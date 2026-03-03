@@ -462,6 +462,21 @@
         "cancel": "Annulla",
         "remove": "Rimuovi"
     },
+    "parentalGuide": {
+        "labels": {
+            "nudity": "Nudità",
+            "violence": "Violenza",
+            "profanity": "Volgarità",
+            "alcohol": "Alcol/Droga",
+            "frightening": "Paura"
+    },
+        "severity": {
+            "severe": "Severa",
+            "moderate": "Moderata",
+            "mild": "Lieve",
+            "none": "Nessuna"
+    }
+    },
     "addons": {
         "title": "Addon",
         "reorder_mode": "Modalità riordino",
