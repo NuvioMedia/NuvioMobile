@@ -676,6 +676,30 @@
         "cache_management": "CACHE MANAGEMENT",
         "downloads_counter": "downloads and counting",
         "made_with_love": "Made with ❤️ by Tapframe and friends",
+        "developer_mode":{
+            "enabled_title":"Developer Mode Enabled",
+            "enabled_message":"Developer tools are now available in Settings.",
+            "invalid_code_title":"Invalid Code",
+            "invalide_code_message":"The code you entered is incorrect.",
+            "disable_title":"Disable Developer Mode",
+            "disable_message":"Are you sure you want to disable developer mode?",
+            "disabled_title":"Developer Mode Disabled",
+            "disabled_message":"Developer tools are now hidden.",
+            "title":"Developer Mode",
+            "enabled_desc":"Tap to disable developer mode",
+            "enter_code_title":"Enable Developer Mode",
+            "enter_code_message":"Enter the developer code to enable developer mode:"},
+        "developer_settings":{
+            "onboarding_reset_success":"Onboarding has been reset. Restart the app to see the onboarding flow.",
+            "onboarding_reset_error":"Failed to reset onboarding.",
+            "campaign_reset_success":"Campaign history reset. Restart app to see posters again.",
+            "clear_all_data":"Clear All Data",
+            "clear_all_data_desc":"This will reset all settings and clear all cached data. Are you sure?",
+            "clear_success":"All data cleared. Please restart the app.",
+            "clear_error":"Failed to clear data.",
+            "plugin_tester_title":"Plugin Tester",
+            "plugin_tester_desc":"Run a plugin and inspect logs/streams"
+        },
         "sections": {
             "information": "INFORMATION",
             "account": "ACCOUNT",
@@ -752,7 +776,8 @@
             "reset_campaigns": "Reset Campaigns",
             "reset_campaigns_desc": "Clear campaign impressions",
             "clear_all_data": "Clear All Data",
-            "clear_all_data_desc": "Reset all settings and cached data"
+            "clear_all_data_desc": "Reset all settings and cached data",
+            "introdb_api_key_placeholder":"Enter your API Key"
         },
         "options": {
             "horizontal": "Horizontal",
@@ -1405,7 +1430,8 @@
         "dmca_title": "Copyright & DMCA",
         "dmca_text": "We respect the intellectual property rights of others. Nuvio does not host media content. If you believe this project's code, assets, or interface infringes your rights, submit a notice through the official project contact channels listed on the website and repository.",
         "warranty_title": "No Warranty",
-        "warranty_text": "This software is provided \"as is\", without warranty of any kind, express or implied. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability arising from the use of this software."
+        "warranty_text": "This software is provided \"as is\", without warranty of any kind, express or implied. In no event shall the authors or copyright holders be liable for any claim, damages, or other liability arising from the use of this software.",
+        "last_updated":"Last updated:"
     },
     "plugin_tester": {
         "title": "Plugin Tester",
