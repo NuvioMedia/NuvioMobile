@@ -1531,5 +1531,25 @@
 	},
     "ai_chat_screen":{
         "loading":"Loading AI context..."
+    },
+    "auth_screen":{
+        "invalid_email_title":"Invalid Email",
+        "invalid_email_desc":"Enter a valid email address",
+        "password_short_title":"Password too short",
+        "password_short_desc":"Password must be at least 6 characters",
+        "password_not_match_title":"Password do not match",
+        "password_not_match_desc":"Password do not match",
+        "authentication_failed":"Authentication Failed",
+        "welcome_back":"Welcome back",
+        "create_account":"Create your account",
+        "sync_desc":"Sync your addons, progress and settings across devices",
+        "sign_in":"Sign In",
+        "password_min_placeholder":"Password (min 6 characters)",
+        "forgot_password":"Forgot password?",
+        "password_confirm_placeholder":"Confirm Password",
+        "dont_have_account":"Don't have an account?",
+        "already_have_account":"Already have an account?",
+        "sign_up":"Sign Up",
+        "continue_without_account":"Continue without an account"
     }
 }
