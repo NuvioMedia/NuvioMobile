@@ -385,11 +385,8 @@ const TrailerPlayer = React.forwardRef<any, TrailerPlayerProps>(({
           }
           return { uri: trailerUrl } as any;
         })()}
-        style={[
-          styles.video,
-          contentType === 'movie' && styles.movieVideoScale,
-        ]}
-        resizeMode="cover"
+        style={styles.video}
+        resizeMode="contain"
         paused={!isPlaying}
         repeat={false}
         muted={isMuted}
@@ -519,9 +516,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  movieVideoScale: {
-    transform: [{ scale: 1.30 }], // Custom scale for movies to crop black bars
-  },
+
   videoOverlay: {
     position: 'absolute',
     top: 0,
