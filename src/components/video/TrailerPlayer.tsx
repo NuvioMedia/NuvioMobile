@@ -376,23 +376,10 @@ const TrailerPlayer = React.forwardRef<any, TrailerPlayerProps>(({
         source={(() => {
           const lower = (trailerUrl || '').toLowerCase();
           const looksLikeHls = /\.m3u8(\b|$)/.test(lower) || /hls|applehlsencryption|playlist|m3u/.test(lower);
-          // Detect both .mpd URLs and inline data: DASH manifests
-          const looksLikeDash = /\.mpd(\b|$)/.test(lower) || /dash|manifest/.test(lower) || lower.startsWith('data:application/dash');
           if (Platform.OS === 'android') {
-            // For DASH streams from YouTube (googlevideo.com CDN), use the same
-            // User-Agent as the ANDROID_VR Innertube client used during extraction.
-            // For all other URLs (HLS, MP4 from server fallback) use a generic UA.
-            const isYouTubeCdn = lower.includes('googlevideo.com') || lower.includes('youtube.com');
-            const androidHeaders = {
-              'User-Agent': (looksLikeDash && isYouTubeCdn)
-                ? 'com.google.android.apps.youtube.vr.oculus/1.60.19 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip'
-                : 'Nuvio/1.0 (Android)',
-            };
+            const androidHeaders = { 'User-Agent': 'Nuvio/1.0 (Android)' };
             if (looksLikeHls) {
               return { uri: trailerUrl, type: 'm3u8', headers: androidHeaders } as any;
-            }
-            if (looksLikeDash) {
-              return { uri: trailerUrl, type: 'mpd', headers: androidHeaders } as any;
             }
             return { uri: trailerUrl, headers: androidHeaders } as any;
           }
