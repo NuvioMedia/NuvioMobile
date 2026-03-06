@@ -660,6 +660,7 @@
         "integrations": "Entegrasyonlar",
         "playback": "Oynatma",
         "backup_restore": "Yedekle ve Geri Yükle",
+        "backup_restore_desc": "Uygulama yedekleri oluştur ve geri yükle",
         "updates": "Güncellemeler",
         "about": "Hakkında",
         "developer": "Geliştirici",
@@ -767,62 +768,62 @@
         "app_updates": "Uygulama Güncellemeleri",
         "about_nuvio": "Nuvio Hakkında",
         "cloud_sync": {
-            "title": "Nuvio Sync",
-            "description": "Sync data across your Nuvio devices",
-            "hero_title": "Cloud Sync",
-            "hero_subtitle": "Keep your addons, progress, and library aligned across all devices.",
+            "title": "Nuvio Senkronizasyonu",
+            "description": "Verilerinizi Nuvio cihazlarınız arasında senkronize edin",
+            "hero_title": "Bulut Senkronizasyonu",
+            "hero_subtitle": "Eklentilerinizi, ilerlemenizi ve kütüphanenizi tüm cihazlarda senkronize tutun.",
             "auth": {
-                "account": "Account",
-                "not_configured": "Supabase not configured",
-                "not_authenticated": "Not authenticated",
-                "email_session": "Email session",
-                "signed_in_as": "Signed in as {{email}}",
-                "not_signed_in": "Not signed in",
-                "effective_owner": "Effective owner: {{id}}"
+                "account": "Hesap",
+                "not_configured": "Supabase yapılandırılmadı",
+                "not_authenticated": "Giriş yapılmadı",
+                "email_session": "E-posta oturumu",
+                "signed_in_as": "{{email}} olarak giriş yapıldı",
+                "not_signed_in": "Giriş yapılmadı",
+                "effective_owner": "Geçerli Kullanıcı: {{id}}"
             },
             "stats": {
-                "title": "Database Statistics",
-                "plugins": "Plugins",
-                "addons": "Addons",
-                "watch_progress": "Watch Progress",
-                "library_items": "Library Items",
-                "watched_items": "Watched Items",
-                "signin_required": "Sign in to load remote data counts."
+                "title": "Veri Tabanı İstatistikleri",
+                "plugins": "Eklentiler",
+                "addons": "Modüller (Addons)",
+                "watch_progress": "İzleme İlerlemesi",
+                "library_items": "Kütüphane Ögeleri",
+                "watched_items": "İzlenen Ögeler",
+                "signin_required": "Uzak veri sayılarını yüklemek için giriş yapın."
             },
             "actions": {
-                "title": "Actions",
-                "description": "Pull to update this device from the cloud, or push from this device as the latest source.",
-                "pull_btn": "Pull from Cloud",
-                "push_btn": "Push from Device",
-                "manage_account": "Manage Account",
-                "sign_out": "Sign Out",
-                "sign_in_up": "Sign In / Up"
+                "title": "İşlemler",
+                "description": "Bu cihazı buluttan güncellemek için verileri çekin (Pull) veya bu cihazı güncel kabul edip buluta aktarın (Push).",
+                "pull_btn": "Buluttan Çek",
+                "push_btn": "Cihazdan Aktar",
+                "manage_account": "Hesabı Yönet",
+                "sign_out": "Çıkış Yap",
+                "sign_in_up": "Giriş Yap / Kayıt Ol"
             },
             "alerts": {
-                "pull_success_title": "Cloud Data Pulled",
-                "pull_success_msg": "The latest cloud data has been downloaded to this device.",
-                "pull_failed_title": "Pull Failed",
-                "pull_failed_msg": "Failed to download data from the cloud",
-                "push_success_title": "Push Completed",
-                "push_success_msg": "Device data has been uploaded to the cloud.",
-                "push_failed_title": "Push Failed",
-                "push_failed_msg": "Failed to upload local data",
-                "sign_out_failed": "Sign Out Failed",
-                "sign_out_failed_title": "Logout Error"
+                "pull_success_title": "Bulut Verisi Çekildi",
+                "pull_success_msg": "En son bulut verisi bu cihaza indirildi.",
+                "pull_failed_title": "Çekme Başarısız",
+                "pull_failed_msg": "Buluttan veri indirilemedi",
+                "push_success_title": "Aktarım Tamamlandı",
+                "push_success_msg": "Cihaz verileri buluta yüklendi.",
+                "push_failed_title": "Aktarım Başarısız",
+                "push_failed_msg": "Yerel veriler yüklenemedi",
+                "sign_out_failed": "Çıkış Başarısız",
+                "sign_out_failed_title": "Çıkış Hatası"
             },
             "external_sync": {
-                "title": "External Sync Priority",
-                "active_msg": "{{services}} is active. Watch progress and library updates are managed by these services instead of Nuvio cloud database.",
-                "inactive_msg": "If Trakt or Simkl sync is enabled, watch progress and library updates will use those services instead of Nuvio cloud database."
+                "title": "Harici Senkronizasyon Önceliği",
+                "active_msg": "{{services}} aktif. İzleme ilerlemesi ve kütüphane güncellemeleri Nuvio bulut veri tabanı yerine bu hizmetler tarafından yönetiliyor.",
+                "inactive_msg": "Eğer Trakt veya Simkl senkronizasyonu etkinleştirilirse, izleme ilerlemesi ve kütüphane güncellemeleri Nuvio bulutu yerine o hizmetleri kullanacaktır."
             },
             "pre_auth": {
-                "title": "Before Syncing",
-                "description": "Sign in to start cloud sync and keep your data consistent across devices.",
-                "point_1": "• Addons and plugins settings",
-                "point_2": "• Watch progress and library",
-                "env_warning": "Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY to enable sync."
+                "title": "Senkronizasyondan Önce",
+                "description": "Bulut senkronizasyonunu başlatmak ve verilerinizi cihazlar arasında tutarlı tutmak için giriş yapın.",
+                "point_1": "• Modül ve eklenti ayarları",
+                "point_2": "• İzleme ilerlemesi ve kütüphane",
+                "env_warning": "Senkronizasyonu etkinleştirmek için EXPO_PUBLIC_SUPABASE_URL ve EXPO_PUBLIC_SUPABASE_ANON_KEY değerlerini ayarlayın."
             },
-            "connection": "Connection"
+            "connection": "Bağlantı"
         }
     },
     "privacy": {
@@ -1042,6 +1043,8 @@
         "select_catalogs": "Katalogları Seç",
         "all_catalogs": "Tüm kataloglar",
         "selected": "seçildi",
+        "prefer_external_meta": "Harici Meta Eklentisini Tercih Et",
+        "prefer_external_meta_desc": "Detay sayfasında harici meta verilerini kullan",
         "hero_layout": "Hero Düzeni",
         "layout_legacy": "Klasik",
         "layout_carousel": "Atlıkarınca",
