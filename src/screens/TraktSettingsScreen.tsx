@@ -595,7 +595,7 @@ const TraktSettingsScreen: React.FC = () => {
           </View>
         )}
         <Text style={[styles.disclaimer, { color: isDarkMode ? currentTheme.colors.mediumEmphasis : currentTheme.colors.textMutedDark }]}>
-          This product uses the Trakt API but is not endorsed or certified by Trakt.
+          {t('trakt.disclaimer')}
         </Text>
       </ScrollView>
 
