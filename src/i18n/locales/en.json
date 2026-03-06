@@ -1509,11 +1509,28 @@
 			"tried_url": "Tried: {{url}}",
 			"provider_logs": "Provider Logs",
 			"no_logs_captured": "No logs captured."
-		},
-		"first_time_welcome": {
-			"welcome_msg": "Welcome to Nuvio!",
-			"get_started": "To get started, install some addons to access content from various sources.",
-			"install_addons": "Install Addons"
 		}
+	},
+	"first_time_welcome": {
+		"welcome_msg": "Welcome to Nuvio!",
+		"get_started": "To get started, install some addons to access content from various sources.",
+		"install_addons": "Install Addons"
+	},
+	"onboarding_screen": {
+		"welcome_title": "Welcome to\nNuvio",
+		"welcome_subtitle": "Your Ultimate Content Hub",
+		"welcome_desc": "Discover, organize, and manage your favorite movies and TV shows from multiple sources in one beautiful app.",
+		"addons_title": "Powerful\nAddons",
+		"addons_subtitle": "Extend Your Experience",
+		"addons_desc": "Install addons to access content from various platforms and services. Choose what works best for you.",
+		"discovery_title": "Smart\nDiscovery",
+		"discovery_subtitle": "Find What You Love",
+		"discovery_desc": "Browse trending content, search across all your sources, and get personalized recommendations.",
+		"library_title": "Your\nLibrary",
+		"library_subtitle": "Track & Organize",
+		"library_desc": "Save favorites, track your progress, and sync with Trakt to keep everything organized across devices.",
+		"swipe_to_continue": "Swipe to continue",
+		"skip": "Skip",
+        "get_started":"Get Started"
 	}
 }
