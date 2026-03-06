@@ -813,7 +813,7 @@ const SettingsScreen: React.FC = () => {
 								<SettingsCard title={t('settings.account').toUpperCase()}>
 									{showCloudSyncItem && (
 										<SettingItem
-											title="Nuvio Sync"
+											title={t('settings.cloud_sync.title')}
 											description={t('settings.cloud_sync.description')}
 											customIcon={
 												<FastImage
