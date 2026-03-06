@@ -1175,7 +1175,13 @@
 		"alert_reset_success": "All notifications have been reset",
 		"alert_sync_complete": "Sync Complete",
 		"alert_sync_msg": "Successfully synced notifications for your library and Trakt items.\n\nScheduled: {{upcoming}} upcoming episodes\nThis week: {{thisWeek}} episodes",
-		"alert_test_scheduled": "Test notification scheduled to fire instantly"
+		"alert_test_scheduled": "Test notification scheduled to fire instantly",
+		"failed_sync_notifications": "Failed to sync notifications. Please try again.",
+		"failed_reset_notifications": "Failed to reset notifications.",
+		"failed_update_notification_settings": "Failed to update notification settings",
+		"failed_test": "Failed to schedule test notification",
+		"failed_test_enable_notifications": "Failed to schedule test notification. Make sure notifications are enabled.",
+		"loading_settings": "Loading settings..."
 	},
 	"backup": {
 		"title": "Backup & Restore",
@@ -1539,9 +1545,9 @@
 		"profanity": "Profanity",
 		"alcohol": "Alcohol/Drugs",
 		"frightening": "Frightening",
-        "severe":"severe",
-        "moderate":"moderate",
-        "mild":"mild",
-        "none":"none"
+		"severe": "severe",
+		"moderate": "moderate",
+		"mild": "mild",
+		"none": "none"
 	}
 }

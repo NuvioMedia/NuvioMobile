@@ -1175,7 +1175,13 @@
 		"alert_reset_success": "Tutte le notifiche sono state ripristinate",
 		"alert_sync_complete": "Sincronizzazione Completata",
 		"alert_sync_msg": "Sincronizzazione notifiche completata con successo per la libreria e gli elementi Trakt.\n\nProgrammati: {{upcoming}} episodi in arrivo\nQuesta settimana: {{thisWeek}} episodi",
-		"alert_test_scheduled": "Notifica di test programmata per l'invio immediato"
+		"alert_test_scheduled": "Notifica di test programmata per l'invio immediato",
+		"failed_sync_notifications": "Errore nella sincronizzazione delle notifiche. Riprova.",
+		"failed_reset_notifications": "Errore nel reset delle notifiche. Riprova.",
+		"failed_update_notification_settings": "Errore nell'aggiornamento delle impostazioni delle notifiche. Riprova",
+		"failed_test_enable_notifications": "Errore nella programmazione della notifica di test. Assicurati di aver garantito i permessi alle notifice per l'app.",
+		"failed_test": "Errore nella programmazione della notifica di test.",
+		"loading_settings": "Caricamento Impostazioni..."
 	},
 	"backup": {
 		"title": "Backup e Ripristino",
@@ -1543,5 +1549,11 @@
 		"moderate": "moderata",
 		"mild": "lieve",
 		"none": "nessuno"
+	},
+	"skip_intro_button": {
+		"skip": "Salta",
+		"skip_intro": "Salta Inizio",
+		"skip_ending": "Salta Fine",
+		"skip_recap": "Salta Riassunto"
 	}
 }
