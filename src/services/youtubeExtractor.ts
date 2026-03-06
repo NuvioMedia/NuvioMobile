@@ -1,478 +1,572 @@
 import { logger } from '../utils/logger';
+import { Platform } from 'react-native';
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 interface InnertubeFormat {
-  itag: number;
+  itag?: number;
   url?: string;
-  signatureCipher?: string;
-  mimeType: string;
-  bitrate: number;
+  mimeType?: string;
+  bitrate?: number;
+  averageBitrate?: number;
   width?: number;
   height?: number;
-  contentLength?: string;
-  quality: string;
+  fps?: number;
+  quality?: string;
   qualityLabel?: string;
   audioQuality?: string;
   audioSampleRate?: string;
-  audioChannels?: number;
-  approxDurationMs?: string;
-  lastModified?: string;
-  projectionType?: string;
   initRange?: { start: string; end: string };
   indexRange?: { start: string; end: string };
 }
 
-interface InnertubeStreamingData {
-  formats: InnertubeFormat[];
-  adaptiveFormats: InnertubeFormat[];
-  expiresInSeconds?: string;
-}
-
-interface InnertubePlayerResponse {
-  streamingData?: InnertubeStreamingData;
-  videoDetails?: {
-    videoId: string;
-    title: string;
-    lengthSeconds: string;
-    isLive?: boolean;
-    isLiveDvr?: boolean;
+interface PlayerResponse {
+  streamingData?: {
+    formats?: InnertubeFormat[];
+    adaptiveFormats?: InnertubeFormat[];
+    hlsManifestUrl?: string;
   };
   playabilityStatus?: {
-    status: string;
+    status?: string;
     reason?: string;
   };
 }
 
-export interface ExtractedStream {
+interface StreamCandidate {
+  client: string;
+  priority: number;
   url: string;
-  quality: string;        // e.g. "720p", "480p"
-  mimeType: string;       // e.g. "video/mp4"
-  itag: number;
-  hasAudio: boolean;
-  hasVideo: boolean;
+  score: number;
+  height: number;
+  fps: number;
+  ext: 'mp4' | 'webm' | 'm4a' | 'other';
   bitrate: number;
+  audioSampleRate?: string;
+  mimeType: string;
+}
+
+interface HlsVariant {
+  url: string;
+  width: number;
+  height: number;
+  bandwidth: number;
 }
 
 export interface YouTubeExtractionResult {
-  streams: ExtractedStream[];
-  bestStream: ExtractedStream | null;
+  /** Primary playable URL — HLS manifest, progressive muxed, or video-only adaptive */
+  videoUrl: string;
+  /** Separate audio URL when adaptive video-only is used. null for HLS/progressive. */
+  audioUrl: string | null;
+  quality: string;
   videoId: string;
-  title?: string;
-  durationSeconds?: number;
 }
 
 // ---------------------------------------------------------------------------
-// Constants
+// Constants — matching the Kotlin extractor exactly
 // ---------------------------------------------------------------------------
 
-// Innertube client configs — we use Android (no cipher, direct URLs)
-// and web as fallback (may need cipher decode)
-// Note: ?key= param was deprecated by YouTube in mid-2023 and is no longer sent.
-const INNERTUBE_URL = 'https://www.youtube.com/youtubei/v1/player';
+// Used for all GET requests (watch page, HLS manifest fetch)
+const DEFAULT_USER_AGENT =
+  'Mozilla/5.0 (Linux; Android 12; Android TV) AppleWebKit/537.36 ' +
+  '(KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36';
 
-// Android client gives direct URLs without cipher obfuscation
-const ANDROID_CLIENT_CONTEXT = {
-  client: {
-    clientName: 'ANDROID',
-    clientVersion: '19.44.41',
-    androidSdkVersion: 30,
+const DEFAULT_HEADERS: Record<string, string> = {
+  'accept-language': 'en-US,en;q=0.9',
+  'user-agent': DEFAULT_USER_AGENT,
+};
+
+const PREFERRED_ADAPTIVE_CLIENT = 'android_vr';
+const REQUEST_TIMEOUT_MS = 6000;        // player API + HLS manifest requests
+const WATCH_PAGE_TIMEOUT_MS = 3000;    // watch page scrape — best-effort only
+const MAX_RETRIES = 2;                  // retry extraction up to 2 times on total failure
+
+interface ClientDef {
+  key: string;
+  id: string;
+  version: string;
+  userAgent: string;
+  context: Record<string, any>;
+  priority: number;
+}
+
+// Matching the Kotlin extractor client list exactly (versions updated to current)
+const CLIENTS: ClientDef[] = [
+  {
+    key: 'android_vr',
+    id: '28',
+    version: '1.62.27',
     userAgent:
-      'com.google.android.youtube/19.44.41 (Linux; U; Android 11) gzip',
-    hl: 'en',
-    gl: 'US',
+      'com.google.android.apps.youtube.vr.oculus/1.62.27 ' +
+      '(Linux; U; Android 12; en_US; Quest 3; Build/SQ3A.220605.009.A1) gzip',
+    context: {
+      clientName: 'ANDROID_VR',
+      clientVersion: '1.62.27',
+      deviceMake: 'Oculus',
+      deviceModel: 'Quest 3',
+      osName: 'Android',
+      osVersion: '12',
+      platform: 'MOBILE',
+      androidSdkVersion: 32,
+      hl: 'en',
+      gl: 'US',
+    },
+    priority: 0,
   },
-};
-
-// iOS client as secondary fallback
-const IOS_CLIENT_CONTEXT = {
-  client: {
-    clientName: 'IOS',
-    clientVersion: '19.45.4',
-    deviceModel: 'iPhone16,2',
+  {
+    key: 'android',
+    id: '3',
+    version: '20.10.38',
     userAgent:
-      'com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)',
-    hl: 'en',
-    gl: 'US',
+      'com.google.android.youtube/20.10.38 (Linux; U; Android 14; en_US) gzip',
+    context: {
+      clientName: 'ANDROID',
+      clientVersion: '20.10.38',
+      osName: 'Android',
+      osVersion: '14',
+      platform: 'MOBILE',
+      androidSdkVersion: 34,
+      hl: 'en',
+      gl: 'US',
+    },
+    priority: 1,
   },
-};
-
-// TV Embedded client — works for age-restricted / embed-allowed content
-const TVHTML5_EMBEDDED_CONTEXT = {
-  client: {
-    clientName: 'TVHTML5_SIMPLY_EMBEDDED_PLAYER',
-    clientVersion: '2.0',
-    hl: 'en',
-    gl: 'US',
+  {
+    key: 'ios',
+    id: '5',
+    version: '20.10.1',
+    userAgent:
+      'com.google.ios.youtube/20.10.1 (iPhone16,2; U; CPU iOS 17_4 like Mac OS X)',
+    context: {
+      clientName: 'IOS',
+      clientVersion: '20.10.1',
+      deviceModel: 'iPhone16,2',
+      osName: 'iPhone',
+      osVersion: '17.4.0.21E219',
+      platform: 'MOBILE',
+      hl: 'en',
+      gl: 'US',
+    },
+    priority: 2,
   },
-};
-
-// Web Embedded client — good fallback for content that rejects app clients
-const WEB_EMBEDDED_CONTEXT = {
-  client: {
-    clientName: 'WEB_EMBEDDED_PLAYER',
-    clientVersion: '2.20240726.00.00',
-    hl: 'en',
-    gl: 'US',
-  },
-  thirdParty: {
-    embedUrl: 'https://www.youtube.com',
-  },
-};
-
-// ---------------------------------------------------------------------------
-// Itag reference tables
-// ---------------------------------------------------------------------------
-
-// Muxed (video+audio in one file).
-// iOS AVPlayer can ONLY use these. Max quality YouTube provides is 720p (itag 22),
-// but it is often absent on modern videos, leaving 360p (itag 18) as the fallback.
-const PREFERRED_MUXED_ITAGS = [
-  22,   // 720p MP4 (video+audio)
-  18,   // 360p MP4 (video+audio)
-  59,   // 480p MP4 (video+audio) — rare
-  78,   // 480p MP4 (video+audio) — rare
 ];
-
-// Adaptive video-only itags, best quality first (MP4 preferred over WebM).
-// Used for DASH on Android only.
-const ADAPTIVE_VIDEO_ITAGS_RANKED = [
-  137,  // 1080p MP4 video-only
-  248,  // 1080p WebM video-only
-  136,  // 720p MP4 video-only
-  247,  // 720p WebM video-only
-  135,  // 480p MP4 video-only
-  244,  // 480p WebM video-only
-  134,  // 360p MP4 video-only
-  243,  // 360p WebM video-only
-];
-
-// Adaptive audio-only itags, best quality first (AAC preferred over Opus).
-// Used for DASH on Android only.
-const ADAPTIVE_AUDIO_ITAGS_RANKED = [
-  141,  // 256kbps AAC
-  140,  // 128kbps AAC  ← most common
-  251,  // 160kbps Opus
-  250,  // 70kbps Opus
-  249,  // 50kbps Opus
-];
-
-const REQUEST_TIMEOUT_MS = 12000;
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
-function extractVideoId(input: string): string | null {
+function parseVideoId(input: string): string | null {
   if (!input) return null;
-
-  // Already a bare video ID (11 chars, alphanumeric + _ -)
-  if (/^[A-Za-z0-9_-]{11}$/.test(input.trim())) {
-    return input.trim();
-  }
-
+  const trimmed = input.trim();
+  if (/^[A-Za-z0-9_-]{11}$/.test(trimmed)) return trimmed;
   try {
-    const url = new URL(input);
-
-    // youtu.be/VIDEO_ID
-    if (url.hostname === 'youtu.be') {
+    const url = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+    const host = url.hostname.toLowerCase();
+    if (host.endsWith('youtu.be')) {
       const id = url.pathname.slice(1).split('/')[0];
-      if (id && /^[A-Za-z0-9_-]{11}$/.test(id)) return id;
+      if (/^[A-Za-z0-9_-]{11}$/.test(id)) return id;
     }
-
-    // youtube.com/watch?v=VIDEO_ID
     const v = url.searchParams.get('v');
     if (v && /^[A-Za-z0-9_-]{11}$/.test(v)) return v;
-
-    // youtube.com/embed/VIDEO_ID or /shorts/VIDEO_ID
-    const pathMatch = url.pathname.match(/\/(embed|shorts|v)\/([A-Za-z0-9_-]{11})/);
-    if (pathMatch) return pathMatch[2];
+    const m = url.pathname.match(/\/(embed|shorts|live|v)\/([A-Za-z0-9_-]{11})/);
+    if (m) return m[2];
   } catch {
-    // Not a valid URL — try regex fallback
-    const match = input.match(/[?&]v=([A-Za-z0-9_-]{11})/);
-    if (match) return match[1];
+    const m = trimmed.match(/[?&]v=([A-Za-z0-9_-]{11})/);
+    if (m) return m[1];
   }
-
   return null;
 }
 
-function parseMimeType(mimeType: string): { container: string; codecs: string } {
-  // e.g. 'video/mp4; codecs="avc1.64001F, mp4a.40.2"'
-  const [base, codecsPart] = mimeType.split(';');
-  const container = base.trim();
-  const codecs = codecsPart ? codecsPart.replace(/codecs=["']?/i, '').replace(/["']$/, '').trim() : '';
-  return { container, codecs };
+function getMimeBase(mimeType?: string): string {
+  return (mimeType ?? '').split(';')[0].trim();
 }
 
-function isMuxedFormat(format: InnertubeFormat): boolean {
-  // A muxed format has both video and audio codecs in its mimeType
-  const { codecs } = parseMimeType(format.mimeType);
-  // MP4 muxed: "avc1.xxx, mp4a.xxx"
-  // WebM muxed: "vp8, vorbis" etc.
-  return codecs.includes(',') || (!!format.audioQuality && !!format.qualityLabel);
+function getExt(mimeType?: string): 'mp4' | 'webm' | 'm4a' | 'other' {
+  const base = getMimeBase(mimeType);
+  if (base === 'video/mp4' || base === 'audio/mp4') return 'mp4';
+  if (base.includes('webm')) return 'webm';
+  if (base.includes('m4a')) return 'm4a';
+  return 'other';
 }
 
-function isVideoMp4(format: InnertubeFormat): boolean {
-  return format.mimeType.startsWith('video/mp4');
+function containerScore(ext: string): number {
+  return ext === 'mp4' || ext === 'm4a' ? 0 : ext === 'webm' ? 1 : 2;
 }
 
-function formatQualityLabel(format: InnertubeFormat): string {
-  return format.qualityLabel || format.quality || 'unknown';
+function videoScore(height: number, fps: number, bitrate: number): number {
+  return height * 1_000_000_000 + fps * 1_000_000 + bitrate;
 }
 
-function scoreFormat(format: InnertubeFormat): number {
-  const preferredIndex = PREFERRED_MUXED_ITAGS.indexOf(format.itag);
-  const itagBonus = preferredIndex !== -1 ? (PREFERRED_MUXED_ITAGS.length - preferredIndex) * 10000 : 0;
-  const height = format.height ?? 0;
-  const heightScore = Math.min(height, 720) * 10;
-  const bitrateScore = Math.min(format.bitrate ?? 0, 3_000_000) / 1000;
-  return itagBonus + heightScore + bitrateScore;
+function audioScore(bitrate: number, sampleRate: number): number {
+  return bitrate * 1_000_000 + sampleRate;
 }
 
-// ---------------------------------------------------------------------------
-// Adaptive stream helpers (Android/DASH only)
-// ---------------------------------------------------------------------------
-
-function pickBestAdaptiveVideo(adaptiveFormats: InnertubeFormat[]): InnertubeFormat | null {
-  // Video-only: has qualityLabel, no audioQuality, has direct URL
-  const videoOnly = adaptiveFormats.filter(
-    (f) => f.url && f.qualityLabel && !f.audioQuality && f.mimeType.startsWith('video/')
-  );
-  if (videoOnly.length === 0) return null;
-  for (const itag of ADAPTIVE_VIDEO_ITAGS_RANKED) {
-    const match = videoOnly.find((f) => f.itag === itag);
-    if (match) return match;
-  }
-  return videoOnly.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0))[0] ?? null;
+function parseQualityLabel(label?: string): number {
+  const m = (label ?? '').match(/(\d{2,4})p/);
+  return m ? parseInt(m[1], 10) : 0;
 }
 
-function pickBestAdaptiveAudio(adaptiveFormats: InnertubeFormat[]): InnertubeFormat | null {
-  // Audio-only: has audioQuality, no qualityLabel, has direct URL
-  const audioOnly = adaptiveFormats.filter(
-    (f) => f.url && f.audioQuality && !f.qualityLabel && f.mimeType.startsWith('audio/')
-  );
-  if (audioOnly.length === 0) return null;
-  for (const itag of ADAPTIVE_AUDIO_ITAGS_RANKED) {
-    const match = audioOnly.find((f) => f.itag === itag);
-    if (match) return match;
-  }
-  return audioOnly.sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0))[0] ?? null;
-}
-
-/**
- * Write a DASH MPD manifest to a temp file and return its file:// URI.
- *
- * We use a file URI rather than a data: URI because:
- * - ExoPlayer's DefaultDataSource handles file:// URIs natively via FileDataSource.
- * - The .mpd file extension lets ExoPlayer auto-detect the type even without an
- *   explicit 'type' hint — meaning TrailerModal's bare <Video> also works correctly.
- * - Avoids the need for a Buffer/btoa polyfill (not guaranteed in Hermes).
- *
- * Uses expo-file-system which is already in the project's dependencies.
- * Returns null if writing fails.
- */
-async function writeDashManifestToFile(
-  videoFormat: InnertubeFormat,
-  audioFormat: InnertubeFormat,
-  videoId: string,
-  durationSeconds?: number
-): Promise<string | null> {
+function summarizeUrl(url: string): string {
   try {
-    const FileSystem = await import('expo-file-system/legacy');
-    const cacheDir = FileSystem.cacheDirectory;
-    if (!cacheDir) return null;
-
-    const duration = durationSeconds ?? 300;
-    const mediaDurationISO = `PT${duration}S`;
-
-    const videoCodec = parseMimeType(videoFormat.mimeType).codecs.replace(/"/g, '').trim();
-    const audioCodec = parseMimeType(audioFormat.mimeType).codecs.replace(/"/g, '').trim();
-    const videoMime = videoFormat.mimeType.split(';')[0].trim();
-    const audioMime = audioFormat.mimeType.split(';')[0].trim();
-
-    const width = videoFormat.width ?? 1920;
-    const height = videoFormat.height ?? 1080;
-    const videoBandwidth = videoFormat.bitrate ?? 2_000_000;
-    const audioBandwidth = audioFormat.bitrate ?? 128_000;
-    const audioSampleRate = audioFormat.audioSampleRate ?? '44100';
-
-    const escapeXml = (s: string) =>
-      s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-
-    const videoUrl = escapeXml(videoFormat.url!);
-    const audioUrl = escapeXml(audioFormat.url!);
-
-    // Use proper initRange/indexRange if available (YouTube adaptive streams have these)
-    // Without correct ranges ExoPlayer's DashMediaSource cannot parse the segment index.
-    // Fall back to range "0-0" only as last resort — ExoPlayer will attempt a range request.
-    const vInit = videoFormat.initRange
-      ? `${videoFormat.initRange.start}-${videoFormat.initRange.end}`
-      : '0-0';
-    const vIndex = videoFormat.indexRange
-      ? `${videoFormat.indexRange.start}-${videoFormat.indexRange.end}`
-      : '0-0';
-    const aInit = audioFormat.initRange
-      ? `${audioFormat.initRange.start}-${audioFormat.initRange.end}`
-      : '0-0';
-    const aIndex = audioFormat.indexRange
-      ? `${audioFormat.indexRange.start}-${audioFormat.indexRange.end}`
-      : '0-0';
-
-    const mpd = `<?xml version="1.0" encoding="UTF-8"?>
-<MPD xmlns="urn:mpeg:dash:schema:mpd:2011" type="static" mediaPresentationDuration="${mediaDurationISO}" minBufferTime="PT2S" profiles="urn:mpeg:dash:profile:isoff-on-demand:2011">
-  <Period duration="${mediaDurationISO}">
-    <AdaptationSet id="1" mimeType="${videoMime}" codecs="${videoCodec}" width="${width}" height="${height}" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
-      <Representation id="v1" bandwidth="${videoBandwidth}" width="${width}" height="${height}">
-        <BaseURL>${videoUrl}</BaseURL>
-        <SegmentBase indexRange="${vIndex}">
-          <Initialization range="${vInit}"/>
-        </SegmentBase>
-      </Representation>
-    </AdaptationSet>
-    <AdaptationSet id="2" mimeType="${audioMime}" codecs="${audioCodec}" lang="en" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
-      <Representation id="a1" bandwidth="${audioBandwidth}" audioSamplingRate="${audioSampleRate}">
-        <BaseURL>${audioUrl}</BaseURL>
-        <SegmentBase indexRange="${aIndex}">
-          <Initialization range="${aInit}"/>
-        </SegmentBase>
-      </Representation>
-    </AdaptationSet>
-  </Period>
-</MPD>`;
-
-    const filePath = `${cacheDir}trailer_${videoId}.mpd`;
-    await FileSystem.writeAsStringAsync(filePath, mpd, { encoding: FileSystem.EncodingType.UTF8 });
-    logger.info('YouTubeExtractor', `DASH manifest written: ${filePath}`);
-    return filePath;
-  } catch (err) {
-    logger.warn('YouTubeExtractor', 'writeDashManifestToFile failed:', err);
-    return null;
+    const u = new URL(url);
+    return `${u.hostname}${u.pathname.substring(0, 40)}`;
+  } catch {
+    return url.substring(0, 80);
   }
 }
 
 // ---------------------------------------------------------------------------
-// Core extractor
+// URL validation — HEAD request to check if URL is actually accessible
+// ---------------------------------------------------------------------------
+
+async function validateUrl(url: string, userAgent: string): Promise<boolean> {
+  // Only validate googlevideo.com CDN URLs — other URLs (HLS manifests) are fine
+  if (!url.includes('googlevideo.com')) return true;
+
+  // Check expiry param before making a network request
+  try {
+    const u = new URL(url);
+    const expire = u.searchParams.get('expire');
+    if (expire) {
+      const expiresAt = parseInt(expire, 10) * 1000;
+      if (Date.now() > expiresAt - 30000) {
+        logger.warn('YouTubeExtractor', `URL expired or expiring in <30s: expire=${expire}`);
+        return false;
+      }
+    }
+  } catch { /* ignore URL parse errors */ }
+
+  // Quick HEAD request to confirm URL is accessible
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 4000);
+  try {
+    const res = await fetch(url, {
+      method: 'HEAD',
+      headers: { 'User-Agent': userAgent },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (res.status === 403 || res.status === 401) {
+      logger.warn('YouTubeExtractor', `URL validation failed: HTTP ${res.status}`);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    clearTimeout(timer);
+    // Network error or timeout — assume valid and let the player try
+    logger.warn('YouTubeExtractor', `URL validation request failed (assuming valid):`, err);
+    return true;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// android_vr preferred selection — only fall back to other clients if
+// android_vr returned zero formats (likely PO token required for others)
+// ---------------------------------------------------------------------------
+
+function filterPreferAndroidVr(items: StreamCandidate[]): StreamCandidate[] {
+  const fromVr = items.filter(c => c.client === 'android_vr');
+  return fromVr.length > 0 ? fromVr : items;
+}
+
+function sortCandidates(items: StreamCandidate[]): StreamCandidate[] {
+  return [...items].sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    const ca = containerScore(a.ext), cb = containerScore(b.ext);
+    if (ca !== cb) return ca - cb;
+    return a.priority - b.priority;
+  });
+}
+
+function pickBestForClient(
+  items: StreamCandidate[],
+  preferredClient: string,
+): StreamCandidate | null {
+  const fromPreferred = items.filter(c => c.client === preferredClient);
+  const pool = fromPreferred.length > 0 ? fromPreferred : items;
+  return sortCandidates(pool)[0] ?? null;
+}
+
+// ---------------------------------------------------------------------------
+// Watch page — extract API key + visitor data dynamically
+// ---------------------------------------------------------------------------
+
+interface WatchConfig {
+  apiKey: string | null;
+  visitorData: string | null;
+}
+
+async function fetchWatchConfig(videoId: string): Promise<WatchConfig> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), WATCH_PAGE_TIMEOUT_MS);
+  try {
+    const res = await fetch(
+      `https://www.youtube.com/watch?v=${videoId}&hl=en`,
+      { headers: DEFAULT_HEADERS, signal: controller.signal },
+    );
+    clearTimeout(timer);
+    if (!res.ok) {
+      logger.warn('YouTubeExtractor', `Watch page ${res.status}`);
+      return { apiKey: null, visitorData: null };
+    }
+    const html = await res.text();
+    const apiKey = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/)?.[1] ?? null;
+    const visitorData = html.match(/"VISITOR_DATA":"([^"]+)"/)?.[1] ?? null;
+    logger.info('YouTubeExtractor', `Watch page: apiKey=${apiKey ? 'found' : 'missing'} visitorData=${visitorData ? 'found' : 'missing'}`);
+    return { apiKey, visitorData };
+  } catch (err) {
+    clearTimeout(timer);
+    logger.warn('YouTubeExtractor', 'Watch page error:', err);
+    return { apiKey: null, visitorData: null };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Player API
 // ---------------------------------------------------------------------------
 
 async function fetchPlayerResponse(
   videoId: string,
-  context: object,
-  userAgent: string,
-  clientNameId: string = '3'
-): Promise<InnertubePlayerResponse | null> {
+  client: ClientDef,
+  apiKey: string | null,
+  visitorData: string | null,
+): Promise<PlayerResponse | null> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
+  const endpoint = apiKey
+    ? `https://www.youtube.com/youtubei/v1/player?key=${encodeURIComponent(apiKey)}&prettyPrint=false`
+    : `https://www.youtube.com/youtubei/v1/player?prettyPrint=false`;
+
+  const headers: Record<string, string> = {
+    ...DEFAULT_HEADERS,
+    'content-type': 'application/json',
+    'origin': 'https://www.youtube.com',
+    'referer': `https://www.youtube.com/watch?v=${videoId}`,
+    'x-youtube-client-name': client.id,
+    'x-youtube-client-version': client.version,
+    'user-agent': client.userAgent,
+  };
+  if (visitorData) headers['x-goog-visitor-id'] = visitorData;
+
+  const body = JSON.stringify({
+    videoId,
+    contentCheckOk: true,
+    racyCheckOk: true,
+    context: { client: client.context },
+    playbackContext: {
+      contentPlaybackContext: { html5Preference: 'HTML5_PREF_WANTS' },
+    },
+  });
+
   try {
-    const body = {
-      videoId,
-      context,
-      contentCheckOk: true,
-      racyCheckOk: true,
-    };
-
-    const response = await fetch(
-      `${INNERTUBE_URL}?prettyPrint=false`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'User-Agent': userAgent,
-          'X-YouTube-Client-Name': clientNameId,
-          'Origin': 'https://www.youtube.com',
-          'Referer': `https://www.youtube.com/watch?v=${videoId}`,
-        },
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      }
-    );
-
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers,
+      body,
+      signal: controller.signal,
+    });
     clearTimeout(timer);
-
-    if (!response.ok) {
-      logger.warn('YouTubeExtractor', `Innertube HTTP ${response.status} for videoId=${videoId}`);
+    if (!res.ok) {
+      logger.warn('YouTubeExtractor', `[${client.key}] HTTP ${res.status}`);
       return null;
     }
-
-    const data: InnertubePlayerResponse = await response.json();
-    return data;
+    return await res.json() as PlayerResponse;
   } catch (err) {
     clearTimeout(timer);
     if (err instanceof Error && err.name === 'AbortError') {
-      logger.warn('YouTubeExtractor', `Request timed out for videoId=${videoId}`);
+      logger.warn('YouTubeExtractor', `[${client.key}] Timed out`);
     } else {
-      logger.warn('YouTubeExtractor', `Fetch error for videoId=${videoId}:`, err);
+      logger.warn('YouTubeExtractor', `[${client.key}] Error:`, err);
     }
     return null;
   }
 }
 
-function parseMuxedFormats(playerResponse: InnertubePlayerResponse): InnertubeFormat[] {
-  const sd = playerResponse.streamingData;
-  if (!sd) return [];
-  const formats: InnertubeFormat[] = [];
-  for (const f of sd.formats ?? []) {
-    if (f.url) formats.push(f);
-  }
-  // Edge case: some adaptive formats are muxed
-  for (const f of sd.adaptiveFormats ?? []) {
-    if (f.url && isMuxedFormat(f)) formats.push(f);
-  }
-  return formats;
-}
+// ---------------------------------------------------------------------------
+// HLS manifest parsing
+// ---------------------------------------------------------------------------
 
-function parseAdaptiveFormats(playerResponse: InnertubePlayerResponse): InnertubeFormat[] {
-  const sd = playerResponse.streamingData;
-  if (!sd) return [];
-  return (sd.adaptiveFormats ?? []).filter((f) => !!f.url);
-}
+async function parseBestHlsVariant(manifestUrl: string): Promise<HlsVariant | null> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  try {
+    const res = await fetch(manifestUrl, {
+      headers: DEFAULT_HEADERS,
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return null;
+    const text = await res.text();
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-function pickBestMuxedStream(
-  muxedFormats: InnertubeFormat[],
-  adaptiveFormats: InnertubeFormat[] = []
-): ExtractedStream | null {
-  // Prefer proper muxed streams (have both video and audio)
-  if (muxedFormats.length > 0) {
-    const mp4Formats = muxedFormats.filter(isVideoMp4);
-    const pool = mp4Formats.length > 0 ? mp4Formats : muxedFormats;
-    const sorted = [...pool].sort((a, b) => scoreFormat(b) - scoreFormat(a));
-    const best = sorted[0];
-    return {
-      url: best.url!,
-      quality: formatQualityLabel(best),
-      mimeType: best.mimeType,
-      itag: best.itag,
-      hasAudio: !!best.audioQuality || isMuxedFormat(best),
-      hasVideo: !!best.qualityLabel || best.mimeType.startsWith('video/'),
-      bitrate: best.bitrate ?? 0,
-    };
-  }
+    let best: HlsVariant | null = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.startsWith('#EXT-X-STREAM-INF:')) continue;
+      const nextLine = lines[i + 1];
+      if (!nextLine || nextLine.startsWith('#')) continue;
 
-  // Last resort: if there are no muxed formats at all, use the best video-only
-  // adaptive stream (will have no audio, but at least something plays vs nothing)
-  if (adaptiveFormats.length > 0) {
-    const videoAdaptive = adaptiveFormats.filter(
-      (f) => f.url && f.qualityLabel && f.mimeType.startsWith('video/')
-    );
-    if (videoAdaptive.length > 0) {
-      const sorted = [...videoAdaptive].sort((a, b) => (b.bitrate ?? 0) - (a.bitrate ?? 0));
-      const best = sorted[0];
-      logger.warn('YouTubeExtractor', `No muxed streams — using video-only adaptive itag=${best.itag} (no audio)`);
-      return {
-        url: best.url!,
-        quality: formatQualityLabel(best),
-        mimeType: best.mimeType,
-        itag: best.itag,
-        hasAudio: false,
-        hasVideo: true,
-        bitrate: best.bitrate ?? 0,
-      };
+      // Parse attribute list
+      const attrs: Record<string, string> = {};
+      let key = '', val = '', inKey = true, inQuote = false;
+      for (const ch of line.substring(line.indexOf(':') + 1)) {
+        if (inKey) { if (ch === '=') inKey = false; else key += ch; continue; }
+        if (ch === '"') { inQuote = !inQuote; continue; }
+        if (ch === ',' && !inQuote) {
+          if (key.trim()) attrs[key.trim()] = val.trim();
+          key = ''; val = ''; inKey = true; continue;
+        }
+        val += ch;
+      }
+      if (key.trim()) attrs[key.trim()] = val.trim();
+
+      const res2 = (attrs['RESOLUTION'] ?? '').split('x');
+      const width = parseInt(res2[0] ?? '0', 10) || 0;
+      const height = parseInt(res2[1] ?? '0', 10) || 0;
+      const bandwidth = parseInt(attrs['BANDWIDTH'] ?? '0', 10) || 0;
+
+      let variantUrl = nextLine;
+      if (!variantUrl.startsWith('http')) {
+        try { variantUrl = new URL(variantUrl, manifestUrl).toString(); } catch { /* keep */ }
+      }
+
+      const candidate: HlsVariant = { url: variantUrl, width, height, bandwidth };
+      if (
+        !best ||
+        candidate.height > best.height ||
+        (candidate.height === best.height && candidate.bandwidth > best.bandwidth)
+      ) {
+        best = candidate;
+      }
     }
+    return best;
+  } catch (err) {
+    clearTimeout(timer);
+    logger.warn('YouTubeExtractor', 'HLS manifest parse error:', err);
+    return null;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Format collection — tries ALL clients, collects from all (matching Kotlin)
+// ---------------------------------------------------------------------------
+
+interface CollectedFormats {
+  progressive: StreamCandidate[];
+  adaptiveVideo: StreamCandidate[];
+  adaptiveAudio: StreamCandidate[];
+  hlsManifests: Array<{ clientKey: string; priority: number; url: string }>;
+}
+
+async function collectAllFormats(
+  videoId: string,
+  apiKey: string | null,
+  visitorData: string | null,
+): Promise<CollectedFormats> {
+  const progressive: StreamCandidate[] = [];
+  const adaptiveVideo: StreamCandidate[] = [];
+  const adaptiveAudio: StreamCandidate[] = [];
+  const hlsManifests: Array<{ clientKey: string; priority: number; url: string }> = [];
+
+  // Fire all client requests in parallel — same approach as Kotlin coroutines
+  const results = await Promise.allSettled(
+    CLIENTS.map(client => fetchPlayerResponse(videoId, client, apiKey, visitorData)
+      .then(resp => ({ client, resp }))
+    )
+  );
+
+  for (const result of results) {
+    if (result.status === 'rejected') {
+      logger.warn('YouTubeExtractor', `Client request rejected:`, result.reason);
+      continue;
+    }
+
+    const { client, resp } = result.value;
+    if (!resp) continue;
+
+    const status = resp.playabilityStatus?.status;
+    if (status && status !== 'OK' && status !== 'CONTENT_CHECK_REQUIRED') {
+      logger.warn('YouTubeExtractor', `[${client.key}] status=${status} reason=${resp.playabilityStatus?.reason ?? ''}`);
+      continue;
+    }
+
+    const sd = resp.streamingData;
+    if (!sd) continue;
+
+    if (sd.hlsManifestUrl) {
+      hlsManifests.push({ clientKey: client.key, priority: client.priority, url: sd.hlsManifestUrl });
+    }
+
+    let nProg = 0, nVid = 0, nAud = 0;
+
+    // Progressive (muxed) formats — matching Kotlin: skip non-video mimeTypes
+    for (const f of (sd.formats ?? [])) {
+      if (!f.url) continue;
+      const mimeBase = getMimeBase(f.mimeType);
+      if (f.mimeType && !mimeBase.startsWith('video/')) continue;
+      const height = f.height ?? parseQualityLabel(f.qualityLabel);
+      const fps = f.fps ?? 0;
+      const bitrate = f.bitrate ?? f.averageBitrate ?? 0;
+      progressive.push({
+        client: client.key,
+        priority: client.priority,
+        url: f.url,
+        score: videoScore(height, fps, bitrate),
+        height,
+        fps,
+        ext: getExt(f.mimeType),
+        bitrate,
+        mimeType: f.mimeType ?? '',
+      });
+      nProg++;
+    }
+
+    // Adaptive formats
+    for (const f of (sd.adaptiveFormats ?? [])) {
+      if (!f.url) continue;
+      const mimeBase = getMimeBase(f.mimeType);
+
+      if (mimeBase.startsWith('video/')) {
+        const height = f.height ?? parseQualityLabel(f.qualityLabel);
+        const fps = f.fps ?? 0;
+        const bitrate = f.bitrate ?? f.averageBitrate ?? 0;
+        adaptiveVideo.push({
+          client: client.key,
+          priority: client.priority,
+          url: f.url,
+          score: videoScore(height, fps, bitrate),
+          height,
+          fps,
+          ext: getExt(f.mimeType),
+          bitrate,
+          mimeType: f.mimeType ?? '',
+        });
+        nVid++;
+      } else if (mimeBase.startsWith('audio/')) {
+        const bitrate = f.bitrate ?? f.averageBitrate ?? 0;
+        const sampleRate = parseFloat(f.audioSampleRate ?? '0') || 0;
+        adaptiveAudio.push({
+          client: client.key,
+          priority: client.priority,
+          url: f.url,
+          score: audioScore(bitrate, sampleRate),
+          height: 0,
+          fps: 0,
+          ext: getExt(f.mimeType),
+          bitrate,
+          audioSampleRate: f.audioSampleRate,
+          mimeType: f.mimeType ?? '',
+        });
+        nAud++;
+      }
+    }
+
+    logger.info('YouTubeExtractor', `[${client.key}] progressive=${nProg} video=${nVid} audio=${nAud} hls=${sd.hlsManifestUrl ? 1 : 0}`);
   }
 
-  return null;
+  return { progressive, adaptiveVideo, adaptiveAudio, hlsManifests };
 }
 
 // ---------------------------------------------------------------------------
@@ -481,165 +575,154 @@ function pickBestMuxedStream(
 
 export class YouTubeExtractor {
   /**
-   * Extract a playable stream URL from a YouTube video ID or URL.
+   * Extract a playable source from a YouTube video ID or URL.
    *
-   * On Android: attempts to build a DASH manifest from high-quality adaptive
-   * streams (up to 1080p) written to a temp .mpd file. Falls back to best
-   * muxed stream (max 720p) if adaptive streams are unavailable or file write fails.
+   * Matches the Kotlin InAppYouTubeExtractor approach:
+   * 1. Fetch watch page for dynamic API key + visitor data
+   * 2. Try ALL clients, collect formats from all that succeed
+   * 3. Pick best HLS variant (by resolution/bandwidth) as primary
+   * 4. Fall back to best progressive (muxed) if no HLS
    *
-   * On iOS: always returns the best muxed stream. AVPlayer has no DASH support.
+   * Note: Unlike the Kotlin version, we do not return separate videoUrl/audioUrl
+   * for adaptive streams — react-native-video cannot merge two sources. HLS
+   * provides the best quality without needing a separate audio track.
    */
   static async extract(
     videoIdOrUrl: string,
-    platform?: 'android' | 'ios'
+    platform?: 'android' | 'ios',
   ): Promise<YouTubeExtractionResult | null> {
-    const videoId = extractVideoId(videoIdOrUrl);
+    const videoId = parseVideoId(videoIdOrUrl);
     if (!videoId) {
-      logger.warn('YouTubeExtractor', `Could not parse video ID from: ${videoIdOrUrl}`);
+      logger.warn('YouTubeExtractor', `Could not parse video ID: ${videoIdOrUrl}`);
       return null;
     }
 
-    logger.info('YouTubeExtractor', `Extracting for videoId=${videoId} platform=${platform ?? 'unknown'}`);
+    const effectivePlatform = platform ?? (Platform.OS === 'android' ? 'android' : 'ios');
 
-    const clients: Array<{ context: object; userAgent: string; name: string; clientNameId: string }> = [
-      {
-        name: 'ANDROID',
-        clientNameId: '3',
-        context: ANDROID_CLIENT_CONTEXT,
-        userAgent: 'com.google.android.youtube/19.44.41 (Linux; U; Android 11) gzip',
-      },
-      {
-        name: 'IOS',
-        clientNameId: '5',
-        context: IOS_CLIENT_CONTEXT,
-        userAgent: 'com.google.ios.youtube/19.45.4 (iPhone16,2; U; CPU iOS 17_5_1 like Mac OS X)',
-      },
-      {
-        name: 'TVHTML5_EMBEDDED',
-        clientNameId: '85',
-        context: TVHTML5_EMBEDDED_CONTEXT,
-        userAgent: 'Mozilla/5.0 (SMART-TV; Linux; Tizen 6.0)',
-      },
-      {
-        name: 'WEB_EMBEDDED',
-        clientNameId: '56',
-        context: WEB_EMBEDDED_CONTEXT,
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/127.0.0.0 Safari/537.36',
-      },
-    ];
-
-    let muxedFormats: InnertubeFormat[] = [];
-    let adaptiveFormats: InnertubeFormat[] = [];
-    let playerResponse: InnertubePlayerResponse | null = null;
-
-    for (const client of clients) {
-      logger.info('YouTubeExtractor', `Trying ${client.name} client...`);
-      const resp = await fetchPlayerResponse(videoId, client.context, client.userAgent, client.clientNameId);
-      if (!resp) continue;
-
-      const status = resp.playabilityStatus?.status;
-      if (status === 'UNPLAYABLE' || status === 'LOGIN_REQUIRED') {
-        logger.warn('YouTubeExtractor', `${client.name}: playabilityStatus=${status}`);
-        continue;
+    for (let attempt = 1; attempt <= MAX_RETRIES + 1; attempt++) {
+      if (attempt > 1) {
+        const delay = attempt * 300;
+        logger.info('YouTubeExtractor', `Retry attempt ${attempt}/${MAX_RETRIES + 1} after ${delay}ms`);
+        await new Promise(resolve => setTimeout(resolve, delay));
       }
-
-      const muxed = parseMuxedFormats(resp);
-      const adaptive = parseAdaptiveFormats(resp);
-
-      if (muxed.length > 0 || adaptive.length > 0) {
-        logger.info('YouTubeExtractor', `${client.name}: ${muxed.length} muxed, ${adaptive.length} adaptive`);
-        muxedFormats = muxed;
-        adaptiveFormats = adaptive;
-        playerResponse = resp;
-        break;
-      }
-
-      logger.warn('YouTubeExtractor', `${client.name} returned no usable formats`);
+      const result = await this.extractOnce(videoId, effectivePlatform);
+      if (result) return result;
+      logger.warn('YouTubeExtractor', `Attempt ${attempt} failed for videoId=${videoId}`);
     }
 
-    if (muxedFormats.length === 0 && adaptiveFormats.length === 0) {
-      logger.warn('YouTubeExtractor', `All clients failed for videoId=${videoId}`);
-      return null;
-    }
-
-    const details = playerResponse?.videoDetails;
-    const durationSeconds = details?.lengthSeconds ? parseInt(details.lengthSeconds, 10) : undefined;
-
-    let bestStream: ExtractedStream | null = null;
-
-    // Android: try DASH via temp .mpd file (works in TrailerPlayer AND TrailerModal)
-    if (platform === 'android' && adaptiveFormats.length > 0) {
-      const bestVideo = pickBestAdaptiveVideo(adaptiveFormats);
-      const bestAudio = pickBestAdaptiveAudio(adaptiveFormats);
-
-      if (bestVideo && bestAudio) {
-        const mpdFilePath = await writeDashManifestToFile(bestVideo, bestAudio, videoId, durationSeconds);
-        if (mpdFilePath) {
-          logger.info(
-            'YouTubeExtractor',
-            `DASH: video=${bestVideo.itag} (${formatQualityLabel(bestVideo)}), audio=${bestAudio.itag}`
-          );
-          bestStream = {
-            url: mpdFilePath,        // file:// path, .mpd extension → ExoPlayer auto-detects DASH
-            quality: formatQualityLabel(bestVideo),
-            mimeType: 'application/dash+xml',
-            itag: bestVideo.itag,
-            hasAudio: true,
-            hasVideo: true,
-            bitrate: (bestVideo.bitrate ?? 0) + (bestAudio.bitrate ?? 0),
-          };
-        } else {
-          logger.warn('YouTubeExtractor', 'DASH file write failed — falling back to muxed');
-        }
-      } else {
-        logger.info(
-          'YouTubeExtractor',
-          `No adaptive pair: video=${bestVideo?.itag ?? 'none'}, audio=${bestAudio?.itag ?? 'none'} — falling back to muxed`
-        );
-      }
-    }
-
-    // iOS or DASH fallback: use best muxed stream (or video-only adaptive as last resort)
-    if (!bestStream) {
-      bestStream = pickBestMuxedStream(muxedFormats, adaptiveFormats);
-      if (bestStream) {
-        logger.info('YouTubeExtractor', `Muxed: itag=${bestStream.itag} quality=${bestStream.quality}`);
-      }
-    }
-
-    const streams: ExtractedStream[] = muxedFormats.map((f) => ({
-      url: f.url!,
-      quality: formatQualityLabel(f),
-      mimeType: f.mimeType,
-      itag: f.itag,
-      hasAudio: !!f.audioQuality || isMuxedFormat(f),
-      hasVideo: !!f.qualityLabel || f.mimeType.startsWith('video/'),
-      bitrate: f.bitrate ?? 0,
-    }));
-
-    return {
-      streams,
-      bestStream,
-      videoId,
-      title: details?.title,
-      durationSeconds,
-    };
+    logger.warn('YouTubeExtractor', `All ${MAX_RETRIES + 1} attempts failed for videoId=${videoId}`);
+    return null;
   }
 
-  /**
-   * Returns just the best playable URL or null.
-   * Pass platform so the extractor can choose DASH vs muxed.
-   */
+  private static async extractOnce(
+    videoId: string,
+    effectivePlatform: 'android' | 'ios',
+  ): Promise<YouTubeExtractionResult | null> {
+    logger.info('YouTubeExtractor', `Extracting videoId=${videoId} platform=${effectivePlatform}`);
+
+    const { apiKey, visitorData } = await fetchWatchConfig(videoId);
+
+    // Step 2: collect formats from all clients
+    const { progressive, adaptiveVideo, adaptiveAudio, hlsManifests } =
+      await collectAllFormats(videoId, apiKey, visitorData);
+
+    logger.info('YouTubeExtractor',
+      `Totals: progressive=${progressive.length} adaptiveVideo=${adaptiveVideo.length} ` +
+      `adaptiveAudio=${adaptiveAudio.length} hls=${hlsManifests.length}`
+    );
+
+    if (progressive.length === 0 && adaptiveVideo.length === 0 && hlsManifests.length === 0) {
+      logger.warn('YouTubeExtractor', `No usable formats for videoId=${videoId}`);
+      return null;
+    }
+
+    // Step 3: pick best HLS variant across all manifests
+    let bestHls: (HlsVariant & { manifestUrl: string }) | null = null;
+    for (const { url } of hlsManifests.sort((a, b) => a.priority - b.priority)) {
+      const variant = await parseBestHlsVariant(url);
+      if (
+        variant &&
+        (!bestHls ||
+          variant.height > bestHls.height ||
+          (variant.height === bestHls.height && variant.bandwidth > bestHls.bandwidth))
+      ) {
+        bestHls = { ...variant, manifestUrl: url };
+      }
+    }
+
+    // Prefer android_vr formats exclusively — other clients may require PO tokens
+    // and return URLs that 403 at the CDN level during playback
+    const preferredProgressive = sortCandidates(filterPreferAndroidVr(progressive));
+    const bestAdaptiveVideo = pickBestForClient(adaptiveVideo, PREFERRED_ADAPTIVE_CLIENT);
+    const bestAdaptiveAudio = pickBestForClient(adaptiveAudio, PREFERRED_ADAPTIVE_CLIENT);
+
+    if (bestHls) logger.info('YouTubeExtractor', `Best HLS: ${bestHls.height}p ${bestHls.bandwidth}bps`);
+    if (preferredProgressive[0]) logger.info('YouTubeExtractor', `Best progressive: ${preferredProgressive[0].height}p client=${preferredProgressive[0].client}`);
+    if (bestAdaptiveVideo) logger.info('YouTubeExtractor', `Best adaptive video: ${bestAdaptiveVideo.height}p client=${bestAdaptiveVideo.client}`);
+    if (bestAdaptiveAudio) logger.info('YouTubeExtractor', `Best adaptive audio: ${bestAdaptiveAudio.bitrate}bps client=${bestAdaptiveAudio.client}`);
+
+    // VR client user agent used for CDN URL validation
+    const vrUserAgent = CLIENTS.find(c => c.key === 'android_vr')!.userAgent;
+
+    // Step 4: select final source with URL validation
+    // Priority: HLS > progressive muxed
+    // HLS manifests don't need validation — they're not CDN segment URLs
+    if (bestHls) {
+      // Return the specific best variant URL, not the master playlist.
+      // Master playlist lets the player pick quality adaptively (often starts low).
+      // Pinning to the best variant ensures consistent high quality playback.
+      logger.info('YouTubeExtractor', `Using HLS variant: ${summarizeUrl(bestHls.url)} ${bestHls.height}p`);
+      return {
+        videoUrl: bestHls.url,
+        audioUrl: null,
+        quality: `${bestHls.height}p`,
+        videoId,
+      };
+    }
+
+    // Validate progressive candidates in order, return first valid one
+    for (const candidate of preferredProgressive) {
+      const valid = await validateUrl(candidate.url, vrUserAgent);
+      if (valid) {
+        logger.info('YouTubeExtractor', `Using progressive: ${summarizeUrl(candidate.url)} ${candidate.height}p`);
+        return {
+          videoUrl: candidate.url,
+          audioUrl: null,
+          quality: `${candidate.height}p`,
+          videoId,
+        };
+      }
+      logger.warn('YouTubeExtractor', `Progressive URL invalid, trying next candidate`);
+    }
+
+    // Last resort: video-only adaptive (no audio, but beats nothing)
+    if (bestAdaptiveVideo) {
+      const valid = await validateUrl(bestAdaptiveVideo.url, vrUserAgent);
+      if (valid) {
+        logger.warn('YouTubeExtractor', `Using video-only adaptive (no audio): ${bestAdaptiveVideo.height}p`);
+        return {
+          videoUrl: bestAdaptiveVideo.url,
+          audioUrl: null,
+          quality: `${bestAdaptiveVideo.height}p`,
+          videoId,
+        };
+      }
+    }
+
+    logger.warn('YouTubeExtractor', `No playable source for videoId=${videoId}`);
+    return null;
+  }
+
   static async getBestStreamUrl(
     videoIdOrUrl: string,
-    platform?: 'android' | 'ios'
+    platform?: 'android' | 'ios',
   ): Promise<string | null> {
     const result = await this.extract(videoIdOrUrl, platform);
-    return result?.bestStream?.url ?? null;
+    return result?.videoUrl ?? null;
   }
 
   static parseVideoId(input: string): string | null {
-    return extractVideoId(input);
+    return parseVideoId(input);
   }
 }
 

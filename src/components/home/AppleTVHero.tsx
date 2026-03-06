@@ -460,7 +460,7 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
         // Fetch video list from TMDB to get the YouTube video ID
         const tmdbApiKey = await TMDBService.getInstance().getApiKey();
         const videosRes = await fetch(
-          `https://api.themoviedb.org/3/${contentType}/${tmdbId}/videos?api_key=${tmdbApiKey}&language=en-US`
+          `https://api.themoviedb.org/3/${contentType}/${tmdbId}/videos?api_key=${tmdbApiKey}`
         );
 
         if (!alive) return;
@@ -475,9 +475,8 @@ const AppleTVHero: React.FC<AppleTVHeroProps> = ({
         const videosData = await videosRes.json();
         const results: any[] = videosData.results ?? [];
 
-        // Pick best YouTube trailer: official trailer > any trailer > teaser > any YouTube video
+        // Pick best YouTube trailer: any trailer > teaser > any YouTube video
         const pick =
-          results.find((v) => v.site === 'YouTube' && v.type === 'Trailer' && v.official) ??
           results.find((v) => v.site === 'YouTube' && v.type === 'Trailer') ??
           results.find((v) => v.site === 'YouTube' && v.type === 'Teaser') ??
           results.find((v) => v.site === 'YouTube');

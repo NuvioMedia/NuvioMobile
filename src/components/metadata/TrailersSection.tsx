@@ -201,7 +201,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
 
         if (type === 'movie') {
           // For movies, just fetch the main videos endpoint
-          const videosEndpoint = `https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${tmdbApiKey}&language=en-US`;
+          const videosEndpoint = `https://api.themoviedb.org/3/movie/${tmdbId}/videos?api_key=${tmdbApiKey}`;
 
           logger.info('TrailersSection', `Fetching movie videos from: ${videosEndpoint}`);
 
@@ -232,7 +232,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
           logger.info('TrailersSection', `TV show has ${numberOfSeasons} seasons`);
 
           // Fetch main TV show videos
-          const tvVideosEndpoint = `https://api.themoviedb.org/3/tv/${tmdbId}/videos?api_key=${tmdbApiKey}&language=en-US`;
+          const tvVideosEndpoint = `https://api.themoviedb.org/3/tv/${tmdbId}/videos?api_key=${tmdbApiKey}`;
           const tvResponse = await fetch(tvVideosEndpoint);
 
           if (tvResponse.ok) {
@@ -251,7 +251,7 @@ const TrailersSection: React.FC<TrailersSectionProps> = memo(({
           const seasonPromises = [];
           for (let seasonNum = 1; seasonNum <= numberOfSeasons; seasonNum++) {
             seasonPromises.push(
-              fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNum}/videos?api_key=${tmdbApiKey}&language=en-US`)
+              fetch(`https://api.themoviedb.org/3/tv/${tmdbId}/season/${seasonNum}/videos?api_key=${tmdbApiKey}`)
                 .then(res => res.json())
                 .then(data => ({
                   seasonNumber: seasonNum,
