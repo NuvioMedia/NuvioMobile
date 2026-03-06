@@ -1531,6 +1531,17 @@
 		"library_desc": "Save favorites, track your progress, and sync with Trakt to keep everything organized across devices.",
 		"swipe_to_continue": "Swipe to continue",
 		"skip": "Skip",
-        "get_started":"Get Started"
+		"get_started": "Get Started"
+	},
+	"overlay_screen": {
+		"nudity": "Nudity",
+		"violence": "Violence",
+		"profanity": "Profanity",
+		"alcohol": "Alcohol/Drugs",
+		"frightening": "Frightening",
+        "severe":"severe",
+        "moderate":"moderate",
+        "mild":"mild",
+        "none":"none"
 	}
 }

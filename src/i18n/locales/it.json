@@ -1389,7 +1389,7 @@
 	"theme": {
 		"title": "Temi App",
 		"select_theme": "SELEZIONA TEMA",
-		"create_custom": "Crea Tema Personalizado",
+		"create_custom": "Crea Tema Personalizzato",
 		"options": "OPZIONI",
 		"use_dominant_color": "Usa colore dominante dall'artwork",
 		"categories": {
@@ -1532,5 +1532,16 @@
 		"swipe_to_continue": "Scorri per proseguire",
 		"skip": "Salta",
 		"get_started": "Inizia"
+	},
+	"overlay_screen": {
+		"nudity": "Nudità",
+		"violence": "Violenza",
+		"profanity": "Volgarità",
+		"alcohol_drugs": "Alcol/Droga",
+		"frightening": "Paura",
+		"severe": "severa",
+		"moderate": "moderata",
+		"mild": "lieve",
+		"none": "nessuno"
 	}
 }
