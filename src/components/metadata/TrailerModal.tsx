@@ -59,7 +59,7 @@ const TrailerModal: React.FC<TrailerModalProps> = memo(({
         return t('trailers.clip');
       case 'Featurette':
         return t('trailers.featurette');
-      case 'Behind the Scenes':
+      case t('components.behind_the_scenes'):
         return t('trailers.behind_the_scenes');
       default:
         return type;
@@ -151,7 +151,7 @@ const TrailerModal: React.FC<TrailerModalProps> = memo(({
   }, [onClose, resumeTrailer]);
 
   const handleTrailerError = useCallback(() => {
-    setError('Failed to play trailer');
+    setError(t('errors.failed_to_play_trailer'));
     setIsPlaying(false);
   }, []);
 
@@ -169,7 +169,7 @@ const TrailerModal: React.FC<TrailerModalProps> = memo(({
     }
 
     logger.error('TrailerModal', 'Video error after retries:', error);
-    setError('Unable to play trailer. Please try again.');
+    setError(t('errors.unable_to_play_trailer'));
     setLoading(false);
   }, [retryCount, loadTrailer, trailer?.key]);
 
