@@ -349,7 +349,9 @@
         "unavailable": "Fragman Kullanılamıyor",
         "unavailable_desc": "Bu fragman şu an yüklenemedi. Lütfen daha sonra tekrar deneyin.",
         "unable_to_play": "Fragman oynatılamıyor. Lütfen tekrar deneyin.",
-        "watch_on_youtube": "YouTube'da İzle"
+        "watch_on_youtube": "YouTube'da İzle",
+        "loading": "Fragman yükleniyor...",
+        "no_streaming_url": "Yayın URL'si bulunamadı"
     },
     "catalog": {
         "no_content_found": "İçerik bulunamadı",
@@ -1957,5 +1959,16 @@
         "screenplay": "Senaryo",
         "series_creator": "Dizi Yaratıcısı",
         "executive_producer": "Baş Yapımcı"
+    },
+    "advisory": {
+        "nudity": "Çıplaklık",
+        "violence": "Şiddet",
+        "profanity": "Küfür",
+        "alcohol": "Alkol/Uyuşturucu",
+        "frightening": "Korkutucu",
+        "severe": "şiddetli",
+        "moderate": "orta",
+        "mild": "hafif",
+        "none": "yok"
     }
 }

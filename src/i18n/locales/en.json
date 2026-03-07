@@ -349,7 +349,9 @@
         "unavailable": "Trailer Unavailable",
         "unavailable_desc": "This trailer could not be loaded at this time. Please try again later.",
         "unable_to_play": "Unable to play trailer. Please try again.",
-        "watch_on_youtube": "Watch on YouTube"
+        "watch_on_youtube": "Watch on YouTube",
+        "loading": "Loading trailer...",
+        "no_streaming_url": "No streaming URL available"
     },
     "catalog": {
         "no_content_found": "No content found",
@@ -1957,5 +1959,16 @@
         "screenplay": "Screenplay",
         "series_creator": "Series Creator",
         "executive_producer": "Executive Producer"
+    },
+    "advisory": {
+        "nudity": "Nudity",
+        "violence": "Violence",
+        "profanity": "Profanity",
+        "alcohol": "Alcohol/Drugs",
+        "frightening": "Frightening",
+        "severe": "severe",
+        "moderate": "moderate",
+        "mild": "mild",
+        "none": "none"
     }
 }
