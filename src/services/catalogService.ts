@@ -18,6 +18,7 @@ export enum DataSource {
 
 export interface StreamingAddon {
   id: string;
+  installationId?: string;
   name: string;
   version: string;
   description: string;
@@ -320,6 +321,7 @@ class CatalogService {
   private convertManifestToStreamingAddon(manifest: Manifest): StreamingAddon {
     return {
       id: manifest.id,
+      installationId: manifest.installationId,
       name: manifest.name,
       version: manifest.version,
       description: manifest.description,
@@ -346,7 +348,7 @@ class CatalogService {
     for (const addon of addons) {
       if (addon.catalogs) {
         for (const catalog of addon.catalogs) {
-          const settingKey = `${addon.id}:${catalog.type}:${catalog.id}`;
+          const settingKey = `${addon.installationId || addon.id}:${catalog.type}:${catalog.id}`;
           const isEnabled = catalogSettings[settingKey] ?? true;
 
           if (isEnabled) {
