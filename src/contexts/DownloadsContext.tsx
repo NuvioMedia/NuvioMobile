@@ -35,6 +35,7 @@ export interface DownloadItem {
   sourceUrl: string; // stream url
   headers?: Record<string, string>;
   fileUri?: string; // local file uri once downloading/finished
+  relativeFilePath?: string; // stable path under the app documents dir (survives sandbox path changes)
   createdAt: number;
   updatedAt: number;
   // Additional metadata for progress tracking
@@ -231,6 +232,55 @@ function toFileUri(pathOrUri: string): string {
   return pathOrUri;
 }
 
+function normalizeRelativePath(path: string): string {
+  return path.replace(/\\/g, '/').replace(/^\/+/, '');
+}
+
+function getDocumentsDirPath(): string {
+  return stripFileScheme(String((directories as any).documents || (FileSystem as any).documentDirectory || ''));
+}
+
+function getRelativeDownloadPath(pathOrUri?: string | null): string | undefined {
+  if (!pathOrUri) return undefined;
+
+  const withoutScheme = stripFileScheme(String(pathOrUri)).replace(/\\/g, '/').trim();
+  if (!withoutScheme) return undefined;
+
+  const relativeCandidate = normalizeRelativePath(withoutScheme);
+  if (!withoutScheme.startsWith('/') && relativeCandidate.startsWith('downloads/')) {
+    return relativeCandidate;
+  }
+
+  const downloadsMatch = withoutScheme.match(/(?:^|\/)(downloads\/.+)$/);
+  if (downloadsMatch?.[1]) {
+    return normalizeRelativePath(downloadsMatch[1]);
+  }
+
+  const documentsDir = getDocumentsDirPath().replace(/\\/g, '/').replace(/\/+$/, '');
+  if (documentsDir && withoutScheme.startsWith(`${documentsDir}/`)) {
+    return normalizeRelativePath(withoutScheme.slice(documentsDir.length + 1));
+  }
+
+  if (!withoutScheme.startsWith('/') && !withoutScheme.includes('://')) {
+    return relativeCandidate;
+  }
+
+  return undefined;
+}
+
+function resolveDownloadFileUri(relativeFilePath?: string | null, fileUri?: string | null): string | undefined {
+  const relativePath = getRelativeDownloadPath(relativeFilePath) || getRelativeDownloadPath(fileUri);
+  if (relativePath) {
+    const documentsDir = getDocumentsDirPath();
+    if (documentsDir) {
+      return toFileUri(`${documentsDir}/${relativePath}`);
+    }
+  }
+
+  if (fileUri) return toFileUri(String(fileUri));
+  return undefined;
+}
+
 export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [downloads, setDownloads] = useState<DownloadItem[]>([]);
   const downloadsRef = useRef(downloads);
@@ -272,7 +322,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               posterUrl: (d.posterUrl as any) ?? null,
               sourceUrl: String(d.sourceUrl ?? ''),
               headers: (d.headers as any) ?? undefined,
-              fileUri: d.fileUri ? String(d.fileUri) : undefined,
+              fileUri: resolveDownloadFileUri((d as any).relativeFilePath, d.fileUri),
+              relativeFilePath: getRelativeDownloadPath((d as any).relativeFilePath) || getRelativeDownloadPath(d.fileUri),
               createdAt: typeof d.createdAt === 'number' ? d.createdAt : Date.now(),
               updatedAt: typeof d.updatedAt === 'number' ? d.updatedAt : Date.now(),
               // Restore metadata for progress tracking
@@ -463,6 +514,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       .done(({ location, bytesDownloaded, bytesTotal }: any) => {
         const finalPath = location ? String(location) : '';
         const finalUri = finalPath ? toFileUri(finalPath) : undefined;
+        const relativeFilePath = getRelativeDownloadPath(finalPath || finalUri);
 
         updateDownload(taskId, (d) => ({
           ...d,
@@ -472,6 +524,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           progress: 100,
           updatedAt: Date.now(),
           fileUri: finalUri || d.fileUri,
+          relativeFilePath: relativeFilePath || d.relativeFilePath,
           resumeData: undefined,
         }));
 
@@ -539,7 +592,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               posterUrl: meta.posterUrl ?? null,
               sourceUrl: String(meta.sourceUrl ?? ''),
               headers: meta.headers,
-              fileUri: meta.fileUri,
+              fileUri: resolveDownloadFileUri(meta.relativeFilePath, meta.fileUri),
+              relativeFilePath: getRelativeDownloadPath(meta.relativeFilePath) || getRelativeDownloadPath(meta.fileUri),
               createdAt,
               updatedAt: createdAt,
               imdbId: meta.imdbId,
@@ -564,11 +618,12 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const list = downloadsRef.current;
       await Promise.all(
         list.map(async (d) => {
-          if (!d.fileUri) return;
+          const resolvedFileUri = resolveDownloadFileUri(d.relativeFilePath, d.fileUri);
+          if (!resolvedFileUri) return;
           if (d.status === 'completed' || d.status === 'queued') return;
 
           try {
-            const info = await FileSystem.getInfoAsync(d.fileUri);
+            const info = await FileSystem.getInfoAsync(resolvedFileUri);
             if (!info.exists || typeof info.size !== 'number') return;
 
             let totalBytes = d.totalBytes;
@@ -588,6 +643,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               totalBytes: totalBytes || prev.totalBytes,
               progress: looksComplete ? 100 : Math.min(99, Math.max(prev.progress, progress)),
               status: looksComplete ? 'completed' : prev.status,
+              fileUri: resolvedFileUri,
+              relativeFilePath: prev.relativeFilePath || getRelativeDownloadPath(resolvedFileUri),
               resumeData: looksComplete ? undefined : prev.resumeData,
               updatedAt: Date.now(),
             }));
@@ -595,7 +652,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             if (looksComplete) {
               const done = downloadsRef.current.find(x => x.id === d.id);
               if (done) {
-                notifyCompleted({ ...done, status: 'completed', progress: 100, fileUri: d.fileUri } as DownloadItem);
+                notifyCompleted({ ...done, status: 'completed', progress: 100, fileUri: resolvedFileUri } as DownloadItem);
                 stopLiveActivityForDownload(d.id, { title: done.title, subtitle: 'Completed', progressPercent: 100 });
               } else {
                 stopLiveActivityForDownload(d.id, { subtitle: 'Completed', progressPercent: 100 });
@@ -693,7 +750,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       }
     }
 
-    const documentsDir = stripFileScheme(String((directories as any).documents || ''));
+    const documentsDir = getDocumentsDirPath();
     if (!documentsDir) throw new Error('Downloads directory is not available');
 
     const uniqueId = `${Date.now()}_${Math.random().toString(36).substring(7)}`;
@@ -713,6 +770,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     } catch { }
 
     const fileUri = toFileUri(destinationPath);
+    const relativeFilePath = getRelativeDownloadPath(destinationPath);
 
     const createdAt = Date.now();
     const newItem: DownloadItem = {
@@ -737,6 +795,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       sourceUrl: input.url,
       headers: input.headers,
       fileUri,
+      relativeFilePath,
       createdAt,
       updatedAt: createdAt,
       // Store metadata for progress tracking
@@ -770,6 +829,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         sourceUrl: input.url,
         headers: input.headers,
         fileUri,
+        relativeFilePath,
         imdbId: input.imdbId,
         tmdbId: input.tmdbId,
       },
@@ -823,8 +883,9 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }
 
     const item = downloadsRef.current.find(d => d.id === id);
-    if (item?.fileUri) {
-      await FileSystem.deleteAsync(item.fileUri, { idempotent: true }).catch(() => { });
+    const resolvedFileUri = resolveDownloadFileUri(item?.relativeFilePath, item?.fileUri);
+    if (resolvedFileUri) {
+      await FileSystem.deleteAsync(resolvedFileUri, { idempotent: true }).catch(() => { });
     }
     setDownloads(prev => prev.filter(d => d.id !== id));
   }, [stopLiveActivityForDownload]);
@@ -832,8 +893,9 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const removeDownload = useCallback(async (id: string) => {
     const item = downloadsRef.current.find(d => d.id === id);
     await stopLiveActivityForDownload(id, { title: item?.title, subtitle: 'Removed', progressPercent: item?.progress });
-    if (item?.fileUri && item.status === 'completed') {
-      await FileSystem.deleteAsync(item.fileUri, { idempotent: true }).catch(() => { });
+    const resolvedFileUri = resolveDownloadFileUri(item?.relativeFilePath, item?.fileUri);
+    if (resolvedFileUri && item?.status === 'completed') {
+      await FileSystem.deleteAsync(resolvedFileUri, { idempotent: true }).catch(() => { });
     }
     setDownloads(prev => prev.filter(d => d.id !== id));
   }, [stopLiveActivityForDownload]);
@@ -862,5 +924,4 @@ export function useDownloads(): DownloadsContextValue {
   if (!ctx) throw new Error('useDownloads must be used within DownloadsProvider');
   return ctx;
 }
-
 

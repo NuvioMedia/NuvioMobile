@@ -95,8 +95,8 @@ android {
         applicationId 'com.nuvio.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 37
-        versionName "1.4.1"
+        versionCode 38
+        versionName "1.4.2"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }
@@ -118,7 +118,7 @@ android {
     def abiVersionCodes = ['armeabi-v7a': 1, 'arm64-v8a': 2, 'x86': 3, 'x86_64': 4]
     applicationVariants.all { variant ->
         variant.outputs.each { output ->
-            def baseVersionCode = 37 // Current versionCode 37 from defaultConfig
+            def baseVersionCode = 38 // Current versionCode 38 from defaultConfig
             def abiName = output.getFilter(com.android.build.OutputFile.ABI)
 
             def versionCode = baseVersionCode * 100 // Base multiplier
