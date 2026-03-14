@@ -363,10 +363,51 @@ class CatalogService {
   }
 
   private canBrowseCatalog(catalog: StreamingCatalog): boolean {
-    // Exclude non-standard types like anime.series, anime.movie from discover browsing
-    if (catalog.type && catalog.type.includes('.')) return false;
+    // Exclude search-only catalogs from discover browsing
+    if (
+      (catalog.id && catalog.id.startsWith('search.')) ||
+      (catalog.type && catalog.type.startsWith('search'))
+    ) {
+      return false;
+    }
     const requiredExtras = this.getRequiredCatalogExtras(catalog);
     return requiredExtras.every(extraName => extraName === 'genre');
+  }
+
+  /**
+   * Whether a catalog should appear on the home screen, based purely on the
+   * addon manifest — no user settings / mmkv involved.
+   *
+   * Rules (in order):
+   *  1. Search catalogs (id/type starts with "search") → never on home
+   *  2. Catalogs with any required extra (including required genre) → never on home
+   *  3. Addon uses showInHome flag on at least one catalog:
+   *       → only catalogs with showInHome:true appear on home
+   *  4. No showInHome flag on any catalog → all browseable catalogs appear on home
+   */
+  private isVisibleOnHome(catalog: StreamingCatalog, addonCatalogs: StreamingCatalog[]): boolean {
+    // Rule 1: never show search catalogs
+    if (
+      (catalog.id && catalog.id.startsWith('search.')) ||
+      (catalog.type && catalog.type.startsWith('search'))
+    ) {
+      return false;
+    }
+
+    // Rule 2: never show catalogs with any required extra (e.g. required genre, calendarVideosIds)
+    const requiredExtras = this.getRequiredCatalogExtras(catalog);
+    if (requiredExtras.length > 0) {
+      return false;
+    }
+
+    // Rule 3: respect showInHome if the addon uses it on any catalog
+    const addonUsesShowInHome = addonCatalogs.some((c: any) => c.showInHome === true);
+    if (addonUsesShowInHome) {
+      return (catalog as any).showInHome === true;
+    }
+
+    // Rule 4: no showInHome flag used — show all browseable catalogs
+    return true;
   }
 
   private canSearchCatalog(catalog: StreamingCatalog): boolean {
@@ -381,24 +422,13 @@ class CatalogService {
   async resolveHomeCatalogsToFetch(limitIds?: string[]): Promise<{ addon: StreamingAddon; catalog: any }[]> {
     const addons = await this.getAllAddons();
 
-    // Load enabled/disabled settings
-    const catalogSettingsJson = await mmkvStorage.getItem(CATALOG_SETTINGS_KEY);
-    const catalogSettings = catalogSettingsJson ? JSON.parse(catalogSettingsJson) : {};
-
-    // Collect all potential catalogs first
+    // Collect catalogs visible on home using manifest-only rules (no mmkv/user settings)
     const potentialCatalogs: { addon: StreamingAddon; catalog: any }[] = [];
 
     for (const addon of addons) {
       if (addon.catalogs) {
         for (const catalog of addon.catalogs) {
-          if (!this.canBrowseCatalog(catalog)) {
-            continue;
-          }
-
-          const settingKey = `${addon.id}:${catalog.type}:${catalog.id}`;
-          const isEnabled = catalogSettings[settingKey] ?? true;
-
-          if (isEnabled) {
+          if (this.isVisibleOnHome(catalog, addon.catalogs)) {
             potentialCatalogs.push({ addon, catalog });
           }
         }
@@ -512,7 +542,9 @@ class CatalogService {
     const catalogPromises: Promise<CatalogContent | null>[] = [];
 
     for (const addon of typeAddons) {
-      const typeCatalogs = addon.catalogs.filter(catalog => catalog.type === type);
+      const typeCatalogs = addon.catalogs.filter((catalog: StreamingCatalog) =>
+        catalog.type === type && this.isVisibleOnHome(catalog, addon.catalogs)
+      );
 
       for (const catalog of typeCatalogs) {
         const catalogPromise = (async () => {
