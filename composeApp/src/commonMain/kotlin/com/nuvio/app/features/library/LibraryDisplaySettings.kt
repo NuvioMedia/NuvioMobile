@@ -110,17 +110,17 @@ internal fun sortLibraryItems(
         LibrarySortOption.DEFAULT -> items.sortedWith(
             compareBy<LibraryItem> { it.traktRank ?: Int.MAX_VALUE }
                 .thenByDescending { it.savedAtEpochMs }
-                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { libraryTitleSortKey(it) }
                 .thenBy { it.id },
         )
         LibrarySortOption.ADDED_DESC -> items.sortedWith(
             compareByDescending<LibraryItem> { it.savedAtEpochMs }
-                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { libraryTitleSortKey(it) }
                 .thenBy { it.id },
         )
         LibrarySortOption.ADDED_ASC -> items.sortedWith(
             compareBy<LibraryItem> { it.savedAtEpochMs }
-                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { libraryTitleSortKey(it) }
                 .thenBy { it.id },
         )
         LibrarySortOption.TITLE_ASC -> items.sortedWith(
@@ -227,16 +227,10 @@ private val LibraryDisplaySettingsJson = Json {
     encodeDefaults = true
 }
 
-private val LeadingLibraryTitleArticle = Regex("^(the|an|a)\\s+", RegexOption.IGNORE_CASE)
-
 private fun libraryTitleSortKey(item: LibraryItem): String =
-    libraryTitleTieBreakKey(item)
-        .trim()
-        .replace(LeadingLibraryTitleArticle, "")
-
-private fun libraryTitleTieBreakKey(item: LibraryItem): String =
     item.name
-        .ifBlank { item.id }
+        .trim()
+        .ifBlank { item.id.trim() }
         .lowercase()
 
 private fun libraryDisplayItemKey(item: LibraryItem): String =
