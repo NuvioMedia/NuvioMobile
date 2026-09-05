@@ -261,10 +261,25 @@ private fun SettingsSliderRow(
 
 @Composable
 private fun subtitleColorLabel(color: Color): String {
-    return if (color.alpha == 0f) {
-        stringResource(Res.string.settings_playback_subtitle_color_transparent)
-    } else {
-        color.toStorageHexString()
+    if (color.alpha == 0f) {
+        return stringResource(Res.string.settings_playback_subtitle_color_transparent)
+    }
+    return when (color.toStorageHexString().takeLast(6)) {
+        "FFFFFF" -> stringResource(Res.string.settings_playback_subtitle_color_white)
+        "FFD700" -> stringResource(Res.string.settings_playback_subtitle_color_yellow)
+        "00E5FF" -> stringResource(Res.string.settings_playback_subtitle_color_cyan)
+        "FF5C5C" -> stringResource(Res.string.settings_playback_subtitle_color_red)
+        "00FF88" -> stringResource(Res.string.settings_playback_subtitle_color_light_green)
+        "9B59B6" -> stringResource(Res.string.settings_playback_subtitle_color_purple)
+        "F97316" -> stringResource(Res.string.settings_playback_subtitle_color_orange)
+        "22C55E" -> stringResource(Res.string.settings_playback_subtitle_color_green)
+        "3B82F6" -> stringResource(Res.string.settings_playback_subtitle_color_blue)
+        "000000" -> stringResource(Res.string.settings_playback_subtitle_color_black)
+        "111827" -> stringResource(Res.string.settings_playback_subtitle_color_dark_gray)
+        "7F1D1D" -> stringResource(Res.string.settings_playback_subtitle_color_dark_red)
+        "064E3B" -> stringResource(Res.string.settings_playback_subtitle_color_dark_green)
+        "1E3A8A" -> stringResource(Res.string.settings_playback_subtitle_color_dark_blue)
+        else -> color.toStorageHexString()
     }
 }
 
