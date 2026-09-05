@@ -801,16 +801,23 @@ fun HomeScreen(
     val addonManifestsLoading = enabledAddons.any { it.isRefreshing }
     val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
     val isResolvingHeroSources = addonManifestsLoading || homeUiState.isLoading
-    var firstCatalogReported by remember { mutableStateOf(false) }
-
-    LaunchedEffect(homeUiState.sections.firstOrNull()?.key, onFirstCatalogRendered) {
-        if (firstCatalogReported || homeUiState.sections.isEmpty()) return@LaunchedEffect
-        firstCatalogReported = true
-        onFirstCatalogRendered?.invoke()
-    }
-
     val visibleCollections = remember(collections) {
         collections.filter { it.folders.isNotEmpty() }
+    }
+    var firstCatalogReported by remember { mutableStateOf(false) }
+
+    LaunchedEffect(
+        homeUiState.sections.firstOrNull()?.key,
+        visibleCollections.isNotEmpty(),
+        onFirstCatalogRendered,
+    ) {
+        if (firstCatalogReported) return@LaunchedEffect
+        val hasAnyVisibleContent = homeUiState.sections.isNotEmpty() ||
+            visibleCollections.isNotEmpty()
+        if (hasAnyVisibleContent) {
+            firstCatalogReported = true
+            onFirstCatalogRendered?.invoke()
+        }
     }
     val collectionsMap = remember(visibleCollections) {
         visibleCollections.associateBy { "collection_${it.id}" }

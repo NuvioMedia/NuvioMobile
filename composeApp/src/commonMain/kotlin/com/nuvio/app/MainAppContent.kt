@@ -476,7 +476,7 @@ internal fun MainAppContent(
         if (!ownsAppRuntime) return@LaunchedEffect
         NetworkStatusRepository.ensureStarted()
         EpisodeReleaseNotificationsRepository.refreshAsync()
-        kotlinx.coroutines.delay(5_000)
+        kotlinx.coroutines.delay(2_000)
         initialHomeReady = true
     }
 
@@ -484,6 +484,9 @@ internal fun MainAppContent(
         if (!ownsAppRuntime) return@LaunchedEffect
         val condition = networkStatusUiState.condition
         if (!networkToastBaselineReady) {
+            if (condition == NetworkCondition.Checking || condition == NetworkCondition.Unknown) {
+                return@LaunchedEffect
+            }
             networkToastBaselineReady = true
             lastNetworkToastCondition = condition.name
             return@LaunchedEffect

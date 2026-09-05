@@ -3,6 +3,8 @@ package com.nuvio.app
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -143,7 +145,29 @@ internal fun AppGate(
         )
     }
 
-    var gateScreen by rememberSaveable { mutableStateOf(AppGateScreen.Loading.name) }
+    val initialGateScreen = remember {
+        val currentProfiles = ProfileRepository.state.value.profiles
+        val currentProfileState = ProfileRepository.state.value
+        val remembered = if (
+            currentProfileState.rememberLastProfileEnabled &&
+            currentProfileState.hasEverSelectedProfile
+        ) {
+            currentProfiles.find { it.profileIndex == ProfileRepository.activeProfileId }?.takeUnless { it.pinEnabled }
+        } else if (currentProfiles.size == 1 && !currentProfiles.first().pinEnabled) {
+            currentProfiles.first()
+        } else {
+            null
+        }
+
+        if (remembered != null) {
+            AppGateScreen.Main.name
+        } else if (currentProfiles.isNotEmpty()) {
+            AppGateScreen.ProfileSelection.name
+        } else {
+            AppGateScreen.Loading.name
+        }
+    }
+    var gateScreen by rememberSaveable { mutableStateOf(initialGateScreen) }
     var editingProfile by remember { mutableStateOf<NuvioProfile?>(null) }
     var autoSkipProfileSelection by rememberSaveable { mutableStateOf(false) }
     var profileSelectionLoading by rememberSaveable { mutableStateOf(false) }
@@ -254,7 +278,9 @@ internal fun AppGate(
         if (!renderMainContent) {
             appGateController?.beginContentReload()
         }
-        ProfileRepository.selectProfile(profile.profileIndex)
+        if (ProfileRepository.activeProfileId != profile.profileIndex) {
+            ProfileRepository.selectProfile(profile.profileIndex)
+        }
         if (sync) {
             SyncManager.pullAllForProfile(profile.profileIndex)
         }
@@ -270,7 +296,11 @@ internal fun AppGate(
         }
 
         rememberedStartupProfile(profiles)?.let { profile ->
-            selectProfile(profile, sync = syncOnEnter)
+            if (ProfileRepository.activeProfileId != profile.profileIndex) {
+                selectProfile(profile, sync = syncOnEnter)
+            } else if (syncOnEnter) {
+                SyncManager.pullAllForProfile(profile.profileIndex)
+            }
             gateScreen = AppGateScreen.Main.name
             autoSkipProfileSelection = false
             return
@@ -283,7 +313,11 @@ internal fun AppGate(
                 gateScreen = AppGateScreen.ProfileSelection.name
                 return
             }
-            selectProfile(onlyProfile, sync = syncOnEnter)
+            if (ProfileRepository.activeProfileId != onlyProfile.profileIndex) {
+                selectProfile(onlyProfile, sync = syncOnEnter)
+            } else if (syncOnEnter) {
+                SyncManager.pullAllForProfile(onlyProfile.profileIndex)
+            }
             gateScreen = AppGateScreen.Main.name
             autoSkipProfileSelection = false
         } else {
@@ -335,6 +369,9 @@ internal fun AppGate(
         val authenticatedState = authState as? AuthState.Authenticated ?: return@LaunchedEffect
         ProfileRepository.ensureLoaded(authenticatedState.userId)
         ProfileRepository.pullProfiles()
+        ProfileRepository.state.value.activeProfile?.let { active ->
+            SyncManager.pullAllForProfile(active.profileIndex)
+        }
     }
 
     LaunchedEffect(
@@ -413,20 +450,23 @@ internal fun AppGate(
             targetState = gateScreen,
             label = "app_gate",
             transitionSpec = {
-                (fadeIn(tween(400)) + scaleIn(tween(400), initialScale = 0.94f))
-                    .togetherWith(fadeOut(tween(250)))
+                if (
+                    (initialState == AppGateScreen.Loading.name && targetState == AppGateScreen.Main.name) ||
+                    (initialState == AppGateScreen.Main.name && targetState == AppGateScreen.Loading.name)
+                ) {
+                    EnterTransition.None togetherWith ExitTransition.None
+                } else {
+                    (fadeIn(tween(400)) + scaleIn(tween(400), initialScale = 0.94f))
+                        .togetherWith(fadeOut(tween(250)))
+                }
             },
         ) { currentGate ->
             when (currentGate) {
                 AppGateScreen.Loading.name -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.nuvio.colors.background),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        NuvioLoadingIndicator(color = MaterialTheme.nuvio.colors.accent)
-                    }
+                    AppLaunchOverlay(
+                        profile = profileState.activeProfile ?: profileState.profiles.firstOrNull(),
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
                 AppGateScreen.Auth.name -> {
                     AuthScreen(modifier = Modifier.fillMaxSize())
