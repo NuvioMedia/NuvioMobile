@@ -2,6 +2,9 @@ package com.nuvio.app.features.addons
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import com.nuvio.app.core.build.AppVersionConfig
 import com.nuvio.app.core.diagnostics.SentryNetworkBreadcrumbInterceptor
 import com.nuvio.app.core.network.IPv4FirstDns
 import kotlinx.coroutines.Dispatchers
@@ -82,9 +85,11 @@ private fun parseEnabledStateLine(line: String): Pair<String, Boolean>? {
 
 internal object AddonHttpClientProvider {
     private const val cacheSizeBytes = 50L * 1024L * 1024L
+    private var appContext: Context? = null
     private var client = buildAddonHttpClient()
 
     fun initialize(context: Context) {
+        appContext = context.applicationContext
         if (client.cache != null) return
         client = buildAddonHttpClient(
             cache = Cache(
@@ -95,6 +100,28 @@ internal object AddonHttpClientProvider {
     }
 
     fun get(): OkHttpClient = client
+}
+
+/** Canonical User-Agent sent on addon requests that do not already carry one. */
+private val ADDON_USER_AGENT = "NuvioMobile/${AppVersionConfig.VERSION_NAME.ifBlank { "dev" }} (Android)"
+
+/**
+ * Returns the transport the device is currently using, or null when it cannot
+ * be determined. Only the main network is considered.
+ */
+private fun currentTransport(): String? {
+    val context = AddonHttpClientProvider.appContext ?: return null
+    val manager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        ?: return null
+    val network = manager.activeNetwork ?: return null
+    val capabilities = manager.getNetworkCapabilities(network) ?: return null
+    return when {
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "cellular"
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "wifi"
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ethernet"
+        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_VPN) -> "vpn"
+        else -> null
+    }
 }
 
 private fun buildAddonHttpClient(cache: Cache? = null): OkHttpClient =
@@ -113,6 +140,23 @@ private fun buildAddonHttpClient(cache: Cache? = null): OkHttpClient =
             }
         }
         .build()
+
+/**
+ * Applies identity headers to an addon request builder: a canonical
+ * User-Agent unless the caller already set one (e.g. plugin runtimes
+ * masquerading as a browser), and the current transport so addon hosts such
+ * as AIOStreams can serve device/network-appropriate results via conditional
+ * variants.
+ */
+private fun Request.Builder.addAddonIdentityHeaders(): Request.Builder {
+    if (header("User-Agent") == null) {
+        header("User-Agent", ADDON_USER_AGENT)
+    }
+    if (header("X-Nuvio-Network") == null) {
+        header("X-Nuvio-Network", currentTransport() ?: "unknown")
+    }
+    return this
+}
 
 private val jsonMediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -190,7 +234,7 @@ private suspend fun executeTextRequest(
 ): String = withContext(Dispatchers.IO) {
     val normalizedMethod = method.uppercase()
     val sanitizedHeaders = headers.withoutAcceptEncoding()
-    val builder = Request.Builder().url(url)
+    val builder = Request.Builder().url(url).addAddonIdentityHeaders()
     sanitizedHeaders.forEach { (key, value) ->
         builder.header(key, value)
     }
