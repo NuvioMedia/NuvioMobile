@@ -550,7 +550,11 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
                 hasAired = PlayerNextEpisodeRules.hasEpisodeAired(nextVideo.released),
                 isWatched = isWatched,
                 unairedMessage = if (!PlayerNextEpisodeRules.hasEpisodeAired(nextVideo.released)) {
-                    "$airsPrefix ${nextVideo.released ?: tbaLabel}"
+                    PlayerNextEpisodeRules.formatUnairedEpisodeMessage(
+                        released = nextVideo.released,
+                        airsPrefix = airsPrefix,
+                        tbaLabel = tbaLabel,
+                    )
                 } else null,
             )
         } else null

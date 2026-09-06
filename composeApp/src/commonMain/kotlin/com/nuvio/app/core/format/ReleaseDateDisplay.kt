@@ -1,6 +1,7 @@
 package com.nuvio.app.core.format
 
 import com.nuvio.app.core.i18n.localizedMonthName
+import com.nuvio.app.core.i18n.localizedShortMonthName
 import com.nuvio.app.core.time.parseEpisodeReleaseLocalDate
 
 /**
@@ -28,6 +29,41 @@ fun formatReleaseDateWithoutYear(raw: String): String {
     val month = parts[1].toIntOrNull()?.takeIf { it in 1..12 } ?: return raw
     val day = parts[2].toIntOrNull()?.takeIf { it in 1..31 } ?: return raw
     return "${localizedMonthName(month)} $day"
+}
+
+/**
+ * Formats ISO calendar dates (yyyy-MM-dd or yyyy-MM-ddTHH:mm:ss…) with day-first ordering:
+ * e.g., "5 Sep 2026" (or "5 Sep" if without year).
+ * Returns null if the raw string is blank or cannot be parsed as an ISO date.
+ */
+fun formatDayFirstReleaseDate(
+    raw: String?,
+    includeYear: Boolean = true,
+): String? {
+    val trimmed = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val datePart = parseEpisodeReleaseLocalDate(trimmed) ?: return null
+    val parts = datePart.split('-')
+    if (parts.size != 3) return null
+    val year = parts[0].toIntOrNull() ?: return null
+    val month = parts[1].toIntOrNull()?.takeIf { it in 1..12 } ?: return null
+    val day = parts[2].toIntOrNull()?.takeIf { it in 1..31 } ?: return null
+
+    val monthName = localizedShortMonthName(month)
+    return if (includeYear) {
+        "$day $monthName $year"
+    } else {
+        "$day $monthName"
+    }
+}
+
+/**
+ * Formats a release date string with day-first ordering, falling back to the raw string if unparseable.
+ */
+fun formatReleaseDateDayFirst(
+    raw: String,
+    includeYear: Boolean = true,
+): String {
+    return formatDayFirstReleaseDate(raw, includeYear = includeYear) ?: raw
 }
 
 /**
