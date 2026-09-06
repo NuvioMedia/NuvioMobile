@@ -268,7 +268,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
             onSeekBack = { seekBy(-10_000L) },
             onSeekForward = { seekBy(10_000L) },
             onResizeModeClick = { cycleResizeMode() },
-            onSpeedClick = { cyclePlaybackSpeed() },
+            onSpeedClick = { showPlaybackSpeedModal = true },
             onSubtitleClick = {
                 refreshTracks()
                 showSubtitleModal = true
@@ -489,6 +489,13 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         onAutoSyncCueSelected = { cue -> applySubtitleAutoSyncCue(cue) },
         onAutoSyncReload = { loadSubtitleAutoSyncCues(force = true) },
         onSubtitleModalDismissed = { showSubtitleModal = false },
+        showPlaybackSpeedModal = showPlaybackSpeedModal,
+        currentPlaybackSpeed = playbackSnapshot.playbackSpeed,
+        onSpeedSelected = { speed ->
+            playerController?.setPlaybackSpeed(speed)
+            showGestureMessage(formatPlaybackSpeedLabel(speed))
+        },
+        onPlaybackSpeedModalDismissed = { showPlaybackSpeedModal = false },
         showVideoSettingsModal = showVideoSettingsModal,
         playerSettings = playerSettingsUiState,
         onVideoSettingsChanged = {
