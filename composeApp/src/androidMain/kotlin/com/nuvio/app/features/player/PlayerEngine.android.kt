@@ -350,9 +350,7 @@ private fun ExoPlayerSurface(
         val renderersFactory = SubtitleOffsetRenderersFactory(
             context = context,
             subtitleDelayUsProvider = { latestSubtitleDelayMs.value.toLong() * 1_000L },
-            shouldNormalizeCuePositionProvider = {
-                latestExternalSubtitleMimeType.value == MimeTypes.TEXT_VTT
-            },
+            shouldNormalizeCuePositionProvider = { true },
             shouldStripSdhProvider = { currentSubtitleStyle.stripSdh },
             videoBoundsFractionProvider = {
                 playerViewRef?.videoBoundsFraction(latestVideoAspectRatio.value)
