@@ -63,6 +63,8 @@ import com.nuvio.app.features.watched.WatchedStorage
 import com.nuvio.app.features.streams.StreamLinkCacheStorage
 import com.nuvio.app.features.streams.StreamBadgeSettingsStorage
 import com.nuvio.app.features.streams.BingeGroupCacheStorage
+import com.nuvio.app.features.streams.AndroidSmartStreamContext
+import com.nuvio.app.features.streams.SmartStreamSelector
 import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentStorage
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesStorage
 import com.nuvio.app.features.watchprogress.ResumePromptStorage
@@ -137,6 +139,9 @@ open class MainActivity : AppCompatActivity() {
         PlatformLocalAccountDataCleaner.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.initialize(applicationContext)
         EpisodeReleaseNotificationPlatform.bindActivity(this)
+        SmartStreamSelector.setPlatformContextProvider {
+            AndroidSmartStreamContext.current(applicationContext)
+        }
         handleIncomingAppIntent(intent)
 
         setContent {
