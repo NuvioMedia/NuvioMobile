@@ -25,6 +25,10 @@ import nuvio.composeapp.generated.resources.library_filter_sort
 import nuvio.composeapp.generated.resources.library_filter_type
 import nuvio.composeapp.generated.resources.library_sort_added_asc
 import nuvio.composeapp.generated.resources.library_sort_added_desc
+import nuvio.composeapp.generated.resources.library_sort_rating_asc
+import nuvio.composeapp.generated.resources.library_sort_rating_desc
+import nuvio.composeapp.generated.resources.library_sort_release_date_asc
+import nuvio.composeapp.generated.resources.library_sort_release_date_desc
 import nuvio.composeapp.generated.resources.library_sort_title_asc
 import nuvio.composeapp.generated.resources.library_sort_title_desc
 import nuvio.composeapp.generated.resources.library_sort_provider_order
@@ -163,6 +167,10 @@ private fun librarySortOptionLabel(option: LibrarySortOption): String =
         LibrarySortOption.ADDED_ASC -> stringResource(Res.string.library_sort_added_asc)
         LibrarySortOption.TITLE_ASC -> stringResource(Res.string.library_sort_title_asc)
         LibrarySortOption.TITLE_DESC -> stringResource(Res.string.library_sort_title_desc)
+        LibrarySortOption.RATING_DESC -> stringResource(Res.string.library_sort_rating_desc)
+        LibrarySortOption.RATING_ASC -> stringResource(Res.string.library_sort_rating_asc)
+        LibrarySortOption.RELEASE_DATE_DESC -> stringResource(Res.string.library_sort_release_date_desc)
+        LibrarySortOption.RELEASE_DATE_ASC -> stringResource(Res.string.library_sort_release_date_asc)
     }
 
 private fun List<LibraryVerticalEntry>.findEntry(preview: MetaPreview): LibraryVerticalEntry? =

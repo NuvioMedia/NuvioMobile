@@ -46,6 +46,8 @@ import nuvio.composeapp.generated.resources.library_other
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 
+
+
 object LibraryRepository {
     private const val pushDebounceMs = 500L
 
@@ -621,6 +623,42 @@ object LibraryRepository {
         )
         localState.runIfCurrent(localSnapshot) {
             _uiState.value = newUiState
+            triggerLibraryEnrichmentAsync(items)
+        }
+    }
+
+    private var libraryEnrichmentJob: kotlinx.coroutines.Job? = null
+
+    fun triggerLibraryEnrichmentAsync(items: List<LibraryItem> = _uiState.value.sections.flatMap { it.items }, force: Boolean = false) {
+        val tmdbSettings = com.nuvio.app.features.tmdb.TmdbSettingsRepository.snapshot()
+        if (!tmdbSettings.enabled || !tmdbSettings.hasApiKey) return
+
+        if (libraryEnrichmentJob?.isActive == true && !force) return
+
+        val itemsNeedingEnrichment = items.filter { item ->
+            if (force) return@filter true
+            val date = item.rawReleaseDate?.trim().orEmpty().ifBlank { item.releaseInfo?.trim().orEmpty() }
+            date.isBlank() || !date.contains(Regex("\\b(18|19|20)\\d{2}[-/]\\d{1,2}[-/]\\d{1,2}\\b"))
+        }
+        if (itemsNeedingEnrichment.isEmpty()) return
+
+        libraryEnrichmentJob = syncScope.launch {
+            var updatedAny = false
+            for (item in itemsNeedingEnrichment) {
+                try {
+                    val enriched = com.nuvio.app.features.tmdb.TmdbMetadataService.enrichLibraryItem(item, tmdbSettings)
+                    val newDate = enriched.rawReleaseDate ?: enriched.releaseInfo
+                    if (!newDate.isNullOrBlank() && newDate != item.rawReleaseDate) {
+                        val snapshot = localState.upsert(enriched)
+                        persist(snapshot)
+                        updatedAny = true
+                        publish()
+                    }
+                } catch (e: Exception) {
+                    if (e is CancellationException) throw e
+                    log.w(e) { "Failed to enrich library item ${item.id}" }
+                }
+            }
         }
     }
 
@@ -721,6 +759,8 @@ internal fun libraryMembershipWithRemovedList(
     currentMembership.toMutableMap().apply {
         this[listKey] = false
     }
+
+
 
 internal fun String.toLibraryDisplayTitle(): String {
     val normalized = trim()

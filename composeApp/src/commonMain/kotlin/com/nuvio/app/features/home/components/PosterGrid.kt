@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.format.formatReleaseDateForDisplay
+import com.nuvio.app.core.ui.DisintegratingContainer
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
 import com.nuvio.app.core.ui.NuvioPosterWatchedOverlay
 import com.nuvio.app.core.ui.nuvioCardDepth
@@ -50,6 +51,8 @@ internal fun PosterGridRow(
     modifier: Modifier = Modifier,
     watchedKeys: Set<String> = emptySet(),
     fullyWatchedSeriesKeys: Set<String> = emptySet(),
+    exitingKeys: Set<String> = emptySet(),
+    onDisintegrated: ((String) -> Unit)? = null,
     onPosterClick: ((MetaPreview) -> Unit)? = null,
     onPosterLongClick: ((MetaPreview) -> Unit)? = null,
 ) {
@@ -61,19 +64,26 @@ internal fun PosterGridRow(
         verticalAlignment = Alignment.Top,
     ) {
         items.forEach { item ->
-            PosterGridTile(
-                item = item,
-                cornerRadiusDp = posterCardStyle.cornerRadiusDp,
-                hideLabels = posterCardStyle.hideLabelsEnabled,
+            val isExiting = item.id in exitingKeys
+            DisintegratingContainer(
+                disintegrating = isExiting,
+                onDisintegrated = { onDisintegrated?.invoke(item.id) },
                 modifier = Modifier.weight(1f),
-                isWatched = WatchingState.isPosterWatched(
-                    watchedKeys = watchedKeys,
+            ) {
+                PosterGridTile(
                     item = item,
-                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
-                ),
-                onClick = onPosterClick?.let { { it(item) } },
-                onLongClick = onPosterLongClick?.let { { it(item) } },
-            )
+                    cornerRadiusDp = posterCardStyle.cornerRadiusDp,
+                    hideLabels = posterCardStyle.hideLabelsEnabled,
+                    modifier = Modifier.fillMaxWidth(),
+                    isWatched = WatchingState.isPosterWatched(
+                        watchedKeys = watchedKeys,
+                        item = item,
+                        fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                    ),
+                    onClick = if (isExiting) null else onPosterClick?.let { { it(item) } },
+                    onLongClick = if (isExiting) null else onPosterLongClick?.let { { it(item) } },
+                )
+            }
         }
         repeat(columns - items.size) {
             Spacer(modifier = Modifier.weight(1f))
@@ -154,7 +164,7 @@ private fun PosterGridTile(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
-            val detail = item.releaseInfo?.let { formatReleaseDateForDisplay(it) }
+            val detail = item.releaseInfo?.let { formatReleaseDateForDisplay(it, item.type) }
             if (detail != null) {
                 Text(
                     text = detail,

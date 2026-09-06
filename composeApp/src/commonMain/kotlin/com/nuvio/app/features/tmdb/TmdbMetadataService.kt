@@ -652,8 +652,8 @@ object TmdbMetadataService {
         if (!settings.enabled || !settings.hasApiKey) return meta
 
         val tmdbType = normalizeMetaType(meta.type)
-        val tmdbId = TmdbService.ensureTmdbId(meta.id, tmdbType)
-            ?: TmdbService.ensureTmdbId(fallbackItemId, tmdbType)
+        val tmdbId = TmdbService.ensureTmdbId(meta.id, tmdbType, title = meta.name, year = meta.releaseInfo)
+            ?: TmdbService.ensureTmdbId(fallbackItemId, tmdbType, title = meta.name, year = meta.releaseInfo)
             ?: return meta
 
         val needsEpisodes = (
@@ -691,6 +691,41 @@ object TmdbMetadataService {
         )
     }
 
+    suspend fun enrichLibraryItem(
+        item: com.nuvio.app.features.library.LibraryItem,
+        settings: TmdbSettings = TmdbSettingsRepository.snapshot(),
+    ): com.nuvio.app.features.library.LibraryItem {
+        if (!settings.enabled || !settings.hasApiKey) return item
+
+        val tmdbType = normalizeMetaType(item.type)
+        val tmdbIdStr = item.tmdbId?.toString()
+            ?: TmdbService.ensureTmdbId(item.id, tmdbType, title = item.name, year = item.releaseInfo)
+            ?: return item
+
+        val enrichment = fetchEnrichment(
+            tmdbId = tmdbIdStr,
+            mediaType = tmdbType,
+            language = settings.language,
+            settings = settings,
+        ) ?: return item
+
+        val rawDate = if (settings.useReleaseDates) enrichment.releaseInfo else null
+        val rating = if (settings.useBasicInfo) enrichment.rating?.formatRating() else null
+        val isMovie = tmdbType == "movie" || item.type.trim().lowercase() == "movie"
+        val updatedReleaseInfo = if (isMovie && !rawDate.isNullOrBlank()) {
+            rawDate
+        } else {
+            item.releaseInfo?.takeIf { it.isNotBlank() } ?: rawDate
+        }
+
+        return item.copy(
+            tmdbId = tmdbIdStr.toIntOrNull() ?: item.tmdbId,
+            releaseInfo = updatedReleaseInfo,
+            rawReleaseDate = rawDate ?: item.rawReleaseDate,
+            imdbRating = item.imdbRating?.takeIf { it.isNotBlank() } ?: rating,
+        )
+    }
+
     suspend fun fetchStandaloneMeta(
         type: String,
         id: String,
@@ -698,13 +733,10 @@ object TmdbMetadataService {
     ): MetaDetails? {
         if (!settings.hasApiKey) return null
 
-        val tmdbId = id
-            .takeIf { it.startsWith("tmdb:", ignoreCase = true) }
-            ?.substringAfter(':')
-            ?.substringBefore(':')
-            ?.toIntOrNull()
-            ?: return null
         val tmdbType = normalizeMetaType(type)
+        val tmdbIdStr = TmdbService.ensureTmdbId(id, tmdbType) ?: return null
+        val tmdbId = tmdbIdStr.toIntOrNull() ?: return null
+
         val enrichment = fetchEnrichment(
             tmdbId = tmdbId.toString(),
             mediaType = tmdbType,
@@ -793,7 +825,7 @@ object TmdbMetadataService {
             )
         }
 
-        if (enrichment != null && settings.useReleaseDates) {
+        if (enrichment != null) {
             updated = updated.copy(
                 releaseInfo = enrichment.releaseInfo ?: updated.releaseInfo,
                 lastAirDate = enrichment.lastAirDate ?: updated.lastAirDate,

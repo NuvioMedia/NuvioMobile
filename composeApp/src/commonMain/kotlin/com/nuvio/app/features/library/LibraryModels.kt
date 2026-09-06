@@ -6,6 +6,31 @@ import com.nuvio.app.features.home.PosterShape
 import com.nuvio.app.features.tracking.TrackingAttributedItem
 import kotlinx.serialization.Serializable
 
+enum class LibraryShelf(val key: String, val displayTitle: String) {
+    PLAN_TO_WATCH("plan_to_watch", "Plan to watch"),
+    CURRENTLY_WATCHING("currently_watching", "Currently Watching"),
+    REVISIT("revisit", "Revisit"),
+    COMPLETED("completed", "Completed"),
+    DROPPED("dropped", "Dropped"),
+    ON_HOLD("on_hold", "On Hold"),
+    ARCHIVE("archive", "Archive");
+
+    companion object {
+        fun fromKey(key: String?): LibraryShelf? =
+            entries.firstOrNull { it.key.equals(key?.trim(), ignoreCase = true) }
+    }
+}
+
+fun isNSFWGenreOrTag(tag: String): Boolean {
+    val t = tag.trim().lowercase()
+    return t == "erotica" || t == "erotic" || t == "hentai" || t == "adult" ||
+           t == "ecchi" || t == "nsfw" || t == "18+" || t == "porn" ||
+           t == "pornography" || t == "xxx" || t == "sex" || t == "nude" ||
+           t == "nudity" || t == "smut" || t.contains("hentai") || t.contains("erotica")
+}
+
+fun LibraryItem.isNSFWItem(): Boolean = isNSFW || genres.any { isNSFWGenreOrTag(it) }
+
 @Serializable
 data class LibraryItem(
     val id: String,
@@ -16,6 +41,7 @@ data class LibraryItem(
     val logo: String? = null,
     val description: String? = null,
     val releaseInfo: String? = null,
+    val rawReleaseDate: String? = null,
     val imdbRating: String? = null,
     val genres: List<String> = emptyList(),
     val posterShape: PosterShape = PosterShape.Poster,
@@ -32,6 +58,13 @@ data class LibraryItem(
     override val trackingProviderItemId: String? = null,
     override val trackingSourceUrl: String? = null,
     val savedAtEpochMs: Long,
+    val shelf: String? = null,
+    val shelfSeason: Int? = null,
+    val shelfEpisode: Int? = null,
+    val lastWatchedAtEpochMs: Long? = null,
+    val isPrivate: Boolean = false,
+    val isNSFW: Boolean = false,
+    val isArchive: Boolean = false,
 ) : TrackingAttributedItem {
     override val trackingContentId: String
         get() = id
@@ -71,11 +104,13 @@ fun MetaDetails.toLibraryItem(savedAtEpochMs: Long): LibraryItem =
         logo = logo,
         description = description,
         releaseInfo = releaseInfo,
+        rawReleaseDate = releaseInfo,
         imdbRating = imdbRating,
         genres = genres,
         posterShape = PosterShape.Poster,
         imdbId = id.takeIf { it.startsWith("tt") },
         savedAtEpochMs = savedAtEpochMs,
+        isNSFW = genres.any { isNSFWGenreOrTag(it) },
     )
 
 fun MetaPreview.toLibraryItem(savedAtEpochMs: Long): LibraryItem =
@@ -88,15 +123,22 @@ fun MetaPreview.toLibraryItem(savedAtEpochMs: Long): LibraryItem =
         logo = logo,
         description = description,
         releaseInfo = releaseInfo,
+        rawReleaseDate = rawReleaseDate,
         imdbRating = imdbRating,
         genres = genres,
         posterShape = posterShape,
         imdbId = id.takeIf { it.startsWith("tt") },
         savedAtEpochMs = savedAtEpochMs,
+        isNSFW = genres.any { isNSFWGenreOrTag(it) },
     )
 
-fun LibraryItem.toMetaPreview(): MetaPreview =
-    MetaPreview(
+fun LibraryItem.toMetaPreview(): MetaPreview {
+    val displayDate = if (type.trim().lowercase() == "movie") {
+        rawReleaseDate.takeIf { !it.isNullOrBlank() } ?: releaseInfo
+    } else {
+        releaseInfo
+    }
+    return MetaPreview(
         id = id,
         type = type,
         name = name,
@@ -105,7 +147,9 @@ fun LibraryItem.toMetaPreview(): MetaPreview =
         logo = logo,
         posterShape = posterShape,
         description = description,
-        releaseInfo = releaseInfo,
+        releaseInfo = displayDate,
+        rawReleaseDate = rawReleaseDate,
         imdbRating = imdbRating,
         genres = genres,
     )
+}

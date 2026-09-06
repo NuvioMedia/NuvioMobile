@@ -1807,6 +1807,10 @@
     <string name="library_other">Other</string>
     <string name="library_sort_added_asc">Oldest added</string>
     <string name="library_sort_added_desc">Recently added</string>
+    <string name="library_sort_rating_asc">Lowest rated</string>
+    <string name="library_sort_rating_desc">Highest rated</string>
+    <string name="library_sort_release_date_asc">Oldest released</string>
+    <string name="library_sort_release_date_desc">Latest released</string>
     <string name="library_sort_title_asc">Title A–Z</string>
     <string name="library_sort_title_desc">Title Z–A</string>
     <string name="library_sort_provider_order">Tracker order</string>

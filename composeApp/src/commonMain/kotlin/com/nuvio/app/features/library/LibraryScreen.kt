@@ -100,6 +100,7 @@ import org.jetbrains.compose.resources.stringResource
 @Composable
 fun LibraryScreen(
     modifier: Modifier = Modifier,
+    topChromePadding: Dp? = null,
     scrollToTopRequests: Flow<Unit> = emptyFlow(),
     onPosterClick: ((LibraryItem) -> Unit)? = null,
     onPosterLongClick: ((LibraryItem, LibrarySection) -> Unit)? = null,
@@ -148,10 +149,10 @@ fun LibraryScreen(
         selected = displaySettings.sortOption,
         sourceMode = uiState.sourceMode,
     )
-    val sortedSections = remember(uiState.sections, displaySettings.sortOption, uiState.sourceMode) {
+    val sortedSections = remember(uiState.sections, effectiveSortOption, uiState.sourceMode) {
         sortLibrarySections(
             sections = uiState.sections,
-            selected = displaySettings.sortOption,
+            selected = effectiveSortOption,
             sourceMode = uiState.sourceMode,
         )
     }
@@ -160,15 +161,25 @@ fun LibraryScreen(
         uiState.sourceMode,
         selectedLibrarySectionKey,
         selectedLibraryType,
-        displaySettings.sortOption,
+        effectiveSortOption,
     ) {
         buildLibraryVerticalProjection(
             sections = uiState.sections,
             sourceMode = uiState.sourceMode,
             selectedSectionKey = selectedLibrarySectionKey,
             selectedType = selectedLibraryType,
-            sortOption = displaySettings.sortOption,
+            sortOption = effectiveSortOption,
         )
+    }
+
+    LaunchedEffect(Unit) {
+        LibraryRepository.triggerLibraryEnrichmentAsync(force = false)
+    }
+
+    LaunchedEffect(effectiveSortOption) {
+        if (effectiveSortOption == LibrarySortOption.RELEASE_DATE_DESC || effectiveSortOption == LibrarySortOption.RELEASE_DATE_ASC) {
+            LibraryRepository.triggerLibraryEnrichmentAsync(force = false)
+        }
     }
     val retryLibraryLoad: () -> Unit = {
         NetworkStatusRepository.requestRefresh(force = true)
@@ -241,6 +252,7 @@ fun LibraryScreen(
         NuvioScreen(
             modifier = Modifier.fillMaxSize(),
             horizontalPadding = 0.dp,
+            topPadding = if (topChromePadding != null) 0.dp else null,
             listState = listState,
         ) {
             stickyHeader {
@@ -265,6 +277,7 @@ fun LibraryScreen(
                                 }
                             },
                             modifier = Modifier.padding(horizontal = 16.dp),
+                            topPadding = topChromePadding,
                             actions = {
                                 if (sourceMode == LibraryViewMode.Saved) {
                                     val targetLayout = if (displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL) {

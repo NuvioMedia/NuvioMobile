@@ -15,7 +15,12 @@ object TmdbService {
     private val tmdbToImdbCache = linkedMapOf<String, String>()
     private val cacheMutex = Mutex()
 
-    suspend fun ensureTmdbId(videoId: String, mediaType: String): String? {
+    suspend fun ensureTmdbId(
+        videoId: String,
+        mediaType: String,
+        title: String? = null,
+        year: String? = null,
+    ): String? {
         val apiKey = currentApiKey() ?: return null
 
         val normalized = videoId
@@ -26,11 +31,57 @@ object TmdbService {
             .substringBefore('/')
             .trim()
 
-        if (normalized.isBlank()) return null
-        if (normalized.all(Char::isDigit)) return normalized
-        if (!normalized.startsWith("tt", ignoreCase = true)) return null
+        if (normalized.isNotBlank() && normalized.all(Char::isDigit)) return normalized
+        if (normalized.startsWith("tt", ignoreCase = true)) {
+            return imdbToTmdb(imdbId = normalized, mediaType = mediaType, apiKey = apiKey)
+        }
 
-        return imdbToTmdb(imdbId = normalized, mediaType = mediaType, apiKey = apiKey)
+        if (!title.isNullOrBlank()) {
+            return searchTmdbIdByTitle(title = title, year = year, mediaType = mediaType, apiKey = apiKey)
+        }
+
+        return null
+    }
+
+    private suspend fun searchTmdbIdByTitle(
+        title: String,
+        year: String?,
+        mediaType: String,
+        apiKey: String,
+    ): String? {
+        val normalizedType = normalizeMediaType(mediaType)
+        val cleanYear = year?.let { Regex("\\b(18|19|20)\\d{2}\\b").find(it)?.value }
+        val cacheKey = "$title:$cleanYear:$normalizedType"
+        cacheMutex.withLock {
+            imdbToTmdbCache[cacheKey]?.let { return it }
+        }
+
+        val endpoint = when (normalizedType) {
+            "tv" -> "search/tv"
+            else -> "search/movie"
+        }
+        val query = mutableMapOf("query" to title)
+        if (!cleanYear.isNullOrBlank()) {
+            if (normalizedType == "tv") {
+                query["first_air_date_year"] = cleanYear
+            } else {
+                query["primary_release_year"] = cleanYear
+            }
+        }
+
+        var body = fetch<TmdbSearchResponse>(endpoint = endpoint, apiKey = apiKey, query = query)
+        if (body == null || body.results.isEmpty()) {
+            if (query.containsKey("first_air_date_year") || query.containsKey("primary_release_year")) {
+                val fallbackQuery = mutableMapOf("query" to title)
+                body = fetch<TmdbSearchResponse>(endpoint = endpoint, apiKey = apiKey, query = fallbackQuery)
+            }
+        }
+        val resultId = body?.results?.firstOrNull()?.id?.toString() ?: return null
+
+        cacheMutex.withLock {
+            imdbToTmdbCache[cacheKey] = resultId
+        }
+        return resultId
     }
 
     suspend fun tmdbToImdb(tmdbId: Int, mediaType: String): String? {
@@ -135,6 +186,11 @@ internal fun buildTmdbUrl(
 private data class TmdbFindResponse(
     @SerialName("movie_results") val movieResults: List<TmdbExternalResult> = emptyList(),
     @SerialName("tv_results") val tvResults: List<TmdbExternalResult> = emptyList(),
+)
+
+@Serializable
+private data class TmdbSearchResponse(
+    val results: List<TmdbExternalResult> = emptyList(),
 )
 
 @Serializable
