@@ -40,4 +40,7 @@ object TrackingSettingsRepository {
 
     fun setSimklAnimeIdPreference(preference: SimklAnimeIdPreference) =
         TraktSettingsRepository.setSimklAnimeIdPreference(preference)
+
+    fun setSimklRewatchesEnabled(enabled: Boolean) =
+        TraktSettingsRepository.setSimklRewatchesEnabled(enabled)
 }

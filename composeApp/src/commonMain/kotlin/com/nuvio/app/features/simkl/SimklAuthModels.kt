@@ -24,6 +24,7 @@ data class SimklAuthUiState(
     val isLoading: Boolean = false,
     val username: String? = null,
     val accountId: Long? = null,
+    val accountType: String? = null,
     val tokenExpiresAtEpochMs: Long? = null,
     val pendingAuthorizationStartedAtEpochMs: Long? = null,
     val error: SimklAuthError? = null,
@@ -33,6 +34,7 @@ data class SimklAuthUiState(
 internal data class SimklStoredAuthState(
     val username: String? = null,
     val accountId: Long? = null,
+    val accountType: String? = null,
     val hasFetchedUserSettings: Boolean = false,
     val settingsActivityWatermark: String? = null,
     val tokenExpiresAtEpochMs: Long? = null,

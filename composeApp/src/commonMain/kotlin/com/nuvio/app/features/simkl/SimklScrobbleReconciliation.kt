@@ -264,3 +264,43 @@ private fun TrackingExternalIds.comparableMatch(target: TrackingExternalIds): Bo
     if (tmdb != null && target.tmdb != null) return tmdb == target.tmdb
     return null
 }
+
+/**
+ * True when the item (or the exact episode) this scrobble just completed was already on the
+ * user's Simkl history before this playback, i.e. finishing it again is a genuine rewatch.
+ *
+ * Mirrors how completed scrobbles are stored in [SimklLibraryEntry.seasons]: the episode must
+ * carry a `watchedAt` and match either the Simkl/TVDB coordinates or the plain season/number.
+ * Movies and anime movies count as rewatchable once a canonical (non-plan-to-watch) entry exists.
+ */
+internal fun SimklSyncSnapshot.hasPriorWatch(result: SimklScrobbleResult): Boolean {
+    val entry = entries.firstOrNull { candidate ->
+        (candidate.mediaType == result.mediaType &&
+            candidate.media?.matchesTarget(result.media) == true) ||
+            candidate.media?.matchesTarget(result.media) == true
+    } ?: return false
+    val isMovieLike = result.mediaType == SimklMediaType.MOVIES ||
+        (result.mediaType == SimklMediaType.ANIME && result.episode == null)
+    if (isMovieLike) {
+        return entry.isMovieEntry() && entry.status != SimklListStatus.PLAN_TO_WATCH
+    }
+    val target = result.episode ?: return false
+    val targetNumber = target.number ?: return false
+    val targetSeason = target.season ?: 1
+    val targetMapping = if (target.tvdbSeason != null && target.tvdbNumber != null) {
+        SimklEpisodeMapping(season = target.tvdbSeason, episode = target.tvdbNumber)
+    } else {
+        null
+    }
+    return entry.seasons.any { season ->
+        season.episodes.any { episode ->
+            episode.watchedAt != null &&
+                episode.matches(
+                    targetSeason = targetSeason,
+                    targetNumber = targetNumber,
+                    targetMapping = targetMapping,
+                    seasonNumber = season.number,
+                )
+        }
+    }
+}

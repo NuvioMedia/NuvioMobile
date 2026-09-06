@@ -2095,6 +2095,9 @@
     <string name="settings_tracking_anime_id_kitsu">Uprednostniť Kitsu</string>
     <string name="settings_tracking_anime_id_kitsu_description">Každá séria anime získa ako hlavný identifikátor vlastné Kitsu ID.</string>
     <string name="settings_tracking_anime_section">Funkcie Simkl</string>
+    <string name="settings_tracking_simkl_rewatches_section">Simkl rewatche</string>
+    <string name="settings_tracking_simkl_rewatches_title">Zaznamenávať rewatche v Simkl</string>
+    <string name="settings_tracking_simkl_rewatches_description">Keď dopozeráte film alebo epizódu, ktoré už má Simkl vo vašej histórii, uloží sa ako samostatná rewatch session namiesto zahodenia. Vyžaduje Simkl Pro alebo VIP.</string>
     <string name="settings_simkl_connect">Pripojiť Simkl</string>
     <string name="settings_simkl_connected_as">Pripojené ako %1$s</string>
     <string name="settings_simkl_default_user">Používateľ Simkl</string>

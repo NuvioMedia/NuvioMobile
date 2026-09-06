@@ -1261,6 +1261,9 @@
     <string name="settings_tracking_anime_id_kitsu">Prefer Kitsu</string>
     <string name="settings_tracking_anime_id_kitsu_description">Each anime season gets its own Kitsu ID as the primary identifier.</string>
     <string name="settings_tracking_anime_section">Simkl features</string>
+    <string name="settings_tracking_simkl_rewatches_section">Simkl rewatches</string>
+    <string name="settings_tracking_simkl_rewatches_title">Record rewatches in Simkl</string>
+    <string name="settings_tracking_simkl_rewatches_description">When you finish a movie or episode that Simkl already has in your history, save it as a separate rewatch session instead of discarding it. Requires Simkl Pro or VIP.</string>
     <string name="settings_simkl_connect">Connect Simkl</string>
     <string name="settings_simkl_connected_as">Connected as %1$s</string>
     <string name="settings_simkl_default_user">Simkl user</string>

@@ -297,6 +297,7 @@ object SimklAuthRepository : TrackingAuthProvider {
         storedState = storedState.copy(
             username = settings.user?.name,
             accountId = settings.account?.id,
+            accountType = settings.account?.type,
             hasFetchedUserSettings = true,
             settingsActivityWatermark = activityWatermark ?: storedState.settingsActivityWatermark,
         )
@@ -375,6 +376,7 @@ object SimklAuthRepository : TrackingAuthProvider {
             isLoading = isLoading,
             username = storedState.username,
             accountId = storedState.accountId,
+            accountType = storedState.accountType,
             tokenExpiresAtEpochMs = storedState.tokenExpiresAtEpochMs,
             pendingAuthorizationStartedAtEpochMs = storedState.pendingAuthorizationStartedAtEpochMs,
             error = error,
@@ -424,4 +426,5 @@ private data class SimklUser(
 @Serializable
 private data class SimklAccount(
     val id: Long? = null,
+    val type: String? = null,
 )

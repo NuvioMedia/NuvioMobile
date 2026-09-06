@@ -1,11 +1,12 @@
 package com.nuvio.app.features.simkl
 
+import co.touchlab.kermit.Logger
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.tracking.TrackingEpisode
 import com.nuvio.app.features.tracking.TrackingExternalIds
 import com.nuvio.app.features.tracking.TrackingHistoryItem
-import com.nuvio.app.features.tracking.TrackingHistoryWriter
 import com.nuvio.app.features.tracking.TrackingListStatus
+import com.nuvio.app.features.tracking.TrackingHistoryWriter
 import com.nuvio.app.features.tracking.TrackingListWriter
 import com.nuvio.app.features.tracking.TrackingMediaKind
 import com.nuvio.app.features.tracking.TrackingMediaReference
@@ -16,6 +17,8 @@ import com.nuvio.app.features.tracking.TrackingRefreshIntent
 import com.nuvio.app.features.tracking.TrackingScrobbleAction
 import com.nuvio.app.features.tracking.TrackingScrobbleEvent
 import com.nuvio.app.features.tracking.TrackingScrobbler
+import com.nuvio.app.features.tracking.TrackingSettingsRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
@@ -57,7 +60,10 @@ internal class SimklMutationService(
     suspend fun removeFromList(items: Collection<TrackingMediaReference>): TrackingMutationResult =
         removeFromHistory(items)
 
-    suspend fun addToHistory(items: Collection<TrackingHistoryItem>): TrackingMutationResult {
+    suspend fun addToHistory(
+        items: Collection<TrackingHistoryItem>,
+        allowRewatch: Boolean = false,
+    ): TrackingMutationResult {
         val candidates = items.toList().also { historyItems ->
             require(historyItems.all { item -> item.media.hasResolvableIdentity }) {
                 "Simkl mutation requires a media ID or title for every item"
@@ -69,6 +75,7 @@ internal class SimklMutationService(
             SimklApiRequest(
                 method = SimklHttpMethod.POST,
                 path = "/sync/history",
+                query = if (allowRewatch) mapOf("allow_rewatch" to "yes") else emptyMap(),
                 body = body,
                 retryPolicy = SimklRetryPolicy.SYNC_WRITE,
             ),
@@ -124,6 +131,8 @@ internal class SimklMutationService(
 
 object SimklMutationRepository : TrackingListWriter, TrackingHistoryWriter, TrackingScrobbler {
     override val providerId: TrackingProviderId = TrackingProviderId.SIMKL
+
+    private val log = Logger.withTag("SimklMutation")
 
     private val service by lazy {
         SimklMutationService(
@@ -195,14 +204,50 @@ object SimklMutationRepository : TrackingListWriter, TrackingHistoryWriter, Trac
         if (!isActiveProfile(profileId)) return
         SimklSyncRepository.ensureLoaded()
         val enriched = SimklSyncRepository.state.value.snapshot.enrichMediaReference(event.media)
+        val resolvedMedia = enriched.resolveAnimeEpisodeForSimkl()
         val result = service.scrobble(
             action = action,
-            event = event.copy(
-                media = enriched.resolveAnimeEpisodeForSimkl(),
-            ),
+            event = event.copy(media = resolvedMedia),
         )
+        // Evaluate before committing this scrobble locally: a first watch is not a rewatch.
+        val shouldRecordRewatch = result.outcome == SimklScrobbleOutcome.SCROBBLE &&
+            isRewatchRecordingEnabled() &&
+            SimklSyncRepository.state.value.snapshot.hasPriorWatch(result)
         if (action != TrackingScrobbleAction.START) {
             SimklSyncRepository.commitScrobble(result)
+        }
+        if (shouldRecordRewatch) {
+            recordRewatchWrite(media = resolvedMedia, result = result)
+        }
+    }
+
+    private suspend fun isRewatchRecordingEnabled(): Boolean {
+        TrackingSettingsRepository.ensureLoaded()
+        if (!TrackingSettingsRepository.uiState.value.simklRewatchesEnabled) return false
+        var accountType = SimklAuthRepository.snapshot().accountType
+        if (accountType == null) {
+            // Plan is unknown until user settings have been fetched at least once.
+            SimklAuthRepository.refreshUserSettings()
+            accountType = SimklAuthRepository.snapshot().accountType
+        }
+        return accountType == "pro" || accountType == "vip"
+    }
+
+    private suspend fun recordRewatchWrite(
+        media: TrackingMediaReference,
+        result: SimklScrobbleResult,
+    ) {
+        val watchedAtEpochMs = result.watchedAt?.let(::parseSimklUtcEpochMs)
+            ?: SimklPlatformClock.nowEpochMs()
+        try {
+            service.addToHistory(
+                items = listOf(TrackingHistoryItem(media = media, watchedAtEpochMs = watchedAtEpochMs)),
+                allowRewatch = true,
+            )
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            log.w(error) { "Simkl rewatch write failed" }
         }
     }
 

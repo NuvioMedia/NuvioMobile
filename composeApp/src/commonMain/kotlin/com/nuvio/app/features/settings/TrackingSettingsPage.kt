@@ -70,6 +70,9 @@ import nuvio.composeapp.generated.resources.settings_tracking_anime_id_mal_descr
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_subtitle
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_title
 import nuvio.composeapp.generated.resources.settings_tracking_anime_section
+import nuvio.composeapp.generated.resources.settings_tracking_simkl_rewatches_description
+import nuvio.composeapp.generated.resources.settings_tracking_simkl_rewatches_section
+import nuvio.composeapp.generated.resources.settings_tracking_simkl_rewatches_title
 import nuvio.composeapp.generated.resources.settings_trakt_comments
 import nuvio.composeapp.generated.resources.settings_trakt_comments_description
 import nuvio.composeapp.generated.resources.tracking_source_simkl
@@ -163,6 +166,33 @@ internal fun LazyListScope.trackingSettingsContent(
                 )
             }
         }
+        item {
+            SettingsSection(
+                title = stringResource(Res.string.settings_tracking_simkl_rewatches_section),
+                isTablet = isTablet,
+            ) {
+                SimklRewatchesPreferenceSection(
+                    isTablet = isTablet,
+                    settingsUiState = settingsUiState,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SimklRewatchesPreferenceSection(
+    isTablet: Boolean,
+    settingsUiState: TrackingSettingsUiState,
+) {
+    SettingsGroup(isTablet = isTablet) {
+        SettingsSwitchRow(
+            title = stringResource(Res.string.settings_tracking_simkl_rewatches_title),
+            description = stringResource(Res.string.settings_tracking_simkl_rewatches_description),
+            checked = settingsUiState.simklRewatchesEnabled,
+            isTablet = isTablet,
+            onCheckedChange = TrackingSettingsRepository::setSimklRewatchesEnabled,
+        )
     }
 }
 
