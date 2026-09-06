@@ -27,6 +27,67 @@ internal fun pluginDigest(algorithm: String, data: ByteArray): ByteArray {
     return MessageDigest.getInstance(normalizeDigestAlgorithm(algorithm)).digest(data)
 }
 
+/**
+ * ABDX-style Proof-of-Work solver: find the smallest nonce >= 0 such that
+ * SHA-256(challenge + ":" + nonce) has at least [difficulty] leading zero
+ * bits (MSB-first, byte by byte). Runs fully native (single MessageDigest
+ * instance reused) so ~2^18 attempts complete in a couple of seconds instead
+ * of tens of seconds when driven per-hash from JS.
+ * @return nonce as decimal string
+ */
+internal fun pluginPowFindNonce(challenge: String, difficulty: Int): String {
+    val target = if (difficulty > 0) difficulty else 18
+    val md = MessageDigest.getInstance("SHA-256")
+    val prefix = challenge.encodeToByteArray() // ASCII hex challenge
+    // message buffer: challenge + ':' + up to 10 decimal digits
+    val msg = ByteArray(prefix.size + 1 + 10)
+    prefix.copyInto(msg, 0)
+    msg[prefix.size] = ':'.code.toByte()
+    var nonce = 0L
+    while (true) {
+        // render nonce decimal right-aligned at the end of msg then copy in order
+        var n = nonce
+        var len = 0
+        var tail = msg.size
+        if (n == 0L) {
+            msg[tail - 1] = '0'.code.toByte()
+            len = 1
+        } else {
+            while (n > 0 && tail > prefix.size + 1) {
+                msg[--tail] = ('0'.code.toByte() + (n % 10).toInt()).toByte()
+                n /= 10
+                len++
+            }
+            // digits were written backwards at msg[msg.size-len .. msg.size)
+            // shift them left to sit right after the ':' when len < 10
+            if (len < 10) {
+                val dst = prefix.size + 1
+                val src = msg.size - len
+                for (i in 0 until len) msg[dst + i] = msg[src + i]
+            }
+        }
+        val total = prefix.size + 1 + len
+        md.reset()
+        md.update(msg, 0, total)
+        val digest = md.digest()
+        if (leadingZeroBits(digest) >= target) return nonce.toString()
+        nonce++
+        if (nonce > (1L shl 24)) throw IllegalArgumentException("abdx pow cap exceeded")
+    }
+}
+
+private fun leadingZeroBits(digest: ByteArray): Int {
+    var bits = 0
+    for (b in digest) {
+        val ub = b.toInt() and 0xff
+        if (ub == 0) { bits += 8; continue }
+        var x = ub
+        while (x < 128) { bits++; x = x shl 1 }
+        return bits
+    }
+    return bits
+}
+
 internal fun pluginPbkdf2(
     password: ByteArray,
     salt: ByteArray,
