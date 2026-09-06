@@ -372,6 +372,22 @@ internal fun PlayerScreenRuntime.switchToDownloadedEpisode(downloadItem: Downloa
 }
 
 internal fun PlayerScreenRuntime.playNextEpisode() {
+    // If streams for the next episode are already loaded (e.g. autoplay found one
+    // during its countdown), re-use them immediately instead of restarting the
+    // entire search. This prevents a visible "Searching…" flicker when the user
+    // manually taps the Next Episode button while the countdown is in progress.
+    val nextVideoId = nextEpisodeInfo?.videoId
+    val nextVideo = nextVideoId?.let { id -> playerMetaVideos.firstOrNull { it.id == id } }
+    if (nextVideo != null && nextEpisodeInfo?.hasAired == true) {
+        val cachedStreams = PlayerStreamsRepository.episodeStreamsState.value.groups
+            .flatMap { it.streams }
+        if (cachedStreams.isNotEmpty()) {
+            nextEpisodeAutoPlayJob?.cancel()
+            switchToEpisodeStream(cachedStreams.first(), nextVideo)
+            return
+        }
+    }
+
     scope.launchPlayerNextEpisodeAutoPlay(
         previousJob = nextEpisodeAutoPlayJob,
         nextEpisodeInfo = nextEpisodeInfo,
