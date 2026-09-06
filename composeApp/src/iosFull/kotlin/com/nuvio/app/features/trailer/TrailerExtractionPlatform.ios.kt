@@ -20,6 +20,9 @@ import kotlinx.coroutines.withTimeoutOrNull
 import platform.Foundation.NSURLComponents
 import platform.Foundation.NSURLQueryItem
 
+private const val PROBE_TIMEOUT_MS = 5_000L
+private const val PROBE_RACE_TIMEOUT_MS = 8_000L
+
 internal object TrailerExtractionPlatform {
     val defaultHeaders: Map<String, String> = mapOf(
         "accept-language" to "en-US,en;q=0.9",
@@ -72,78 +75,142 @@ internal object TrailerExtractionPlatform {
     }
 
     suspend fun buildPlaybackSource(
-        bestManifest: ManifestCandidate?,
-        bestProgressive: StreamCandidate?,
-        bestVideo: StreamCandidate?,
-        bestAudio: StreamCandidate?,
+        manifestCandidates: List<ManifestCandidate>,
+        progressiveCandidates: List<StreamCandidate>,
+        videoCandidates: List<StreamCandidate>,
+        audioCandidates: List<StreamCandidate>,
     ): TrailerPlaybackSource? = withContext(Dispatchers.Default) {
-        val bestManifestHeight = bestManifest?.height ?: -1
-        val bestCombinedIsManifest = bestManifest != null &&
-            (bestProgressive == null || bestManifestHeight > bestProgressive.height)
+        // A candidate can look fine and still be unplayable: PO token gated URLs
+        // answer the first range and 403 everything after it. Every candidate is
+        // probed and the first one that survives wins.
+        var videoOnlyFallback: String? = null
+        // One rejection condemns a whole client: the gate applies to all of its
+        // adaptive formats, so there is no point probing its siblings.
+        val gatedClients = mutableSetOf<String>()
 
-        val combinedUrl = if (bestCombinedIsManifest) {
-            bestManifest.manifestUrl
-        } else {
-            bestProgressive?.url
+        suspend fun fromManifests(): TrailerPlaybackSource? {
+            for (candidate in manifestCandidates.take(MAX_CANDIDATE_ATTEMPTS)) {
+                val url = resolveReachableUrlOrNull(candidate.manifestUrl) ?: continue
+                return TrailerPlaybackSource(videoUrl = url, audioUrl = null)
+            }
+            return null
         }
 
-        val videoUrl = resolveReachableUrl(bestVideo?.url ?: combinedUrl ?: return@withContext null)
-        val audioUrl = bestAudio?.url?.let { resolveReachableUrl(it) }
+        suspend fun fromSeparateStreams(): TrailerPlaybackSource? {
+            for (video in videoCandidates.take(MAX_CANDIDATE_ATTEMPTS)) {
+                if (video.client in gatedClients) continue
+                val videoUrl = resolveReachableUrlOrNull(video.url)
+                if (videoUrl == null) {
+                    gatedClients += video.client
+                    continue
+                }
+                for (audio in audioCandidates.take(MAX_CANDIDATE_ATTEMPTS)) {
+                    val audioUrl = resolveReachableUrlOrNull(audio.url) ?: continue
+                    return TrailerPlaybackSource(videoUrl = videoUrl, audioUrl = audioUrl)
+                }
+                // Video is reachable but no audio track survived: remember it and
+                // let the other strategies try to produce a source with sound.
+                if (videoOnlyFallback == null) {
+                    videoOnlyFallback = videoUrl
+                }
+                break
+            }
+            return null
+        }
 
-        TrailerPlaybackSource(
-            videoUrl = videoUrl,
-            audioUrl = audioUrl,
-        )
+        suspend fun fromProgressive(): TrailerPlaybackSource? {
+            for (candidate in progressiveCandidates.take(MAX_CANDIDATE_ATTEMPTS)) {
+                val url = resolveReachableUrlOrNull(candidate.url) ?: continue
+                return TrailerPlaybackSource(videoUrl = url, audioUrl = null)
+            }
+            return null
+        }
+
+        val manifestHeight = manifestCandidates.firstOrNull()?.height ?: -1
+        val separateHeight = videoCandidates.firstOrNull()?.height ?: -1
+        val strategies: List<suspend () -> TrailerPlaybackSource?> = if (manifestHeight >= separateHeight) {
+            listOf({ fromManifests() }, { fromSeparateStreams() }, { fromProgressive() })
+        } else {
+            listOf({ fromSeparateStreams() }, { fromManifests() }, { fromProgressive() })
+        }
+
+        for (strategy in strategies) {
+            strategy()?.let { return@withContext it }
+        }
+
+        videoOnlyFallback?.let { videoUrl ->
+            return@withContext TrailerPlaybackSource(videoUrl = videoUrl, audioUrl = null)
+        }
+
+        null
     }
 
-    private suspend fun resolveReachableUrl(url: String): String {
+    private suspend fun resolveReachableUrlOrNull(url: String): String? {
         if (!url.contains("googlevideo.com")) return url
 
-        val mnParam = getQueryParameter(url, "mn") ?: return url
-        val servers = mnParam.split(',').map { it.trim() }.filter { it.isNotBlank() }
-        if (servers.size < 2) return url
+        val servers = getQueryParameter(url, "mn")
+            ?.split(',')
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        val host = getHost(url)
 
-        val host = getHost(url) ?: return url
-        val candidates = mutableListOf(url)
-
-        servers.forEachIndexed { index, server ->
-            val altHost = host
-                .replaceFirst(Regex("^rr\\d+---"), "rr${index + 1}---")
-                .replaceFirst(Regex("sn-[a-z0-9]+-[a-z0-9]+"), server)
-            if (altHost != host) {
-                candidates += url.replace(host, altHost)
+        val candidates = buildList {
+            add(url)
+            if (host != null) {
+                servers.forEachIndexed { index, server ->
+                    val altHost = host
+                        .replaceFirst(Regex("^rr\\d+---"), "rr${index + 1}---")
+                        .replaceFirst(Regex("sn-[a-z0-9]+-[a-z0-9]+"), server)
+                    if (altHost != host) {
+                        add(url.replace(host, altHost))
+                    }
+                }
             }
-        }
+        }.distinct()
 
-        if (candidates.size == 1) return candidates.first()
+        if (candidates.size == 1) {
+            return candidates.first().takeIf { isUrlReachable(it) }
+        }
 
         return coroutineScope {
             val probes = candidates.map { candidate ->
-                async {
-                    if (isUrlReachable(candidate)) candidate else null
-                }
+                async { if (isUrlReachable(candidate)) candidate else null }
             }
-            withTimeoutOrNull(2_000L) {
+            withTimeoutOrNull(PROBE_RACE_TIMEOUT_MS) {
                 probes.awaitAll().firstOrNull { !it.isNullOrBlank() }
-            } ?: url
+            }
         }
     }
 
+    // A single head range probe is not enough: gated URLs answer the first chunk
+    // and 403 the rest, so the tail is probed too whenever the length is known.
     private suspend fun isUrlReachable(url: String): Boolean {
-        val response = runCatching {
-            performRequest(
-                url = url,
-                method = "GET",
-                headers = mapOf(
-                    "range" to "bytes=0-0",
-                    "user-agent" to defaultHeaders.getValue("user-agent"),
-                ),
-                body = null,
-                timeoutMillis = 2_000L,
-            )
-        }.getOrNull() ?: return false
+        val sourceSize = getQueryParameter(url, "clen")?.toLongOrNull()?.takeIf { it > 0L }
+        val ranges = sourceSize?.let { size ->
+            listOf(
+                0L to 65_535L.coerceAtMost(size - 1L),
+                (size - 65_536L).coerceAtLeast(0L) to size - 1L,
+            ).distinct()
+        } ?: listOf(0L to 0L)
 
-        return response.status in 200..299
+        return ranges.all { (rangeStart, rangeEnd) ->
+            val response = runCatching {
+                performRequest(
+                    url = url,
+                    method = "GET",
+                    headers = mapOf(
+                        "range" to "bytes=$rangeStart-$rangeEnd",
+                        "user-agent" to defaultHeaders.getValue("user-agent"),
+                    ),
+                    body = null,
+                    timeoutMillis = PROBE_TIMEOUT_MS,
+                )
+            }.getOrNull() ?: return false
+
+            response.status == 206 ||
+                (sourceSize == null && rangeStart == 0L && response.status in 200..299)
+        }
     }
 
     private fun getHost(url: String): String? {
