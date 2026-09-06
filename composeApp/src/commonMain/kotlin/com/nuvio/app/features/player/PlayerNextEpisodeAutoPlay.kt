@@ -215,7 +215,12 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
         val isBoundedTimeout = timeoutSeconds in 1..30
 
         if (isBoundedTimeout) {
-            delay(timeoutMs)
+            // The timeout caps how long to wait for a stream to become
+            // selectable, so it has to be raced against the selection rather
+            // than served in full. Sleeping it unconditionally made every
+            // transition cost the whole setting even when the collector above
+            // had already picked a source in the first few hundred milliseconds.
+            withTimeoutOrNull(timeoutMs) { autoSelectSettled.await() }
             timeoutElapsed = true
             if (!autoSelectTriggered) {
                 val allStreams = PlayerStreamsRepository.episodeStreamsState.value.groups.flatMap { it.streams }
