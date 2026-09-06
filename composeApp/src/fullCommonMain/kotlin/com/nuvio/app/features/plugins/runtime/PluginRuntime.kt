@@ -229,10 +229,19 @@ internal object PluginRuntime {
                     )
                 }?.takeIf { it.isNotEmpty() }
 
+                val clientResolve = (item["clientResolve"] as? JsonObject)?.let { resolveObj ->
+                    com.nuvio.app.features.streams.StreamClientResolve(
+                        type = resolveObj["type"]?.jsonPrimitive?.contentOrNull,
+                        infoHash = resolveObj["infoHash"]?.jsonPrimitive?.contentOrNull,
+                        service = resolveObj["service"]?.jsonPrimitive?.contentOrNull,
+                        isCached = resolveObj["isCached"]?.jsonPrimitive?.contentOrNull?.toBoolean() ?: resolveObj["isCached"]?.jsonPrimitive?.booleanOrNull
+                    )
+                }
+
                 PluginRuntimeResult(
                     title = item.stringOrNull("title") ?: item.stringOrNull("name") ?: runBlocking { getString(Res.string.generic_unknown) },
                     name = item.stringOrNull("name"),
-                    url = url,
+                    url = url ?: "", // Default to empty if missing but clientResolve is present
                     quality = item.stringOrNull("quality"),
                     size = item.stringOrNull("size"),
                     language = item.stringOrNull("language"),
@@ -243,8 +252,9 @@ internal object PluginRuntime {
                     infoHash = item.stringOrNull("infoHash"),
                     headers = headers,
                     subtitles = subtitles,
+                    clientResolve = clientResolve,
                 )
-            }.filter { it.url.isNotBlank() }
+            }.filter { it.url.isNotBlank() || it.clientResolve != null }
         }.getOrElse { emptyList() }
     }
 

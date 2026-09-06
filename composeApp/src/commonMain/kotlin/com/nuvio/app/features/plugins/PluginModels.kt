@@ -87,6 +87,7 @@ data class PluginRuntimeResult(
     val infoHash: String? = null,
     val headers: Map<String, String>? = null,
     val subtitles: List<PluginSubtitleResult>? = null,
+    val clientResolve: com.nuvio.app.features.streams.StreamClientResolve? = null,
 )
 
 @Serializable
