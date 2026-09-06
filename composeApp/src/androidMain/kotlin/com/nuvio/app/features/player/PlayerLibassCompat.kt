@@ -43,7 +43,7 @@ internal fun ExoPlayer.Builder.buildWithAssSupportCompat(
     val mediaSourceFactory = DefaultMediaSourceFactory(
         dataSourceFactory,
         assExtractorsFactory
-    )
+    ).setLoadErrorHandlingPolicy(HlsRenditionFallbackPolicy())
     mediaSourceFactory.setSubtitleParserFactory(assSubtitleParserFactory)
 
     val player = this
