@@ -55,7 +55,7 @@ class LibraryDisplaySettingsTest {
     }
 
     @Test
-    fun `title sorting ignores leading English articles`() {
+    fun `title sorting preserves leading articles for literal alphabetical order`() {
         val input = listOf(
             item("batman", name = "The Batman"),
             item("arrival", name = "Arrival"),
@@ -63,11 +63,11 @@ class LibraryDisplaySettingsTest {
         )
 
         assertEquals(
-            listOf("arrival", "batman", "quiet"),
+            listOf("quiet", "arrival", "batman"),
             sortLibraryItems(input, LibrarySortOption.TITLE_ASC, LibrarySourceMode.LOCAL).map { it.id },
         )
         assertEquals(
-            listOf("quiet", "batman", "arrival"),
+            listOf("batman", "arrival", "quiet"),
             sortLibraryItems(input, LibrarySortOption.TITLE_DESC, LibrarySourceMode.LOCAL).map { it.id },
         )
     }

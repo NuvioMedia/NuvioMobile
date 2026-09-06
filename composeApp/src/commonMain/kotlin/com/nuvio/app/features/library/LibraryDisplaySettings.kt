@@ -227,12 +227,8 @@ private val LibraryDisplaySettingsJson = Json {
     encodeDefaults = true
 }
 
-private val LeadingLibraryTitleArticle = Regex("^(the|an|a)\\s+", RegexOption.IGNORE_CASE)
-
 private fun libraryTitleSortKey(item: LibraryItem): String =
     libraryTitleTieBreakKey(item)
-        .trim()
-        .replace(LeadingLibraryTitleArticle, "")
 
 private fun libraryTitleTieBreakKey(item: LibraryItem): String =
     item.name
