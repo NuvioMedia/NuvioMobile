@@ -192,14 +192,14 @@ object HomeRepository {
             }
 
         val catalogHeroItems = if (snapshot.heroEnabled) {
-            val heroRandom = Random((requestKey?.hashCode() ?: 0).absoluteValue + 1)
+            val heroOrderSeed = requestKey?.hashCode() ?: 0
             currentDefinitions
                 .filter { definition -> preferences[definition.key]?.heroSourceEnabled != false }
                 .mapNotNull { definition -> cachedSections[definition.cacheKey] }
                 .map { section -> section.withReleaseFilter() }
                 .flatMap { section -> section.items }
                 .distinctBy { item -> "${item.type}:${item.id}" }
-                .shuffled(heroRandom)
+                .orderedForHero(heroOrderSeed) { item -> "${item.type}:${item.id}" }
                 .take(HOME_HERO_ITEM_LIMIT)
         } else {
             emptyList()
@@ -430,6 +430,26 @@ private const val HOME_COLLECTION_HERO_SOURCE_ITEM_LIMIT = 8
 private const val HOME_CATALOG_FETCH_BATCH_SIZE = 4
 private const val HOME_CATALOG_PREVIEW_FETCH_LIMIT = 18
 private const val HOME_CATALOG_PUBLISH_INTERVAL = 2
+
+internal fun <T> List<T>.orderedForHero(seed: Int, keySelector: (T) -> String): List<T> =
+    sortedWith(
+        compareBy(
+            { item -> stableHeroOrderRank(seed, keySelector(item)) },
+            { item -> keySelector(item) },
+        ),
+    )
+
+internal fun stableHeroOrderRank(seed: Int, itemKey: String): Int {
+    var hash = seed
+    for (index in itemKey.indices) {
+        hash = hash * 31 + itemKey[index].code
+    }
+    // Avalanche mix so items from the same catalog (similar ids) don't cluster together.
+    hash = hash xor (hash ushr 16)
+    hash *= 0x7feb352d
+    hash = hash xor (hash ushr 15)
+    return hash
+}
 
 private fun prioritizeDefinitions(
     definitions: List<HomeCatalogDefinition>,
