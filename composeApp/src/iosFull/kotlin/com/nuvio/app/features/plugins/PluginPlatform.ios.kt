@@ -93,6 +93,20 @@ internal object PluginStorage {
         )
     }
 
+    fun loadCfSession(host: String): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey("cf_session_${host}")
+
+    fun saveCfSession(host: String, payload: String) {
+        NSUserDefaults.standardUserDefaults.setObject(
+            payload,
+            forKey = "cf_session_${host}",
+        )
+    }
+
+    fun removeCfSession(host: String) {
+        NSUserDefaults.standardUserDefaults.removeObjectForKey("cf_session_${host}")
+    }
+
     private fun scraperCodeDirectory(profileId: Int): String =
         "${NSHomeDirectory()}/Library/Application Support/$scraperCodeDirectoryName/$profileId"
 

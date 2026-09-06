@@ -47,7 +47,8 @@ internal object JsBindings {
             var headers = __normalize_fetch_headers(options.headers);
             var body = options.body || '';
             var followRedirects = options.redirect !== 'manual';
-            var result = __native_fetch(url, method, JSON.stringify(headers), body, followRedirects);
+            var useCfKiller = options.cfKiller === true;
+            var result = __native_fetch(url, method, JSON.stringify(headers), body, followRedirects, useCfKiller);
             var parsed = JSON.parse(result);
             return {
                 ok: parsed.ok,
