@@ -15,6 +15,7 @@
 	<locale android:name="pt-BR"/>
     <locale android:name="pt"/>
     <locale android:name="ro"/>
+    <locale android:name="ru"/>
     <locale android:name="sk"/>
     <locale android:name="es"/>
     <locale android:name="tr"/>
