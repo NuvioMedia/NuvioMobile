@@ -12,6 +12,63 @@ import kotlin.test.assertTrue
 class PlayerScreenRuntimeStateTest {
 
     @Test
+    fun providerRowSurvivesRuntimeResolutionAndPlaybackOptionSynchronization() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val providers = listOf("OpenSubtitles v3", "AIOStreams | ElfHosted", "Third provider")
+        runtime.addonSubtitles = providers.map { provider ->
+            AddonSubtitle(
+                id = "11742948",
+                url = "https://example.com/shared.srt",
+                language = "ind",
+                display = "Indonesian",
+                addonName = provider,
+            )
+        }
+        val options = buildSubtitleSelectionOptions("id", emptyList(), runtime.visibleAddonSubtitles)
+            .filterIsInstance<SubtitleSelectionOption.Addon>()
+        assertEquals(3, options.size)
+        assertEquals(3, options.map { it.id }.distinct().size)
+
+        // The row callback writes selectionKey; the modal later replaces its pending
+        // option with selectedSubtitleOptionId derived from the runtime's resolved addon.
+        // Starting with B reproduces the first-tap jump, not just the warm A/B case.
+        for (index in listOf(1, 0, 1, 0, 1, 2)) {
+            val tapped = options[index]
+            runtime.selectedAddonSubtitleId = tapped.subtitle.selectionKey
+            runtime.selectedSubtitleIndex = -1
+
+            val effective = runtime.selectedAddonSubtitle
+            assertEquals(providers[index], effective?.addonName)
+            assertEquals("https://example.com/shared.srt", effective?.url)
+            assertEquals(tapped.id, selectedSubtitleOptionId(emptyList(), -1, effective))
+        }
+
+        // Off -> B must not synchronize the highlight back to provider A.
+        runtime.selectedAddonSubtitleId = null
+        assertNull(runtime.selectedAddonSubtitle)
+        assertNull(selectedSubtitleOptionId(emptyList(), -1, runtime.selectedAddonSubtitle))
+        runtime.selectedAddonSubtitleId = options[1].subtitle.selectionKey
+        assertEquals("AIOStreams | ElfHosted", runtime.selectedAddonSubtitle?.addonName)
+        assertEquals(options[1].id, selectedSubtitleOptionId(emptyList(), -1, runtime.selectedAddonSubtitle))
+    }
+
+    @Test
+    fun legacyUrlSelectionRemainsReadableUntilAProviderRowIsSelected() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val first = AddonSubtitle("shared", "https://example.com/shared.srt", "en", "English", "First")
+        val second = first.copy(addonName = "Second")
+        runtime.addonSubtitles = listOf(first, second)
+        runtime.selectedAddonSubtitleId = first.url
+        assertEquals(first, runtime.selectedAddonSubtitle)
+        assertEquals(first.url, runtime.selectedAddonSubtitleId)
+
+        runtime.selectedAddonSubtitleId = second.selectionKey
+        assertEquals(second, runtime.selectedAddonSubtitle)
+        runtime.addonSubtitles = listOf(second.copy(), first.copy())
+        assertEquals(second, runtime.selectedAddonSubtitle)
+    }
+
+    @Test
     fun controlsStartHidden() {
         assertFalse(PlayerScreenRuntime(testPlayerScreenArgs()).controlsVisible)
     }
