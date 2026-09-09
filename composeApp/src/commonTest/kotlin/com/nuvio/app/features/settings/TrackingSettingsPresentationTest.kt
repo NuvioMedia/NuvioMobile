@@ -1,6 +1,7 @@
 package com.nuvio.app.features.settings
 
 import com.nuvio.app.features.simkl.SimklConnectionMode
+import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.trakt.MoreLikeThisSourcePreference
 import com.nuvio.app.features.trakt.TraktConnectionMode
 import kotlin.test.Test
@@ -60,5 +61,13 @@ class TrackingSettingsPresentationTest {
             effectiveTrackingRecommendationsSource(stored, traktConnected = true),
         )
         assertEquals(MoreLikeThisSourcePreference.TRAKT, stored)
+    }
+
+    @Test
+    fun `Trakt continue watching window is only enabled while Trakt is the active watch progress source`() {
+        assertTrue(isTraktContinueWatchingWindowEnabled(WatchProgressSource.TRAKT, true, false))
+        assertFalse(isTraktContinueWatchingWindowEnabled(WatchProgressSource.SIMKL, true, true))
+        assertFalse(isTraktContinueWatchingWindowEnabled(WatchProgressSource.SIMKL, true, false))
+        assertFalse(isTraktContinueWatchingWindowEnabled(WatchProgressSource.NUVIO_SYNC, true, false))
     }
 }

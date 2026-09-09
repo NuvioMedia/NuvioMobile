@@ -144,6 +144,7 @@ internal fun LazyListScope.trackingSettingsContent(
                     isTablet = isTablet,
                     settingsUiState = settingsUiState,
                     traktConnected = true,
+                    simklConnected = simklUiState.mode == SimklConnectionMode.CONNECTED,
                     commentsEnabled = commentsEnabled,
                     onCommentsEnabledChange = onCommentsEnabledChange,
                 )
@@ -287,11 +288,17 @@ private fun TrackingViewingAndDiscovery(
     isTablet: Boolean,
     settingsUiState: TrackingSettingsUiState,
     traktConnected: Boolean,
+    simklConnected: Boolean,
     commentsEnabled: Boolean,
     onCommentsEnabledChange: (Boolean) -> Unit,
 ) {
     var activePickerName by rememberSaveable { mutableStateOf<String?>(null) }
     val activePicker = activePickerName?.let(TrackingViewingPicker::valueOf)
+    val continueWatchingWindowEnabled = isTraktContinueWatchingWindowEnabled(
+        watchProgressSource = settingsUiState.watchProgressSource,
+        traktConnected = traktConnected,
+        simklConnected = simklConnected,
+    )
     val effectiveRecommendationsSource = effectiveTrackingRecommendationsSource(
         source = settingsUiState.moreLikeThisSource,
         traktConnected = traktConnected,
@@ -315,6 +322,7 @@ private fun TrackingViewingAndDiscovery(
             title = stringResource(Res.string.trakt_continue_watching_window),
             description = stringResource(Res.string.trakt_continue_watching_subtitle),
             value = continueWatchingDaysCapLabel(settingsUiState.continueWatchingDaysCap),
+            enabled = continueWatchingWindowEnabled,
             isTablet = isTablet,
             onClick = { activePickerName = TrackingViewingPicker.CONTINUE_WATCHING.name },
         )
@@ -373,6 +381,7 @@ private fun TrackingPreferenceActionRow(
     onClick: () -> Unit,
     supportingMessage: String? = null,
     isLoading: Boolean = false,
+    enabled: Boolean = true,
 ) {
     val tokens = MaterialTheme.nuvio
     SettingsNavigationRow(
@@ -381,6 +390,7 @@ private fun TrackingPreferenceActionRow(
             description,
             supportingMessage?.takeIf(String::isNotBlank),
         ).joinToString("\n"),
+        enabled = enabled,
         isTablet = isTablet,
         trailingContent = {
             Row(
@@ -576,6 +586,20 @@ internal fun effectiveTrackingRecommendationsSource(
     } else {
         source
     }
+
+internal fun isTraktContinueWatchingWindowEnabled(
+    watchProgressSource: WatchProgressSource,
+    traktConnected: Boolean,
+    simklConnected: Boolean,
+): Boolean {
+    val effectiveSource = effectiveWatchProgressSource(watchProgressSource) { provider ->
+        when (provider) {
+            TrackingProviderId.TRAKT -> traktConnected
+            TrackingProviderId.SIMKL -> simklConnected
+        }
+    }
+    return effectiveSource == WatchProgressSource.TRAKT
+}
 
 @Composable
 private fun AnimeIdPreferenceSection(
