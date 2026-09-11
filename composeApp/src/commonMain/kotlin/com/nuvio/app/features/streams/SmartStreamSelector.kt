@@ -12,13 +12,30 @@ object SmartStreamSelector {
         val estimatedBandwidthKbps: Int? = null,
         val displayWidth: Int? = null,
         val displayHeight: Int? = null,
-        val supportsHdr: Boolean = false,
+        /**
+         * Null means the device capability is not known. Unknown capability must
+         * not be treated as an explicit lack of HDR support.
+         */
+        val supportsHdr: Boolean? = null,
         val supportedHdrTypes: Set<String> = emptySet(),
         val dataSaver: Boolean = false,
         val preferredVideoCodec: String? = null,
         val preferredAudioLanguage: String? = null,
         val preferredStreamTerms: List<String> = emptyList(),
     )
+
+    private val resolutionPattern =
+        Regex("""(?:^|\D)(4320|2160|1440|1080|720|576|540|480|360)p?(?:\D|$)""")
+    private val dolbyVisionPattern =
+        Regex("""(^|[^a-z0-9])(dv|dovi|dolby[ ._-]?vision)([^a-z0-9]|$)""")
+    private val hdrPattern =
+        Regex("""(^|[^a-z0-9])(hdr|hdr10|hdr10\+|hdr10plus|hlg)([^a-z0-9]|$)""")
+    private val hevcPattern =
+        Regex("""(^|[^a-z0-9])(hevc|h[ ._-]?265|x265)([^a-z0-9]|$)""")
+    private val h264Pattern =
+        Regex("""(^|[^a-z0-9])(h[ ._-]?264|avc|x264)([^a-z0-9]|$)""")
+    private val av1Pattern =
+        Regex("""(^|[^a-z0-9])av1([^a-z0-9]|$)""")
 
     private var platformContextProvider: (() -> Context)? = null
 
@@ -43,19 +60,10 @@ object SmartStreamSelector {
 
     private fun preferenceScore(stream: StreamItem, context: Context): Int {
         if (context.preferredStreamTerms.isEmpty()) return 0
-        val text = listOfNotNull(
-            stream.name,
-            stream.description,
-            stream.behaviorHints.filename,
-            stream.clientResolve?.filename,
-            stream.clientResolve?.torrentName,
-            stream.clientResolve?.stream?.raw?.parsed?.resolution,
-            stream.clientResolve?.stream?.raw?.parsed?.quality,
-            stream.clientResolve?.stream?.raw?.parsed?.codec,
-        ).joinToString(" ").lowercase()
+        val text = streamSearchText(stream)
 
         context.preferredStreamTerms.forEachIndexed { index, term ->
-            if (term.isNotBlank() && term.lowercase() in text) {
+            if (term.isNotBlank() && matchesPreferenceTerm(text, term)) {
                 return (context.preferredStreamTerms.size - index) * 1_000
             }
         }
@@ -64,19 +72,12 @@ object SmartStreamSelector {
 
     private fun score(stream: StreamItem, context: Context): Int {
         val parsed = stream.clientResolve?.stream?.raw?.parsed
-        val text = listOfNotNull(
-            stream.name,
-            stream.description,
-            stream.behaviorHints.filename,
-            stream.clientResolve?.filename,
-            stream.clientResolve?.torrentName,
-            parsed?.resolution,
-            parsed?.quality,
-            parsed?.codec,
-        ).joinToString(" ").lowercase()
+        val text = streamSearchText(stream)
 
         var score = 0
-        val resolution = resolutionHeight(parsed?.resolution ?: text)
+        val resolution = resolutionHeight(parsed?.resolution.orEmpty())
+            .takeIf { it > 0 }
+            ?: resolutionHeight(text)
         if (resolution > 0) {
             score += when {
                 context.dataSaver -> when {
@@ -104,7 +105,11 @@ object SmartStreamSelector {
             }
         }
 
-        val sizeBytes = stream.behaviorHints.videoSize ?: stream.clientResolve?.stream?.raw?.size
+        val sizeBytes = (
+            stream.behaviorHints.videoSize
+                ?: stream.clientResolve?.stream?.raw?.size
+                ?: stream.debridCacheStatus?.cachedSize
+            )?.takeIf { it > 0 }
         val bandwidthKbps = context.estimatedBandwidthKbps
         val durationSeconds = parsed?.duration?.takeIf { it > 0 }
         if (bandwidthKbps != null && bandwidthKbps > 0 && sizeBytes != null && durationSeconds != null) {
@@ -123,23 +128,17 @@ object SmartStreamSelector {
         }
 
         val hdrTypes = hdrTypes(parsed?.hdr.orEmpty(), text)
-        val hdr = hdrTypes.isNotEmpty() ||
-            listOf("dolby vision", "dolbyvision", "hdr10", "hdr10+", "hlg").any { it in text }
-        score += if (hdr) {
-            when {
-                context.supportedHdrTypes.isNotEmpty() &&
-                    hdrTypes.any { it in context.supportedHdrTypes.map(String::lowercase).toSet() } -> 20
-                context.supportsHdr -> 20
-                else -> -25
-            }
-        } else 5
+        val isHdr = hdrTypes.isNotEmpty() || hasHdrToken(parsed?.hdr.orEmpty(), text)
+        val supportedHdrTypes = context.supportedHdrTypes.map { it.lowercase() }.toSet()
+        score += when {
+            isHdr && hdrTypes.any { it in supportedHdrTypes } -> 20
+            isHdr && context.supportsHdr == true -> 20
+            isHdr && context.supportsHdr == false -> -25
+            !isHdr && context.supportsHdr != null -> 5
+            else -> 0
+        }
 
-        val codec = normalizeCodec(parsed?.codec ?: when {
-            "av1" in text -> "av1"
-            "hevc" in text || "h265" in text || "x265" in text -> "hevc"
-            "h264" in text || "x264" in text -> "h264"
-            else -> ""
-        })
+        val codec = normalizeCodec(parsed?.codec).takeIf { it.isNotEmpty() } ?: codecFromText(text)
         if (normalizeCodec(context.preferredVideoCodec) == codec && codec.isNotEmpty()) score += 15
         score += when (codec) {
             "av1", "hevc" -> 5
@@ -160,34 +159,89 @@ object SmartStreamSelector {
         return score
     }
 
+    private fun streamSearchText(stream: StreamItem): String {
+        val resolve = stream.clientResolve
+        val raw = resolve?.stream?.raw
+        val parsed = raw?.parsed
+        return listOfNotNull(
+            stream.name,
+            stream.title,
+            stream.description,
+            stream.behaviorHints.filename,
+            stream.debridCacheStatus?.cachedName,
+            resolve?.filename,
+            resolve?.torrentName,
+            raw?.filename,
+            raw?.torrentName,
+            parsed?.rawTitle,
+            parsed?.parsedTitle,
+            parsed?.resolution,
+            parsed?.quality,
+            parsed?.codec,
+            parsed?.hdr?.joinToString(" "),
+        ).joinToString(" ").lowercase()
+    }
+
     private fun hdrTypes(parsedHdr: List<String>, text: String): Set<String> = buildSet {
         (parsedHdr + text).forEach { value ->
             val normalized = value.lowercase()
             when {
-                "dolby vision" in normalized || "dolbyvision" in normalized || " dv" in " $normalized" -> add("dolbyvision")
-                "hdr10+" in normalized || "hdr10plus" in normalized -> add("hdr10+")
-                "hdr10" in normalized -> add("hdr10")
-                "hlg" in normalized -> add("hlg")
+                dolbyVisionPattern.containsMatchIn(normalized) -> add("dolbyvision")
+                normalized.contains("hdr10+") || normalized.contains("hdr10plus") -> add("hdr10+")
+                hasToken(normalized, "hdr10") -> add("hdr10")
+                hasToken(normalized, "hlg") -> add("hlg")
             }
         }
     }
 
-    private fun normalizeCodec(codec: String?): String = when (codec?.trim()?.lowercase()) {
-        "hevc", "h265", "x265" -> "hevc"
-        "h264", "avc", "x264" -> "h264"
-        "av1" -> "av1"
+    private fun hasHdrToken(parsedHdr: List<String>, text: String): Boolean =
+        (parsedHdr + text).any { hdrPattern.containsMatchIn(it.lowercase()) }
+
+    private fun matchesPreferenceTerm(text: String, term: String): Boolean {
+        val normalized = term.trim().lowercase()
+        return if (normalized.all { it.isLetterOrDigit() }) {
+            hasToken(text, normalized)
+        } else {
+            normalized in text
+        }
+    }
+
+    private fun normalizeCodec(codec: String?): String {
+        val normalized = codec
+            ?.lowercase()
+            ?.filter { it.isLetterOrDigit() }
+            .orEmpty()
+        return when (normalized) {
+            "hevc", "h265", "x265" -> "hevc"
+            "h264", "avc", "x264" -> "h264"
+            "av1" -> "av1"
+            else -> ""
+        }
+    }
+
+    private fun codecFromText(text: String): String = when {
+        av1Pattern.containsMatchIn(text) -> "av1"
+        hevcPattern.containsMatchIn(text) -> "hevc"
+        h264Pattern.containsMatchIn(text) -> "h264"
         else -> ""
     }
 
     private fun resolutionHeight(value: String): Int {
         val normalized = value.lowercase()
-        val match = Regex("(?:^|\\D)(4320|2160|1440|1080|720|576|540|480|360)p?(?:\\D|$)").find(normalized)
+        val match = resolutionPattern.find(normalized)
         if (match != null) return match.groupValues[1].toInt()
         return when {
-            "8k" in normalized -> 4320
-            "4k" in normalized || "uhd" in normalized -> 2160
-            "2k" in normalized || "qhd" in normalized -> 1440
+            hasToken(normalized, "8k") -> 4320
+            hasToken(normalized, "4k") || hasToken(normalized, "uhd") -> 2160
+            hasToken(normalized, "2k") || hasToken(normalized, "qhd") -> 1440
+            hasToken(normalized, "fhd") -> 1080
+            hasToken(normalized, "hd") -> 720
+            hasToken(normalized, "sd") -> 480
             else -> 0
         }
     }
+
+    private fun hasToken(value: String, token: String): Boolean =
+        Regex("(^|[^a-z0-9])${Regex.escape(token.lowercase())}([^a-z0-9]|$)")
+            .containsMatchIn(value.lowercase())
 }
