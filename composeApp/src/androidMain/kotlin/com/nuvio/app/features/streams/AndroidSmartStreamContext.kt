@@ -26,7 +26,7 @@ object AndroidSmartStreamContext {
             estimatedBandwidthKbps = bandwidthKbps,
             displayWidth = displayWidth,
             displayHeight = displayHeight,
-            supportsHdr = hdrTypes.isNotEmpty(),
+            supportsHdr = display?.let { hdrTypes.isNotEmpty() },
             supportedHdrTypes = hdrTypes,
         )
     }
