@@ -28,6 +28,7 @@ actual object AddonStorage {
     private const val preferencesName = "nuvio_addons"
     private const val addonUrlsKey = "installed_manifest_urls"
     private const val addonEnabledStatesKey = "installed_manifest_enabled_states"
+    private const val manifestCacheKey = "addon_manifest_cache"
 
     private var preferences: SharedPreferences? = null
 
@@ -66,6 +67,16 @@ actual object AddonStorage {
         preferences
             ?.edit()
             ?.putString("${addonEnabledStatesKey}_$profileId", payload)
+            ?.apply()
+    }
+
+    actual fun loadManifestCache(profileId: Int): String? =
+        preferences?.getString("${manifestCacheKey}_$profileId", null)
+
+    actual fun saveManifestCache(profileId: Int, json: String) {
+        preferences
+            ?.edit()
+            ?.putString("${manifestCacheKey}_$profileId", json)
             ?.apply()
     }
 }

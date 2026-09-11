@@ -5,6 +5,10 @@ internal expect object AddonStorage {
     fun saveInstalledAddonUrls(profileId: Int, urls: List<String>)
     fun loadAddonEnabledStates(profileId: Int): Map<String, Boolean>
     fun saveAddonEnabledStates(profileId: Int, states: Map<String, Boolean>)
+
+    /** Raw manifest payloads persisted per profile as a JSON blob, keyed by manifest URL. */
+    fun loadManifestCache(profileId: Int): String?
+    fun saveManifestCache(profileId: Int, json: String)
 }
 
 data class RawHttpResponse(

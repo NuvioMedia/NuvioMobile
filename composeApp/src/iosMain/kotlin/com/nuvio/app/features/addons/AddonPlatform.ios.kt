@@ -25,6 +25,7 @@ import platform.Foundation.NSUserDefaults
 actual object AddonStorage {
     private const val addonUrlsKey = "installed_manifest_urls"
     private const val addonEnabledStatesKey = "installed_manifest_enabled_states"
+    private const val manifestCacheKey = "addon_manifest_cache"
 
     actual fun loadInstalledAddonUrls(profileId: Int): List<String> =
         NSUserDefaults.standardUserDefaults
@@ -57,6 +58,16 @@ actual object AddonStorage {
         NSUserDefaults.standardUserDefaults.setObject(
             payload,
             forKey = "${addonEnabledStatesKey}_$profileId",
+        )
+    }
+
+    actual fun loadManifestCache(profileId: Int): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey("${manifestCacheKey}_$profileId")
+
+    actual fun saveManifestCache(profileId: Int, json: String) {
+        NSUserDefaults.standardUserDefaults.setObject(
+            json,
+            forKey = "${manifestCacheKey}_$profileId",
         )
     }
 }
