@@ -1,5 +1,7 @@
 package com.nuvio.app.features.streams
 
+import kotlin.concurrent.Volatile
+
 /**
  * Deterministic quality-aware ordering for automatic stream selection.
  * Manual stream selection is intentionally unaffected.
@@ -24,6 +26,44 @@ object SmartStreamSelector {
         val preferredStreamTerms: List<String> = emptyList(),
     )
 
+    private object ScoreWeights {
+        const val RES_8K = 150
+        const val RES_4K = 130
+        const val RES_2K = 120
+        const val RES_1080 = 110
+        const val RES_720 = 90
+        const val RES_480 = 70
+        const val RES_DEFAULT = 50
+
+        const val DATA_SAVER_480 = 70
+        const val DATA_SAVER_720 = 90
+        const val DATA_SAVER_1080 = 80
+        const val DATA_SAVER_HIGH = 45
+
+        const val BASE_DISPLAY_MATCH = 100
+
+        const val BW_SAFE = 35
+        const val BW_FAIR = 20
+        const val BW_TIGHT = 5
+        const val BW_EXCEEDS = 0
+        const val BW_RISKY = -15
+        const val BW_DANGEROUS = -60
+
+        const val HDR_SUPPORTED = 20
+        const val HDR_UNSUPPORTED = -25
+        const val HDR_FALLBACK = 5
+
+        const val CODEC_PREFERRED = 15
+        const val CODEC_HEVC_AV1 = 5
+        const val CODEC_H264 = 3
+
+        const val AUDIO_LANG_PREFERRED = 12
+        const val DEBRID_CACHED = 35
+        const val DIRECT_PLAY = 20
+        const val TORRENT_NOT_CACHED = -10
+        const val NOT_WEB_READY = -15
+    }
+
     private val resolutionPattern =
         Regex("""(?:^|\D)(4320|2160|1440|1080|720|576|540|480|360)p?(?:\D|$)""")
     private val dolbyVisionPattern =
@@ -37,6 +77,7 @@ object SmartStreamSelector {
     private val av1Pattern =
         Regex("""(^|[^a-z0-9])av1([^a-z0-9]|$)""")
 
+    @Volatile
     private var platformContextProvider: (() -> Context)? = null
 
     @Synchronized
@@ -81,26 +122,26 @@ object SmartStreamSelector {
         if (resolution > 0) {
             score += when {
                 context.dataSaver -> when {
-                    resolution <= 480 -> 70
-                    resolution <= 720 -> 90
-                    resolution <= 1080 -> 80
-                    else -> 45
+                    resolution <= 480 -> ScoreWeights.DATA_SAVER_480
+                    resolution <= 720 -> ScoreWeights.DATA_SAVER_720
+                    resolution <= 1080 -> ScoreWeights.DATA_SAVER_1080
+                    else -> ScoreWeights.DATA_SAVER_HIGH
                 }
                 context.displayHeight?.takeIf { it > 0 } != null -> {
                     val displayHeight = context.displayHeight!!.coerceAtLeast(1)
                     when {
-                        resolution <= displayHeight -> 100 + resolution / 100
-                        else -> maxOf(0, 100 - (resolution - displayHeight) / 20)
+                        resolution <= displayHeight -> ScoreWeights.BASE_DISPLAY_MATCH + resolution / 100
+                        else -> maxOf(0, ScoreWeights.BASE_DISPLAY_MATCH - (resolution - displayHeight) / 20)
                     }
                 }
                 else -> when (resolution) {
-                    4320 -> 150
-                    2160 -> 130
-                    1440 -> 120
-                    1080 -> 110
-                    720 -> 90
-                    480 -> 70
-                    else -> 50
+                    4320 -> ScoreWeights.RES_8K
+                    2160 -> ScoreWeights.RES_4K
+                    1440 -> ScoreWeights.RES_2K
+                    1080 -> ScoreWeights.RES_1080
+                    720 -> ScoreWeights.RES_720
+                    480 -> ScoreWeights.RES_480
+                    else -> ScoreWeights.RES_DEFAULT
                 }
             }
         }
@@ -118,12 +159,12 @@ object SmartStreamSelector {
                 .toInt()
             val bandwidth = bandwidthKbps.toLong()
             score += when {
-                requiredKbps.toLong() * 100 <= bandwidth * 60 -> 35
-                requiredKbps.toLong() * 100 <= bandwidth * 75 -> 20
-                requiredKbps.toLong() * 100 <= bandwidth * 90 -> 5
-                requiredKbps.toLong() * 100 <= bandwidth * 100 -> 0
-                requiredKbps.toLong() * 100 <= bandwidth * 125 -> -15
-                else -> -60
+                requiredKbps.toLong() * 100 <= bandwidth * 60 -> ScoreWeights.BW_SAFE
+                requiredKbps.toLong() * 100 <= bandwidth * 75 -> ScoreWeights.BW_FAIR
+                requiredKbps.toLong() * 100 <= bandwidth * 90 -> ScoreWeights.BW_TIGHT
+                requiredKbps.toLong() * 100 <= bandwidth * 100 -> ScoreWeights.BW_EXCEEDS
+                requiredKbps.toLong() * 100 <= bandwidth * 125 -> ScoreWeights.BW_RISKY
+                else -> ScoreWeights.BW_DANGEROUS
             }
         }
 
@@ -131,30 +172,30 @@ object SmartStreamSelector {
         val isHdr = hdrTypes.isNotEmpty() || hasHdrToken(parsed?.hdr.orEmpty(), text)
         val supportedHdrTypes = context.supportedHdrTypes.map { it.lowercase() }.toSet()
         score += when {
-            isHdr && hdrTypes.any { it in supportedHdrTypes } -> 20
-            isHdr && context.supportsHdr == true -> 20
-            isHdr && context.supportsHdr == false -> -25
-            !isHdr && context.supportsHdr != null -> 5
+            isHdr && hdrTypes.any { it in supportedHdrTypes } -> ScoreWeights.HDR_SUPPORTED
+            isHdr && context.supportsHdr == true -> ScoreWeights.HDR_SUPPORTED
+            isHdr && context.supportsHdr == false -> ScoreWeights.HDR_UNSUPPORTED
+            !isHdr && context.supportsHdr != null -> ScoreWeights.HDR_FALLBACK
             else -> 0
         }
 
         val codec = normalizeCodec(parsed?.codec).takeIf { it.isNotEmpty() } ?: codecFromText(text)
-        if (normalizeCodec(context.preferredVideoCodec) == codec && codec.isNotEmpty()) score += 15
+        if (normalizeCodec(context.preferredVideoCodec) == codec && codec.isNotEmpty()) score += ScoreWeights.CODEC_PREFERRED
         score += when (codec) {
-            "av1", "hevc" -> 5
-            "h264" -> 3
+            "av1", "hevc" -> ScoreWeights.CODEC_HEVC_AV1
+            "h264" -> ScoreWeights.CODEC_H264
             else -> 0
         }
 
         if (context.preferredAudioLanguage != null && parsed?.languages.orEmpty().any {
                 it.equals(context.preferredAudioLanguage, ignoreCase = true)
-            }) score += 12
+            }) score += ScoreWeights.AUDIO_LANG_PREFERRED
 
-        if (stream.isDirectDebridStream || stream.isCachedDebridTorrentStream) score += 35
-        if (stream.clientResolve?.isCached == true) score += 35
-        if (stream.playableDirectUrl != null) score += 20
-        if (stream.isTorrentStream && !stream.isCachedDebridTorrentStream) score -= 10
-        if (stream.behaviorHints.notWebReady) score -= 15
+        if (stream.isDirectDebridStream || stream.isCachedDebridTorrentStream) score += ScoreWeights.DEBRID_CACHED
+        if (stream.clientResolve?.isCached == true) score += ScoreWeights.DEBRID_CACHED
+        if (stream.playableDirectUrl != null) score += ScoreWeights.DIRECT_PLAY
+        if (stream.isTorrentStream && !stream.isCachedDebridTorrentStream) score += ScoreWeights.TORRENT_NOT_CACHED
+        if (stream.behaviorHints.notWebReady) score += ScoreWeights.NOT_WEB_READY
 
         return score
     }

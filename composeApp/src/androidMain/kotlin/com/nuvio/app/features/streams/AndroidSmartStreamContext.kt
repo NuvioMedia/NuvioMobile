@@ -12,8 +12,12 @@ object AndroidSmartStreamContext {
             ?.getDisplay(Display.DEFAULT_DISPLAY)
 
         val mode = display?.mode
-        val displayWidth = mode?.physicalWidth?.takeIf { it > 0 }
-        val displayHeight = mode?.physicalHeight?.takeIf { it > 0 }
+        val rawWidth = mode?.physicalWidth?.takeIf { it > 0 }
+        val rawHeight = mode?.physicalHeight?.takeIf { it > 0 }
+
+        // For video resolution matching, displayHeight corresponds to the short dimension (vertical pixels in landscape)
+        val displayWidth = if (rawWidth != null && rawHeight != null) maxOf(rawWidth, rawHeight) else rawWidth
+        val displayHeight = if (rawWidth != null && rawHeight != null) minOf(rawWidth, rawHeight) else rawHeight
         val hdrTypes = display?.supportedHdrTypes().orEmpty()
 
         val connectivityManager = context.getSystemService(ConnectivityManager::class.java)

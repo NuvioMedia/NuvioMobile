@@ -216,7 +216,7 @@ object StreamAutoPlaySelector {
         val match = SIMPLE_ALTERNATIVES.matchEntire(pattern.trim()) ?: return emptyList()
         return match.groupValues[1]
             .split("|")
-            .map { it.trim() }
+            .map { it.trim().lowercase() }
             .filter { it.matches(SIMPLE_PREFERENCE_TERM) }
     }
 
