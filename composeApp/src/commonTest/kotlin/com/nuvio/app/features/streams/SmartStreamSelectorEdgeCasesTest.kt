@@ -10,21 +10,31 @@ class SmartStreamSelectorEdgeCasesTest {
         name: String,
         resolution: String? = null,
         size: Long? = null,
-        duration: Int? = null,
+        duration: Long? = null,
         codec: String? = null,
         hdr: List<String> = emptyList(),
         languages: List<String> = emptyList(),
         directDebrid: Boolean = false,
         cached: Boolean = false,
+        cachedSize: Long? = null,
     ) = StreamItem(
         name = name,
         url = "https://cdn.example.com/$name.mkv",
         addonName = "Test",
         addonId = "addon.test",
         behaviorHints = StreamBehaviorHints(videoSize = size),
-        isDirectDebridStream = directDebrid,
+        debridCacheStatus = cachedSize?.let {
+            StreamDebridCacheStatus(
+                providerId = "test",
+                providerName = "Test",
+                state = StreamDebridCacheState.CACHED,
+                cachedSize = it,
+            )
+        },
         clientResolve = StreamClientResolve(
-            isCached = cached,
+            type = if (directDebrid) "debrid" else null,
+            service = if (directDebrid) "test" else null,
+            isCached = directDebrid || cached,
             stream = StreamClientResolveStream(
                 raw = StreamClientResolveRaw(
                     size = size,
@@ -213,4 +223,67 @@ class SmartStreamSelectorEdgeCasesTest {
             SmartStreamSelector.setPlatformContextProvider(null)
         }
     }
+
+    @Test
+    fun recognizes_fhd_when_parsed_resolution_uses_the_common_label() {
+        val fhd = stream("fhd", "FHD")
+        val hd = stream("hd", "720p")
+
+        assertEquals(fhd, SmartStreamSelector.rank(listOf(hd, fhd)).first())
+    }
+
+    @Test
+    fun unknown_hdr_capability_is_neutral() {
+        val hdr = stream("HDR 1080p", "1080p", hdr = listOf("HDR"))
+        val sdr = stream("SDR 1080p", "1080p")
+
+        assertEquals(hdr, SmartStreamSelector.rank(listOf(hdr, sdr)).first())
+    }
+
+    @Test
+    fun recognizes_generic_hdr_but_not_dvd_as_dolby_vision() {
+        val hdr = stream("HDR 1080p", "1080p")
+        val sdr = stream("SDR 1080p", "1080p")
+        val dvd = stream("DVD 1080p", "1080p")
+
+        assertEquals(
+            sdr,
+            SmartStreamSelector.rank(
+                listOf(hdr, sdr),
+                SmartStreamSelector.Context(supportsHdr = false),
+            ).first(),
+        )
+        assertEquals(
+            sdr,
+            SmartStreamSelector.rank(
+                listOf(sdr, dvd),
+                SmartStreamSelector.Context(supportsHdr = true),
+            ).first(),
+        )
+    }
+
+    @Test
+    fun uses_cached_size_when_ranking_for_bandwidth() {
+        val high = stream(
+            "1080p",
+            "1080p",
+            duration = 600,
+            cachedSize = 100_000_000,
+        )
+        val low = stream(
+            "720p",
+            "720p",
+            size = 40_000_000,
+            duration = 600,
+        )
+
+        assertEquals(
+            low,
+            SmartStreamSelector.rank(
+                listOf(high, low),
+                SmartStreamSelector.Context(estimatedBandwidthKbps = 1_000),
+            ).first(),
+        )
+    }
+
 }
