@@ -132,7 +132,7 @@ internal object PluginRuntime {
         val domBridge = DomBridge()
         val hostRegistry = HostApiRegistry().apply {
             addModule(HostFunctions(scraperId) { deferred.complete(it) })
-            addModule(FetchBridge())
+            addModule(FetchBridge(scraperId))
             addModule(UrlBridge())
             addModule(CryptoBridge())
             addModule(WasmBridge())
