@@ -112,7 +112,13 @@ class SmartStreamSelectorTest {
         )
         val sdr = stream("sdr", emptyList())
         val hdr = stream("hdr", listOf("HDR10"))
-        assertEquals(sdr, SmartStreamSelector.rank(listOf(hdr, sdr)).first())
+        assertEquals(
+            sdr,
+            SmartStreamSelector.rank(
+                listOf(hdr, sdr),
+                SmartStreamSelector.Context(supportsHdr = false),
+            ).first(),
+        )
     }
 
     @Test
