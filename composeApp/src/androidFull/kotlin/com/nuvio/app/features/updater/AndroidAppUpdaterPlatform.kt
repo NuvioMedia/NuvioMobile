@@ -27,8 +27,7 @@ object AndroidAppUpdaterPlatform {
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(60, TimeUnit.SECONDS)
-        .writeTimeout(60, TimeUnit.SECONDS)
+        // No readTimeout — applies per chunk, not per download; kills slow streams.
         .followRedirects(true)
         .followSslRedirects(true)
         .build()
