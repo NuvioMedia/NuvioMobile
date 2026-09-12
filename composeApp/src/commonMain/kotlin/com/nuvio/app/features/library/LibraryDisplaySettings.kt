@@ -20,6 +20,10 @@ enum class LibrarySortOption {
     ADDED_ASC,
     TITLE_ASC,
     TITLE_DESC,
+    RATING_DESC,
+    RATING_ASC,
+    RELEASE_DATE_DESC,
+    RELEASE_DATE_ASC,
 }
 
 data class LibraryDisplaySettingsUiState(
@@ -131,6 +135,28 @@ internal fun sortLibraryItems(
             compareByDescending<LibraryItem> { libraryTitleSortKey(it) }
                 .thenBy { it.id },
         )
+        LibrarySortOption.RATING_DESC -> items.sortedWith(
+            compareByDescending<LibraryItem> { it.imdbRating?.toFloatOrNull() ?: 0f }
+                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { it.id },
+        )
+        LibrarySortOption.RATING_ASC -> items.sortedWith(
+            compareBy<LibraryItem> { it.imdbRating?.toFloatOrNull() ?: Float.MAX_VALUE }
+                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { it.id },
+        )
+        LibrarySortOption.RELEASE_DATE_DESC -> items.sortedWith(
+            compareByDescending<LibraryItem> { releaseDateSortKey(it).isNotBlank() }
+                .thenByDescending { releaseDateSortKey(it) }
+                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { it.id },
+        )
+        LibrarySortOption.RELEASE_DATE_ASC -> items.sortedWith(
+            compareByDescending<LibraryItem> { releaseDateSortKey(it).isNotBlank() }
+                .thenBy { releaseDateSortKey(it) }
+                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { it.id },
+        )
     }
 
 internal fun sortLibrarySections(
@@ -227,17 +253,46 @@ private val LibraryDisplaySettingsJson = Json {
     encodeDefaults = true
 }
 
-private val LeadingLibraryTitleArticle = Regex("^(the|an|a)\\s+", RegexOption.IGNORE_CASE)
-
 private fun libraryTitleSortKey(item: LibraryItem): String =
     libraryTitleTieBreakKey(item)
-        .trim()
-        .replace(LeadingLibraryTitleArticle, "")
 
 private fun libraryTitleTieBreakKey(item: LibraryItem): String =
     item.name
         .ifBlank { item.id }
         .lowercase()
+
+private val IsoDateRegex = Regex("\\b\\d{4}(-\\d{2})?(-\\d{2})?\\b")
+
+private fun releaseDateSortKey(item: LibraryItem): String {
+    val raw = item.rawReleaseDate?.trim().orEmpty().ifBlank { item.releaseInfo.orEmpty().trim() }
+    if (raw.isBlank()) return ""
+
+    val fullDateMatch = Regex("\\b(18|19|20)\\d{2}[-/]\\d{1,2}[-/]\\d{1,2}\\b").find(raw)?.value
+    if (fullDateMatch != null) {
+        val parts = fullDateMatch.split('-', '/')
+        if (parts.size == 3) {
+            val y = parts[0]
+            val m = parts[1].padStart(2, '0')
+            val d = parts[2].padStart(2, '0')
+            return "$y-$m-$d"
+        }
+    }
+
+    val yearMonthMatch = Regex("\\b(18|19|20)\\d{2}[-/]\\d{1,2}\\b").find(raw)?.value
+    if (yearMonthMatch != null) {
+        val parts = yearMonthMatch.split('-', '/')
+        if (parts.size == 2) {
+            val y = parts[0]
+            val m = parts[1].padStart(2, '0')
+            return "$y-$m-01"
+        }
+    }
+
+    val yearMatch = Regex("\\b(18|19|20)\\d{2}\\b").find(raw)?.value
+    if (yearMatch != null) return "$yearMatch-01-01"
+
+    return raw.lowercase()
+}
 
 private fun libraryDisplayItemKey(item: LibraryItem): String =
     "${item.type.normalizedLibraryType()}:${item.id.trim()}"
