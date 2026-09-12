@@ -322,6 +322,7 @@ private fun ExoPlayerSurface(
     fun ExoPlayer.setPlaybackMediaItem(videoMediaItem: MediaItem, startPositionMs: Long? = null) {
         if (!sourceAudioUrl.isNullOrBlank()) {
             val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
+                .setLoadErrorHandlingPolicy(HlsRenditionFallbackPolicy())
             val videoSource = mediaSourceFactory.createMediaSource(videoMediaItem)
             val audioSource = mediaSourceFactory.createMediaSource(playbackMediaItemFromUrl(sourceAudioUrl))
             val mergedSource = MergingMediaSource(videoSource, audioSource)
@@ -415,7 +416,7 @@ private fun ExoPlayerSurface(
             val mediaSourceFactory = DefaultMediaSourceFactory(
                 dataSourceFactory,
                 extractorsFactory,
-            )
+            ).setLoadErrorHandlingPolicy(HlsRenditionFallbackPolicy())
 
             ExoPlayer.Builder(context)
                 .setRenderersFactory(renderersFactory)
