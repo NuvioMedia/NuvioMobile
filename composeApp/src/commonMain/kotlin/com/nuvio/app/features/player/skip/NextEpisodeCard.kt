@@ -142,7 +142,8 @@ fun NextEpisodeCard(
                     fontWeight = FontWeight.SemiBold,
                 )
                 val autoPlayStatus = when {
-                    !isPlayable && !nextEpisode.unairedMessage.isNullOrBlank() -> nextEpisode.unairedMessage
+                    !isPlayable -> nextEpisode.unairedMessage?.takeIf { it.isNotBlank() }
+                        ?: stringResource(Res.string.player_next_episode_unaired)
                     isAutoPlaySearching -> stringResource(Res.string.player_next_episode_finding_source)
                     !autoPlaySourceName.isNullOrBlank() && autoPlayCountdownSec != null ->
                         stringResource(
