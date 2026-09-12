@@ -197,6 +197,7 @@ object SimklProgressRepository {
 object SimklTrackingProgressProvider : TrackingProgressProvider {
     override val providerId: TrackingProviderId = TrackingProviderId.SIMKL
     override val changes: Flow<Unit> = SimklProgressRepository.uiState.map { Unit }
+    override fun showIdSiblings() = SimklSyncRepository.state.value.snapshot.toSimklShowIdSiblings()
 
     override fun ensureLoaded() = SimklProgressRepository.ensureLoaded()
 

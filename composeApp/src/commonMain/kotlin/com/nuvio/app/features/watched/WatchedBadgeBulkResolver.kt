@@ -147,13 +147,9 @@ private fun getActiveProviderSiblingMap(): Map<String, Set<String>> {
             com.nuvio.app.features.tracking.TrackingProviderRegistry.isAuthenticated(providerId)
         },
     )
-    return when (effectiveSource.providerId) {
-        TrackingProviderId.TRAKT -> TraktProgressRepository.getShowIdSiblings()
-        TrackingProviderId.SIMKL -> {
-            SimklSyncRepository.state.value.snapshot.toSimklShowIdSiblings()
-        }
-        else -> emptyMap()
-    }
+    return effectiveSource.providerId?.let {
+        com.nuvio.app.features.tracking.TrackingProviderRegistry.progressProvider(it)?.showIdSiblings()
+    }.orEmpty()
 }
 
 private fun extractContentIdFromWatchedKey(key: String): String? {

@@ -21,12 +21,17 @@ data class TrackingLibraryTab(
     val selectionGroup: String? = null,
     val supportedContentTypes: Set<String>? = null,
     val isMembershipDestination: Boolean = true,
+    val description: String? = null,
+    val privacy: LibraryListPrivacy? = null,
 )
 
 fun TrackingLibraryTab.supportsContentType(contentType: String): Boolean =
     supportedContentTypes == null || supportedContentTypes.any { supported ->
         supported.equals(contentType, ignoreCase = true)
     }
+
+fun TrackingLibraryTab.membershipTitle(): String =
+    providerId?.let { "${it.displayName} · $title" } ?: title
 
 internal fun trackingMembershipDestinations(
     tabs: List<TrackingLibraryTab>,
@@ -78,6 +83,8 @@ enum class TrackingRefreshIntent {
  */
 interface TrackingLibraryProvider {
     val providerId: TrackingProviderId
+    val listManager: TrackingListManager?
+        get() = null
     val changes: Flow<Unit>
     val connectionRefreshIntent: TrackingRefreshIntent
 
@@ -119,6 +126,7 @@ data class TrackingProgressSnapshot(
 interface TrackingProgressProvider {
     val providerId: TrackingProviderId
     val changes: Flow<Unit>
+    fun showIdSiblings(): Map<String, Set<String>> = emptyMap()
 
     /** True when the provider projection already contains display-ready metadata. */
     val providesCompleteMetadata: Boolean

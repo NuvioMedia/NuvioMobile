@@ -105,10 +105,11 @@ internal fun sortLibraryItems(
     items: List<LibraryItem>,
     selected: LibrarySortOption,
     sourceMode: LibrarySourceMode,
+    listKey: String? = null,
 ): List<LibraryItem> =
     when (effectiveLibrarySortOption(selected, sourceMode)) {
         LibrarySortOption.DEFAULT -> items.sortedWith(
-            compareBy<LibraryItem> { it.traktRank ?: Int.MAX_VALUE }
+            compareBy<LibraryItem> { it.listRanks[listKey] ?: it.traktRank ?: Int.MAX_VALUE }
                 .thenByDescending { it.savedAtEpochMs }
                 .thenBy { libraryTitleTieBreakKey(it) }
                 .thenBy { it.id },
@@ -139,7 +140,7 @@ internal fun sortLibrarySections(
     sourceMode: LibrarySourceMode,
 ): List<LibrarySection> =
     sections.map { section ->
-        section.copy(items = sortLibraryItems(section.items, selected, sourceMode))
+        section.copy(items = sortLibraryItems(section.items, selected, sourceMode, section.type))
     }
 
 internal fun buildLibraryVerticalProjection(
@@ -185,6 +186,7 @@ internal fun buildLibraryVerticalProjection(
         items = filteredEntries.map { entry -> entry.item },
         selected = sortOption,
         sourceMode = sourceMode,
+        listKey = selectedSection?.type,
     ).mapNotNull { item -> entryByKey[libraryDisplayItemKey(item)] }
 
     return LibraryVerticalProjection(

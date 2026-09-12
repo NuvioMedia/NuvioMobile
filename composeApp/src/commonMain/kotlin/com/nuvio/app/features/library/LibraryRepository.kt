@@ -395,6 +395,19 @@ object LibraryRepository {
                 .flatMap { provider -> provider.snapshot().tabs },
         ).filter { tab -> item == null || tab.supportsContentType(item.type) }
 
+    internal fun listManagementContext(): LibraryManagementContext? {
+        val source = effectiveLibrarySourceMode()
+        val provider = activeLibraryProvider(source) ?: return null
+        if (provider.listManager == null) return null
+        val account = TrackingProviderRegistry.authProvider(provider.providerId) ?: return null
+        return LibraryManagementContext(ProfileRepository.activeProfileId, source, account.accountGeneration)
+    }
+
+    internal fun listManager(context: LibraryManagementContext): com.nuvio.app.features.tracking.TrackingListManager {
+        check(context == listManagementContext()) { "Library account changed" }
+        return requireNotNull(activeLibraryProvider(context.source)?.listManager)
+    }
+
     suspend fun getMembershipSnapshot(item: LibraryItem): Map<String, Boolean> {
         ensureLoaded()
         val inLocal = localState.contains(item.id, item.type)
