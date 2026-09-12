@@ -1,6 +1,8 @@
 package com.nuvio.app.features.addons
 
 import co.touchlab.kermit.Logger
+import com.nuvio.app.core.auth.AuthRepository
+import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.network.SupabaseProvider
 import com.nuvio.app.core.sync.putSyncOriginClientId
 import com.nuvio.app.features.profiles.ProfileRepository
@@ -47,6 +49,9 @@ private data class AddonPushItem(
 )
 
 private const val ADDON_PUSH_DEBOUNCE_MS = 500L
+
+internal fun shouldPushAddonsToServer(authState: AuthState): Boolean =
+    authState is AuthState.Authenticated && !authState.isAnonymous
 
 object AddonRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
@@ -340,6 +345,10 @@ object AddonRepository {
 
     private fun pushToServer() {
         if (isUsingPrimaryAddonsFromSecondaryProfile()) return
+        if (!shouldPushAddonsToServer(AuthRepository.state.value)) {
+            log.d { "pushToServer() — skipped: registered authenticated session required" }
+            return
+        }
         val profileId = currentProfileId
         val addons = _uiState.value.addons
             .distinctBy { it.manifestUrl }
@@ -356,6 +365,10 @@ object AddonRepository {
         pushJob = scope.launch {
             try {
                 delay(ADDON_PUSH_DEBOUNCE_MS)
+                if (!shouldPushAddonsToServer(AuthRepository.state.value)) {
+                    log.d { "pushToServer() — cancelled: registered authenticated session no longer active" }
+                    return@launch
+                }
                 log.d { "pushToServer() — profileId=$profileId, pushing ${addons.size} addons" }
                 val params = buildJsonObject {
                     put("p_profile_id", profileId)
