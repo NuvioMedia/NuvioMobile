@@ -4,6 +4,9 @@ import com.nuvio.app.features.details.MetaVideo
 
 object PlayerNextEpisodeRules {
 
+    fun resolvePlayableEpisodeAtIndex(videos: List<MetaVideo>, index: Int): MetaVideo? =
+        videos.getOrNull(index)?.takeIf { hasEpisodeAired(it.released) }
+
     fun resolveNextEpisode(
         videos: List<MetaVideo>,
         currentSeason: Int?,
