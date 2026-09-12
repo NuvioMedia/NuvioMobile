@@ -444,6 +444,7 @@
     <string name="compose_player_panel_sources">Sources</string>
     <string name="compose_player_panel_streams">Streams</string>
     <string name="compose_player_playback_error">Playback error</string>
+    <string name="compose_player_playback_speed">Playback Speed</string>
     <string name="compose_player_playing">Playing</string>
     <string name="compose_player_fetch_subtitles">Tap to fetch subtitles</string>
     <string name="compose_player_go_back">Go back</string>
