@@ -45,6 +45,7 @@ object StreamAutoPlaySelector {
         bingeGroupOnly: Boolean = false,
         debridEnabled: Boolean = true,
         activeResolverProviderId: String? = null,
+        smartSelectionContext: SmartStreamSelector.Context? = null,
     ): StreamItem? =
         evaluateAutoPlayStream(
             streams = streams,
@@ -59,6 +60,7 @@ object StreamAutoPlaySelector {
             bingeGroupOnly = bingeGroupOnly,
             debridEnabled = debridEnabled,
             activeResolverProviderId = activeResolverProviderId,
+            smartSelectionContext = smartSelectionContext,
         ).stream
 
     fun evaluateAutoPlayStream(
@@ -74,8 +76,18 @@ object StreamAutoPlaySelector {
         bingeGroupOnly: Boolean = false,
         debridEnabled: Boolean = true,
         activeResolverProviderId: String? = null,
+        smartSelectionContext: SmartStreamSelector.Context? = null,
     ): StreamAutoPlayEvaluation {
         if (streams.isEmpty()) return StreamAutoPlayEvaluation()
+
+        val selectionContext = smartSelectionContext ?: SmartStreamSelector.currentContext()
+        val rankingContext = if (mode == StreamAutoPlayMode.REGEX_MATCH) {
+            selectionContext.copy(
+                preferredStreamTerms = extractOrderedRegexPreferences(regexPattern),
+            )
+        } else {
+            selectionContext
+        }
 
         val sourceScopedStreams = when (source) {
             StreamAutoPlaySource.ALL_SOURCES -> streams
@@ -101,9 +113,12 @@ object StreamAutoPlaySelector {
         } else {
             emptyList()
         }
-        val preferredReadyStream = bingeGroupCandidates.firstOrNull { stream ->
-            stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
-        }
+        val preferredReadyStream = SmartStreamSelector.rank(
+            bingeGroupCandidates.filter { stream ->
+                stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
+            },
+            rankingContext,
+        ).firstOrNull()
         if (bingeGroupOnly) {
             val readyStreams = preferredReadyStream?.let(::listOf).orEmpty()
             return StreamAutoPlayEvaluation(
@@ -117,14 +132,6 @@ object StreamAutoPlaySelector {
         }
         if (mode == StreamAutoPlayMode.MANUAL) {
             return StreamAutoPlayEvaluation()
-        }
-        val preferredStream = if (preferBingeGroupInSelection && targetBingeGroup.isNotEmpty()) {
-            candidateStreams.firstOrNull { stream ->
-                stream.behaviorHints.bingeGroup == targetBingeGroup &&
-                    stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
-            }
-        } else {
-            null
         }
         val matchingStreams = when (mode) {
             StreamAutoPlayMode.MANUAL -> emptyList()
@@ -145,7 +152,7 @@ object StreamAutoPlaySelector {
 
                 val excludeRegex = if (exclusionWords.isNotEmpty()) {
                     Regex(
-                        "\\b(${exclusionWords.joinToString("|") { Regex.escape(it) }})\\b",
+                        "\\b(" + exclusionWords.joinToString("|") { Regex.escape(it) } + ")\\b",
                         RegexOption.IGNORE_CASE,
                     )
                 } else null
@@ -171,13 +178,18 @@ object StreamAutoPlaySelector {
                 }
             }
         }
-        if (matchingStreams.isEmpty() && preferredStream == null) return StreamAutoPlayEvaluation()
+        if (matchingStreams.isEmpty() && preferredReadyStream == null) return StreamAutoPlayEvaluation()
 
+        val rankedReadyStreams = SmartStreamSelector.rank(
+            matchingStreams.filter { stream ->
+                stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
+            },
+            rankingContext,
+        )
         val readyStreams = buildList {
-            preferredStream?.let(::add)
-            matchingStreams
-                .filter { it.isAutoPlayable(debridEnabled, activeResolverProviderId) }
-                .filterNot { it == preferredStream }
+            preferredReadyStream?.let(::add)
+            rankedReadyStreams
+                .filterNot { it == preferredReadyStream }
                 .forEach(::add)
         }
         val selected = readyStreams.firstOrNull()
@@ -194,6 +206,18 @@ object StreamAutoPlaySelector {
                 it.isPendingDebridAutoPlay(debridEnabled, activeResolverProviderId)
             },
         )
+    }
+
+    /**
+     * Preserves a sole simple alternatives group such as `(DV|HDR|ATMOS)` as
+     * an explicit left-to-right preference. Complex expressions remain filters.
+     */
+    private fun extractOrderedRegexPreferences(pattern: String): List<String> {
+        val match = SIMPLE_ALTERNATIVES.matchEntire(pattern.trim()) ?: return emptyList()
+        return match.groupValues[1]
+            .split("|")
+            .map { it.trim().lowercase() }
+            .filter { it.matches(SIMPLE_PREFERENCE_TERM) }
     }
 
     private fun StreamItem.isAutoPlayable(
@@ -230,6 +254,11 @@ object StreamAutoPlaySelector {
         val active = activeResolverProviderId?.trim().orEmpty()
         return active.isBlank() || this == null || equals(active, ignoreCase = true)
     }
+
+    private val SIMPLE_ALTERNATIVES =
+        Regex("""^\((?:\?:)?([^()]+(?:\|[^()]+)+)\)$""")
+    private val SIMPLE_PREFERENCE_TERM =
+        Regex("""^[A-Za-z0-9][A-Za-z0-9 .+_-]*$""")
 }
 
 data class StreamAutoPlayEvaluation(
