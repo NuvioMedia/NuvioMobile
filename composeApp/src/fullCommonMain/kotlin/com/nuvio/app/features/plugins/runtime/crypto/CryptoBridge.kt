@@ -19,8 +19,20 @@ import com.nuvio.app.features.plugins.pluginAesEncrypt
 import com.nuvio.app.features.plugins.pluginSign
 import com.nuvio.app.features.plugins.pluginVerify
 
+import com.nuvio.app.features.plugins.pluginPowFindNonce
+
 internal class CryptoBridge : HostModule {
     override fun register(runtime: QuickJs) {
+        // ABDX-style proof-of-work solved natively in one bridge call
+        // (SHA-256("challenge:nonce") leading-zero-bits >= difficulty).
+        runtime.function("__crypto_pow_find_nonce") { args ->
+            val challenge = args.getOrNull(0)?.toString() ?: ""
+            val difficulty = (args.getOrNull(1) as? Number)?.toInt() ?: 18
+            runCatching {
+                pluginPowFindNonce(challenge, difficulty)
+            }.getOrDefault("")
+        }
+
         // Hex transport keeps binary data stable across the QuickJS/native bridge.
         runtime.function("__crypto_get_random_values_hex") { args ->
             val length = (args.getOrNull(0) as? Number)?.toInt() ?: 0
