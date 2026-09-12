@@ -15,6 +15,9 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.util.concurrent.TimeUnit
 
+private const val PROBE_TIMEOUT_SECONDS = 5L
+private const val PROBE_RACE_TIMEOUT_MS = 8_000L
+
 internal object TrailerExtractionPlatform {
     val defaultHeaders: Map<String, String> = mapOf(
         "accept-language" to "en-US,en;q=0.9",
@@ -34,8 +37,8 @@ internal object TrailerExtractionPlatform {
 
     private val probeClient = OkHttpClient.Builder()
         .dns(IPv4FirstDns())
-        .connectTimeout(2, TimeUnit.SECONDS)
-        .readTimeout(2, TimeUnit.SECONDS)
+        .connectTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        .readTimeout(PROBE_TIMEOUT_SECONDS, TimeUnit.SECONDS)
         .followRedirects(true)
         .followSslRedirects(true)
         .build()
@@ -76,57 +79,102 @@ internal object TrailerExtractionPlatform {
     }
 
     suspend fun buildPlaybackSource(
-        bestManifest: ManifestCandidate?,
-        bestProgressive: StreamCandidate?,
-        bestVideo: StreamCandidate?,
-        bestAudio: StreamCandidate?,
+        manifestCandidates: List<ManifestCandidate>,
+        progressiveCandidates: List<StreamCandidate>,
+        videoCandidates: List<StreamCandidate>,
+        audioCandidates: List<StreamCandidate>,
     ): TrailerPlaybackSource? = withContext(Dispatchers.IO) {
-        val bestCombinedIsManifest = bestManifest != null &&
-            (bestProgressive == null || bestManifest.height > bestProgressive.height)
+        // A candidate can look fine and still be unplayable: PO token gated URLs
+        // answer the first range and 403 everything after it. Every candidate is
+        // probed and the first one that survives wins.
+        var videoOnlyFallback: String? = null
+        // One rejection condemns a whole client: the gate applies to all of its
+        // adaptive formats, so there is no point probing its siblings.
+        val gatedClients = mutableSetOf<String>()
 
-        val combinedUrl = if (bestCombinedIsManifest) {
-            bestManifest.selectedVariantUrl
-        } else {
-            bestProgressive?.url
+        suspend fun fromManifests(): TrailerPlaybackSource? {
+            for (candidate in manifestCandidates.take(MAX_CANDIDATE_ATTEMPTS)) {
+                val url = resolveReachableUrlOrNull(candidate.selectedVariantUrl) ?: continue
+                return TrailerPlaybackSource(videoUrl = url, audioUrl = null)
+            }
+            return null
         }
 
-        val separatedVideoUrl = bestVideo?.url?.let { resolveReachableUrlOrNull(it) }
-        val combinedCandidateUrl = combinedUrl?.let { resolveReachableUrlOrNull(it) }
-        val videoUrl = separatedVideoUrl ?: combinedCandidateUrl ?: return@withContext null
-        val audioUrl = if (!separatedVideoUrl.isNullOrBlank()) {
-            bestAudio?.url?.let { resolveReachableUrlOrNull(it) }
-        } else {
-            null
+        suspend fun fromSeparateStreams(): TrailerPlaybackSource? {
+            for (video in videoCandidates.take(MAX_CANDIDATE_ATTEMPTS)) {
+                if (video.client in gatedClients) continue
+                val videoUrl = resolveReachableUrlOrNull(video.url)
+                if (videoUrl == null) {
+                    gatedClients += video.client
+                    continue
+                }
+                for (audio in audioCandidates.take(MAX_CANDIDATE_ATTEMPTS)) {
+                    val audioUrl = resolveReachableUrlOrNull(audio.url) ?: continue
+                    return TrailerPlaybackSource(videoUrl = videoUrl, audioUrl = audioUrl)
+                }
+                // Video is reachable but no audio track survived: remember it and
+                // let the other strategies try to produce a source with sound.
+                if (videoOnlyFallback == null) {
+                    videoOnlyFallback = videoUrl
+                }
+                break
+            }
+            return null
         }
 
-        TrailerPlaybackSource(
-            videoUrl = videoUrl,
-            audioUrl = audioUrl,
-        )
+        suspend fun fromProgressive(): TrailerPlaybackSource? {
+            for (candidate in progressiveCandidates.take(MAX_CANDIDATE_ATTEMPTS)) {
+                val url = resolveReachableUrlOrNull(candidate.url) ?: continue
+                return TrailerPlaybackSource(videoUrl = url, audioUrl = null)
+            }
+            return null
+        }
+
+        val manifestHeight = manifestCandidates.firstOrNull()?.height ?: -1
+        val separateHeight = videoCandidates.firstOrNull()?.height ?: -1
+        val strategies: List<suspend () -> TrailerPlaybackSource?> = if (manifestHeight >= separateHeight) {
+            listOf({ fromManifests() }, { fromSeparateStreams() }, { fromProgressive() })
+        } else {
+            listOf({ fromSeparateStreams() }, { fromManifests() }, { fromProgressive() })
+        }
+
+        for (strategy in strategies) {
+            strategy()?.let { return@withContext it }
+        }
+
+        videoOnlyFallback?.let { videoUrl ->
+            return@withContext TrailerPlaybackSource(videoUrl = videoUrl, audioUrl = null)
+        }
+
+        null
     }
 
     private suspend fun resolveReachableUrlOrNull(url: String): String? {
         if (!url.contains("googlevideo.com")) return url
         val uri = Uri.parse(url)
-        val mnParam = uri.getQueryParameter("mn") ?: return url
-        val servers = mnParam.split(',').map { it.trim() }.filter { it.isNotBlank() }
-        if (servers.size < 2) {
-            return if (isUrlReachable(url)) url else null
-        }
+        val servers = uri.getQueryParameter("mn")
+            ?.split(',')
+            ?.map { it.trim() }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        val host = uri.host
 
-        val host = uri.host ?: return if (isUrlReachable(url)) url else null
-        val candidates = mutableListOf(url)
-        servers.forEachIndexed { index, server ->
-            val altHost = host
-                .replaceFirst(Regex("^rr\\d+---"), "rr${index + 1}---")
-                .replaceFirst(Regex("sn-[a-z0-9]+-[a-z0-9]+"), server)
-            if (altHost != host) {
-                candidates += url.replace(host, altHost)
+        val candidates = buildList {
+            add(url)
+            if (host != null) {
+                servers.forEachIndexed { index, server ->
+                    val altHost = host
+                        .replaceFirst(Regex("^rr\\d+---"), "rr${index + 1}---")
+                        .replaceFirst(Regex("sn-[a-z0-9]+-[a-z0-9]+"), server)
+                    if (altHost != host) {
+                        add(url.replace(host, altHost))
+                    }
+                }
             }
-        }
+        }.distinct()
 
         if (candidates.size == 1) {
-            return if (isUrlReachable(candidates[0])) candidates[0] else null
+            return candidates.first().takeIf { isUrlReachable(it) }
         }
 
         val result = CompletableDeferred<String>()
@@ -140,26 +188,37 @@ internal object TrailerExtractionPlatform {
         }
 
         return try {
-            withTimeoutOrNull(2_000L) { result.await() }
+            withTimeoutOrNull(PROBE_RACE_TIMEOUT_MS) { result.await() }
         } finally {
             probeScope.cancel()
         }
     }
 
-    private fun isUrlReachable(url: String): Boolean {
-        return runCatching {
+    // A single head range probe is not enough: gated URLs answer the first chunk
+    // and 403 the rest, so the tail is probed too whenever the length is known.
+    private fun isUrlReachable(url: String): Boolean = runCatching {
+        val sourceSize = Uri.parse(url).getQueryParameter("clen")?.toLongOrNull()?.takeIf { it > 0L }
+        val ranges = sourceSize?.let { size ->
+            listOf(
+                0L to 65_535L.coerceAtMost(size - 1L),
+                (size - 65_536L).coerceAtLeast(0L) to size - 1L,
+            ).distinct()
+        } ?: listOf(0L to 0L)
+
+        ranges.all { (rangeStart, rangeEnd) ->
             val request = Request.Builder()
                 .url(url)
-                .get()
-                .header("Range", "bytes=0-0")
                 .headers(buildHeaders(defaultHeaders))
+                .header("Range", "bytes=$rangeStart-$rangeEnd")
+                .get()
                 .build()
 
             probeClient.newCall(request).execute().use { response ->
-                response.code in 200..299
+                response.code == 206 ||
+                    (sourceSize == null && rangeStart == 0L && response.code in 200..299)
             }
-        }.getOrDefault(false)
-    }
+        }
+    }.getOrDefault(false)
 
     private fun buildHeaders(source: Map<String, String>): Headers {
         val headers = Headers.Builder()

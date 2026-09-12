@@ -2,6 +2,8 @@ package com.nuvio.app.features.trailer
 
 import co.touchlab.kermit.Logger
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -9,12 +11,43 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+import kotlin.time.TimeMark
+import kotlin.time.TimeSource
 
 internal const val TRAILER_EXTRACTOR_TAG = "InAppYouTubeExtractor"
 internal const val TRAILER_REQUEST_TIMEOUT_MS = 20_000L
 
 private const val EXTRACTOR_TIMEOUT_MS = 30_000L
-private const val PREFERRED_SEPARATE_CLIENT = "visionos"
+
+// YouTube gates the ANDROID and IOS InnerTube clients behind a PO token: their
+// googlevideo URLs serve the first chunk and then reject every further range
+// with 403, which surfaces as mid-open playback failures. VISIONOS URLs (and
+// its HLS manifest) are still ungated, so only those are used for playback.
+// The other clients stay in CLIENTS as a last-resort fallback in case VISIONOS
+// gets gated too - unreachable candidates are then dropped by the probes.
+private val PLAYBACK_CLIENT_ALLOWLIST = setOf("visionos", "android_vr")
+
+// The InnerTube key is a public constant shipped in every YouTube page and the
+// player endpoint even accepts requests without it. Scraping it from the watch
+// page (over a megabyte per video) is what breaks first when the device gets
+// rate limited, so it is only used as a fallback.
+private const val DEFAULT_INNERTUBE_API_KEY = "AIzaSyAO_FJ2SlqU8Q4STEHLGCilw_Y9_11qcW8"
+
+// Probing is not free, so only the top few candidates of each kind are tried.
+internal const val MAX_CANDIDATE_ATTEMPTS = 3
+
+// The watch page is over a megabyte and only exists to scrape the InnerTube key
+// and visitor id, which are not per-video. Re-fetching it for every trailer is
+// what gets the device rate limited, so it is cached process-wide.
+private val WatchConfigTtl = 3.hours
+
+// A 429 is device wide: every further request makes it worse, so extraction
+// stops entirely until the cooldown expires. Per client bot checks are handled
+// separately and only skip the client that was challenged.
+private val RateLimitCooldown = 15.minutes
 
 private val VIDEO_ID_REGEX = Regex("^[a-zA-Z0-9_-]{11}$")
 private val API_KEY_REGEX = Regex("\"INNERTUBE_API_KEY\":\"([^\"]+)\"")
@@ -29,6 +62,14 @@ private data class YouTubeClient(
     val context: JsonObject,
     val priority: Int,
 )
+
+// A verdict YouTube will keep repeating no matter how often we ask: geo blocks,
+// removed videos, private videos. Retrying only burns request budget.
+private class UnplayableException(val playabilityStatus: String, val playabilityReason: String) :
+    IllegalStateException("unplayable ($playabilityStatus): $playabilityReason")
+
+private class BotCheckException(clientKey: String, playabilityStatus: String) :
+    IllegalStateException("bot check for $clientKey ($playabilityStatus)")
 
 private data class WatchConfig(
     val apiKey: String?,
@@ -95,41 +136,114 @@ private val CLIENTS = listOf(
         ),
         priority = 0,
     ),
+    // Oculus client: no PO token required, so its URLs stay playable. It gets
+    // bot challenged sooner than ANDROID/IOS, hence second rather than first.
     YouTubeClient(
-        key = "android",
-        id = "3",
-        version = "20.10.35",
-        userAgent = "com.google.android.youtube/20.10.35 (Linux; U; Android 14; en_US) gzip",
+        key = "android_vr",
+        id = "28",
+        version = "1.65.10",
+        userAgent = "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; " +
+            "eureka-user Build/SQ3A.220605.009.A1) gzip",
         context = jsonObjectOf(
-            "clientName" to "ANDROID",
-            "clientVersion" to "20.10.35",
+            "clientName" to "ANDROID_VR",
+            "clientVersion" to "1.65.10",
+            "deviceMake" to "Oculus",
+            "deviceModel" to "Quest 3",
             "osName" to "Android",
-            "osVersion" to "14",
-            "platform" to "MOBILE",
-            "androidSdkVersion" to 34,
+            "osVersion" to "12L",
+            "androidSdkVersion" to 32,
             "hl" to "en",
             "gl" to "US",
         ),
         priority = 1,
     ),
+    // ANDROID and IOS survive bot checks the longest but their adaptive formats
+    // are PO token gated; only their progressive format stays playable.
     YouTubeClient(
-        key = "ios",
-        id = "5",
-        version = "20.10.1",
-        userAgent = "com.google.ios.youtube/20.10.1 (iPhone16,2; U; CPU iOS 17_4 like Mac OS X)",
+        key = "android",
+        id = "3",
+        version = "21.26.364",
+        userAgent = "com.google.android.youtube/21.26.364 (Linux; U; Android 11) gzip",
         context = jsonObjectOf(
-            "clientName" to "IOS",
-            "clientVersion" to "20.10.1",
-            "deviceModel" to "iPhone16,2",
-            "osName" to "iPhone",
-            "osVersion" to "17.4.0.21E219",
+            "clientName" to "ANDROID",
+            "clientVersion" to "21.26.364",
+            "osName" to "Android",
+            "osVersion" to "11",
             "platform" to "MOBILE",
+            "androidSdkVersion" to 30,
             "hl" to "en",
             "gl" to "US",
         ),
         priority = 2,
     ),
+    YouTubeClient(
+        key = "ios",
+        id = "5",
+        version = "21.26.4",
+        userAgent = "com.google.ios.youtube/21.26.4 (iPhone16,2; U; CPU iOS 18_3_2 like Mac OS X;)",
+        context = jsonObjectOf(
+            "clientName" to "IOS",
+            "clientVersion" to "21.26.4",
+            "deviceMake" to "Apple",
+            "deviceModel" to "iPhone16,2",
+            "osName" to "iPhone",
+            "osVersion" to "18.3.2.22D82",
+            "platform" to "MOBILE",
+            "hl" to "en",
+            "gl" to "US",
+        ),
+        priority = 3,
+    ),
 )
+
+// Shared across every extractor instance: the InnerTube key and visitor id are
+// account-agnostic and stay valid for hours.
+private object WatchConfigCache {
+    private val mutex = Mutex()
+    private var cached: WatchConfig? = null
+    private var cachedAt: TimeMark? = null
+
+    suspend fun get(fetch: suspend () -> WatchConfig): WatchConfig = mutex.withLock {
+        val current = cached
+        val age = cachedAt
+        if (current != null && age != null && age.elapsedNow() < WatchConfigTtl) {
+            return@withLock current
+        }
+        val fresh = fetch()
+        if (fresh.apiKey != null) {
+            cached = fresh
+            cachedAt = TimeSource.Monotonic.markNow()
+        }
+        fresh
+    }
+
+    suspend fun invalidate() = mutex.withLock {
+        cached = null
+        cachedAt = null
+    }
+}
+
+// Global backoff so a rate limited device stops issuing requests instead of
+// retrying per trailer, per hover and per hero.
+private object RateLimitGate {
+    private val mutex = Mutex()
+    private var trippedAt: TimeMark? = null
+
+    suspend fun remaining(): Duration? = mutex.withLock {
+        val tripped = trippedAt ?: return@withLock null
+        val elapsed = tripped.elapsedNow()
+        if (elapsed >= RateLimitCooldown) {
+            trippedAt = null
+            null
+        } else {
+            RateLimitCooldown - elapsed
+        }
+    }
+
+    suspend fun trip() = mutex.withLock {
+        trippedAt = TimeSource.Monotonic.markNow()
+    }
+}
 
 class InAppYouTubeExtractor {
     private val log = Logger.withTag(TRAILER_EXTRACTOR_TAG)
@@ -149,76 +263,51 @@ class InAppYouTubeExtractor {
     private suspend fun extractPlaybackSourceInternal(youtubeUrl: String): TrailerPlaybackSource? {
         val videoId = extractVideoId(youtubeUrl) ?: return null
 
-        val watchUrl = "https://www.youtube.com/watch?v=$videoId&hl=en"
-        val watchResponse = TrailerExtractionPlatform.performRequest(
-            url = watchUrl,
-            method = "GET",
-            headers = TrailerExtractionPlatform.defaultHeaders,
-            body = null,
-            timeoutMillis = TRAILER_REQUEST_TIMEOUT_MS,
-        )
-        if (!watchResponse.ok) {
-            throw IllegalStateException("Failed to fetch watch page (${watchResponse.status})")
+        RateLimitGate.remaining()?.let { remaining ->
+            return null
         }
 
-        val watchConfig = getWatchConfig(watchResponse.body)
-        val apiKey = watchConfig.apiKey
-            ?: throw IllegalStateException("Unable to extract INNERTUBE_API_KEY")
+        // The watch page is deliberately NOT fetched up front: it is the first
+        // thing YouTube rate limits, and the player endpoint works fine with the
+        // public key. It is only consulted if every client came back empty.
+        var watchConfig: WatchConfig? = null
 
         val progressive = mutableListOf<StreamCandidate>()
         val adaptiveVideo = mutableListOf<StreamCandidate>()
         val adaptiveAudio = mutableListOf<StreamCandidate>()
         val manifestUrls = mutableListOf<Triple<String, Int, String>>()
+        var definitiveVerdict: UnplayableException? = null
 
-        for (client in CLIENTS) {
-            runCatching {
-                val playerResponse = fetchPlayerResponse(
-                    apiKey = apiKey,
-                    videoId = videoId,
-                    client = client,
-                    visitorData = watchConfig.visitorData,
-                )
-
-                val streamingData = playerResponse.objectValue("streamingData") ?: return@runCatching
-                val hlsManifestUrl = streamingData.stringValue("hlsManifestUrl")
-                if (!hlsManifestUrl.isNullOrBlank()) {
-                    manifestUrls += Triple(client.key, client.priority, hlsManifestUrl)
+        suspend fun queryClients() {
+            for (client in CLIENTS) {
+                // The allowlisted client is tried first and, when it yields anything
+                // playable, the remaining clients are skipped: their URLs are gated
+                // anyway and every extra call brings the device closer to a 429.
+                if (client.key !in PLAYBACK_CLIENT_ALLOWLIST &&
+                    (manifestUrls.isNotEmpty() || progressive.isNotEmpty() || adaptiveVideo.isNotEmpty())
+                ) {
+                    continue
                 }
-
-                for (format in streamingData.listObjectValue("formats")) {
-                    val url = format.stringValue("url") ?: continue
-                    val mimeType = format.stringValue("mimeType").orEmpty()
-                    if (!mimeType.contains("video/") && mimeType.isNotBlank()) continue
-
-                    val height = (
-                        format.numberValue("height")
-                            ?: parseQualityLabel(format.stringValue("qualityLabel"))?.toDouble()
-                            ?: 0.0
-                        ).toInt()
-                    val fps = (format.numberValue("fps") ?: 0.0).toInt()
-                    val bitrate = format.numberValue("bitrate")
-                        ?: format.numberValue("averageBitrate")
-                        ?: 0.0
-
-                    progressive += StreamCandidate(
-                        client = client.key,
-                        priority = client.priority,
-                        url = url,
-                        score = videoScore(height, fps, bitrate),
-                        hasN = hasNParam(url),
-                        height = height,
-                        fps = fps,
-                        ext = if (mimeType.contains("webm")) "webm" else "mp4",
+                runCatching {
+                    val playerResponse = fetchPlayerResponse(
+                        apiKey = watchConfig?.apiKey ?: DEFAULT_INNERTUBE_API_KEY,
+                        videoId = videoId,
+                        client = client,
+                        visitorData = watchConfig?.visitorData,
                     )
-                }
 
-                for (format in streamingData.listObjectValue("adaptiveFormats")) {
-                    val url = format.stringValue("url") ?: continue
-                    val mimeType = format.stringValue("mimeType").orEmpty()
-                    val hasVideo = mimeType.contains("video/")
-                    val hasAudio = mimeType.contains("audio/") || mimeType.startsWith("audio/")
+                    val streamingData = playerResponse.objectValue("streamingData")
+                        ?: throw IllegalStateException("missing streamingData")
+                    val hlsManifestUrl = streamingData.stringValue("hlsManifestUrl")
+                    if (!hlsManifestUrl.isNullOrBlank()) {
+                        manifestUrls += Triple(client.key, client.priority, hlsManifestUrl)
+                    }
 
-                    if (hasVideo) {
+                    for (format in streamingData.listObjectValue("formats")) {
+                        val url = format.stringValue("url") ?: continue
+                        val mimeType = format.stringValue("mimeType").orEmpty()
+                        if (!mimeType.contains("video/") && mimeType.isNotBlank()) continue
+
                         val height = (
                             format.numberValue("height")
                                 ?: parseQualityLabel(format.stringValue("qualityLabel"))?.toDouble()
@@ -229,7 +318,7 @@ class InAppYouTubeExtractor {
                             ?: format.numberValue("averageBitrate")
                             ?: 0.0
 
-                        adaptiveVideo += StreamCandidate(
+                        progressive += StreamCandidate(
                             client = client.key,
                             priority = client.priority,
                             url = url,
@@ -239,31 +328,81 @@ class InAppYouTubeExtractor {
                             fps = fps,
                             ext = if (mimeType.contains("webm")) "webm" else "mp4",
                         )
-                    } else if (hasAudio) {
-                        val bitrate = format.numberValue("bitrate")
-                            ?: format.numberValue("averageBitrate")
-                            ?: 0.0
-                        val audioSampleRate = format.numberValue("audioSampleRate") ?: 0.0
-                        // Multi-language uploads (common for major-studio trailers)
-                        // expose each dub as a separate adaptiveFormats entry with an
-                        // audioTrack.audioIsDefault flag. Formats with no audioTrack
-                        // are the only audio for that video, so treat them as default.
-                        val isDefaultAudioTrack = format.objectValue("audioTrack")
-                            ?.booleanValue("audioIsDefault") ?: true
+                    }
 
-                        adaptiveAudio += StreamCandidate(
-                            client = client.key,
-                            priority = client.priority,
-                            url = url,
-                            score = audioScore(bitrate, audioSampleRate),
-                            hasN = hasNParam(url),
-                            height = 0,
-                            fps = 0,
-                            ext = if (mimeType.contains("webm")) "webm" else "m4a",
-                            isDefaultAudioTrack = isDefaultAudioTrack,
-                        )
+                    for (format in streamingData.listObjectValue("adaptiveFormats")) {
+                        val url = format.stringValue("url") ?: continue
+                        val mimeType = format.stringValue("mimeType").orEmpty()
+                        val hasVideo = mimeType.contains("video/")
+                        val hasAudio = mimeType.contains("audio/") || mimeType.startsWith("audio/")
+
+                        if (hasVideo) {
+                            val height = (
+                                format.numberValue("height")
+                                    ?: parseQualityLabel(format.stringValue("qualityLabel"))?.toDouble()
+                                    ?: 0.0
+                                ).toInt()
+                            val fps = (format.numberValue("fps") ?: 0.0).toInt()
+                            val bitrate = format.numberValue("bitrate")
+                                ?: format.numberValue("averageBitrate")
+                                ?: 0.0
+
+                            adaptiveVideo += StreamCandidate(
+                                client = client.key,
+                                priority = client.priority,
+                                url = url,
+                                score = videoScore(height, fps, bitrate),
+                                hasN = hasNParam(url),
+                                height = height,
+                                fps = fps,
+                                ext = if (mimeType.contains("webm")) "webm" else "mp4",
+                            )
+                        } else if (hasAudio) {
+                            val bitrate = format.numberValue("bitrate")
+                                ?: format.numberValue("averageBitrate")
+                                ?: 0.0
+                            val audioSampleRate = format.numberValue("audioSampleRate") ?: 0.0
+                            // Multi-language uploads (common for major-studio trailers)
+                            // expose each dub as a separate adaptiveFormats entry with an
+                            // audioTrack.audioIsDefault flag. Formats with no audioTrack
+                            // are the only audio for that video, so treat them as default.
+                            val isDefaultAudioTrack = format.objectValue("audioTrack")
+                                ?.booleanValue("audioIsDefault") ?: true
+
+                            adaptiveAudio += StreamCandidate(
+                                client = client.key,
+                                priority = client.priority,
+                                url = url,
+                                score = audioScore(bitrate, audioSampleRate),
+                                hasN = hasNParam(url),
+                                height = 0,
+                                fps = 0,
+                                ext = if (mimeType.contains("webm")) "webm" else "m4a",
+                                isDefaultAudioTrack = isDefaultAudioTrack,
+                            )
+                        }
+                    }
+                }.onFailure {
+                    if (it is UnplayableException) {
+                        definitiveVerdict = it
                     }
                 }
+                }
+        }
+
+        queryClients()
+
+        // Everything came back empty: the constant key or a stale visitor id may
+        // be the reason, so the watch page is tried once as a last resort.
+        definitiveVerdict?.let { verdict ->
+            return null
+        }
+
+        if (manifestUrls.isEmpty() && progressive.isEmpty() && adaptiveVideo.isEmpty() && adaptiveAudio.isEmpty()) {
+            val fetched = runCatching { fetchWatchConfig(videoId) }.getOrNull()
+            if (fetched?.apiKey != null) {
+                watchConfig = fetched
+                queryClients()
             }
         }
 
@@ -271,11 +410,16 @@ class InAppYouTubeExtractor {
             return null
         }
 
-        var bestManifest: ManifestCandidate? = null
-        for ((clientKey, priority, manifestUrl) in manifestUrls) {
+        val playbackManifestUrls = manifestUrls.preferPlaybackClients { it.first }
+        val playbackProgressive = progressive.preferPlaybackClients { it.client }
+        val playbackVideo = adaptiveVideo.preferPlaybackClients { it.client }
+        val playbackAudio = adaptiveAudio.preferPlaybackClients { it.client }
+
+        val manifestCandidates = mutableListOf<ManifestCandidate>()
+        for ((clientKey, priority, manifestUrl) in playbackManifestUrls) {
             runCatching {
                 val variant = parseHlsManifest(manifestUrl) ?: return@runCatching
-                val candidate = ManifestCandidate(
+                manifestCandidates += ManifestCandidate(
                     client = clientKey,
                     priority = priority,
                     manifestUrl = manifestUrl,
@@ -283,26 +427,53 @@ class InAppYouTubeExtractor {
                     height = variant.height,
                     bandwidth = variant.bandwidth,
                 )
-                if (
-                    bestManifest == null ||
-                    candidate.height > bestManifest.height ||
-                    (candidate.height == bestManifest.height && candidate.bandwidth > bestManifest.bandwidth)
-                ) {
-                    bestManifest = candidate
-                }
             }
         }
+        manifestCandidates.sortWith(
+            compareByDescending<ManifestCandidate> { it.height }
+                .thenByDescending { it.bandwidth }
+                .thenBy { it.priority },
+        )
 
-        val bestProgressive = sortCandidates(progressive).firstOrNull()
-        val bestVideo = pickBestForClient(adaptiveVideo, PREFERRED_SEPARATE_CLIENT)
-        val bestAudio = pickBestForClient(adaptiveAudio, PREFERRED_SEPARATE_CLIENT)
+        val progressiveCandidates = sortCandidates(playbackProgressive)
+        val videoCandidates = sortCandidates(playbackVideo)
+        val audioCandidates = sortCandidates(playbackAudio)
 
         return TrailerExtractionPlatform.buildPlaybackSource(
-            bestManifest = bestManifest,
-            bestProgressive = bestProgressive,
-            bestVideo = bestVideo,
-            bestAudio = bestAudio,
+            manifestCandidates = manifestCandidates,
+            progressiveCandidates = progressiveCandidates,
+            videoCandidates = videoCandidates,
+            audioCandidates = audioCandidates,
         )
+    }
+
+    // Keeps only candidates minted by a playback-safe client, falling back to
+    // the untrusted ones when that leaves nothing to play.
+    private fun <T> List<T>.preferPlaybackClients(clientOf: (T) -> String): List<T> {
+        val allowed = filter { clientOf(it) in PLAYBACK_CLIENT_ALLOWLIST }
+        if (allowed.isNotEmpty()) return allowed
+        if (isNotEmpty()) {
+        }
+        return this
+    }
+
+    private suspend fun fetchWatchConfig(videoId: String): WatchConfig = WatchConfigCache.get {
+        val watchUrl = "https://www.youtube.com/watch?v=$videoId&hl=en"
+        val watchResponse = TrailerExtractionPlatform.performRequest(
+            url = watchUrl,
+            method = "GET",
+            headers = TrailerExtractionPlatform.defaultHeaders,
+            body = null,
+            timeoutMillis = TRAILER_REQUEST_TIMEOUT_MS,
+        )
+        if (watchResponse.status == 429) {
+            RateLimitGate.trip()
+            throw IllegalStateException("Rate limited by YouTube (429)")
+        }
+        if (!watchResponse.ok) {
+            throw IllegalStateException("Failed to fetch watch page (${watchResponse.status})")
+        }
+        getWatchConfig(watchResponse.body)
     }
 
     private suspend fun fetchPlayerResponse(
@@ -341,13 +512,37 @@ class InAppYouTubeExtractor {
             timeoutMillis = TRAILER_REQUEST_TIMEOUT_MS,
         )
 
+        if (response.status == 429) {
+            RateLimitGate.trip()
+            throw IllegalStateException("Rate limited by YouTube (429)")
+        }
         if (!response.ok) {
             val preview = response.body.take(200)
             throw IllegalStateException("player API ${client.key} failed (${response.status}): $preview")
         }
 
         val parsed = JSON.parseToJsonElement(response.body)
-        return parsed as? JsonObject ?: JsonObject(emptyMap())
+        val playerResponse = parsed as? JsonObject ?: JsonObject(emptyMap())
+
+        val playability = playerResponse.objectValue("playabilityStatus")
+        val playabilityStatus = playability?.stringValue("status")
+        val playabilityReason = playability?.stringValue("reason").orEmpty()
+        if (playabilityStatus != null && playabilityStatus != "OK") {
+            // "Sign in to confirm you're not a bot" is per client: the rare clients
+            // (visionos, android_vr, tvhtml5) get challenged long before ANDROID
+            // and IOS do. Only this client is abandoned - the loop still falls
+            // through to the others, whose progressive stream stays playable.
+            if (playabilityStatus == "LOGIN_REQUIRED" || playabilityReason.contains("bot", ignoreCase = true)) {
+                throw BotCheckException(client.key, playabilityStatus)
+            }
+            // UNPLAYABLE / ERROR are final: no client and no fresh visitor id will
+            // produce streams for a video that is geo blocked or gone.
+            if (playabilityStatus == "UNPLAYABLE" || playabilityStatus == "ERROR") {
+                throw UnplayableException(playabilityStatus, playabilityReason)
+            }
+        }
+
+        return playerResponse
     }
 
     private suspend fun parseHlsManifest(manifestUrl: String): ManifestBestVariant? {
@@ -523,14 +718,6 @@ class InAppYouTubeExtractor {
         )
     }
 
-    private fun pickBestForClient(items: List<StreamCandidate>, clientKey: String): StreamCandidate? {
-        val sameClient = items.filter { it.client == clientKey }
-        if (sameClient.isNotEmpty()) {
-            return sortCandidates(sameClient).firstOrNull()
-        }
-        return sortCandidates(items).firstOrNull()
-    }
-
     private fun containerPreference(ext: String): Int {
         return when (ext.lowercase()) {
             "mp4", "m4a" -> 0
@@ -665,3 +852,5 @@ private fun toJsonElement(value: Any): JsonElement {
         else -> JsonPrimitive(value.toString())
     }
 }
+
+
