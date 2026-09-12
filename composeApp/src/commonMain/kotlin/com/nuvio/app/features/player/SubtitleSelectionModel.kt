@@ -26,22 +26,27 @@ internal sealed interface SubtitleSelectionOption {
     data class Addon(
         val subtitle: AddonSubtitle,
     ) : SubtitleSelectionOption {
-        override val id: String = "addon:${subtitle.addonName}:${subtitle.id}:${subtitle.selectionKey}"
+        override val id: String = subtitle.selectionKey
     }
 }
 
 internal val AddonSubtitle.selectionKey: String
+    // Selection identifies the provider row; url remains the playback resource.
+    get() = "addon:$addonName:$id:$legacySelectionKey"
+
+private val AddonSubtitle.legacySelectionKey: String
     get() = url.takeIf { it.isNotBlank() } ?: listOfNotNull(addonName, id).joinToString(":")
 
 internal fun AddonSubtitle.matchesSelection(selectedId: String?): Boolean {
     if (selectedId.isNullOrBlank()) return false
-    return url == selectedId || id == selectedId || selectionKey == selectedId
+    return url == selectedId || id == selectedId || selectionKey == selectedId || legacySelectionKey == selectedId
 }
 
 internal fun List<AddonSubtitle>.findSelectedAddon(selectedId: String?): AddonSubtitle? {
     if (selectedId.isNullOrBlank()) return null
-    firstOrNull { it.url == selectedId }?.let { return it }
     firstOrNull { it.selectionKey == selectedId }?.let { return it }
+    firstOrNull { it.url == selectedId }?.let { return it }
+    firstOrNull { it.legacySelectionKey == selectedId }?.let { return it }
     return firstOrNull { it.id == selectedId }
 }
 
