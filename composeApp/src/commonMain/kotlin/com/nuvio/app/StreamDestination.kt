@@ -213,6 +213,7 @@ internal fun StreamDestination(
             torrentTrackers = stream.p2pTrackers,
             initialPositionMs = resolvedResumePositionMs ?: 0L,
             initialProgressFraction = resolvedResumeProgressFraction,
+            shuffleSession = launch.shuffleSession,
             contentLanguage = resolveLaunchContentLanguage(),
         )
 

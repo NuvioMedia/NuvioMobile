@@ -8,6 +8,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.nuvio.app.features.details.MetaDetailsRepository
+import com.nuvio.app.features.details.ContinuousShuffleSession
+import com.nuvio.app.features.details.RandomEpisodePicker
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.p2p.P2pStreamRequest
 import com.nuvio.app.features.p2p.P2pStreamingEngine
@@ -521,11 +523,27 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         }
         val curSeason = activeSeasonNumber ?: return@LaunchedEffect
         val curEpisode = activeEpisodeNumber ?: return@LaunchedEffect
-        val nextVideo = PlayerNextEpisodeRules.resolveNextEpisode(
-            videos = playerMetaVideos,
-            currentSeason = curSeason,
-            currentEpisode = curEpisode,
-        )
+        val currentVideoId = activeVideoId
+        val nextVideo = if (shuffleSession) {
+            currentVideoId?.let { ContinuousShuffleSession.record(parentMetaId, it) }
+            val eligible = RandomEpisodePicker.eligibleEpisodes(playerMetaVideos)
+            var history = ContinuousShuffleSession.history(parentMetaId)
+            if (eligible.none { it.id !in history }) {
+                ContinuousShuffleSession.restartCycle(parentMetaId, currentVideoId)
+                history = ContinuousShuffleSession.history(parentMetaId)
+            }
+            RandomEpisodePicker.pick(
+                videos = playerMetaVideos,
+                excludedVideoIds = history,
+                currentVideoId = currentVideoId,
+            )
+        } else {
+            PlayerNextEpisodeRules.resolveNextEpisode(
+                videos = playerMetaVideos,
+                currentSeason = curSeason,
+                currentEpisode = curEpisode,
+            )
+        }
         val nextSeason = nextVideo?.season
         val nextEpisode = nextVideo?.episode
         nextEpisodeInfo = if (nextVideo != null && nextSeason != null && nextEpisode != null) {

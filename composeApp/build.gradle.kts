@@ -26,6 +26,9 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     abstract val appVersionCode: Property<Int>
 
     @get:Input
+    abstract val personalUpdateBuild: Property<Boolean>
+
+    @get:Input
     abstract val supabaseUrl: Property<String>
 
     @get:Input
@@ -156,6 +159,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |object AppVersionConfig {
                 |    const val VERSION_NAME = "${appVersionName.get()}"
                 |    const val VERSION_CODE = ${appVersionCode.get()}
+                |    const val PERSONAL_UPDATE_BUILD = ${personalUpdateBuild.get()}
                 |}
                 """.trimMargin()
             )
@@ -211,6 +215,10 @@ val releaseAppVersionName = readXcconfigValue(appVersionConfigFile, "MARKETING_V
 val releaseAppVersionCode = readXcconfigValue(appVersionConfigFile, "CURRENT_PROJECT_VERSION")
     ?.toIntOrNull()
     ?: error("CURRENT_PROJECT_VERSION is missing or invalid in ${appVersionConfigFile.path}")
+val effectiveAppVersionName = providers.environmentVariable("NUVIO_PERSONAL_VERSION_NAME").orNull
+    ?.takeIf { it.isNotBlank() } ?: releaseAppVersionName
+val effectiveAppVersionCode = providers.environmentVariable("NUVIO_PERSONAL_VERSION_CODE").orNull
+    ?.toIntOrNull() ?: releaseAppVersionCode
 val iosDistribution = (
     providers.gradleProperty("nuvio.ios.distribution").orNull
         ?: System.getenv("NUVIO_IOS_DISTRIBUTION")
@@ -287,8 +295,9 @@ fun runtimeConfigBoolean(key: String, default: Boolean): Boolean =
 val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generateRuntimeConfigs") {
     outputDir.set(generatedRuntimeConfigDir)
     localPropertiesFile.set(rootProject.layout.projectDirectory.file("local.properties"))
-    appVersionName.set(releaseAppVersionName)
-    appVersionCode.set(releaseAppVersionCode)
+    appVersionName.set(effectiveAppVersionName)
+    appVersionCode.set(effectiveAppVersionCode)
+    personalUpdateBuild.set(providers.environmentVariable("NUVIO_PERSONAL_UPDATE_BUILD").orNull == "true")
     supabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL"))
     supabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY"))
     supabaseFallbackUrl.set(runtimeConfigValue("NUVIO_SUPABASE_FALLBACK_URL"))

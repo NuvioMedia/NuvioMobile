@@ -986,6 +986,7 @@ internal fun MainAppContent(
             resumeProgressFraction: Float?,
             manualSelection: Boolean,
             startFromBeginning: Boolean,
+            shuffleSession: Boolean = false,
         ) {
             val targetResumePositionMs = if (startFromBeginning) 0L else (resumePositionMs ?: 0L)
             val targetResumeProgressFraction = if (startFromBeginning) null else resumeProgressFraction
@@ -1024,6 +1025,7 @@ internal fun MainAppContent(
                         parentMetaType = parentMetaType,
                         initialPositionMs = targetResumePositionMs,
                         initialProgressFraction = targetResumeProgressFraction,
+                        shuffleSession = shuffleSession,
                     )
                     if (playerSettingsUiState.externalPlayerEnabled) {
                         coroutineScope.launch { openExternalPlayback(playerLaunch) }
@@ -1060,6 +1062,7 @@ internal fun MainAppContent(
                     resumeProgressFraction = targetResumeProgressFraction,
                     manualSelection = manualSelection,
                     startFromBeginning = startFromBeginning,
+                    shuffleSession = shuffleSession,
                 ),
             )
             navController.navigate(
@@ -1112,6 +1115,29 @@ internal fun MainAppContent(
                     startFromBeginning = false,
                 )
             }
+
+        val onShuffle: (String, com.nuvio.app.features.details.MetaVideo) -> Unit = { parentMetaId, video ->
+            launchPlaybackWithDownloadPreference(
+                type = "series",
+                videoId = video.id,
+                parentMetaId = parentMetaId,
+                parentMetaType = "series",
+                title = video.title,
+                logo = null,
+                poster = video.thumbnail,
+                background = null,
+                seasonNumber = video.season,
+                episodeNumber = video.episode,
+                episodeTitle = video.title,
+                episodeThumbnail = video.thumbnail,
+                pauseDescription = video.overview,
+                resumePositionMs = null,
+                resumeProgressFraction = null,
+                manualSelection = false,
+                startFromBeginning = true,
+                shuffleSession = true,
+            )
+        }
 
         val onCatalogClick: (HomeCatalogSection) -> Unit = { section ->
             val launchId = CatalogLaunchStore.put(
@@ -1485,6 +1511,7 @@ internal fun MainAppContent(
                         navController = navController,
                         onPlay = onPlay,
                         onPlayManually = onPlayManually,
+                        onShuffle = onShuffle,
                         sharedTransitionScope = this@SharedTransitionLayout,
                         animatedVisibilityScope = LocalNavAnimatedContentScope.current,
                     )

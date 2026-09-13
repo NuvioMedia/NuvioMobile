@@ -42,6 +42,9 @@ val releaseAppVersionName = readXcconfigValue(appVersionConfigFile, "MARKETING_V
 val releaseAppVersionCode = readXcconfigValue(appVersionConfigFile, "CURRENT_PROJECT_VERSION")
     ?.toIntOrNull()
     ?: error("CURRENT_PROJECT_VERSION is missing or invalid in ${appVersionConfigFile.path}")
+val effectiveAppVersionName = envOrLocalProperty("NUVIO_PERSONAL_VERSION_NAME") ?: releaseAppVersionName
+val effectiveAppVersionCode = envOrLocalProperty("NUVIO_PERSONAL_VERSION_CODE")
+    ?.toIntOrNull() ?: releaseAppVersionCode
 val requestedTaskNames = gradle.startParameter.taskNames.map { it.substringAfterLast(':') }
 val buildsReleaseApks = requestedTaskNames.any {
     it.startsWith("assemble", ignoreCase = true) && it.endsWith("Release", ignoreCase = true)
@@ -67,8 +70,8 @@ android {
         applicationId = "com.nuvio.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = releaseAppVersionCode
-        versionName = releaseAppVersionName
+        versionCode = effectiveAppVersionCode
+        versionName = effectiveAppVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

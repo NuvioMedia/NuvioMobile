@@ -1,4 +1,5 @@
 <resources>
+    <string name="action_shuffle">Shuffle</string>
     <string name="theme_gold">Gold</string>
     <string name="theme_jade">Jade</string>
     <string name="theme_rose_gold">Rose Gold</string>

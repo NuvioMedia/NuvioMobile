@@ -1,0 +1,73 @@
+name: Personal automatic APK update
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_version:
+        description: Base version to publish (for example 0.4.18)
+        required: false
+        type: string
+  workflow_run:
+    workflows: ["Build Mobile Release"]
+    types: [completed]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: personal-apk-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    env:
+      NUVIO_PERSONAL_UPDATE_BUILD: "true"
+      NUVIO_SIGNING_KEY_BASE64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
+      NUVIO_LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Configure signed release
+        run: |
+          test -n "$NUVIO_LOCAL_PROPERTIES_BASE64"
+          test -n "$NUVIO_SIGNING_KEY_BASE64"
+          printf '%s' "$NUVIO_LOCAL_PROPERTIES_BASE64" | base64 --decode > local.properties
+          key_path="$RUNNER_TEMP/nuvio-release.jks"
+          printf '%s' "$NUVIO_SIGNING_KEY_BASE64" | base64 --decode > "$key_path"
+          sed -i -E '/^[[:space:]]*(sdk\.dir|NUVIO_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
+          printf '\nNUVIO_RELEASE_STORE_FILE=%s\n' "$key_path" >> local.properties
+      - name: Calculate personal version
+        id: version
+        run: |
+          base="${{ inputs.base_version }}"
+          if [[ -z "$base" ]]; then
+            base="$(./scripts/release-metadata.sh | sed -n 's/^version=//p')"
+          fi
+          run="${GITHUB_RUN_NUMBER}"
+          echo "name=${base}-beta.personal.${run}" >> "$GITHUB_OUTPUT"
+          echo "code=$((run + 1000000))" >> "$GITHUB_OUTPUT"
+      - name: Build signed APKs
+        env:
+          NUVIO_PERSONAL_VERSION_NAME: ${{ steps.version.outputs.name }}
+          NUVIO_PERSONAL_VERSION_CODE: ${{ steps.version.outputs.code }}
+        run: ./gradlew :androidApp:assembleFullRelease --no-daemon
+      - name: Publish prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ steps.version.outputs.name }}
+        run: |
+          mapfile -t apks < <(find androidApp/build/outputs/apk -type f -name '*.apk' | sort)
+          test "${#apks[@]}" -gt 0
+          gh release create "personal-${VERSION_NAME}" "${apks[@]}" \
+            --repo "$GITHUB_REPOSITORY" \
+            --prerelease \
+            --title "Personal ${VERSION_NAME}" \
+            --notes "Signed personal update build."

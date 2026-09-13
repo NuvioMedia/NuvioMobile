@@ -133,7 +133,11 @@ private object AppUpdaterRepository {
         }
 
         val releases = appUpdaterJson.decodeFromString<List<GitHubReleaseDto>>(response.body)
-        val release = releases.firstOrNull { it.matchesRequestedChannel() && !it.draft && !it.prerelease }
+        val release = releases.firstOrNull {
+            it.matchesRequestedChannel() &&
+                !it.draft &&
+                (!it.prerelease || AppVersionConfig.PERSONAL_UPDATE_BUILD)
+        }
             ?: throw NoChannelReleaseException()
 
         val tag = release.tagName?.takeIf { it.isNotBlank() }
@@ -155,6 +159,9 @@ private object AppUpdaterRepository {
     }
 
     private fun GitHubReleaseDto.matchesRequestedChannel(): Boolean {
+        if (AppVersionConfig.PERSONAL_UPDATE_BUILD && prerelease) {
+            return true
+        }
         val channel = releaseChannelBranch
         if (targetCommitish?.trim()?.equals(channel, ignoreCase = true) == true) {
             return true
