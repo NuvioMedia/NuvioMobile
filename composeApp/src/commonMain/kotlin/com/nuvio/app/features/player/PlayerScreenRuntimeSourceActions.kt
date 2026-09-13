@@ -10,6 +10,8 @@ import com.nuvio.app.features.downloads.DownloadItem
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.p2p.P2pStreamingEngine
+import com.nuvio.app.features.player.skip.NextEpisodeInfo
+import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
@@ -390,6 +392,50 @@ internal fun PlayerScreenRuntime.playNextEpisode() {
             episodeStreamsPanelState = EpisodeStreamsPanelState(
                 showStreams = true,
                 selectedEpisode = nextVideo,
+            )
+            showEpisodesPanel = true
+        },
+        onSearchingChanged = { nextEpisodeAutoPlaySearching = it },
+        onSourceNameChanged = { nextEpisodeAutoPlaySourceName = it },
+        onCountdownChanged = { nextEpisodeAutoPlayCountdown = it },
+        onNextEpisodeCardVisibleChanged = { showNextEpisodeCard = it },
+    )?.let { job ->
+        nextEpisodeAutoPlayJob = job
+    }
+}
+
+/**
+ * Plays an episode selected outside the player UI through the same download,
+ * source resolution, and autoplay policy as next-episode playback.
+ */
+internal fun PlayerScreenRuntime.playEpisodeAtIndex(index: Int) {
+    val targetEpisode = PlayerNextEpisodeRules.resolvePlayableEpisodeAtIndex(playerMetaVideos, index) ?: return
+    scope.launchPlayerNextEpisodeAutoPlay(
+        previousJob = nextEpisodeAutoPlayJob,
+        nextEpisodeInfo = NextEpisodeInfo(
+            videoId = targetEpisode.id,
+            season = targetEpisode.season ?: return,
+            episode = targetEpisode.episode ?: return,
+            title = targetEpisode.title,
+            thumbnail = targetEpisode.thumbnail,
+            overview = targetEpisode.overview,
+            released = targetEpisode.released,
+            hasAired = true,
+            isWatched = false,
+            unairedMessage = null,
+        ),
+        allEpisodes = playerMetaVideos,
+        parentMetaId = parentMetaId,
+        parentMetaType = parentMetaType,
+        contentType = contentType,
+        settings = playerSettingsUiState,
+        currentStreamBingeGroup = currentStreamBingeGroup,
+        onDownloadedEpisodeSelected = { item, episode -> switchToDownloadedEpisode(item, episode) },
+        onEpisodeStreamSelected = { stream, episode -> switchToEpisodeStream(stream, episode) },
+        onManualSelectionRequired = { episode ->
+            episodeStreamsPanelState = EpisodeStreamsPanelState(
+                showStreams = true,
+                selectedEpisode = episode,
             )
             showEpisodesPanel = true
         },
