@@ -3,6 +3,7 @@ package com.nuvio.app.features.settings
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.lang_arabic
 import nuvio.composeapp.generated.resources.lang_bulgarian
+import nuvio.composeapp.generated.resources.lang_chinese
 import nuvio.composeapp.generated.resources.lang_chinese_simplified
 import nuvio.composeapp.generated.resources.lang_chinese_traditional
 import nuvio.composeapp.generated.resources.lang_czech
@@ -36,7 +37,7 @@ enum class AppLanguage(
     DEVICE("device", Res.string.settings_appearance_app_language_device),
     ARABIC("ar", Res.string.lang_arabic),
     BULGARIAN("bg", Res.string.lang_bulgarian),
-    CHINESE("zh", Res.string.lang_chinese_traditional),
+    CHINESE("zh", Res.string.lang_chinese),
     CHINESE_CHINA("zh-CN", Res.string.lang_chinese_simplified),
     CHINESE_TAIWAN("zh-TW", Res.string.lang_chinese_traditional),
     CZECH("cs", Res.string.lang_czech),
