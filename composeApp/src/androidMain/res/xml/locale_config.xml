@@ -22,6 +22,7 @@
     <locale android:name="nb"/>
 	<locale android:name="ja"/>
     <locale android:name="vi"/>
-	<locale android:name="zh-Hans"/>
-	<locale android:name="zh-Hant"/>
+	<locale android:name="zh"/>
+	<locale android:name="zh-CN"/>
+	<locale android:name="zh-TW"/>
 </locale-config>
