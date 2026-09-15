@@ -153,4 +153,39 @@ class StreamAutoPlaySmartSelectionTest {
         assertEquals(dv, selected)
     }
 
+    @Test
+    fun `preferred binge group cannot bypass regex filtering`() {
+        fun stream(name: String, resolution: String) = StreamItem(
+            name = name,
+            url = "https://cdn.example.com/$name.mkv",
+            addonName = "Test",
+            addonId = "addon.test",
+            behaviorHints = StreamBehaviorHints(bingeGroup = "same"),
+            clientResolve = StreamClientResolve(
+                stream = StreamClientResolveStream(
+                    raw = StreamClientResolveRaw(
+                        parsed = StreamClientResolveParsed(resolution = resolution),
+                    ),
+                ),
+            ),
+        )
+
+        val preferredButFilteredOut = stream("1080p Preferred", "1080p")
+        val regexMatch = stream("HDR 720p", "720p")
+
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(preferredButFilteredOut, regexMatch),
+            mode = StreamAutoPlayMode.REGEX_MATCH,
+            regexPattern = "HDR",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = emptySet(),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet(),
+            preferredBingeGroup = "same",
+            preferBingeGroupInSelection = true,
+        )
+
+        assertEquals(regexMatch, selected)
+    }
+
 }
