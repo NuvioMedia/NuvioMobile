@@ -113,13 +113,16 @@ object StreamAutoPlaySelector {
         } else {
             emptyList()
         }
-        val preferredReadyStream = SmartStreamSelector.rank(
-            bingeGroupCandidates.filter { stream ->
-                stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
-            },
-            rankingContext,
-        ).firstOrNull()
+
+        // bingeGroupOnly intentionally operates on the group before normal mode filtering,
+        // preserving the existing binge-group-only behavior.
         if (bingeGroupOnly) {
+            val preferredReadyStream = SmartStreamSelector.rank(
+                bingeGroupCandidates.filter { stream ->
+                    stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
+                },
+                rankingContext,
+            ).firstOrNull()
             val readyStreams = preferredReadyStream?.let(::listOf).orEmpty()
             return StreamAutoPlayEvaluation(
                 stream = preferredReadyStream,
@@ -133,6 +136,7 @@ object StreamAutoPlaySelector {
         if (mode == StreamAutoPlayMode.MANUAL) {
             return StreamAutoPlayEvaluation()
         }
+
         val matchingStreams = when (mode) {
             StreamAutoPlayMode.MANUAL -> emptyList()
             StreamAutoPlayMode.FIRST_STREAM -> candidateStreams
@@ -178,6 +182,20 @@ object StreamAutoPlaySelector {
                 }
             }
         }
+
+        // A preferred binge-group stream may only bypass the normal ranking. It must
+        // never bypass the user's explicit regex filter.
+        val preferredReadyStream = SmartStreamSelector.rank(
+            bingeGroupCandidates
+                .filter { stream ->
+                    stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
+                }
+                .filter { stream ->
+                    mode != StreamAutoPlayMode.REGEX_MATCH || stream in matchingStreams
+                },
+            rankingContext,
+        ).firstOrNull()
+
         if (matchingStreams.isEmpty() && preferredReadyStream == null) return StreamAutoPlayEvaluation()
 
         val rankedReadyStreams = SmartStreamSelector.rank(
