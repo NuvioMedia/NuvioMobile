@@ -166,6 +166,7 @@ internal fun PlayerScreenRuntime.switchToP2pSourceStream(stream: StreamItem) {
     }
     val currentPositionMs = playbackSnapshot.positionMs.coerceAtLeast(0L)
     flushWatchProgress()
+    resetPlaybackEndDetection()
     stopActiveP2pStream()
     saveP2pStreamForReuse(
         stream = stream,
@@ -209,6 +210,7 @@ internal fun PlayerScreenRuntime.switchToP2pEpisodeStream(
     }
     resetEpisodePanelAndNextEpisodeState()
     flushWatchProgress()
+    resetPlaybackEndDetection()
     stopActiveP2pStream()
     val epVideoId = episode.id
     val resume = resolveEpisodeResume(epVideoId, episode)
@@ -265,6 +267,7 @@ internal fun PlayerScreenRuntime.switchToSource(stream: StreamItem) {
     }
     val currentPositionMs = playbackSnapshot.positionMs.coerceAtLeast(0L)
     flushWatchProgress()
+    resetPlaybackEndDetection()
     stopActiveP2pStream()
     val currentVideoId = activeVideoId
     if (playerSettingsUiState.streamReuseLastLinkEnabled && currentVideoId != null) {
@@ -315,6 +318,7 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(stream: StreamItem, episo
     val url = stream.playableDirectUrl ?: return
     resetEpisodePanelAndNextEpisodeState()
     flushWatchProgress()
+    resetPlaybackEndDetection()
     stopActiveP2pStream()
     val epVideoId = episode.id
     val resume = resolveEpisodeResume(epVideoId, episode)
@@ -334,6 +338,7 @@ internal fun PlayerScreenRuntime.switchToDownloadedEpisode(downloadItem: Downloa
     val localFileUri = DownloadsRepository.playableLocalFileUri(downloadItem) ?: return
     resetEpisodePanelAndNextEpisodeState()
     flushWatchProgress()
+    resetPlaybackEndDetection()
     stopActiveP2pStream()
 
     val fallbackVideoId = buildPlaybackVideoId(

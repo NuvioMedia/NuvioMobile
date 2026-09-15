@@ -161,14 +161,24 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     }
                 },
                 onControllerReady = { controller ->
+                    resetPlaybackEndDetection()
                     playerController = controller
                     playerControllerSourceUrl = activeSourceUrl
                 },
                 onSnapshot = { snapshot ->
+                    if (!snapshot.isEnded && snapshot.durationMs > 0L) {
+                        mpvEofSeenClear = true
+                    }
                     playbackSnapshot = snapshot
                     refreshAudioTracksIfChanged()
                     if (!snapshot.isLoading) initialLoadCompleted = true
-                    if (snapshot.isEnded) {
+                    if (
+                        shouldTreatPlaybackAsNaturalEnd(
+                            isEnded = snapshot.isEnded,
+                            endDetectionArmed = endDetectionArmed,
+                            mpvEofSeenClear = mpvEofSeenClear,
+                        )
+                    ) {
                         shouldPlay = false
                         controlsVisible = !playerControlsLocked
                     }

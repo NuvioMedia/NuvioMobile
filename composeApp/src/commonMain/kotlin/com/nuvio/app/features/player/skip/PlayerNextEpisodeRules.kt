@@ -84,6 +84,33 @@ object PlayerNextEpisodeRules {
         }
     }
 
+    /**
+     * Returns true only after the current stream has reported a position that
+     * is clearly before its end and outside the next-episode window.
+     *
+     * MPV can briefly keep reporting the previous file's final position while
+     * a new episode is being loaded. End detection must not be armed from that
+     * stale reading.
+     */
+    fun isAwayFromEnd(
+        positionMs: Long,
+        durationMs: Long,
+        skipIntervals: List<SkipInterval>,
+        thresholdMode: NextEpisodeThresholdMode,
+        thresholdPercent: Float,
+        thresholdMinutesBeforeEnd: Float,
+    ): Boolean =
+        durationMs > 0L &&
+            positionMs < durationMs - NEAR_END_MS &&
+            !shouldShowNextEpisodeCard(
+                positionMs = positionMs,
+                durationMs = durationMs,
+                skipIntervals = skipIntervals,
+                thresholdMode = thresholdMode,
+                thresholdPercent = thresholdPercent,
+                thresholdMinutesBeforeEnd = thresholdMinutesBeforeEnd,
+            )
+
     fun hasEpisodeAired(raw: String?): Boolean {
         val value = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return true
         val dateStr = when {
@@ -111,6 +138,9 @@ object PlayerNextEpisodeRules {
     }
 
     val OUTRO_SEGMENT_TYPES = setOf("outro", "ed", "mixed-ed")
+
+    /** How close to the duration MPV treats as the end of the file. */
+    const val NEAR_END_MS = 500L
 }
 
 internal expect fun currentDateComponents(): DateComponents
