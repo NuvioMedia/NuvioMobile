@@ -141,6 +141,7 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.tag }}
       RELEASE_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
       RELEASE_KEYSTORE_BASE64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
 
@@ -181,7 +182,7 @@ jobs:
           done
 
       - name: Build full release APKs
-        run: ./gradlew :androidApp:assembleFullRelease --stacktrace
+        run: ./gradlew :androidApp:assembleFullRelease -Pnuvio.app.versionName="${RELEASE_VERSION}" --stacktrace
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v7
@@ -274,7 +275,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       RELEASE_MODE: ${{ inputs.mode }}
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+      RELEASE_VERSION: ${{ needs.prepare.outputs.tag }}
       RELEASE_BRANCH: ${{ github.ref_name }}
 
     steps:

@@ -34,6 +34,7 @@ internal object MetaDetailsParser {
             id = meta.requiredString("id"),
             type = meta.requiredString("type"),
             name = meta.requiredString("name"),
+            imdbId = meta.string("imdb_id"),
             poster = meta.string("poster"),
             background = meta.string("background"),
             logo = meta.string("logo"),
@@ -248,7 +249,7 @@ internal object MetaDetailsParser {
                 season = video.int("season"),
                 episode = video.int("episode"),
                 overview = video.string("overview") ?: video.string("description"),
-                runtime = video.int("runtime"),
+                runtime = parseRuntimeMinutes((video["runtime"] as? JsonPrimitive)?.contentOrNull),
                 rating = video.string("rating")?.trim()?.toDoubleOrNull()?.takeIf { it > 0.0 },
                 streams = video.embeddedStreams(),
             )

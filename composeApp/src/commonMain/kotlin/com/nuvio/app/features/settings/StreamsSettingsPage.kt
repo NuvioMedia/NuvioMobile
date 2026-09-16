@@ -3,7 +3,6 @@ package com.nuvio.app.features.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -637,33 +636,6 @@ private fun BadgePreviewDialog(
                     Text(text = stringResource(Res.string.action_close), maxLines = 1)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SettingsDialogSurface(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val tokens = MaterialTheme.nuvio
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = tokens.shapes.dialog,
-        color = tokens.colors.surfaceDialog,
-    ) {
-        Column(
-            modifier = Modifier.padding(tokens.spacing.dialogPadding),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                color = tokens.colors.textPrimary,
-                fontWeight = FontWeight.SemiBold,
-            )
-            content()
-            Spacer(modifier = Modifier.height(NuvioTokens.Space.s2))
         }
     }
 }

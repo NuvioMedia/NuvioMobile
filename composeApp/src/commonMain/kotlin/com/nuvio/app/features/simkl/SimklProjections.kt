@@ -269,22 +269,27 @@ internal fun SimklMedia.canonicalContentId(): String? =
  * don't have anime context (movies/shows always use the default chain).
  */
 internal fun SimklMedia.canonicalContentId(animeIdPreference: SimklAnimeIdPreference): String? {
-    // Try the preferred anime ID first when preference is not IMDB
-    when (animeIdPreference) {
-        SimklAnimeIdPreference.MAL -> {
-            ids.idValue("mal")?.takeIf(String::isNotBlank)?.let { return "mal:$it" }
-            ids.idValue("kitsu")?.takeIf(String::isNotBlank)?.let { return "kitsu:$it" }
-            ids.idValue("anidb")?.takeIf(String::isNotBlank)?.let { return "anidb:$it" }
+    val hasAnimeIds = !ids.idValue("mal").isNullOrBlank() ||
+        !ids.idValue("kitsu").isNullOrBlank() ||
+        !ids.idValue("anidb").isNullOrBlank()
+
+    if (hasAnimeIds) {
+        when (animeIdPreference) {
+            SimklAnimeIdPreference.MAL -> {
+                ids.idValue("mal")?.takeIf(String::isNotBlank)?.let { return "mal:$it" }
+                ids.idValue("kitsu")?.takeIf(String::isNotBlank)?.let { return "kitsu:$it" }
+                ids.idValue("anidb")?.takeIf(String::isNotBlank)?.let { return "anidb:$it" }
+            }
+            SimklAnimeIdPreference.KITSU -> {
+                ids.idValue("kitsu")?.takeIf(String::isNotBlank)?.let { return "kitsu:$it" }
+                ids.idValue("mal")?.takeIf(String::isNotBlank)?.let { return "mal:$it" }
+                ids.idValue("anidb")?.takeIf(String::isNotBlank)?.let { return "anidb:$it" }
+            }
+            SimklAnimeIdPreference.TVDB -> {
+                ids.idValue("tvdb")?.takeIf(String::isNotBlank)?.let { return "tvdb:$it" }
+            }
+            SimklAnimeIdPreference.IMDB -> Unit
         }
-        SimklAnimeIdPreference.KITSU -> {
-            ids.idValue("kitsu")?.takeIf(String::isNotBlank)?.let { return "kitsu:$it" }
-            ids.idValue("mal")?.takeIf(String::isNotBlank)?.let { return "mal:$it" }
-            ids.idValue("anidb")?.takeIf(String::isNotBlank)?.let { return "anidb:$it" }
-        }
-        SimklAnimeIdPreference.TVDB -> {
-            ids.idValue("tvdb")?.takeIf(String::isNotBlank)?.let { return "tvdb:$it" }
-        }
-        SimklAnimeIdPreference.IMDB -> Unit // fall through to standard chain
     }
     // Standard fallback chain
     return when {

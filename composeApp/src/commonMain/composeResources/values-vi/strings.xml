@@ -339,6 +339,9 @@
     <string name="compose_action_off">Tắt</string>
     <string name="compose_action_on">Bật</string>
     <string name="compose_action_pause">Tạm dừng</string>
+    <string name="trailer_enter_fullscreen">Mở toàn màn hình</string>
+    <string name="trailer_exit_fullscreen">Thoát toàn màn hình</string>
+    <string name="player_seek_position">Vị trí phát lại</string>
     <string name="compose_action_reload">Tải lại</string>
     <string name="compose_auth_already_have_account">Đã có tài khoản? </string>
     <string name="compose_auth_continue_without_account">Tiếp tục không cần tài khoản</string>
@@ -568,6 +571,10 @@
     <string name="settings_licenses_attributions_section_app">GIẤY PHÉP ỨNG DỤNG</string>
     <string name="settings_licenses_attributions_section_data">DỮ LIỆU &amp; DỊCH VỤ</string>
     <string name="settings_licenses_attributions_section_playback">GIẤY PHÉP PHÁT LẠI</string>
+    <string name="settings_licenses_attributions_section_ui">THƯ VIỆN GIAO DIỆN NGƯỜI DÙNG</string>
+    <string name="settings_licenses_attributions_haze_title">Haze 1.7.2</string>
+    <string name="settings_licenses_attributions_haze_body">Dùng cho hiệu ứng làm mờ ảnh nền. Được tạo bởi Chris Banes.</string>
+    <string name="settings_licenses_attributions_haze_license">Được cấp phép theo Giấy phép Apache, Phiên bản 2.0.</string>
     <string name="settings_licenses_attributions_nuvio_title">Nuvio Mobile</string>
     <string name="settings_licenses_attributions_nuvio_body">Mã nguồn và điều khoản cấp phép có trong kho lưu trữ của dự án</string>
     <string name="settings_licenses_attributions_nuvio_license">Cấp phép theo GNU General Public License v3.0</string>
@@ -669,6 +676,13 @@
     <string name="settings_appearance_app_language_sheet_title">Chọn ngôn ngữ</string>
     <string name="settings_appearance_nav_bar_style">Thanh điều hướng</string>
     <string name="settings_appearance_nav_bar_style_sheet_title">Kiểu thanh điều hướng</string>
+    <string name="settings_nav_bar_glow">Hiệu ứng vệt sáng mờ</string>
+    <string name="settings_nav_bar_glow_description">Thêm vệt sáng mờ quanh thanh điều hướng nổi.</string>
+    <string name="settings_nav_bar_glow_on">Bật phát sáng</string>
+    <string name="settings_nav_bar_glow_off">Tắt phát sáng</string>
+    <string name="settings_nav_bar_summary">%1$s · %2$s</string>
+    <string name="settings_nav_bar_preview_hint">Chạm vào thanh điều hướng để dùng thử. Cuộn phần xem trước để thử tự động thay đổi kích thước</string>
+    <string name="settings_nav_bar_preview_tap_hint">Chạm vào thanh điều hướng để dùng thử.</string>
     <string name="settings_nav_bar_style_adaptive">Tự thích ứng</string>
     <string name="settings_nav_bar_style_expanded">Luôn mở rộng</string>
     <string name="settings_nav_bar_style_compact">Luôn thu gọn</string>
@@ -800,6 +814,9 @@
     <string name="settings_continue_watching_use_episode_thumbnails_title">Ưu tiên ảnh thu nhỏ trong Tiếp tục xem</string>
     <string name="settings_content_discovery_section_home">TRANG CHỦ</string>
     <string name="settings_content_discovery_section_sources">NGUỒN</string>
+    <string name="settings_content_discovery_section_search">TÌM KIẾM</string>
+    <string name="settings_content_discovery_recent_searches">Các tìm kiếm gần đây</string>
+    <string name="settings_content_discovery_recent_searches_description">Lưu các tìm kiếm gần đây và hiển thị khi chọn vào thanh tìm kiếm.</string>
     <string name="settings_content_discovery_addons_description">Cài đặt, xóa, làm mới và sắp xếp các nguồn nội dung của bạn.</string>
     <string name="settings_content_discovery_addons_description_appstore">Thêm và quản lý các tiện ích bạn dùng với Nuvio.</string>
     <string name="settings_content_discovery_plugins_description">Cài đặt các kho lưu trữ trình thu thập dữ liệu bằng JavaScript và kiểm tra các nhà cung cấp nội bộ</string>
@@ -859,6 +876,8 @@
     <string name="settings_stream_addon_logo_title">Biểu tượng tiện ích</string>
     <string name="settings_stream_addon_logo_description">Hiển thị biểu tượng và tên tiện ích bên cạnh mỗi nguồn phát</string>
     <string name="settings_stream_display_section">HIỂN THỊ</string>
+    <string name="settings_stream_background_title">Ảnh nền</string>
+    <string name="settings_stream_background_description">Chọn ảnh nền cho màn hình luồng phát.</string>
     <string name="settings_stream_badge_position_title">Vị trí nhãn</string>
     <string name="settings_stream_badge_position_description">Chọn vị trí hiển thị nhãn Fusion và dung lượng xuất hiện phía trên hoặc phía dưới thẻ luồng.</string>
     <string name="settings_stream_badge_position_dialog_title">Vị trí nhãn</string>
@@ -1129,6 +1148,8 @@
     <string name="settings_playback_selected_count">Đã chọn %1$d</string>
     <string name="settings_playback_show_loading_overlay">Lớp phủ Đang tải</string>
     <string name="settings_playback_show_loading_overlay_description">Hiển thị màn hình tải đến khi khung hình video đầu tiên xuất hiện.</string>
+    <string name="settings_playback_pause_overlay">Lớp phủ Tạm dừng</string>
+    <string name="settings_playback_pause_overlay_description">Hiển thị lớp phủ chi tiết sau 5 giây khi đang tạm dừng.</string>
     <string name="settings_playback_parental_guide">Cảnh báo nội dung</string>
     <string name="settings_playback_parental_guide_description">Hiển thị lớp phủ khuyến cáo phụ huynh khi phát lại bắt đầu.</string>
     <string name="settings_playback_subtitle_background_color">Màu nền</string>
@@ -1258,6 +1279,8 @@
     <string name="settings_tracking_anime_id_mal_description">Mỗi mùa anime sẽ có một ID MAL riêng làm định danh chính.</string>
     <string name="settings_tracking_anime_id_kitsu">Ưu tiên Kitsu</string>
     <string name="settings_tracking_anime_id_kitsu_description">Mỗi mùa anime sẽ có một ID Kitsu riêng làm định danh chính.</string>
+    <string name="settings_tracking_anime_id_tvdb">Ưu tiên TVDB</string>
+    <string name="settings_tracking_anime_id_tvdb_description">Dùng ID TVDB để nhóm các mùa phim. Tùy chọn này ổn định hơn IMDb đối với anime bị IMDb tách riêng theo mùa.</string>
     <string name="settings_tracking_anime_section">Tính năng Simkl</string>
     <string name="settings_simkl_connect">Kết nối Simkl</string>
     <string name="settings_simkl_connected_as">Đã kết nối với %1$s</string>
@@ -1333,7 +1356,7 @@
     <string name="custom_theme_title">Dải màu chuyển tiếp tùy chỉnh của bạn</string>
     <string name="custom_theme_subtitle">Chọn 3 màu cho chủ đề của bạn. Chọn một màu để chỉnh sửa.</string>
     <string name="custom_theme_edit">Chỉnh sửa chủ đề tùy chỉnh</string>
-    <string name="custom_theme_solid_title">Màu tùy chỉnh của bạn</string>
+    <string name="custom_theme_solid_title">Màu tùy chỉnh</string>
     <string name="custom_theme_solid_subtitle">Chọn một màu cho chủ đề của bạn.</string>
     <string name="custom_theme_mode_gradient">Dải màu chuyển tiếp</string>
     <string name="custom_theme_mode_solid">Màu trơn</string>
@@ -1564,6 +1587,7 @@
     <string name="profile_use_primary_addons">Dùng tiện ích chính</string>
     <string name="profile_use_primary_addons_description">Dùng cấu hình tiện ích của hồ sơ chính thay vì quản lý riêng</string>
     <string name="profile_who_is_watching">Ai đang xem?</string>
+    <string name="profile_already_active">Bạn đang trong hồ sơ &quot;%1$s&quot;</string>
     <string name="provider_downloaded">Đã tải xuống</string>
     <string name="resume_prompt_action">Xem tiếp</string>
     <string name="streams_active_scrapers">Trình thu thập dữ liệu đang hoạt động</string>
@@ -1588,6 +1612,17 @@
     <string name="streams_loading_subtitles">Đang tải phụ đề từ tiện ích…</string>
     <string name="streams_loading_skip_segments">Đang tải các đoạn bỏ qua…</string>
     <string name="streams_finding_streams">Đang tìm luồng…</string>
+    <string name="playback_show_loading_status">Hiển thị trạng thái tải</string>
+    <string name="playback_show_loading_status_sub">Hiển thị tiến trình từng bước trong khi trình phát đang khởi tạo.</string>
+    <string name="player_loading_preparing">Đang chuẩn bị luồng phát…</string>
+    <string name="player_loading_subtitles">Đang tải phụ đề…</string>
+    <string name="player_loading_subtitles_from">Đang tải phụ đề từ %1$d tiện ích…</string>
+    <string name="player_loading_subtitles_progress">Đang tải phụ đề… (%1$d / %2$d)</string>
+    <string name="player_loading_subtitles_addon">Phụ đề: %1$s (%2$d / %3$d)</string>
+    <string name="player_loading_building">Đang khởi tạo trình phát…</string>
+    <string name="player_loading_starting">Bắt đầu phát…</string>
+    <string name="player_loading_buffering">Đang tải bộ đệm…</string>
+    <string name="debrid_resolving_stream">Đang phân giải luồng debrid</string>
     <string name="streams_link_copied">Đã sao chép liên kết luồng</string>
     <string name="streams_no_direct_link">Không có sẵn liên kết phát trực tiếp nào</string>
     <string name="streams_no_metadata">Không có thông tin</string>

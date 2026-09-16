@@ -14,6 +14,7 @@ object TmdbSettingsRepository {
     private var hasLoaded = false
 
     private var enabled = false
+    private var apiKey = ""
     private var language = "en"
     private var useTrailers = true
     private var useArtwork = true
@@ -42,12 +43,24 @@ object TmdbSettingsRepository {
         return _uiState.value
     }
 
+    fun effectiveApiKey(): String = snapshot().apiKey.ifBlank { TmdbConfig.API_KEY }
+
     fun setEnabled(value: Boolean) {
         ensureLoaded()
         if (enabled == value) return
         enabled = value
         publish()
         TmdbSettingsStorage.saveEnabled(value)
+    }
+
+    fun setApiKey(value: String) {
+        ensureLoaded()
+        val normalized = value.trim()
+        if (apiKey == normalized) return
+        apiKey = normalized
+        publish()
+        TmdbSettingsStorage.saveApiKey(normalized)
+        invalidateMetadata()
     }
 
     fun setLanguage(value: String) {
@@ -93,7 +106,7 @@ object TmdbSettingsRepository {
         useReleaseDates = value
         publish()
         TmdbSettingsStorage.saveUseReleaseDates(value)
-        invalidateReleaseDateMetadata()
+        invalidateMetadata()
     }
 
     fun setUseCredits(value: Boolean) = setBoolean(
@@ -160,9 +173,11 @@ object TmdbSettingsRepository {
 
     private fun loadFromDisk() {
         val wasLoaded = hasLoaded
+        val previousApiKey = apiKey
         val previousUseReleaseDates = useReleaseDates
         hasLoaded = true
         enabled = TmdbSettingsStorage.loadEnabled() ?: false
+        apiKey = TmdbSettingsStorage.loadApiKey()?.trim().orEmpty()
         val storedLanguage = TmdbSettingsStorage.loadLanguage()
         language = if (storedLanguage == null) "en" else normalizeLanguage(storedLanguage)
         useTrailers = TmdbSettingsStorage.loadUseTrailers() ?: true
@@ -178,14 +193,15 @@ object TmdbSettingsRepository {
         useMoreLikeThis = TmdbSettingsStorage.loadUseMoreLikeThis() ?: true
         useCollections = TmdbSettingsStorage.loadUseCollections() ?: true
         publish()
-        if (wasLoaded && previousUseReleaseDates != useReleaseDates) {
-            invalidateReleaseDateMetadata()
+        if (wasLoaded && (previousApiKey != apiKey || previousUseReleaseDates != useReleaseDates)) {
+            invalidateMetadata()
         }
     }
 
     private fun publish() {
         _uiState.value = TmdbSettings(
             enabled = enabled,
+            apiKey = apiKey,
             language = language,
             useTrailers = useTrailers,
             useArtwork = useArtwork,
@@ -202,7 +218,7 @@ object TmdbSettingsRepository {
         )
     }
 
-    private fun invalidateReleaseDateMetadata() {
+    private fun invalidateMetadata() {
         MetaDetailsRepository.clear()
         ContinueWatchingEnrichmentCache.clearAll(ProfileRepository.activeProfileId)
     }

@@ -24,6 +24,8 @@ import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 import com.nuvio.app.features.tmdb.normalizeLanguage
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_save
+import nuvio.composeapp.generated.resources.settings_tmdb_api_key_label
+import nuvio.composeapp.generated.resources.settings_tmdb_api_key_override_description
 import nuvio.composeapp.generated.resources.settings_tmdb_enable_enrichment
 import nuvio.composeapp.generated.resources.settings_tmdb_enable_enrichment_description
 import nuvio.composeapp.generated.resources.settings_tmdb_language_code_label
@@ -51,6 +53,7 @@ import nuvio.composeapp.generated.resources.settings_tmdb_module_season_posters
 import nuvio.composeapp.generated.resources.settings_tmdb_module_season_posters_description
 import nuvio.composeapp.generated.resources.settings_tmdb_module_trailers
 import nuvio.composeapp.generated.resources.settings_tmdb_module_trailers_description
+import nuvio.composeapp.generated.resources.settings_tmdb_personal_api_key
 import nuvio.composeapp.generated.resources.settings_tmdb_preferred_language
 import nuvio.composeapp.generated.resources.settings_tmdb_preferred_language_description
 import nuvio.composeapp.generated.resources.settings_tmdb_section_localization
@@ -76,6 +79,12 @@ internal fun LazyListScope.tmdbSettingsContent(
                     checked = settings.enabled,
                     isTablet = isTablet,
                     onCheckedChange = TmdbSettingsRepository::setEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                TmdbApiKeyRow(
+                    isTablet = isTablet,
+                    value = settings.apiKey,
+                    onApiKeyCommitted = TmdbSettingsRepository::setApiKey,
                 )
             }
         }
@@ -211,6 +220,52 @@ internal fun LazyListScope.tmdbSettingsContent(
                     onCheckedChange = TmdbSettingsRepository::setUseCollections,
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun TmdbApiKeyRow(
+    isTablet: Boolean,
+    value: String,
+    onApiKeyCommitted: (String) -> Unit,
+) {
+    var draft by rememberSaveable(value) { mutableStateOf(value) }
+    val normalizedDraft = draft.trim()
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = if (isTablet) 20.dp else 16.dp, vertical = if (isTablet) 16.dp else 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(
+                text = stringResource(Res.string.settings_tmdb_personal_api_key),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Medium,
+            )
+            Text(
+                text = stringResource(Res.string.settings_tmdb_api_key_override_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        SettingsSecretTextField(
+            value = draft,
+            onValueChange = { draft = it },
+            modifier = Modifier.fillMaxWidth(),
+            label = stringResource(Res.string.settings_tmdb_api_key_label),
+        )
+        Button(
+            onClick = {
+                draft = normalizedDraft
+                onApiKeyCommitted(normalizedDraft)
+            },
+            enabled = normalizedDraft != value,
+        ) {
+            Text(stringResource(Res.string.action_save))
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.nuvio.app.features.mdblist
 
 import co.touchlab.kermit.Logger
+import com.nuvio.app.features.addons.httpGetText
 import com.nuvio.app.features.addons.httpPostJson
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaExternalRating
@@ -49,7 +50,7 @@ object MdbListMetadataService {
         if (!settings.enabled) return false
         if (settings.apiKey.trim().isBlank()) return false
         if (settings.enabledProvidersInPriorityOrder().isEmpty()) return false
-        return extractImdbId(meta.id) != null || extractImdbId(fallbackItemId) != null
+        return extractImdbId(meta.id) != null || extractImdbId(fallbackItemId) != null || extractImdbId(meta.imdbId) != null
     }
 
     suspend fun enrichMeta(
@@ -64,6 +65,7 @@ object MdbListMetadataService {
 
         val imdbId = extractImdbId(meta.id)
             ?: extractImdbId(fallbackItemId)
+            ?: extractImdbId(meta.imdbId)
             ?: return meta.copy(externalRatings = emptyList())
         val mediaType = toMdbListMediaType(meta.type)
         val enabledProviders = settings.enabledProvidersInPriorityOrder()
@@ -92,8 +94,17 @@ object MdbListMetadataService {
         ratingsCache[cacheKey]?.let { return@withContext it }
 
         val ratings = coroutineScope {
+            val rottenTomatoesRatings = if (providers.any { it == PROVIDER_TOMATOES || it == PROVIDER_AUDIENCE }) {
+                async { fetchRottenTomatoesRatings(imdbId, mediaType, apiKey) }
+            } else {
+                null
+            }
             providers.map { providerId ->
                 async {
+                    if (providerId == PROVIDER_TOMATOES || providerId == PROVIDER_AUDIENCE) {
+                        rottenTomatoesRatings?.await()?.firstOrNull { it.source == providerId }
+                            ?.let { return@async it }
+                    }
                     fetchProviderRating(
                         imdbId = imdbId,
                         mediaType = mediaType,
@@ -106,6 +117,20 @@ object MdbListMetadataService {
 
         ratingsCache[cacheKey] = ratings
         ratings
+    }
+
+    private suspend fun fetchRottenTomatoesRatings(
+        imdbId: String,
+        mediaType: String,
+        apiKey: String,
+    ): List<MetaExternalRating> {
+        val url = "https://api.mdblist.com/imdb/$mediaType/$imdbId?apikey=$apiKey&append_to_response=keyword"
+        return runCatching {
+            parseRottenTomatoesRatings(httpGetText(url))
+        }.onFailure { error ->
+            if (error is CancellationException) throw error
+            log.w { "MDBList Rotten Tomatoes request failed for $imdbId: ${error.message}" }
+        }.getOrDefault(emptyList())
     }
 
     private suspend fun fetchProviderRating(

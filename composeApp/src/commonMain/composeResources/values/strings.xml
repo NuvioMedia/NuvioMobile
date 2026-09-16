@@ -1200,6 +1200,9 @@
     <string name="settings_playback_timeout_unlimited">Unlimited</string>
     <string name="settings_playback_tunneled_playback">Tunneled Playback</string>
     <string name="settings_playback_tunneled_playback_description">Hardware-level audio/video sync. May improve playback on some Android TV devices</string>
+    <string name="settings_tmdb_api_key_label">API key</string>
+    <string name="settings_tmdb_api_key_override_description">Use your own TMDB API key, or leave blank to use the default.</string>
+    <string name="settings_tmdb_personal_api_key">Personal API key</string>
     <string name="settings_tmdb_enable_enrichment">Enable TMDB Enrichment</string>
     <string name="settings_tmdb_enable_enrichment_description">Use TMDB as a metadata source to enhance addon data</string>
     <string name="settings_tmdb_language_code_label">Language code</string>
@@ -2215,6 +2218,13 @@
     <string name="updates_empty_download_body">Empty download body</string>
     <string name="updates_github_api_error">GitHub releases API error: %1$d</string>
     <string name="updates_no_channel_release">No update has been published yet.</string>
+    <string name="updates_channel_title">Update channel</string>
+    <string name="updates_channel_description">Choose the type of app updates to receive</string>
+    <string name="updates_channel_stable">Stable</string>
+    <string name="updates_channel_beta">Beta</string>
+    <string name="updates_channel_stable_description">Intended for everyday use.</string>
+    <string name="updates_channel_beta_description">Early updates that may contain bugs, break features, or behave unexpectedly.</string>
+    <string name="updates_waiting_for_stable">You’ll receive the next stable release when it becomes available</string>
     <string name="updates_release_missing_title">Release has no tag or name</string>
     <!-- Continue Watching air date display -->
     <string name="cw_airs_date">Airs %1$s</string>

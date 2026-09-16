@@ -520,3 +520,30 @@ internal fun HomescreenCatalogRow(
         }
     }
 }
+
+@Composable
+internal fun SettingsDialogSurface(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = tokens.shapes.dialog,
+        color = tokens.colors.surfaceDialog,
+    ) {
+        Column(
+            modifier = Modifier.padding(tokens.spacing.dialogPadding),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleLarge,
+                color = tokens.colors.textPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+            content()
+            Spacer(modifier = Modifier.height(NuvioTokens.Space.s2))
+        }
+    }
+}
