@@ -20,6 +20,26 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.4.21",
+          "buildVersion": "126",
+          "date": "2026-09-15T10:29:28Z",
+          "localizedDescription": "- 24c08216 fix(home): match continue watching badge colors to tv @tapframe  \n- 73005d99 perf(navigation): reduce root tab switch stalls @tapframe  \n- [Add TVDB anime ID preference to avoid per-season IMDB splits (#1952)](https://github.com/NuvioMedia/NuvioMobile/pull/1952) @skoruppa  \n- f6d172ae Revert \"perf(navigation): reduce tab switch animation stalls\" @tapframe  \n- 33edb559 fix(player): keep android landscape lock during exit @tapframe  \n- 6761ebab fix(profiles): add active profile toast and back button @tapframe  \n- 51951059 fix(profiles): prevent selecting the active profile @tapframe  \n- 998a9bfb fix(player): hide addons with no streams @tapframe  \n- [fix(player): start playback without waiting for addon subtitles (#1949)](https://github.com/NuvioMedia/NuvioMobile/pull/1949) @halibiram  \n- 7a0e80b0 fix(trailer): open ios playback in fullscreen @tapframe  \n- [Fix anime skip mapping, subtitle language detection, watched badges and Polish translations (#1943)](https://github.com/NuvioMedia/NuvioMobile/pull/1943) @skoruppa  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.21/nuvio-0.4.21-full-release.ipa",
+          "size": 51231186,
+          "sha256": "118eb04f4a945cf8da9e4bbc03969ee360c0e47b7a62d1ade7967d86ad75870e",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.20",
+          "buildVersion": "125",
+          "date": "2026-09-14T08:44:41Z",
+          "localizedDescription": "- 50d39823 feat(streams): add mobile background selection @tapframe  \n- 36d36dba fix(player): center loading title and logo @tapframe  \n- 728349b1 feat(player): dismiss next episode prompt with a right swipe @tapframe  \n- c9f12a70 fix(details): match toggle styles and remove duplicate season headings @tapframe  \n- 08d76308 fix(library): sync title logo @tapframe  \n- 96786c18 fix(details): use localized landscape backdrops @tapframe  \n- 902e0917 feat(trailer): add fullscreen playback @tapframe  \n- a3f87b24 perf(navigation): reduce tab switch animation stalls @tapframe  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.20/nuvio-0.4.20-full-release.ipa",
+          "size": 51167786,
+          "sha256": "5c48df020b647bd1d08f384278578a204002d37aa0a3a7a8025bab91ffa002d8",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.4.19",
           "buildVersion": "124",
           "date": "2026-09-13T19:40:06Z",

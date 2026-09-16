@@ -17,6 +17,10 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -36,6 +40,36 @@ object TmdbMetadataService {
     private val entityBrowseCache = mutableMapOf<String, TmdbEntityBrowseData>()
     private val entityHeaderCache = mutableMapOf<String, TmdbEntityHeader>()
     private val entityRailCache = mutableMapOf<String, List<MetaPreview>>()
+    private val backdropCache = linkedMapOf<String, String?>()
+    private val backdropCacheMutex = Mutex()
+    private val backdropRequests = Semaphore(4)
+
+    suspend fun fetchLocalizedBackdrop(id: String, type: String, language: String): String? =
+        withContext(Dispatchers.Default) {
+            val mediaType = TmdbService.normalizeMediaType(type)
+            if (mediaType != "movie" && mediaType != "tv") return@withContext null
+            val normalizedLanguage = normalizeTmdbLanguage(language)
+            backdropRequests.withPermit {
+                val tmdbId = TmdbService.ensureTmdbId(id, mediaType) ?: return@withPermit null
+                val cacheKey = "$tmdbId:$mediaType:$normalizedLanguage"
+                backdropCacheMutex.withLock {
+                    if (backdropCache.containsKey(cacheKey)) return@withPermit backdropCache[cacheKey]
+                }
+                val images = fetch<TmdbImagesResponse>(
+                    endpoint = "$mediaType/$tmdbId/images",
+                    query = mapOf("include_image_language" to tmdbImageLanguages(normalizedLanguage)),
+                ) ?: return@withPermit null
+                val backdrop = buildImageUrl(
+                    images.backdrops.selectBestLocalizedImagePath(normalizedLanguage),
+                    "w1280",
+                )
+                backdropCacheMutex.withLock {
+                    backdropCache[cacheKey] = backdrop
+                    if (backdropCache.size > 256) backdropCache.remove(backdropCache.keys.first())
+                }
+                backdrop
+            }
+        }
 
     suspend fun fetchPersonDetail(
         personId: Int,
@@ -893,12 +927,7 @@ object TmdbMetadataService {
         enrichmentCache[cacheKey]?.let { return@withContext it }
 
         val numericId = tmdbId.toIntOrNull() ?: return@withContext null
-        val includeImageLanguage = buildString {
-            append(normalizedLanguage.substringBefore("-"))
-            append(",")
-            append(normalizedLanguage)
-            append(",en,null")
-        }
+        val includeImageLanguage = tmdbImageLanguages(normalizedLanguage)
 
         val response = coroutineScope {
             val details = async {
@@ -1742,25 +1771,6 @@ private fun buildImageUrl(path: String?, size: String): String? {
     return "https://image.tmdb.org/t/p/$size$clean"
 }
 
-private fun List<TmdbImage>.selectBestLocalizedImagePath(normalizedLanguage: String): String? {
-    if (isEmpty()) return null
-    val languageCode = normalizedLanguage.substringBefore("-")
-    val regionCode = normalizedLanguage.substringAfter("-", "").uppercase().takeIf { it.length == 2 }
-        ?: defaultLanguageRegions[languageCode]
-    return sortedWith(
-        compareByDescending<TmdbImage> { it.iso6391 == languageCode && it.iso31661 == regionCode }
-            .thenByDescending { it.iso6391 == languageCode && it.iso31661 == null }
-            .thenByDescending { it.iso6391 == languageCode }
-            .thenByDescending { it.iso6391 == "en" }
-            .thenByDescending { it.iso6391 == null },
-    ).firstOrNull()?.filePath
-}
-
-private val defaultLanguageRegions = mapOf(
-    "pt" to "PT",
-    "es" to "ES",
-)
-
 private fun Double.formatRating(): String =
     if (this == 0.0) {
         "0.0"
@@ -1983,18 +1993,6 @@ private data class TmdbCrewMember(
     @SerialName("original_name") val originalName: String? = null,
     val job: String? = null,
     @SerialName("profile_path") val profilePath: String? = null,
-)
-
-@Serializable
-private data class TmdbImagesResponse(
-    val logos: List<TmdbImage> = emptyList(),
-)
-
-@Serializable
-private data class TmdbImage(
-    @SerialName("file_path") val filePath: String? = null,
-    @SerialName("iso_639_1") val iso6391: String? = null,
-    @SerialName("iso_3166_1") val iso31661: String? = null,
 )
 
 @Serializable

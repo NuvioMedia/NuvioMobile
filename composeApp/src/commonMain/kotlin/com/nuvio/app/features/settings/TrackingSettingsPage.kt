@@ -66,6 +66,8 @@ import nuvio.composeapp.generated.resources.settings_tracking_anime_id_imdb
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_imdb_description
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_kitsu
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_kitsu_description
+import nuvio.composeapp.generated.resources.settings_tracking_anime_id_tvdb
+import nuvio.composeapp.generated.resources.settings_tracking_anime_id_tvdb_description
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_mal
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_mal_description
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_subtitle
@@ -632,6 +634,11 @@ private fun animeIdPreferenceOptions(): List<TrackingPickerOption<SimklAnimeIdPr
         title = stringResource(Res.string.settings_tracking_anime_id_kitsu),
         description = stringResource(Res.string.settings_tracking_anime_id_kitsu_description),
     ),
+    TrackingPickerOption(
+        value = SimklAnimeIdPreference.TVDB,
+        title = stringResource(Res.string.settings_tracking_anime_id_tvdb),
+        description = stringResource(Res.string.settings_tracking_anime_id_tvdb_description),
+    ),
 )
 
 @Composable
@@ -639,4 +646,5 @@ private fun animeIdPreferenceLabel(preference: SimklAnimeIdPreference): String =
     SimklAnimeIdPreference.IMDB -> stringResource(Res.string.settings_tracking_anime_id_imdb)
     SimklAnimeIdPreference.MAL -> stringResource(Res.string.settings_tracking_anime_id_mal)
     SimklAnimeIdPreference.KITSU -> stringResource(Res.string.settings_tracking_anime_id_kitsu)
+    SimklAnimeIdPreference.TVDB -> stringResource(Res.string.settings_tracking_anime_id_tvdb)
 }

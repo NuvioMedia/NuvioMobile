@@ -199,17 +199,18 @@ fun DetailSeriesContent(
                 },
                 label = "season_episodes",
             ) { seasonForContent ->
-                val sectionTitle = if (meta.type != "series" && seasons.size == 1 && seasonForContent <= 0) {
-                    stringResource(Res.string.details_videos)
-                } else {
-                    seasonForContent.label()
-                }
                 Column(
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    DetailSectionTitle(
-                        title = sectionTitle,
-                    )
+                    if (seasons.size == 1) {
+                        DetailSectionTitle(
+                            title = if (meta.type != "series" && seasonForContent <= 0) {
+                                stringResource(Res.string.details_videos)
+                            } else {
+                                seasonForContent.label()
+                            },
+                        )
+                    }
                     val seasonEpisodes = groupedEpisodes.getValue(seasonForContent)
                     if (episodeCardStyle == MetaEpisodeCardStyle.Horizontal) {
                         EpisodeHorizontalRow(
@@ -292,13 +293,15 @@ internal fun DetailSeriesListHeader(
                 onSelect = onSeasonSelect,
                 onLongPress = onSeasonLongPress,
             )
-            DetailSectionTitle(
-                title = if (meta.type != "series" && seasons.size == 1 && currentSeason <= 0) {
-                    stringResource(Res.string.details_videos)
-                } else {
-                    currentSeason.label()
-                },
-            )
+            if (seasons.size == 1) {
+                DetailSectionTitle(
+                    title = if (meta.type != "series" && currentSeason <= 0) {
+                        stringResource(Res.string.details_videos)
+                    } else {
+                        currentSeason.label()
+                    },
+                )
+            }
         }
     }
 }
@@ -446,16 +449,10 @@ private fun SeasonViewModeToggle(
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(
-                if (isPosters) {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
-                },
-            )
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
             .border(
                 width = 1.dp,
-                color = Color.White.copy(alpha = if (isPosters) 0.2f else 0.3f),
+                color = Color.White.copy(alpha = 0.2f),
                 shape = RoundedCornerShape(8.dp),
             )
             .clickable(onClick = onClick)
@@ -472,11 +469,7 @@ private fun SeasonViewModeToggle(
                 fontSize = sizing.seasonToggleTextSize,
                 fontWeight = FontWeight.SemiBold,
             ),
-            color = if (isPosters) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.onBackground
-            },
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }

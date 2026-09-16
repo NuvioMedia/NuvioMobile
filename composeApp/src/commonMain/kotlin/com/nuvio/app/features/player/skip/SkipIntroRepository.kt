@@ -29,15 +29,25 @@ object SkipIntroRepository {
         val introDbDeferred = async {
             if (introDbConfigured) fetchFromIntroDb(imdbId, season, episode) else emptyList()
         }
-        val simklIdsDeferred = async { SimklIdResolver.resolveIds("imdb", imdbId) }
+        // Resolve IMDB -> season-specific MAL/AniList via Simkl full_anime_seasons
+        val simklIdsDeferred = async { SimklIdResolver.resolveIdsForImdbEpisode(imdbId, season, episode) }
         val simklIds = simklIdsDeferred.await()
         val malId = simklIds?.mal
         val anilistId = simklIds?.anilist
+
+        // Remap the TVDB episode number to the anime-entry-local episode number.
+        val animeEpisode = if (simklIds != null) {
+            val mapping = SimklIdResolver.getEpisodeMapping(simklIds.simklId, simklIds.type)
+            mapping.firstOrNull { it.tvdbSeason == season && it.tvdbEpisode == episode }
+                ?.animeEpisode
+                ?: episode
+        } else episode
+
         val aniSkipDeferred = async {
-            if (malId != null) fetchFromAniSkip(malId, episode) else emptyList()
+            if (malId != null) fetchFromAniSkip(malId, animeEpisode) else emptyList()
         }
         val animeSkipDeferred = async {
-            if (anilistId != null) fetchFromAnimeSkip(anilistId, episode, season = null) else emptyList()
+            if (anilistId != null) fetchFromAnimeSkip(anilistId, animeEpisode, season = null) else emptyList()
         }
 
         return@coroutineScope mergeByPriority(

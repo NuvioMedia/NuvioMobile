@@ -5,6 +5,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import platform.Foundation.NSNotificationCenter
 import platform.MediaPlayer.MPVolumeView
 import platform.UIKit.UIApplication
@@ -37,6 +39,19 @@ actual fun LockPlayerToLandscape() {
             }
         }
     }
+}
+
+@Composable
+actual fun FullscreenPlayerDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            usePlatformInsets = false,
+            useSoftwareKeyboardInset = false,
+        ),
+        content = content,
+    )
 }
 
 @Composable

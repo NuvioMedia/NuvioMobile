@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.MaterialTheme
@@ -97,9 +96,10 @@ internal fun LazyListScope.discoverContent(
         }
 
         else -> {
-            items(state.items.chunked(columns)) { rowItems ->
+            items(count = (state.items.size + columns - 1) / columns) { rowIndex ->
+                val firstIndex = rowIndex * columns
                 PosterGridRow(
-                    items = rowItems,
+                    items = state.items.subList(firstIndex, minOf(firstIndex + columns, state.items.size)),
                     columns = columns,
                     modifier = Modifier.padding(horizontal = 16.dp),
                     watchedKeys = watchedKeys,

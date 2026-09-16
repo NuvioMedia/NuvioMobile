@@ -339,6 +339,9 @@
     <string name="compose_action_off">Off</string>
     <string name="compose_action_on">On</string>
     <string name="compose_action_pause">Pause</string>
+    <string name="trailer_enter_fullscreen">Enter fullscreen</string>
+    <string name="trailer_exit_fullscreen">Exit fullscreen</string>
+    <string name="player_seek_position">Playback position</string>
     <string name="compose_action_reload">Reload</string>
     <string name="compose_auth_already_have_account">Already have an account? </string>
     <string name="compose_auth_continue_without_account">Continue Without Account</string>
@@ -873,6 +876,8 @@
     <string name="settings_stream_addon_logo_title">Addon logo</string>
     <string name="settings_stream_addon_logo_description">Show addon logo and name next to stream sources.</string>
     <string name="settings_stream_display_section">DISPLAY</string>
+    <string name="settings_stream_background_title">Background</string>
+    <string name="settings_stream_background_description">Choose the background for the streams screen.</string>
     <string name="settings_stream_badge_position_title">Badge position</string>
     <string name="settings_stream_badge_position_description">Choose whether Fusion and size badges appear above or below stream cards.</string>
     <string name="settings_stream_badge_position_dialog_title">Badge position</string>
@@ -1274,6 +1279,8 @@
     <string name="settings_tracking_anime_id_mal_description">Each anime season gets its own MAL ID as the primary identifier.</string>
     <string name="settings_tracking_anime_id_kitsu">Prefer Kitsu</string>
     <string name="settings_tracking_anime_id_kitsu_description">Each anime season gets its own Kitsu ID as the primary identifier.</string>
+    <string name="settings_tracking_anime_id_tvdb">Prefer TVDB</string>
+    <string name="settings_tracking_anime_id_tvdb_description">Use TVDB ID to group seasons. More stable than IMDB for anime with per-season IMDB splits.</string>
     <string name="settings_tracking_anime_section">Simkl features</string>
     <string name="settings_simkl_connect">Connect Simkl</string>
     <string name="settings_simkl_connected_as">Connected as %1$s</string>
@@ -1580,6 +1587,7 @@
     <string name="profile_use_primary_addons">Use Primary Addons</string>
     <string name="profile_use_primary_addons_description">Share the main profile's addon setup instead of managing a separate list.</string>
     <string name="profile_who_is_watching">Who&apos;s watching?</string>
+    <string name="profile_already_active">You&apos;re already on &quot;%1$s&quot;</string>
     <string name="provider_downloaded">Downloaded</string>
     <string name="resume_prompt_action">Resume</string>
     <string name="streams_active_scrapers">Active scrapers</string>

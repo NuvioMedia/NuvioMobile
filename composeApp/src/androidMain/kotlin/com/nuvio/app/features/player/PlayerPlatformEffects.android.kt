@@ -18,6 +18,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.app.PictureInPictureModeChangedInfo
 import androidx.core.util.Consumer
 import androidx.core.view.WindowCompat
@@ -41,11 +45,23 @@ actual fun LockPlayerToLandscape() {
 }
 
 @Composable
+actual fun FullscreenPlayerDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        HidePlayerSystemBars()
+        content()
+    }
+}
+
+@Composable
 actual fun HidePlayerSystemBars() {
     val activity = LocalContext.current.findActivity() ?: return
+    val view = LocalView.current
+    val window = (view.parent as? DialogWindowProvider)?.window ?: activity.window
 
-    DisposableEffect(activity) {
-        val window = activity.window
+    DisposableEffect(window) {
         val controller = WindowCompat.getInsetsController(window, window.decorView)
         val previousBehavior = controller.systemBarsBehavior
 

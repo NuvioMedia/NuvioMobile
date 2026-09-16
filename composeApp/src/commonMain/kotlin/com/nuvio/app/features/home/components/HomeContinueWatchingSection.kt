@@ -25,7 +25,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -677,11 +676,7 @@ private fun ContinueWatchingCard(
     val episodeTitle = item.episodeTitle?.trim()?.takeIf { it.isNotBlank() } ?: airDateText
     val badgeText = continueWatchingCardBadgeText(item = item, airDateText = airDateText)
     val backgroundColor = MaterialTheme.colorScheme.background
-    val badgeBackground = when {
-        item.isNewSeasonRelease -> ContinueWatchingNewSeasonBadgeColor
-        item.isReleaseAlert -> ContinueWatchingNewEpisodeBadgeColor
-        else -> backgroundColor.copy(alpha = 0.80f)
-    }
+    val badgeBackground = continueWatchingBadgeBackground(item)
 
     Box(
         modifier = Modifier
@@ -788,7 +783,7 @@ private fun ContinueWatchingCard(
                     fontSize = cardMetrics.badgeTextSize,
                     fontWeight = FontWeight.SemiBold,
                 ),
-                color = MaterialTheme.colorScheme.onBackground,
+                color = Color.White,
                 maxLines = 1,
             )
         }
@@ -932,7 +927,7 @@ private fun ContinueWatchingWideCard(
                                     ?: stringResource(Res.string.home_continue_watching_up_next)
                             }
                         }
-                        UpNextBadge(text = badgeText, compact = isCompact, textSize = layout.wideBadgeTextSize)
+                        UpNextBadge(item = item, text = badgeText, compact = isCompact, textSize = layout.wideBadgeTextSize)
                     }
                 }
                 Text(
@@ -1049,7 +1044,7 @@ private fun ContinueWatchingPosterCard(
                                 ?: stringResource(Res.string.home_continue_watching_up_next)
                         }
                     }
-                    UpNextBadge(text = badgeText, compact = true, textSize = layout.posterBadgeTextSize)
+                    UpNextBadge(item = item, text = badgeText, compact = true, textSize = layout.posterBadgeTextSize)
                 }
             }
             if (item.progressFraction > 0f) {
@@ -1142,18 +1137,23 @@ private fun ArtworkPanel(
 }
 
 @Composable
+private fun continueWatchingBadgeBackground(item: ContinueWatchingItem): Color = when {
+    item.isNewSeasonRelease -> ContinueWatchingNewSeasonBadgeColor
+    item.isReleaseAlert -> ContinueWatchingNewEpisodeBadgeColor
+    else -> MaterialTheme.colorScheme.background.copy(alpha = 0.80f)
+}
+
+@Composable
 private fun UpNextBadge(
+    item: ContinueWatchingItem,
     text: String,
     compact: Boolean,
     textSize: androidx.compose.ui.unit.TextUnit,
 ) {
-    val chipColor = MaterialTheme.colorScheme.primary
-    val chipTextColor = contentColorFor(chipColor)
-
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(if (compact) 4.dp else 12.dp))
-            .background(chipColor)
+            .background(continueWatchingBadgeBackground(item))
             .padding(
                 horizontal = if (compact) 6.dp else 8.dp,
                 vertical = if (compact) 3.dp else 4.dp,
@@ -1165,7 +1165,7 @@ private fun UpNextBadge(
                 fontSize = textSize,
                 fontWeight = FontWeight.Bold,
             ),
-            color = chipTextColor,
+            color = Color.White,
             maxLines = 1,
         )
     }

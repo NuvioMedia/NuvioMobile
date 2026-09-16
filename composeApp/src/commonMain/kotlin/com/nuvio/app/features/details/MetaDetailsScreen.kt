@@ -1044,6 +1044,7 @@ fun MetaDetailsScreen(
                                         heroTrailerReady = heroTrailerReady,
                                         heroTrailerPlayWhenReady = {
                                             heroTrailerSourceUrl != null &&
+                                                selectedTrailer == null &&
                                                 !isLeavingDetails &&
                                                 !isHeroCollapsed.value
                                         },
@@ -1142,6 +1143,7 @@ fun MetaDetailsScreen(
                                     onTrailerClick = resolveTrailer,
                                     progressByVideoId = progressByVideoId,
                                     watchedKeys = watchedUiState.watchedKeys,
+                                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
                                     blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
                                     onEpisodeClick = onEpisodePlayClick,
                                     onEpisodeLongPress = { video ->
@@ -1797,6 +1799,7 @@ private fun LazyListScope.configuredMetaSectionItems(
     onTrailerClick: (MetaTrailer) -> Unit,
     progressByVideoId: Map<String, WatchProgressEntry>,
     watchedKeys: Set<String>,
+    fullyWatchedSeriesKeys: Set<String> = emptySet(),
     blurUnwatchedEpisodes: Boolean,
     onEpisodeClick: (MetaVideo) -> Unit,
     onEpisodeLongPress: (MetaVideo) -> Unit,
@@ -1874,6 +1877,7 @@ private fun LazyListScope.configuredMetaSectionItems(
                     onTrailerClick = onTrailerClick,
                     progressByVideoId = progressByVideoId,
                     watchedKeys = watchedKeys,
+                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
                     blurUnwatchedEpisodes = blurUnwatchedEpisodes,
                     onEpisodeClick = onEpisodeClick,
                     onEpisodeLongPress = onEpisodeLongPress,
@@ -2098,6 +2102,7 @@ private fun ConfiguredMetaSections(
     onTrailerClick: (MetaTrailer) -> Unit,
     progressByVideoId: Map<String, WatchProgressEntry>,
     watchedKeys: Set<String>,
+    fullyWatchedSeriesKeys: Set<String> = emptySet(),
     blurUnwatchedEpisodes: Boolean,
     onEpisodeClick: (MetaVideo) -> Unit,
     onEpisodeLongPress: (MetaVideo) -> Unit,
@@ -2246,6 +2251,7 @@ private fun ConfiguredMetaSections(
                         title = meta.collectionName.orEmpty(),
                         items = meta.collectionItems,
                         watchedKeys = watchedKeys,
+                        fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
                         showHeader = showHeader,
                         horizontalScrollPadding = horizontalScrollPadding,
                         onPosterClick = onOpenMeta,
@@ -2263,6 +2269,7 @@ private fun ConfiguredMetaSections(
                         title = stringResource(Res.string.details_more_like_this),
                         items = meta.moreLikeThis,
                         watchedKeys = watchedKeys,
+                        fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
                         showHeader = showHeader,
                         horizontalScrollPadding = horizontalScrollPadding,
                         sourceLabel = sourceLabel,

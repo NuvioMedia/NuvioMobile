@@ -269,30 +269,22 @@ private fun ExoPlayerSurface(
     var fallbackStartPositionMs by remember(playerSourceKey) { mutableStateOf<Long?>(null) }
     val effectiveDecoderPriority = decoderPriorityOverride ?: playerSettings.decoderPriority
 
-    var resolvedMediaItem by remember(playerSourceKey, externalSubtitles) { mutableStateOf<MediaItem?>(null) }
-
-    LaunchedEffect(playerSourceKey, externalSubtitles) {
-        val subtitleConfigs = externalSubtitles.map { subtitle ->
-            val mimeType = resolveSubtitleMimeType(subtitle.url, subtitle.headers)
-            MediaItem.SubtitleConfiguration.Builder(Uri.parse(subtitle.url))
-                .setMimeType(mimeType)
-                .setLanguage(subtitle.language)
-                .setLabel(subtitle.name ?: subtitle.language)
-                .setRoleFlags(C.ROLE_FLAG_SUBTITLE)
-                .build()
-        }
-        resolvedMediaItem = playbackMediaItemFromUrl(
-            url = sourceUrl,
-            responseHeaders = sanitizedSourceResponseHeaders,
-            streamType = normalizedStreamType,
-        ).buildUpon()
-            .setMediaId(sourceUrl)
-            .apply {
-                if (subtitleConfigs.isNotEmpty()) {
-                    setSubtitleConfigurations(subtitleConfigs)
+    var resolvedMediaItem by remember(playerSourceKey, externalSubtitles) {
+        mutableStateOf(
+            playbackMediaItemFromUrl(
+                url = sourceUrl,
+                responseHeaders = sanitizedSourceResponseHeaders,
+                streamType = normalizedStreamType,
+            ).buildUpon()
+                .setMediaId(sourceUrl)
+                .apply {
+                    val subtitleConfigs = startupSubtitleConfigurations(externalSubtitles)
+                    if (subtitleConfigs.isNotEmpty()) {
+                        setSubtitleConfigurations(subtitleConfigs)
+                    }
                 }
-            }
-            .build()
+                .build(),
+        )
     }
     var probeAttempted by remember(playerSourceKey) { mutableStateOf(false) }
 
@@ -463,7 +455,7 @@ private fun ExoPlayerSurface(
     }
 
     LaunchedEffect(exoPlayer, resolvedMediaItem, initialPositionRequestKey) {
-        val mediaItem = resolvedMediaItem ?: return@LaunchedEffect
+        val mediaItem = resolvedMediaItem
         val requestedStartPositionMs = fallbackStartPositionMs
             ?: initialPositionMs?.takeIf { it > 0L }
         playbackDiagnostics.attempt += 1
@@ -574,9 +566,9 @@ private fun ExoPlayerSurface(
                         }
                         if (probedMime != null) {
                             Log.d(TAG, "Playback failed with source error. Probed MIME type: $probedMime. Retrying...")
-                            resolvedMediaItem = resolvedMediaItem?.buildUpon()
-                                ?.setMimeType(probedMime)
-                                ?.build()
+                            resolvedMediaItem = resolvedMediaItem.buildUpon()
+                                .setMimeType(probedMime)
+                                .build()
                             latestOnError.value(null)
                             return@launch
                         }
@@ -822,7 +814,7 @@ private fun ExoPlayerSurface(
                             return@launch
                         }
                         preserveAudioSelectionForReload("setSubtitleUri")
-                        val resolvedMime = resolveSubtitleMimeType(url)
+                        val resolvedMime = PlayerSubtitleUtils.mimeTypeFromUrl(url)
                         selectedExternalSubtitleMimeType = resolvedMime
                         Log.d(TAG, "setSubtitleUri: currentPosition=$currentPosition, wasPlaying=$wasPlaying")
                         val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(Uri.parse(url))

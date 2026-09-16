@@ -1,8 +1,6 @@
 package com.nuvio.app.features.details.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
@@ -11,14 +9,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Fullscreen
 import androidx.compose.material.icons.Icons
-import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -36,9 +33,12 @@ import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
-import com.nuvio.app.features.player.PlatformPlayerSurface
-import com.nuvio.app.features.player.PlayerResizeMode
+import com.nuvio.app.features.player.FullscreenPlayerDialog
+import com.nuvio.app.features.player.LockPlayerToLandscape
+import com.nuvio.app.features.trailer.TrailerPlaybackState
+import com.nuvio.app.features.trailer.TrailerPlayer
 import com.nuvio.app.features.trailer.TrailerPlaybackSource
+import com.nuvio.app.isIos
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -70,13 +70,41 @@ fun TrailerPlayerPopup(
 
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val coroutineScope = rememberCoroutineScope()
-    var playerError by remember(playbackSource?.videoUrl, playbackSource?.audioUrl) {
-        mutableStateOf<String?>(null)
+    val playbackState = remember(playbackSource) { TrailerPlaybackState() }
+    var fullscreen by remember { mutableStateOf(false) }
+    val toggleFullscreen = {
+        playbackState.changePresentation()
+        fullscreen = !fullscreen
     }
 
-    val activeError = errorMessage ?: playerError
+    val exitFullscreen = {
+        if (isIos) {
+            playbackState.controller?.pause()
+            onDismiss()
+        } else {
+            toggleFullscreen()
+        }
+    }
+
+    if (isIos || fullscreen) {
+        LockPlayerToLandscape()
+        FullscreenPlayerDialog(onDismiss = exitFullscreen) {
+            TrailerPlayer(
+                source = playbackSource,
+                state = playbackState,
+                isLoading = isLoading,
+                errorMessage = errorMessage,
+                onRetry = onRetry,
+                modifier = Modifier.fillMaxSize(),
+                title = headerSubtitle.ifBlank { headerType },
+                onExitFullscreen = exitFullscreen,
+            )
+        }
+        return
+    }
 
     val dismissSheet: () -> Unit = {
+        playbackState.controller?.pause()
         coroutineScope.launch {
             dismissNuvioBottomSheet(sheetState = sheetState, onDismiss = onDismiss)
         }
@@ -119,6 +147,13 @@ fun TrailerPlayerPopup(
                     }
                 }
 
+                IconButton(onClick = toggleFullscreen) {
+                    Icon(
+                        imageVector = Icons.Rounded.Fullscreen,
+                        contentDescription = stringResource(Res.string.trailer_enter_fullscreen),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
                 IconButton(onClick = dismissSheet) {
                     Icon(
                         imageVector = Icons.Rounded.Close,
@@ -130,61 +165,17 @@ fun TrailerPlayerPopup(
 
             NuvioBottomSheetDivider()
 
-            Box(
+            TrailerPlayer(
+                source = playbackSource,
+                state = playbackState,
+                isLoading = isLoading,
+                errorMessage = errorMessage,
+                onRetry = onRetry,
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(18.dp))
-                    .background(MaterialTheme.colorScheme.scrim)
                     .aspectRatio(16f / 9f),
-                contentAlignment = Alignment.Center,
-            ) {
-                when {
-                    isLoading -> {
-                        NuvioLoadingIndicator(color = MaterialTheme.colorScheme.primary)
-                    }
-
-                    activeError != null -> {
-                        Column(
-                            modifier = Modifier.padding(16.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.trailer_unable_to_play),
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                            )
-                            Text(
-                                text = activeError,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 3,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            if (onRetry != null) {
-                                TextButton(onClick = onRetry) {
-                                    Text(stringResource(Res.string.action_retry))
-                                }
-                            }
-                        }
-                    }
-
-                    playbackSource != null -> {
-                        PlatformPlayerSurface(
-                            sourceUrl = playbackSource.videoUrl,
-                            sourceAudioUrl = playbackSource.audioUrl,
-                            useYoutubeChunkedPlayback = true,
-                            modifier = Modifier.fillMaxSize(),
-                            playWhenReady = true,
-                            resizeMode = PlayerResizeMode.Fit,
-                            useNativeController = true,
-                            onControllerReady = {},
-                            onSnapshot = {},
-                            onError = { playerError = it },
-                        )
-                    }
-                }
-            }
+            )
         }
     }
 }

@@ -17,11 +17,9 @@ import org.jetbrains.compose.resources.stringResource
 internal fun playerLoadingStatusResource(
     showStatus: Boolean,
     controllerReady: Boolean,
-    subtitlesLoading: Boolean,
     buffering: Boolean,
 ): StringResource? = when {
     !showStatus -> null
-    subtitlesLoading -> Res.string.player_loading_subtitles
     !controllerReady -> Res.string.player_loading_building
     buffering -> Res.string.player_loading_buffering
     else -> Res.string.player_loading_starting
@@ -31,13 +29,9 @@ internal fun playerLoadingStatusResource(
 internal fun playerLoadingStatusMessage(
     showStatus: Boolean,
     controllerReady: Boolean,
-    subtitlesLoading: Boolean,
     buffering: Boolean,
-): String? {
-    if (showStatus && subtitlesLoading) return subtitleLoadingStatusMessage()
-    return playerLoadingStatusResource(showStatus, controllerReady, subtitlesLoading, buffering)
-        ?.let { stringResource(it) }
-}
+): String? = playerLoadingStatusResource(showStatus, controllerReady, buffering)
+    ?.let { stringResource(it) }
 
 @Composable
 internal fun subtitleLoadingStatusMessage(): String {

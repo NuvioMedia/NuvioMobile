@@ -17,6 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -59,7 +60,16 @@ fun PlayerSourcesPanel(
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
-    val addonGroups = streamsUiState.groups
+    val addonGroups = streamsUiState.groups.filter { it.streams.isNotEmpty() || it.isLoading }
+    LaunchedEffect(visible, addonGroups, streamsUiState.selectedFilter) {
+        if (
+            visible &&
+            streamsUiState.selectedFilter != null &&
+            addonGroups.none { it.addonId == streamsUiState.selectedFilter }
+        ) {
+            onFilterSelected(null)
+        }
+    }
     val contentLabel = if (currentSeason != null && currentEpisode != null) {
         buildString {
             append(stringResource(Res.string.compose_player_episode_code_full, currentSeason, currentEpisode))

@@ -19,7 +19,10 @@ enum class SimklAnimeIdPreference {
     MAL,
 
     /** Prefer Kitsu ID — each Kitsu entry gets its own canonical ID. */
-    KITSU;
+    KITSU,
+
+    /** Use TVDB ID — stable across seasons, groups like IMDB but avoids per-season IMDB splits. */
+    TVDB;
 
     companion object {
         fun fromStorage(value: String?): SimklAnimeIdPreference =

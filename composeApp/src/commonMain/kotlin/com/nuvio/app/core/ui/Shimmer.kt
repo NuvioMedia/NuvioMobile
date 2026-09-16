@@ -58,13 +58,19 @@ internal fun SkeletonAnimationProvider(content: @Composable () -> Unit) {
 @Composable
 internal fun rememberSkeletonProgress(): State<Float> {
     val animation = LocalSkeletonAnimation.current
-    DisposableEffect(animation) {
-        if (animation != null) animation.consumers++
+    SkeletonAnimationConsumer(animation)
+    return animation?.progress?.asState() ?: remember { mutableFloatStateOf(0f) }
+}
+
+@Composable
+private fun SkeletonAnimationConsumer(animation: SkeletonAnimation?) {
+    val active = LocalScreenActive.current
+    DisposableEffect(animation, active) {
+        if (animation != null && active) animation.consumers++
         onDispose {
-            if (animation != null) animation.consumers--
+            if (animation != null && active) animation.consumers--
         }
     }
-    return animation?.progress?.asState() ?: remember { mutableFloatStateOf(0f) }
 }
 
 @Composable

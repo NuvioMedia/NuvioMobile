@@ -9,7 +9,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -42,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -128,130 +128,144 @@ internal fun OpeningOverlay(
             contentDescription = stringResource(Res.string.compose_player_close),
         )
 
-        Column(
+        val targetProgress = progress?.coerceIn(0f, 1f)
+        val animatedProgress by animateFloatAsState(
+            targetValue = targetProgress ?: 0f,
+            animationSpec = tween(
+                durationMillis = if ((targetProgress ?: 0f) >= 0.999f) 160 else 400,
+                easing = LinearEasing,
+            ),
+            label = "openingOverlayP2pProgress",
+        )
+        val progressActive = targetProgress != null
+        Layout(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            val targetProgress = progress?.coerceIn(0f, 1f)
-            val animatedProgress by animateFloatAsState(
-                targetValue = targetProgress ?: 0f,
-                animationSpec = tween(
-                    durationMillis = if ((targetProgress ?: 0f) >= 0.999f) 160 else 400,
-                    easing = LinearEasing,
-                ),
-                label = "openingOverlayP2pProgress",
-            )
-            val progressActive = targetProgress != null
-            if (logoUrl != null && !logoLoadError) {
-                Box(
-                    modifier = Modifier
-                        .width(logoWidth)
-                        .height(logoHeight),
-                ) {
-                    AsyncImage(
-                        model = logoUrl,
-                        contentDescription = null,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                alpha = if (progressActive) 0.25f else contentAlpha
-                                if (!progressActive) {
-                                    scaleX = contentScale
-                                    scaleY = contentScale
-                                }
-                            },
-                        contentScale = ContentScale.Fit,
-                        onError = { logoLoadError = true },
-                    )
-                    if (progressActive) {
-                        AsyncImage(
-                            model = logoUrl,
-                            contentDescription = null,
+            content = {
+                Box(contentAlignment = Alignment.Center) {
+                    if (logoUrl != null && !logoLoadError) {
+                        Box(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .drawWithContent {
-                                    clipRect(right = size.width * animatedProgress) {
-                                        this@drawWithContent.drawContent()
-                                    }
-                                },
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                }
-            } else if (!title.isNullOrBlank()) {
-                Text(
-                    text = title,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    style = MaterialTheme.nuvioTypeScale.displayMd.copy(
-                        fontSize = titleFontSize,
-                        fontWeight = FontWeight.ExtraBold,
-                    ),
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .graphicsLayer {
-                            alpha = contentAlpha
-                            scaleX = contentScale
-                            scaleY = contentScale
-                        },
-                )
-            } else {
-                NuvioLoadingIndicator(
-                    color = Color(0xFFE50914),
-                    modifier = Modifier.size(54.dp),
-                )
-            }
-
-            val showHorizontalProgress = progressActive && (logoUrl == null || logoLoadError)
-            Spacer(modifier = Modifier.height(16.dp))
-            Crossfade(
-                targetState = message?.takeIf { it.isNotBlank() },
-                animationSpec = tween(260),
-                label = "openingLoadingMessage",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(40.dp),
-            ) { loadingMessage ->
-                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    if (loadingMessage != null) {
+                                .width(logoWidth)
+                                .height(logoHeight),
+                        ) {
+                            AsyncImage(
+                                model = logoUrl,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        alpha = if (progressActive) 0.25f else contentAlpha
+                                        if (!progressActive) {
+                                            scaleX = contentScale
+                                            scaleY = contentScale
+                                        }
+                                    },
+                                contentScale = ContentScale.Fit,
+                                onError = { logoLoadError = true },
+                            )
+                            if (progressActive) {
+                                AsyncImage(
+                                    model = logoUrl,
+                                    contentDescription = null,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .drawWithContent {
+                                            clipRect(right = size.width * animatedProgress) {
+                                                this@drawWithContent.drawContent()
+                                            }
+                                        },
+                                    contentScale = ContentScale.Fit,
+                                )
+                            }
+                        }
+                    } else if (!title.isNullOrBlank()) {
                         Text(
-                            text = loadingMessage,
-                            color = Color.White.copy(alpha = 0.72f),
+                            text = title,
+                            color = Color.White,
                             textAlign = TextAlign.Center,
                             maxLines = 2,
-                            style = MaterialTheme.typography.labelMedium,
+                            style = MaterialTheme.nuvioTypeScale.displayMd.copy(
+                                fontSize = titleFontSize,
+                                fontWeight = FontWeight.ExtraBold,
+                            ),
                             modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 24.dp),
+                                .padding(horizontal = 24.dp)
+                                .graphicsLayer {
+                                    alpha = contentAlpha
+                                    scaleX = contentScale
+                                    scaleY = contentScale
+                                },
+                        )
+                    } else {
+                        NuvioLoadingIndicator(
+                            color = Color(0xFFE50914),
+                            modifier = Modifier.size(54.dp),
                         )
                     }
                 }
-            }
-            if (showHorizontalProgress) {
-                Spacer(modifier = Modifier.height(10.dp))
-                Box(
-                    modifier = Modifier
-                        .width(240.dp)
-                        .height(4.dp)
-                        .background(
-                            color = Color.White.copy(alpha = 0.2f),
-                            shape = RoundedCornerShape(2.dp),
-                        ),
-                ) {
-                    Box(
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    val showHorizontalProgress = progressActive && (logoUrl == null || logoLoadError)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Crossfade(
+                        targetState = message?.takeIf { it.isNotBlank() },
+                        animationSpec = tween(260),
+                        label = "openingLoadingMessage",
                         modifier = Modifier
-                            .fillMaxWidth(animatedProgress)
-                            .height(4.dp)
-                            .background(
-                                color = Color.White.copy(alpha = 0.85f),
-                                shape = RoundedCornerShape(2.dp),
-                            ),
-                    )
+                            .fillMaxWidth()
+                            .height(40.dp),
+                    ) { loadingMessage ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            if (loadingMessage != null) {
+                                Text(
+                                    text = loadingMessage,
+                                    color = Color.White.copy(alpha = 0.72f),
+                                    textAlign = TextAlign.Center,
+                                    maxLines = 2,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 24.dp),
+                                )
+                            }
+                        }
+                    }
+                    if (showHorizontalProgress) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Box(
+                            modifier = Modifier
+                                .width(240.dp)
+                                .height(4.dp)
+                                .background(
+                                    color = Color.White.copy(alpha = 0.2f),
+                                    shape = RoundedCornerShape(2.dp),
+                                ),
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth(animatedProgress)
+                                    .height(4.dp)
+                                    .background(
+                                        color = Color.White.copy(alpha = 0.85f),
+                                        shape = RoundedCornerShape(2.dp),
+                                    ),
+                            )
+                        }
+                    }
                 }
+            },
+        ) { measurables, constraints ->
+            val looseConstraints = constraints.copy(minWidth = 0, minHeight = 0)
+            val artworkContent = measurables[0].measure(looseConstraints)
+            val artworkTop = (constraints.maxHeight - artworkContent.height) / 2
+            val statusTop = artworkTop + artworkContent.height
+            val statusContent = measurables[1].measure(
+                looseConstraints.copy(maxHeight = constraints.maxHeight - statusTop),
+            )
+            layout(constraints.maxWidth, constraints.maxHeight) {
+                artworkContent.placeRelative((constraints.maxWidth - artworkContent.width) / 2, artworkTop)
+                statusContent.placeRelative((constraints.maxWidth - statusContent.width) / 2, statusTop)
             }
         }
     }

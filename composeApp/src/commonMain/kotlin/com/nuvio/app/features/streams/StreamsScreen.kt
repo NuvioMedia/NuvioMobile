@@ -133,6 +133,10 @@ fun StreamsScreen(
 ) {
     val useNativeNavigation = LocalUseNativeNavigation.current
     val uiState by StreamsRepository.uiState.collectAsStateWithLifecycle()
+    val streamDisplaySettings by remember {
+        StreamBadgeSettingsRepository.ensureLoaded()
+        StreamBadgeSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
     val playerSettings by remember {
         PlayerSettingsRepository.ensureLoaded()
         PlayerSettingsRepository.uiState
@@ -263,6 +267,7 @@ fun StreamsScreen(
         } else {
             MobileStreamsLayout(
                 isEpisode = isEpisode,
+                backgroundMode = streamDisplaySettings.backgroundMode,
                 title = title,
                 logo = logo,
                 heroArtwork = heroArtwork,
@@ -407,6 +412,7 @@ fun StreamsScreen(
 @Composable
 private fun MobileStreamsLayout(
     isEpisode: Boolean,
+    backgroundMode: StreamBackgroundMode,
     title: String,
     logo: String?,
     heroArtwork: String?,
@@ -425,7 +431,7 @@ private fun MobileStreamsLayout(
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize()) {
-        if (heroArtwork != null) {
+        if (backgroundMode == StreamBackgroundMode.Cinematic && heroArtwork != null) {
             AsyncImage(
                 model = heroArtwork,
                 contentDescription = null,
@@ -465,7 +471,7 @@ private fun MobileStreamsLayout(
                     .fillMaxWidth()
                     .weight(1f),
             ) {
-                if (isEpisode) {
+                if (isEpisode && backgroundMode == StreamBackgroundMode.Cinematic) {
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -647,6 +653,12 @@ private fun EpisodeHeroBlock(
             )
         }
 
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.1f)),
+        )
+
         // Gradient overlay bottom-up
         Box(
             modifier = Modifier
@@ -658,18 +670,12 @@ private fun EpisodeHeroBlock(
                             0.58f to Color.Transparent,
                             0.8f to Color.Black.copy(alpha = 0.42f),
                             0.93f to heroBlendColor.copy(alpha = 0.84f),
-                            1.0f to heroBlendColor.copy(alpha = 0.97f),
+                            1.0f to heroBlendColor,
                         ),
                         startY = 0f,
                         endY = Float.POSITIVE_INFINITY,
                     ),
                 ),
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.1f)),
         )
 
         // Safe-area push-down for status bar, then content pinned to bottom

@@ -80,6 +80,7 @@ internal data class SettingsSearchEntry(
 
 @Composable
 internal fun settingsSearchEntries(
+    isTablet: Boolean,
     pluginsEnabled: Boolean,
     supportersContributorsPageEnabled: Boolean,
     accountDeletionEnabled: Boolean,
@@ -519,6 +520,17 @@ internal fun settingsSearchEntries(
         section = stringResource(Res.string.settings_stream_display_section),
         icon = Icons.Rounded.Style,
     )
+    if (!isTablet) {
+        addRow(
+            page = SettingsPage.Streams,
+            key = "stream-background",
+            title = stringResource(Res.string.settings_stream_background_title),
+            description = stringResource(Res.string.settings_stream_background_description),
+            pageLabel = streamsPage,
+            section = stringResource(Res.string.settings_stream_display_section),
+            icon = Icons.Rounded.Style,
+        )
+    }
     addRow(
         page = SettingsPage.Streams,
         key = "stream-size-badges",

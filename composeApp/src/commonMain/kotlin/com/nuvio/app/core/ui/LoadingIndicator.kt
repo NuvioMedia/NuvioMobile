@@ -11,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.State
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -29,18 +31,13 @@ fun NuvioLoadingIndicator(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.nuvio.colors.textSecondary,
     size: Dp = NuvioTokens.Space.s40,
+    active: Boolean = LocalScreenActive.current,
 ) {
     Box(
         modifier = modifier.size(size),
         contentAlignment = Alignment.Center,
     ) {
-        val transition = rememberInfiniteTransition(label = "loading_indicator")
-        val frame by transition.animateFloat(
-            initialValue = 0f,
-            targetValue = 61f,
-            animationSpec = infiniteRepeatable(tween(durationMillis = 1016, easing = LinearEasing)),
-            label = "loading_frame",
-        )
+        val frame = rememberLoadingIndicatorFrame(active)
 
         Spacer(
             modifier = Modifier
@@ -57,7 +54,7 @@ fun NuvioLoadingIndicator(
                         start to end
                     }
                     onDrawBehind {
-                        val currentFrame = frame.coerceIn(0f, 60f)
+                        val currentFrame = frame.value.coerceIn(0f, 60f)
                         for (index in spokes.lastIndex downTo 0) {
                             val (start, end) = spokes[index]
                             drawLine(
@@ -74,6 +71,19 @@ fun NuvioLoadingIndicator(
         )
     }
 }
+
+@Composable
+internal fun rememberLoadingIndicatorFrame(active: Boolean): State<Float> =
+    if (active) {
+        rememberInfiniteTransition(label = "loading_indicator").animateFloat(
+            initialValue = 0f,
+            targetValue = 61f,
+            animationSpec = infiniteRepeatable(tween(durationMillis = 1016, easing = LinearEasing)),
+            label = "loading_frame",
+        )
+    } else {
+        remember { mutableFloatStateOf(0f) }
+    }
 
 private fun loadingSpokeAlpha(index: Int, frame: Float): Float {
     if (index == 0) return lerp(100f, 0f, frame / 60f) / 100f
