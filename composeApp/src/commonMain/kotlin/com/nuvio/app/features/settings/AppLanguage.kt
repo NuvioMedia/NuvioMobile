@@ -55,6 +55,8 @@ enum class AppLanguage(
     DUTCH("nl", Res.string.lang_dutch),
     JAPANESE("ja", Res.string.lang_japanese),
     VIETNAMESE("vi", Res.string.lang_vietnamese),
+    CHINESE_SIMPLIFIED("zh-Hans", Res.string.lang_chinese_simplified),
+    CHINESE_TRADITIONAL("zh-Hant", Res.string.lang_chinese_traditional),
     ;
 
     companion object {
