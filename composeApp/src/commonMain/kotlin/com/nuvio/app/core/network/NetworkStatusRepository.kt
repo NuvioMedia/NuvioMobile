@@ -75,7 +75,7 @@ object NetworkStatusRepository {
     fun ensureStarted() {
         if (started) return
         started = true
-        requestRefresh(force = true)
+        requestRefresh(force = true, confirmFailures = true)
     }
 
     fun requestForegroundRefresh() {
