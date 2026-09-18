@@ -291,11 +291,127 @@ class StreamAutoPlaySelectorTest {
         assertEquals(stream, selected)
     }
 
+    @Test
+    fun `same-name stream from same addon is selected first before default first stream mode`() {
+        val topCartoons = stream(
+            addonName = "TopCartoons",
+            url = "https://example.com/topcartoons.m3u8",
+            name = "TopCartoons",
+        )
+        val matchingStream = stream(
+            addonName = "4KHDHub",
+            url = "https://example.com/4khdhub-fsl.m3u8",
+            name = "4KHDHub - FSL 1080p",
+        )
+
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(topCartoons, matchingStream),
+            mode = StreamAutoPlayMode.FIRST_STREAM,
+            regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = setOf("TopCartoons", "4KHDHub"),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet(),
+            preferredStreamTitle = "4KHDHub - FSL 1080p",
+            preferredProviderName = "4KHDHub",
+            preferSameNameInSelection = true,
+        )
+
+        assertEquals(matchingStream, selected)
+    }
+
+    @Test
+    fun `same-name stream matching prefers matching subtitle when multiple exist`() {
+        val stream720p = stream(
+            addonName = "4KHDHub",
+            url = "https://example.com/720p.m3u8",
+            name = "4KHDHub - FSL",
+            description = "720p",
+        )
+        val stream1080p = stream(
+            addonName = "4KHDHub",
+            url = "https://example.com/1080p.m3u8",
+            name = "4KHDHub - FSL",
+            description = "1080p",
+        )
+
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(stream720p, stream1080p),
+            mode = StreamAutoPlayMode.FIRST_STREAM,
+            regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = setOf("4KHDHub"),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet(),
+            preferredStreamTitle = "4KHDHub - FSL",
+            preferredProviderName = "4KHDHub",
+            preferredStreamSubtitle = "1080p",
+            preferSameNameInSelection = true,
+        )
+
+        assertEquals(stream1080p, selected)
+    }
+
+    @Test
+    fun `same-name stream matching falls back to default scanning algorithm if same-name not found`() {
+        val firstStream = stream(
+            addonName = "TopCartoons",
+            url = "https://example.com/first.m3u8",
+            name = "TopCartoons",
+        )
+        val otherStream = stream(
+            addonName = "OtherAddon",
+            url = "https://example.com/other.m3u8",
+            name = "OtherAddon 1080p",
+        )
+
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(firstStream, otherStream),
+            mode = StreamAutoPlayMode.FIRST_STREAM,
+            regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = setOf("TopCartoons", "OtherAddon"),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet(),
+            preferredStreamTitle = "4KHDHub - FSL 1080p",
+            preferredProviderName = "4KHDHub",
+            preferSameNameInSelection = true,
+        )
+
+        assertEquals(firstStream, selected)
+    }
+
+    @Test
+    fun `same-name stream matching works in manual mode when preferred stream is requested`() {
+        val matchingStream = stream(
+            addonName = "4KHDHub",
+            url = "https://example.com/4khdhub-fsl.m3u8",
+            name = "4KHDHub - FSL 1080p",
+        )
+
+        val selected = StreamAutoPlaySelector.selectAutoPlayStream(
+            streams = listOf(matchingStream),
+            mode = StreamAutoPlayMode.MANUAL,
+            regexPattern = "",
+            source = StreamAutoPlaySource.ALL_SOURCES,
+            installedAddonNames = setOf("4KHDHub"),
+            selectedAddons = emptySet(),
+            selectedPlugins = emptySet(),
+            preferredStreamTitle = "4KHDHub - FSL 1080p",
+            preferredProviderName = "4KHDHub",
+            preferSameNameInSelection = true,
+            bingeGroupOnly = true,
+        )
+
+        assertEquals(matchingStream, selected)
+    }
+
     private fun stream(
         addonName: String,
         url: String? = null,
         externalUrl: String? = null,
         name: String? = null,
+        description: String? = null,
         bingeGroup: String? = null,
         directDebrid: Boolean = false,
         directDebridService: String = "torbox",
@@ -303,6 +419,7 @@ class StreamAutoPlaySelectorTest {
         cacheState: StreamDebridCacheState? = null,
     ): StreamItem = StreamItem(
         name = name,
+        description = description,
         url = url,
         externalUrl = externalUrl,
         infoHash = infoHash,
