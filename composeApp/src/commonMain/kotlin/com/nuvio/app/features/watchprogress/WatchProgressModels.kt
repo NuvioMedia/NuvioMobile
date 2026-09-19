@@ -54,6 +54,13 @@ data class WatchProgressEntry(
     val lastSourceUrl: String? = null,
     val isCompleted: Boolean = false,
     val progressPercent: Float? = null,
+    /**
+     * Where this playback counts as finished, as a fraction of the content, when the app knew it: the
+     * credits marker of the release being played, read one point early. Null means nothing was known
+     * about the credits and the usual percentage decides. It keeps a playback that stopped before the
+     * credits from being read as a finished one, the same way the tracker reads it.
+     */
+    val completionFraction: Float? = null,
     val source: String = WatchProgressSourceLocal,
     override val trackingProviderId: String? = null,
     override val trackingProviderItemId: String? = null,
@@ -68,9 +75,34 @@ data class WatchProgressEntry(
         get() = progressPercent?.coerceIn(0f, 100f)
 
     val isEffectivelyCompleted: Boolean
-        get() = isCompleted ||
-            (normalizedProgressPercent?.let { it >= WatchProgressCompletionPercentThreshold } == true) ||
-            (durationMs > 0L && isWatchProgressComplete(lastPositionMs, durationMs, false))
+        get() = isCompleted || (!isProviderPlaybackPosition && isCompletedByPosition)
+
+    /**
+     * Whether the position itself says the playback is over: the credits marker when the app knew one,
+     * and the percentage it has always read as a finished watch otherwise.
+     */
+    private val isCompletedByPosition: Boolean
+        get() {
+            if (normalizedProgressPercent?.let { it >= WatchProgressCompletionPercentThreshold } == true) {
+                return true
+            }
+            if (durationMs <= 0L) return false
+            return isWatchProgressComplete(
+                positionMs = lastPositionMs,
+                durationMs = durationMs,
+                isEnded = false,
+                completionFraction = completionFraction?.toDouble(),
+            )
+        }
+
+    /**
+     * A playback row a provider keeps is a position it can resume, and where such a playback ends is the
+     * credits marker, which a row the provider publishes does not carry. Reading its percentage as a
+     * finished watch would drop the position out of Continue Watching, so the row never completes on a
+     * percentage alone. A watch the provider really recorded arrives as history, and that supersedes it.
+     */
+    private val isProviderPlaybackPosition: Boolean
+        get() = source == WatchProgressSourceSimklPlayback
 
     val progressFraction: Float
         get() {

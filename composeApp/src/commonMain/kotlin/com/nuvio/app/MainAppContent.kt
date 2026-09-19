@@ -153,6 +153,7 @@ import com.nuvio.app.features.streams.PlaybackAvailability
 import com.nuvio.app.features.streams.rememberPlaybackAvailability
 import com.nuvio.app.features.streams.StreamLaunchStore
 import com.nuvio.app.features.streams.StreamsRepository
+import com.nuvio.app.features.tracking.RewatchPromptHost
 import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.TrackingMembershipApplyResult
 import com.nuvio.app.features.tracking.TrackingProviderId
@@ -224,6 +225,7 @@ internal fun MainAppContent(
             )
         }
         val appUpdaterController = rememberAppUpdaterController()
+        RewatchPromptHost()
         if (ownsAppRuntime) {
             remember {
                 EpisodeReleaseNotificationsRepository.ensureLoaded()

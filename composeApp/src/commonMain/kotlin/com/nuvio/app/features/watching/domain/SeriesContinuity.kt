@@ -3,6 +3,7 @@ package com.nuvio.app.features.watching.domain
 import com.nuvio.app.core.i18n.localizedPlayLabel
 import com.nuvio.app.core.i18n.localizedResumeLabel
 import com.nuvio.app.core.i18n.localizedUpNextLabel
+import com.nuvio.app.core.i18n.localizedWatchAgainLabel
 
 const val DefaultContinueWatchingLimit = 20
 
@@ -124,6 +125,8 @@ fun decideSeriesPrimaryAction(
     preferFurthestEpisode: Boolean = true,
     showUnairedNextUp: Boolean = false,
     defaultVideoId: String? = null,
+    rewatchSeasonNumber: Int? = null,
+    rewatchEpisodeNumber: Int? = null,
 ): WatchingSeriesPrimaryAction? {
     val resumeRecord = resumeProgressForSeries(
         content = content,
@@ -135,6 +138,26 @@ fun decideSeriesPrimaryAction(
         watchedRecords = watchedRecords,
         preferFurthestEpisode = preferFurthestEpisode,
     )
+
+    // A rewatch the user is following from its Continue Watching card decides where Play goes: the
+    // run is at that episode, so the next step of the run is the right offer even though the series
+    // was watched to the end long ago.
+    if (rewatchSeasonNumber != null && rewatchEpisodeNumber != null) {
+        val runEpisode = nextReleasedEpisodeAfter(
+            content = content,
+            episodes = episodes,
+            seasonNumber = rewatchSeasonNumber,
+            episodeNumber = rewatchEpisodeNumber,
+            todayIsoDate = todayIsoDate,
+            showUnairedNextUp = showUnairedNextUp,
+        )
+        if (runEpisode != null) {
+            return content.actionForEpisode(
+                episode = runEpisode,
+                label = upNextLabel(runEpisode.seasonNumber, runEpisode.episodeNumber),
+            )
+        }
+    }
 
     if (shouldPreferResume(resumeRecord = resumeRecord, latestCompletedEpisode = latestCompletedEpisode)) {
         return resumeRecord?.toResumeAction()
@@ -150,40 +173,85 @@ fun decideSeriesPrimaryAction(
             showUnairedNextUp = showUnairedNextUp,
         )
     } else {
-        val sorted = episodes
-            .sortedWith(compareBy<WatchingReleasedEpisode>({ normalizeSeasonNumber(it.seasonNumber) }, { it.episodeNumber ?: 0 }))
-        val released = sorted.filter { episode ->
-            isReleasedBy(
-                todayIsoDate = todayIsoDate,
-                releasedDate = episode.releasedDate,
-                available = episode.available,
-            )
-        }
-        defaultVideoId?.let { videoId -> released.firstOrNull { it.videoId == videoId } }
-            ?: released.firstOrNull { normalizeSeasonNumber(it.seasonNumber) > 0 }
-            ?: released.firstOrNull()
-    }
-
-    return nextEpisode?.let { episode ->
-        WatchingSeriesPrimaryAction(
-            label = if (latestCompletedEpisode != null) {
-                upNextLabel(episode.seasonNumber, episode.episodeNumber)
-            } else {
-                playLabel(episode.seasonNumber, episode.episodeNumber)
-            },
-            videoId = buildPlaybackVideoId(
-                content = content,
-                seasonNumber = episode.seasonNumber,
-                episodeNumber = episode.episodeNumber,
-                fallbackVideoId = episode.videoId,
-            ),
-            seasonNumber = episode.seasonNumber,
-            episodeNumber = episode.episodeNumber,
-            episodeTitle = episode.title,
-            episodeThumbnail = episode.thumbnail,
-            resumePositionMs = null,
+        firstReleasedEpisode(
+            episodes = episodes,
+            todayIsoDate = todayIsoDate,
+            defaultVideoId = defaultVideoId,
         )
     }
+
+    if (nextEpisode != null) {
+        return content.actionForEpisode(
+            episode = nextEpisode,
+            label = if (latestCompletedEpisode != null) {
+                upNextLabel(nextEpisode.seasonNumber, nextEpisode.episodeNumber)
+            } else {
+                playLabel(nextEpisode.seasonNumber, nextEpisode.episodeNumber)
+            },
+        )
+    }
+
+    // The series has been watched to its last episode, so there is no next one to offer. Watching it
+    // again from the first episode keeps the button meaningful and, unlike a launch without an
+    // episode, gives progress and tracking something real to record.
+    if (latestCompletedEpisode == null) return null
+    val firstEpisode = firstReleasedEpisode(
+        episodes = episodes,
+        todayIsoDate = todayIsoDate,
+        defaultVideoId = null,
+    )
+    return firstEpisode?.let { episode ->
+        content.actionForEpisode(
+            episode = episode,
+            label = watchAgainLabel(episode.seasonNumber, episode.episodeNumber),
+            isWatchAgain = true,
+        )
+    }
+}
+
+private fun WatchingContentRef.actionForEpisode(
+    episode: WatchingReleasedEpisode,
+    label: String,
+    isWatchAgain: Boolean = false,
+): WatchingSeriesPrimaryAction =
+    WatchingSeriesPrimaryAction(
+        label = label,
+        videoId = buildPlaybackVideoId(
+            content = this,
+            seasonNumber = episode.seasonNumber,
+            episodeNumber = episode.episodeNumber,
+            fallbackVideoId = episode.videoId,
+        ),
+        seasonNumber = episode.seasonNumber,
+        episodeNumber = episode.episodeNumber,
+        episodeTitle = episode.title,
+        episodeThumbnail = episode.thumbnail,
+        resumePositionMs = null,
+        isWatchAgain = isWatchAgain,
+    )
+
+/** The first episode the catalogue can actually play, used when a series starts from scratch. */
+private fun firstReleasedEpisode(
+    episodes: List<WatchingReleasedEpisode>,
+    todayIsoDate: String,
+    defaultVideoId: String?,
+): WatchingReleasedEpisode? {
+    val sorted = episodes.sortedWith(
+        compareBy<WatchingReleasedEpisode>(
+            { normalizeSeasonNumber(it.seasonNumber) },
+            { it.episodeNumber ?: 0 },
+        ),
+    )
+    val released = sorted.filter { episode ->
+        isReleasedBy(
+            todayIsoDate = todayIsoDate,
+            releasedDate = episode.releasedDate,
+            available = episode.available,
+        )
+    }
+    return defaultVideoId?.let { videoId -> released.firstOrNull { it.videoId == videoId } }
+        ?: released.firstOrNull { normalizeSeasonNumber(it.seasonNumber) > 0 }
+        ?: released.firstOrNull()
 }
 
 fun buildPlaybackVideoId(
@@ -203,6 +271,9 @@ fun playLabel(seasonNumber: Int?, episodeNumber: Int?): String =
 
 fun upNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
     localizedUpNextLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber)
+
+fun watchAgainLabel(seasonNumber: Int?, episodeNumber: Int?): String =
+    localizedWatchAgainLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber)
 
 fun resumeLabel(seasonNumber: Int?, episodeNumber: Int?): String =
     localizedResumeLabel(seasonNumber = seasonNumber, episodeNumber = episodeNumber)

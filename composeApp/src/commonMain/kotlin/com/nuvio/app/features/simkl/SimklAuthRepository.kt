@@ -1,6 +1,7 @@
 package com.nuvio.app.features.simkl
 
 import co.touchlab.kermit.Logger
+import com.nuvio.app.features.tracking.RewatchPromptRepository
 import com.nuvio.app.features.tracking.TrackingAuthProvider
 import com.nuvio.app.features.tracking.TrackingCapability
 import com.nuvio.app.features.tracking.TrackingProviderDescriptor
@@ -167,6 +168,7 @@ object SimklAuthRepository : TrackingAuthProvider {
         storedState = SimklStoredAuthState()
         persistMetadata()
         SimklSyncRepository.clearLocalState()
+        RewatchPromptRepository.clear()
         publish(error = null)
     }
 
@@ -188,6 +190,17 @@ object SimklAuthRepository : TrackingAuthProvider {
     suspend fun refreshUserSettings(): String? {
         authorizedAccessToken() ?: return null
         return if (fetchAndStoreUserSettings()) storedState.username else null
+    }
+
+    /**
+     * Returns the cached plan, refetching `/users/settings` once when it is still unknown or does
+     * not prove Pro/VIP. Used to validate the rewatch setting at the moment the user enables it.
+     */
+    suspend fun ensurePlanLoaded(): String? {
+        authorizedAccessToken() ?: return storedState.accountType
+        if (isSimklRewatchPlanEligible(storedState.accountType)) return storedState.accountType
+        fetchAndStoreUserSettings()
+        return storedState.accountType
     }
 
     internal suspend fun synchronizeUserSettings(activityWatermark: String?) {
@@ -297,6 +310,7 @@ object SimklAuthRepository : TrackingAuthProvider {
         storedState = storedState.copy(
             username = settings.user?.name,
             accountId = settings.account?.id,
+            accountType = settings.account?.type?.takeIf(String::isNotBlank) ?: storedState.accountType,
             hasFetchedUserSettings = true,
             settingsActivityWatermark = activityWatermark ?: storedState.settingsActivityWatermark,
         )
@@ -375,6 +389,7 @@ object SimklAuthRepository : TrackingAuthProvider {
             isLoading = isLoading,
             username = storedState.username,
             accountId = storedState.accountId,
+            accountType = storedState.accountType,
             tokenExpiresAtEpochMs = storedState.tokenExpiresAtEpochMs,
             pendingAuthorizationStartedAtEpochMs = storedState.pendingAuthorizationStartedAtEpochMs,
             error = error,
@@ -424,4 +439,5 @@ private data class SimklUser(
 @Serializable
 private data class SimklAccount(
     val id: Long? = null,
+    val type: String? = null,
 )

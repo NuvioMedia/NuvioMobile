@@ -227,6 +227,43 @@ private fun List<SimklLibraryEntry>.matchingEntry(
     result: SimklScrobbleResult,
 ): SimklLibraryEntry? = getOrNull(indexOfMatchingEntry(result))
 
+/**
+ * Reads the canonical history for the item a scrobble touched, so the caller can tell whether the
+ * playback was a repeat viewing and how long ago the previous one was.
+ */
+internal fun SimklSyncSnapshot.priorWatchForScrobble(result: SimklScrobbleResult): SimklPriorWatch {
+    val entry = entries.matchingEntry(result) ?: return SimklPriorWatch.None
+    val isMovie = result.mediaType == SimklMediaType.MOVIES ||
+        (result.mediaType == SimklMediaType.ANIME && (entry.animeType == "movie" || result.episode == null))
+    if (isMovie) {
+        if (entry.status == SimklListStatus.PLAN_TO_WATCH) return SimklPriorWatch.None
+        return SimklPriorWatch(
+            wasWatched = true,
+            watchedAtEpochMs = entry.lastWatchedAt?.let(::parseSimklUtcEpochMs),
+        )
+    }
+    val target = result.episode ?: return SimklPriorWatch.None
+    val targetNumber = target.number ?: return SimklPriorWatch.None
+    val targetSeason = target.season ?: 1
+    val targetMapping = if (target.tvdbSeason != null && target.tvdbNumber != null) {
+        SimklEpisodeMapping(target.tvdbSeason, target.tvdbNumber)
+    } else {
+        null
+    }
+    val watchedAt = entry.seasons
+        .flatMap { season -> season.episodes.map { episode -> season.number to episode } }
+        .firstOrNull { (seasonNumber, episode) ->
+            episode.matches(targetSeason, targetNumber, targetMapping, seasonNumber)
+        }
+        ?.second
+        ?.watchedAt
+        ?: return SimklPriorWatch.None
+    return SimklPriorWatch(
+        wasWatched = true,
+        watchedAtEpochMs = parseSimklUtcEpochMs(watchedAt),
+    )
+}
+
 private fun List<SimklLibraryEntry>.indexOfMatchingEntry(
     result: SimklScrobbleResult,
 ): Int {

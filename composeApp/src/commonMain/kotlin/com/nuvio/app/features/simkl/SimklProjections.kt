@@ -165,7 +165,9 @@ internal fun SimklSyncSnapshot.movieAlternateWatchedKeys(): Set<String> {
 
 internal fun SimklSyncSnapshot.toSimklProgressEntries(): List<WatchProgressEntry> =
     playback
-        .mapNotNull { session -> session.toWatchProgressEntry(entries) }
+        .mapNotNull { session ->
+            session.toWatchProgressEntry(libraryEntries = entries)
+        }
         .groupBy(WatchProgressEntry::progressKey)
         .mapNotNull { (_, candidates) -> candidates.maxByOrNull(WatchProgressEntry::lastUpdatedEpochMs) }
         .sortedByDescending(WatchProgressEntry::lastUpdatedEpochMs)
@@ -399,7 +401,7 @@ internal fun parseSimklUtcEpochMs(value: String?): Long? {
 }
 
 internal fun SimklPlaybackSession.toWatchProgressEntry(
-    libraryEntries: List<SimklLibraryEntry> = emptyList()
+    libraryEntries: List<SimklLibraryEntry> = emptyList(),
 ): WatchProgressEntry? {
     val media = media ?: return null
     val parentId = media.canonicalContentId() ?: return null
@@ -453,7 +455,13 @@ internal fun SimklPlaybackSession.toWatchProgressEntry(
         lastPositionMs = positionMs,
         durationMs = durationMs,
         lastUpdatedEpochMs = updatedAt,
-        isCompleted = normalizedProgress >= SIMKL_WATCHED_THRESHOLD_PERCENT,
+        // A playback session is a position Simkl can resume, not a finished watch. Where a playback
+        // ends is the credits marker when there is one, and the app reports a playback that has not
+        // reached it as a pause, which Simkl answers by keeping this row with the percentage the user
+        // stopped at. Reading that percentage as a finished watch would drop the position out of
+        // Continue Watching and offer the next episode instead. A watch the account really recorded
+        // arrives through the watched history, and that supersedes this row.
+        isCompleted = false,
         progressPercent = normalizedProgress.toFloat(),
         source = WatchProgressSourceSimklPlayback,
         trackingProviderId = TrackingProviderId.SIMKL.storageId,
@@ -630,5 +638,3 @@ private val SIMKL_UTC_PATTERN = Regex(
     "^(\\d{4})-(\\d{2})-(\\d{2})T(\\d{2}):(\\d{2}):(\\d{2})(?:\\.(\\d{1,9}))?Z$",
     RegexOption.IGNORE_CASE,
 )
-
-private const val SIMKL_WATCHED_THRESHOLD_PERCENT = 80.0

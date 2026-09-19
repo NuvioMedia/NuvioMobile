@@ -61,6 +61,28 @@ private fun IntroDbSegment?.movieIntervalOrNull(type: String): SkipInterval? {
     return SkipInterval(start, end, type, "introdb")
 }
 
+/**
+ * Where the content ends, in percent of the video it plays in, taken from the credits marker.
+ *
+ * Only the marker is read here, never the skip settings: a playback that reached the credits is over
+ * for the tracker as well. A start that is not a real position inside the video is not usable, and a
+ * null lets the caller fall back to the percentage the user set.
+ */
+internal fun List<SkipInterval>.contentEndPercent(durationMs: Long): Double? {
+    if (durationMs <= 0L) return null
+    val creditsStartSeconds = filter { interval -> interval.type in ContentEndSegmentTypes }
+        .minOfOrNull { interval -> interval.startTime }
+        ?: return null
+    if (!creditsStartSeconds.isFinite() || creditsStartSeconds <= 0.0) return null
+    val creditsStartMs = creditsStartSeconds * 1_000.0
+    if (creditsStartMs >= durationMs) return null
+    return creditsStartMs / durationMs.toDouble() * 100.0
+}
+
+/** Segment types that mark where the content ends: the series outro and the film credits. */
+internal val ContentEndSegmentTypes: Set<String> =
+    PlayerNextEpisodeRules.OUTRO_SEGMENT_TYPES + setOf("movie-credits")
+
 @Serializable
 data class IntroDbSegment(
     @SerialName("start_sec") val startSec: Double? = null,

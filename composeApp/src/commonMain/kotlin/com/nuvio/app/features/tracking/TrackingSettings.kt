@@ -2,6 +2,9 @@ package com.nuvio.app.features.tracking
 
 import com.nuvio.app.features.library.LibrarySourceMode
 import com.nuvio.app.features.simkl.SimklAnimeIdPreference
+import com.nuvio.app.features.simkl.SimklRewatchMode
+import com.nuvio.app.features.simkl.SimklRewatchNextUpMode
+import com.nuvio.app.features.simkl.SimklSyncRepository
 import com.nuvio.app.features.trakt.MoreLikeThisSourcePreference
 import com.nuvio.app.features.trakt.TraktSettingsRepository
 import com.nuvio.app.features.trakt.TraktSettingsUiState
@@ -40,4 +43,20 @@ object TrackingSettingsRepository {
 
     fun setSimklAnimeIdPreference(preference: SimklAnimeIdPreference) =
         TraktSettingsRepository.setSimklAnimeIdPreference(preference)
+
+    fun setSimklRewatchMode(mode: SimklRewatchMode) =
+        TraktSettingsRepository.setSimklRewatchMode(mode)
+
+    /**
+     * How much of a rewatch the app offers as next up. The runs read from the account are re-derived
+     * right away, so Continue Watching follows the choice without waiting for the next sync.
+     */
+    suspend fun setSimklRewatchNextUpMode(mode: SimklRewatchNextUpMode) {
+        TraktSettingsRepository.setSimklRewatchNextUpMode(mode)
+        SimklSyncRepository.refreshRewatchRuns()
+    }
+
+    /** Where a Simkl playback counts as finished, in percent. */
+    fun setSimklWatchedThresholdPercent(percent: Int) =
+        TraktSettingsRepository.setSimklWatchedThresholdPercent(percent)
 }

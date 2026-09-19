@@ -473,6 +473,41 @@ class WatchProgressRulesTest {
         assertNull(parseReleaseDateToEpochMs("invalid-date"))
     }
 
+    @Test
+    fun `a playback that stopped before the credits is not a finished watch`() {
+        val beforeCredits = entry(
+            videoId = "show:1:2",
+            seasonNumber = 1,
+            episodeNumber = 2,
+            lastPositionMs = 940_000L,
+            durationMs = 1_000_000L,
+        ).copy(completionFraction = 0.95f)
+
+        assertFalse(beforeCredits.isEffectivelyCompleted)
+
+        val insideCredentials = beforeCredits.copy(lastPositionMs = 960_000L)
+
+        assertTrue(insideCredentials.isEffectivelyCompleted)
+    }
+
+    @Test
+    fun `a movie a provider paused inside the credits is still a position to resume`() {
+        val row = entry(
+            videoId = "tt0133093",
+            parentMetaType = "movie",
+            lastPositionMs = 100_000_000L,
+            durationMs = 104_000_000L,
+        ).copy(
+            progressPercent = 96f,
+            source = WatchProgressSourceSimklPlayback,
+        )
+
+        // The credits marker is what ends a playback, and a row a provider publishes does not carry it,
+        // so the row stays a resume point instead of leaving Continue Watching as a finished watch.
+        assertFalse(row.isEffectivelyCompleted)
+        assertEquals(0.96f, row.progressFraction, 0.0005f)
+    }
+
     private fun entry(
         videoId: String,
         parentMetaId: String = videoId.substringBefore(':'),
