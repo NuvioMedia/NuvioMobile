@@ -165,18 +165,13 @@ internal actual object DownloadLocationManager {
     private fun openTreeLocation(value: String): Boolean {
         val context = appContext ?: return false
         val treeUri = runCatching { Uri.parse(value) }.getOrNull() ?: return false
-        val documentUri = runCatching {
-            DocumentsContract.buildDocumentUriUsingTree(
-                treeUri,
-                DocumentsContract.getTreeDocumentId(treeUri),
-            )
-        }.getOrNull()
         val intents = buildList {
-            add(
-                Intent(Intent.ACTION_VIEW).apply {
-                    setDataAndType(treeUri, DocumentsContract.Document.MIME_TYPE_DIR)
-                },
-            )
+            val documentUri = runCatching {
+                DocumentsContract.buildDocumentUriUsingTree(
+                    treeUri,
+                    DocumentsContract.getTreeDocumentId(treeUri),
+                )
+            }.getOrNull()
             if (documentUri != null) {
                 add(
                     Intent(Intent.ACTION_VIEW).apply {
@@ -184,6 +179,11 @@ internal actual object DownloadLocationManager {
                     },
                 )
             }
+            add(
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(treeUri, DocumentsContract.Document.MIME_TYPE_DIR)
+                },
+            )
         }
 
         return startFirstWorkingIntent(context, intents)
