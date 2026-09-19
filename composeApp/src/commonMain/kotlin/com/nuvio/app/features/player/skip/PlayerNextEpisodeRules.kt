@@ -1,6 +1,19 @@
 package com.nuvio.app.features.player.skip
 
+import com.nuvio.app.core.format.formatDayFirstReleaseDate
+import com.nuvio.app.core.time.daysUntilEpisodeRelease
+import com.nuvio.app.core.time.parseEpisodeReleaseLocalDate
 import com.nuvio.app.features.details.MetaVideo
+import kotlinx.coroutines.CancellationException
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.cw_airs_date
+import nuvio.composeapp.generated.resources.cw_airs_in_days
+import nuvio.composeapp.generated.resources.cw_airs_today
+import nuvio.composeapp.generated.resources.cw_airs_tomorrow
+import org.jetbrains.compose.resources.PluralStringResource
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getPluralString
+import org.jetbrains.compose.resources.getString
 
 object PlayerNextEpisodeRules {
 
@@ -86,7 +99,7 @@ object PlayerNextEpisodeRules {
 
     fun hasEpisodeAired(raw: String?): Boolean {
         val value = raw?.trim()?.takeIf { it.isNotEmpty() } ?: return true
-        val dateStr = when {
+        val dateStr = parseEpisodeReleaseLocalDate(value) ?: when {
             value.length >= 10 -> value.substring(0, 10)
             else -> return true
         }
@@ -94,11 +107,120 @@ object PlayerNextEpisodeRules {
         val parts = dateStr.split("-")
         if (parts.size != 3) return true
         val year = parts[0].toIntOrNull() ?: return true
-        val month = parts[1].toIntOrNull() ?: return true
-        val day = parts[2].toIntOrNull() ?: return true
+        val month = parts[1].toIntOrNull()?.takeIf { it in 1..12 } ?: return true
+        val day = parts[2].toIntOrNull()?.takeIf { it in 1..31 } ?: return true
 
         val today = currentDateComponents()
         return compareDate(year, month, day, today.year, today.month, today.day) <= 0
+    }
+
+    suspend fun formatUnairedEpisodeMessage(
+        released: String?,
+        airsPrefix: String,
+        tbaLabel: String,
+        todayComponents: DateComponents = currentDateComponents(),
+    ): String {
+        val prefix = airsPrefix.takeIf { it.isNotBlank() } ?: "Airs"
+        val tba = tbaLabel.takeIf { it.isNotBlank() } ?: "TBA"
+
+        val trimmed = released?.trim()?.takeIf { it.isNotEmpty() }
+        if (trimmed == null) {
+            return "$prefix $tba"
+        }
+
+        val targetLocalDate = parseEpisodeReleaseLocalDate(trimmed)
+        if (targetLocalDate == null) {
+            return "$prefix $tba"
+        }
+
+        val todayIso = "${todayComponents.year.toString().padStart(4, '0')}-${todayComponents.month.toString().padStart(2, '0')}-${todayComponents.day.toString().padStart(2, '0')}"
+        val daysUntil = daysUntilEpisodeRelease(
+            todayIsoDate = todayIso,
+            releasedDate = trimmed,
+        )
+
+        return when {
+            daysUntil == 0 -> try {
+                getString(Res.string.cw_airs_today)
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                "$prefix Today"
+            }
+            daysUntil == 1 -> try {
+                getString(Res.string.cw_airs_tomorrow)
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                "$prefix Tomorrow"
+            }
+            daysUntil != null && daysUntil in 2..3 -> try {
+                getPluralString(Res.plurals.cw_airs_in_days, daysUntil, daysUntil)
+            } catch (e: Throwable) {
+                if (e is CancellationException) throw e
+                "$prefix in $daysUntil days"
+            }
+            else -> {
+                val formattedDate = formatDayFirstReleaseDate(
+                    raw = trimmed,
+                    includeYear = true,
+                ) ?: return "$prefix $tba"
+
+                try {
+                    getString(Res.string.cw_airs_date, formattedDate)
+                } catch (e: Throwable) {
+                    if (e is CancellationException) throw e
+                    "$prefix $formattedDate"
+                }
+            }
+        }
+    }
+
+    fun formatUnairedEpisodeMessageSync(
+        released: String?,
+        airsPrefix: String = "Airs",
+        tbaLabel: String = "TBA",
+        todayComponents: DateComponents = currentDateComponents(),
+        getStringResource: ((StringResource, Array<out Any>) -> String)? = null,
+        getPluralResource: ((PluralStringResource, Int, Array<out Any>) -> String)? = null,
+    ): String {
+        val prefix = airsPrefix.takeIf { it.isNotBlank() } ?: "Airs"
+        val tba = tbaLabel.takeIf { it.isNotBlank() } ?: "TBA"
+
+        val trimmed = released?.trim()?.takeIf { it.isNotEmpty() }
+        if (trimmed == null) {
+            return "$prefix $tba"
+        }
+
+        val targetLocalDate = parseEpisodeReleaseLocalDate(trimmed)
+        if (targetLocalDate == null) {
+            return "$prefix $tba"
+        }
+
+        val todayIso = "${todayComponents.year.toString().padStart(4, '0')}-${todayComponents.month.toString().padStart(2, '0')}-${todayComponents.day.toString().padStart(2, '0')}"
+        val daysUntil = daysUntilEpisodeRelease(
+            todayIsoDate = todayIso,
+            releasedDate = trimmed,
+        )
+
+        return when {
+            daysUntil == 0 -> getStringResource?.invoke(Res.string.cw_airs_today, emptyArray())
+                ?: "$prefix Today"
+            daysUntil == 1 -> getStringResource?.invoke(Res.string.cw_airs_tomorrow, emptyArray())
+                ?: "$prefix Tomorrow"
+            daysUntil != null && daysUntil in 2..3 -> getPluralResource?.invoke(
+                Res.plurals.cw_airs_in_days,
+                daysUntil,
+                arrayOf(daysUntil),
+            ) ?: "$prefix in $daysUntil days"
+            else -> {
+                val formattedDate = formatDayFirstReleaseDate(
+                    raw = trimmed,
+                    includeYear = true,
+                ) ?: return "$prefix $tba"
+
+                getStringResource?.invoke(Res.string.cw_airs_date, arrayOf(formattedDate))
+                    ?: "$prefix $formattedDate"
+            }
+        }
     }
 
     private fun compareDate(

@@ -53,4 +53,40 @@ class ReleaseDateDisplayTest {
     fun formatReleaseDateWithoutYearLeavesNonIsoUnchanged() {
         assertEquals("TBA", formatReleaseDateWithoutYear("TBA"))
     }
+
+    @Test
+    fun formatsDayFirstIsoDate() {
+        assertEquals("5 Sep 2026", formatDayFirstReleaseDate("2026-09-05"))
+    }
+
+    @Test
+    fun formatsDayFirstZonedTimestamp() {
+        assertEquals("5 Sep 2026", formatDayFirstReleaseDate("2026-09-05T12:00:00Z"))
+    }
+
+    @Test
+    fun formatsDayFirstWithoutYear() {
+        assertEquals("5 Sep", formatDayFirstReleaseDate("2026-09-05", includeYear = false))
+    }
+
+    @Test
+    fun formatsDayFirstHandlesSingleDigitDay() {
+        assertEquals("9 Jan 2025", formatDayFirstReleaseDate("2025-01-09"))
+    }
+
+    @Test
+    fun formatsDayFirstReturnsNullForInvalidOrTba() {
+        assertEquals(null, formatDayFirstReleaseDate("TBA"))
+        assertEquals(null, formatDayFirstReleaseDate(""))
+        assertEquals(null, formatDayFirstReleaseDate(null))
+        assertEquals(null, formatDayFirstReleaseDate("invalid-date"))
+        assertEquals(null, formatDayFirstReleaseDate("2024"))
+    }
+
+    @Test
+    fun formatReleaseDateDayFirstFallsBackToRaw() {
+        assertEquals("5 Sep 2026", formatReleaseDateDayFirst("2026-09-05"))
+        assertEquals("TBA", formatReleaseDateDayFirst("TBA"))
+        assertEquals("2024", formatReleaseDateDayFirst("2024"))
+    }
 }
