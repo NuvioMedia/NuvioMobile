@@ -7,9 +7,11 @@ import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import java.io.File
 import java.net.URI
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -18,6 +20,7 @@ internal actual object DownloadLocationManager {
     private const val DOWNLOADS_DIRECTORY_NAME = "downloads"
     private const val LOCATION_PREFERENCES_NAME = "nuvio_download_location"
     private const val LOCATION_PREFERENCE_KEY = "download_location_pref"
+    private const val DOWNLOAD_MIME_TYPE = "application/octet-stream"
 
     private val locationJson = Json {
         ignoreUnknownKeys = true
@@ -30,6 +33,7 @@ internal actual object DownloadLocationManager {
     private var appContext: Context? = null
     private var locationPref: DownloadLocationPref? = null
     private var folderPickerLauncher: (() -> Unit)? = null
+    private var pendingLocationSelection: CancellableContinuation<Boolean>? = null
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -43,21 +47,34 @@ internal actual object DownloadLocationManager {
     }
 
     fun onFolderPicked(uri: Uri?) {
-        if (uri == null) return
-        val context = appContext ?: return
+        val continuation = pendingLocationSelection
+        pendingLocationSelection = null
+        if (uri == null) {
+            continuation?.resumeWith(Result.success(false))
+            return
+        }
+        val context = appContext
+        if (context == null) {
+            continuation?.resumeWith(Result.success(false))
+            return
+        }
         val persisted = runCatching {
             context.contentResolver.takePersistableUriPermission(
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
             )
         }.isSuccess
-        if (!persisted) return
+        if (!persisted) {
+            continuation?.resumeWith(Result.success(false))
+            return
+        }
         persistLocationPref(
             DownloadLocationPref(
                 mode = DownloadLocationMode.ANDROID_SAF,
                 value = uri.toString(),
             ),
         )
+        continuation?.resumeWith(Result.success(true))
     }
 
     actual fun ensureLocationSet(): Boolean {
@@ -65,6 +82,23 @@ internal actual object DownloadLocationManager {
             refreshLocationLabel()
         }
         return locationPref != null
+    }
+
+    actual suspend fun ensureLocationSelected(): Boolean {
+        if (ensureLocationSet()) return true
+        return suspendCancellableCoroutine { continuation ->
+            pendingLocationSelection?.cancel()
+            pendingLocationSelection = continuation
+            continuation.invokeOnCancellation {
+                if (pendingLocationSelection === continuation) {
+                    pendingLocationSelection = null
+                }
+            }
+            if (!requestFolderPicker()) {
+                pendingLocationSelection = null
+                continuation.resumeWith(Result.success(false))
+            }
+        }
     }
 
     actual fun currentLocationLabel(): String {
@@ -94,6 +128,10 @@ internal actual object DownloadLocationManager {
     actual fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String {
         val source = sourceFileUri.toLocalFileOrNull()
             ?: error("Unsupported download source: $sourceFileUri")
+        val pref = locationPref
+        if (pref?.mode == DownloadLocationMode.ANDROID_SAF) {
+            return copyIntoTreeLocation(pref.value, source, destinationFileName)
+        }
         val destination = File(downloadsDirectory(), destinationFileName)
         if (source.absolutePath == destination.absolutePath) {
             return destination.toURI().toString()
@@ -132,8 +170,79 @@ internal actual object DownloadLocationManager {
 
     actual fun removeFile(localFileUri: String?): Boolean {
         if (localFileUri.isNullOrBlank()) return false
+        val contentUri = localFileUri.toContentUriOrNull()
+        if (contentUri != null) {
+            val context = appContext ?: return false
+            return runCatching {
+                DocumentsContract.deleteDocument(context.contentResolver, contentUri)
+            }.getOrDefault(false)
+        }
         val file = localFileUri.toLocalFileOrNull() ?: return false
         return runCatching { file.delete() }.getOrDefault(false)
+    }
+
+    private fun copyIntoTreeLocation(treeValue: String, source: File, destinationFileName: String): String {
+        val context = appContext ?: error("Downloads are not initialized")
+        val treeUri = runCatching { Uri.parse(treeValue) }.getOrNull()
+            ?: error("Unsupported download location: $treeValue")
+        val treeDocumentId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
+            ?: error("Unsupported download location: $treeValue")
+        val treeDocumentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeDocumentId)
+
+        findDocumentByName(context, treeUri, destinationFileName)?.let { existing ->
+            runCatching { DocumentsContract.deleteDocument(context.contentResolver, existing) }
+        }
+
+        val documentUri = DocumentsContract.createDocument(
+            context.contentResolver,
+            treeDocumentUri,
+            DOWNLOAD_MIME_TYPE,
+            destinationFileName,
+        ) ?: error("Could not create the download file in the selected folder")
+
+        try {
+            val output = context.contentResolver.openOutputStream(documentUri, "w")
+                ?: error("Could not open the download file in the selected folder")
+            output.use { stream ->
+                source.inputStream().use { input -> input.copyTo(stream) }
+            }
+        } catch (error: Throwable) {
+            runCatching { DocumentsContract.deleteDocument(context.contentResolver, documentUri) }
+            throw error
+        }
+
+        source.delete()
+        return documentUri.toString()
+    }
+
+    private fun findDocumentByName(context: Context, treeUri: Uri, displayName: String): Uri? {
+        val treeDocumentId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
+            ?: return null
+        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeDocumentId)
+        return runCatching {
+            context.contentResolver.query(
+                childrenUri,
+                arrayOf(
+                    DocumentsContract.Document.COLUMN_DOCUMENT_ID,
+                    DocumentsContract.Document.COLUMN_DISPLAY_NAME,
+                ),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                val documentIdIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
+                val displayNameIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
+                while (cursor.moveToNext()) {
+                    if (cursor.getString(displayNameIndex) == displayName) {
+                        return@use DocumentsContract.buildDocumentUriUsingTree(
+                            treeUri,
+                            cursor.getString(documentIdIndex),
+                        )
+                    }
+                }
+                null
+            }
+        }.getOrNull()
     }
 
     private fun openInternalDownloadsLocation(): Boolean {
@@ -238,8 +347,8 @@ internal actual object DownloadLocationManager {
                 uri.authority,
                 DocumentsContract.getTreeDocumentId(uri),
             )
-        }.getOrNull() ?: return false
-        if (!hasReadableTreePermission(context, treeUri)) return false
+        }.getOrNull()
+        if (treeUri != null && !hasReadableTreePermission(context, treeUri)) return false
 
         return runCatching {
             context.contentResolver.query(

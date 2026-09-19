@@ -44,6 +44,7 @@ class DownloadSubtitlesTest {
     @Test
     fun backgroundDownloadSavesAddonAndStreamSubtitlesBeforeVideo(): Unit = runBlocking {
         val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
         val paths = Collections.synchronizedList(mutableListOf<String>())
         val playerSubtitles = SubtitleRepository.addonSubtitles.value
         val server = MockWebServer()
@@ -121,7 +122,9 @@ class DownloadSubtitlesTest {
                     else -> MockResponse().setResponseCode(503)
                 }
             }
-            val scheduler = AndroidDownloadScheduler(RuntimeEnvironment.getApplication())
+            val context = RuntimeEnvironment.getApplication()
+            DownloadLocationManager.initialize(context)
+            val scheduler = AndroidDownloadScheduler(context)
             val item = downloadItem(server.url("/video").toString()).copy(
                 fileName = "partial-subtitles.mkv",
                 subtitleRequests = listOf(SubtitleAddonRequest(server.url("/failed-addon").toString(), "failed", "Failed addon")),

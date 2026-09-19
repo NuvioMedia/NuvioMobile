@@ -118,6 +118,10 @@ object DownloadsRepository {
     ): DownloadEnqueueResult {
         ensureLoaded()
 
+        if (!DownloadLocationManager.ensureLocationSet()) {
+            return DownloadEnqueueResult.MissingLocation
+        }
+
         val sourceUrl = stream.playableDirectUrl
             ?.trim()
             ?.takeIf { it.isNotBlank() }

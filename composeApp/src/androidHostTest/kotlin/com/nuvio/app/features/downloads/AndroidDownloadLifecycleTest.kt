@@ -1,7 +1,9 @@
 package com.nuvio.app.features.downloads
 
 import android.app.job.JobInfo
+import android.net.Uri
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Robolectric
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
@@ -84,6 +86,7 @@ class AndroidDownloadLifecycleTest {
     @Test
     fun backgroundExecutionDoesNotNeedRepositoryOrActivityCallbacks(): Unit = runBlocking {
         val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setBody("complete video"))
             val scheduler = AndroidDownloadScheduler(context)
@@ -116,7 +119,9 @@ class AndroidDownloadLifecycleTest {
 
     @Test
     fun completedRenameIsRecoveredAfterProcessDeathBeforeStateCommit(): Unit = runBlocking {
-        val scheduler = AndroidDownloadScheduler(RuntimeEnvironment.getApplication())
+        val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        val scheduler = AndroidDownloadScheduler(context)
         val transfer = scheduler.store.begin(downloadItem().copy(fileName = "finalized.mkv"))
         scheduler.directory.mkdirs()
         File(scheduler.directory, transfer.item.fileName).writeText("final data")
@@ -125,5 +130,37 @@ class AndroidDownloadLifecycleTest {
 
         assertEquals(DownloadStatus.Completed, scheduler.store.get(transfer.item.fileName)?.item?.status)
         assertEquals(10L, scheduler.store.get(transfer.item.fileName)?.item?.downloadedBytes)
+    }
+
+    @Test
+    fun completedSafDownloadStoresContentUriAndRemovesInternalTemp(): Unit = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        Robolectric.setupContentProvider(FakeDocumentsProvider::class.java, SAF_MOVIES_URI.authority)
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("complete video"))
+            val scheduler = AndroidDownloadScheduler(context)
+            val item = downloadItem(server.url("/video").toString(), "saf").copy(fileName = "saf.mkv")
+            val transfer = scheduler.store.begin(item)
+
+            assertFalse(scheduler.execute(transfer) { })
+
+            val completed = assertNotNull(scheduler.store.get(item.fileName)).item
+            assertEquals(DownloadStatus.Completed, completed.status)
+            val storedUri = assertNotNull(completed.localFileUri)
+            assertTrue(storedUri.startsWith("content://"))
+            assertEquals(
+                "complete video",
+                context.contentResolver.openInputStream(Uri.parse(storedUri))
+                    ?.use { it.readBytes().decodeToString() },
+            )
+            assertFalse(File(scheduler.directory, item.fileName).exists())
+        }
+    }
+
+    private companion object {
+        val SAF_MOVIES_URI: Uri =
+            Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMovies")
     }
 }

@@ -174,14 +174,19 @@ internal class AndroidDownloadScheduler(val context: Context) {
                 },
             )
             currentCoroutineContext().ensureActive()
+            if (partial != destination && !partial.renameTo(destination)) {
+                throw IOException("Could not finalize the downloaded file")
+            }
+            val bytes = destination.length()
+            val storedFileUri = DownloadLocationManager.finalizeDownload(
+                destination.toURI().toString(),
+                fileName,
+            )
+            currentCoroutineContext().ensureActive()
             updateActive(transfer) { current ->
-                if (partial != destination && !partial.renameTo(destination)) {
-                    throw IOException("Could not finalize the downloaded file")
-                }
-                val bytes = destination.length()
                 current.copy(item = current.item.copy(
                     status = DownloadStatus.Completed,
-                    localFileUri = destination.toURI().toString(),
+                    localFileUri = storedFileUri,
                     downloadedBytes = bytes,
                     totalBytes = bytes,
                     errorMessage = null,

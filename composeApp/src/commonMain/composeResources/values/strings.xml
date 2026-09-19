@@ -1841,10 +1841,12 @@
     <string name="details_status">Status</string>
     <string name="details_videos">Videos</string>
     <string name="details_episode_badge_file">FILE</string>
+    <string name="downloads_enqueue_missing_location">Choose a download folder first</string>
     <string name="downloads_enqueue_missing_url">No direct stream link available</string>
     <string name="downloads_enqueue_replaced">Replaced previous download</string>
     <string name="downloads_enqueue_started">Download started</string>
     <string name="downloads_enqueue_unsupported_format">Unsupported stream format for downloads</string>
+    <string name="downloads_location_prompt_cancelled">Download cancelled - no download folder selected</string>
     <string name="downloads_error_empty_body">Empty response body</string>
     <string name="downloads_error_finalize_failed">Failed to finalize download file</string>
     <string name="downloads_error_http_failed">Request failed with HTTP %1$d</string>
