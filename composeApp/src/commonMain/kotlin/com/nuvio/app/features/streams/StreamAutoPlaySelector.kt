@@ -43,6 +43,11 @@ object StreamAutoPlaySelector {
         preferredBingeGroup: String? = null,
         preferBingeGroupInSelection: Boolean = false,
         bingeGroupOnly: Boolean = false,
+        preferredStreamTitle: String? = null,
+        preferredProviderName: String? = null,
+        preferredProviderAddonId: String? = null,
+        preferredStreamSubtitle: String? = null,
+        preferSameNameInSelection: Boolean = false,
         debridEnabled: Boolean = true,
         activeResolverProviderId: String? = null,
     ): StreamItem? =
@@ -57,6 +62,11 @@ object StreamAutoPlaySelector {
             preferredBingeGroup = preferredBingeGroup,
             preferBingeGroupInSelection = preferBingeGroupInSelection,
             bingeGroupOnly = bingeGroupOnly,
+            preferredStreamTitle = preferredStreamTitle,
+            preferredProviderName = preferredProviderName,
+            preferredProviderAddonId = preferredProviderAddonId,
+            preferredStreamSubtitle = preferredStreamSubtitle,
+            preferSameNameInSelection = preferSameNameInSelection,
             debridEnabled = debridEnabled,
             activeResolverProviderId = activeResolverProviderId,
         ).stream
@@ -72,6 +82,11 @@ object StreamAutoPlaySelector {
         preferredBingeGroup: String? = null,
         preferBingeGroupInSelection: Boolean = false,
         bingeGroupOnly: Boolean = false,
+        preferredStreamTitle: String? = null,
+        preferredProviderName: String? = null,
+        preferredProviderAddonId: String? = null,
+        preferredStreamSubtitle: String? = null,
+        preferSameNameInSelection: Boolean = false,
         debridEnabled: Boolean = true,
         activeResolverProviderId: String? = null,
     ): StreamAutoPlayEvaluation {
@@ -95,37 +110,66 @@ object StreamAutoPlaySelector {
             return StreamAutoPlayEvaluation()
         }
 
+        val targetStreamTitle = preferredStreamTitle?.trim().orEmpty()
+        val sameNameCandidates = if (preferSameNameInSelection && targetStreamTitle.isNotEmpty()) {
+            candidateStreams.filter { stream ->
+                val providerMatches = when {
+                    !preferredProviderAddonId.isNullOrBlank() && stream.addonId.equals(preferredProviderAddonId.trim(), ignoreCase = true) -> true
+                    !preferredProviderName.isNullOrBlank() && stream.addonName.equals(preferredProviderName.trim(), ignoreCase = true) -> true
+                    preferredProviderAddonId.isNullOrBlank() && preferredProviderName.isNullOrBlank() -> true
+                    else -> false
+                }
+                if (!providerMatches) return@filter false
+
+                stream.streamLabel.trim().equals(targetStreamTitle, ignoreCase = true) ||
+                    stream.name?.trim()?.equals(targetStreamTitle, ignoreCase = true) == true
+            }
+        } else {
+            emptyList()
+        }
+        val targetSubtitle = preferredStreamSubtitle?.trim().orEmpty()
+        val orderedSameNameCandidates = if (sameNameCandidates.size > 1 && targetSubtitle.isNotEmpty()) {
+            sameNameCandidates.sortedByDescending { stream ->
+                stream.streamSubtitle?.trim()?.equals(targetSubtitle, ignoreCase = true) == true
+            }
+        } else {
+            sameNameCandidates
+        }
+        val preferredSameNameReadyStream = orderedSameNameCandidates.firstOrNull { stream ->
+            stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
+        }
+
         val targetBingeGroup = preferredBingeGroup?.trim().orEmpty()
         val bingeGroupCandidates = if (preferBingeGroupInSelection && targetBingeGroup.isNotEmpty()) {
             candidateStreams.filter { stream -> stream.behaviorHints.bingeGroup == targetBingeGroup }
         } else {
             emptyList()
         }
-        val preferredReadyStream = bingeGroupCandidates.firstOrNull { stream ->
+        val preferredBingeGroupReadyStream = bingeGroupCandidates.firstOrNull { stream ->
             stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
         }
+
+        val preferredReadyStream = preferredSameNameReadyStream ?: preferredBingeGroupReadyStream
         if (bingeGroupOnly) {
             val readyStreams = preferredReadyStream?.let(::listOf).orEmpty()
             return StreamAutoPlayEvaluation(
                 stream = preferredReadyStream,
                 readyStreams = readyStreams,
                 hasPendingDebridCandidate = preferredReadyStream == null &&
-                    bingeGroupCandidates.any {
-                        it.isPendingDebridAutoPlay(debridEnabled, activeResolverProviderId)
-                    },
+                    (
+                        orderedSameNameCandidates.any {
+                            it.isPendingDebridAutoPlay(debridEnabled, activeResolverProviderId)
+                        } ||
+                        bingeGroupCandidates.any {
+                            it.isPendingDebridAutoPlay(debridEnabled, activeResolverProviderId)
+                        }
+                    ),
             )
         }
         if (mode == StreamAutoPlayMode.MANUAL) {
             return StreamAutoPlayEvaluation()
         }
-        val preferredStream = if (preferBingeGroupInSelection && targetBingeGroup.isNotEmpty()) {
-            candidateStreams.firstOrNull { stream ->
-                stream.behaviorHints.bingeGroup == targetBingeGroup &&
-                    stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
-            }
-        } else {
-            null
-        }
+        val preferredStream = preferredReadyStream
         val matchingStreams = when (mode) {
             StreamAutoPlayMode.MANUAL -> emptyList()
             StreamAutoPlayMode.FIRST_STREAM -> candidateStreams
