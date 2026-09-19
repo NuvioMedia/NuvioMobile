@@ -22,6 +22,7 @@ data class LibraryItem(
     val addonBaseUrl: String? = null,
     val listKeys: Set<String> = emptySet(),
     val traktRank: Int? = null,
+    val listRanks: Map<String, Int> = emptyMap(),
     val imdbId: String? = null,
     val tmdbId: Int? = null,
     val traktId: Int? = null,
@@ -50,6 +51,7 @@ enum class LibrarySourceMode {
     LOCAL,
     TRAKT,
     SIMKL,
+    MDBLIST,
 }
 
 data class LibraryUiState(

@@ -79,6 +79,40 @@ class LibraryCatalogStateTest {
     }
 
     @Test
+    fun `mdblist catalog follows the selected list ranks during live updates`() = runBlocking {
+        val sectionKey = "mdblist:list:1"
+        val otherSectionKey = "mdblist:list:2"
+        val alpha = item("alpha").copy(listRanks = mapOf(sectionKey to 2, otherSectionKey to 1))
+        val zulu = item("zulu").copy(listRanks = mapOf(sectionKey to 1, otherSectionKey to 2))
+        val library = MutableStateFlow(
+            state(listOf(alpha, zulu), sectionKey).copy(sourceMode = LibrarySourceMode.MDBLIST),
+        )
+        val emissions = mutableListOf<CatalogUiState>()
+        val job = launch(start = CoroutineStart.UNDISPATCHED) {
+            library.libraryCatalogStates(
+                target(sectionKey).copy(sortOption = LibrarySortOption.DEFAULT),
+            ).collect { emissions.add(it) }
+        }
+        try {
+            assertEquals(listOf("zulu", "alpha"), emissions.last().items.map { it.id })
+
+            library.value = state(
+                listOf(
+                    alpha.copy(listRanks = alpha.listRanks + (sectionKey to 1)),
+                    zulu.copy(listRanks = zulu.listRanks + (sectionKey to 2)),
+                ),
+                sectionKey,
+            ).copy(sourceMode = LibrarySourceMode.MDBLIST)
+            yield()
+
+            assertEquals(listOf("alpha", "zulu"), emissions.last().items.map { it.id })
+            assertEquals(2, emissions.size)
+        } finally {
+            job.cancelAndJoin()
+        }
+    }
+
+    @Test
     fun `catalog follows library loading and recovery without reopening`() = runBlocking {
         val library = MutableStateFlow(LibraryUiState(isLoading = true))
         val emissions = mutableListOf<CatalogUiState>()

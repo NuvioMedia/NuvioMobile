@@ -184,7 +184,10 @@ internal fun MetaDetails.seriesPrimaryAction(
 ): SeriesPrimaryAction? =
     decideSeriesPrimaryAction(
         content = content,
-        episodes = videos.map(MetaVideo::toDomainReleasedEpisode),
+        episodes = videos.filterNot { video ->
+            entries.any { entry -> entry.parentMetaId == content.id && entry.parentMetaType.equals(content.type, true) &&
+                video.season in entry.excludedNextUpSeasons }
+        }.map(MetaVideo::toDomainReleasedEpisode),
         progressRecords = entries.map(WatchProgressEntry::toDomainProgressRecord),
         watchedRecords = watchedItems.map(WatchedItem::toDomainWatchedRecord),
         todayIsoDate = todayIsoDate,

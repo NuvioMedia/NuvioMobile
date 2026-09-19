@@ -26,6 +26,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import com.nuvio.app.features.tracking.TrackingLibraryTab
+import com.nuvio.app.features.tracking.membershipTitle
 import com.nuvio.app.features.tracking.trackingMembershipDestinations
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_cancel
@@ -128,7 +129,7 @@ fun TrackingListPickerDialog(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
                                 Text(
-                                    text = tab.title,
+                                    text = tab.membershipTitle(),
                                     modifier = Modifier.weight(1f),
                                     style = MaterialTheme.typography.bodyLarge,
                                     color = tokens.colors.textPrimary,
