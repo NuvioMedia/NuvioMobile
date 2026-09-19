@@ -22,6 +22,7 @@
     <string name="action_next">Next</string>
     <string name="action_ok">OK</string>
     <string name="action_play">Play</string>
+    <string name="action_watch_again">Watch Again</string>
     <string name="action_previous">Previous</string>
     <string name="action_remove">Remove</string>
     <string name="action_remove_anyway">Remove anyway</string>
