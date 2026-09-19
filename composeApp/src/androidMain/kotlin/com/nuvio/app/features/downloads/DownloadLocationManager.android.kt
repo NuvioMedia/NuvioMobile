@@ -2,57 +2,80 @@ package com.nuvio.app.features.downloads
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import java.io.File
 import java.net.URI
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 internal actual object DownloadLocationManager {
     private const val DOWNLOADS_DIRECTORY_NAME = "downloads"
+    private const val LOCATION_PREFERENCES_NAME = "nuvio_download_location"
+    private const val LOCATION_PREFERENCE_KEY = "download_location_pref"
+
+    private val locationJson = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     private var appContext: Context? = null
+    private var locationPref: DownloadLocationPref? = null
+    private var folderPickerLauncher: (() -> Unit)? = null
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
+        locationPref = loadLocationPref()
+        DownloadLocationState.refresh()
+    }
+
+    fun bindFolderPicker(launcher: (() -> Unit)?) {
+        folderPickerLauncher = launcher
+    }
+
+    fun onFolderPicked(uri: Uri?) {
+        if (uri == null) return
+        val context = appContext ?: return
+        runCatching {
+            context.contentResolver.takePersistableUriPermission(
+                uri,
+                Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+            )
+        }
+        persistLocationPref(
+            DownloadLocationPref(
+                mode = DownloadLocationMode.ANDROID_SAF,
+                value = uri.toString(),
+            ),
+        )
     }
 
     actual fun ensureLocationSet(): Boolean = true
 
-    actual fun currentLocationLabel(): String = downloadsDirectoryOrNull()?.absolutePath.orEmpty()
+    actual fun currentLocationLabel(): String {
+        val pref = locationPref
+        if (pref?.mode == DownloadLocationMode.ANDROID_SAF) {
+            return safLocationLabel(pref.value)
+        }
+        return downloadsDirectoryOrNull()?.absolutePath.orEmpty()
+    }
+
+    actual fun requestFolderPicker(): Boolean {
+        val launcher = folderPickerLauncher ?: return false
+        return runCatching {
+            launcher()
+            true
+        }.getOrDefault(false)
+    }
 
     actual fun openDownloadLocation(): Boolean {
-        val context = appContext ?: return false
-        val directory = downloadsDirectory().apply { mkdirs() }
-        val uri = runCatching {
-            FileProvider.getUriForFile(
-                context,
-                "${context.packageName}.fileprovider",
-                directory,
-            )
-        }.getOrNull() ?: return false
-
-        val intents = listOf(
-            Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "resource/folder")
-            },
-            Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(uri, "vnd.android.document/directory")
-            },
-            Intent(Intent.ACTION_VIEW).apply {
-                data = uri
-            },
-        )
-
-        return intents.any { intent ->
-            intent.addCategory(Intent.CATEGORY_DEFAULT)
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            intent.addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
-
-            runCatching {
-                context.startActivity(intent)
-                true
-            }.getOrDefault(false)
+        val pref = locationPref
+        if (pref?.mode == DownloadLocationMode.ANDROID_SAF) {
+            return openTreeLocation(pref.value)
         }
+        return openInternalDownloadsLocation()
     }
 
     actual fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String {
@@ -93,6 +116,92 @@ internal actual object DownloadLocationManager {
         if (localFileUri.isNullOrBlank()) return false
         val file = localFileUri.toLocalFileOrNull() ?: return false
         return runCatching { file.delete() }.getOrDefault(false)
+    }
+
+    private fun openInternalDownloadsLocation(): Boolean {
+        val context = appContext ?: return false
+        val directory = downloadsDirectory().apply { mkdirs() }
+        val uri = runCatching {
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                directory,
+            )
+        }.getOrNull() ?: return false
+
+        val intents = listOf(
+            Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "resource/folder")
+            },
+            Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(uri, "vnd.android.document/directory")
+            },
+            Intent(Intent.ACTION_VIEW).apply {
+                data = uri
+            },
+        )
+
+        return startFirstWorkingIntent(context, intents)
+    }
+
+    private fun openTreeLocation(value: String): Boolean {
+        val context = appContext ?: return false
+        val treeUri = runCatching { Uri.parse(value) }.getOrNull() ?: return false
+        val documentUri = DocumentsContract.buildDocumentUriUsingTree(
+            treeUri, DocumentsContract.getTreeDocumentId(treeUri)
+        )
+        val intents = listOf(
+            Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(
+                    documentUri,
+                    DocumentsContract.Document.MIME_TYPE_DIR
+                )
+            },
+        )
+
+        return startFirstWorkingIntent(context, intents)
+    }
+
+    private fun startFirstWorkingIntent(context: Context, intents: List<Intent>): Boolean =
+        intents.any { intent ->
+            intent.addCategory(Intent.CATEGORY_DEFAULT)
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            intent.addFlags(Intent.FLAG_GRANT_PREFIX_URI_PERMISSION)
+
+            runCatching {
+                context.startActivity(intent)
+                true
+            }.getOrDefault(false)
+        }
+
+    private fun safLocationLabel(value: String): String {
+        val uri = runCatching { Uri.parse(value) }.getOrNull()
+        val documentId = uri?.let {
+            runCatching { DocumentsContract.getTreeDocumentId(it) }.getOrNull()
+        }.orEmpty()
+        val path = documentId.substringAfter(':', documentId).trim('/')
+        return path.ifBlank { documentId.trimEnd(':').ifBlank { value } }
+    }
+
+    private fun loadLocationPref(): DownloadLocationPref? {
+        val raw = appContext
+            ?.getSharedPreferences(LOCATION_PREFERENCES_NAME, Context.MODE_PRIVATE)
+            ?.getString(LOCATION_PREFERENCE_KEY, null)
+            ?: return null
+        return runCatching {
+            locationJson.decodeFromString<DownloadLocationPref>(raw)
+        }.getOrNull()
+    }
+
+    private fun persistLocationPref(pref: DownloadLocationPref) {
+        appContext
+            ?.getSharedPreferences(LOCATION_PREFERENCES_NAME, Context.MODE_PRIVATE)
+            ?.edit()
+            ?.putString(LOCATION_PREFERENCE_KEY, locationJson.encodeToString(pref))
+            ?.apply()
+        locationPref = pref
+        DownloadLocationState.refresh()
     }
 
     private fun downloadsDirectoryOrNull(): File? =

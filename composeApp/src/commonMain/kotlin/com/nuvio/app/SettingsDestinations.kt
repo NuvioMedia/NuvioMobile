@@ -12,6 +12,7 @@ import com.nuvio.app.features.collection.CollectionRepository
 import com.nuvio.app.features.collection.FolderDetailRepository
 import com.nuvio.app.features.collection.FolderDetailScreen
 import com.nuvio.app.features.downloads.DownloadItem
+import com.nuvio.app.features.downloads.DownloadLocationSettingsScreen
 import com.nuvio.app.features.downloads.DownloadsScreen
 import com.nuvio.app.features.home.HomeCatalogSection
 import com.nuvio.app.features.home.MetaPreview
@@ -21,11 +22,15 @@ import com.nuvio.app.navigation.CollectionEditorPageRoute
 import com.nuvio.app.navigation.CollectionEditorRoute
 import com.nuvio.app.navigation.CollectionsRoute
 import com.nuvio.app.navigation.DetailRoute
+import com.nuvio.app.navigation.DownloadLocationSettingsRoute
 import com.nuvio.app.navigation.DownloadShowRoute
 import com.nuvio.app.navigation.DownloadsSettingsRoute
 import com.nuvio.app.navigation.FolderDetailRoute
 import com.nuvio.app.navigation.NuvioNavigator
 import com.nuvio.app.navigation.SettingsPageRoute
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.compose_settings_root_downloads_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun SettingsDestination(
@@ -76,9 +81,13 @@ internal fun DownloadsDestination(
     onOpenDownload: (DownloadItem) -> Unit,
 ) {
     val onBack = rememberGuardedPopBackStack(navController, route)
+    val locationSettingsTitle = stringResource(Res.string.compose_settings_root_downloads_title)
     DownloadsScreen(
         onBack = onBack,
         onOpenDownload = onOpenDownload,
+        onOpenLocationSettings = {
+            navController.navigate(DownloadLocationSettingsRoute(locationSettingsTitle))
+        },
         onNavigateToShow = if (useNativeNavigation) {
             { showId, title -> navController.navigate(DownloadShowRoute(showId, title)) }
         } else {
@@ -97,9 +106,19 @@ internal fun DownloadShowDestination(
     DownloadsScreen(
         onBack = onBack,
         onOpenDownload = onOpenDownload,
+        onOpenLocationSettings = {},
         initialShowId = route.showId,
         onBackFromShow = onBack,
     )
+}
+
+@Composable
+internal fun DownloadLocationSettingsDestination(
+    route: DownloadLocationSettingsRoute,
+    navController: NuvioNavigator,
+) {
+    val onBack = rememberGuardedPopBackStack(navController, route)
+    DownloadLocationSettingsScreen(onBack = onBack)
 }
 
 @Composable

@@ -624,6 +624,11 @@
     <string name="downloads_empty_episodes">No completed episodes</string>
     <string name="downloads_empty_title">No downloads yet</string>
     <string name="downloads_episode_count">%1$d downloaded episode(s)</string>
+    <string name="downloads_location_change">Change</string>
+    <string name="downloads_location_change_description">Choose a different folder for future downloads</string>
+    <string name="downloads_location_change_failed">Couldn&apos;t open the folder picker</string>
+    <string name="downloads_location_label">Download Location</string>
+    <string name="downloads_location_open">Open folder</string>
     <string name="downloads_open_directory">Open downloads folder</string>
     <string name="downloads_open_directory_failed">Couldn&apos;t open downloads folder</string>
     <string name="downloads_section_active">Active</string>

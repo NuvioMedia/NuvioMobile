@@ -5,6 +5,8 @@ internal expect object DownloadLocationManager {
 
     fun currentLocationLabel(): String
 
+    fun requestFolderPicker(): Boolean
+
     fun openDownloadLocation(): Boolean
 
     fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String

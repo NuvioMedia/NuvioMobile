@@ -1,5 +1,8 @@
 package com.nuvio.app.features.downloads
 
+import android.app.Application
+import android.net.Uri
+import android.provider.DocumentsContract
 import java.io.File
 import java.net.URI
 import org.junit.Rule
@@ -7,6 +10,7 @@ import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -21,8 +25,7 @@ class DownloadLocationManagerTest {
 
     @Test
     fun androidDefaultsToInternalStorageLocation() {
-        val context = RuntimeEnvironment.getApplication()
-        DownloadLocationManager.initialize(context)
+        val context = initializedApplication()
 
         assertTrue(DownloadLocationManager.ensureLocationSet())
         assertEquals(
@@ -33,8 +36,7 @@ class DownloadLocationManagerTest {
 
     @Test
     fun finalizeDownloadMovesTempFileIntoInternalLocation() {
-        val context = RuntimeEnvironment.getApplication()
-        DownloadLocationManager.initialize(context)
+        val context = initializedApplication()
         val temp = File(temporary.newFolder(), "video.mkv.part").apply { writeText("video bytes") }
 
         val uri = DownloadLocationManager.finalizeDownload(temp.toURI().toString(), "video.mkv")
@@ -48,8 +50,7 @@ class DownloadLocationManagerTest {
 
     @Test
     fun resolveLocalFileUriUsesStoredFileAndFallsBackToLocation() {
-        val context = RuntimeEnvironment.getApplication()
-        DownloadLocationManager.initialize(context)
+        val context = initializedApplication()
         val stored = File(temporary.newFolder(), "stored.mkv").apply { writeText("stored") }
 
         assertEquals(
@@ -70,12 +71,81 @@ class DownloadLocationManagerTest {
 
     @Test
     fun removeFileDeletesLegacyFile() {
-        val context = RuntimeEnvironment.getApplication()
-        DownloadLocationManager.initialize(context)
+        val context = initializedApplication()
         val file = File(temporary.newFolder(), "remove-me.mkv").apply { writeText("bytes") }
 
         assertTrue(DownloadLocationManager.removeFile(file.toURI().toString()))
         assertFalse(file.exists())
         assertFalse(DownloadLocationManager.removeFile(null))
+    }
+
+    @Test
+    fun folderPickerPersistsSafLocationAndUpdatesLabel() {
+        val context = initializedApplication()
+
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+
+        assertEquals("Movies", DownloadLocationManager.currentLocationLabel())
+        assertEquals("Movies", DownloadLocationState.locationLabel.value)
+
+        DownloadLocationManager.initialize(context)
+        assertEquals("Movies", DownloadLocationManager.currentLocationLabel())
+    }
+
+    @Test
+    fun changingFolderReplacesStoredLocation() {
+        initializedApplication()
+
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        DownloadLocationManager.onFolderPicked(SAF_NESTED_URI)
+
+        assertEquals("Download/Nuvio", DownloadLocationManager.currentLocationLabel())
+    }
+
+    @Test
+    fun cancellingFolderPickerKeepsExistingLocation() {
+        val context = initializedApplication()
+        val defaultLabel = DownloadLocationManager.currentLocationLabel()
+
+        DownloadLocationManager.onFolderPicked(null)
+
+        assertEquals(defaultLabel, DownloadLocationManager.currentLocationLabel())
+    }
+
+    @Test
+    fun openDownloadLocationUsesPersistedTreeDocumentUri() {
+        val application = initializedApplication()
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+
+        assertTrue(DownloadLocationManager.openDownloadLocation())
+
+        val started = shadowOf(application).nextStartedActivity
+        assertEquals(
+            DocumentsContract.buildDocumentUriUsingTree(
+                SAF_MOVIES_URI,
+                DocumentsContract.getTreeDocumentId(SAF_MOVIES_URI),
+            ),
+            started?.data,
+        )
+    }
+
+    @Test
+    fun requestFolderPickerInvokesBoundLauncher() {
+        initializedApplication()
+        var launched = false
+        DownloadLocationManager.bindFolderPicker { launched = true }
+
+        assertTrue(DownloadLocationManager.requestFolderPicker())
+        assertTrue(launched)
+    }
+
+    private fun initializedApplication(): Application =
+        RuntimeEnvironment.getApplication().also(DownloadLocationManager::initialize)
+
+    private companion object {
+        val SAF_MOVIES_URI: Uri =
+            Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMovies")
+        val SAF_NESTED_URI: Uri =
+            Uri.parse("content://com.android.externalstorage.documents/tree/primary%3ADownload%2FNuvio")
     }
 }

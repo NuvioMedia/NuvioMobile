@@ -18,6 +18,7 @@ import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -48,6 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 fun DownloadsScreen(
     onBack: () -> Unit,
     onOpenDownload: (DownloadItem) -> Unit,
+    onOpenLocationSettings: () -> Unit,
     initialShowId: String? = null,
     onNavigateToShow: ((showId: String, title: String) -> Unit)? = null,
     onBackFromShow: (() -> Unit)? = null,
@@ -99,7 +101,17 @@ fun DownloadsScreen(
                         Icon(
                             imageVector = Icons.Rounded.Folder,
                             contentDescription = stringResource(Res.string.downloads_open_directory),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                    if (selectedShowId == null) {
+                        IconButton(onClick = onOpenLocationSettings) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = stringResource(Res.string.compose_settings_root_downloads_title),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                 },
             )

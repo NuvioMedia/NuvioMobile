@@ -20,6 +20,8 @@ internal actual object DownloadLocationManager {
 
     actual fun currentLocationLabel(): String = downloadsDirectoryPath()
 
+    actual fun requestFolderPicker(): Boolean = false
+
     actual fun openDownloadLocation(): Boolean {
         val url = NSURL.fileURLWithPath(downloadsDirectoryPath())
         UIApplication.sharedApplication.openURL(
