@@ -5,6 +5,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -33,6 +34,12 @@ internal fun DownloadLocationSettingsScreen(
     val locationLabel by DownloadLocationManager.locationLabel.collectAsStateWithLifecycle()
     val openFolderFailedText = stringResource(Res.string.downloads_open_directory_failed)
     val changeFolderFailedText = stringResource(Res.string.downloads_location_change_failed)
+
+    LaunchedEffect(Unit) {
+        if (!DownloadLocationManager.ensureLocationSet()) {
+            DownloadLocationManager.requestFolderPicker()
+        }
+    }
 
     NuvioScreen(modifier = Modifier.fillMaxSize()) {
         stickyHeader {

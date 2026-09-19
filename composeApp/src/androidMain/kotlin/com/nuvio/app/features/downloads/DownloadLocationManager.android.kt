@@ -34,6 +34,7 @@ internal actual object DownloadLocationManager {
     fun initialize(context: Context) {
         appContext = context.applicationContext
         locationPref = loadLocationPref()
+        clearInvalidLocationIfNeeded()
         refreshLocationLabel()
     }
 
@@ -44,12 +45,13 @@ internal actual object DownloadLocationManager {
     fun onFolderPicked(uri: Uri?) {
         if (uri == null) return
         val context = appContext ?: return
-        runCatching {
+        val persisted = runCatching {
             context.contentResolver.takePersistableUriPermission(
                 uri,
                 Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
             )
-        }
+        }.isSuccess
+        if (!persisted) return
         persistLocationPref(
             DownloadLocationPref(
                 mode = DownloadLocationMode.ANDROID_SAF,
@@ -58,7 +60,12 @@ internal actual object DownloadLocationManager {
         )
     }
 
-    actual fun ensureLocationSet(): Boolean = true
+    actual fun ensureLocationSet(): Boolean {
+        if (clearInvalidLocationIfNeeded()) {
+            refreshLocationLabel()
+        }
+        return locationPref != null
+    }
 
     actual fun currentLocationLabel(): String {
         val pref = locationPref
@@ -102,6 +109,11 @@ internal actual object DownloadLocationManager {
     }
 
     actual fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String? {
+        val contentUri = localFileUri?.toContentUriOrNull()
+        if (contentUri != null && isContentUriAccessible(contentUri)) {
+            return contentUri.toString()
+        }
+
         localFileUri
             ?.toLocalFileOrNull()
             ?.takeIf { it.exists() }
@@ -153,17 +165,26 @@ internal actual object DownloadLocationManager {
     private fun openTreeLocation(value: String): Boolean {
         val context = appContext ?: return false
         val treeUri = runCatching { Uri.parse(value) }.getOrNull() ?: return false
-        val documentUri = DocumentsContract.buildDocumentUriUsingTree(
-            treeUri, DocumentsContract.getTreeDocumentId(treeUri)
-        )
-        val intents = listOf(
-            Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(
-                    documentUri,
-                    DocumentsContract.Document.MIME_TYPE_DIR
+        val documentUri = runCatching {
+            DocumentsContract.buildDocumentUriUsingTree(
+                treeUri,
+                DocumentsContract.getTreeDocumentId(treeUri),
+            )
+        }.getOrNull()
+        val intents = buildList {
+            add(
+                Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(treeUri, DocumentsContract.Document.MIME_TYPE_DIR)
+                },
+            )
+            if (documentUri != null) {
+                add(
+                    Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(documentUri, DocumentsContract.Document.MIME_TYPE_DIR)
+                    },
                 )
-            },
-        )
+            }
+        }
 
         return startFirstWorkingIntent(context, intents)
     }
@@ -189,6 +210,59 @@ internal actual object DownloadLocationManager {
         val path = documentId.substringAfter(':', documentId).trim('/')
         return path.ifBlank { documentId.trimEnd(':').ifBlank { value } }
     }
+
+    private fun clearInvalidLocationIfNeeded(): Boolean {
+        val pref = locationPref ?: return false
+        if (pref.mode != DownloadLocationMode.ANDROID_SAF) return false
+        val context = appContext ?: return false
+        val treeUri = runCatching { Uri.parse(pref.value) }.getOrNull()
+        if (treeUri != null && hasWritableTreePermission(context, treeUri)) return false
+
+        clearLocationPref()
+        return true
+    }
+
+    private fun clearLocationPref() {
+        locationPref = null
+        appContext
+            ?.getSharedPreferences(LOCATION_PREFERENCES_NAME, Context.MODE_PRIVATE)
+            ?.edit()
+            ?.remove(LOCATION_PREFERENCE_KEY)
+            ?.apply()
+    }
+
+    private fun isContentUriAccessible(uri: Uri): Boolean {
+        val context = appContext ?: return false
+        val treeUri = runCatching {
+            DocumentsContract.buildTreeDocumentUri(
+                uri.authority,
+                DocumentsContract.getTreeDocumentId(uri),
+            )
+        }.getOrNull() ?: return false
+        if (!hasReadableTreePermission(context, treeUri)) return false
+
+        return runCatching {
+            context.contentResolver.query(
+                uri,
+                arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID),
+                null,
+                null,
+                null,
+            )?.use { cursor -> cursor.moveToFirst() } == true
+        }.getOrDefault(false)
+    }
+
+    private fun hasWritableTreePermission(context: Context, treeUri: Uri): Boolean =
+        context.contentResolver.persistedUriPermissions.any { permission ->
+            permission.isReadPermission &&
+                permission.isWritePermission &&
+                permission.uri == treeUri
+        }
+
+    private fun hasReadableTreePermission(context: Context, treeUri: Uri): Boolean =
+        context.contentResolver.persistedUriPermissions.any { permission ->
+            permission.isReadPermission && permission.uri == treeUri
+        }
 
     private fun loadLocationPref(): DownloadLocationPref? {
         val raw = appContext
@@ -228,3 +302,6 @@ private fun String.toLocalFileOrNull(): File? = runCatching {
         File(this)
     }
 }.getOrNull()
+
+private fun String.toContentUriOrNull(): Uri? =
+    takeIf { it.startsWith("content:") }?.let(Uri::parse)
