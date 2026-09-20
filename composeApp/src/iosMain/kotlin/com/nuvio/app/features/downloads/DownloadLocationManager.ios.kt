@@ -1,12 +1,16 @@
 package com.nuvio.app.features.downloads
 
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSURL
 import platform.UIKit.UIApplication
 
 @OptIn(ExperimentalForeignApi::class)
 internal actual object DownloadLocationManager {
+    actual val locationLabel: StateFlow<String> = MutableStateFlow(downloadsDirectoryPath())
+
     actual fun ensureLocationSet(): Boolean {
         val path = downloadsDirectoryPath()
         NSFileManager.defaultManager.createDirectoryAtPath(

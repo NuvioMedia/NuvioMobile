@@ -106,7 +106,6 @@ internal fun DownloadShowDestination(
     DownloadsScreen(
         onBack = onBack,
         onOpenDownload = onOpenDownload,
-        onOpenLocationSettings = {},
         initialShowId = route.showId,
         onBackFromShow = onBack,
     )

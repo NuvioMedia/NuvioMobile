@@ -86,7 +86,7 @@ class DownloadLocationManagerTest {
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
 
         assertEquals("Movies", DownloadLocationManager.currentLocationLabel())
-        assertEquals("Movies", DownloadLocationState.locationLabel.value)
+        assertEquals("Movies", DownloadLocationManager.locationLabel.value)
 
         DownloadLocationManager.initialize(context)
         assertEquals("Movies", DownloadLocationManager.currentLocationLabel())

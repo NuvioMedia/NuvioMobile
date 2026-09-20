@@ -49,7 +49,7 @@ import org.jetbrains.compose.resources.stringResource
 fun DownloadsScreen(
     onBack: () -> Unit,
     onOpenDownload: (DownloadItem) -> Unit,
-    onOpenLocationSettings: () -> Unit,
+    onOpenLocationSettings: (() -> Unit)? = null,
     initialShowId: String? = null,
     onNavigateToShow: ((showId: String, title: String) -> Unit)? = null,
     onBackFromShow: (() -> Unit)? = null,
@@ -91,8 +91,9 @@ fun DownloadsScreen(
                     }
                 },
                 actions = {
-                    if (selectedShowId == null) {
-                        IconButton(onClick = onOpenLocationSettings) {
+                    val openLocationSettings = onOpenLocationSettings
+                    if (selectedShowId == null && openLocationSettings != null) {
+                        IconButton(onClick = openLocationSettings) {
                             Icon(
                                 imageVector = Icons.Rounded.Settings,
                                 contentDescription = stringResource(Res.string.compose_settings_root_downloads_title),

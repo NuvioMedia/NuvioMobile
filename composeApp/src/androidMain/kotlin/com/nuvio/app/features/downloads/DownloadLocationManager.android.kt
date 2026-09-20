@@ -7,6 +7,9 @@ import android.provider.DocumentsContract
 import androidx.core.content.FileProvider
 import java.io.File
 import java.net.URI
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -21,6 +24,9 @@ internal actual object DownloadLocationManager {
         encodeDefaults = true
     }
 
+    private val _locationLabel = MutableStateFlow("")
+    actual val locationLabel: StateFlow<String> = _locationLabel.asStateFlow()
+
     private var appContext: Context? = null
     private var locationPref: DownloadLocationPref? = null
     private var folderPickerLauncher: (() -> Unit)? = null
@@ -28,7 +34,7 @@ internal actual object DownloadLocationManager {
     fun initialize(context: Context) {
         appContext = context.applicationContext
         locationPref = loadLocationPref()
-        DownloadLocationState.refresh()
+        refreshLocationLabel()
     }
 
     fun bindFolderPicker(launcher: (() -> Unit)?) {
@@ -201,7 +207,11 @@ internal actual object DownloadLocationManager {
             ?.putString(LOCATION_PREFERENCE_KEY, locationJson.encodeToString(pref))
             ?.apply()
         locationPref = pref
-        DownloadLocationState.refresh()
+        refreshLocationLabel()
+    }
+
+    private fun refreshLocationLabel() {
+        _locationLabel.value = currentLocationLabel()
     }
 
     private fun downloadsDirectoryOrNull(): File? =
