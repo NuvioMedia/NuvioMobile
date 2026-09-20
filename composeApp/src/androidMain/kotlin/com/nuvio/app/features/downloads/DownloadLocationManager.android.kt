@@ -8,10 +8,12 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.net.URI
 import kotlinx.coroutines.CancellableContinuation
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -125,26 +127,27 @@ internal actual object DownloadLocationManager {
         return openInternalDownloadsLocation()
     }
 
-    actual fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String {
-        val source = sourceFileUri.toLocalFileOrNull()
-            ?: error("Unsupported download source: $sourceFileUri")
-        val pref = locationPref
-        if (pref?.mode == DownloadLocationMode.ANDROID_SAF) {
-            return copyIntoTreeLocation(pref.value, source, destinationFileName)
+    actual suspend fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String =
+        withContext(Dispatchers.IO) {
+            val source = sourceFileUri.toLocalFileOrNull()
+                ?: error("Unsupported download source: $sourceFileUri")
+            val pref = locationPref
+            if (pref?.mode == DownloadLocationMode.ANDROID_SAF) {
+                return@withContext copyIntoTreeLocation(pref.value, source, destinationFileName)
+            }
+            val destination = File(downloadsDirectory(), destinationFileName)
+            if (source.absolutePath == destination.absolutePath) {
+                return@withContext destination.toURI().toString()
+            }
+            check(destination.parentFile?.let { it.isDirectory || it.mkdirs() } == true) {
+                "Cannot create downloads directory"
+            }
+            if (!source.renameTo(destination)) {
+                source.copyTo(destination, overwrite = true)
+                source.delete()
+            }
+            destination.toURI().toString()
         }
-        val destination = File(downloadsDirectory(), destinationFileName)
-        if (source.absolutePath == destination.absolutePath) {
-            return destination.toURI().toString()
-        }
-        check(destination.parentFile?.let { it.isDirectory || it.mkdirs() } == true) {
-            "Cannot create downloads directory"
-        }
-        if (!source.renameTo(destination)) {
-            source.copyTo(destination, overwrite = true)
-            source.delete()
-        }
-        return destination.toURI().toString()
-    }
 
     actual fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String? {
         val contentUri = localFileUri?.toContentUriOrNull()

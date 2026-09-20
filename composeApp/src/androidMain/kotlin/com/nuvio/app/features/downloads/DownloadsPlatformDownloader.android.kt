@@ -64,18 +64,9 @@ internal actual object DownloadsPlatformDownloader {
         }
     }
 
-    actual fun removeFile(localFileUri: String?): Boolean =
-        DownloadLocationManager.removeFile(localFileUri)
-
     actual fun removePartialFile(destinationFileName: String): Boolean {
         val scheduler = downloadScheduler ?: return false
         scheduler.remove(destinationFileName)
         return true
     }
-
-    actual fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String? =
-        DownloadLocationManager.resolveLocalFileUri(localFileUri, destinationFileName)
-
-    actual fun openDownloadsDirectory(): Boolean =
-        DownloadLocationManager.openDownloadLocation()
 }

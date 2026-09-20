@@ -84,7 +84,7 @@ class DownloadLocationManagerTest {
     }
 
     @Test
-    fun finalizeDownloadMovesTempFileIntoInternalLocation() {
+    fun finalizeDownloadMovesTempFileIntoInternalLocation() = runBlocking {
         val context = initializedApplication()
         val temp = File(temporary.newFolder(), "video.mkv.part").apply { writeText("video bytes") }
 
@@ -98,7 +98,7 @@ class DownloadLocationManagerTest {
     }
 
     @Test
-    fun finalizeDownloadCopiesTempFileIntoSelectedFolderAndDeletesTemp() {
+    fun finalizeDownloadCopiesTempFileIntoSelectedFolderAndDeletesTemp() = runBlocking {
         val context = initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
         val provider = registerDocumentProvider(SAF_MOVIES_URI)
@@ -116,7 +116,7 @@ class DownloadLocationManagerTest {
     }
 
     @Test
-    fun finalizedDocumentUriResolvesForPlayback() {
+    fun finalizedDocumentUriResolvesForPlayback() = runBlocking {
         initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
         registerDocumentProvider(SAF_MOVIES_URI)
@@ -128,7 +128,7 @@ class DownloadLocationManagerTest {
     }
 
     @Test
-    fun finalizeDownloadReplacesExistingFileInSelectedFolder() {
+    fun finalizeDownloadReplacesExistingFileInSelectedFolder() = runBlocking {
         val context = initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
         val provider = registerDocumentProvider(SAF_MOVIES_URI)

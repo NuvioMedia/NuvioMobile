@@ -76,6 +76,7 @@ import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
+import com.nuvio.app.features.downloads.DownloadEnqueueResult
 import com.nuvio.app.features.downloads.DownloadLocationManager
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.details.MetaScreenSettingsRepository
@@ -347,44 +348,8 @@ fun StreamsScreen(
             },
             onDownload = { stream ->
                 downloadScope.launch {
-                    if (!DownloadLocationManager.ensureLocationSelected()) {
-                        NuvioToastController.show(downloadLocationPromptCancelledText)
-                        return@launch
-                    }
-                    if (DirectDebridPlaybackResolver.shouldResolveToPlayableStream(stream)) {
-                        val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(
-                            stream = stream,
-                            season = seasonNumber,
-                            episode = episodeNumber,
-                        )
-                        when (resolved) {
-                            is DirectDebridPlayableResult.Success -> {
-                                val result = DownloadsRepository.enqueueFromStream(
-                                    contentType = type,
-                                    videoId = videoId,
-                                    parentMetaId = parentMetaId,
-                                    parentMetaType = parentMetaType,
-                                    title = title,
-                                    logo = logo,
-                                    poster = poster,
-                                    background = background,
-                                    seasonNumber = seasonNumber,
-                                    episodeNumber = episodeNumber,
-                                    episodeTitle = episodeTitle,
-                                    episodeThumbnail = episodeThumbnail,
-                                    stream = resolved.stream,
-                                )
-                                NuvioToastController.show(result.toastMessage())
-                            }
-                            else -> {
-                                val message = resolved.toastMessage()
-                                if (message != null) {
-                                    NuvioToastController.show(message)
-                                }
-                            }
-                        }
-                    } else {
-                        val result = DownloadsRepository.enqueueFromStream(
+                    val enqueue: (StreamItem) -> DownloadEnqueueResult = { targetStream ->
+                        DownloadsRepository.enqueueFromStream(
                             contentType = type,
                             videoId = videoId,
                             parentMetaId = parentMetaId,
@@ -397,9 +362,42 @@ fun StreamsScreen(
                             episodeNumber = episodeNumber,
                             episodeTitle = episodeTitle,
                             episodeThumbnail = episodeThumbnail,
-                            stream = stream,
+                            stream = targetStream,
                         )
-                        NuvioToastController.show(result.toastMessage())
+                    }
+                    suspend fun enqueueWithLocationPrompt(targetStream: StreamItem): DownloadEnqueueResult? {
+                        val firstAttempt = enqueue(targetStream)
+                        if (firstAttempt != DownloadEnqueueResult.MissingLocation) return firstAttempt
+                        if (!DownloadLocationManager.ensureLocationSelected()) {
+                            NuvioToastController.show(downloadLocationPromptCancelledText)
+                            return null
+                        }
+                        return enqueue(targetStream)
+                    }
+
+                    if (DirectDebridPlaybackResolver.shouldResolveToPlayableStream(stream)) {
+                        val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(
+                            stream = stream,
+                            season = seasonNumber,
+                            episode = episodeNumber,
+                        )
+                        when (resolved) {
+                            is DirectDebridPlayableResult.Success -> {
+                                enqueueWithLocationPrompt(resolved.stream)?.let { result ->
+                                    NuvioToastController.show(result.toastMessage())
+                                }
+                            }
+                            else -> {
+                                val message = resolved.toastMessage()
+                                if (message != null) {
+                                    NuvioToastController.show(message)
+                                }
+                            }
+                        }
+                    } else {
+                        enqueueWithLocationPrompt(stream)?.let { result ->
+                            NuvioToastController.show(result.toastMessage())
+                        }
                     }
                 }
             },

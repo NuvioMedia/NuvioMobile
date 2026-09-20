@@ -80,7 +80,7 @@ object DownloadsRepository {
     fun playableLocalFileUri(item: DownloadItem): String? {
         ensureLoaded()
         if (item.status != DownloadStatus.Completed) return null
-        val resolvedUri = DownloadsPlatformDownloader.resolveLocalFileUri(
+        val resolvedUri = DownloadLocationManager.resolveLocalFileUri(
             localFileUri = item.localFileUri,
             destinationFileName = item.fileName,
         ) ?: return null
@@ -118,10 +118,6 @@ object DownloadsRepository {
     ): DownloadEnqueueResult {
         ensureLoaded()
 
-        if (!DownloadLocationManager.ensureLocationSet()) {
-            return DownloadEnqueueResult.MissingLocation
-        }
-
         val sourceUrl = stream.playableDirectUrl
             ?.trim()
             ?.takeIf { it.isNotBlank() }
@@ -129,6 +125,10 @@ object DownloadsRepository {
 
         if (!sourceUrl.isSupportedDownloadUrl()) {
             return DownloadEnqueueResult.UnsupportedFormat
+        }
+
+        if (!DownloadLocationManager.ensureLocationSet()) {
+            return DownloadEnqueueResult.MissingLocation
         }
 
         val now = DownloadsClock.nowEpochMs()
@@ -144,7 +144,7 @@ object DownloadsRepository {
         if (existing != null) {
             replacedExisting = true
             activeHandles.remove(existing.id)?.cancel()
-            DownloadsPlatformDownloader.removeFile(playableLocalFileUri(existing) ?: existing.localFileUri)
+            DownloadLocationManager.removeFile(playableLocalFileUri(existing) ?: existing.localFileUri)
             DownloadsPlatformDownloader.removePartialFile(existing.fileName)
             currentItems.removeAll { it.id == existing.id }
         }
@@ -264,7 +264,7 @@ object DownloadsRepository {
         val item = _uiState.value.items.firstOrNull { it.id == downloadId } ?: return
 
         activeHandles.remove(downloadId)?.cancel()
-        DownloadsPlatformDownloader.removeFile(playableLocalFileUri(item) ?: item.localFileUri)
+        DownloadLocationManager.removeFile(playableLocalFileUri(item) ?: item.localFileUri)
         DownloadsPlatformDownloader.removePartialFile(item.fileName)
 
         publish(_uiState.value.items.filterNot { it.id == downloadId })
@@ -418,7 +418,7 @@ object DownloadsRepository {
 
     private fun normalizeCompletedLocalFileUri(item: DownloadItem): DownloadItem {
         if (item.status != DownloadStatus.Completed) return item
-        val resolvedUri = DownloadsPlatformDownloader.resolveLocalFileUri(
+        val resolvedUri = DownloadLocationManager.resolveLocalFileUri(
             localFileUri = item.localFileUri,
             destinationFileName = item.fileName,
         ) ?: return item
@@ -431,7 +431,7 @@ object DownloadsRepository {
 
     private fun DownloadItem.hasPlayableLocalFile(): Boolean =
         status == DownloadStatus.Completed &&
-            DownloadsPlatformDownloader.resolveLocalFileUri(
+            DownloadLocationManager.resolveLocalFileUri(
                 localFileUri = localFileUri,
                 destinationFileName = fileName,
             ) != null

@@ -15,7 +15,7 @@ internal expect object DownloadLocationManager {
 
     fun openDownloadLocation(): Boolean
 
-    fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String
+    suspend fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String
 
     fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String?
 

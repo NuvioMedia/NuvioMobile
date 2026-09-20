@@ -18,7 +18,25 @@ class DownloadsRepositoryEnqueueTest {
         DownloadLocationManager.initialize(context)
         DownloadsRepository.clearLocalState()
 
-        val result = DownloadsRepository.enqueueFromStream(
+        val result = enqueue(url = "https://example.com/video.mkv")
+
+        assertEquals(DownloadEnqueueResult.MissingLocation, result)
+    }
+
+    @Test
+    fun enqueueWithoutLocationStillValidatesFormat() {
+        val context = RuntimeEnvironment.getApplication()
+        DownloadsStorage.initialize(context)
+        DownloadLocationManager.initialize(context)
+        DownloadsRepository.clearLocalState()
+
+        val result = enqueue(url = "https://example.com/playlist.m3u8")
+
+        assertEquals(DownloadEnqueueResult.UnsupportedFormat, result)
+    }
+
+    private fun enqueue(url: String): DownloadEnqueueResult =
+        DownloadsRepository.enqueueFromStream(
             contentType = "movie",
             videoId = "tt1",
             parentMetaId = "tt1",
@@ -32,12 +50,9 @@ class DownloadsRepositoryEnqueueTest {
             episodeTitle = null,
             episodeThumbnail = null,
             stream = StreamItem(
-                url = "https://example.com/video.mkv",
+                url = url,
                 addonName = "Test",
                 addonId = "test",
             ),
         )
-
-        assertEquals(DownloadEnqueueResult.MissingLocation, result)
-    }
 }

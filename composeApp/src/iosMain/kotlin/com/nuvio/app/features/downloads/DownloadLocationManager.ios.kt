@@ -38,7 +38,7 @@ internal actual object DownloadLocationManager {
         return true
     }
 
-    actual fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String {
+    actual suspend fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String {
         val sourcePath = sourceFileUri.toLocalPath()
             ?: error("Unsupported download source: $sourceFileUri")
         val destinationPath = "${downloadsDirectoryPath()}/$destinationFileName"
