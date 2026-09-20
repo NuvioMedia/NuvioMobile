@@ -22,4 +22,6 @@ actual object WatchProgressStorage {
             ?.putString("${payloadKey}_$profileId", payload)
             ?.apply()
     }
+
+    actual fun flushPendingWrites(): Boolean = preferences?.edit()?.commit() == true
 }

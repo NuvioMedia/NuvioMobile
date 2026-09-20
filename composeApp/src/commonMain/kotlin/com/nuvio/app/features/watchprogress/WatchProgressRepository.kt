@@ -1105,9 +1105,10 @@ object WatchProgressRepository {
         session: WatchProgressPlaybackSession,
         snapshot: PlayerPlaybackSnapshot,
         syncRemote: Boolean = true,
-    ) {
+    ): Boolean {
         ensureLoaded()
         upsert(session = session, snapshot = snapshot, persist = true, syncRemote = syncRemote)
+        return WatchProgressStorage.flushPendingWrites()
     }
 
     fun clearProgress(videoId: String, parentMetaId: String? = null) {
