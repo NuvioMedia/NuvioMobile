@@ -10,8 +10,17 @@ import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import java.io.File
 import java.io.FileNotFoundException
+import java.util.concurrent.atomic.AtomicInteger
 
 internal class FakeDocumentsProvider : ContentProvider() {
+    @Volatile
+    var failCreateDocument: Boolean = false
+
+    private val createAttempts = AtomicInteger()
+
+    val createDocumentAttempts: Int
+        get() = createAttempts.get()
+
     var appendSupported: Boolean = true
     var renameSupported: Boolean = true
     val createdMimeTypes = mutableListOf<String>()
@@ -25,6 +34,8 @@ internal class FakeDocumentsProvider : ContentProvider() {
             ?: return null
         return when (method) {
             METHOD_CREATE_DOCUMENT -> {
+                createAttempts.incrementAndGet()
+                if (failCreateDocument) return null
                 val displayName = extras?.getString(EXTRA_DISPLAY_NAME) ?: return null
                 val mimeType = extras.getString(EXTRA_MIME_TYPE)
                 mimeType?.let { createdMimeTypes += it }

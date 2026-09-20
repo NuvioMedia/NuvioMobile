@@ -1,7 +1,13 @@
 package com.nuvio.app.features.downloads
 
 import com.nuvio.app.features.player.addonSubtitleRequests
+import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.streams.StreamItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +25,8 @@ object DownloadsRepository {
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
 
     private val activeHandles = mutableMapOf<String, DownloadsTaskHandle>()
+    private val migrationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var migrationJob: Job? = null
     private var hasLoaded = false
     private var nextDownloadOrdinal = 0L
 
@@ -34,6 +42,8 @@ object DownloadsRepository {
     fun clearLocalState() {
         activeHandles.values.forEach(DownloadsTaskHandle::cancel)
         activeHandles.clear()
+        migrationJob?.cancel()
+        migrationJob = null
         hasLoaded = false
         _uiState.value = DownloadsUiState()
         notifyLiveStatusPlatform()
@@ -272,11 +282,14 @@ object DownloadsRepository {
     }
 
     private fun loadFromDisk() {
+        migrationJob?.cancel()
+        migrationJob = null
         hasLoaded = true
         val payload = DownloadsStorage.loadPayload().orEmpty().trim()
         if (payload.isEmpty()) {
             _uiState.value = DownloadsUiState()
             notifyLiveStatusPlatform()
+            scheduleLegacyMigrationIfNeeded()
             return
         }
 
@@ -299,6 +312,37 @@ object DownloadsRepository {
         }
         normalized.filter { it.status == DownloadStatus.Downloading && it.id !in activeHandles }
             .forEach(::startDownload)
+        scheduleLegacyMigrationIfNeeded()
+    }
+
+    private fun scheduleLegacyMigrationIfNeeded() {
+        if (DownloadsStorage.isLegacyMigrationComplete()) return
+        if (!DownloadLocationManager.ensureLocationSet()) return
+
+        val legacyItems = LegacyDownloadMigration.itemsToMigrate(_uiState.value.items)
+        if (legacyItems.isEmpty()) {
+            DownloadsStorage.markLegacyMigrationComplete()
+            return
+        }
+
+        val profileId = ProfileRepository.activeProfileId
+        migrationJob = migrationScope.launch {
+            val migratedAll = LegacyDownloadMigration.migrate(legacyItems) { item, migratedUri ->
+                mutateItem(item.id) { current ->
+                    if (current.status == DownloadStatus.Completed && current.localFileUri == item.localFileUri) {
+                        current.copy(
+                            localFileUri = migratedUri,
+                            updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                        )
+                    } else {
+                        current
+                    }
+                }
+            }
+            if (migratedAll && ProfileRepository.activeProfileId == profileId) {
+                DownloadsStorage.markLegacyMigrationComplete()
+            }
+        }
     }
 
     private fun startDownload(item: DownloadItem) {

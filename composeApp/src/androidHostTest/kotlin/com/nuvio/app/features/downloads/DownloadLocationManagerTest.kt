@@ -164,6 +164,39 @@ class DownloadLocationManagerTest {
     }
 
     @Test
+    fun missingLegacyStoredFileResolvesToTheSameNameInTheSelectedFolder() {
+        initializedApplication()
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val provider = registerDocumentProvider(SAF_MOVIES_URI)
+        provider.createDocument("primary:Movies/migrated.mkv", "video bytes")
+        val documentUri = safDocumentUri("primary:Movies/migrated.mkv")
+
+        assertEquals(
+            documentUri.toString(),
+            DownloadLocationManager.resolveLocalFileUri(
+                "file:/data/user/0/com.nuvio/files/downloads/migrated.mkv",
+                "migrated.mkv",
+            ),
+        )
+    }
+
+    @Test
+    fun revokedLocationDoesNotResolveStoredFilesByName() {
+        val context = initializedApplication()
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val provider = registerDocumentProvider(SAF_MOVIES_URI)
+        provider.createDocument("primary:Movies/video.mkv", "video bytes")
+        revokePersistedPermission(context, SAF_MOVIES_URI)
+
+        assertNull(
+            DownloadLocationManager.resolveLocalFileUri(
+                "file:/data/user/0/com.nuvio/files/downloads/video.mkv",
+                "video.mkv",
+            ),
+        )
+    }
+
+    @Test
     fun removeFileDeletesLegacyFile() {
         val context = initializedApplication()
         val file = File(temporary.newFolder(), "remove-me.mkv").apply { writeText("bytes") }
