@@ -1,6 +1,7 @@
 package com.nuvio.app.features.details.components
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -32,6 +33,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +54,9 @@ import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.heroStretchHeight
 import com.nuvio.app.core.ui.heroStretchZoom
 import com.nuvio.app.features.details.MetaDetails
+import com.nuvio.app.features.details.heroTrailerFullscreenChromeAlpha
+import com.nuvio.app.features.trailer.TrailerPlaybackState
+import com.nuvio.app.features.trailer.TrailerPlayerControls
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
@@ -74,12 +79,26 @@ fun DetailHero(
     onHeroTrailerReady: () -> Unit = {},
     onHeroTrailerEnded: () -> Unit = {},
     onHeroTrailerError: () -> Unit = {},
+    fullscreenProgress: () -> Float = { 0f },
+    showFullscreenControls: Boolean = false,
+    fullscreenTitle: String = "",
+    onExitFullscreen: (() -> Unit)? = null,
+    lockHeroSize: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
     ) {
-        val heroHeight = detailHeroHeight(maxWidth, isTablet)
+        val liveHeroHeight = detailHeroHeight(maxWidth, isTablet)
+        var lockedHeroHeight by remember { mutableStateOf<Dp?>(null) }
+        SideEffect {
+            lockedHeroHeight = if (lockHeroSize) {
+                lockedHeroHeight ?: liveHeroHeight
+            } else {
+                null
+            }
+        }
+        val heroHeight = lockedHeroHeight ?: liveHeroHeight
         val trailerAlpha by animateFloatAsState(
             targetValue = if (heroTrailerReady) 1f else 0f,
             animationSpec = tween(durationMillis = 300),
@@ -94,6 +113,7 @@ fun DetailHero(
             mutableStateOf(false)
         }
         val logoUrl = meta.logo?.takeIf { it.isNotBlank() }
+        val playbackState = remember(heroTrailerSourceUrl) { TrailerPlaybackState() }
 
         val heroBaseHeightPx = with(LocalDensity.current) { heroHeight.roundToPx() }
         LaunchedEffect(heroBaseHeightPx) { onHeightChanged(heroBaseHeightPx) }
@@ -125,7 +145,7 @@ fun DetailHero(
                                 translationY = scrollOffset() * 0.5f
                                 scaleX = 1.08f
                                 scaleY = 1.08f
-                        },
+                            },
                         alignment = if (isTablet) Alignment.TopCenter else Alignment.Center,
                         contentScale = ContentScale.Crop,
                         onSuccess = { state ->
@@ -146,28 +166,32 @@ fun DetailHero(
                     HeroTrailerPlayerSurface(
                         sourceUrl = heroTrailerSourceUrl,
                         sourceAudioUrl = heroTrailerSourceAudioUrl,
-                        playWhenReady = heroTrailerPlayWhenReady(),
+                        playWhenReady = heroTrailerPlayWhenReady() && playbackState.playWhenReady,
                         muted = heroTrailerMuted,
                         modifier = Modifier
                             .align(Alignment.TopCenter)
-                            .fillMaxWidth()
-                            .height(heroHeight)
-                            .heroStretchZoom(stretchPx)
+                            .fillMaxSize()
                             .graphicsLayer {
+                                val fullscreen = fullscreenProgress()
+                                val chromeAlpha = heroTrailerFullscreenChromeAlpha(fullscreen)
                                 alpha = trailerAlpha
-                                translationY = scrollOffset() * 0.5f
-                                scaleX = 1.08f
-                                scaleY = 1.08f
+                                translationY = scrollOffset() * 0.5f * chromeAlpha
+                                val idleZoom = 1.08f
+                                val zoom = idleZoom + (1f - idleZoom) * fullscreen
+                                scaleX = zoom
+                                scaleY = zoom
                             },
                         onReady = onHeroTrailerReady,
                         onEnded = onHeroTrailerEnded,
                         onError = onHeroTrailerError,
+                        onControllerReady = { playbackState.controller = it },
+                        onSnapshot = { playbackState.snapshot = it },
                     )
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
                             .clickable(
-                                enabled = heroTrailerReady,
+                                enabled = heroTrailerReady && !showFullscreenControls,
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                                 onClick = onHeroTrailerMuteToggle,
@@ -182,7 +206,7 @@ fun DetailHero(
                                 end = if (isTablet) 32.dp else 22.dp,
                             )
                             .graphicsLayer {
-                                alpha = trailerAlpha * 0.72f
+                                alpha = trailerAlpha * 0.72f * heroTrailerFullscreenChromeAlpha(fullscreenProgress())
                             },
                         transitionSpec = {
                             (fadeIn(animationSpec = tween(120)) + scaleIn(
@@ -209,6 +233,9 @@ fun DetailHero(
                         .fillMaxWidth()
                         .height(if (isTablet) 360.dp else 320.dp)
                         .align(Alignment.BottomCenter)
+                        .graphicsLayer {
+                            alpha = heroTrailerFullscreenChromeAlpha(fullscreenProgress())
+                        }
                         .background(
                             Brush.verticalGradient(
                                 colorStops = arrayOf(
@@ -228,7 +255,10 @@ fun DetailHero(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = if (isTablet) 32.dp else 18.dp)
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = 8.dp)
+                        .graphicsLayer {
+                            alpha = heroTrailerFullscreenChromeAlpha(fullscreenProgress())
+                        },
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     if (logoUrl != null && !logoLoadError) {
@@ -261,6 +291,18 @@ fun DetailHero(
                             textAlign = TextAlign.Center,
                         )
                     }
+                }
+                AnimatedVisibility(
+                    visible = showFullscreenControls && heroTrailerSourceUrl != null,
+                    enter = fadeIn(animationSpec = tween(durationMillis = 220)),
+                    exit = fadeOut(animationSpec = tween(durationMillis = 140)),
+                ) {
+                    TrailerPlayerControls(
+                        state = playbackState,
+                        canControlPlayback = heroTrailerReady,
+                        title = fullscreenTitle,
+                        onExitFullscreen = onExitFullscreen,
+                    )
                 }
             }
         }
