@@ -3,7 +3,6 @@ package com.nuvio.app.features.downloads
 import android.app.job.JobInfo
 import android.net.Uri
 import org.robolectric.RuntimeEnvironment
-import org.robolectric.Robolectric
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
@@ -137,7 +136,7 @@ class AndroidDownloadLifecycleTest {
         val context = RuntimeEnvironment.getApplication()
         DownloadLocationManager.initialize(context)
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
-        Robolectric.setupContentProvider(FakeDocumentsProvider::class.java, SAF_MOVIES_URI.authority)
+        registerFakeDocumentsProvider()
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setBody("complete video"))
             val scheduler = AndroidDownloadScheduler(context)
@@ -157,10 +156,5 @@ class AndroidDownloadLifecycleTest {
             )
             assertFalse(File(scheduler.directory, item.fileName).exists())
         }
-    }
-
-    private companion object {
-        val SAF_MOVIES_URI: Uri =
-            Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMovies")
     }
 }

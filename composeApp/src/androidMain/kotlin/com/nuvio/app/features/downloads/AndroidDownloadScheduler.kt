@@ -36,9 +36,9 @@ import okhttp3.ConnectionPool
 
 internal class AndroidDownloadScheduler(val context: Context) {
     val store = AndroidDownloadStore(File(context.filesDir, "download-transfers"))
-    val directory = File(context.filesDir, "downloads")
+    val directory = internalDownloadsDirectory(context)
     private val locks = ConcurrentHashMap<String, Mutex>()
-    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun enqueue(item: DownloadItem): AndroidDownloadTransfer {
         val previous = store.get(item.fileName)
@@ -120,7 +120,7 @@ internal class AndroidDownloadScheduler(val context: Context) {
         store.remove(fileName)
         transfer?.let(::cancelScheduled)
         transfer?.let { DownloadsLiveStatusPlatform.removeNotification(it.item.id) }
-        cleanupScope.launch {
+        backgroundScope.launch {
             lock(fileName).withLock {
                 if (store.get(fileName) == null) {
                     File(directory, "$fileName.part").delete()

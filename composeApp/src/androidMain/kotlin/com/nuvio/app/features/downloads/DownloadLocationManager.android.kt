@@ -19,10 +19,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 internal actual object DownloadLocationManager {
-    private const val DOWNLOADS_DIRECTORY_NAME = "downloads"
     private const val LOCATION_PREFERENCES_NAME = "nuvio_download_location"
     private const val LOCATION_PREFERENCE_KEY = "download_location_pref"
-    private const val DOWNLOAD_MIME_TYPE = "application/octet-stream"
 
     private val locationJson = Json {
         ignoreUnknownKeys = true
@@ -32,13 +30,12 @@ internal actual object DownloadLocationManager {
     private val _locationLabel = MutableStateFlow("")
     actual val locationLabel: StateFlow<String> = _locationLabel.asStateFlow()
 
-    private var appContext: Context? = null
     private var locationPref: DownloadLocationPref? = null
     private var folderPickerLauncher: (() -> Unit)? = null
     private var pendingLocationSelection: CancellableContinuation<Boolean>? = null
 
     fun initialize(context: Context) {
-        appContext = context.applicationContext
+        DownloadsAndroidContext.initialize(context)
         locationPref = loadLocationPref()
         clearInvalidLocationIfNeeded()
         refreshLocationLabel()
@@ -55,7 +52,7 @@ internal actual object DownloadLocationManager {
             continuation?.resumeWith(Result.success(false))
             return
         }
-        val context = appContext
+        val context = DownloadsAndroidContext.contextOrNull()
         if (context == null) {
             continuation?.resumeWith(Result.success(false))
             return
@@ -86,7 +83,7 @@ internal actual object DownloadLocationManager {
         return locationPref != null
     }
 
-    actual suspend fun ensureLocationSelected(): Boolean {
+    actual suspend fun ensureLocationSelectedOrPrompt(): Boolean {
         if (ensureLocationSet()) return true
         return suspendCancellableCoroutine { continuation ->
             pendingLocationSelection?.cancel()
@@ -175,42 +172,40 @@ internal actual object DownloadLocationManager {
         if (localFileUri.isNullOrBlank()) return false
         val contentUri = localFileUri.toContentUriOrNull()
         if (contentUri != null) {
-            val context = appContext ?: return false
-            return runCatching {
-                DocumentsContract.deleteDocument(context.contentResolver, contentUri)
-            }.getOrDefault(false)
+            val resolver = DownloadsAndroidContext.contentResolverOrNull() ?: return false
+            return SafDocuments.delete(resolver, contentUri)
         }
         val file = localFileUri.toLocalFileOrNull() ?: return false
         return runCatching { file.delete() }.getOrDefault(false)
     }
 
     private fun copyIntoTreeLocation(treeValue: String, source: File, destinationFileName: String): String {
-        val context = appContext ?: error("Downloads are not initialized")
+        val resolver = DownloadsAndroidContext.contentResolver()
         val treeUri = runCatching { Uri.parse(treeValue) }.getOrNull()
             ?: error("Unsupported download location: $treeValue")
         val treeDocumentId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
             ?: error("Unsupported download location: $treeValue")
         val treeDocumentUri = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeDocumentId)
 
-        findDocumentByName(context, treeUri, destinationFileName)?.let { existing ->
-            runCatching { DocumentsContract.deleteDocument(context.contentResolver, existing) }
+        SafDocuments.findChild(resolver, treeUri, treeDocumentId, destinationFileName)?.let { existing ->
+            SafDocuments.delete(resolver, existing)
         }
 
-        val documentUri = DocumentsContract.createDocument(
-            context.contentResolver,
-            treeDocumentUri,
-            DOWNLOAD_MIME_TYPE,
-            destinationFileName,
+        val documentUri = SafDocuments.createDocument(
+            resolver = resolver,
+            parentDocumentUri = treeDocumentUri,
+            mimeType = mimeTypeForFileName(destinationFileName),
+            displayName = destinationFileName,
         ) ?: error("Could not create the download file in the selected folder")
 
         try {
-            val output = context.contentResolver.openOutputStream(documentUri, "w")
+            val output = resolver.openOutputStream(documentUri, "w")
                 ?: error("Could not open the download file in the selected folder")
             output.use { stream ->
                 source.inputStream().use { input -> input.copyTo(stream) }
             }
         } catch (error: Throwable) {
-            runCatching { DocumentsContract.deleteDocument(context.contentResolver, documentUri) }
+            SafDocuments.delete(resolver, documentUri)
             throw error
         }
 
@@ -218,38 +213,8 @@ internal actual object DownloadLocationManager {
         return documentUri.toString()
     }
 
-    private fun findDocumentByName(context: Context, treeUri: Uri, displayName: String): Uri? {
-        val treeDocumentId = runCatching { DocumentsContract.getTreeDocumentId(treeUri) }.getOrNull()
-            ?: return null
-        val childrenUri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, treeDocumentId)
-        return runCatching {
-            context.contentResolver.query(
-                childrenUri,
-                arrayOf(
-                    DocumentsContract.Document.COLUMN_DOCUMENT_ID,
-                    DocumentsContract.Document.COLUMN_DISPLAY_NAME,
-                ),
-                null,
-                null,
-                null,
-            )?.use { cursor ->
-                val documentIdIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DOCUMENT_ID)
-                val displayNameIndex = cursor.getColumnIndex(DocumentsContract.Document.COLUMN_DISPLAY_NAME)
-                while (cursor.moveToNext()) {
-                    if (cursor.getString(displayNameIndex) == displayName) {
-                        return@use DocumentsContract.buildDocumentUriUsingTree(
-                            treeUri,
-                            cursor.getString(documentIdIndex),
-                        )
-                    }
-                }
-                null
-            }
-        }.getOrNull()
-    }
-
     private fun openInternalDownloadsLocation(): Boolean {
-        val context = appContext ?: return false
+        val context = DownloadsAndroidContext.contextOrNull() ?: return false
         val directory = downloadsDirectory().apply { mkdirs() }
         val uri = runCatching {
             FileProvider.getUriForFile(
@@ -275,7 +240,7 @@ internal actual object DownloadLocationManager {
     }
 
     private fun openTreeLocation(value: String): Boolean {
-        val context = appContext ?: return false
+        val context = DownloadsAndroidContext.contextOrNull() ?: return false
         val treeUri = runCatching { Uri.parse(value) }.getOrNull() ?: return false
         val intents = buildList {
             val documentUri = runCatching {
@@ -326,7 +291,7 @@ internal actual object DownloadLocationManager {
     private fun clearInvalidLocationIfNeeded(): Boolean {
         val pref = locationPref ?: return false
         if (pref.mode != DownloadLocationMode.ANDROID_SAF) return false
-        val context = appContext ?: return false
+        val context = DownloadsAndroidContext.contextOrNull() ?: return false
         val treeUri = runCatching { Uri.parse(pref.value) }.getOrNull()
         if (treeUri != null && hasWritableTreePermission(context, treeUri)) return false
 
@@ -336,15 +301,19 @@ internal actual object DownloadLocationManager {
 
     private fun clearLocationPref() {
         locationPref = null
-        appContext
+        DownloadsAndroidContext.contextOrNull()
             ?.getSharedPreferences(LOCATION_PREFERENCES_NAME, Context.MODE_PRIVATE)
             ?.edit()
             ?.remove(LOCATION_PREFERENCE_KEY)
             ?.apply()
     }
 
+    private fun refreshLocationLabel() {
+        _locationLabel.value = currentLocationLabel()
+    }
+
     private fun isContentUriAccessible(uri: Uri): Boolean {
-        val context = appContext ?: return false
+        val context = DownloadsAndroidContext.contextOrNull() ?: return false
         val treeUri = runCatching {
             DocumentsContract.buildTreeDocumentUri(
                 uri.authority,
@@ -377,7 +346,7 @@ internal actual object DownloadLocationManager {
         }
 
     private fun loadLocationPref(): DownloadLocationPref? {
-        val raw = appContext
+        val raw = DownloadsAndroidContext.contextOrNull()
             ?.getSharedPreferences(LOCATION_PREFERENCES_NAME, Context.MODE_PRIVATE)
             ?.getString(LOCATION_PREFERENCE_KEY, null)
             ?: return null
@@ -387,7 +356,7 @@ internal actual object DownloadLocationManager {
     }
 
     private fun persistLocationPref(pref: DownloadLocationPref) {
-        appContext
+        DownloadsAndroidContext.contextOrNull()
             ?.getSharedPreferences(LOCATION_PREFERENCES_NAME, Context.MODE_PRIVATE)
             ?.edit()
             ?.putString(LOCATION_PREFERENCE_KEY, locationJson.encodeToString(pref))
@@ -396,15 +365,9 @@ internal actual object DownloadLocationManager {
         refreshLocationLabel()
     }
 
-    private fun refreshLocationLabel() {
-        _locationLabel.value = currentLocationLabel()
-    }
+    private fun downloadsDirectoryOrNull(): File? = internalDownloadsDirectoryOrNull()
 
-    private fun downloadsDirectoryOrNull(): File? =
-        appContext?.let { File(it.filesDir, DOWNLOADS_DIRECTORY_NAME) }
-
-    private fun downloadsDirectory(): File =
-        checkNotNull(downloadsDirectoryOrNull()) { "Downloads are not initialized" }
+    private fun downloadsDirectory(): File = internalDownloadsDirectory()
 }
 
 private fun String.toLocalFileOrNull(): File? = runCatching {

@@ -7,7 +7,7 @@ internal expect object DownloadLocationManager {
 
     fun ensureLocationSet(): Boolean
 
-    suspend fun ensureLocationSelected(): Boolean
+    suspend fun ensureLocationSelectedOrPrompt(): Boolean
 
     fun currentLocationLabel(): String
 
