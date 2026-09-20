@@ -11,4 +11,8 @@ object HeroTrailerAudioState {
     fun toggleMuted() {
         _muted.value = !_muted.value
     }
+
+    fun setMuted(muted: Boolean) {
+        _muted.value = muted
+    }
 }

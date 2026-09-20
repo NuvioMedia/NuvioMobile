@@ -27,7 +27,12 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.source.MergingMediaSource
+import com.nuvio.app.features.player.AudioTrack
 import com.nuvio.app.features.player.PlatformPlaybackDataSourceFactory
+import com.nuvio.app.features.player.PlayerEngineController
+import com.nuvio.app.features.player.PlayerPlaybackSnapshot
+import com.nuvio.app.features.player.SubtitleTrack
+import kotlinx.coroutines.delay
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
@@ -40,6 +45,8 @@ actual fun HeroTrailerPlayerSurface(
     onReady: () -> Unit,
     onEnded: () -> Unit,
     onError: () -> Unit,
+    onControllerReady: (PlayerEngineController) -> Unit,
+    onSnapshot: (PlayerPlaybackSnapshot) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -47,6 +54,8 @@ actual fun HeroTrailerPlayerSurface(
     val latestOnReady = rememberUpdatedState(onReady)
     val latestOnEnded = rememberUpdatedState(onEnded)
     val latestOnError = rememberUpdatedState(onError)
+    val latestOnControllerReady = rememberUpdatedState(onControllerReady)
+    val latestOnSnapshot = rememberUpdatedState(onSnapshot)
     var playerContainer by remember { mutableStateOf<HeroTrailerTextureContainer?>(null) }
 
     val dataSourceFactory = remember(context) {
@@ -77,6 +86,12 @@ actual fun HeroTrailerPlayerSurface(
                 volume = if (muted) 0f else 1f
                 prepare()
             }
+    }
+    val controller = remember(exoPlayer) { HeroTrailerPlayerController(exoPlayer) }
+
+    DisposableEffect(controller) {
+        latestOnControllerReady.value(controller)
+        onDispose { }
     }
 
     DisposableEffect(exoPlayer, lifecycleOwner) {
@@ -162,6 +177,13 @@ actual fun HeroTrailerPlayerSurface(
         exoPlayer.volume = if (muted) 0f else 1f
     }
 
+    LaunchedEffect(exoPlayer) {
+        while (true) {
+            latestOnSnapshot.value(exoPlayer.heroPlaybackSnapshot())
+            delay(if (exoPlayer.isPlaying) 200L else 400L)
+        }
+    }
+
     AndroidView(
         modifier = modifier,
         factory = { viewContext ->
@@ -241,4 +263,64 @@ private class HeroTrailerTextureContainer(
         }
         textureView.setTransform(textureTransform)
     }
+}
+
+private fun ExoPlayer.heroPlaybackSnapshot(): PlayerPlaybackSnapshot {
+    val playbackState = playbackState
+    val duration = duration.takeIf { it > 0L } ?: 0L
+    return PlayerPlaybackSnapshot(
+        isLoading = playbackState == Player.STATE_BUFFERING ||
+            (playbackState != Player.STATE_READY && playbackState != Player.STATE_ENDED),
+        isPlaying = isPlaying,
+        isEnded = playbackState == Player.STATE_ENDED,
+        durationMs = duration,
+        positionMs = currentPosition.coerceAtLeast(0L),
+        bufferedPositionMs = bufferedPosition.coerceAtLeast(0L),
+        playbackSpeed = playbackParameters.speed,
+        videoWidth = videoSize.width,
+        videoHeight = videoSize.height,
+    )
+}
+
+private class HeroTrailerPlayerController(
+    private val player: ExoPlayer,
+) : PlayerEngineController {
+    override fun play() {
+        player.playWhenReady = true
+        player.play()
+    }
+
+    override fun pause() {
+        player.pause()
+    }
+
+    override fun seekTo(positionMs: Long) {
+        player.seekTo(positionMs)
+    }
+
+    override fun seekBy(offsetMs: Long) {
+        player.seekTo((player.currentPosition + offsetMs).coerceAtLeast(0L))
+    }
+
+    override fun retry() {
+        player.prepare()
+        player.play()
+    }
+
+    override fun setPlaybackSpeed(speed: Float) {
+        player.setPlaybackSpeed(speed)
+    }
+
+    override fun setMuted(muted: Boolean) {
+        player.volume = if (muted) 0f else 1f
+    }
+
+    override fun getAudioTracks() = emptyList<AudioTrack>()
+    override fun getSubtitleTracks() = emptyList<SubtitleTrack>()
+    override fun applyAudioLanguagePreferences(languages: List<String>) = Unit
+    override fun selectAudioTrack(index: Int) = Unit
+    override fun selectSubtitleTrack(index: Int) = Unit
+    override fun setSubtitleUri(url: String) = Unit
+    override fun clearExternalSubtitle() = Unit
+    override fun clearExternalSubtitleAndSelect(trackIndex: Int) = Unit
 }
