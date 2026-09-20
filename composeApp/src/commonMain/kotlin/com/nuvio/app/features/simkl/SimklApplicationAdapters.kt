@@ -26,6 +26,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 object SimklWatchedSyncAdapter : TrackingWatchedProvider {
+    private val log = Logger.withTag("SimklWatched")
     override val providerId: TrackingProviderId = TrackingProviderId.SIMKL
     override suspend fun pull(profileId: Int, pageSize: Int): List<WatchedItem> {
         if (profileId != ProfileRepository.activeProfileId) return emptyList()
@@ -69,9 +70,14 @@ object SimklWatchedSyncAdapter : TrackingWatchedProvider {
 
     override suspend fun push(profileId: Int, items: Collection<WatchedItem>) {
         if (profileId != ProfileRepository.activeProfileId || items.isEmpty()) return
+        val pushableItems = simklHistoryPushItems(items)
+        if (pushableItems.isEmpty()) {
+            log.i { "Skipped ${items.size} Simkl history items: nothing but whole-series marks" }
+            return
+        }
         SimklSyncRepository.ensureLoaded()
         val snapshot = SimklSyncRepository.state.value.snapshot
-        val historyItems = items.map { item ->
+        val historyItems = pushableItems.map { item ->
             TrackingHistoryItem(
                 media = snapshot.mediaReference(
                     contentId = item.id,
@@ -81,6 +87,7 @@ object SimklWatchedSyncAdapter : TrackingWatchedProvider {
                     season = item.season,
                     episode = item.episode,
                     videoId = item.videoId,
+                    posterUrl = item.poster,
                 ),
                 watchedAtEpochMs = item.markedAtEpochMs,
             )
@@ -127,6 +134,28 @@ data class SimklProgressUiState(
     val errorMessage: String? = null,
     val hiddenContentIds: Set<String> = emptySet(),
 )
+
+/**
+ * What may travel to Simkl as a watched mark.
+ *
+ * A mark without episode coordinates describes a whole series. Simkl turns that into a show-level
+ * entry and answers by marking every episode of the show watched, including episodes the user never
+ * opened, which is how a single ill-timed mark wiped a full series. Only films are allowed through
+ * without coordinates; a whole-series action still reports its episodes one by one (`WatchingActions`
+ * marks the series and its released episodes together), which carries the same information and cannot
+ * touch anything else. A mark whose type is `anime` is dropped too: the app cannot tell an anime film
+ * from an anime series without more metadata, and Trakt's adapter drops both for the same reason. That
+ * is the accepted trade, because a mark the user made by hand staying out of the history is cheaper
+ * than a single call stamping a whole series.
+ */
+internal fun simklHistoryPushItems(items: Collection<WatchedItem>): List<WatchedItem> =
+    items.filterNot(WatchedItem::isWholeSeriesMark)
+
+private fun WatchedItem.isWholeSeriesMark(): Boolean =
+    season == null && episode == null && type.trim().lowercase() !in MOVIE_LIKE_WATCHED_TYPES
+
+/** Content types that stand on their own and need no episode to be a real mark. */
+private val MOVIE_LIKE_WATCHED_TYPES = setOf("movie", "film")
 
 object SimklProgressRepository {
     private val log = Logger.withTag("SimklProgress")

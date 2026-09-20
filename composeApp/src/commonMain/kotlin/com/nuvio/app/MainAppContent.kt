@@ -124,10 +124,12 @@ import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.player.ExternalPlayerIntentResult
+import com.nuvio.app.features.player.externalPlaybackSession
+import com.nuvio.app.features.player.infusePlaybackCallbacks
+import com.nuvio.app.features.player.recordExternalPlaybackProgress
 import com.nuvio.app.features.player.ExternalPlayerPlatform
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
-import com.nuvio.app.features.player.PlayerPlaybackSnapshot
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.player.SubtitleLanguageOption
 import com.nuvio.app.features.player.prepareExternalPlayerLaunch
@@ -154,10 +156,6 @@ import com.nuvio.app.features.streams.StreamsRepository
 import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.TrackingMembershipApplyResult
 import com.nuvio.app.features.tracking.TrackingProviderId
-import com.nuvio.app.features.tracking.TrackingScrobbleAction
-import com.nuvio.app.features.tracking.TrackingScrobbleCoordinator
-import com.nuvio.app.features.tracking.TrackingScrobbleEvent
-import com.nuvio.app.features.tracking.buildTrackingMediaReference
 import com.nuvio.app.features.tracking.toggleTrackingLibraryMembership
 import com.nuvio.app.features.updater.AppUpdaterHost
 import com.nuvio.app.features.updater.AppUpdaterPlatform
@@ -165,11 +163,9 @@ import com.nuvio.app.features.updater.rememberAppUpdaterController
 import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.features.watching.application.WatchingActions
 import com.nuvio.app.features.watching.application.WatchingState
-import com.nuvio.app.features.watching.domain.isShortPlaceholderDuration
 import com.nuvio.app.features.watchprogress.ContinueWatchingItem
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.ResumePromptRepository
-import com.nuvio.app.features.watchprogress.WatchProgressPlaybackSession
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.WatchProgressSourceCoordinator
 import com.nuvio.app.features.watchprogress.continueWatchingItemKey
@@ -667,73 +663,11 @@ internal fun MainAppContent(
     var lastExternalPlayerLaunch by remember { mutableStateOf<PlayerLaunch?>(null) }
     val activePlaybackProfileId = profileState.activeProfile?.profileIndex ?: ProfileRepository.activeProfileId
     val launchExternalPlayer = rememberExternalPlayerLauncher { result ->
-        if (result != null && result.positionMs > 0L) {
+        if (result != null) {
+            val fallbackSession = lastExternalPlayerLaunch?.externalPlaybackSession()
             coroutineScope.launch {
-                val durationMs = result.durationMs
-                // Guard: debrid cache-sync placeholders and error clips report a short
-                // duration reaching completion. Skip scrobble + progress for those.
-                if (durationMs != null && isShortPlaceholderDuration(durationMs)) return@launch
-                val progressPercent = if (durationMs != null && durationMs > 0L) {
-                    (result.positionMs.toFloat() / durationMs.toFloat() * 100f).coerceIn(0f, 100f)
-                } else {
-                    null
-                }
-                val playerLaunch = lastExternalPlayerLaunch
-                if (progressPercent != null && playerLaunch != null) {
-                    val trackingMedia = buildTrackingMediaReference(
-                        contentType = playerLaunch.parentMetaType,
-                        parentMetaId = playerLaunch.parentMetaId,
-                        videoId = playerLaunch.videoId,
-                        title = playerLaunch.title,
-                        seasonNumber = playerLaunch.seasonNumber,
-                        episodeNumber = playerLaunch.episodeNumber,
-                        episodeTitle = playerLaunch.episodeTitle,
-                    )
-                    if (trackingMedia.hasResolvableIdentity) {
-                        runCatching {
-                            TrackingScrobbleCoordinator.scrobble(
-                                profileId = playerLaunch.profileId,
-                                action = TrackingScrobbleAction.STOP,
-                                event = TrackingScrobbleEvent(
-                                    media = trackingMedia,
-                                    progressPercent = progressPercent.toDouble(),
-                                ),
-                            )
-                        }
-                    }
-                }
-                playerLaunch?.let { playerLaunch ->
-                    val session = WatchProgressPlaybackSession(
-                        profileId = playerLaunch.profileId,
-                        contentType = playerLaunch.contentType ?: playerLaunch.parentMetaType,
-                        parentMetaId = playerLaunch.parentMetaId,
-                        parentMetaType = playerLaunch.parentMetaType,
-                        videoId = playerLaunch.videoId ?: playerLaunch.parentMetaId,
-                        title = playerLaunch.title,
-                        logo = playerLaunch.logo,
-                        poster = playerLaunch.poster,
-                        background = playerLaunch.background,
-                        seasonNumber = playerLaunch.seasonNumber,
-                        episodeNumber = playerLaunch.episodeNumber,
-                        episodeTitle = playerLaunch.episodeTitle,
-                        episodeThumbnail = playerLaunch.episodeThumbnail,
-                        providerName = playerLaunch.providerName,
-                        providerAddonId = playerLaunch.providerAddonId,
-                        lastStreamTitle = playerLaunch.streamTitle,
-                        lastSourceUrl = playerLaunch.sourceUrl,
-                    )
-                    val snapshot = PlayerPlaybackSnapshot(
-                        isLoading = false,
-                        isPlaying = false,
-                        isEnded = !result.endedByUser,
-                        durationMs = durationMs ?: 0L,
-                        positionMs = result.positionMs,
-                    )
-                    WatchProgressRepository.upsertPlaybackProgress(
-                        session = session,
-                        snapshot = snapshot,
-                    )
-                }
+                recordExternalPlaybackProgress(result, fallbackSession)
+                result.callbackId?.let(infusePlaybackCallbacks::consume)
             }
         }
     }

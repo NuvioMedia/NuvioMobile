@@ -2123,4 +2123,12 @@
     <string name="library_simkl_empty_title">Váš zoznam sledovania Simkl je prázdny</string>
     <string name="library_simkl_load_failed">Nepodarilo sa načítať zoznam sledovania Simkl</string>
     <string name="library_simkl_title">Zoznam sledovania Simkl</string>
+    <string name="layout_overall_ratings">Celkové hodnotenia</string>
+    <string name="layout_overall_ratings_sub_on">Zobrazujú sa štandardné hodnotenia a hodnotenia TMDB</string>
+    <string name="layout_overall_ratings_sub_off">Štandardné hodnotenia a hodnotenia TMDB sú skryté. Na stránkach detailov majú prioritu nastavenia poskytovateľa MDBList</string>
+    <string name="layout_episode_ratings">Hodnotenia epizód</string>
+    <string name="layout_episode_ratings_sub">Vyberte, ktoré hodnotenia epizód budú viditeľné</string>
+    <string name="layout_ratings_show">Zobraziť</string>
+    <string name="layout_ratings_hide">Skryť</string>
+    <string name="layout_ratings_hide_unwatched">Skryť nepozerané</string>
 </resources>

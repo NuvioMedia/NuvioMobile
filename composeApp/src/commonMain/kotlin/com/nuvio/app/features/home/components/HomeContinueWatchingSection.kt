@@ -1194,15 +1194,12 @@ internal fun rememberContinueWatchingLayout(
     maxWidthDp: Float,
     posterCardStyle: PosterCardStyleUiState = PosterCardStyleUiState(),
 ): ContinueWatchingLayout {
-    val wideCardWidth = posterCardStyle.widthDp.dp * 2.1f
-    val wideCardHeight = wideCardWidth * 0.4f
-    val widePosterStripWidth = wideCardHeight * (2f / 3f)
     return when {
         maxWidthDp >= 1440f -> ContinueWatchingLayout(
             itemGap = 20.dp,
-            wideCardWidth = wideCardWidth,
-            wideCardHeight = wideCardHeight,
-            widePosterStripWidth = widePosterStripWidth,
+            wideCardWidth = 400.dp,
+            wideCardHeight = 160.dp,
+            widePosterStripWidth = 100.dp,
             wideContentPadding = 16.dp,
             posterCardWidth = posterCardStyle.widthDp.dp,
             posterCardHeight = posterCardStyle.heightDp.dp,
@@ -1218,9 +1215,9 @@ internal fun rememberContinueWatchingLayout(
         )
         maxWidthDp >= 1024f -> ContinueWatchingLayout(
             itemGap = 18.dp,
-            wideCardWidth = wideCardWidth,
-            wideCardHeight = wideCardHeight,
-            widePosterStripWidth = widePosterStripWidth,
+            wideCardWidth = 350.dp,
+            wideCardHeight = 140.dp,
+            widePosterStripWidth = 90.dp,
             wideContentPadding = 14.dp,
             posterCardWidth = posterCardStyle.widthDp.dp,
             posterCardHeight = posterCardStyle.heightDp.dp,
@@ -1236,9 +1233,9 @@ internal fun rememberContinueWatchingLayout(
         )
         maxWidthDp >= 768f -> ContinueWatchingLayout(
             itemGap = 16.dp,
-            wideCardWidth = wideCardWidth,
-            wideCardHeight = wideCardHeight,
-            widePosterStripWidth = widePosterStripWidth,
+            wideCardWidth = 320.dp,
+            wideCardHeight = 130.dp,
+            widePosterStripWidth = 85.dp,
             wideContentPadding = 12.dp,
             posterCardWidth = posterCardStyle.widthDp.dp,
             posterCardHeight = posterCardStyle.heightDp.dp,
@@ -1254,9 +1251,9 @@ internal fun rememberContinueWatchingLayout(
         )
         else -> ContinueWatchingLayout(
             itemGap = 16.dp,
-            wideCardWidth = wideCardWidth,
-            wideCardHeight = wideCardHeight,
-            widePosterStripWidth = widePosterStripWidth,
+            wideCardWidth = 280.dp,
+            wideCardHeight = 120.dp,
+            widePosterStripWidth = 80.dp,
             wideContentPadding = 12.dp,
             posterCardWidth = posterCardStyle.widthDp.dp,
             posterCardHeight = posterCardStyle.heightDp.dp,

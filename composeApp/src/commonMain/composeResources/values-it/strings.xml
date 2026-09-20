@@ -1938,4 +1938,12 @@
   <string name="entity_browse_about">Informazioni</string>
   <string name="player_external_loading_subtitles">Caricamento sottotitoli dagli addon...</string>
   <string name="player_external_downloading_subtitles">Download dei sottotitoli...</string>
+    <string name="layout_overall_ratings">Valutazioni generali</string>
+    <string name="layout_overall_ratings_sub_on">Le valutazioni standard e TMDB vengono mostrate.</string>
+    <string name="layout_overall_ratings_sub_off">Le valutazioni standard e TMDB sono nascoste. Le impostazioni del provider MDBList hanno priorità nelle pagine dei dettagli.</string>
+    <string name="layout_episode_ratings">Valutazioni episodi</string>
+    <string name="layout_episode_ratings_sub">Scegli quali valutazioni degli episodi sono visibili.</string>
+    <string name="layout_ratings_show">Mostra</string>
+    <string name="layout_ratings_hide">Nascondi</string>
+    <string name="layout_ratings_hide_unwatched">Nascondi non guardati</string>
 </resources>

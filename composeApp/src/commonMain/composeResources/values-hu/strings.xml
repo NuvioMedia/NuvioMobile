@@ -2121,4 +2121,12 @@
     <string name="player_torrent_preparing_stream">Torrent stream előkészítése...</string>
     <string name="player_torrent_connecting_status">%1$s · %2$s · %3$s</string>
     <string name="player_torrent_loading_status">%1$s letöltve · %2$s · %3$s</string>
+    <string name="layout_overall_ratings">Általános értékelések</string>
+    <string name="layout_overall_ratings_sub_on">A normál és a TMDB értékelések látszanak.</string>
+    <string name="layout_overall_ratings_sub_off">A normál és a TMDB értékelések rejtve vannak. A részletek oldalon az MDBList szolgáltatóbeállításai élveznek elsőbbséget.</string>
+    <string name="layout_episode_ratings">Epizódértékelések</string>
+    <string name="layout_episode_ratings_sub">Válaszd ki, mely epizódértékelések látszanak.</string>
+    <string name="layout_ratings_show">Megjelenítés</string>
+    <string name="layout_ratings_hide">Elrejtés</string>
+    <string name="layout_ratings_hide_unwatched">Nem látottak elrejtése</string>
 </resources>

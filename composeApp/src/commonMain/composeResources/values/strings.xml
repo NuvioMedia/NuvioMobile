@@ -1061,7 +1061,7 @@
     <string name="settings_playback_external_player_forward_subtitles">Forward Subtitles to External Player</string>
     <string name="settings_playback_external_player_forward_subtitles_description">Fetch addon subtitles in your preferred language and pass them to the external player.</string>
     <string name="settings_playback_external_player_send_skip_segments">Send Intro and Outro Timestamps</string>
-    <string name="settings_playback_external_player_send_skip_segments_description">Pass resolved intro and outro skip timestamps to the external player for auto-skipping. Only works in players that support it; other players ignore it.</string>
+    <string name="settings_playback_external_player_send_skip_segments_description">Send all available episode and movie skip timestamps. The external player controls skipping, independently of these settings.</string>
     <string name="settings_playback_external_player_none_available">No supported external players installed</string>
     <string name="settings_playback_player_preference">Player</string>
     <string name="settings_playback_player_preference_internal">Internal</string>
@@ -2302,4 +2302,35 @@
         <item quantity="one">%d title</item>
         <item quantity="other">%d titles</item>
     </plurals>
+    <string name="settings_playback_auto_skip_segments">Automatic Skipping</string>
+    <string name="settings_playback_auto_skip_none">None</string>
+    <string name="settings_playback_auto_skip_intro">Intro / Opening</string>
+    <string name="settings_playback_auto_skip_intro_description">Skip intros and anime openings automatically.</string>
+    <string name="settings_playback_auto_skip_recap">Recap</string>
+    <string name="settings_playback_auto_skip_recap_description">Skip recap segments automatically.</string>
+    <string name="settings_playback_auto_skip_outro">Outro / Ending</string>
+    <string name="settings_playback_auto_skip_outro_description">Skip outros and anime endings automatically.</string>
+    <string name="settings_playback_auto_skip_movie_credits">End Credits</string>
+    <string name="settings_playback_auto_skip_movie_credits_description">Skip movie credits, keeping post-credits scenes.</string>
+    <string name="player_skip_movie_credits">Skip Credits</string>
+    <string name="player_skip_to_post_credits">Skip to Post-Credits</string>
+    <string name="layout_overall_ratings">Overall Ratings</string>
+    <string name="layout_overall_ratings_sub_on">Standard and TMDB ratings are shown.</string>
+    <string name="layout_overall_ratings_sub_off">Standard and TMDB ratings are Hidden. MDBList provider settings take priority on detail pages.</string>
+    <string name="layout_episode_ratings">Episode Ratings</string>
+    <string name="layout_episode_ratings_sub">Choose which episode ratings are visible.</string>
+    <string name="layout_ratings_show">Show</string>
+    <string name="layout_ratings_hide">Hide</string>
+    <string name="layout_ratings_hide_unwatched">Hide Unwatched</string>
+    <string name="settings_playback_legacy_layout">Legacy layout</string>
+    <string name="settings_playback_legacy_layout_description">Use the original player controls.</string>
+    <string name="compose_player_via">Via %1$s</string>
+    <string name="compose_player_episode_code">S%1$d E%2$d</string>
+    <string name="compose_player_more_actions">More controls</string>
+    <string name="compose_player_fewer_actions">Fewer controls</string>
+    <string name="compose_player_speed">Playback speed</string>
+    <string name="compose_player_show_elapsed_time">Show elapsed time</string>
+    <string name="compose_player_show_remaining_time">Show remaining time</string>
+    <string name="compose_player_brightness">Brightness</string>
+    <string name="compose_player_volume">Volume</string>
 </resources>

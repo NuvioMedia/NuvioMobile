@@ -15,6 +15,9 @@ import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
 import com.nuvio.app.features.player.skip.SkipIntroRepository
+import com.nuvio.app.features.player.skip.shouldAutoSkip
+import com.nuvio.app.features.player.skip.internalSkipAction
+import com.nuvio.app.features.player.skip.intervalsAtSeekPositions
 import com.nuvio.app.features.streams.BingeGroupCacheRepository
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.streams.StreamItem
@@ -355,6 +358,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
 private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
     LaunchedEffect(
         controlsVisible,
+        controlsActivityTick,
         isScrubbingTimeline,
         playbackSnapshot.isPlaying,
         playbackSnapshot.isLoading,
@@ -458,8 +462,13 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         }
     }
 
-    LaunchedEffect(activeVideoId, activeSeasonNumber, activeEpisodeNumber) {
+    LaunchedEffect(
+        activeVideoId, parentMetaId, parentMetaType, contentType, activeSeasonNumber, activeEpisodeNumber,
+        playerSettingsUiState.skipIntroEnabled,
+    ) {
         skipIntervals = emptyList()
+        autoSkippedIntervals.clear()
+        lastManualSkipSeekPositions = null
         activeSkipInterval = null
         skipIntervalDismissed = false
         showNextEpisodeCard = false
@@ -470,6 +479,11 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         val season = activeSeasonNumber
         val episode = activeEpisodeNumber
         val vid = activeVideoId
+        if (!playerSettingsUiState.skipIntroEnabled) return@LaunchedEffect
+        if ((contentType ?: parentMetaType).equals("movie", ignoreCase = true)) {
+            skipIntervals = SkipIntroRepository.getMovieSkipIntervals(parentMetaId, vid)
+            return@LaunchedEffect
+        }
         if (season == null || episode == null || vid == null) return@LaunchedEffect
 
         launch {
@@ -497,18 +511,42 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         }
     }
 
-    LaunchedEffect(playbackSnapshot.positionMs, skipIntervals) {
+    LaunchedEffect(
+        playbackSnapshot.positionMs, playbackSnapshot.durationMs, playbackSnapshot.isPlaying, skipIntervals,
+        playerSettingsUiState.autoSkipSegmentTypes,
+        playerSettingsUiState.skipIntroEnabled, isScrubbingTimeline, initialSeekApplied,
+        lastManualSkipSeekPositions,
+    ) {
         if (skipIntervals.isEmpty()) {
             activeSkipInterval = null
             return@LaunchedEffect
         }
         val positionSec = playbackSnapshot.positionMs / 1000.0
+        lastManualSkipSeekPositions?.let { (fromMs, toMs) ->
+            autoSkippedIntervals += skipIntervals.intervalsAtSeekPositions(fromMs, toMs)
+        }
         val current = skipIntervals.firstOrNull { interval ->
-            positionSec >= interval.startTime && positionSec < interval.endTime
+            positionSec >= interval.startTime && positionSec < interval.endTime &&
+                interval.internalSkipAction(skipIntervals, playbackSnapshot.durationMs) != null
         }
         if (current != activeSkipInterval) {
             activeSkipInterval = current
             if (current != null) skipIntervalDismissed = false
+        }
+        val controller = playerController
+        if (current != null && controller != null &&
+            playerControllerSourceUrl == activeSourceUrl &&
+            playerSettingsUiState.skipIntroEnabled && playbackSnapshot.isPlaying &&
+            !isScrubbingTimeline && initialSeekApplied &&
+            current.shouldAutoSkip(playerSettingsUiState.autoSkipSegmentTypes) &&
+            current !in autoSkippedIntervals
+        ) {
+            autoSkippedIntervals.add(current)
+            val durationMs = playbackSnapshot.durationMs
+            val rawMs = current.internalSkipAction(skipIntervals, durationMs)?.targetMs ?: return@LaunchedEffect
+            controller.seekTo(if (durationMs > 0L) rawMs.coerceAtMost(durationMs - 1) else rawMs)
+            scheduleProgressSyncAfterSeek()
+            skipIntervalDismissed = true
         }
     }
 

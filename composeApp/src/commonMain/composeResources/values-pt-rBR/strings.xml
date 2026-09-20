@@ -1352,4 +1352,12 @@
     <string name="unit_bytes_kb">KB</string>
     <string name="unit_bytes_mb">MB</string>
     <string name="unit_bytes_gb">GB</string>
+    <string name="layout_overall_ratings">Avaliações gerais</string>
+    <string name="layout_overall_ratings_sub_on">Mostra as avaliações padrão e do TMDB.</string>
+    <string name="layout_overall_ratings_sub_off">Oculta as avaliações padrão e do TMDB. As configurações do provedor MDBList têm prioridade nas páginas de detalhes.</string>
+    <string name="layout_episode_ratings">Avaliações de episódios</string>
+    <string name="layout_episode_ratings_sub">Escolha quais avaliações de episódios ficam visíveis.</string>
+    <string name="layout_ratings_show">Mostrar</string>
+    <string name="layout_ratings_hide">Ocultar</string>
+    <string name="layout_ratings_hide_unwatched">Ocultar não assistidos</string>
 </resources>

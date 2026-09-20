@@ -13,6 +13,25 @@ import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+
+internal fun PlayerScreenRuntime.finishTimelineScrub(positionMs: Long) {
+    lastManualSkipSeekPositions = playbackSnapshot.positionMs to positionMs
+    isScrubbingTimeline = false
+    scrubbingPositionMs = positionMs.takeIf { playbackSnapshot.isLoading }
+}
+
+internal fun PlayerScreenRuntime.updatePlaybackSnapshot(snapshot: PlayerPlaybackSnapshot) {
+    playbackSnapshot = snapshot
+    val targetPositionMs = scrubbingPositionMs ?: return
+    if (!isScrubbingTimeline && (
+            !snapshot.isLoading || snapshot.isEnded ||
+                abs(snapshot.positionMs - targetPositionMs) <= 1_000L
+            )
+    ) {
+        scrubbingPositionMs = null
+    }
+}
 
 internal val PlayerScreenRuntime.activePlaybackIdentity: String
     get() = activeTorrentInfoHash

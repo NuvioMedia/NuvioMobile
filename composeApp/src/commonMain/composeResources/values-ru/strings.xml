@@ -2241,4 +2241,12 @@
         <item quantity="many">%d названий</item>
         <item quantity="other">%d названия</item>
     </plurals>
+    <string name="layout_overall_ratings">Общие рейтинги</string>
+    <string name="layout_overall_ratings_sub_on">Показываются стандартные рейтинги и рейтинги TMDB.</string>
+    <string name="layout_overall_ratings_sub_off">Стандартные рейтинги и рейтинги TMDB скрыты. На страницах с описанием приоритет имеют настройки провайдера MDBList.</string>
+    <string name="layout_episode_ratings">Рейтинги эпизодов</string>
+    <string name="layout_episode_ratings_sub">Выберите, какие рейтинги эпизодов отображать.</string>
+    <string name="layout_ratings_show">Показывать</string>
+    <string name="layout_ratings_hide">Скрывать</string>
+    <string name="layout_ratings_hide_unwatched">Скрывать для непросмотренных</string>
 </resources>

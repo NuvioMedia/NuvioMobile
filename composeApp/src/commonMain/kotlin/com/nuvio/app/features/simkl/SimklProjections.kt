@@ -427,7 +427,15 @@ internal fun SimklPlaybackSession.toWatchProgressEntry(
         )
     }
     val normalizedProgress = progress.coerceIn(0.0, 100.0)
-    val durationMs = media.runtime?.takeIf { it > 0 }?.toLong()?.times(60_000L) ?: 0L
+    // A series reports the runtime of the show, not of the episode, so scaling the percentage by it
+    // invents a timecode: an episode stopped at 83 % of 47 minutes resumed at 42 minutes, because
+    // 83 % of the show's 52 minutes is 43. Leaving the duration out, with the percentage in place,
+    // makes the player scale it by the duration it really has, which is what a Trakt row already does.
+    val durationMs = if (isMovie) {
+        media.runtime?.takeIf { it > 0 }?.toLong()?.times(60_000L) ?: 0L
+    } else {
+        0L
+    }
     val positionMs = if (durationMs > 0L) (durationMs * normalizedProgress / 100.0).toLong() else 0L
     val updatedAt = parseSimklUtcEpochMs(pausedAt)
         ?: parseSimklUtcEpochMs(watchedAt)

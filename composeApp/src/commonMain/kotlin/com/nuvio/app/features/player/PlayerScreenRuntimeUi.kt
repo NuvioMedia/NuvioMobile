@@ -13,6 +13,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.p2p.formatP2pMegabytes
 import com.nuvio.app.features.p2p.formatP2pSpeed
+import com.nuvio.app.features.player.skip.internalSkipAction
 import com.nuvio.app.isIos
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -165,7 +166,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     playerControllerSourceUrl = activeSourceUrl
                 },
                 onSnapshot = { snapshot ->
-                    playbackSnapshot = snapshot
+                    updatePlaybackSnapshot(snapshot)
                     refreshAudioTracksIfChanged()
                     if (!snapshot.isLoading) initialLoadCompleted = true
                     if (snapshot.isEnded) {
@@ -179,6 +180,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     }
                     errorMessage = message
                     if (message != null) {
+                        scrubbingPositionMs = null
                         controlsVisible = !playerControlsLocked
                         removeFailedStreamFromCache()
                     }
@@ -259,6 +261,17 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
             metrics = metrics,
             resizeMode = resizeMode,
             isLocked = playerControlsLocked,
+            useLegacyLayout = playerSettingsUiState.useLegacyPlayerLayout,
+            showRemainingTime = showRemainingTime,
+            onRuntimeClick = { showRemainingTime = !showRemainingTime },
+            releaseInfo = metaUiState.meta?.takeIf { it.id == parentMetaId }?.releaseInfo,
+            hideDetails = activeSkipInterval != null && !skipIntervalDismissed,
+            onNextEpisodeClick = if (nextEpisodeInfo?.hasAired == true && !nextEpisodeAutoPlaySearching && nextEpisodeAutoPlayCountdown == null) {
+                {
+                    playNextEpisode()
+                }
+            } else null,
+            onInteraction = { controlsActivityTick += 1 },
             showPlaybackControls = controlsVisible,
             onLockToggle = {
                 if (playerControlsLocked) unlockPlayerControls() else lockPlayerControls()
@@ -312,6 +325,8 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                             streamTitle = activeStreamTitle,
                             sourceHeaders = activeSourceHeaders,
                             resumePositionMs = playbackSnapshot.positionMs,
+                            durationMs = playbackSnapshot.durationMs.takeIf { it > 0L },
+                            playbackSession = playbackSession,
                             subtitles = loadedSubtitles,
                             season = activeSeasonNumber,
                             episode = activeEpisodeNumber,
@@ -337,8 +352,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 scrubbingPositionMs = positionMs
             },
             onScrubFinished = { positionMs ->
-                isScrubbingTimeline = false
-                scrubbingPositionMs = null
+                finishTimelineScrub(positionMs)
                 playerController?.seekTo(positionMs)
                 scheduleProgressSyncAfterSeek()
             },
@@ -362,7 +376,9 @@ private fun BoxScope.RenderPlaybackOverlays(
     runtime.run {
         PlayerPlaybackOverlays(
             playerControlsLocked = playerControlsLocked,
+            useLegacyLayout = playerSettingsUiState.useLegacyPlayerLayout,
             lockedOverlayVisible = lockedOverlayVisible,
+            showRemainingTime = showRemainingTime,
             playbackSnapshot = playbackSnapshot,
         displayedPositionMs = displayedPositionMs,
         metrics = metrics,
@@ -392,15 +408,17 @@ private fun BoxScope.RenderPlaybackOverlays(
         initialLoadCompleted = initialLoadCompleted,
         pausedOverlayVisible = pausedOverlayVisible,
         activeSkipInterval = activeSkipInterval,
+        skipsToPostCredits = activeSkipInterval?.internalSkipAction(skipIntervals, playbackSnapshot.durationMs)?.skipsToPostCredits == true,
         skipIntervalDismissed = skipIntervalDismissed,
         controlsVisible = controlsVisible,
         onSkipInterval = { interval ->
-            val rawMs = (interval.endTime * 1000.0).toLong()
-            val durationMs = playbackSnapshot.durationMs
-            val seekMs = if (durationMs > 0L) rawMs.coerceAtMost(durationMs - 1) else rawMs
-            playerController?.seekTo(seekMs)
-            scheduleProgressSyncAfterSeek()
-            skipIntervalDismissed = true
+            interval.internalSkipAction(skipIntervals, playbackSnapshot.durationMs)?.let { action ->
+                val durationMs = playbackSnapshot.durationMs
+                val seekMs = if (durationMs > 0L) action.targetMs.coerceAtMost(durationMs - 1) else action.targetMs
+                playerController?.seekTo(seekMs)
+                scheduleProgressSyncAfterSeek()
+                skipIntervalDismissed = true
+            }
         },
         onDismissSkipInterval = { skipIntervalDismissed = true },
         sliderEdgePadding = sliderEdgePadding,
@@ -413,7 +431,6 @@ private fun BoxScope.RenderPlaybackOverlays(
         nextEpisodeAutoPlayCountdown = nextEpisodeAutoPlayCountdown,
         blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
         onPlayNextEpisode = {
-            nextEpisodeAutoPlayJob?.cancel()
             playNextEpisode()
         },
         onDismissNextEpisode = {

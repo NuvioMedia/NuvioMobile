@@ -2144,4 +2144,12 @@ Bu özelliği tamamen kendi sorumluluğunuzda kullanırsınız. P2P istediğiniz
         <item quantity="one">%d başlık</item>
         <item quantity="other">%d başlık</item>
     </plurals>
+    <string name="layout_overall_ratings">Genel Puanlar</string>
+    <string name="layout_overall_ratings_sub_on">Standart ve TMDB puanları gösterilir.</string>
+    <string name="layout_overall_ratings_sub_off">Standart ve TMDB puanları gizlenir. Detay sayfalarında MDBList sağlayıcı ayarları önceliklidir.</string>
+    <string name="layout_episode_ratings">Bölüm Puanları</string>
+    <string name="layout_episode_ratings_sub">Hangi bölüm puanlarının görüneceğini seçin.</string>
+    <string name="layout_ratings_show">Göster</string>
+    <string name="layout_ratings_hide">Gizle</string>
+    <string name="layout_ratings_hide_unwatched">İzlenmeyenleri Gizle</string>
 </resources>

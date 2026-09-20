@@ -80,7 +80,7 @@ actual fun ManagePlayerPictureInPicture(
 actual fun rememberIsInPictureInPicture(): Boolean = false
 
 @Composable
-actual fun rememberPlayerGestureController(): PlayerGestureController? {
+internal actual fun rememberPlatformPlayerGestureController(): PlayerGestureController? {
     val controller = remember { IOSPlayerGestureController() }
 
     DisposableEffect(controller) {

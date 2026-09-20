@@ -93,7 +93,9 @@ internal class PlayerScreenRuntime(
 
     var gestureController: PlayerGestureController? = null
 
+    var controlsActivityTick by mutableStateOf(0)
     var controlsVisible by mutableStateOf(false)
+    var showRemainingTime by mutableStateOf(false)
     var playerControlsLocked by mutableStateOf(false)
     var activeSourceUrl by mutableStateOf(sourceUrl)
     var activeSourceAudioUrl by mutableStateOf(sourceAudioUrl)
@@ -165,6 +167,8 @@ internal class PlayerScreenRuntime(
     var playerMetaVideos by mutableStateOf<List<MetaVideo>>(emptyList())
     var playerMeta by mutableStateOf<MetaDetails?>(null)
     var skipIntervals by mutableStateOf<List<SkipInterval>>(emptyList())
+    val autoSkippedIntervals = mutableSetOf<SkipInterval>()
+    var lastManualSkipSeekPositions by mutableStateOf<Pair<Long, Long>?>(null)
     var activeSkipInterval by mutableStateOf<SkipInterval?>(null)
     var skipIntervalDismissed by mutableStateOf(false)
     var parentalWarnings by mutableStateOf<List<ParentalWarning>>(emptyList())

@@ -565,6 +565,11 @@ internal fun settingsSearchEntries(
         icon = Icons.Rounded.PlayArrow,
         rows = listOfNotNull(
             PlaybackSearchRow(
+                "legacy-player-layout",
+                stringResource(Res.string.settings_playback_legacy_layout),
+                stringResource(Res.string.settings_playback_legacy_layout_description),
+            ),
+            PlaybackSearchRow(
                 "loading-overlay",
                 stringResource(Res.string.settings_playback_show_loading_overlay),
                 stringResource(Res.string.settings_playback_show_loading_overlay_description),
@@ -790,6 +795,22 @@ internal fun settingsSearchEntries(
     listOf(
         PlaybackSearchRow("meta-background-mode", stringResource(Res.string.settings_meta_background_mode), stringResource(Res.string.settings_meta_background_mode_description)),
         PlaybackSearchRow("meta-tabs", stringResource(Res.string.settings_meta_tab_layout), stringResource(Res.string.settings_meta_tab_layout_description)),
+        PlaybackSearchRow(
+            "meta-overall-ratings",
+            stringResource(Res.string.layout_overall_ratings),
+            stringResource(Res.string.layout_overall_ratings_sub_on) + " " +
+                stringResource(Res.string.layout_overall_ratings_sub_off),
+        ),
+        PlaybackSearchRow(
+            "meta-episode-ratings",
+            stringResource(Res.string.layout_episode_ratings),
+            listOf(
+                stringResource(Res.string.layout_episode_ratings_sub),
+                stringResource(Res.string.layout_ratings_show),
+                stringResource(Res.string.layout_ratings_hide),
+                stringResource(Res.string.layout_ratings_hide_unwatched),
+            ).joinToString(" "),
+        ),
         PlaybackSearchRow("meta-episode-cards", stringResource(Res.string.settings_meta_episode_cards), stringResource(Res.string.settings_meta_episode_cards_description)),
         PlaybackSearchRow("meta-blur-episodes", stringResource(Res.string.settings_meta_blur_unwatched_episodes), stringResource(Res.string.settings_meta_blur_unwatched_episodes_description)),
     ).forEach { row ->

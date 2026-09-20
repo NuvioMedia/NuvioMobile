@@ -2117,4 +2117,12 @@
         <item quantity="one">%d عنوان</item>
         <item quantity="other">%d عنوان</item>
     </plurals>
+    <string name="layout_overall_ratings">التقييمات العامة</string>
+    <string name="layout_overall_ratings_sub_on">التقييمات القياسية وتقييمات TMDB ظاهرة.</string>
+    <string name="layout_overall_ratings_sub_off">التقييمات القياسية وتقييمات TMDB مخفية. إعدادات مزود MDBList لها الأولوية في صفحات التفاصيل.</string>
+    <string name="layout_episode_ratings">تقييمات الحلقات</string>
+    <string name="layout_episode_ratings_sub">اختر تقييمات الحلقات الظاهرة.</string>
+    <string name="layout_ratings_show">إظهار</string>
+    <string name="layout_ratings_hide">إخفاء</string>
+    <string name="layout_ratings_hide_unwatched">إخفاء ما لم يُشاهد</string>
 </resources>

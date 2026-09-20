@@ -2265,4 +2265,16 @@
     <string name="player_torrent_preparing_stream">Przygotowywanie strumienia torrent…</string>
     <string name="player_torrent_connecting_status">%1$s · %2$s · %3$s</string>
     <string name="player_torrent_loading_status">%1$s pobrano · %2$s · %3$s</string>
+    <string name="player_skip_movie_credits">Pomiń napisy końcowe</string>
+    <string name="player_skip_to_post_credits">Do sceny po napisach</string>
+    <string name="settings_playback_auto_skip_movie_credits">Napisy końcowe</string>
+    <string name="settings_playback_auto_skip_movie_credits_description">Automatycznie pomijaj napisy końcowe filmów, zachowując sceny po napisach.</string>
+    <string name="layout_overall_ratings">Ogólne oceny</string>
+    <string name="layout_overall_ratings_sub_on">Standardowe oceny i TMDB są wyświetlane.</string>
+    <string name="layout_overall_ratings_sub_off">Standardowe oceny i TMDB są ukryte. Ustawienia MDBList mają priorytet na stronach szczegółów.</string>
+    <string name="layout_episode_ratings">Oceny odcinków</string>
+    <string name="layout_episode_ratings_sub">Wybierz, które oceny odcinków mają być widoczne.</string>
+    <string name="layout_ratings_show">Pokaż</string>
+    <string name="layout_ratings_hide">Ukryj</string>
+    <string name="layout_ratings_hide_unwatched">Ukryj nieobejrzane</string>
 </resources>
