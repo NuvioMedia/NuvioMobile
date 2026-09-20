@@ -372,6 +372,7 @@ fun StreamsScreen(
                             NuvioToastController.show(downloadLocationPromptCancelledText)
                             return null
                         }
+                        DownloadsRepository.onDownloadLocationChanged()
                         return enqueue(targetStream)
                     }
 

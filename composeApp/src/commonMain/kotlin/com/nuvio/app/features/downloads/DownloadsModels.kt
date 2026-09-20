@@ -10,7 +10,6 @@ import nuvio.composeapp.generated.resources.downloads_enqueue_missing_url
 import nuvio.composeapp.generated.resources.downloads_enqueue_replaced
 import nuvio.composeapp.generated.resources.downloads_enqueue_started
 import nuvio.composeapp.generated.resources.downloads_enqueue_unsupported_format
-import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
 
 @Serializable
@@ -48,6 +47,7 @@ data class DownloadItem(
     val localFileUri: String? = null,
     val fileName: String,
     val status: DownloadStatus,
+    val legacyMigrationPending: Boolean = false,
     val downloadedBytes: Long = 0L,
     val totalBytes: Long? = null,
     val errorMessage: String? = null,
@@ -96,16 +96,15 @@ enum class DownloadEnqueueResult {
     MissingLocation,
     UnsupportedFormat;
 
-    internal fun messageResource(): StringResource = when (this) {
-        Started -> Res.string.downloads_enqueue_started
-        Replaced -> Res.string.downloads_enqueue_replaced
-        MissingUrl -> Res.string.downloads_enqueue_missing_url
-        MissingLocation -> Res.string.downloads_enqueue_missing_location
-        UnsupportedFormat -> Res.string.downloads_enqueue_unsupported_format
-    }
-
-    fun toastMessage(): String = runBlocking {
-        getString(messageResource())
+    fun toastMessage(): String {
+        val resource = when (this) {
+            Started -> Res.string.downloads_enqueue_started
+            Replaced -> Res.string.downloads_enqueue_replaced
+            MissingUrl -> Res.string.downloads_enqueue_missing_url
+            MissingLocation -> Res.string.downloads_enqueue_missing_location
+            UnsupportedFormat -> Res.string.downloads_enqueue_unsupported_format
+        }
+        return runBlocking { getString(resource) }
     }
 }
 

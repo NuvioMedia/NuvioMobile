@@ -61,7 +61,7 @@ class DownloadLocationManagerTest {
         val context = initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
         val documentUri = safDocumentUri("primary:Movies/video.mkv")
-        registerFakeDocumentsProvider(documentUri).createDocument("primary:Movies/video.mkv")
+        registerFakeDocumentsProvider().createDocument("primary:Movies/video.mkv")
 
         assertEquals(
             documentUri.toString(),
@@ -167,7 +167,7 @@ class DownloadLocationManagerTest {
     fun missingLegacyStoredFileResolvesToTheSameNameInTheSelectedFolder() {
         initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
-        val provider = registerDocumentProvider(SAF_MOVIES_URI)
+        val provider = registerFakeDocumentsProvider(SAF_MOVIES_URI)
         provider.createDocument("primary:Movies/migrated.mkv", "video bytes")
         val documentUri = safDocumentUri("primary:Movies/migrated.mkv")
 
@@ -184,7 +184,7 @@ class DownloadLocationManagerTest {
     fun revokedLocationDoesNotResolveStoredFilesByName() {
         val context = initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
-        val provider = registerDocumentProvider(SAF_MOVIES_URI)
+        val provider = registerFakeDocumentsProvider(SAF_MOVIES_URI)
         provider.createDocument("primary:Movies/video.mkv", "video bytes")
         revokePersistedPermission(context, SAF_MOVIES_URI)
 
@@ -332,5 +332,4 @@ class DownloadLocationManagerTest {
             Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
         )
     }
-
 }

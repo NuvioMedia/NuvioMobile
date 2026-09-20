@@ -4,30 +4,43 @@ import kotlinx.coroutines.CancellationException
 
 internal object LegacyDownloadMigration {
     fun itemsToMigrate(items: List<DownloadItem>): List<DownloadItem> =
-        items.filter(::isLegacyDownload)
+        items.filter { isLegacyDownload(it) || isPendingMigration(it) }
 
     fun isLegacyStoredFileUri(storedFileUri: String?): Boolean =
         storedFileUri?.startsWith("file:") == true
 
     suspend fun migrate(
         items: List<DownloadItem>,
+        onMigrationStarted: (DownloadItem) -> Unit,
         onMigrated: (DownloadItem, String) -> Unit,
     ): Boolean {
         var migratedAll = true
         for (item in items) {
-            val legacyUri = item.localFileUri ?: continue
-            val migratedUri = runMigrationStep {
-                DownloadLocationManager.finalizeDownload(legacyUri, item.fileName)
+            val storedFileUri = item.localFileUri ?: continue
+            onMigrationStarted(item)
+
+            val migratedUri = if (isLegacyStoredFileUri(storedFileUri)) {
+                runQuietlySuspending {
+                    DownloadLocationManager.finalizeDownload(storedFileUri, item.fileName)
+                }
+            } else {
+                storedFileUri
             }
             if (migratedUri == null) {
                 migratedAll = false
                 continue
             }
-            runMigrationStep {
-                if (migratedUri != legacyUri) {
-                    DownloadSubtitles.migrate(legacyUri, migratedUri)
+
+            if (migratedUri != storedFileUri) {
+                val subtitlesMigrated = runQuietlySuspending {
+                    DownloadSubtitles.migrate(storedFileUri, migratedUri)
+                } ?: false
+                if (!subtitlesMigrated) {
+                    migratedAll = false
+                    continue
                 }
             }
+
             onMigrated(item, migratedUri)
         }
         return migratedAll
@@ -36,12 +49,15 @@ internal object LegacyDownloadMigration {
     private fun isLegacyDownload(item: DownloadItem): Boolean =
         item.status == DownloadStatus.Completed && isLegacyStoredFileUri(item.localFileUri)
 
-    private suspend fun <T> runMigrationStep(block: suspend () -> T): T? =
-        try {
-            block()
-        } catch (cancelled: CancellationException) {
-            throw cancelled
-        } catch (_: Throwable) {
-            null
-        }
+    private fun isPendingMigration(item: DownloadItem): Boolean =
+        item.status == DownloadStatus.Completed && item.legacyMigrationPending
 }
+
+internal suspend inline fun <T> runQuietlySuspending(block: suspend () -> T): T? =
+    try {
+        block()
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (_: Exception) {
+        null
+    }

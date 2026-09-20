@@ -10,7 +10,6 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.junit.runner.RunWith
-import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -26,7 +25,7 @@ class LegacyDownloadMigrationRepositoryTest {
     fun completedLegacyDownloadMovesIntoTheFolderWithItsSubtitles() = runBlocking {
         val context = initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
-        val provider = registerDocumentProvider()
+        val provider = registerFakeDocumentsProvider()
         val legacyFile = legacyVideoFile(context, "legacy.mkv", "legacy video bytes")
         val legacyUri = legacyFile.toURI().toString()
         writeLegacySubtitle(legacyUri, "0.srt", srt)
@@ -52,7 +51,7 @@ class LegacyDownloadMigrationRepositoryTest {
     fun failedCopyKeepsTheLegacyFileAndRetriesOnTheNextLoad() = runBlocking {
         val context = initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
-        val provider = registerDocumentProvider()
+        val provider = registerFakeDocumentsProvider()
         provider.failCreateDocument = true
         val legacyFile = legacyVideoFile(context, "legacy.mkv", "legacy video bytes")
         val legacyUri = legacyFile.toURI().toString()
@@ -78,20 +77,56 @@ class LegacyDownloadMigrationRepositoryTest {
     }
 
     @Test
-    fun staleLegacyUriRecoversFromTheFolderAfterAnInterruptedMigration() {
+    fun interruptedMigrationRecoversSubtitlesBeforeMarkingTheProfileComplete() = runBlocking {
         val context = initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
-        registerDocumentProvider().createDocument("primary:Movies/legacy.mkv", "legacy video bytes")
-        seedCompletedLegacyDownload(
-            "file:/data/user/0/com.nuvio/files/downloads/legacy.mkv",
-            "legacy.mkv",
-        )
+        val provider = registerFakeDocumentsProvider()
+        provider.createDocument("primary:Movies/legacy.mkv", "legacy video bytes")
+        val legacyUri = File(File(context.filesDir, "downloads"), "legacy.mkv").toURI().toString()
+        writeLegacySubtitle(legacyUri, "0.srt", srt)
+        seedCompletedLegacyDownload(legacyUri, "legacy.mkv", legacyMigrationPending = true)
 
         DownloadsRepository.ensureLoaded()
+        val storedUri = awaitStoredFileUri()
 
-        val healed = DownloadsRepository.uiState.value.items.single()
-        assertTrue(healed.localFileUri.orEmpty().startsWith("content://"))
-        assertEquals("legacy video bytes", readDocument(context, healed.localFileUri.orEmpty()))
+        val migrated = DownloadsRepository.uiState.value.items.single()
+        assertFalse(migrated.legacyMigrationPending)
+        assertEquals("legacy video bytes", readDocument(context, storedUri))
+        assertFalse(File(context.filesDir, "downloads/legacy.mkv.subtitles").exists())
+        assertTrue(provider.documentExists("primary:Movies/legacy.mkv.subtitles/manifest.json"))
+        assertTrue(provider.documentExists("primary:Movies/legacy.mkv.subtitles/0.srt"))
+        assertEquals(srt, readDocument(context, DownloadSubtitles.localSubtitles(storedUri).single().url))
+        assertTrue(DownloadsStorage.isLegacyMigrationComplete())
+    }
+
+    @Test
+    fun failedSubtitleMigrationKeepsTheItemPendingAndRetriesOnTheNextLoad() = runBlocking {
+        val context = initializedApplication()
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val provider = registerFakeDocumentsProvider()
+        provider.createDocument("primary:Movies/legacy.mkv", "legacy video bytes")
+        provider.failCreateDocument = true
+        val legacyUri = File(File(context.filesDir, "downloads"), "legacy.mkv").toURI().toString()
+        writeLegacySubtitle(legacyUri, "0.srt", srt)
+        seedCompletedLegacyDownload(legacyUri, "legacy.mkv", legacyMigrationPending = true)
+
+        DownloadsRepository.ensureLoaded()
+        withTimeout(5_000) {
+            while (provider.createDocumentAttempts == 0) delay(10)
+        }
+
+        val pending = DownloadsRepository.uiState.value.items.single()
+        assertTrue(pending.legacyMigrationPending)
+        assertFalse(DownloadsStorage.isLegacyMigrationComplete())
+        assertTrue(File(context.filesDir, "downloads/legacy.mkv.subtitles").exists())
+
+        provider.failCreateDocument = false
+        DownloadsRepository.onProfileChanged()
+        val storedUri = awaitStoredFileUri()
+
+        assertFalse(DownloadsRepository.uiState.value.items.single().legacyMigrationPending)
+        assertTrue(provider.documentExists("primary:Movies/legacy.mkv.subtitles/0.srt"))
+        assertEquals(srt, readDocument(context, DownloadSubtitles.localSubtitles(storedUri).single().url))
         assertTrue(DownloadsStorage.isLegacyMigrationComplete())
     }
 
@@ -99,7 +134,7 @@ class LegacyDownloadMigrationRepositoryTest {
     fun migrationDoesNotRunAgainOnceTheProfileFlagIsSet() {
         val context = initializedApplication()
         DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
-        registerDocumentProvider()
+        registerFakeDocumentsProvider()
         DownloadsStorage.markLegacyMigrationComplete()
         val legacyFile = legacyVideoFile(context, "legacy.mkv", "legacy video bytes")
         seedCompletedLegacyDownload(legacyFile.toURI().toString(), "legacy.mkv")
@@ -118,9 +153,6 @@ class LegacyDownloadMigrationRepositoryTest {
             DownloadsRepository.clearLocalState()
         }
 
-    private fun registerDocumentProvider(): FakeDocumentsProvider =
-        Robolectric.setupContentProvider(FakeDocumentsProvider::class.java, SAF_MOVIES_URI.authority)
-
     private fun legacyVideoFile(context: Application, fileName: String, contents: String): File =
         File(File(context.filesDir, "downloads").apply { mkdirs() }, fileName).apply { writeText(contents) }
 
@@ -133,11 +165,16 @@ class LegacyDownloadMigrationRepositoryTest {
         )
     }
 
-    private fun seedCompletedLegacyDownload(legacyUri: String, fileName: String) {
+    private fun seedCompletedLegacyDownload(
+        legacyUri: String,
+        fileName: String,
+        legacyMigrationPending: Boolean = false,
+    ) {
         val item = downloadItem(id = "legacy-download").copy(
             fileName = fileName,
             localFileUri = legacyUri,
             status = DownloadStatus.Completed,
+            legacyMigrationPending = legacyMigrationPending,
             downloadedBytes = 18L,
             totalBytes = 18L,
         )
@@ -160,11 +197,6 @@ class LegacyDownloadMigrationRepositoryTest {
         context.contentResolver.openInputStream(Uri.parse(uri))?.use { it.readBytes().decodeToString() }.orEmpty()
 
     private val srt = "1\n00:00:01,000 --> 00:00:02,000\nHello\n"
-
-    private companion object {
-        val SAF_MOVIES_URI: Uri =
-            Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMovies")
-    }
 }
 
 @Serializable

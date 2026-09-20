@@ -41,6 +41,10 @@ internal fun DownloadLocationSettingsScreen(
         }
     }
 
+    LaunchedEffect(locationLabel) {
+        DownloadsRepository.onDownloadLocationChanged()
+    }
+
     NuvioScreen(modifier = Modifier.fillMaxSize()) {
         stickyHeader {
             NuvioScreenHeader(

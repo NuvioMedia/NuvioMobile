@@ -82,63 +82,40 @@ internal object DownloadSubtitles {
         }
     }
 
-    suspend fun migrate(legacyStoredFileUri: String, newStoredFileUri: String): Unit = withContext(Dispatchers.Default) {
-        if (legacyStoredFileUri == newStoredFileUri) return@withContext
+    suspend fun migrate(legacyStoredFileUri: String, newStoredFileUri: String): Boolean = withContext(Dispatchers.Default) {
+        if (legacyStoredFileUri == newStoredFileUri) return@withContext true
         val source = DownloadSubtitleStorage(legacyStoredFileUri)
         val destination = DownloadSubtitleStorage(newStoredFileUri)
         val manifest = readManifest(source)
         if (manifest.tracks.isEmpty()) {
-            source.removeQuietly()
-            return@withContext
+            runQuietlySuspending { source.remove() }
+            return@withContext true
         }
 
-        val migrated = manifest.tracks.filter { track ->
-            val body = source.readTrackOrNull(track.fileName) ?: return@filter false
-            destination.writeTrackOrNull(track.fileName, body)
+        val migrated = mutableListOf<DownloadedSubtitle>()
+        for (track in manifest.tracks) {
+            val body = runQuietlySuspending { source.read(track.fileName) } ?: break
+            if (runQuietlySuspending { destination.write(track.fileName, body) } == null) break
+            migrated += track
         }
-        if (migrated.size != manifest.tracks.size) return@withContext
+        if (migrated.size != manifest.tracks.size) return@withContext false
 
-        runCatching {
+        val manifestWritten = runQuietlySuspending {
             destination.write(
                 "manifest.json",
                 json.encodeToString(SubtitleManifest(complete = manifest.complete, tracks = migrated)),
             )
-            source.remove()
-        }
+        } != null
+        if (!manifestWritten) return@withContext false
+
+        runQuietlySuspending { source.remove() }
+        true
     }
 
     private fun readManifest(storage: DownloadSubtitleStorage): SubtitleManifest =
         runCatching {
             storage.read("manifest.json")?.let { json.decodeFromString<SubtitleManifest>(it) }
         }.getOrNull() ?: SubtitleManifest()
-}
-
-private fun DownloadSubtitleStorage.readTrackOrNull(fileName: String): String? =
-    try {
-        read(fileName)
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        null
-    }
-
-private fun DownloadSubtitleStorage.writeTrackOrNull(fileName: String, text: String): Boolean =
-    try {
-        write(fileName, text)
-        true
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-        false
-    }
-
-private fun DownloadSubtitleStorage.removeQuietly() {
-    try {
-        remove()
-    } catch (cancelled: CancellationException) {
-        throw cancelled
-    } catch (_: Exception) {
-    }
 }
 
 private fun String.isDownloadedVideoUri(): Boolean =

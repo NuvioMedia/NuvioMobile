@@ -44,6 +44,34 @@ class LegacyDownloadMigrationTest {
     }
 
     @Test
+    fun pendingMigrationsAreRetriedEvenWhenTheStoredFileWasHealed() {
+        val items = listOf(
+            item(
+                id = "pending",
+                status = DownloadStatus.Completed,
+                localFileUri = "content://com.android.externalstorage.documents/document/primary%3AMovies%2Fmovie.mkv",
+                legacyMigrationPending = true,
+            ),
+            item(
+                id = "healed",
+                status = DownloadStatus.Completed,
+                localFileUri = "content://com.android.externalstorage.documents/document/primary%3AMovies%2Fmovie.mkv",
+            ),
+            item(
+                id = "pending-not-completed",
+                status = DownloadStatus.Paused,
+                localFileUri = "file:/data/user/0/com.nuvio/files/downloads/paused.mkv",
+                legacyMigrationPending = true,
+            ),
+        )
+
+        assertEquals(
+            listOf("pending"),
+            LegacyDownloadMigration.itemsToMigrate(items).map(DownloadItem::id),
+        )
+    }
+
+    @Test
     fun fileUrisAreRecognizedAsLegacyStoredFiles() {
         assertTrue(LegacyDownloadMigration.isLegacyStoredFileUri("file:/data/user/0/com.nuvio/files/downloads/movie.mkv"))
         assertTrue(LegacyDownloadMigration.isLegacyStoredFileUri("file:///data/user/0/com.nuvio/files/downloads/movie.mkv"))
@@ -56,7 +84,12 @@ class LegacyDownloadMigrationTest {
         assertFalse(LegacyDownloadMigration.isLegacyStoredFileUri(""))
     }
 
-    private fun item(id: String, status: DownloadStatus, localFileUri: String?): DownloadItem = DownloadItem(
+    private fun item(
+        id: String,
+        status: DownloadStatus,
+        localFileUri: String?,
+        legacyMigrationPending: Boolean = false,
+    ): DownloadItem = DownloadItem(
         id = id,
         contentType = "movie",
         parentMetaId = "tt1",
@@ -69,6 +102,7 @@ class LegacyDownloadMigrationTest {
         localFileUri = localFileUri,
         fileName = "$id.mkv",
         status = status,
+        legacyMigrationPending = legacyMigrationPending,
         createdAtEpochMs = 1L,
         updatedAtEpochMs = 1L,
     )

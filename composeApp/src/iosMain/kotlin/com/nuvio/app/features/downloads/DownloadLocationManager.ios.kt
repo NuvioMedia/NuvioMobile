@@ -40,8 +40,13 @@ internal actual object DownloadLocationManager {
 
     actual suspend fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String {
         val sourcePath = sourceFileUri.toLocalPath()
-            ?: error("Unsupported download source: $sourceFileUri")
         val destinationPath = "${downloadsDirectoryPath()}/$destinationFileName"
+        if (sourcePath == null || !NSFileManager.defaultManager.fileExistsAtPath(sourcePath)) {
+            check(NSFileManager.defaultManager.fileExistsAtPath(destinationPath)) {
+                "Downloaded file is no longer available: $sourceFileUri"
+            }
+            return fileUri(destinationPath)
+        }
         if (sourcePath == destinationPath) {
             return fileUri(destinationPath)
         }

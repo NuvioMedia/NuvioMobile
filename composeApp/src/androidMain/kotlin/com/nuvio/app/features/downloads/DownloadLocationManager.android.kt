@@ -127,12 +127,22 @@ internal actual object DownloadLocationManager {
     actual suspend fun finalizeDownload(sourceFileUri: String, destinationFileName: String): String =
         withContext(Dispatchers.IO) {
             val source = sourceFileUri.toLocalFileOrNull()
-                ?: error("Unsupported download source: $sourceFileUri")
             val pref = locationPref
             if (pref?.mode == DownloadLocationMode.ANDROID_SAF) {
+                if (source == null || !source.exists()) {
+                    return@withContext findStoredFileInLocation(destinationFileName)
+                        ?: error("Downloaded file is no longer available: $sourceFileUri")
+                }
                 return@withContext copyIntoTreeLocation(pref.value, source, destinationFileName)
             }
             val destination = File(downloadsDirectory(), destinationFileName)
+            if (source == null || !source.exists()) {
+                return@withContext destination
+                    .takeIf(File::isFile)
+                    ?.toURI()
+                    ?.toString()
+                    ?: error("Downloaded file is no longer available: $sourceFileUri")
+            }
             if (source.absolutePath == destination.absolutePath) {
                 return@withContext destination.toURI().toString()
             }
@@ -260,6 +270,7 @@ internal actual object DownloadLocationManager {
             ?: return null
         return SafDocuments.findChild(context.contentResolver, treeUri, treeDocumentId, fileName)?.toString()
     }
+
     private fun openInternalDownloadsLocation(): Boolean {
         val context = DownloadsAndroidContext.contextOrNull() ?: return false
         val directory = downloadsDirectory().apply { mkdirs() }
