@@ -137,6 +137,7 @@ internal class AndroidDownloadScheduler(val context: Context) {
                     transfer?.destinationDocumentUri?.let { DownloadLocationManager.removeFile(it) }
                     transfer?.item?.localFileUri?.let { DownloadLocationManager.removeFile(it) }
                     DownloadSubtitleStorage(File(directory, fileName).toURI().toString()).remove()
+                    transfer?.item?.localFileUri?.let { DownloadSubtitleStorage(it).remove() }
                 }
             }
         }
@@ -170,13 +171,10 @@ internal class AndroidDownloadScheduler(val context: Context) {
                 DownloadLocationManager.findFinalizedDownloadFile(transfer.destinationTreeUri, fileName)
                     ?.let { finalized ->
                         complete(transfer, finalized, DownloadLocationManager.fileSize(finalized))
+                        prepareSubtitles(fileName, finalized)
                         return@withLock false
                     }
             }
-
-            DownloadSubtitles.prepare(transfer.item, File(directory, fileName).toURI().toString())
-            currentCoroutineContext().ensureActive()
-            if (!isActive(transfer)) return@withLock false
 
             target = resolveTarget(transfer)
             var lastProgressAt = 0L
@@ -203,6 +201,7 @@ internal class AndroidDownloadScheduler(val context: Context) {
             val bytes = target.size()
             val storedFileUri = target.finish()
             complete(transfer, storedFileUri, bytes)
+            prepareSubtitles(fileName, storedFileUri)
             false
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -258,6 +257,21 @@ internal class AndroidDownloadScheduler(val context: Context) {
     private fun clearDestination(transfer: AndroidDownloadTransfer) {
         store.update(transfer.item.fileName, transfer.generation) {
             it.copy(destinationTreeUri = null, destinationDocumentUri = null)
+        }
+    }
+
+    private fun prepareSubtitles(fileName: String, localFileUri: String) {
+        backgroundScope.launch {
+            lock(fileName).withLock {
+                val item = store.get(fileName)?.item
+                if (item?.status != DownloadStatus.Completed || item.localFileUri != localFileUri) return@withLock
+                try {
+                    DownloadSubtitles.prepare(item, localFileUri)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                }
+            }
         }
     }
 

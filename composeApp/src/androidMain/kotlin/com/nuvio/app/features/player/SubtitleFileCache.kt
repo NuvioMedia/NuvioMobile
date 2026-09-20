@@ -81,6 +81,12 @@ object SubtitleFileCache {
                     File(URI(input.url)).copyTo(file, overwrite = true)
                     return@withContext FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 }
+                if (input.url.startsWith("content:")) {
+                    context.contentResolver.openInputStream(Uri.parse(input.url))?.use { inputStream ->
+                        file.outputStream().use { output -> inputStream.copyTo(output) }
+                    } ?: return@withContext null
+                    return@withContext FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                }
                 val request = Request.Builder().url(input.url).build()
                 okHttpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {

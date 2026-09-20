@@ -45,7 +45,7 @@ internal class FakeDocumentsProvider : ContentProvider() {
                 }
             }
             METHOD_DELETE_DOCUMENT -> {
-                fileFor(documentIdOf(target)).delete()
+                fileFor(documentIdOf(target)).deleteRecursively()
                 Bundle().apply { putBoolean(EXTRA_RESULT, true) }
             }
             METHOD_RENAME_DOCUMENT -> {

@@ -82,7 +82,6 @@ internal actual object DownloadsPlatformDownloader {
             val tempPath = "$downloadsDirectory/${request.destinationFileName}.part"
 
             try {
-                DownloadSubtitles.prepare(request.item, NSURL.fileURLWithPath(destinationPath).absoluteString!!)
                 var resumeFromBytes = fileSizeOrNull(tempPath)?.coerceAtLeast(0L) ?: 0L
 
                 var attemptedRangeRequest = resumeFromBytes > 0L
@@ -135,6 +134,12 @@ internal actual object DownloadsPlatformDownloader {
                 val localFileUri = NSURL.fileURLWithPath(destinationPath).absoluteString ?: "file://$destinationPath"
                 val finalSize = fileSizeOrNull(destinationPath)
                 onSuccess(localFileUri, totalBytes ?: finalSize)
+                try {
+                    DownloadSubtitles.prepare(request.item, localFileUri)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (_: Throwable) {
+                }
             } catch (_: CancellationException) {
                 handle.cancelNativeTask()
             } catch (error: Throwable) {

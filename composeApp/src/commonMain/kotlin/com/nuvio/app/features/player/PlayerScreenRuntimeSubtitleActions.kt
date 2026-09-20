@@ -6,7 +6,7 @@ import com.nuvio.app.features.addons.httpGetTextWithHeaders
 import kotlinx.coroutines.launch
 
 internal fun PlayerScreenRuntime.fetchAddonSubtitlesForActiveItem() {
-    if (activeSourceUrl.startsWith("file:") && externalSubtitles.isNotEmpty()) {
+    if (activeSourceUrl.isLocalSubtitleUri() && externalSubtitles.isNotEmpty()) {
         SubtitleRepository.clear()
         return
     }
