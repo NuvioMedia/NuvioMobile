@@ -13,6 +13,7 @@ internal actual fun publishNativeTabAccentColor(hexColor: String) = Unit
 internal actual fun publishNativeTabTitles(
     home: String,
     search: String,
+    liveTv: String,
     library: String,
     profile: String,
 ) = Unit

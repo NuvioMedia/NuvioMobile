@@ -182,6 +182,8 @@ object ProfileRepository {
         TmdbSettingsRepository.onProfileChanged()
         MdbListSettingsRepository.onProfileChanged()
         SearchHistoryRepository.onProfileChanged()
+        com.nuvio.app.features.livetv.LiveTvSettingsRepository.onProfileChanged()
+        com.nuvio.app.features.livetv.LiveTvRepository.refresh()
         SearchRepository.reset()
         CollectionRepository.onProfileChanged()
         CollectionMobileSettingsRepository.onProfileChanged()

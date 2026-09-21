@@ -233,6 +233,7 @@ final class TabNavigationCoordinator: ObservableObject {
 enum NuvioAppTab: String, CaseIterable, Hashable {
     case home = "Home"
     case search = "Search"
+    case liveTv = "LiveTv"
     case library = "Library"
     case settings = "Settings"
 
@@ -244,6 +245,7 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         switch kotlinName?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() {
         case "home": return .home
         case "search": return .search
+        case "livetv", "live tv": return .liveTv
         case "library": return .library
         case "settings", "profile": return .settings
         default: return nil
@@ -254,6 +256,7 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         switch self {
         case .home: return "NuvioTabHome"
         case .search: return "NuvioTabSearch"
+        case .liveTv: return "NuvioTabLiveTv"
         case .library: return "NuvioTabLibrary"
         case .settings: return "NuvioTabProfile"
         }
@@ -263,6 +266,7 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
         switch self {
         case .home: return "house.fill"
         case .search: return "magnifyingglass"
+        case .liveTv: return "tv.fill"
         case .library: return "rectangle.stack.fill"
         case .settings: return "person.crop.circle.fill"
         }
@@ -550,6 +554,7 @@ final class AppNavigationCoordinator: ObservableObject {
 
     let homeCoordinator = TabNavigationCoordinator()
     let searchCoordinator = TabNavigationCoordinator()
+    let liveTvCoordinator = TabNavigationCoordinator()
     let libraryCoordinator = TabNavigationCoordinator()
     let settingsCoordinator = TabNavigationCoordinator()
     let appGateController = AppGateController()
@@ -564,13 +569,14 @@ final class AppNavigationCoordinator: ObservableObject {
     }
 
     private var allCoordinators: [TabNavigationCoordinator] {
-        [homeCoordinator, searchCoordinator, libraryCoordinator, settingsCoordinator]
+        [homeCoordinator, searchCoordinator, liveTvCoordinator, libraryCoordinator, settingsCoordinator]
     }
 
     func coordinator(for tab: NuvioAppTab) -> TabNavigationCoordinator {
         switch tab {
         case .home: return homeCoordinator
         case .search: return searchCoordinator
+        case .liveTv: return liveTvCoordinator
         case .library: return libraryCoordinator
         case .settings: return settingsCoordinator
         }
@@ -590,6 +596,7 @@ final class AppNavigationCoordinator: ObservableObject {
     func updateTabTitles(
         home: String,
         search: String,
+        liveTv: String,
         library: String,
         profile: String,
         switchProfile: String,
@@ -598,6 +605,7 @@ final class AppNavigationCoordinator: ObservableObject {
         localizedTabTitles = [
             .home: home,
             .search: search,
+            .liveTv: liveTv,
             .library: library,
             .settings: profile,
         ]
@@ -692,10 +700,11 @@ struct NativeNavComposeView: UIViewControllerRepresentable {
             onActivate: { tabName in
                 appCoordinator.activateTab(named: tabName)
             },
-            onTabTitles: { home, search, library, profile, switchProfile, addProfile in
+            onTabTitles: { home, search, liveTv, library, profile, switchProfile, addProfile in
                 appCoordinator.updateTabTitles(
                     home: home,
                     search: search,
+                    liveTv: liveTv,
                     library: library,
                     profile: profile,
                     switchProfile: switchProfile,

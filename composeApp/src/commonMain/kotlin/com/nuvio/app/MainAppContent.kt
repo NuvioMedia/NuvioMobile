@@ -112,6 +112,8 @@ import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.library.LibraryRepository
 import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.library.LibrarySortOption
+import com.nuvio.app.features.livetv.LiveTvChannel
+import com.nuvio.app.features.livetv.LiveTvSource
 import com.nuvio.app.features.library.LibrarySourceMode
 import com.nuvio.app.features.library.PendingTrackingMembershipRemoval
 import com.nuvio.app.features.library.TrackingMembershipRemovalConfirmationHost
@@ -195,7 +197,7 @@ internal fun MainAppContent(
     onGoBack: (() -> Unit)? = null,
     onReplace: ((AppRoute) -> Unit)? = null,
     onActivate: ((AppScreenTab) -> Unit)? = null,
-    onTabTitles: ((home: String, search: String, library: String, profile: String, switchProfile: String, addProfile: String) -> Unit)? = null,
+    onTabTitles: ((home: String, search: String, liveTv: String, library: String, profile: String, switchProfile: String, addProfile: String) -> Unit)? = null,
     appGateController: AppGateController? = null,
     onRootContentReady: ((Boolean) -> Unit)? = null,
     onSwitchProfile: () -> Unit = {},
@@ -243,6 +245,7 @@ internal fun MainAppContent(
         var searchFocusRequestCount by remember { mutableStateOf(0) }
         val homeScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val searchScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+        val liveTvScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val searchListState = rememberLazyListState()
         val libraryScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val settingsRootActionRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
@@ -339,6 +342,7 @@ internal fun MainAppContent(
     val cloudLibraryPlayNotConnectedText = stringResource(Res.string.cloud_library_play_not_connected)
     val nativeTabHomeTitle = stringResource(Res.string.compose_nav_home)
     val nativeTabSearchTitle = stringResource(Res.string.compose_nav_search)
+    val nativeTabLiveTvTitle = stringResource(Res.string.compose_nav_livetv)
     val nativeTabLibraryTitle = stringResource(Res.string.compose_nav_library)
     val nativeTabProfileTitle = stringResource(Res.string.compose_nav_profile)
     val nativeSwitchProfileTitle = stringResource(Res.string.compose_settings_root_switch_profile_title)
@@ -347,6 +351,7 @@ internal fun MainAppContent(
     val metaScreenSettingsTitle = stringResource(Res.string.compose_settings_page_meta_screen)
     val continueWatchingSettingsTitle = stringResource(Res.string.compose_settings_page_continue_watching)
     val debridSettingsTitle = stringResource(Res.string.compose_settings_page_debrid)
+    val liveTvSettingsTitle = stringResource(Res.string.compose_settings_page_livetv)
     val downloadsSettingsTitle = stringResource(Res.string.compose_settings_root_downloads_title)
     val addonsSettingsTitle = stringResource(Res.string.compose_settings_page_addons)
     val pluginsSettingsTitle = stringResource(Res.string.compose_settings_page_plugins)
@@ -402,6 +407,7 @@ internal fun MainAppContent(
                 searchFocusRequestCount++
                 searchScrollToTopRequests.tryEmit(Unit)
             }
+            AppScreenTab.LiveTv -> liveTvScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
         }
@@ -436,6 +442,7 @@ internal fun MainAppContent(
     LaunchedEffect(
         nativeTabHomeTitle,
         nativeTabSearchTitle,
+        nativeTabLiveTvTitle,
         nativeTabLibraryTitle,
         nativeTabProfileTitle,
         nativeSwitchProfileTitle,
@@ -445,12 +452,14 @@ internal fun MainAppContent(
         NativeTabBridge.publishTabTitles(
             home = nativeTabHomeTitle,
             search = nativeTabSearchTitle,
+            liveTv = nativeTabLiveTvTitle,
             library = nativeTabLibraryTitle,
             profile = nativeTabProfileTitle,
         )
         onTabTitles?.invoke(
             nativeTabHomeTitle,
             nativeTabSearchTitle,
+            nativeTabLiveTvTitle,
             nativeTabLibraryTitle,
             nativeTabProfileTitle,
             nativeSwitchProfileTitle,
@@ -803,6 +812,36 @@ internal fun MainAppContent(
                     false
                 }
             }
+        }
+
+        fun launchLiveTvChannel(channel: LiveTvChannel) {
+            val playerLaunch = PlayerLaunch(
+                profileId = activePlaybackProfileId,
+                title = channel.name,
+                sourceUrl = channel.streamUrl,
+                sourceHeaders = mapOf(
+                    "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                ),
+                streamTitle = channel.name,
+                streamSubtitle = channel.group,
+                providerName = when (channel.source) {
+                    LiveTvSource.Pluto -> "Pluto TV"
+                    LiveTvSource.Xtream -> "Xtream Codes"
+                },
+                providerAddonId = "livetv:${channel.source.name.lowercase()}",
+                poster = channel.logoUrl,
+                contentType = "channel",
+                videoId = channel.id,
+                parentMetaId = channel.id,
+                parentMetaType = "channel",
+                streamType = "live",
+            )
+            if (playerSettingsUiState.externalPlayerEnabled) {
+                coroutineScope.launch { openExternalPlayback(playerLaunch) }
+                return
+            }
+            val launchId = PlayerLaunchStore.put(playerLaunch)
+            navController.navigate(PlayerRoute(launchId = launchId, title = playerLaunch.title))
         }
 
         fun openDownloadedItem(item: DownloadItem) {
@@ -1254,12 +1293,14 @@ internal fun MainAppContent(
                         requests = remember(
                             homeScrollToTopRequests,
                             searchScrollToTopRequests,
+                            liveTvScrollToTopRequests,
                             libraryScrollToTopRequests,
                             settingsRootActionRequests,
                         ) {
                             AppTabRequests(
                                 homeScrollToTopRequests = homeScrollToTopRequests,
                                 searchScrollToTopRequests = searchScrollToTopRequests,
+                                liveTvScrollToTopRequests = liveTvScrollToTopRequests,
                                 libraryScrollToTopRequests = libraryScrollToTopRequests,
                                 settingsRootActionRequests = settingsRootActionRequests,
                             )
@@ -1413,6 +1454,21 @@ internal fun MainAppContent(
                                     requestedSettingsPageName = null
                                 },
                                 onInitialHomeContentRendered = { initialHomeReady = true },
+                                onLiveTvChannelPlay = ::launchLiveTvChannel,
+                                onLiveTvSettingsClick = {
+                                    if (useNativeNavigation && !isTabletLayout) {
+                                        activateTab(AppScreenTab.Settings)
+                                        navController.navigate(
+                                            SettingsPageRoute(
+                                                pageName = "LiveTv",
+                                                title = liveTvSettingsTitle,
+                                            ),
+                                        )
+                                    } else {
+                                        requestedSettingsPageName = "LiveTv"
+                                        activateTab(AppScreenTab.Settings)
+                                    }
+                                },
                             )
                         },
                         onBack = {

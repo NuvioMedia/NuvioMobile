@@ -12,6 +12,8 @@ import nuvio.composeapp.generated.resources.compose_settings_page_plugins
 import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description_appstore
 import nuvio.composeapp.generated.resources.settings_content_discovery_plugins_description
+import nuvio.composeapp.generated.resources.compose_settings_page_livetv
+import nuvio.composeapp.generated.resources.livetv_settings_content_discovery_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_sources
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_search
 import nuvio.composeapp.generated.resources.settings_content_discovery_recent_searches
@@ -23,6 +25,7 @@ internal fun LazyListScope.contentDiscoveryContent(
     showPluginsEntry: Boolean,
     onAddonsClick: () -> Unit,
     onPluginsClick: () -> Unit,
+    onLiveTvClick: () -> Unit,
 ) {
     item {
         val recentSearchesEnabled by remember {
@@ -72,6 +75,12 @@ internal fun LazyListScope.contentDiscoveryContent(
                         onClick = onPluginsClick,
                     )
                 }
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_livetv),
+                    description = stringResource(Res.string.livetv_settings_content_discovery_description),
+                    isTablet = isTablet,
+                    onClick = onLiveTvClick,
+                )
             }
         }
     }

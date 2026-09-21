@@ -19,6 +19,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_debrid
 import nuvio.composeapp.generated.resources.compose_settings_page_continue_watching
 import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
 import nuvio.composeapp.generated.resources.compose_settings_page_integrations
+import nuvio.composeapp.generated.resources.compose_settings_page_livetv
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_mdblist_ratings
 import nuvio.composeapp.generated.resources.compose_settings_page_meta_screen
@@ -117,6 +118,11 @@ internal enum class SettingsPage(
     ),
     Plugins(
         titleRes = Res.string.compose_settings_page_plugins,
+        category = SettingsCategory.General,
+        parentPage = ContentDiscovery,
+    ),
+    LiveTv(
+        titleRes = Res.string.compose_settings_page_livetv,
         category = SettingsCategory.General,
         parentPage = ContentDiscovery,
     ),

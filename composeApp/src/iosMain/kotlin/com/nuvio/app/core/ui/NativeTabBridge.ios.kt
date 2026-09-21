@@ -11,6 +11,7 @@ private const val nativeSelectedTabKey = "NuvioNativeSelectedTab"
 private const val nativeTabAccentColorKey = "NuvioNativeTabAccentColor"
 private const val nativeTabTitleHomeKey = "NuvioNativeTabTitleHome"
 private const val nativeTabTitleSearchKey = "NuvioNativeTabTitleSearch"
+private const val nativeTabTitleLiveTvKey = "NuvioNativeTabTitleLiveTv"
 private const val nativeTabTitleLibraryKey = "NuvioNativeTabTitleLibrary"
 private const val nativeTabTitleProfileKey = "NuvioNativeTabTitleProfile"
 private const val nativeProfileNameKey = "NuvioNativeProfileName"
@@ -45,11 +46,13 @@ internal actual fun publishNativeTabAccentColor(hexColor: String) {
 internal actual fun publishNativeTabTitles(
     home: String,
     search: String,
+    liveTv: String,
     library: String,
     profile: String,
 ) {
     publishString(nativeTabTitleHomeKey, home)
     publishString(nativeTabTitleSearchKey, search)
+    publishString(nativeTabTitleLiveTvKey, liveTv)
     publishString(nativeTabTitleLibraryKey, library)
     publishString(nativeTabTitleProfileKey, profile)
     notifyNativeTabChromeChanged()

@@ -24,7 +24,7 @@ fun MainViewController(
     onGoBack: () -> Unit,
     onReplace: (AppRoute) -> Unit,
     onActivate: (String) -> Unit,
-    onTabTitles: (String, String, String, String, String, String) -> Unit,
+    onTabTitles: (String, String, String, String, String, String, String) -> Unit,
     appGateController: AppGateController,
 ): UIViewController {
     val initialTab = AppScreenTab.fromName(initialTabName)

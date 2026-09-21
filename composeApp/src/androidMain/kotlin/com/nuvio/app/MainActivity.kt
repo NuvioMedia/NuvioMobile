@@ -106,6 +106,7 @@ open class MainActivity : AppCompatActivity() {
         MemberAssetStorage.initialize(applicationContext)
         DiscoverSelectionStorage.initialize(applicationContext)
         SearchHistoryStorage.initialize(applicationContext)
+        com.nuvio.app.features.livetv.LiveTvSettingsStorage.initialize(applicationContext)
         SeasonViewModeStorage.initialize(applicationContext)
         PosterCardStyleStorage.initialize(applicationContext)
         CardDepthStyleStorage.initialize(applicationContext)
