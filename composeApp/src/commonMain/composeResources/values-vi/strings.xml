@@ -2185,7 +2185,7 @@
     <string name="plugins_error_unavailable_build">Phiên bản này không hỗ trợ trình mở rộng</string>
     <string name="plugins_group_by_repo_desc">Trong danh sách nguồn phát, hiển thị một nhà cung cấp cho mỗi kho lưu trữ thay vì từng nguồn</string>
     <string name="plugins_group_by_repo_title">Nhóm các nhà cung cấp theo kho lưu trữ</string>
-    <string name="plugins_input_manifest_placeholder">URL tệp kê khai của trình mở rộng</string>
+    <string name="plugins_input_manifest_placeholder">URL tệp kê khai trình mở rộng</string>
     <string name="plugins_manifest_error_name_missing">Tên tệp kê khai bị thiếu</string>
     <string name="plugins_manifest_error_no_providers">Tệp kê khai chưa có nhà cung cấp</string>
     <string name="plugins_manifest_error_version_missing">Tệp kê khai bị thiếu phiên bản</string>
