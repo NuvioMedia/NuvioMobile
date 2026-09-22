@@ -758,7 +758,7 @@
     <string name="settings_card_depth_surface_cast">Diễn viên</string>
     <string name="settings_card_depth_surface_trailers">Trailer</string>
     <string name="settings_poster_card_radius">Bo tròn góc</string>
-    <string name="settings_poster_card_style">KIỂU POSTER</string>
+    <string name="settings_poster_card_style">KIỂU THẺ POSTER</string>
     <string name="settings_poster_card_width">Độ rộng</string>
     <string name="settings_poster_custom">Tuỳ chỉnh</string>
     <string name="settings_poster_description">Điều chỉnh độ rộng và bo tròn góc của thẻ.</string>
@@ -780,6 +780,14 @@
     <string name="settings_poster_width_dense">Dày đặc</string>
     <string name="settings_poster_width_large">Lớn</string>
     <string name="settings_poster_width_standard">Tiêu chuẩn</string>
+    <!-- Custom Poster URL -->
+    <string name="settings_custom_poster_title">NGUỒN POSTER TÙY CHỈNH</string>
+    <string name="settings_custom_poster_description">Cung cấp mẫu URL poster từ một dịch vụ bên ngoài. Nếu một biến giữ chỗ không có giá trị cho tiêu đề cụ thể, poster gốc sẽ được sử dụng thay thế.</string>
+    <string name="settings_custom_poster_placeholder">https://example.com/poster?id={id}&amp;id_type={id_type}&amp;type={type}</string>
+    <string name="settings_custom_poster_active">Nguồn poster tùy chỉnh đang hoạt động</string>
+    <string name="settings_custom_poster_none">Chưa thiết lập mẫu</string>
+    <string name="settings_custom_poster_save">Lưu</string>
+    <string name="settings_custom_poster_clear">Xóa</string>
     <string name="settings_show_secret">Hiện giá trị</string>
     <string name="settings_continue_watching_resume_prompt_description">Hiển thị hộp thoại để tiếp tục từ chỗ đã dừng khi mở lại ứng dụng sau khi thoát khỏi trình phát.</string>
     <string name="settings_continue_watching_resume_prompt_title">Lời nhắc Tiếp tục xem</string>
@@ -1142,7 +1150,7 @@
     <string name="settings_playback_section_player">TRÌNH PHÁT</string>
     <string name="settings_playback_section_skip_segments">BỎ QUA PHÂN ĐOẠN</string>
     <string name="settings_playback_section_stream_auto_play">TỰ ĐỘNG PHÁT</string>
-    <string name="settings_playback_section_stream_selection">CHỌN NGUỒN PHÁT</string>
+    <string name="settings_playback_section_stream_selection">CHỌN LUỒNG PHÁT</string>
     <string name="settings_playback_section_subtitle_audio">PHỤ ĐỀ VÀ ÂM THANH</string>
     <string name="settings_playback_section_subtitle_rendering">KẾT XUẤT PHỤ ĐỀ</string>
     <string name="settings_playback_selected_count">Đã chọn %1$d</string>
@@ -1717,7 +1725,7 @@
     <string name="profile_pin_set_requires_internet">Vui lòng kết nối Internet để đặt mã PIN</string>
     <string name="profile_primary_addons_required">Hồ sơ này đang dùng tiện ích chính</string>
     <string name="streams_failed_to_load_scraper">Không thể tải %1$s</string>
-    <string name="stream_default_name">Nguồn phát</string>
+    <string name="stream_default_name">Luồng phát</string>
     <string name="source_embedded">Nhúng</string>
     <string name="trakt_authorization_denied">Quyền truy cập bị từ chối</string>
     <string name="trakt_authorization_expired_reconnect">Quyền truy cập Trakt của bạn không còn hợp lệ. Vui lòng kết nối lại tài khoản Trakt của bạn.</string>
