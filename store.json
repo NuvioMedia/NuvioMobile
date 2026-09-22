@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.5.0",
+          "buildVersion": "132",
+          "date": "2026-09-22T10:10:10Z",
+          "localizedDescription": "- 4c82f9ac feat(settings): collapse tracker cards by default @tapframe  \r\n- c9d6f5f6 fix(player): restore subtitles for each episode @tapframe  \r\n- [feat(mdblist): add tracking and library support (#1900)](https://github.com/NuvioMedia/NuvioMobile/pull/1900) @tapframe  \r\n- [remove inaccurate TMDB release date enrichment option (#2032)](https://github.com/NuvioMedia/NuvioMobile/pull/2032) @skoruppa  \r\n- [Fix(player) record mx player completion when no position is returned (#2031)](https://github.com/NuvioMedia/NuvioMobile/pull/2031) @zuko726  \r\n- 4178d5cd fix(tmdb): sort blank collection release dates last @tapframe  \r\n- fb9f859e fix(ios): use clean player framework archive @tapframe  \r\n- 6ff7882a fix(player): preserve iOS audio during calls @tapframe  \r\n- [Custom poster URL pattern support (#2025)](https://github.com/NuvioMedia/NuvioMobile/pull/2025) @skoruppa  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.0-beta/nuvio-0.5.0-full-release.ipa",
+          "size": 66006978,
+          "sha256": "14cc46e4098e4568e2e20a86a8b5dc7dba3da7e28ab7567972338fba460421ef",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.4.26",
           "buildVersion": "131",
           "date": "2026-09-21T09:49:45Z",
