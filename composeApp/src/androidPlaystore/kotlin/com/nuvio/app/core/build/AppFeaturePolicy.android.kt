@@ -13,5 +13,6 @@ actual object AppFeaturePolicy {
     actual val inAppUpdaterEnabled: Boolean = false
     actual val imdbRatingLogoEnabled: Boolean = false
     actual val mediaPlaybackForegroundServiceEnabled: Boolean = false
+    actual val downloadForegroundServiceEnabled: Boolean = false
     actual val customServerConnectionsEnabled: Boolean = false
 }

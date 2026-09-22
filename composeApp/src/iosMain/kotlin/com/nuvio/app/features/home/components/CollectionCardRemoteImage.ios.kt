@@ -25,6 +25,7 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.reinterpret
 import platform.CoreGraphics.CGImageRef
 import platform.CoreFoundation.CFDataCreate
+import platform.CoreFoundation.CFRelease
 import platform.ImageIO.CGImageSourceCreateImageAtIndex
 import platform.ImageIO.CGImageSourceCreateWithData
 import platform.ImageIO.CGImageSourceGetCount
@@ -154,8 +155,8 @@ private suspend fun loadGifImage(imageUrl: String): UIImage? {
             bytes
                 .takeIf { it.isNotEmpty() }
                 ?.let { gifBytes ->
-                    UIImage.gifImageWithData(
-                        data = gifBytes.toCFData(),
+                    UIImage.gifImageWithBytes(
+                        bytes = gifBytes,
                         frameDurations = parseGifFrameDurations(gifBytes),
                     )
                 }
@@ -188,36 +189,45 @@ private fun ByteArray.toCFData() =
     }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun UIImage.Companion.gifImageWithData(
-    data: kotlinx.cinterop.CPointer<cnames.structs.__CFData>?,
+private fun UIImage.Companion.gifImageWithBytes(
+    bytes: ByteArray,
     frameDurations: List<Int>,
 ): UIImage? {
     return runCatching {
-        val source = data?.let { CGImageSourceCreateWithData(it, null) } ?: return null
-        val count = CGImageSourceGetCount(source).toInt()
-        val frames = mutableListOf<GifFrame>()
-
-        for (index in 0 until count) {
-            val imageRef: CGImageRef = CGImageSourceCreateImageAtIndex(source, index.toULong(), null) ?: continue
+        val data = bytes.toCFData() ?: return null
+        try {
+            val source = CGImageSourceCreateWithData(data, null) ?: return null
             try {
-                frames.add(
-                    GifFrame(
-                        image = UIImage.imageWithCGImage(imageRef),
-                        delayCentiseconds = frameDurations.getOrNull(index)
-                            ?.coerceAtLeast(1)
-                            ?: DefaultGifFrameDelayCentiseconds,
-                    )
-                )
+                val count = CGImageSourceGetCount(source).toInt()
+                val frames = mutableListOf<GifFrame>()
+
+                for (index in 0 until count) {
+                    val imageRef: CGImageRef = CGImageSourceCreateImageAtIndex(source, index.toULong(), null) ?: continue
+                    try {
+                        frames.add(
+                            GifFrame(
+                                image = UIImage.imageWithCGImage(imageRef),
+                                delayCentiseconds = frameDurations.getOrNull(index)
+                                    ?.coerceAtLeast(1)
+                                    ?: DefaultGifFrameDelayCentiseconds,
+                            )
+                        )
+                    } finally {
+                        CGImageRelease(imageRef)
+                    }
+                }
+
+                if (frames.isEmpty()) return null
+
+                val expanded = expandedGifFrames(frames)
+                val durationSeconds = (expanded.images.size * expanded.tickCentiseconds) / 100.0
+                UIImage.animatedImageWithImages(expanded.images, durationSeconds)
             } finally {
-                CGImageRelease(imageRef)
+                CFRelease(source)
             }
+        } finally {
+            CFRelease(data)
         }
-
-        if (frames.isEmpty()) return null
-
-        val expanded = expandedGifFrames(frames)
-        val durationSeconds = (expanded.images.size * expanded.tickCentiseconds) / 100.0
-        UIImage.animatedImageWithImages(expanded.images, durationSeconds)
     }.getOrNull()
 }
 

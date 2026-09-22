@@ -20,6 +20,7 @@ import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogSection
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.filterReleasedItems
+import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -450,7 +451,11 @@ object SearchRepository {
             search = query,
             forceRefresh = forceRefresh,
         ).withUnreleasedFilter()
-        val items = page.items
+        val posterPattern = com.nuvio.app.core.poster.CustomPosterUrlRepository.let {
+            it.ensureLoaded()
+            it.pattern.value
+        }
+        val items = page.items.withCustomPosterUrls(posterPattern)
         require(items.isNotEmpty()) {
             getString(Res.string.search_error_no_results_for_catalog, catalogName)
         }
@@ -524,6 +529,12 @@ object SearchRepository {
                         page.items
                     } else {
                         mergeCatalogItems(latest.items, page.items)
+                    }.let { items ->
+                        val pattern = com.nuvio.app.core.poster.CustomPosterUrlRepository.let { repo ->
+                            repo.ensureLoaded()
+                            repo.pattern.value
+                        }
+                        items.withCustomPosterUrls(pattern)
                     }
                     val supportsPagination = selectedCatalog.supportsPagination || page.rawItemCount >= CATALOG_PAGE_SIZE
                     val loadedNewItems = reset || mergedItems.size > latest.items.size

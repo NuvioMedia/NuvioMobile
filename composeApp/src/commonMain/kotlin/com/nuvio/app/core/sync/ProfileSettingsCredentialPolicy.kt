@@ -32,6 +32,7 @@ internal fun preservingLocalProfileCredentials(
     remotePayload: JsonObject,
     localPayload: JsonObject,
 ): JsonObject {
+    if (feature == PROFILE_TMDB_SETTINGS_FEATURE) return withoutProfileCredentials(feature, remotePayload)
     val keys = profileCredentialKeys[feature].orEmpty()
     if (keys.isEmpty()) return remotePayload
     val merged = remotePayload.toMutableMap()

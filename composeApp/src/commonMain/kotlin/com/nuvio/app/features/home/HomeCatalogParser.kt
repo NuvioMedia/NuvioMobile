@@ -30,16 +30,16 @@ internal object HomeCatalogParser {
         val metas = root.array("metas")
         val parsedItems = buildList {
             val seenKeys = mutableSetOf<String>()
-            metas.forEach { element ->
-                if (maxItems != null && size >= maxItems) return@forEach
+            for (element in metas) {
+                if (maxItems != null && size >= maxItems) break
 
-                val meta = element as? JsonObject ?: return@forEach
+                val meta = element as? JsonObject ?: continue
                 val id = meta.string("id")
                 val type = meta.string("type")
                 val name = meta.string("name")
 
                 if (id.isNullOrBlank() || type.isNullOrBlank() || name.isNullOrBlank()) {
-                    return@forEach
+                    continue
                 }
 
                 val item = MetaPreview(

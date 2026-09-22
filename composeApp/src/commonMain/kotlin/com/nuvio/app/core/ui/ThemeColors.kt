@@ -173,7 +173,11 @@ object ThemeColors {
         backgroundCard = Color(0xFF222222),
     )
 
-    fun getColorPalette(theme: AppTheme): ThemeColorPalette = when (theme) {
+    fun getColorPalette(
+        theme: AppTheme,
+        customColors: CustomThemeColors = CustomThemeColors.Default,
+    ): ThemeColorPalette = when (theme) {
+        AppTheme.CUSTOM -> customColors.toColorPalette()
         AppTheme.GOLD -> Gold
         AppTheme.JADE -> Jade
         AppTheme.ROSE_GOLD -> RoseGold

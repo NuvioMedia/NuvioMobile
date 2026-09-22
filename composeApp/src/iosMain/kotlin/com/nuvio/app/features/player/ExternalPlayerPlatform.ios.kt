@@ -15,18 +15,7 @@ private val iosExternalPlayerSpecs = listOf(
         id = "infuse",
         name = "Infuse",
         scheme = "infuse",
-        buildUrl = { request ->
-            buildString {
-                append("infuse://x-callback-url/play?url=")
-                append(request.sourceUrl.urlQueryEncode())
-                append("&filename=")
-                append(request.buildPlayerTitle(includeEpisodeTitle = true).urlQueryEncode())
-                request.subtitles?.forEach { subtitle ->
-                    append("&sub=")
-                    append(subtitle.url.urlQueryEncode())
-                }
-            }
-        },
+        buildUrl = infusePlaybackCallbacks::prepare,
     ),
     IosExternalPlayerSpec(
         id = "vlc",
@@ -89,7 +78,9 @@ internal actual object ExternalPlayerPlatform {
         UIApplication.sharedApplication.openURL(
             url = url,
             options = emptyMap<Any?, Any>(),
-            completionHandler = null,
+            completionHandler = { opened ->
+                if (!opened) infusePlaybackCallbacks.cancelLaunch(url.absoluteString.orEmpty())
+            },
         )
         return ExternalPlayerOpenResult.Opened
     }

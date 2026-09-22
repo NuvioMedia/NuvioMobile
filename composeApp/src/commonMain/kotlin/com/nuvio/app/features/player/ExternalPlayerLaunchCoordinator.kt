@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.downloads.DownloadSubtitles
 import com.nuvio.app.features.player.skip.SkipInterval
 import com.nuvio.app.features.player.skip.SkipIntroRepository
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +27,7 @@ private val skipResolveScope = CoroutineScope(SupervisorJob() + Dispatchers.Defa
 /**
  * Orchestrates the full external player launch flow:
  * fetches subtitles if forwarding is enabled, downloads them to local cache,
- * resolves intro/outro skip segments if enabled, then returns an enriched
+ * resolves episode or movie skip segments if enabled, then returns an enriched
  * request for the caller to dispatch.
  */
 suspend fun prepareExternalPlayerLaunch(
@@ -40,18 +41,29 @@ suspend fun prepareExternalPlayerLaunch(
     secondaryLanguage: String?,
     onOverlayMessage: (String?) -> Unit,
 ): ExternalPlayerPlaybackRequest = coroutineScope {
-    var result = request
+    var result = request.copy(skipSegmentsJson = null)
 
     val subtitlesDeferred = if (forwardSubtitles && !preferredLanguage.equals(SubtitleLanguageOption.NONE, ignoreCase = true)) {
         async {
             onOverlayMessage(getString(Res.string.player_external_loading_subtitles))
 
-            val subtitles = SubtitleForwarder.fetchForExternalPlayer(
-                type = type,
-                videoId = videoId,
-                preferredLanguage = preferredLanguage,
-                secondaryLanguage = secondaryLanguage,
-            )
+            val downloadedSubtitles = DownloadSubtitles.localSubtitles(request.sourceUrl)
+            val subtitles = if (downloadedSubtitles.isNotEmpty()) {
+                downloadedSubtitles
+                    .filter {
+                        languageMatchesPreference(it.language, preferredLanguage) ||
+                            (secondaryLanguage != null && languageMatchesPreference(it.language, secondaryLanguage))
+                    }
+                    .map { SubtitleInput(it.url, it.name ?: it.language, it.language) }
+                    .ifEmpty { null }
+            } else {
+                SubtitleForwarder.fetchForExternalPlayer(
+                    type = type,
+                    videoId = videoId,
+                    preferredLanguage = preferredLanguage,
+                    secondaryLanguage = secondaryLanguage,
+                )
+            }
 
             if (subtitles != null) {
                 onOverlayMessage(getString(Res.string.player_external_downloading_subtitles))
@@ -67,7 +79,7 @@ suspend fun prepareExternalPlayerLaunch(
     }
 
     val skipSegmentsDeferred = if (sendSkipSegments) {
-        async { resolveSkipSegmentsJson(videoId, request.season, request.episode, contentId) }
+        async { resolveSkipSegmentsJson(type, videoId, request.season, request.episode, contentId) }
     } else {
         null
     }
@@ -83,7 +95,7 @@ suspend fun prepareExternalPlayerLaunch(
 }
 
 /**
- * Resolves intro/outro skip segments for the given content and serializes them to the
+ * Resolves episode or movie skip segments for the given content and serializes them to the
  * JSON contract understood by supporting external players: a JSON array of objects with
  * `type` (String), `start` (seconds) and `end` (seconds). Returns null if nothing resolved.
  *
@@ -91,11 +103,22 @@ suspend fun prepareExternalPlayerLaunch(
  * intentionally independent of the in-app skip-intro toggle (requireSkipIntroEnabled = false):
  * this is its own opt-in setting.
  */
-private suspend fun resolveSkipSegmentsJson(videoId: String, season: Int?, episode: Int?, contentId: String?): String? {
-    val ep = episode ?: return null
+private suspend fun resolveSkipSegmentsJson(
+    type: String,
+    videoId: String,
+    season: Int?,
+    episode: Int?,
+    contentId: String?,
+): String? {
     val imdbFromContent = contentId?.takeIf { it.startsWith("tt") }
     val intervals = skipResolveScope.async {
         withTimeoutOrNull(SkipSegmentResolveTimeoutMs) {
+            if (type.equals("movie", ignoreCase = true)) {
+                return@withTimeoutOrNull SkipIntroRepository.getMovieSkipIntervals(
+                    contentId, videoId, requireSkipIntroEnabled = false,
+                )
+            }
+            val ep = episode ?: return@withTimeoutOrNull null
             when {
                 videoId.startsWith("mal:") -> {
                     val malId = videoId.removePrefix("mal:").substringBefore(':')
@@ -118,11 +141,11 @@ private suspend fun resolveSkipSegmentsJson(videoId: String, season: Int?, episo
     return intervals.toSkipSegmentsJson()
 }
 
-private fun List<SkipInterval>.toSkipSegmentsJson(): String =
+internal fun List<SkipInterval>.toSkipSegmentsJson(): String =
     buildJsonArray {
         forEach { interval ->
             addJsonObject {
-                put("type", interval.type)
+                put("type", if (interval.type == "movie-credits") "end-credits" else interval.type)
                 put("start", interval.startTime)
                 put("end", interval.endTime)
             }

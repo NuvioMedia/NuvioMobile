@@ -1,15 +1,16 @@
 package com.nuvio.app.features.catalog
 
+import com.nuvio.app.core.poster.CustomPosterUrlRepository
+import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.features.collection.CollectionRepository
 import com.nuvio.app.features.collection.TmdbCollectionSourceResolver
 import com.nuvio.app.features.collection.catalogRouteKey
 import com.nuvio.app.features.library.LibraryRepository
-import com.nuvio.app.features.library.sortLibraryItems
-import com.nuvio.app.features.library.toMetaPreview
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.filterReleasedItems
 import com.nuvio.app.features.trakt.TraktPublicListSourceResolver
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -40,7 +41,7 @@ object CatalogRepository {
         }
         activeRequest = request
         if (target is CatalogTarget.Library) {
-            fetchInternalLibrary(request)
+            observeInternalLibrary(request)
             return
         }
         fetchPage(
@@ -86,7 +87,7 @@ object CatalogRepository {
         )
     }
 
-    private fun fetchInternalLibrary(request: CatalogRequest) {
+    private fun observeInternalLibrary(request: CatalogRequest) {
         activeJob?.cancel()
         _uiState.value = _uiState.value.copy(
             isLoading = true,
@@ -94,41 +95,21 @@ object CatalogRepository {
         )
 
         activeJob = scope.launch {
-            runCatching {
+            try {
                 val target = request.target as CatalogTarget.Library
                 LibraryRepository.ensureLoaded()
-                val libraryState = LibraryRepository.uiState.value
-                val items = libraryState.sections
-                    .firstOrNull { it.type == target.sectionType }
-                    ?.items
-                    .orEmpty()
-                sortLibraryItems(
-                    items = items,
-                    selected = target.sortOption,
-                    sourceMode = libraryState.sourceMode,
+                LibraryRepository.uiState.libraryCatalogStates(target).collect { state ->
+                    if (activeRequest != request) return@collect
+                    _uiState.value = state
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (activeRequest != request) return@launch
+                _uiState.value = CatalogUiState(
+                    errorMessage = error.message ?: getString(Res.string.catalog_load_failed),
                 )
-                    .map { it.toMetaPreview() }
-                    .let(::dedupeCatalogItems)
-            }.fold(
-                onSuccess = { items ->
-                    if (activeRequest != request) return@fold
-                    _uiState.value = CatalogUiState(
-                        items = items,
-                        isLoading = false,
-                        nextSkip = null,
-                        errorMessage = null,
-                    )
-                },
-                onFailure = { error ->
-                    if (activeRequest != request) return@fold
-                    _uiState.value = CatalogUiState(
-                        items = emptyList(),
-                        isLoading = false,
-                        nextSkip = null,
-                        errorMessage = error.message ?: getString(Res.string.catalog_load_failed),
-                    )
-                },
-            )
+            }
         }
     }
 
@@ -185,8 +166,10 @@ object CatalogRepository {
                         loadedNewItems = loadedNewItems,
                         consecutiveDuplicatePages = if (reset) 0 else current.consecutiveDuplicatePages,
                     )
+                    CustomPosterUrlRepository.ensureLoaded()
+                    val posterPattern = CustomPosterUrlRepository.pattern.value
                     _uiState.value = CatalogUiState(
-                        items = mergedItems,
+                        items = mergedItems.withCustomPosterUrls(posterPattern),
                         isLoading = false,
                         nextSkip = paginationState.nextSkip,
                         consecutiveDuplicatePages = paginationState.consecutiveDuplicatePages,

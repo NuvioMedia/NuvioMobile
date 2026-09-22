@@ -16,7 +16,6 @@ import com.nuvio.app.features.settings.AppIconPlatform
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
-import kotlin.math.abs
 
 internal actual object DownloadsLiveStatusPlatform {
     private const val channelId = "downloads_live_status"
@@ -46,9 +45,10 @@ internal actual object DownloadsLiveStatusPlatform {
                 item.status == DownloadStatus.Paused ||
                 item.status == DownloadStatus.Failed
         }
+        val managedIds = DownloadsPlatformDownloader.managedTransfers().map { it.item.id }.toSet()
 
-        val trackedNow = mutableSetOf<String>()
-        activeItems.forEach { item ->
+        val trackedNow = managedIds.toMutableSet()
+        activeItems.filterNot { it.id in managedIds }.forEach { item ->
             val renderState = RenderState(
                 status = item.status,
                 progressPercent = progressPercent(item),
@@ -80,7 +80,28 @@ internal actual object DownloadsLiveStatusPlatform {
             .apply()
     }
 
-    private fun buildNotification(context: Context, item: DownloadItem): android.app.Notification {
+    internal fun notifyTransfer(item: DownloadItem) {
+        val context = appContext ?: return
+        if (!canPostNotifications(context)) return
+        val manager = NotificationManagerCompat.from(context)
+        if (item.status == DownloadStatus.Completed) {
+            removeNotification(item.id)
+        } else {
+            val active = item.status == DownloadStatus.Downloading
+            manager.cancel(notificationId(if (active) "inactive:${item.id}" else item.id))
+            manager.notify(notificationId(if (active) item.id else "inactive:${item.id}"), buildNotification(context, item))
+        }
+    }
+
+    internal fun removeNotification(downloadId: String) {
+        val context = appContext ?: return
+        NotificationManagerCompat.from(context).apply {
+            cancel(notificationId(downloadId))
+            cancel(notificationId("inactive:$downloadId"))
+        }
+    }
+
+    internal fun buildNotification(context: Context, item: DownloadItem): android.app.Notification {
         val subtitle = buildSubtitle(item)
         val launchIntent = Intent().apply {
             component = AppIconPlatform.currentLauncherComponent(context)
@@ -118,6 +139,7 @@ internal actual object DownloadsLiveStatusPlatform {
                             context = context,
                             action = DownloadsNotificationActionReceiver.actionPause,
                             downloadId = item.id,
+                            fileName = item.fileName,
                         ),
                     )
 
@@ -151,6 +173,7 @@ internal actual object DownloadsLiveStatusPlatform {
                             context = context,
                             action = DownloadsNotificationActionReceiver.actionResume,
                             downloadId = item.id,
+                            fileName = item.fileName,
                         ),
                     )
             }
@@ -213,10 +236,12 @@ internal actual object DownloadsLiveStatusPlatform {
         context: Context,
         action: String,
         downloadId: String,
+        fileName: String,
     ): PendingIntent {
         val intent = Intent(context, DownloadsNotificationActionReceiver::class.java).apply {
             this.action = action
             putExtra(DownloadsNotificationActionReceiver.extraDownloadId, downloadId)
+            putExtra(AndroidDownloadScheduler.FILE_NAME, fileName)
         }
         return PendingIntent.getBroadcast(
             context,
@@ -261,7 +286,7 @@ internal actual object DownloadsLiveStatusPlatform {
     private fun preferences(context: Context) =
         context.getSharedPreferences(notificationsPrefName, Context.MODE_PRIVATE)
 
-    private fun notificationId(downloadId: String): Int = abs(downloadId.hashCode())
+    internal fun notificationId(downloadId: String): Int = (downloadId.hashCode() and Int.MAX_VALUE).coerceAtLeast(1)
 
     private data class RenderState(
         val status: DownloadStatus,

@@ -2,7 +2,6 @@ package com.nuvio.app.features.library
 
 import com.nuvio.app.features.library.sync.LibraryDeltaEvent
 import com.nuvio.app.features.library.sync.LibrarySyncKey
-import com.nuvio.app.features.library.sync.toLibrarySyncKey
 
 internal data class LibrarySnapshotReconciliation(
     val itemsByKey: MutableMap<String, LibraryItem>,
@@ -22,40 +21,22 @@ internal fun reconcileLibrarySnapshot(
     localItemsByKey: Map<String, LibraryItem>,
     pendingUpsertKeysByKey: Map<String, LibrarySyncKey>,
     pendingDeleteKeysByKey: Map<String, LibrarySyncKey>,
-    preserveLegacyLocalWhenServerEmpty: Boolean,
 ): LibrarySnapshotReconciliation {
     val serverItemsByKey = serverItems.associateByTo(mutableMapOf()) {
         libraryItemKey(it.id, it.type)
     }
     val pendingUpserts = pendingUpsertKeysByKey.toMutableMap()
     val pendingDeletes = pendingDeleteKeysByKey.toMutableMap()
-    val migrateLegacyLocalItems =
-        preserveLegacyLocalWhenServerEmpty &&
-            serverItemsByKey.isEmpty() &&
-            localItemsByKey.isNotEmpty() &&
-            pendingUpserts.isEmpty() &&
-            pendingDeletes.isEmpty()
-
-    if (migrateLegacyLocalItems) {
-        localItemsByKey.forEach { (key, item) ->
-            pendingUpserts[key] = item.toLibrarySyncKey()
-        }
-    } else {
-        pendingDeletes.keys.forEach(serverItemsByKey::remove)
-        pendingUpserts.keys.forEach { key ->
-            localItemsByKey[key]?.let { item -> serverItemsByKey[key] = item }
-        }
+    pendingDeletes.keys.forEach(serverItemsByKey::remove)
+    pendingUpserts.keys.forEach { key ->
+        localItemsByKey[key]?.let { item -> serverItemsByKey[key] = item }
     }
 
     return LibrarySnapshotReconciliation(
-        itemsByKey = if (migrateLegacyLocalItems) {
-            localItemsByKey.toMutableMap()
-        } else {
-            serverItemsByKey
-        },
+        itemsByKey = serverItemsByKey,
         pendingUpsertKeysByKey = pendingUpserts,
         pendingDeleteKeysByKey = pendingDeletes,
-        preservedLocalItems = migrateLegacyLocalItems || pendingUpserts.isNotEmpty() || pendingDeletes.isNotEmpty(),
+        preservedLocalItems = pendingUpserts.isNotEmpty() || pendingDeletes.isNotEmpty(),
     )
 }
 

@@ -24,6 +24,14 @@ object PlayerSubtitleCueParser {
         }
     }
 
+    internal fun fileExtension(text: String, sourceUrl: String): String =
+        when (detectSubtitleFormat(sourceUrl, cleanText(text))) {
+            SubtitleFormatHint.Srt -> "srt"
+            SubtitleFormatHint.WebVtt -> "vtt"
+            SubtitleFormatHint.Ass -> "ass"
+            SubtitleFormatHint.Ttml -> "ttml"
+        }
+
     private fun cleanText(rawText: String): String =
         rawText
             .replace("\uFEFF", "")

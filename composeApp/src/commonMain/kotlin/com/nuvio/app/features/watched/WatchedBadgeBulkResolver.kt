@@ -29,7 +29,8 @@ private val log = Logger.withTag("WatchedBadgeBulk")
 suspend fun resolveWatchedBadgesBulk(
     watchedItems: List<WatchedItem>,
     progressEntries: List<WatchProgressEntry>,
-) {
+    todayIsoDate: String = CurrentDateProvider.todayIsoDate(),
+): Boolean = withContext(Dispatchers.Default) {
     val touchedSeriesIds = buildSet {
         watchedItems.forEach { item ->
             if (item.type.isSeriesLikeWatchedType() && item.season != null && item.episode != null) {
@@ -43,66 +44,66 @@ suspend fun resolveWatchedBadgesBulk(
         }
         WatchedRepository.baseFullyWatchedSeriesKeys().mapNotNullTo(this, ::extractContentIdFromWatchedKey)
     }
-    if (touchedSeriesIds.isEmpty()) return
+    if (touchedSeriesIds.isEmpty()) return@withContext true
 
-    val todayIsoDate = CurrentDateProvider.todayIsoDate()
     // Use the full watchedKeys from UI state which includes extra keys from
     // provider alternate IDs (e.g. Simkl anime alternate MAL/Kitsu keys).
     val watchedKeys = WatchedRepository.uiState.value.watchedKeys
 
     log.i { "Bulk badge resolution starting: ${touchedSeriesIds.size} series candidates" }
 
-    withContext(Dispatchers.Default) {
-        val semaphore = Semaphore(BADGE_RESOLUTION_CONCURRENCY)
-        val resolvedIds = mutableSetOf<String>()
-        val resolvedStates = linkedMapOf<String, Boolean>()
+    val semaphore = Semaphore(BADGE_RESOLUTION_CONCURRENCY)
+    val resolvedIds = mutableSetOf<String>()
+    val resolvedStates = linkedMapOf<String, Boolean>()
 
-        for (contentId in touchedSeriesIds) {
-            semaphore.withPermit {
-                val meta = try {
-                    MetaDetailsRepository.fetch(type = "series", id = contentId, cacheResult = false)
-                } catch (e: CancellationException) {
-                    throw e
-                } catch (_: Throwable) {
-                    null
-                }
-                if (meta != null) {
-                    val isFullyWatched = WatchedRepository.calculateFullyWatchedSeriesState(
-                        meta = meta,
-                        todayIsoDate = todayIsoDate,
-                        isEpisodeWatched = { episode ->
-                            val keys = watchedItemKeys(meta.type, meta.id, episode.season, episode.episode)
-                            if (keys.any(watchedKeys::contains)) {
-                                true
+    for (contentId in touchedSeriesIds) {
+        semaphore.withPermit {
+            val meta = try {
+                MetaDetailsRepository.fetch(type = "series", id = contentId, cacheResult = false)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Throwable) {
+                null
+            }
+            if (meta != null) {
+                val isFullyWatched = WatchedRepository.calculateFullyWatchedSeriesState(
+                    meta = meta,
+                    todayIsoDate = todayIsoDate,
+                    isEpisodeWatched = { episode ->
+                        val keys = watchedItemKeys(meta.type, meta.id, episode.season, episode.episode)
+                        if (keys.any(watchedKeys::contains)) {
+                            true
+                        } else {
+                            val episodeNumber = episode.episode
+                            if (episodeNumber != null) {
+                                com.nuvio.app.features.simkl.SimklAnimeWatchedFallback.isWatched(episode.id, episodeNumber)
                             } else {
-                                val episodeNumber = episode.episode
-                                if (episodeNumber != null) {
-                                    com.nuvio.app.features.simkl.SimklAnimeWatchedFallback.isWatched(episode.id, episodeNumber)
-                                } else {
-                                    false
-                                }
+                                false
                             }
-                        },
-                        isEpisodeCompleted = { episode ->
-                            val playbackId = meta.episodePlaybackId(episode)
-                            progressEntries.any { entry ->
-                                entry.videoId == playbackId && entry.isEffectivelyCompleted
-                            }
-                        },
-                    )
-                    resolvedStates[watchedItemKey(meta.type, meta.id)] = isFullyWatched
+                        }
+                    },
+                    isEpisodeCompleted = { episode ->
+                        val playbackId = meta.episodePlaybackId(episode)
+                        progressEntries.any { entry ->
+                            entry.videoId == playbackId && entry.isEffectivelyCompleted
+                        }
+                    },
+                )
+                resolvedStates[watchedItemKey(meta.type, meta.id)] = isFullyWatched
+                if (meta.type.isSeriesLikeWatchedType() && meta.videos.isNotEmpty()) {
                     resolvedIds.add(contentId)
                 }
             }
-            yield()
         }
-
-        WatchedRepository.updateFullyWatchedSeriesStates(resolvedStates)
-        log.i { "Bulk badge resolution complete: resolved ${resolvedIds.size}/${touchedSeriesIds.size}" }
-
-        // Sibling expansion
-        expandFullyWatchedWithSiblings()
+        yield()
     }
+
+    WatchedRepository.updateFullyWatchedSeriesStates(resolvedStates)
+    log.i { "Bulk badge resolution complete: resolved ${resolvedIds.size}/${touchedSeriesIds.size}" }
+
+    // Sibling expansion
+    expandFullyWatchedWithSiblings()
+    resolvedIds.size == touchedSeriesIds.size
 }
 
 fun expandFullyWatchedWithSiblings() {
@@ -147,13 +148,9 @@ private fun getActiveProviderSiblingMap(): Map<String, Set<String>> {
             com.nuvio.app.features.tracking.TrackingProviderRegistry.isAuthenticated(providerId)
         },
     )
-    return when (effectiveSource.providerId) {
-        TrackingProviderId.TRAKT -> TraktProgressRepository.getShowIdSiblings()
-        TrackingProviderId.SIMKL -> {
-            SimklSyncRepository.state.value.snapshot.toSimklShowIdSiblings()
-        }
-        else -> emptyMap()
-    }
+    return effectiveSource.providerId?.let {
+        com.nuvio.app.features.tracking.TrackingProviderRegistry.progressProvider(it)?.showIdSiblings()
+    }.orEmpty()
 }
 
 private fun extractContentIdFromWatchedKey(key: String): String? {

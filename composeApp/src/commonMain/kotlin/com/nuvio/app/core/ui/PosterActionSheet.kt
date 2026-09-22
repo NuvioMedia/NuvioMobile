@@ -26,7 +26,7 @@ fun NuvioWatchedBadge(
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
-    val palette = ThemeColors.getColorPalette(MaterialTheme.appTheme)
+    val palette = MaterialTheme.themePalette
     Box(
         modifier = modifier
             .size(NuvioTokens.Icon.md)

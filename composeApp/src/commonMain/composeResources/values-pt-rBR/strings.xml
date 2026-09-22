@@ -846,11 +846,8 @@
     <string name="settings_playback_timeout_unlimited">Ilimitado</string>
     <string name="settings_playback_tunneled_playback">Reprodução em Túnel</string>
     <string name="settings_playback_tunneled_playback_description">Sincronização de áudio/vídeo em nível de hardware. Pode melhorar a reprodução em alguns dispositivos Android TV</string>
-    <string name="settings_tmdb_add_api_key_first">Adicione sua própria chave de API do TMDB abaixo antes de ativar o enriquecimento.</string>
-    <string name="settings_tmdb_api_key_label">Chave de API</string>
     <string name="settings_tmdb_enable_enrichment">Ativar Enriquecimento do TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Usar o TMDB como fonte de metadados para aprimorar dados de addons</string>
-    <string name="settings_tmdb_enter_api_key">Insira sua chave de API TMDB v3.</string>
     <string name="settings_tmdb_language_code_label">Código de idioma</string>
     <string name="settings_tmdb_module_artwork">Arte</string>
     <string name="settings_tmdb_module_artwork_description">Imagens de logo e backdrop do TMDB</string>
@@ -874,10 +871,8 @@
     <string name="settings_tmdb_module_season_posters_description">Usar pôsteres de temporada do TMDB no seletor de temporadas da tela de metadados para séries.</string>
     <string name="settings_tmdb_module_trailers">Trailers</string>
     <string name="settings_tmdb_module_trailers_description">Candidatos a trailer dos vídeos do TMDB para a seção de trailer de detalhes</string>
-    <string name="settings_tmdb_personal_api_key">Chave de API pessoal</string>
     <string name="settings_tmdb_preferred_language">Idioma</string>
     <string name="settings_tmdb_preferred_language_description">Idioma dos metadados do TMDB para título, logo e campos ativados</string>
-    <string name="settings_tmdb_section_credentials">CREDENCIAIS</string>
     <string name="settings_tmdb_section_localization">LOCALIZAÇÃO</string>
     <string name="settings_tmdb_section_modules">MÓDULOS</string>
     <string name="settings_tmdb_section_title">ENRIQUECIMENTO DO TMDB</string>
@@ -1357,4 +1352,12 @@
     <string name="unit_bytes_kb">KB</string>
     <string name="unit_bytes_mb">MB</string>
     <string name="unit_bytes_gb">GB</string>
+    <string name="layout_overall_ratings">Avaliações gerais</string>
+    <string name="layout_overall_ratings_sub_on">Mostra as avaliações padrão e do TMDB.</string>
+    <string name="layout_overall_ratings_sub_off">Oculta as avaliações padrão e do TMDB. As configurações do provedor MDBList têm prioridade nas páginas de detalhes.</string>
+    <string name="layout_episode_ratings">Avaliações de episódios</string>
+    <string name="layout_episode_ratings_sub">Escolha quais avaliações de episódios ficam visíveis.</string>
+    <string name="layout_ratings_show">Mostrar</string>
+    <string name="layout_ratings_hide">Ocultar</string>
+    <string name="layout_ratings_hide_unwatched">Ocultar não assistidos</string>
 </resources>

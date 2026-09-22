@@ -9,6 +9,8 @@ enum class AppIconResource {
     PlayerAspectRatio,
     PlayerSubtitles,
     PlayerAudioFilled,
+    PlayerSource,
+    PlayerEpisodes,
     LibraryAddPlus,
 }
 

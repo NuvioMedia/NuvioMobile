@@ -13,6 +13,8 @@
     <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_close">Close</string>
+    <string name="action_collapse">Collapse</string>
+    <string name="action_expand">Expand</string>
     <string name="action_delete">Delete</string>
     <string name="action_delete_confirm_message">Are you sure you want to delete it?</string>
     <string name="action_delete_confirm_title">Delete?</string>
@@ -339,6 +341,9 @@
     <string name="compose_action_off">Off</string>
     <string name="compose_action_on">On</string>
     <string name="compose_action_pause">Pause</string>
+    <string name="trailer_enter_fullscreen">Enter fullscreen</string>
+    <string name="trailer_exit_fullscreen">Exit fullscreen</string>
+    <string name="player_seek_position">Playback position</string>
     <string name="compose_action_reload">Reload</string>
     <string name="compose_auth_already_have_account">Already have an account? </string>
     <string name="compose_auth_continue_without_account">Continue Without Account</string>
@@ -568,6 +573,10 @@
     <string name="settings_licenses_attributions_section_app">APP LICENSE</string>
     <string name="settings_licenses_attributions_section_data">DATA &amp; SERVICES</string>
     <string name="settings_licenses_attributions_section_playback">PLAYBACK LICENSE</string>
+    <string name="settings_licenses_attributions_section_ui">UI LIBRARIES</string>
+    <string name="settings_licenses_attributions_haze_title">Haze 1.7.2</string>
+    <string name="settings_licenses_attributions_haze_body">Used for background blur effects. Created by Chris Banes.</string>
+    <string name="settings_licenses_attributions_haze_license">Licensed under the Apache License, Version 2.0.</string>
     <string name="settings_licenses_attributions_nuvio_title">Nuvio Mobile</string>
     <string name="settings_licenses_attributions_nuvio_body">Source code and license terms are available in the project repository.</string>
     <string name="settings_licenses_attributions_nuvio_license">Licensed under the GNU General Public License v3.0.</string>
@@ -584,7 +593,7 @@
     <string name="settings_licenses_attributions_torbox_title">TorBox</string>
     <string name="settings_licenses_attributions_torbox_body">Nuvio connects to TorBox for account authentication, cloud library access, cache checks, and cloud playback features. Nuvio is not affiliated with or endorsed by TorBox.</string>
     <string name="settings_licenses_attributions_mdblist_title">MDBList</string>
-    <string name="settings_licenses_attributions_mdblist_body">Nuvio uses MDBList for ratings and external score provider data. Nuvio is not affiliated with or endorsed by MDBList.</string>
+    <string name="settings_licenses_attributions_mdblist_body">Nuvio uses MDBList for ratings, watched history and playback tracking. Nuvio is not affiliated with or endorsed by MDBList.</string>
     <string name="settings_licenses_attributions_introdb_title">IntroDB</string>
     <string name="settings_licenses_attributions_introdb_body">Nuvio uses the IntroDB API for community-provided intro, recap, credits, and preview timestamps used by skip controls. Nuvio is not affiliated with or endorsed by IntroDB.</string>
     <string name="settings_licenses_attributions_mpvkit_title">MPVKit</string>
@@ -669,6 +678,13 @@
     <string name="settings_appearance_app_language_sheet_title">Choose Language</string>
     <string name="settings_appearance_nav_bar_style">Navigation Bar</string>
     <string name="settings_appearance_nav_bar_style_sheet_title">Navigation Bar Style</string>
+    <string name="settings_nav_bar_glow">Glass glow</string>
+    <string name="settings_nav_bar_glow_description">Adds soft light around the floating bar.</string>
+    <string name="settings_nav_bar_glow_on">Glow on</string>
+    <string name="settings_nav_bar_glow_off">Glow off</string>
+    <string name="settings_nav_bar_summary">%1$s · %2$s</string>
+    <string name="settings_nav_bar_preview_hint">Tap the bar to try it. Scroll the preview to try adaptive sizing.</string>
+    <string name="settings_nav_bar_preview_tap_hint">Tap the bar to try it.</string>
     <string name="settings_nav_bar_style_adaptive">Adaptive</string>
     <string name="settings_nav_bar_style_expanded">Always Expanded</string>
     <string name="settings_nav_bar_style_compact">Always Compact</string>
@@ -766,6 +782,14 @@
     <string name="settings_poster_width_dense">Dense</string>
     <string name="settings_poster_width_large">Large</string>
     <string name="settings_poster_width_standard">Standard</string>
+    <!-- Custom Poster URL -->
+    <string name="settings_custom_poster_title">CUSTOM POSTER SOURCE</string>
+    <string name="settings_custom_poster_description">Provide a poster URL pattern from an external service. If a placeholder has no value for a given title, the original poster is used instead.</string>
+    <string name="settings_custom_poster_placeholder">https://example.com/poster?id={id}&amp;id_type={id_type}&amp;type={type}</string>
+    <string name="settings_custom_poster_active">Custom poster source active</string>
+    <string name="settings_custom_poster_none">No pattern configured</string>
+    <string name="settings_custom_poster_save">Save</string>
+    <string name="settings_custom_poster_clear">Clear</string>
     <string name="settings_show_secret">Show value</string>
     <string name="settings_continue_watching_resume_prompt_description">Show a popup to continue where you left off when opening the app after leaving from the player.</string>
     <string name="settings_continue_watching_resume_prompt_title">Resume prompt on launch</string>
@@ -800,6 +824,9 @@
     <string name="settings_continue_watching_use_episode_thumbnails_title">Prefer Episode Thumbnails in Continue Watching</string>
     <string name="settings_content_discovery_section_home">HOME</string>
     <string name="settings_content_discovery_section_sources">SOURCES</string>
+    <string name="settings_content_discovery_section_search">SEARCH</string>
+    <string name="settings_content_discovery_recent_searches">Recent Searches</string>
+    <string name="settings_content_discovery_recent_searches_description">Save recent searches and show them when the search bar is focused.</string>
     <string name="settings_content_discovery_addons_description">Install, remove, refresh, and sort your content sources.</string>
     <string name="settings_content_discovery_addons_description_appstore">Add and manage the addons you use with Nuvio.</string>
     <string name="settings_content_discovery_plugins_description">Install JavaScript scraper repositories and test providers internally.</string>
@@ -859,6 +886,8 @@
     <string name="settings_stream_addon_logo_title">Addon logo</string>
     <string name="settings_stream_addon_logo_description">Show addon logo and name next to stream sources.</string>
     <string name="settings_stream_display_section">DISPLAY</string>
+    <string name="settings_stream_background_title">Background</string>
+    <string name="settings_stream_background_description">Choose the background for the streams screen.</string>
     <string name="settings_stream_badge_position_title">Badge position</string>
     <string name="settings_stream_badge_position_description">Choose whether Fusion and size badges appear above or below stream cards.</string>
     <string name="settings_stream_badge_position_dialog_title">Badge position</string>
@@ -904,6 +933,8 @@
     <string name="settings_meta_cinematic_background_description">Blurred backdrop behind content, similar to stream screen.</string>
     <string name="settings_meta_background_mode">Background Mode</string>
     <string name="settings_meta_background_mode_description">Choose how artwork appears behind metadata pages.</string>
+    <string name="settings_meta_poster_transition">Poster Transition</string>
+    <string name="settings_meta_poster_transition_description">Expand and blur posters when opening details.</string>
     <string name="settings_meta_background_mode_normal">Normal</string>
     <string name="settings_meta_background_mode_normal_description">Use the standard app background.</string>
     <string name="settings_meta_background_mode_cinematic">Cinematic</string>
@@ -1040,7 +1071,7 @@
     <string name="settings_playback_external_player_forward_subtitles">Forward Subtitles to External Player</string>
     <string name="settings_playback_external_player_forward_subtitles_description">Fetch addon subtitles in your preferred language and pass them to the external player.</string>
     <string name="settings_playback_external_player_send_skip_segments">Send Intro and Outro Timestamps</string>
-    <string name="settings_playback_external_player_send_skip_segments_description">Pass resolved intro and outro skip timestamps to the external player for auto-skipping. Only works in players that support it; other players ignore it.</string>
+    <string name="settings_playback_external_player_send_skip_segments_description">Send all available episode and movie skip timestamps. The external player controls skipping, independently of these settings.</string>
     <string name="settings_playback_external_player_none_available">No supported external players installed</string>
     <string name="settings_playback_player_preference">Player</string>
     <string name="settings_playback_player_preference_internal">Internal</string>
@@ -1127,6 +1158,8 @@
     <string name="settings_playback_selected_count">%1$d selected</string>
     <string name="settings_playback_show_loading_overlay">Loading Overlay</string>
     <string name="settings_playback_show_loading_overlay_description">Show loading screen until first video frame appears.</string>
+    <string name="settings_playback_pause_overlay">Pause Overlay</string>
+    <string name="settings_playback_pause_overlay_description">Show details overlay after 5 seconds while paused.</string>
     <string name="settings_playback_parental_guide">Content Warnings</string>
     <string name="settings_playback_parental_guide_description">Show parental guidance overlay when playback starts.</string>
     <string name="settings_playback_subtitle_background_color">Background Color</string>
@@ -1177,11 +1210,11 @@
     <string name="settings_playback_timeout_unlimited">Unlimited</string>
     <string name="settings_playback_tunneled_playback">Tunneled Playback</string>
     <string name="settings_playback_tunneled_playback_description">Hardware-level audio/video sync. May improve playback on some Android TV devices</string>
-    <string name="settings_tmdb_add_api_key_first">Add your own TMDB API key below before turning enrichment on.</string>
-    <string name="settings_tmdb_api_key_label">API Key</string>
+    <string name="settings_tmdb_api_key_label">API key</string>
+    <string name="settings_tmdb_api_key_override_description">Use your own TMDB API key, or leave blank to use the default.</string>
+    <string name="settings_tmdb_personal_api_key">Personal API key</string>
     <string name="settings_tmdb_enable_enrichment">Enable TMDB Enrichment</string>
     <string name="settings_tmdb_enable_enrichment_description">Use TMDB as a metadata source to enhance addon data</string>
-    <string name="settings_tmdb_enter_api_key">Enter your TMDB v3 API key.</string>
     <string name="settings_tmdb_language_code_label">Language code</string>
     <string name="settings_tmdb_module_artwork">Artwork</string>
     <string name="settings_tmdb_module_artwork_description">Logo and backdrop images from TMDB</string>
@@ -1193,8 +1226,6 @@
     <string name="settings_tmdb_module_credits_description">Cast with photos, director, and writer from TMDB</string>
     <string name="settings_tmdb_module_details">Details</string>
     <string name="settings_tmdb_module_details_description">Runtime, status, country, and language from TMDB</string>
-    <string name="settings_tmdb_module_release_dates">Release dates</string>
-    <string name="settings_tmdb_module_release_dates_description">Use TMDB broadcaster air dates instead of precise add-on release times</string>
     <string name="settings_tmdb_module_episodes">Episodes</string>
     <string name="settings_tmdb_module_episodes_description">Episode titles, overviews, thumbnails, and runtime from TMDB</string>
     <string name="settings_tmdb_module_more_like_this">More Like This</string>
@@ -1207,10 +1238,8 @@
     <string name="settings_tmdb_module_season_posters_description">Use TMDB season posters in the metadata screen season selector for series.</string>
     <string name="settings_tmdb_module_trailers">Trailers</string>
     <string name="settings_tmdb_module_trailers_description">Trailer candidates from TMDB videos for the detail trailer section</string>
-    <string name="settings_tmdb_personal_api_key">Personal API key</string>
     <string name="settings_tmdb_preferred_language">Language</string>
     <string name="settings_tmdb_preferred_language_description">TMDB metadata language for title, logo, and enabled fields</string>
-    <string name="settings_tmdb_section_credentials">CREDENTIALS</string>
     <string name="settings_tmdb_section_localization">LOCALIZATION</string>
     <string name="settings_tmdb_section_modules">MODULES</string>
     <string name="settings_tmdb_section_title">TMDB ENRICHMENT</string>
@@ -1247,6 +1276,7 @@
     <string name="settings_tracking_simkl_library_description">Use your Simkl plan-to-watch and status lists.</string>
     <string name="settings_tracking_nuvio_progress_description">Resume with progress stored by Nuvio Sync.</string>
     <string name="settings_tracking_trakt_progress_description">Resume with playback progress from Trakt.</string>
+    <string name="settings_tracking_trakt_progress_required">Available when Trakt is the Watch Progress source</string>
     <string name="settings_tracking_simkl_progress_description">Resume with playback progress from Simkl.</string>
     <string name="settings_tracking_tmdb_recommendations_description">Use TMDB recommendations on details pages.</string>
     <string name="settings_tracking_trakt_recommendations_description">Use personalized related titles from Trakt.</string>
@@ -1260,6 +1290,8 @@
     <string name="settings_tracking_anime_id_mal_description">Each anime season gets its own MAL ID as the primary identifier.</string>
     <string name="settings_tracking_anime_id_kitsu">Prefer Kitsu</string>
     <string name="settings_tracking_anime_id_kitsu_description">Each anime season gets its own Kitsu ID as the primary identifier.</string>
+    <string name="settings_tracking_anime_id_tvdb">Prefer TVDB</string>
+    <string name="settings_tracking_anime_id_tvdb_description">Use TVDB ID to group seasons. More stable than IMDB for anime with per-season IMDB splits.</string>
     <string name="settings_tracking_anime_section">Simkl features</string>
     <string name="settings_simkl_connect">Connect Simkl</string>
     <string name="settings_simkl_connected_as">Connected as %1$s</string>
@@ -1283,6 +1315,7 @@
     <string name="settings_simkl_sync_info_library_statuses">Shows placed in Simkl’s On Hold or Dropped lists are hidden from Continue Watching. They remain hidden for as long as they stay in either list.</string>
     <string name="settings_simkl_sync_info_docs">Read the Simkl sync guide</string>
     <string name="settings_simkl_authorization_revoked">Simkl authorization was revoked. Connect again.</string>
+    <string name="settings_tracking_not_connected">Not connected</string>
     <string name="tracking_source_simkl">Simkl</string>
     <string name="tracking_library_source_simkl_selected">Simkl watchlist selected</string>
     <string name="tracking_watch_progress_simkl_selected">Watch progress source set to Simkl</string>
@@ -1331,6 +1364,23 @@
     <string name="theme_rose">Rose</string>
     <string name="theme_violet">Violet</string>
     <string name="theme_white">White</string>
+    <string name="theme_custom">Custom</string>
+    <string name="custom_theme_title">Your custom gradient</string>
+    <string name="custom_theme_subtitle">Choose three colors for your theme. Select a color to edit it.</string>
+    <string name="custom_theme_edit">Edit custom theme</string>
+    <string name="custom_theme_solid_title">Your custom color</string>
+    <string name="custom_theme_solid_subtitle">Choose a color for your theme.</string>
+    <string name="custom_theme_mode_gradient">Gradient</string>
+    <string name="custom_theme_mode_solid">Single color</string>
+    <string name="custom_theme_color_number">Color %1$d</string>
+    <string name="custom_theme_hue">Hue</string>
+    <string name="custom_theme_saturation">Saturation</string>
+    <string name="custom_theme_brightness">Brightness</string>
+    <string name="custom_theme_hex_title">Hex color</string>
+    <string name="custom_theme_hex_error">Enter six characters (0–9, A–F), with or without #.</string>
+    <string name="custom_theme_save">Save theme</string>
+    <string name="custom_theme_preview">Preview</string>
+    <string name="custom_theme_preview_accent">Your accent</string>
     <string name="player_next_episode">Next Episode</string>
     <string name="player_next_episode_finding_source">Finding source…</string>
     <string name="player_next_episode_playing_via_countdown">Playing via %1$s in %2$d…</string>
@@ -1549,6 +1599,7 @@
     <string name="profile_use_primary_addons">Use Primary Addons</string>
     <string name="profile_use_primary_addons_description">Share the main profile's addon setup instead of managing a separate list.</string>
     <string name="profile_who_is_watching">Who&apos;s watching?</string>
+    <string name="profile_already_active">You&apos;re already on &quot;%1$s&quot;</string>
     <string name="provider_downloaded">Downloaded</string>
     <string name="resume_prompt_action">Resume</string>
     <string name="streams_active_scrapers">Active scrapers</string>
@@ -1559,6 +1610,8 @@
     <string name="streams_open_internal_player">Open in internal player</string>
     <string name="streams_empty_load_failed_message">The installed stream addons failed to return a valid stream response.</string>
     <string name="streams_empty_load_failed_title">Could not load streams</string>
+    <string name="playback_unavailable">Playback unavailable</string>
+    <string name="playback_unavailable_message">Playback isn’t available for this title with your current setup.</string>
     <string name="streams_empty_no_addons_message">Install an addon first to load streams for this title.</string>
     <string name="streams_empty_no_stream_addon_message">Your installed addons do not provide streams for this type of title.</string>
     <string name="streams_empty_no_stream_addon_title">No stream addon available</string>
@@ -1567,9 +1620,20 @@
     <string name="streams_episode_fallback_title">Episode</string>
     <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
     <string name="streams_fetching">Fetching…</string>
-    <string name="streams_finding_source">Finding source…</string>
+    <string name="streams_finding_source">Finding stream source</string>
+    <string name="playback_show_loading_status">Show loading status</string>
+    <string name="playback_show_loading_status_sub">Display step-by-step progress while the player is initializing.</string>
+    <string name="player_loading_preparing">Preparing stream…</string>
+    <string name="player_loading_subtitles">Fetching subtitles…</string>
+    <string name="player_loading_subtitles_from">Fetching subtitles from %1$d addons…</string>
+    <string name="player_loading_subtitles_progress">Fetching subtitles… (%1$d / %2$d)</string>
+    <string name="player_loading_subtitles_addon">Subtitles: %1$s (%2$d / %3$d)</string>
+    <string name="player_loading_building">Building player…</string>
+    <string name="player_loading_starting">Starting stream…</string>
+    <string name="player_loading_buffering">Buffering…</string>
+    <string name="debrid_resolving_stream">Resolving debrid stream</string>
     <string name="streams_loading_subtitles">Loading subtitles from addons…</string>
-    <string name="streams_loading_skip_segments">Loading skip segments…</string>
+    <string name="streams_loading_skip_segments">Loading intro/outro segments…</string>
     <string name="streams_finding_streams">Finding streams…</string>
     <string name="streams_link_copied">Stream link copied</string>
     <string name="streams_no_direct_link">No direct stream link available</string>
@@ -1700,7 +1764,6 @@
     <string name="trakt_error_add_list_failed">Failed to add to Trakt list</string>
     <string name="trakt_error_missing_ids">Missing compatible Trakt IDs</string>
     <string name="trakt_error_empty_response">Empty response body</string>
-    <string name="tmdb_sources_api_key_required">Add a TMDB API key in Settings to use TMDB sources.</string>
     <string name="tmdb_sources_collection_fallback_title">TMDB Collection %1$d</string>
     <string name="tmdb_sources_collection_not_found">TMDB collection not found</string>
     <string name="tmdb_sources_company_fallback_title">TMDB Production %1$d</string>
@@ -2061,7 +2124,6 @@
     <string name="collections_editor_tmdb_production_title_format">TMDB Production %1$s</string>
     <string name="collections_editor_tmdb_source_load_failed">Could not load TMDB source</string>
     <string name="collections_editor_trakt_list_id_format">ID %1$s</string>
-    <string name="collections_tmdb_api_key_required">Add a TMDB API key in Settings to use TMDB sources.</string>
     <string name="collections_tmdb_collection_not_found">TMDB collection not found</string>
     <string name="collections_tmdb_company_not_found">TMDB company not found</string>
     <string name="collections_tmdb_discover_no_data">TMDB discover returned no data</string>
@@ -2104,8 +2166,6 @@
     <string name="plugins_badge_providers">%1$d providers</string>
     <string name="plugins_badge_refreshing">Refreshing</string>
     <string name="plugins_badge_repos">%1$d repos</string>
-    <string name="plugins_badge_tmdb_key_missing">TMDB API key missing</string>
-    <string name="plugins_badge_tmdb_key_set">TMDB API key set</string>
     <string name="plugins_button_install_repo">Install Plugin Repository</string>
     <string name="plugins_button_installing">Installing…</string>
     <string name="plugins_button_test_provider">Test Provider</string>
@@ -2149,7 +2209,6 @@
     <string name="plugins_test_error_title">Error</string>
     <string name="plugins_test_failed">Provider test failed</string>
     <string name="plugins_test_results_count">Test results (%1$d)</string>
-    <string name="plugins_tmdb_required_message">Plugin providers require a TMDB API key. Set it on the TMDB screen or plugin providers will not work correctly.</string>
     <string name="search_error_no_results_for_catalog">No search results returned for %1$s.</string>
     <string name="settings_playback_introdb_invalid_key">Invalid API Key or connection failed</string>
     <string name="streams_plugin_repository_fallback">Plugin repository</string>
@@ -2168,6 +2227,13 @@
     <string name="updates_empty_download_body">Empty download body</string>
     <string name="updates_github_api_error">GitHub releases API error: %1$d</string>
     <string name="updates_no_channel_release">No update has been published yet.</string>
+    <string name="updates_channel_title">Update channel</string>
+    <string name="updates_channel_description">Choose the type of app updates to receive</string>
+    <string name="updates_channel_stable">Stable</string>
+    <string name="updates_channel_beta">Beta</string>
+    <string name="updates_channel_stable_description">Intended for everyday use.</string>
+    <string name="updates_channel_beta_description">Early updates that may contain bugs, break features, or behave unexpectedly.</string>
+    <string name="updates_waiting_for_stable">You’ll receive the next stable release when it becomes available</string>
     <string name="updates_release_missing_title">Release has no tag or name</string>
     <!-- Continue Watching air date display -->
     <string name="cw_airs_date">Airs %1$s</string>
@@ -2239,10 +2305,41 @@
     <string name="entity_browse_type">Type</string>
     <string name="entity_browse_catalogue">Catalogue</string>
     <string name="entity_browse_about">About</string>
-    <string name="player_external_loading_subtitles">Loading subtitles from addons...</string>
+    <string name="player_external_loading_subtitles">Loading subtitles from addons…</string>
     <string name="player_external_downloading_subtitles">Downloading subtitles...</string>
     <plurals name="entity_browse_title_count">
         <item quantity="one">%d title</item>
         <item quantity="other">%d titles</item>
     </plurals>
+    <string name="settings_playback_auto_skip_segments">Automatic Skipping</string>
+    <string name="settings_playback_auto_skip_none">None</string>
+    <string name="settings_playback_auto_skip_intro">Intro / Opening</string>
+    <string name="settings_playback_auto_skip_intro_description">Skip intros and anime openings automatically.</string>
+    <string name="settings_playback_auto_skip_recap">Recap</string>
+    <string name="settings_playback_auto_skip_recap_description">Skip recap segments automatically.</string>
+    <string name="settings_playback_auto_skip_outro">Outro / Ending</string>
+    <string name="settings_playback_auto_skip_outro_description">Skip outros and anime endings automatically.</string>
+    <string name="settings_playback_auto_skip_movie_credits">End Credits</string>
+    <string name="settings_playback_auto_skip_movie_credits_description">Skip movie credits, keeping post-credits scenes.</string>
+    <string name="player_skip_movie_credits">Skip Credits</string>
+    <string name="player_skip_to_post_credits">Skip to Post-Credits</string>
+    <string name="layout_overall_ratings">Overall Ratings</string>
+    <string name="layout_overall_ratings_sub_on">Standard and TMDB ratings are shown.</string>
+    <string name="layout_overall_ratings_sub_off">Standard and TMDB ratings are Hidden. MDBList provider settings take priority on detail pages.</string>
+    <string name="layout_episode_ratings">Episode Ratings</string>
+    <string name="layout_episode_ratings_sub">Choose which episode ratings are visible.</string>
+    <string name="layout_ratings_show">Show</string>
+    <string name="layout_ratings_hide">Hide</string>
+    <string name="layout_ratings_hide_unwatched">Hide Unwatched</string>
+    <string name="settings_playback_legacy_layout">Legacy layout</string>
+    <string name="settings_playback_legacy_layout_description">Use the original player controls.</string>
+    <string name="compose_player_via">Via %1$s</string>
+    <string name="compose_player_episode_code">S%1$d E%2$d</string>
+    <string name="compose_player_more_actions">More controls</string>
+    <string name="compose_player_fewer_actions">Fewer controls</string>
+    <string name="compose_player_speed">Playback speed</string>
+    <string name="compose_player_show_elapsed_time">Show elapsed time</string>
+    <string name="compose_player_show_remaining_time">Show remaining time</string>
+    <string name="compose_player_brightness">Brightness</string>
+    <string name="compose_player_volume">Volume</string>
 </resources>

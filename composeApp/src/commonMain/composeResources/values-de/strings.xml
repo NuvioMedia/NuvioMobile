@@ -748,11 +748,8 @@
     <string name="settings_playback_timeout_unlimited">Unbegrenzt</string>
     <string name="settings_playback_tunneled_playback">Tunneled-Wiedergabe</string>
     <string name="settings_playback_tunneled_playback_description">Tunneled-Wiedergabe für niedrigere Latenz bei Audio-/Video-Synchronisation aktivieren.</string>
-    <string name="settings_tmdb_add_api_key_first">Füge unten deinen eigenen TMDB-API-Schlüssel hinzu, bevor du die Anreicherung aktivierst.</string>
-    <string name="settings_tmdb_api_key_label">TMDB-API-Schlüssel</string>
     <string name="settings_tmdb_enable_enrichment">TMDB-Anreicherung aktivieren</string>
-    <string name="settings_tmdb_enable_enrichment_description">Verwende deinen TMDB-API-Schlüssel, um Addon-Metadaten auf dem Detail-Bildschirm anzureichern, wenn eine TMDB- oder IMDb-ID verfügbar ist.</string>
-    <string name="settings_tmdb_enter_api_key">Gib deinen TMDB-v3-API-Schlüssel ein.</string>
+    <string name="settings_tmdb_enable_enrichment_description">TMDB als Metadatenquelle zur Verbesserung der Add-on-Daten verwenden</string>
     <string name="settings_tmdb_language_code_label">Sprachcode</string>
     <string name="settings_tmdb_module_artwork">Artwork</string>
     <string name="settings_tmdb_module_artwork_description">Backdrop, Poster und Logo durch TMDB-Artwork ersetzen.</string>
@@ -776,10 +773,8 @@
     <string name="settings_tmdb_module_season_posters_description">TMDB-Staffel-Poster im Staffel-Auswahl-Bildschirm der Metadaten für Serien verwenden.</string>
     <string name="settings_tmdb_module_trailers">Trailer</string>
     <string name="settings_tmdb_module_trailers_description">TMDB-Trailer-Videos auf Detailseiten abrufen und anzeigen.</string>
-    <string name="settings_tmdb_personal_api_key">Persönlicher API-Schlüssel</string>
     <string name="settings_tmdb_preferred_language">Bevorzugte Sprache</string>
     <string name="settings_tmdb_preferred_language_description">Lege den TMDB-Sprachcode für lokalisierte Metadaten fest, zum Beispiel `de`, `de-DE` oder `en-US`.</string>
-    <string name="settings_tmdb_section_credentials">ANMELDEDATEN</string>
     <string name="settings_tmdb_section_localization">LOKALISIERUNG</string>
     <string name="settings_tmdb_section_modules">MODULE</string>
     <string name="settings_tmdb_section_title">TMDB</string>

@@ -202,6 +202,7 @@ internal fun AppGate(
     LaunchedEffect(nativeProfileSwitcherController, appGateController, renderMainContent) {
         if (renderMainContent || appGateController == null) return@LaunchedEffect
         nativeProfileSwitcherController?.selectedProfileIndices?.collect { profileIndex ->
+            if (profileIndex == ProfileRepository.state.value.activeProfile?.profileIndex) return@collect
             val profile = ProfileRepository.state.value.profiles
                 .firstOrNull { it.profileIndex == profileIndex }
                 ?: return@collect
@@ -511,17 +512,25 @@ internal fun AppGate(
                 .zIndex(NuvioTokens.Z.dialog),
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                PlatformBackHandler(
-                    enabled = gateScreen == AppGateScreen.ProfileSelection.name && !profileSelectionLoading,
-                ) {
-                    if (!autoSkipProfileSelection) {
+                val onBack: (() -> Unit)? = if (!autoSkipProfileSelection) {
+                    {
                         skipProfileSelectionEnterAnimation = false
                         gateScreen = AppGateScreen.Main.name
                     }
+                } else {
+                    null
+                }
+                PlatformBackHandler(
+                    enabled = gateScreen == AppGateScreen.ProfileSelection.name && !profileSelectionLoading,
+                ) {
+                    onBack?.invoke()
                 }
                 ProfileSelectionScreen(
                     onProfileSelected = { profile ->
-                        if (!profileSelectionLoading) {
+                        if (
+                            !profileSelectionLoading &&
+                            (autoSkipProfileSelection || profile.profileIndex != ProfileRepository.state.value.activeProfile?.profileIndex)
+                        ) {
                             profileSelectionLoading = true
                             profileSelectionTransitionActive = true
                             skipProfileSelectionEnterAnimation = false
@@ -546,6 +555,8 @@ internal fun AppGate(
                         gateScreen = AppGateScreen.ProfileEdit.name
                     },
                     interactionEnabled = !profileSelectionLoading,
+                    onBack = onBack,
+                    activeProfileIndex = if (autoSkipProfileSelection) null else profileState.activeProfile?.profileIndex,
                     contentVisible = !profileSelectionTransitionActive,
                     modifier = Modifier.fillMaxSize(),
                 )

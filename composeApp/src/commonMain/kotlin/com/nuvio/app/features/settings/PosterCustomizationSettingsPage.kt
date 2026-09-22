@@ -31,6 +31,8 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Button
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
@@ -44,6 +46,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 import com.nuvio.app.core.ui.CardDepthStyleRepository
 import com.nuvio.app.core.ui.CardDepthStyleUiState
+import com.nuvio.app.core.poster.CustomPosterUrlRepository
 import com.nuvio.app.core.ui.DefaultCardDepthEdgeCoverage
 import com.nuvio.app.core.ui.DefaultCardDepthEdgeStrength
 import com.nuvio.app.core.ui.DefaultCardDepthSheenStrength
@@ -122,6 +126,12 @@ import nuvio.composeapp.generated.resources.settings_poster_width_compact
 import nuvio.composeapp.generated.resources.settings_poster_width_dense
 import nuvio.composeapp.generated.resources.settings_poster_width_large
 import nuvio.composeapp.generated.resources.settings_poster_width_standard
+import nuvio.composeapp.generated.resources.settings_custom_poster_title
+import nuvio.composeapp.generated.resources.settings_custom_poster_description
+import nuvio.composeapp.generated.resources.settings_custom_poster_placeholder
+import nuvio.composeapp.generated.resources.settings_custom_poster_active
+import nuvio.composeapp.generated.resources.settings_custom_poster_save
+import nuvio.composeapp.generated.resources.settings_custom_poster_clear
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.posterCustomizationSettingsContent(
@@ -151,6 +161,76 @@ internal fun LazyListScope.posterCustomizationSettingsContent(
                     onCatalogLandscapeModeChange = PosterCardStyleRepository::setCatalogLandscapeModeEnabled,
                     onHideLabelsChange = PosterCardStyleRepository::setHideLabelsEnabled,
                 )
+            }
+        }
+    }
+    item {
+        CustomPosterUrlRepository.ensureLoaded()
+        val currentPattern by CustomPosterUrlRepository.pattern.collectAsState()
+        var editingPattern by rememberSaveable(currentPattern) { mutableStateOf(currentPattern) }
+        val isActive = currentPattern.isNotBlank()
+
+        SettingsSection(
+            title = stringResource(Res.string.settings_custom_poster_title),
+            isTablet = isTablet,
+            actions = {
+                if (isActive) {
+                    NuvioActionLabel(
+                        text = stringResource(Res.string.settings_custom_poster_clear),
+                        onClick = {
+                            editingPattern = ""
+                            CustomPosterUrlRepository.clearPattern()
+                        },
+                    )
+                }
+            },
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                Column(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = stringResource(Res.string.settings_custom_poster_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = editingPattern,
+                        onValueChange = { editingPattern = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = {
+                            Text(
+                                text = stringResource(Res.string.settings_custom_poster_placeholder),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        },
+                        textStyle = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace,
+                        ),
+                        singleLine = false,
+                        maxLines = 4,
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Button(
+                            onClick = {
+                                CustomPosterUrlRepository.setPattern(editingPattern)
+                            },
+                            enabled = editingPattern.trim() != currentPattern,
+                        ) {
+                            Text(text = stringResource(Res.string.settings_custom_poster_save))
+                        }
+                    }
+                    if (isActive) {
+                        Text(
+                            text = "✓ ${stringResource(Res.string.settings_custom_poster_active)}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
             }
         }
     }

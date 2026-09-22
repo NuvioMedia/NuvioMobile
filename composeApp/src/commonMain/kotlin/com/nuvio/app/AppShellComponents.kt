@@ -1,32 +1,18 @@
 package com.nuvio.app
 
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveableStateHolder
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,7 +34,6 @@ import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.library.LibrarySortOption
 import com.nuvio.app.features.profiles.NuvioProfile
 import com.nuvio.app.features.profiles.ProfileBackgroundBackdrop
-import com.nuvio.app.features.profiles.ProfileSwitcherTab
 import com.nuvio.app.features.search.SearchScreen
 import com.nuvio.app.features.settings.AppBrandWordmark
 import com.nuvio.app.features.settings.SettingsScreen
@@ -58,13 +43,6 @@ import com.nuvio.app.navigation.NuvioNavigator
 import kotlinx.coroutines.flow.Flow
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.app_brand_name
-import nuvio.composeapp.generated.resources.compose_nav_home
-import nuvio.composeapp.generated.resources.compose_nav_library
-import nuvio.composeapp.generated.resources.compose_nav_profile
-import nuvio.composeapp.generated.resources.compose_nav_search
-import nuvio.composeapp.generated.resources.sidebar_library
-import nuvio.composeapp.generated.resources.sidebar_search
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -89,6 +67,7 @@ internal fun rememberGuardedPopBackStack(
 internal data class AppTabState(
     val searchListState: LazyListState,
     val homeContentGeneration: Int = 0,
+    val profileId: Int? = null,
     val searchFocusRequestCount: Int = 0,
     val rootActionsEnabled: Boolean = true,
     val animateHomeCollectionGifs: Boolean = true,
@@ -142,191 +121,78 @@ internal fun AppTabHost(
     actions: AppTabActions,
     modifier: Modifier = Modifier,
 ) {
-    val tabStateHolder = rememberSaveableStateHolder()
-
-    Box(modifier = modifier.fillMaxSize()) {
-        tabStateHolder.SaveableStateProvider(selectedTab.name) {
-            when (selectedTab) {
-                AppScreenTab.Home -> {
-                    key(state.homeContentGeneration) {
-                        HomeScreen(
-                            modifier = Modifier.fillMaxSize(),
-                            animateCollectionGifs = state.animateHomeCollectionGifs,
-                            scrollToTopRequests = requests.homeScrollToTopRequests,
-                            onCatalogClick = actions.onCatalogClick,
-                            onPosterClick = actions.onPosterClick,
-                            onPosterLongClick = actions.onPosterLongClick,
-                            onContinueWatchingClick = actions.onContinueWatchingClick,
-                            onContinueWatchingLongPress = actions.onContinueWatchingLongPress,
-                            continueWatchingDisintegrationRequest = state.continueWatchingDisintegrationRequest,
-                            onFolderClick = actions.onFolderClick,
-                            onFirstCatalogRendered = actions.onInitialHomeContentRendered,
-                        )
-                    }
-                }
-
-                AppScreenTab.Search -> {
-                    SearchScreen(
+    RootTabHost(
+        selectedTab = selectedTab,
+        modifier = modifier,
+        active = state.rootActionsEnabled,
+        profileId = state.profileId,
+    ) { tab ->
+        when (tab) {
+            AppScreenTab.Home -> {
+                key(state.homeContentGeneration) {
+                    HomeScreen(
                         modifier = Modifier.fillMaxSize(),
-                        listState = state.searchListState,
+                        animateCollectionGifs = state.animateHomeCollectionGifs,
+                        scrollToTopRequests = requests.homeScrollToTopRequests,
+                        onCatalogClick = actions.onCatalogClick,
                         onPosterClick = actions.onPosterClick,
                         onPosterLongClick = actions.onPosterLongClick,
-                        searchFocusRequestCount = state.searchFocusRequestCount,
-                        scrollToTopRequests = requests.searchScrollToTopRequests,
-                    )
-                }
-
-                AppScreenTab.Library -> {
-                    LibraryScreen(
-                        modifier = Modifier.fillMaxSize(),
-                        scrollToTopRequests = requests.libraryScrollToTopRequests,
-                        onPosterClick = actions.onLibraryPosterClick,
-                        onPosterLongClick = actions.onLibraryPosterLongClick,
-                        onSectionViewAllClick = actions.onLibrarySectionViewAllClick,
-                        onCloudFilePlay = actions.onCloudFilePlay,
-                        onConnectCloudClick = actions.onConnectCloudClick,
-                        disintegrationRequest = state.libraryDisintegrationRequest,
-                    )
-                }
-
-                AppScreenTab.Settings -> {
-                    SettingsScreen(
-                        modifier = Modifier.fillMaxSize(),
-                        rootActionRequests = requests.settingsRootActionRequests,
-                        requestedPageName = state.requestedSettingsPageName,
-                        onRequestedPageConsumed = actions.onRequestedSettingsPageConsumed,
-                        rootActionsEnabled = state.rootActionsEnabled,
-                        onNavigatePage = actions.onSettingsPageClick,
-                        onSwitchProfile = actions.onSwitchProfile,
-                        onHomescreenClick = actions.onHomescreenSettingsClick,
-                        onMetaScreenClick = actions.onMetaScreenSettingsClick,
-                        onContinueWatchingClick = actions.onContinueWatchingSettingsClick,
-                        onDownloadsClick = actions.onDownloadsSettingsClick,
-                        onAddonsClick = actions.onAddonsSettingsClick,
-                        onPluginsClick = actions.onPluginsSettingsClick,
-                        onAccountClick = actions.onAccountSettingsClick,
-                        onSupportersContributorsClick = actions.onSupportersContributorsSettingsClick,
-                        onLicensesAttributionsClick = actions.onLicensesAttributionsSettingsClick,
-                        onCheckForUpdatesClick = actions.onCheckForUpdatesClick,
-                        onTestUpdateBannerClick = actions.onTestUpdateBannerClick,
-                        onCollectionsClick = actions.onCollectionsSettingsClick,
+                        onContinueWatchingClick = actions.onContinueWatchingClick,
+                        onContinueWatchingLongPress = actions.onContinueWatchingLongPress,
+                        continueWatchingDisintegrationRequest = state.continueWatchingDisintegrationRequest,
+                        onFolderClick = actions.onFolderClick,
+                        onFirstCatalogRendered = actions.onInitialHomeContentRendered,
                     )
                 }
             }
-        }
-    }
-}
 
-@Composable
-internal fun TabletFloatingTopBar(
-    selectedTab: AppScreenTab,
-    onTabSelected: (AppScreenTab) -> Unit,
-    onProfileSelected: (NuvioProfile) -> Unit,
-    onAddProfileRequested: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val tokens = MaterialTheme.nuvio
-    val statusBarPadding = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+            AppScreenTab.Search -> {
+                SearchScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    listState = state.searchListState,
+                    onPosterClick = actions.onPosterClick,
+                    onPosterLongClick = actions.onPosterLongClick,
+                    searchFocusRequestCount = state.searchFocusRequestCount,
+                    scrollToTopRequests = requests.searchScrollToTopRequests,
+                )
+            }
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(top = statusBarPadding + NuvioTokens.Space.s10, bottom = tokens.spacing.controlGap),
-        contentAlignment = Alignment.TopCenter,
-    ) {
-        Surface(
-            color = tokens.colors.surface.copy(alpha = tokens.opacity.visible - tokens.opacity.subtle),
-            shape = tokens.shapes.chip,
-            tonalElevation = tokens.elevation.playerControls,
-            shadowElevation = tokens.elevation.overlay,
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = NuvioTokens.Space.s10, vertical = tokens.spacing.controlGap),
-                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                TabletTopPillItem(
-                    label = stringResource(Res.string.compose_nav_home),
-                    selected = selectedTab == AppScreenTab.Home,
-                    onClick = { onTabSelected(AppScreenTab.Home) },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Filled.Home,
-                            contentDescription = stringResource(Res.string.compose_nav_home),
-                            modifier = Modifier.size(NuvioTokens.Space.s18),
-                            tint = if (selectedTab == AppScreenTab.Home) {
-                                tokens.colors.textPrimary
-                            } else {
-                                tokens.colors.textMuted
-                            },
-                        )
-                    },
+            AppScreenTab.Library -> {
+                LibraryScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    scrollToTopRequests = requests.libraryScrollToTopRequests,
+                    onPosterClick = actions.onLibraryPosterClick,
+                    onPosterLongClick = actions.onLibraryPosterLongClick,
+                    onSectionViewAllClick = actions.onLibrarySectionViewAllClick,
+                    onCloudFilePlay = actions.onCloudFilePlay,
+                    onConnectCloudClick = actions.onConnectCloudClick,
+                    disintegrationRequest = state.libraryDisintegrationRequest,
                 )
-                TabletTopPillItem(
-                    label = stringResource(Res.string.compose_nav_search),
-                    selected = selectedTab == AppScreenTab.Search,
-                    onClick = { onTabSelected(AppScreenTab.Search) },
-                    icon = {
-                        Icon(
-                            painter = painterResource(Res.drawable.sidebar_search),
-                            contentDescription = stringResource(Res.string.compose_nav_search),
-                            modifier = Modifier.size(NuvioTokens.Space.s18),
-                            tint = if (selectedTab == AppScreenTab.Search) {
-                                tokens.colors.textPrimary
-                            } else {
-                                tokens.colors.textMuted
-                            },
-                        )
-                    },
+            }
+
+            AppScreenTab.Settings -> {
+                SettingsScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    rootActionRequests = requests.settingsRootActionRequests,
+                    requestedPageName = state.requestedSettingsPageName,
+                    onRequestedPageConsumed = actions.onRequestedSettingsPageConsumed,
+                    rootActionsEnabled = state.rootActionsEnabled,
+                    isSelectedTab = selectedTab == AppScreenTab.Settings,
+                    onNavigatePage = actions.onSettingsPageClick,
+                    onSwitchProfile = actions.onSwitchProfile,
+                    onHomescreenClick = actions.onHomescreenSettingsClick,
+                    onMetaScreenClick = actions.onMetaScreenSettingsClick,
+                    onContinueWatchingClick = actions.onContinueWatchingSettingsClick,
+                    onDownloadsClick = actions.onDownloadsSettingsClick,
+                    onAddonsClick = actions.onAddonsSettingsClick,
+                    onPluginsClick = actions.onPluginsSettingsClick,
+                    onAccountClick = actions.onAccountSettingsClick,
+                    onSupportersContributorsClick = actions.onSupportersContributorsSettingsClick,
+                    onLicensesAttributionsClick = actions.onLicensesAttributionsSettingsClick,
+                    onCheckForUpdatesClick = actions.onCheckForUpdatesClick,
+                    onTestUpdateBannerClick = actions.onTestUpdateBannerClick,
+                    onCollectionsClick = actions.onCollectionsSettingsClick,
                 )
-                TabletTopPillItem(
-                    label = stringResource(Res.string.compose_nav_library),
-                    selected = selectedTab == AppScreenTab.Library,
-                    onClick = { onTabSelected(AppScreenTab.Library) },
-                    icon = {
-                        Icon(
-                            painter = painterResource(Res.drawable.sidebar_library),
-                            contentDescription = stringResource(Res.string.compose_nav_library),
-                            modifier = Modifier.size(NuvioTokens.Space.s18),
-                            tint = if (selectedTab == AppScreenTab.Library) {
-                                tokens.colors.textPrimary
-                            } else {
-                                tokens.colors.textMuted
-                            },
-                        )
-                    },
-                )
-                Surface(
-                    color = if (selectedTab == AppScreenTab.Settings) {
-                        tokens.colors.overlaySelected
-                    } else {
-                        tokens.colors.surface
-                    },
-                    shape = tokens.shapes.chip,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = tokens.spacing.listGap, vertical = tokens.spacing.controlGap),
-                        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        ProfileSwitcherTab(
-                            selected = selectedTab == AppScreenTab.Settings,
-                            onClick = { onTabSelected(AppScreenTab.Settings) },
-                            onProfileSelected = onProfileSelected,
-                            onAddProfileRequested = onAddProfileRequested,
-                        )
-                        Text(
-                            text = stringResource(Res.string.compose_nav_profile),
-                            modifier = Modifier.clickable { onTabSelected(AppScreenTab.Settings) },
-                            style = MaterialTheme.typography.labelLarge,
-                            color = if (selectedTab == AppScreenTab.Settings) {
-                                tokens.colors.textPrimary
-                            } else {
-                                tokens.colors.textMuted
-                            },
-                        )
-                    }
-                }
             }
         }
     }
@@ -334,39 +200,6 @@ internal fun TabletFloatingTopBar(
 
 internal fun ContinueWatchingItem.isCloudLibraryContinueWatchingItem(): Boolean =
     parentMetaType.equals(CloudLibraryContentType, ignoreCase = true)
-
-@Composable
-private fun TabletTopPillItem(
-    label: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    icon: @Composable () -> Unit,
-) {
-    val tokens = MaterialTheme.nuvio
-    Surface(
-        color = if (selected) tokens.colors.overlaySelected else tokens.colors.surface,
-        shape = tokens.shapes.chip,
-        tonalElevation = if (selected) tokens.elevation.raised else tokens.elevation.flat,
-        modifier = Modifier.clickable(onClick = onClick),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = tokens.components.chipHorizontalPadding, vertical = NuvioTokens.Space.s10),
-            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            icon()
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = if (selected) {
-                    tokens.colors.textPrimary
-                } else {
-                    tokens.colors.textMuted
-                },
-            )
-        }
-    }
-}
 
 @Composable
 internal fun AppLoadingContent(

@@ -2,11 +2,10 @@ package com.nuvio.app.features.plugins.runtime.network
 
 import co.touchlab.kermit.Logger
 import com.dokar.quickjs.QuickJs
-import com.dokar.quickjs.binding.function
+import com.dokar.quickjs.binding.asyncFunction
 import com.nuvio.app.features.addons.httpRequestRaw
 import com.nuvio.app.features.plugins.runtime.host.HostModule
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
@@ -19,13 +18,13 @@ private const val FETCH_TRUNCATION_SUFFIX = "\n...[truncated]"
 private val CF_BLOCK_CODES = setOf(403, 503)
 private val CF_SERVER_MARKERS = setOf("cloudflare", "cloudflare-nginx")
 
-internal class FetchBridge(private val pluginId: String) : HostModule {
+internal class FetchBridge(private val pluginId: String = "") : HostModule {
     private val log = Logger.withTag("PluginRuntime")
     private val json = Json { ignoreUnknownKeys = true }
     private val cfSolver: WebViewSolver by lazy { createPlatformWebViewSolver() }
 
     override fun register(runtime: QuickJs) {
-        runtime.function("__native_fetch") { args ->
+        runtime.asyncFunction("__native_fetch") { args ->
             val url = args.getOrNull(0)?.toString() ?: ""
             val method = args.getOrNull(1)?.toString() ?: "GET"
             val headersJson = args.getOrNull(2)?.toString() ?: "{}"
@@ -34,6 +33,8 @@ internal class FetchBridge(private val pluginId: String) : HostModule {
             val useCfKiller = args.getOrNull(5) as? Boolean ?: false
             try {
                 performNativeFetch(url, method, headersJson, body, followRedirects, useCfKiller)
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
             } catch (t: Throwable) {
                 log.e(t) { "Fetch bridge error for $method $url" }
                 JsonObject(
@@ -50,7 +51,7 @@ internal class FetchBridge(private val pluginId: String) : HostModule {
         }
     }
 
-    private fun performNativeFetch(
+    private suspend fun performNativeFetch(
         url: String,
         method: String,
         headersJson: String,
@@ -77,32 +78,28 @@ internal class FetchBridge(private val pluginId: String) : HostModule {
             }
         }
 
-        val response = runBlocking {
-            httpRequestRaw(
-                method = method,
-                url = url,
-                headers = headers,
-                body = body,
-                followRedirects = followRedirects,
-            )
-        }
+        val response = httpRequestRaw(
+            method = method,
+            url = url,
+            headers = headers,
+            body = body,
+            followRedirects = followRedirects,
+        )
 
         if (useCfKiller && isCloudflareBlocked(response.status, response.headers)) {
             log.i { "CF: blocked (${response.status}) at $url; launching WebView solver" }
-            val solveResult = runBlocking {
-                CfSessionCache.getMutex(host).withLock {
-                    usedCachedSession?.let { CfSessionCache.evictIfSame(host, it) }
+            val solveResult = CfSessionCache.getMutex(host).withLock {
+                usedCachedSession?.let { CfSessionCache.evictIfSame(host, it) }
 
-                    CfSessionCache.get(host, pluginId) ?: cfSolver
-                        .solve(
-                            url = url,
-                            headers = webViewHeaders(headers),
-                            forceFresh = true,
-                        )
-                        ?.also { solved ->
-                            CfSessionCache.put(host, pluginId, solved)
-                        }
-                }
+                CfSessionCache.get(host, pluginId) ?: cfSolver
+                    .solve(
+                        url = url,
+                        headers = webViewHeaders(headers),
+                        forceFresh = true,
+                    )
+                    ?.also { solved ->
+                        CfSessionCache.put(host, pluginId, solved)
+                    }
             }
 
             if (solveResult != null) {
@@ -121,8 +118,17 @@ internal class FetchBridge(private val pluginId: String) : HostModule {
                 )
 
                 val retryUrl = solveResult.redirectUrl ?: url
-                var retryResponse = runBlocking {
-                    httpRequestRaw(
+                var retryResponse = httpRequestRaw(
+                    method = method,
+                    url = retryUrl,
+                    headers = retryHeaders,
+                    body = body,
+                    followRedirects = followRedirects,
+                )
+
+                if (isCloudflareBlocked(retryResponse.status, retryResponse.headers)) {
+                    delay(500L)
+                    retryResponse = httpRequestRaw(
                         method = method,
                         url = retryUrl,
                         headers = retryHeaders,
@@ -132,26 +138,11 @@ internal class FetchBridge(private val pluginId: String) : HostModule {
                 }
 
                 if (isCloudflareBlocked(retryResponse.status, retryResponse.headers)) {
-                    runBlocking { delay(500L) }
-                    retryResponse = runBlocking {
-                        httpRequestRaw(
-                            method = method,
-                            url = retryUrl,
-                            headers = retryHeaders,
-                            body = body,
-                            followRedirects = followRedirects,
-                        )
-                    }
-                }
-
-                if (isCloudflareBlocked(retryResponse.status, retryResponse.headers)) {
                     log.w { "CF: retry still blocked (${retryResponse.status}) at $retryUrl; trying WebView fetch fallback" }
-                    val renderedResponse = runBlocking {
-                        cfSolver.fetchRenderedPage(
-                            url = retryUrl,
-                            headers = webViewHeaders(retryHeaders),
-                        )
-                    }
+                    val renderedResponse = cfSolver.fetchRenderedPage(
+                        url = retryUrl,
+                        headers = webViewHeaders(retryHeaders),
+                    )
 
                     if (renderedResponse != null && !isRenderedCloudflareBlocked(renderedResponse)) {
                         log.i { "CF: WebView fetch fallback success for ${renderedResponse.url}" }
@@ -197,8 +188,8 @@ internal class FetchBridge(private val pluginId: String) : HostModule {
             mapOf(
                 "ok" to JsonPrimitive(response.status in 200..299),
                 "status" to JsonPrimitive(response.status),
-                "statusText" to JsonPrimitive(response.statusText),
                 "url" to JsonPrimitive(response.url),
+                "statusText" to JsonPrimitive(response.statusText),
                 "body" to JsonPrimitive(response.body),
                 "headers" to JsonObject(responseHeaders.mapValues { JsonPrimitive(it.value) }),
             ),

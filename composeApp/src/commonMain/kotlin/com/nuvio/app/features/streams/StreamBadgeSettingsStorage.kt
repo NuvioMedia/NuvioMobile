@@ -9,6 +9,8 @@ internal expect object StreamBadgeSettingsStorage {
     fun saveShowFileSizeBadges(enabled: Boolean)
     fun loadShowAddonLogo(): Boolean?
     fun saveShowAddonLogo(enabled: Boolean)
+    fun loadStreamBackgroundMode(): String?
+    fun saveStreamBackgroundMode(mode: String)
     fun loadStreamBadgePlacement(): String?
     fun saveStreamBadgePlacement(placement: String)
     fun loadLegacyDebridStreamBadgeRules(): String?

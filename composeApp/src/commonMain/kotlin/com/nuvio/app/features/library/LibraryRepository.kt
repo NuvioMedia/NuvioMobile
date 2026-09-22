@@ -10,6 +10,8 @@ import com.nuvio.app.features.library.sync.consumeCursorPages
 import com.nuvio.app.features.library.sync.libraryDeltaPageSize
 import com.nuvio.app.features.library.sync.librarySnapshotPageSize
 import com.nuvio.app.features.profiles.ProfileRepository
+import com.nuvio.app.core.poster.CustomPosterUrlRepository
+import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.features.tracking.TrackingLibraryProvider
 import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.TrackingLibraryTabKind
@@ -191,7 +193,6 @@ object LibraryRepository {
             log.d { "Skipping library pull for inactive profile $profileId" }
             return
         }
-        var serializedOperationToken: LibraryProfileToken? = null
 
         activeLibraryProvider()?.let { provider ->
             refreshLibraryProvider(
@@ -206,7 +207,6 @@ object LibraryRepository {
 
         nuvioSyncMutex.withLock {
             val serializedToken = activeOperationToken(profileId) ?: return@withLock
-            serializedOperationToken = serializedToken
             val pullSnapshot = localState.markPullStarted(serializedToken) ?: return@withLock
 
             try {
@@ -236,11 +236,6 @@ object LibraryRepository {
             } catch (error: Throwable) {
                 log.e(error) { "Failed to pull library from server" }
             }
-        }
-        val completedToken = serializedOperationToken ?: operationToken
-        val pendingSnapshot = localState.snapshot()
-        if (pendingSnapshot.token == completedToken && isActiveOperation(completedToken)) {
-            pushToServer(pendingSnapshot, delayMs = 0L)
         }
     }
 
@@ -401,6 +396,19 @@ object LibraryRepository {
             TrackingProviderRegistry.connectedLibraryProviders()
                 .flatMap { provider -> provider.snapshot().tabs },
         ).filter { tab -> item == null || tab.supportsContentType(item.type) }
+
+    internal fun listManagementContext(): LibraryManagementContext? {
+        val source = effectiveLibrarySourceMode()
+        val provider = activeLibraryProvider(source) ?: return null
+        if (provider.listManager == null) return null
+        val account = TrackingProviderRegistry.authProvider(provider.providerId) ?: return null
+        return LibraryManagementContext(ProfileRepository.activeProfileId, source, account.accountGeneration)
+    }
+
+    internal fun listManager(context: LibraryManagementContext): com.nuvio.app.features.tracking.TrackingListManager {
+        check(context == listManagementContext()) { "Library account changed" }
+        return requireNotNull(activeLibraryProvider(context.source)?.listManager)
+    }
 
     suspend fun getMembershipSnapshot(item: LibraryItem): Map<String, Boolean> {
         ensureLoaded()
@@ -582,12 +590,15 @@ object LibraryRepository {
     private fun publish() {
         val localSnapshot = localState.snapshot()
         val sourceMode = effectiveLibrarySourceMode()
+        val posterPattern = CustomPosterUrlRepository.pattern.value
         activeLibraryProvider(sourceMode)?.let { provider ->
             val providerSnapshot = provider.snapshot()
             val newUiState = LibraryUiState(
                 sourceMode = sourceMode,
-                items = providerSnapshot.items,
-                sections = providerSnapshot.sections,
+                items = providerSnapshot.items.withCustomPosterUrls(posterPattern),
+                sections = providerSnapshot.sections.map { section ->
+                    section.copy(items = section.items.withCustomPosterUrls(posterPattern))
+                },
                 isLoaded = providerSnapshot.hasLoaded,
                 isLoading = providerSnapshot.isLoading,
                 errorMessage = providerSnapshot.errorMessage,
@@ -613,8 +624,10 @@ object LibraryRepository {
 
         val newUiState = LibraryUiState(
             sourceMode = LibrarySourceMode.LOCAL,
-            items = items,
-            sections = sections,
+            items = items.withCustomPosterUrls(posterPattern),
+            sections = sections.map { section ->
+                section.copy(items = section.items.withCustomPosterUrls(posterPattern))
+            },
             isLoaded = localSnapshot.hasLoaded,
             isLoading = localSnapshot.isLoading,
             errorMessage = null,

@@ -962,11 +962,8 @@
     <string name="settings_playback_timeout_unlimited">Ilimitado</string>
     <string name="settings_playback_tunneled_playback">Reprodução em túnel</string>
     <string name="settings_playback_tunneled_playback_description">Sincronização de áudio/vídeo ao nível do hardware. Pode melhorar a reprodução em alguns dispositivos Android TV</string>
-    <string name="settings_tmdb_add_api_key_first">Adiciona a tua própria chave API do TMDB abaixo antes de ativares o enriquecimento.</string>
-    <string name="settings_tmdb_api_key_label">Chave API</string>
     <string name="settings_tmdb_enable_enrichment">Ativar enriquecimento do TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Utiliza o TMDB como fonte de metadados para melhorar os dados dos addons.</string>
-    <string name="settings_tmdb_enter_api_key">Introduz a tua chave API v3 do TMDB.</string>
     <string name="settings_tmdb_language_code_label">Código do idioma</string>
     <string name="settings_tmdb_module_artwork">Imagens</string>
     <string name="settings_tmdb_module_artwork_description">Logótipos e imagens de fundo (dados do TMDB).</string>
@@ -990,10 +987,8 @@
     <string name="settings_tmdb_module_season_posters_description">Utiliza cartazes de temporadas (dados do TMDB) no seletor de temporadas da página de detalhes das séries.</string>
     <string name="settings_tmdb_module_trailers">Trailers</string>
     <string name="settings_tmdb_module_trailers_description">Trailers para a secção de trailers da página de detalhes (dados do TMDB).</string>
-    <string name="settings_tmdb_personal_api_key">Chave API pessoal</string>
     <string name="settings_tmdb_preferred_language">Idioma</string>
     <string name="settings_tmdb_preferred_language_description">Idioma dos metadados do TMDB para título, logótipo e campos ativos.</string>
-    <string name="settings_tmdb_section_credentials">CREDENCIAIS</string>
     <string name="settings_tmdb_section_localization">LOCALIZAÇÃO</string>
     <string name="settings_tmdb_section_modules">MÓDULOS</string>
     <string name="settings_tmdb_section_title">ENRIQUECIMENTO TMDB</string>
@@ -1399,7 +1394,6 @@
     <string name="trakt_sign_in_complete_failed">Falha ao concluir o início de sessão do Trakt</string>
     <string name="trakt_user_fallback">Utilizador do Trakt</string>
     <string name="trakt_watchlist">Lista de conteúdos</string>
-    <string name="tmdb_sources_api_key_required">Adiciona uma chave API do TMDB nas Definições para utilizar fontes TMDB.</string>
     <string name="tmdb_sources_collection_fallback_title">Coleção TMDB %1$d</string>
     <string name="tmdb_sources_collection_not_found">Coleção TMDB não encontrada</string>
     <string name="tmdb_sources_company_fallback_title">Produtora TMDB %1$d</string>
@@ -1712,7 +1706,6 @@
     <string name="collections_editor_tmdb_production_title_format">Produtora TMDB %1$s</string>
     <string name="collections_editor_tmdb_source_load_failed">Não foi possível carregar a fonte TMDB</string>
     <string name="collections_editor_trakt_list_id_format">ID %1$s</string>
-    <string name="collections_tmdb_api_key_required">Adiciona uma chave API do TMDB nas Definições para utilizar fontes TMDB.</string>
     <string name="collections_tmdb_collection_not_found">Coleção TMDB não encontrada</string>
     <string name="collections_tmdb_company_not_found">Produtora TMDB não encontrada</string>
     <string name="collections_tmdb_discover_no_data">A exploração do TMDB não devolveu dados</string>
@@ -1755,8 +1748,6 @@
     <string name="plugins_badge_providers">%1$d fornecedores</string>
     <string name="plugins_badge_refreshing">A atualizar</string>
     <string name="plugins_badge_repos">%1$d repositórios</string>
-    <string name="plugins_badge_tmdb_key_missing">Chave API do TMDB em falta</string>
-    <string name="plugins_badge_tmdb_key_set">Chave API do TMDB definida</string>
     <string name="plugins_button_install_repo">Instalar repositório de plugins</string>
     <string name="plugins_button_installing">A instalar…</string>
     <string name="plugins_button_test_provider">Testar fornecedor</string>
@@ -1800,7 +1791,6 @@
     <string name="plugins_test_error_title">Erro</string>
     <string name="plugins_test_failed">O teste do fornecedor falhou</string>
     <string name="plugins_test_results_count">Resultados do teste (%1$d)</string>
-    <string name="plugins_tmdb_required_message">Os fornecedores de plugins precisam de uma chave API do TMDB. Define-a na página do TMDB; caso contrário, podem não funcionar corretamente.</string>
     <string name="search_error_no_results_for_catalog">Nenhum resultado de pesquisa devolvido por %1$s.</string>
     <string name="settings_playback_introdb_invalid_key">Chave API inválida ou falha na ligação</string>
     <string name="streams_plugin_repository_fallback">Repositório de plugins</string>

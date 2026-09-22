@@ -1,10 +1,12 @@
 package com.nuvio.app.features.plugins.runtime.js
 
 internal object JsBindings {
-    fun buildPolyfillCode(scraperIdJson: String, settingsJson: String): String {
-        return """
-            globalThis.SCRAPER_ID = $scraperIdJson;
-            globalThis.SCRAPER_SETTINGS = $settingsJson;
+    val staticPolyfillCode: String = """
+            globalThis.SCRAPER_ID = __get_scraper_id();
+            globalThis.SCRAPER_SETTINGS = JSON.parse(__get_scraper_settings());
+            if (typeof TMDB_API_KEY === 'undefined') {
+                globalThis.TMDB_API_KEY = __get_tmdb_api_key();
+            }
             if (typeof globalThis.global === 'undefined') globalThis.global = globalThis;
             if (typeof globalThis.window === 'undefined') globalThis.window = globalThis;
             if (typeof globalThis.self === 'undefined') globalThis.self = globalThis;
@@ -21,7 +23,44 @@ internal object JsBindings {
             ${objectPolyfill()}
             ${stringPolyfill()}
         """.trimIndent()
-    }
+
+    val staticCallCode: String = """
+            (async function() {
+                try {
+                    var getStreams = module.exports.getStreams || globalThis.getStreams;
+                    if (!getStreams) {
+                        console.error("getStreams function not found on module.exports or globalThis");
+                        __capture_result(JSON.stringify([]));
+                        return;
+                    }
+                    var args = JSON.parse(__get_call_args());
+                    var season = args.season == null ? undefined : args.season;
+                    var episode = args.episode == null ? undefined : args.episode;
+                    var result = await getStreams(args.tmdbId, args.mediaType, season, episode);
+                    __capture_result(JSON.stringify(result || []));
+                } catch (e) {
+                    console.error("getStreams error:", e && e.message ? e.message : e, e && e.stack ? e.stack : "");
+                    __capture_result(JSON.stringify([]));
+                }
+            })();
+        """.trimIndent()
+
+    val staticSettingsCallCode: String = """
+            (async function() {
+                try {
+                    var onSettings = (typeof module !== 'undefined' && module.exports && module.exports.onSettings) || globalThis.onSettings;
+                    if (typeof onSettings === 'function') {
+                        var layout = await onSettings();
+                        __capture_result(JSON.stringify(layout || []));
+                    } else {
+                        __capture_result("[]");
+                    }
+                } catch (e) {
+                    console.error("onSettings error:", e);
+                    __capture_result("[]");
+                }
+            })();
+        """.trimIndent()
 
     private fun fetchPolyfill() = """
         function __normalize_fetch_headers(headers) {
@@ -48,7 +87,7 @@ internal object JsBindings {
             var body = options.body || '';
             var followRedirects = options.redirect !== 'manual';
             var useCfKiller = options.cfKiller === true;
-            var result = __native_fetch(url, method, JSON.stringify(headers), body, followRedirects, useCfKiller);
+            var result = await __native_fetch(url, method, JSON.stringify(headers), body, followRedirects, useCfKiller);
             var parsed = JSON.parse(result);
             return {
                 ok: parsed.ok,

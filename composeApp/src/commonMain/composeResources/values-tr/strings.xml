@@ -1082,11 +1082,8 @@
     <string name="settings_playback_timeout_unlimited">Sınırsız</string>
     <string name="settings_playback_tunneled_playback">Tunneled oynatma</string>
     <string name="settings_playback_tunneled_playback_description">Daha düşük gecikmeli ses/video senkronu için tunneled oynatmayı aç.</string>
-    <string name="settings_tmdb_add_api_key_first">Zenginleştirmeyi açmadan önce aşağıya kendi TMDB API anahtarını ekle.</string>
-    <string name="settings_tmdb_api_key_label">TMDB API anahtarı</string>
     <string name="settings_tmdb_enable_enrichment">TMDB zenginleştirmeyi aç</string>
-    <string name="settings_tmdb_enable_enrichment_description">TMDB veya IMDb ID'si varsa detay ekranındaki eklenti meta verilerini TMDB API anahtarınla zenginleştir.</string>
-    <string name="settings_tmdb_enter_api_key">TMDB v3 API anahtarını gir.</string>
+    <string name="settings_tmdb_enable_enrichment_description">Eklenti verilerini geliştirmek için TMDB'yi bir meta veri kaynağı olarak kullanın</string>
     <string name="settings_tmdb_language_code_label">Dil kodu</string>
     <string name="settings_tmdb_module_artwork">Görseller</string>
     <string name="settings_tmdb_module_artwork_description">Arka plan, poster ve logoyu TMDB görselleriyle değiştir.</string>
@@ -1098,8 +1095,6 @@
     <string name="settings_tmdb_module_credits_description">TMDB içerik oluşturucuları, yönetmenleri, yazarları ve oyuncu fotoğraflarını kullan.</string>
     <string name="settings_tmdb_module_details">Detaylar</string>
     <string name="settings_tmdb_module_details_description">TMDB yayın bilgisi, süre, yaş derecelendirmesi, durum, ülke ve dil bilgilerini kullan.</string>
-    <string name="settings_tmdb_module_release_dates">Yayın tarihleri</string>
-    <string name="settings_tmdb_module_release_dates_description">Hassas eklenti çıkış zamanları yerine TMDB yayıncı yayın tarihlerini kullanır</string>
     <string name="settings_tmdb_module_episodes">Bölümler</string>
     <string name="settings_tmdb_module_episodes_description">Diziler için TMDB bölüm başlıklarını, küçük görselleri, açıklamaları ve süreleri kullan.</string>
     <string name="settings_tmdb_module_more_like_this">Buna benzerler</string>
@@ -1112,10 +1107,8 @@
     <string name="settings_tmdb_module_season_posters_description">Dizilerde meta veri ekranındaki sezon seçici için TMDB sezon posterlerini kullan.</string>
     <string name="settings_tmdb_module_trailers">Fragmanlar</string>
     <string name="settings_tmdb_module_trailers_description">Detay sayfalarında TMDB fragman videolarını çekip göster.</string>
-    <string name="settings_tmdb_personal_api_key">Kişisel API anahtarı</string>
     <string name="settings_tmdb_preferred_language">Tercih edilen dil</string>
     <string name="settings_tmdb_preferred_language_description">Yerelleştirilmiş meta veriler için kullanılacak TMDB dil kodunu ayarla; örneğin `en`, `en-US` veya `pt-BR`.</string>
-    <string name="settings_tmdb_section_credentials">KİMLİK BİLGİLERİ</string>
     <string name="settings_tmdb_section_localization">YERELLEŞTİRME</string>
     <string name="settings_tmdb_section_modules">MODÜLLER</string>
     <string name="settings_tmdb_section_title">TMDB</string>
@@ -1603,7 +1596,6 @@
     <string name="trakt_error_add_list_failed">Trakt listesine eklenemedi</string>
     <string name="trakt_error_missing_ids">Uyumlu Trakt Kimlikleri eksik</string>
     <string name="trakt_error_empty_response">Boş yanıt gövdesi</string>
-    <string name="tmdb_sources_api_key_required">TMDB kaynaklarını kullanmak için Ayarlar'a bir TMDB API anahtarı ekleyin.</string>
     <string name="tmdb_sources_collection_fallback_title">TMDB Koleksiyonu %1$d</string>
     <string name="tmdb_sources_collection_not_found">TMDB koleksiyonu bulunamadı</string>
     <string name="tmdb_sources_company_fallback_title">TMDB Yapımı %1$d</string>
@@ -1962,7 +1954,6 @@
     <string name="collections_editor_tmdb_production_title_format">TMDB Yapım Şirketi %1$s</string>
     <string name="collections_editor_tmdb_source_load_failed">TMDB kaynağı yüklenemedi</string>
     <string name="collections_editor_trakt_list_id_format">ID %1$s</string>
-    <string name="collections_tmdb_api_key_required">TMDB kaynaklarını kullanmak için Ayarlar'a bir TMDB API anahtarı ekleyin.</string>
     <string name="collections_tmdb_collection_not_found">TMDB koleksiyonu bulunamadı</string>
     <string name="collections_tmdb_company_not_found">TMDB şirketi bulunamadı</string>
     <string name="collections_tmdb_discover_no_data">TMDB keşif verisi dönmedi</string>
@@ -2005,8 +1996,6 @@
     <string name="plugins_badge_providers">%1$d sağlayıcı</string>
     <string name="plugins_badge_refreshing">Yenileniyor</string>
     <string name="plugins_badge_repos">%1$d depo</string>
-    <string name="plugins_badge_tmdb_key_missing">TMDB API anahtarı eksik</string>
-    <string name="plugins_badge_tmdb_key_set">TMDB API anahtarı ayarlandı</string>
     <string name="plugins_button_install_repo">Eklenti Deposu Yükle</string>
     <string name="plugins_button_installing">Yükleniyor…</string>
     <string name="plugins_button_test_provider">Sağlayıcıyı Test Et</string>
@@ -2050,7 +2039,6 @@
     <string name="plugins_test_error_title">Hata</string>
     <string name="plugins_test_failed">Sağlayıcı testi başarısız oldu</string>
     <string name="plugins_test_results_count">Test sonuçları (%1$d)</string>
-    <string name="plugins_tmdb_required_message">Eklenti sağlayıcıları bir TMDB API anahtarı gerektirir. TMDB ekranından bunu ayarlayın, aksi takdirde eklenti sağlayıcıları düzgün çalışmayacaktır.</string>
     <string name="search_error_no_results_for_catalog">%1$s için arama sonucu bulunamadı.</string>
     <string name="settings_playback_introdb_invalid_key">Geçersiz API Anahtarı veya bağlantı başarısız oldu</string>
     <string name="streams_plugin_repository_fallback">Eklenti deposu</string>
@@ -2154,4 +2142,12 @@ Bu özelliği tamamen kendi sorumluluğunuzda kullanırsınız. P2P istediğiniz
         <item quantity="one">%d başlık</item>
         <item quantity="other">%d başlık</item>
     </plurals>
+    <string name="layout_overall_ratings">Genel Puanlar</string>
+    <string name="layout_overall_ratings_sub_on">Standart ve TMDB puanları gösterilir.</string>
+    <string name="layout_overall_ratings_sub_off">Standart ve TMDB puanları gizlenir. Detay sayfalarında MDBList sağlayıcı ayarları önceliklidir.</string>
+    <string name="layout_episode_ratings">Bölüm Puanları</string>
+    <string name="layout_episode_ratings_sub">Hangi bölüm puanlarının görüneceğini seçin.</string>
+    <string name="layout_ratings_show">Göster</string>
+    <string name="layout_ratings_hide">Gizle</string>
+    <string name="layout_ratings_hide_unwatched">İzlenmeyenleri Gizle</string>
 </resources>

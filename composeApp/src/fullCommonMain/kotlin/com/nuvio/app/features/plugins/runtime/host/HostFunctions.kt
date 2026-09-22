@@ -4,10 +4,13 @@ import co.touchlab.kermit.Logger
 import com.dokar.quickjs.QuickJs
 import com.dokar.quickjs.binding.define
 import com.dokar.quickjs.binding.function
+import com.nuvio.app.features.tmdb.TmdbSettingsRepository
 
 internal class HostFunctions(
     private val scraperId: String,
-    private val onResult: (String) -> Unit
+    private val scraperSettingsJson: String,
+    private val callArgsJson: String = "{}",
+    private val onResult: (String) -> Unit,
 ) : HostModule {
     private val log = Logger.withTag("PluginRuntime")
 
@@ -35,6 +38,10 @@ internal class HostFunctions(
             }
         }
 
+        runtime.function("__get_scraper_id") { scraperId }
+        runtime.function("__get_scraper_settings") { scraperSettingsJson }
+        runtime.function("__get_tmdb_api_key") { TmdbSettingsRepository.effectiveApiKey() }
+        runtime.function("__get_call_args") { callArgsJson }
         runtime.function("__capture_result") { args ->
             onResult(args.getOrNull(0)?.toString() ?: "[]")
             null

@@ -1095,11 +1095,8 @@
     <string name="settings_playback_timeout_unlimited">غير محدود</string>
     <string name="settings_playback_tunneled_playback">التشغيل النفقي</string>
     <string name="settings_playback_tunneled_playback_description">مزامنة الصوت والفيديو على مستوى العتاد. قد تحسن التشغيل على بعض أجهزة Android TV.</string>
-    <string name="settings_tmdb_add_api_key_first">أضف مفتاح API الخاص بك لـ TMDB أدناه قبل تفعيل الإثراء.</string>
-    <string name="settings_tmdb_api_key_label">مفتاح API</string>
     <string name="settings_tmdb_enable_enrichment">تفعيل تحسين TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">استخدام TMDB كمصدر بيانات لتحسين معلومات الإضافات</string>
-    <string name="settings_tmdb_enter_api_key">أدخل مفتاح TMDB API v3 الخاص بك.</string>
     <string name="settings_tmdb_language_code_label">رمز اللغة</string>
     <string name="settings_tmdb_module_artwork">الصور الفنية</string>
     <string name="settings_tmdb_module_artwork_description">الشعارات وصور الخلفية من TMDB</string>
@@ -1111,8 +1108,6 @@
     <string name="settings_tmdb_module_credits_description">الممثلون مع الصور، المخرج، والكاتب من TMDB</string>
     <string name="settings_tmdb_module_details">التفاصيل</string>
     <string name="settings_tmdb_module_details_description">مدة العرض، تاريخ الإصدار، الدولة، واللغة من TMDB</string>
-    <string name="settings_tmdb_module_release_dates">تواريخ الإصدار</string>
-    <string name="settings_tmdb_module_release_dates_description">استخدام تواريخ بث TMDB بدل أوقات الإصدار الدقيقة القادمة من الإضافة</string>
     <string name="settings_tmdb_module_episodes">الحلقات</string>
     <string name="settings_tmdb_module_episodes_description">عناوين الحلقات، الملخصات، الصور، ومدة العرض من TMDB</string>
     <string name="settings_tmdb_module_more_like_this">مقترحات مشابهة</string>
@@ -1125,10 +1120,8 @@
     <string name="settings_tmdb_module_season_posters_description">استخدام ملصقات مواسم TMDB في محدد المواسم بشاشة البيانات الوصفية للمسلسلات.</string>
     <string name="settings_tmdb_module_trailers">الإعلانات</string>
     <string name="settings_tmdb_module_trailers_description">العروض الدعائية المقترحة من فيديوهات TMDB لقسم تفاصيل الإعلان</string>
-    <string name="settings_tmdb_personal_api_key">مفتاح API شخصي</string>
     <string name="settings_tmdb_preferred_language">اللغة</string>
     <string name="settings_tmdb_preferred_language_description">لغة بيانات TMDB للعناوين والشعارات والحقول المفعلة</string>
-    <string name="settings_tmdb_section_credentials">بيانات الاعتماد</string>
     <string name="settings_tmdb_section_localization">الترجمة والتوطين</string>
     <string name="settings_tmdb_section_modules">الوحدات</string>
     <string name="settings_tmdb_section_title">إثراء بيانات TMDB</string>
@@ -1615,7 +1608,6 @@
     <string name="trakt_error_add_list_failed">فشلت الإضافة إلى قائمة Trakt</string>
     <string name="trakt_error_missing_ids">معرّفات Trakt المتوافقة مفقودة</string>
     <string name="trakt_error_empty_response">استجابة الشبكة فارغة</string>
-    <string name="tmdb_sources_api_key_required">أضف مفتاح TMDB API في الإعدادات لاستخدام مصادر TMDB.</string>
     <string name="tmdb_sources_collection_fallback_title">مجموعة TMDB رقم %1$d</string>
     <string name="tmdb_sources_collection_not_found">لم يتم العثور على مجموعة TMDB</string>
     <string name="tmdb_sources_company_fallback_title">إنتاج TMDB %1$d</string>
@@ -1946,7 +1938,6 @@
     <string name="collections_editor_tmdb_production_title_format">إنتاج TMDB %1$s</string>
     <string name="collections_editor_tmdb_source_load_failed">تعذر تحميل مصدر TMDB</string>
     <string name="collections_editor_trakt_list_id_format">المعرّف %1$s</string>
-    <string name="collections_tmdb_api_key_required">أضف مفتاح TMDB API في الإعدادات لاستخدام مصادر TMDB.</string>
     <string name="collections_tmdb_collection_not_found">لم يتم العثور على مجموعة TMDB</string>
     <string name="collections_tmdb_company_not_found">لم يتم العثور على شركة TMDB</string>
     <string name="collections_tmdb_discover_no_data">لم يتم العثور على بيانات في خدمة استكشاف TMDB</string>
@@ -1989,8 +1980,6 @@
     <string name="plugins_badge_providers">%1$d مصدر</string>
     <string name="plugins_badge_refreshing">جارٍ التحديث</string>
     <string name="plugins_badge_repos">%1$d مستودع</string>
-    <string name="plugins_badge_tmdb_key_missing">مفتاح TMDB API مفقود</string>
-    <string name="plugins_badge_tmdb_key_set">تم تعيين مفتاح TMDB API</string>
     <string name="plugins_button_install_repo">تثبيت مستودع ملحقات</string>
     <string name="plugins_button_installing">جارٍ التثبيت</string>
     <string name="plugins_button_test_provider">اختبار المزود</string>
@@ -2034,7 +2023,6 @@
     <string name="plugins_test_error_title">خطأ</string>
     <string name="plugins_test_failed">فشل اختبار المزود</string>
     <string name="plugins_test_results_count">نتائج الاختبار (%1$d)</string>
-    <string name="plugins_tmdb_required_message">تتطلب مزوّدات الملحقات مفتاح TMDB API. عيّنه في شاشة TMDB، وإلا فلن تعمل مزوّدات الملحقات بشكل صحيح.</string>
     <string name="search_error_no_results_for_catalog">لم يتم إرجاع نتائج بحث لـ %1$s.</string>
     <string name="settings_playback_introdb_invalid_key">مفتاح API غير صالح أو فشل الاتصال</string>
     <string name="streams_plugin_repository_fallback">مستودع ملحقات</string>
@@ -2127,4 +2115,12 @@
         <item quantity="one">%d عنوان</item>
         <item quantity="other">%d عنوان</item>
     </plurals>
+    <string name="layout_overall_ratings">التقييمات العامة</string>
+    <string name="layout_overall_ratings_sub_on">التقييمات القياسية وتقييمات TMDB ظاهرة.</string>
+    <string name="layout_overall_ratings_sub_off">التقييمات القياسية وتقييمات TMDB مخفية. إعدادات مزود MDBList لها الأولوية في صفحات التفاصيل.</string>
+    <string name="layout_episode_ratings">تقييمات الحلقات</string>
+    <string name="layout_episode_ratings_sub">اختر تقييمات الحلقات الظاهرة.</string>
+    <string name="layout_ratings_show">إظهار</string>
+    <string name="layout_ratings_hide">إخفاء</string>
+    <string name="layout_ratings_hide_unwatched">إخفاء ما لم يُشاهد</string>
 </resources>

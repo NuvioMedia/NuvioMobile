@@ -1016,11 +1016,8 @@
     <string name="settings_playback_timeout_unlimited">Nelimitat</string>
     <string name="settings_playback_tunneled_playback">Redare tunelată</string>
     <string name="settings_playback_tunneled_playback_description">Sincronizare audio/video la nivel hardware. Poate îmbunătăți redarea pe unele dispozitive Android TV</string>
-    <string name="settings_tmdb_add_api_key_first">Adaugă propria cheie API TMDB mai jos înainte de a activa îmbunătățirea.</string>
-    <string name="settings_tmdb_api_key_label">Cheie API</string>
     <string name="settings_tmdb_enable_enrichment">Activează îmbunătățirea TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Folosește TMDB ca sursă de metadate pentru a îmbunătăți datele din extensii</string>
-    <string name="settings_tmdb_enter_api_key">Introdu cheia API TMDB v3.</string>
     <string name="settings_tmdb_language_code_label">Cod limbă</string>
     <string name="settings_tmdb_module_artwork">Imagini și elemente vizuale</string>
     <string name="settings_tmdb_module_artwork_description">Logouri și imagini de fundal de pe TMDB</string>
@@ -1044,10 +1041,8 @@
     <string name="settings_tmdb_module_season_posters_description">Folosește posterele de sezoane TMDB în selectorul de sezoane pentru seriale.</string>
     <string name="settings_tmdb_module_trailers">Trailere</string>
     <string name="settings_tmdb_module_trailers_description">Trailere potențiale din videoclipurile TMDB pentru secțiunea dedicată</string>
-    <string name="settings_tmdb_personal_api_key">Cheie API personală</string>
     <string name="settings_tmdb_preferred_language">Limbă</string>
     <string name="settings_tmdb_preferred_language_description">Limba metadatelor TMDB pentru titlu, siglă și câmpurile activate</string>
-    <string name="settings_tmdb_section_credentials">CREDENTIALE</string>
     <string name="settings_tmdb_section_localization">LOCALIZARE</string>
     <string name="settings_tmdb_section_modules">MODULE</string>
     <string name="settings_tmdb_section_title">ÎMBUNĂTĂȚIRE TMDB</string>
@@ -1464,7 +1459,6 @@
     <string name="trakt_error_add_list_failed">Nu s-a putut adăuga în lista Trakt</string>
     <string name="trakt_error_missing_ids">Lipsesc ID-uri Trakt compatibile</string>
     <string name="trakt_error_empty_response">Corpul răspunsului este gol</string>
-    <string name="tmdb_sources_api_key_required">Adaugă o cheie API TMDB în Setări pentru a folosi sursele TMDB.</string>
     <string name="tmdb_sources_collection_fallback_title">Colecție TMDB %1$d</string>
     <string name="tmdb_sources_collection_not_found">Colecția TMDB nu a fost găsită</string>
     <string name="tmdb_sources_company_fallback_title">Producție TMDB %1$d</string>
@@ -1779,7 +1773,6 @@
     <string name="collections_editor_tmdb_production_title_format">Producție TMDB %1$s</string>
     <string name="collections_editor_tmdb_source_load_failed">Sursa TMDB nu a putut fi încărcată</string>
     <string name="collections_editor_trakt_list_id_format">ID %1$s</string>
-    <string name="collections_tmdb_api_key_required">Adaugă o cheie API TMDB în Setări pentru a folosi sursele TMDB.</string>
     <string name="collections_tmdb_collection_not_found">Colecția TMDB nu a fost găsită</string>
     <string name="collections_tmdb_company_not_found">Compania TMDB nu a fost găsită</string>
     <string name="collections_tmdb_discover_no_data">Descoperirea TMDB nu a returnat date</string>
@@ -1822,8 +1815,6 @@
     <string name="plugins_badge_providers">%1$d furnizori</string>
     <string name="plugins_badge_refreshing">Se reîmprospătează</string>
     <string name="plugins_badge_repos">%1$d depozite (repos)</string>
-    <string name="plugins_badge_tmdb_key_missing">Lipsește cheia API TMDB</string>
-    <string name="plugins_badge_tmdb_key_set">Cheia API TMDB este configurată</string>
     <string name="plugins_button_install_repo">Instalează depozitul de module</string>
     <string name="plugins_button_installing">Se instalează…</string>
     <string name="plugins_button_test_provider">Testează furnizorul</string>
@@ -1867,7 +1858,6 @@
     <string name="plugins_test_error_title">Eroare</string>
     <string name="plugins_test_failed">Testul furnizorului a eșuat</string>
     <string name="plugins_test_results_count">Rezultate test (%1$d)</string>
-    <string name="plugins_tmdb_required_message">Furnizorii de module necesită o cheie API TMDB. Seteaz-o în ecranul TMDB, altfel modulele furnizorilor nu vor funcționa corect.</string>
     <string name="search_error_no_results_for_catalog">Nu s-au returnat rezultate de căutare pentru %1$s.</string>
     <string name="settings_playback_introdb_invalid_key">Cheie API nevalidă sau conexiunea a eșuat</string>
     <string name="streams_plugin_repository_fallback">Depozit de module</string>

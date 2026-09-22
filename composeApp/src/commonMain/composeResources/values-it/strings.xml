@@ -635,11 +635,8 @@
   <string name="settings_playback_ios_display_color_hint_desc">Lascia scegliere a mpv lo spazio colore del display per impostazione predefinita.</string>
   <string name="settings_playback_ios_target_primaries">Target primario display</string>
   <string name="settings_playback_ios_target_transfer">Target trasferimento colore</string>
-  <string name="settings_tmdb_add_api_key_first">Aggiungi la tua chiave API TMDB qui sotto prima di attivare l'arricchimento.</string>
-  <string name="settings_tmdb_api_key_label">Chiave API TMDB</string>
   <string name="settings_tmdb_enable_enrichment">Abilita arricchimento TMDB</string>
-  <string name="settings_tmdb_enable_enrichment_description">Usa la tua chiave API TMDB per arricchire i metadati degli addon nella schermata dei dettagli quando è disponibile un ID TMDB o IMDb.</string>
-  <string name="settings_tmdb_enter_api_key">Inserisci la tua chiave API TMDB v3.</string>
+  <string name="settings_tmdb_enable_enrichment_description">Usa TMDB come sorgente di metadati per migliorare i dati degli addon</string>
   <string name="settings_tmdb_language_code_label">Codice lingua</string>
   <string name="settings_tmdb_module_artwork">Immagini</string>
   <string name="settings_tmdb_module_artwork_description">Sostituisci sfondo, locandina e logo con le immagini di TMDB.</string>
@@ -663,10 +660,8 @@
   <string name="settings_tmdb_module_season_posters_description">Usa le locandine delle stagioni di TMDB nel selettore delle stagioni per le serie.</string>
   <string name="settings_tmdb_module_trailers">Trailer</string>
   <string name="settings_tmdb_module_trailers_description">Recupera e mostra la sezione dei trailer di TMDB nelle pagine dei dettagli.</string>
-  <string name="settings_tmdb_personal_api_key">Chiave API personale</string>
   <string name="settings_tmdb_preferred_language">Lingua preferita</string>
   <string name="settings_tmdb_preferred_language_description">Imposta il codice lingua TMDB usato per i metadati localizzati, ad esempio `it`, `it-IT` o `en-US`.</string>
-  <string name="settings_tmdb_section_credentials">CREDENZIALI</string>
   <string name="settings_tmdb_section_localization">LOCALIZZAZIONE</string>
   <string name="settings_tmdb_section_modules">MODULI</string>
   <string name="settings_tmdb_section_title">TMDB</string>
@@ -1649,7 +1644,6 @@
   <string name="trakt_error_add_list_failed">Impossibile aggiungere alla lista Trakt</string>
   <string name="trakt_error_missing_ids">ID Trakt compatibili mancanti</string>
   <string name="trakt_error_empty_response">Corpo della risposta vuoto</string>
-  <string name="tmdb_sources_api_key_required">Aggiungi una chiave API TMDB nelle Impostazioni per usare le sorgenti TMDB.</string>
   <string name="tmdb_sources_collection_fallback_title">Collezione TMDB %1$d</string>
   <string name="tmdb_sources_collection_not_found">Collezione TMDB non trovata</string>
   <string name="tmdb_sources_company_fallback_title">Produzione TMDB %1$d</string>
@@ -1819,7 +1813,6 @@
   <string name="collections_editor_tmdb_production_title_format">Produzione TMDB %1$s</string>
   <string name="collections_editor_tmdb_source_load_failed">Impossibile caricare la sorgente TMDB</string>
   <string name="collections_editor_trakt_list_id_format">ID %1$s</string>
-  <string name="collections_tmdb_api_key_required">Add a TMDB API key in Impostazioni to use TMDB sorgentes.</string>
   <string name="collections_tmdb_collection_not_found">Collezione TMDB non trovata</string>
   <string name="collections_tmdb_company_not_found">Azienda TMDB non trovata</string>
   <string name="collections_tmdb_discover_no_data">La ricerca TMDB non ha restituito dati</string>
@@ -1862,8 +1855,6 @@
   <string name="plugins_badge_providers">%1$d provider</string>
   <string name="plugins_badge_refreshing">Aggiornamento</string>
   <string name="plugins_badge_repos">%1$d repository</string>
-  <string name="plugins_badge_tmdb_key_missing">Chiave API TMDB mancante</string>
-  <string name="plugins_badge_tmdb_key_set">Chiave API TMDB impostata</string>
   <string name="plugins_button_install_repo">Installa repository di plugin</string>
   <string name="plugins_button_installing">Installazione…</string>
   <string name="plugins_button_test_provider">Testa provider</string>
@@ -1903,7 +1894,6 @@
   <string name="plugins_test_error_title">Errore</string>
   <string name="plugins_test_failed">Test del provider non riuscito</string>
   <string name="plugins_test_results_count">Risultati del test (%1$d)</string>
-  <string name="plugins_tmdb_required_message">I provider dei plugin richiedono una chiave API TMDB. Impostala nella schermata TMDB, altrimenti i provider non funzioneranno correttamente.</string>
   <string name="search_error_no_results_for_catalog">Nessun risultato di ricerca restituito per %1$s.</string>
   <string name="settings_playback_introdb_invalid_key">Chiave API non valida o connessione non riuscita</string>
   <string name="streams_plugin_repository_fallback">Repository di plugin</string>
@@ -1948,4 +1938,12 @@
   <string name="entity_browse_about">Informazioni</string>
   <string name="player_external_loading_subtitles">Caricamento sottotitoli dagli addon...</string>
   <string name="player_external_downloading_subtitles">Download dei sottotitoli...</string>
+    <string name="layout_overall_ratings">Valutazioni generali</string>
+    <string name="layout_overall_ratings_sub_on">Le valutazioni standard e TMDB vengono mostrate.</string>
+    <string name="layout_overall_ratings_sub_off">Le valutazioni standard e TMDB sono nascoste. Le impostazioni del provider MDBList hanno priorità nelle pagine dei dettagli.</string>
+    <string name="layout_episode_ratings">Valutazioni episodi</string>
+    <string name="layout_episode_ratings_sub">Scegli quali valutazioni degli episodi sono visibili.</string>
+    <string name="layout_ratings_show">Mostra</string>
+    <string name="layout_ratings_hide">Nascondi</string>
+    <string name="layout_ratings_hide_unwatched">Nascondi non guardati</string>
 </resources>

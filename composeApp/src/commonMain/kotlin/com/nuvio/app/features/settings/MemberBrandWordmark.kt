@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.nuvio.app.core.ui.LocalScreenActive
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -141,19 +142,24 @@ internal fun rememberMemberBadgeGradientBrush(
     style: MemberBadgeStyle,
     size: IntSize,
 ): Brush {
-    val gradientTransition = rememberInfiniteTransition(label = "memberBadgeGradient")
-    val gradientProgress by gradientTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = MemberBadgeSweepHalfDurationMs,
-                easing = CubicBezierEasing(0.42f, 0f, 0.58f, 1f),
+    val gradientProgress = if (LocalScreenActive.current) {
+        val gradientTransition = rememberInfiniteTransition(label = "memberBadgeGradient")
+        val progress by gradientTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = MemberBadgeSweepHalfDurationMs,
+                    easing = CubicBezierEasing(0.42f, 0f, 0.58f, 1f),
+                ),
+                repeatMode = RepeatMode.Reverse,
             ),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "memberBadgeGradientProgress",
-    )
+            label = "memberBadgeGradientProgress",
+        )
+        progress
+    } else {
+        0f
+    }
     return remember(style, size, gradientProgress) {
         memberBadgeGradientBrush(
             style = style,

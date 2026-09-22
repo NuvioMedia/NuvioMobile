@@ -988,11 +988,8 @@
     <string name="settings_playback_timeout_unlimited">無制限</string>
     <string name="settings_playback_tunneled_playback">トンネル再生</string>
     <string name="settings_playback_tunneled_playback_description">ハードウェアレベルの音声/映像同期。一部のAndroid TVデバイスで再生が改善される場合があります</string>
-    <string name="settings_tmdb_add_api_key_first">補完を有効にする前に、下で自分のTMDB APIキーを追加してください。</string>
-    <string name="settings_tmdb_api_key_label">APIキー</string>
     <string name="settings_tmdb_enable_enrichment">TMDB補完を有効にする</string>
     <string name="settings_tmdb_enable_enrichment_description">アドオンデータを強化するためのメタデータソースとしてTMDBを使用する</string>
-    <string name="settings_tmdb_enter_api_key">TMDBのv3 APIキーを入力してください。</string>
     <string name="settings_tmdb_language_code_label">言語コード</string>
     <string name="settings_tmdb_module_artwork">アートワーク</string>
     <string name="settings_tmdb_module_artwork_description">TMDBのロゴとバックドロップ画像</string>
@@ -1016,10 +1013,8 @@
     <string name="settings_tmdb_module_season_posters_description">シリーズのメタデータ画面のシーズンセレクターにTMDBのシーズンポスターを使用します。</string>
     <string name="settings_tmdb_module_trailers">予告編</string>
     <string name="settings_tmdb_module_trailers_description">詳細の予告編セクション向けのTMDB動画から予告編候補を取得</string>
-    <string name="settings_tmdb_personal_api_key">個人APIキー</string>
     <string name="settings_tmdb_preferred_language">言語</string>
     <string name="settings_tmdb_preferred_language_description">タイトル、ロゴ、有効なフィールドのTMDBメタデータ言語</string>
-    <string name="settings_tmdb_section_credentials">認証情報</string>
     <string name="settings_tmdb_section_localization">ローカライズ</string>
     <string name="settings_tmdb_section_modules">モジュール</string>
     <string name="settings_tmdb_section_title">TMDB補完</string>
@@ -1436,7 +1431,6 @@
     <string name="trakt_error_add_list_failed">Traktリストへの追加に失敗しました</string>
     <string name="trakt_error_missing_ids">互換性のあるTrakt IDがありません</string>
     <string name="trakt_error_empty_response">空のレスポンスボディ</string>
-    <string name="tmdb_sources_api_key_required">TMDBソースを使用するには設定でTMDB APIキーを追加してください。</string>
     <string name="tmdb_sources_collection_fallback_title">TMDBコレクション %1$d</string>
     <string name="tmdb_sources_collection_not_found">TMDBコレクションが見つかりません</string>
     <string name="tmdb_sources_company_fallback_title">TMDB制作会社 %1$d</string>
@@ -1777,7 +1771,6 @@
     <string name="collections_editor_tmdb_production_title_format">TMDB制作会社 %1$s</string>
     <string name="collections_editor_tmdb_source_load_failed">TMDBソースを読み込めませんでした</string>
     <string name="collections_editor_trakt_list_id_format">ID %1$s</string>
-    <string name="collections_tmdb_api_key_required">TMDBソースを使用するには設定でTMDB APIキーを追加してください。</string>
     <string name="collections_tmdb_collection_not_found">TMDBコレクションが見つかりません</string>
     <string name="collections_tmdb_company_not_found">TMDB会社が見つかりません</string>
     <string name="collections_tmdb_discover_no_data">TMDBディスカバーがデータを返しませんでした</string>
@@ -1820,8 +1813,6 @@
     <string name="plugins_badge_providers">%1$d プロバイダー</string>
     <string name="plugins_badge_refreshing">更新中</string>
     <string name="plugins_badge_repos">%1$d リポジトリ</string>
-    <string name="plugins_badge_tmdb_key_missing">TMDB APIキー未設定</string>
-    <string name="plugins_badge_tmdb_key_set">TMDB APIキー設定済み</string>
     <string name="plugins_button_install_repo">プラグインリポジトリをインストール</string>
     <string name="plugins_button_installing">インストール中…</string>
     <string name="plugins_button_test_provider">プロバイダーをテスト</string>
@@ -1865,7 +1856,6 @@
     <string name="plugins_test_error_title">エラー</string>
     <string name="plugins_test_failed">プロバイダーのテストに失敗しました</string>
     <string name="plugins_test_results_count">テスト結果 (%1$d 件)</string>
-    <string name="plugins_tmdb_required_message">プラグインプロバイダーにはTMDB APIキーが必要です。TMDB画面でAPIキーを設定しないと、プラグインプロバイダーが正常に動作しない場合があります。</string>
     <string name="search_error_no_results_for_catalog">%1$s の検索結果が返されませんでした。</string>
     <string name="settings_playback_introdb_invalid_key">APIキーが無効か接続に失敗しました</string>
     <string name="streams_plugin_repository_fallback">プラグインリポジトリ</string>

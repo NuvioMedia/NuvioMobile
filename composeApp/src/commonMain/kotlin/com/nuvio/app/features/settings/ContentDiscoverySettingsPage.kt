@@ -1,7 +1,11 @@
 package com.nuvio.app.features.settings
 
 import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.features.search.SearchHistoryRepository
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_addons
 import nuvio.composeapp.generated.resources.compose_settings_page_plugins
@@ -9,6 +13,9 @@ import nuvio.composeapp.generated.resources.settings_content_discovery_addons_de
 import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description_appstore
 import nuvio.composeapp.generated.resources.settings_content_discovery_plugins_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_sources
+import nuvio.composeapp.generated.resources.settings_content_discovery_section_search
+import nuvio.composeapp.generated.resources.settings_content_discovery_recent_searches
+import nuvio.composeapp.generated.resources.settings_content_discovery_recent_searches_description
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.contentDiscoveryContent(
@@ -17,6 +24,28 @@ internal fun LazyListScope.contentDiscoveryContent(
     onAddonsClick: () -> Unit,
     onPluginsClick: () -> Unit,
 ) {
+    item {
+        val recentSearchesEnabled by remember {
+            SearchHistoryRepository.ensureLoaded()
+            SearchHistoryRepository.enabled
+        }.collectAsStateWithLifecycle()
+
+        SettingsSection(
+            title = stringResource(Res.string.settings_content_discovery_section_search),
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_content_discovery_recent_searches),
+                    description = stringResource(Res.string.settings_content_discovery_recent_searches_description),
+                    checked = recentSearchesEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = SearchHistoryRepository::setEnabled,
+                )
+            }
+        }
+    }
+
     item {
         SettingsSection(
             title = stringResource(Res.string.settings_content_discovery_section_sources),

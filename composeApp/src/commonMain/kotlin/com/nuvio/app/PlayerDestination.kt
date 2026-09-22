@@ -108,6 +108,8 @@ internal fun PlayerDestination(
                     val launched = launchExternalPlayer(intentResult)
                     if (!launched) {
                         NuvioToastController.show(externalPlayerFailedText)
+                    } else if (externalPlayerId == "infuse") {
+                        onBack()
                     }
                 }
                 ExternalPlayerIntentResult.NotConfigured -> {

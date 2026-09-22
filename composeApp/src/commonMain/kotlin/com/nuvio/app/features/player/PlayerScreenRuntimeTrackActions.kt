@@ -20,19 +20,16 @@ internal val PlayerScreenRuntime.visibleAddonSubtitles: List<AddonSubtitle>
             settings = playerSettingsUiState,
         )
         val selectedId = selectedAddonSubtitleId ?: return filtered
-        val selectedSub = addonSubtitles.firstOrNull { it.id == selectedId || it.url == selectedId } ?: return filtered
-        return if (filtered.any { it.id == selectedSub.id || it.url == selectedSub.url }) {
-            filtered
-        } else {
-            listOf(selectedSub) + filtered
-        }
+        if (filtered.any { it.matchesSelection(selectedId) }) return filtered
+        val selectedSub = addonSubtitles.findSelectedAddon(selectedId) ?: return filtered
+        return listOf(selectedSub) + filtered
     }
 
 internal val PlayerScreenRuntime.selectedAddonSubtitle: AddonSubtitle?
     get() {
         val selectedId = selectedAddonSubtitleId ?: return null
-        return addonSubtitles.firstOrNull { it.id == selectedId || it.url == selectedId }
-            ?: visibleAddonSubtitles.firstOrNull { it.id == selectedId || it.url == selectedId }
+        return addonSubtitles.findSelectedAddon(selectedId)
+            ?: visibleAddonSubtitles.findSelectedAddon(selectedId)
     }
 
 internal fun PlayerScreenRuntime.updateTrackPreference(
@@ -44,6 +41,8 @@ internal fun PlayerScreenRuntime.updateTrackPreference(
 }
 
 internal fun PlayerScreenRuntime.persistAudioPreference(track: AudioTrack?) {
+    isUserExplicitAudioSelection = true
+    preferredAudioSelectionApplied = true
     updateTrackPreference { current ->
         current.copy(
             audioLanguage = track?.language,
@@ -87,27 +86,15 @@ internal fun PlayerScreenRuntime.persistAddonSubtitlePreference(subtitle: AddonS
     }
 }
 
-internal fun PlayerScreenRuntime.restorePersistedTrackPreferenceIfNeeded() {
-    if (trackPreferenceRestoreApplied) return
+internal fun PlayerScreenRuntime.restorePersistedTrackPreferenceIfNeeded(): Boolean {
+    if (trackPreferenceRestoreApplied) return true
     val preference = PlayerTrackPreferenceStorage.load(parentMetaId)
     if (preference == null) {
         trackPreferenceRestoreApplied = true
-        return
+        return true
     }
 
-    if (
-        audioTracks.isNotEmpty() &&
-        (!preference.audioTrackId.isNullOrBlank() ||
-            !preference.audioLanguage.isNullOrBlank() ||
-            !preference.audioName.isNullOrBlank())
-    ) {
-        val restoredAudioIndex = findPersistedAudioTrackIndex(audioTracks, preference)
-        if (restoredAudioIndex >= 0 && restoredAudioIndex != selectedAudioIndex) {
-            playerController?.selectAudioTrack(restoredAudioIndex)
-            selectedAudioIndex = restoredAudioIndex
-        }
-        preferredAudioSelectionApplied = true
-    }
+    restorePersistedAudioPreference(preference)
 
     when (preference.subtitleType) {
         PersistedSubtitleSelectionType.DISABLED -> {
@@ -116,6 +103,7 @@ internal fun PlayerScreenRuntime.restorePersistedTrackPreferenceIfNeeded() {
             selectedAddonSubtitleId = null
             useCustomSubtitles = false
             preferredSubtitleSelectionApplied = true
+            isUserExplicitSubtitleSelection = true
         }
         PersistedSubtitleSelectionType.INTERNAL -> {
             if (subtitleTracks.isNotEmpty()) {
@@ -130,26 +118,45 @@ internal fun PlayerScreenRuntime.restorePersistedTrackPreferenceIfNeeded() {
                     selectedAddonSubtitleId = null
                     useCustomSubtitles = false
                     preferredSubtitleSelectionApplied = true
+                    isUserExplicitSubtitleSelection = true
                 }
             }
         }
         PersistedSubtitleSelectionType.ADDON -> {
-            val url = preference.addonSubtitleUrl?.takeIf { it.isNotBlank() }
-            if (url != null) {
-                selectedAddonSubtitleId = preference.addonSubtitleId ?: url
-                selectedSubtitleIndex = -1
-                useCustomSubtitles = true
-                playerController?.setSubtitleUri(url)
-                preferredSubtitleSelectionApplied = true
+            if (!isUserExplicitSubtitleSelection) {
+                val fetchKey = addonSubtitleFetchKey.takeUnless {
+                    activeSourceUrl.startsWith("file:") && externalSubtitles.isNotEmpty()
+                }
+                if (fetchKey != null && autoFetchedAddonSubtitlesForKey != fetchKey) return false
+
+                val subtitle = findPersistedAddonSubtitle(addonSubtitles, preference)
+                val canRestoreWhileLoading = subtitle != null && (
+                    subtitle.url == preference.addonSubtitleUrl ||
+                        preference.addonSubtitleAddonName.isNullOrBlank() ||
+                        subtitle.addonName.equals(preference.addonSubtitleAddonName, ignoreCase = true)
+                    )
+                if (isLoadingAddonSubtitles && !canRestoreWhileLoading) return false
+                if (subtitle != null) {
+                    selectedAddonSubtitleId = subtitle.selectionKey
+                    selectedSubtitleIndex = -1
+                    useCustomSubtitles = true
+                    playerController?.setSubtitleUri(subtitle.url)
+                    preferredSubtitleSelectionApplied = true
+                    isUserExplicitSubtitleSelection = true
+                }
             }
         }
     }
 
-    trackPreferenceRestoreApplied = true
+    trackPreferenceRestoreApplied = audioTracks.isNotEmpty() ||
+        (preference.audioTrackId.isNullOrBlank() && preference.audioLanguage.isNullOrBlank() &&
+            preference.audioName.isNullOrBlank())
+    return true
 }
 
 internal fun PlayerScreenRuntime.refreshTracks() {
     val ctrl = playerController ?: return
+    val previousAudioIndex = selectedAudioIndex
     audioTracks = ctrl.getAudioTracks()
     subtitleTracks = ctrl.getSubtitleTracks()
     val selectedAudio = audioTracks.firstOrNull { it.isSelected }
@@ -160,36 +167,19 @@ internal fun PlayerScreenRuntime.refreshTracks() {
         hasScannedTextTracksOnce = true
     }
 
-    restorePersistedTrackPreferenceIfNeeded()
-
-    val preferredAudioTargets = resolvePreferredAudioLanguageTargets(
-        preferredAudioLanguage = playerSettingsUiState.preferredAudioLanguage,
-        secondaryPreferredAudioLanguage = playerSettingsUiState.secondaryPreferredAudioLanguage,
-        deviceLanguages = DeviceLanguagePreferences.preferredLanguageCodes(),
-        contentOriginalLanguage = resolveContentLanguage(
-            language = metaUiState.meta?.language,
-            country = metaUiState.meta?.country,
-        ) ?: args.contentLanguage,
-    )
-
-    if (!preferredAudioSelectionApplied) {
-        if (preferredAudioTargets.isEmpty()) {
-            preferredAudioSelectionApplied = true
-        } else if (audioTracks.isNotEmpty()) {
-            val preferredAudioIndex = findPreferredTrackIndex(
-                tracks = audioTracks,
-                targets = preferredAudioTargets,
-                language = ::resolveAudioTrackLanguageTarget,
-            )
-            if (preferredAudioIndex >= 0 && preferredAudioIndex != selectedAudioIndex) {
-                playerController?.selectAudioTrack(preferredAudioIndex)
-                selectedAudioIndex = preferredAudioIndex
-            }
-            preferredAudioSelectionApplied = true
-        }
+    if (selectedAudioIndex != previousAudioIndex && !isUserExplicitSubtitleSelection) {
+        preferredSubtitleSelectionApplied = false
     }
 
-    tryAutoSelectPreferredSubtitleFromAvailableTracks(preferredAudioTargets)
+    val subtitlePreferenceReady = restorePersistedTrackPreferenceIfNeeded()
+
+    val preferredAudioTargets = preferredAudioLanguageTargets
+
+    applyPreferredAudioTrack(preferredAudioTargets)
+
+    if (subtitlePreferenceReady && (preferredAudioSelectionApplied || audioTracks.isEmpty())) {
+        tryAutoSelectPreferredSubtitleFromAvailableTracks(preferredAudioTargets)
+    }
 }
 
 private fun PlayerScreenRuntime.tryAutoSelectPreferredSubtitleFromAvailableTracks(
@@ -272,7 +262,7 @@ private fun PlayerScreenRuntime.tryAutoSelectPreferredSubtitleFromAvailableTrack
             }
             if (primaryAddonMatch != null) {
                 preferredSubtitleSelectionApplied = true
-                selectedAddonSubtitleId = primaryAddonMatch.id
+                selectedAddonSubtitleId = primaryAddonMatch.selectionKey
                 selectedSubtitleIndex = -1
                 useCustomSubtitles = true
                 playerController?.setSubtitleUri(primaryAddonMatch.url)
@@ -314,7 +304,7 @@ private fun PlayerScreenRuntime.tryAutoSelectPreferredSubtitleFromAvailableTrack
         }
         preferredSubtitleSelectionApplied = true
         if (forcedAddonMatch != null) {
-            selectedAddonSubtitleId = forcedAddonMatch.id
+            selectedAddonSubtitleId = forcedAddonMatch.selectionKey
             selectedSubtitleIndex = -1
             useCustomSubtitles = true
             playerController?.setSubtitleUri(forcedAddonMatch.url)
@@ -352,7 +342,7 @@ private fun PlayerScreenRuntime.tryAutoSelectPreferredSubtitleFromAvailableTrack
     }
     if (addonMatch != null) {
         preferredSubtitleSelectionApplied = true
-        selectedAddonSubtitleId = addonMatch.id
+        selectedAddonSubtitleId = addonMatch.selectionKey
         selectedSubtitleIndex = -1
         useCustomSubtitles = true
         playerController?.setSubtitleUri(addonMatch.url)

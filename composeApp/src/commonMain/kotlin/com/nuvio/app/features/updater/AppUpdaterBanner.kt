@@ -56,7 +56,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.ui.AppTheme
-import com.nuvio.app.core.ui.ThemeColors
+import com.nuvio.app.core.ui.themePalette
 import com.nuvio.app.core.ui.accentBrush
 import com.nuvio.app.core.ui.appTheme
 import com.nuvio.app.core.ui.nuvio
@@ -179,7 +179,7 @@ private fun AppUpdateBanner(
     )
     val containerColor = MaterialTheme.colorScheme.surfaceContainerHigh
     val isWhiteTheme = MaterialTheme.appTheme == AppTheme.WHITE
-    val progressBrush = ThemeColors.getColorPalette(MaterialTheme.appTheme).accentBrush()
+    val progressBrush = MaterialTheme.themePalette.accentBrush()
     val progressAlpha = if (isWhiteTheme) 0.18f else 1f
     val dividerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f)
     val debugTestComplete = state.isDebugTest && !state.isDownloading && !state.isUpdateAvailable

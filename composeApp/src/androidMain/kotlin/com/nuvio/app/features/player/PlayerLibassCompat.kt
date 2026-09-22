@@ -60,6 +60,16 @@ internal fun ExoPlayer.Builder.buildWithAssSupportCompat(
 internal fun ExoPlayer.getAssHandlerCompat(): AssHandler? = assHandlersByPlayer[this]
 
 @OptIn(UnstableApi::class)
+internal fun ExoPlayer.releaseWithAssSupportCompat() {
+    val assHandler = assHandlersByPlayer.remove(this)
+    try {
+        release()
+    } finally {
+        assHandler?.release()
+    }
+}
+
+@OptIn(UnstableApi::class)
 private class CompatAssSubtitleParserFactory(
     private val assHandler: AssHandler
 ) : SubtitleParser.Factory {

@@ -827,11 +827,8 @@
     <string name="settings_playback_timeout_unlimited">Korlátlan</string>
     <string name="settings_playback_tunneled_playback">Alagutalt lejátszás (Tunneled)</string>
     <string name="settings_playback_tunneled_playback_description">Hardverszintű hang- és videószinkronizáció. Javíthatja a lejátszást egyes Android TV eszközökön.</string>
-    <string name="settings_tmdb_add_api_key_first">Az adatbővítés bekapcsolása előtt add meg a saját TMDB API-kulcsodat alább.</string>
-    <string name="settings_tmdb_api_key_label">API-kulcs</string>
     <string name="settings_tmdb_enable_enrichment">TMDB adatbővítés engedélyezése</string>
     <string name="settings_tmdb_enable_enrichment_description">A TMDB használata metaadat-forrásként a kiegészítők adatainak felbővítéséhez</string>
-    <string name="settings_tmdb_enter_api_key">Add meg a TMDB v3 API-kulcsodat.</string>
     <string name="settings_tmdb_language_code_label">Nyelvkód</string>
     <string name="settings_tmdb_module_artwork">Borítóképek és grafikák</string>
     <string name="settings_tmdb_module_artwork_description">Logók és háttérképek a TMDB-ről</string>
@@ -855,10 +852,8 @@
     <string name="settings_tmdb_module_season_posters_description">TMDB évadposzterek használata a sorozatok évadválasztó képernyőjén.</string>
     <string name="settings_tmdb_module_trailers">Előzetesek</string>
     <string name="settings_tmdb_module_trailers_description">Előzetesek a TMDB videóiból a részletek oldalon megjelenő szekcióhoz</string>
-    <string name="settings_tmdb_personal_api_key">Saját API-kulcs</string>
     <string name="settings_tmdb_preferred_language">Nyelv</string>
     <string name="settings_tmdb_preferred_language_description">A TMDB metaadatok (cím, logó és engedélyezett mezők) nyelve</string>
-    <string name="settings_tmdb_section_credentials">HITELOSÍTÓ ADATOK</string>
     <string name="settings_tmdb_section_localization">LOKALIZÁCIÓ</string>
     <string name="settings_tmdb_section_modules">MODULOK</string>
     <string name="settings_tmdb_section_title">TMDB ADATBŐVÍTÉS</string>
@@ -1553,7 +1548,6 @@
     <string name="trakt_error_add_list_failed">Nem sikerült hozzáadni a Trakt listához</string>
     <string name="trakt_error_missing_ids">Hiányzó kompatibilis Trakt azonosítók</string>
     <string name="trakt_error_empty_response">Üres válasz törzs (body)</string>
-    <string name="tmdb_sources_api_key_required">A TMDB források használatához adj meg egy TMDB API kulcsot a Beállításokban.</string>
     <string name="tmdb_sources_collection_fallback_title">%1$d. TMDB gyűjtemény</string>
     <string name="tmdb_sources_collection_not_found">A TMDB gyűjtemény nem található</string>
     <string name="tmdb_sources_company_fallback_title">%1$d. TMDB gyártó cég</string>
@@ -1764,7 +1758,6 @@
     <string name="collections_editor_tmdb_production_title_format">%1$s. TMDB gyártó cég</string>
     <string name="collections_editor_tmdb_source_load_failed">Nem sikerült betölteni a TMDB forrást</string>
     <string name="collections_editor_trakt_list_id_format">ID: %1$s</string>
-    <string name="collections_tmdb_api_key_required">A TMDB források használatához adj meg egy TMDB API kulcsot a Beállításokban.</string>
     <string name="collections_tmdb_collection_not_found">A TMDB gyűjtemény nem található</string>
     <string name="collections_tmdb_company_not_found">A TMDB cég nem található</string>
     <string name="collections_tmdb_discover_no_data">A TMDB felfedezés nem adott vissza adatot</string>
@@ -1807,8 +1800,6 @@
     <string name="plugins_badge_providers">%1$d szolgáltató</string>
     <string name="plugins_badge_refreshing">Frissítés…</string>
     <string name="plugins_badge_repos">%1$d repó</string>
-    <string name="plugins_badge_tmdb_key_missing">Hiányzó TMDB API kulcs</string>
-    <string name="plugins_badge_tmdb_key_set">TMDB API kulcs beállítva</string>
     <string name="plugins_button_install_repo">Bővítmény-tároló (Repo) telepítése</string>
     <string name="plugins_button_installing">Telepítés...</string>
     <string name="plugins_button_test_provider">Szolgáltató tesztelése</string>
@@ -1852,7 +1843,6 @@
     <string name="plugins_test_error_title">Hiba</string>
     <string name="plugins_test_failed">A szolgáltató tesztelése meghiúsult</string>
     <string name="plugins_test_results_count">Teszt eredmények (%1$d)</string>
-    <string name="plugins_tmdb_required_message">A szolgáltatói bővítményekhez TMDB API kulcs szükséges. Állítsd be a TMDB képernyőn, különben a bővítmények nem fognak megfelelően működni.</string>
     <string name="search_error_no_results_for_catalog">Nincs találat a(z) %1$s katalógusban.</string>
     <string name="settings_playback_introdb_invalid_key">Érvénytelen API kulcs vagy a kapcsolódás meghiúsult</string>
     <string name="streams_plugin_repository_fallback">Bővítmény-tároló</string>
@@ -2020,8 +2010,6 @@
     <string name="upcoming_section_title">Közelgő</string>
     <string name="settings_playback_auto_play_next_episode_fallback">Tartalék megoldás, ha a sorozatkiadás nem található</string>
     <string name="settings_playback_auto_play_next_episode_fallback_description">Automatikusan az első elérhető stream kiválasztása, ha nem található binge-csoport. Ha ki van kapcsolva, a stream-választó jelenik meg helyette.</string>
-    <string name="settings_tmdb_module_release_dates">Megjelenési dátumok</string>
-    <string name="settings_tmdb_module_release_dates_description">A TMDB műsorszolgáltatói premierdátumainak használata a pontos bővítményes megjelenési idők helyett</string>
     <string name="settings_tracking_data_sources">Források</string>
     <string name="settings_tracking_features">FORRÁS BEÁLLÍTÁSOK</string>
     <string name="settings_tracking_viewing_discovery">Trakt funkciók</string>
@@ -2131,4 +2119,12 @@
     <string name="player_torrent_preparing_stream">Torrent stream előkészítése...</string>
     <string name="player_torrent_connecting_status">%1$s · %2$s · %3$s</string>
     <string name="player_torrent_loading_status">%1$s letöltve · %2$s · %3$s</string>
+    <string name="layout_overall_ratings">Általános értékelések</string>
+    <string name="layout_overall_ratings_sub_on">A normál és a TMDB értékelések látszanak.</string>
+    <string name="layout_overall_ratings_sub_off">A normál és a TMDB értékelések rejtve vannak. A részletek oldalon az MDBList szolgáltatóbeállításai élveznek elsőbbséget.</string>
+    <string name="layout_episode_ratings">Epizódértékelések</string>
+    <string name="layout_episode_ratings_sub">Válaszd ki, mely epizódértékelések látszanak.</string>
+    <string name="layout_ratings_show">Megjelenítés</string>
+    <string name="layout_ratings_hide">Elrejtés</string>
+    <string name="layout_ratings_hide_unwatched">Nem látottak elrejtése</string>
 </resources>

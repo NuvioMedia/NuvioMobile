@@ -5,25 +5,26 @@ android-compileSdkMinor = "0"
 android-minSdk = "24"
 android-targetSdk = "36"
 androidx-activity = "1.12.2"
-androidx-navigation3 = "1.1.1"
+androidx-navigation3 = "1.2.0-alpha02"
 androidx-appcompat = "1.7.1"
 androidx-core = "1.17.0"
 androidx-core-splashscreen = "1.0.1"
 androidx-espresso = "3.7.0"
-androidx-lifecycle = "2.11.0-beta01"
+androidx-lifecycle = "2.11.0"
+androidx-savedstate = "1.4.0"
 androidx-work = "2.10.3"
 androidx-testExt = "1.3.0"
-composeMultiplatform = "1.11.1"
-coil = "3.5.0-beta01"
-compottie = "2.1.0"
+composeMultiplatform = "1.12.0"
+coil = "3.6.3"
 kermit = "2.0.5"
 junit = "4.13.2"
 kotlin = "2.4.10"
-kotlinx-serialization = "1.8.1"
+kotlinx-coroutines = "1.10.2"
+kotlinx-serialization = "1.10.0"
 atomicfu = "0.32.1"
 kmpalette = "4.0.0-beta02"
 ktor = "3.4.1"
-material3 = "1.11.0-alpha07"
+material3 = "1.12.0-alpha03"
 androidx-media3 = "1.8.0"
 mpv-android-lib = "0.1.12"
 supabase = "3.4.1"
@@ -48,19 +49,22 @@ androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigat
 compose-uiTooling = { module = "org.jetbrains.compose.ui:ui-tooling", version.ref = "composeMultiplatform" }
 androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+androidx-savedstate = { module = "org.jetbrains.androidx.savedstate:savedstate", version.ref = "androidx-savedstate" }
+androidx-savedstate-compose = { module = "org.jetbrains.androidx.savedstate:savedstate-compose", version.ref = "androidx-savedstate" }
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work" }
 compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
 compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-materialRipple = { module = "org.jetbrains.compose.material:material-ripple", version.ref = "composeMultiplatform" }
 compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "composeMultiplatform" }
 compose-uiToolingPreview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
-compottie = { module = "io.github.alexzhirkevich:compottie", version.ref = "compottie" }
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" }
 coil-gif = { module = "io.coil-kt.coil3:coil-gif", version.ref = "coil" }
 coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 coil-network-cache-control = { module = "io.coil-kt.coil3:coil-network-cache-control", version.ref = "coil" }
 coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coil" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
 kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
 kotlinx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "atomicfu" }
 kmpalette-core = { module = "com.materialkolor.palette:core", version.ref = "kmpalette" }

@@ -1,8 +1,8 @@
 package com.nuvio.app.features.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -41,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -56,6 +57,7 @@ import com.nuvio.app.features.streams.StreamBadgeImportResult
 import com.nuvio.app.features.streams.StreamBadgePlacement
 import com.nuvio.app.features.streams.StreamBadgeRules
 import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
+import com.nuvio.app.features.streams.StreamBackgroundMode
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_cancel
@@ -89,6 +91,10 @@ import nuvio.composeapp.generated.resources.settings_stream_size_badges_title
 import nuvio.composeapp.generated.resources.settings_stream_addon_logo_title
 import nuvio.composeapp.generated.resources.settings_stream_addon_logo_description
 import nuvio.composeapp.generated.resources.settings_stream_display_section
+import nuvio.composeapp.generated.resources.settings_stream_background_title
+import nuvio.composeapp.generated.resources.settings_stream_background_description
+import nuvio.composeapp.generated.resources.settings_meta_background_mode_cinematic
+import nuvio.composeapp.generated.resources.settings_meta_background_mode_normal
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
@@ -100,6 +106,7 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
         val currentRules = currentSettings.rules
         var showBadgeImportDialog by rememberSaveable { mutableStateOf(false) }
         var showBadgePositionDialog by rememberSaveable { mutableStateOf(false) }
+        var showBackgroundDialog by rememberSaveable { mutableStateOf(false) }
         val badgePlacementLabel = streamBadgePlacementLabel(currentSettings.badgePlacement)
 
         SettingsSection(
@@ -140,6 +147,14 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
+                if (!isTablet) {
+                    SettingsNavigationRow(
+                        title = stringResource(Res.string.settings_stream_background_title),
+                        description = streamBackgroundModeLabel(currentSettings.backgroundMode),
+                        isTablet = false,
+                        onClick = { showBackgroundDialog = true },
+                    )
+                }
                 SettingsSwitchRow(
                     title = stringResource(Res.string.settings_stream_addon_logo_title),
                     description = stringResource(Res.string.settings_stream_addon_logo_description),
@@ -154,6 +169,17 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
             BadgeUrlManagerDialog(
                 currentRules = currentRules,
                 onDismiss = { showBadgeImportDialog = false },
+            )
+        }
+
+        if (showBackgroundDialog && !isTablet) {
+            StreamBackgroundModeDialog(
+                selectedMode = currentSettings.backgroundMode,
+                onModeSelected = { mode ->
+                    StreamBadgeSettingsRepository.setBackgroundMode(mode)
+                    showBackgroundDialog = false
+                },
+                onDismiss = { showBackgroundDialog = false },
             )
         }
 
@@ -176,6 +202,56 @@ private fun streamBadgePlacementLabel(placement: StreamBadgePlacement): String =
         StreamBadgePlacement.TOP -> stringResource(Res.string.settings_stream_badge_position_top)
         StreamBadgePlacement.BOTTOM -> stringResource(Res.string.settings_stream_badge_position_bottom)
     }
+
+@Composable
+private fun streamBackgroundModeLabel(mode: StreamBackgroundMode): String = stringResource(
+    when (mode) {
+        StreamBackgroundMode.Cinematic -> Res.string.settings_meta_background_mode_cinematic
+        StreamBackgroundMode.Normal -> Res.string.settings_meta_background_mode_normal
+    },
+)
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun StreamBackgroundModeDialog(
+    selectedMode: StreamBackgroundMode,
+    onModeSelected: (StreamBackgroundMode) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
+    BasicAlertDialog(onDismissRequest = onDismiss) {
+        SettingsDialogSurface(title = stringResource(Res.string.settings_stream_background_title)) {
+            Text(
+                text = stringResource(Res.string.settings_stream_background_description),
+                style = MaterialTheme.typography.bodyMedium,
+                color = tokens.colors.textSecondary,
+            )
+            StreamBackgroundMode.entries.forEach { mode ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().selectable(
+                        selected = mode == selectedMode,
+                        role = Role.RadioButton,
+                        onClick = { onModeSelected(mode) },
+                    ).padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
+                ) {
+                    RadioButton(selected = mode == selectedMode, onClick = null)
+                    Text(
+                        text = streamBackgroundModeLabel(mode),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = tokens.colors.textPrimary,
+                    )
+                }
+            }
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(Res.string.action_cancel), maxLines = 1)
+                }
+            }
+        }
+    }
+}
 
 @Composable
 private fun badgeRulesPreview(rules: StreamBadgeRules): String {
@@ -560,33 +636,6 @@ private fun BadgePreviewDialog(
                     Text(text = stringResource(Res.string.action_close), maxLines = 1)
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun SettingsDialogSurface(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    val tokens = MaterialTheme.nuvio
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = tokens.shapes.dialog,
-        color = tokens.colors.surfaceDialog,
-    ) {
-        Column(
-            modifier = Modifier.padding(tokens.spacing.dialogPadding),
-            verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap),
-        ) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleLarge,
-                color = tokens.colors.textPrimary,
-                fontWeight = FontWeight.SemiBold,
-            )
-            content()
-            Spacer(modifier = Modifier.height(NuvioTokens.Space.s2))
         }
     }
 }

@@ -12,14 +12,19 @@ import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.http.HttpHeaders
 import io.ktor.http.takeFrom
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
 object SupabaseProvider {
+    private val clientLock = SynchronizedObject()
     private var cachedClient: SupabaseClient? = null
     private val rateLimitCoordinator = BackendRateLimitCoordinator()
 
     @OptIn(SupabaseInternal::class)
     val client: SupabaseClient
-        get() = cachedClient ?: createClient().also { cachedClient = it }
+        get() = synchronized(clientLock) {
+            cachedClient ?: createClient().also { cachedClient = it }
+        }
 
     @OptIn(SupabaseInternal::class)
     private fun createClient(): SupabaseClient {
@@ -103,9 +108,12 @@ object SupabaseProvider {
     }
 
     suspend fun reset() {
-        val previous = cachedClient
-        cachedClient = null
-        rateLimitCoordinator.clear()
+        val previous = synchronized(clientLock) {
+            cachedClient.also {
+                cachedClient = null
+                rateLimitCoordinator.clear()
+            }
+        }
         previous?.close()
     }
 }

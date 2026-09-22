@@ -12,6 +12,7 @@ import kotlin.random.Random
 internal class DomBridge : HostModule {
     private val documentCache = mutableMapOf<String, Document>()
     private val elementCache = mutableMapOf<String, Element>()
+    private val loadedDocIds = mutableListOf<String>()
     private var idCounter = 0
     private val containsRegex = Regex(""":contains\([\"']([^\"']+)[\"']\)""")
 
@@ -20,6 +21,8 @@ internal class DomBridge : HostModule {
             val html = args.getOrNull(0)?.toString() ?: ""
             val docId = "doc_${idCounter++}_${Random.nextInt(0, Int.MAX_VALUE)}"
             documentCache[docId] = Ksoup.parse(html)
+            loadedDocIds.add(docId)
+            evictOldestDocumentsIfNeeded()
             docId
         }
 
@@ -114,5 +117,19 @@ internal class DomBridge : HostModule {
     fun clear() {
         documentCache.clear()
         elementCache.clear()
+        loadedDocIds.clear()
+    }
+
+    private fun evictOldestDocumentsIfNeeded() {
+        while (loadedDocIds.size > MAX_CACHED_DOCUMENTS) {
+            val evictedId = loadedDocIds.removeAt(0)
+            documentCache.remove(evictedId)
+            val staleKeys = elementCache.keys.filter { it.startsWith("$evictedId:") }
+            staleKeys.forEach { elementCache.remove(it) }
+        }
+    }
+
+    private companion object {
+        const val MAX_CACHED_DOCUMENTS = 8
     }
 }

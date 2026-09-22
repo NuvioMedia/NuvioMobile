@@ -31,7 +31,6 @@ jobs:
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
-      release_commit: ${{ steps.release.outputs.release_commit }}
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
@@ -142,6 +141,7 @@ jobs:
     needs: prepare
     runs-on: ubuntu-latest
     env:
+      RELEASE_VERSION: ${{ needs.prepare.outputs.tag }}
       RELEASE_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
       RELEASE_KEYSTORE_BASE64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
 
@@ -182,7 +182,7 @@ jobs:
           done
 
       - name: Build full release APKs
-        run: ./gradlew :androidApp:assembleFullRelease --stacktrace
+        run: ./gradlew :androidApp:assembleFullRelease -Pnuvio.app.versionName="${RELEASE_VERSION}" --stacktrace
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v7
@@ -196,7 +196,7 @@ jobs:
     if: inputs.mode != 'dry-run'
     needs: prepare
     runs-on: macos-26
-    timeout-minutes: 75
+    timeout-minutes: 120
     env:
       DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
       GRADLE_OPTS: -Dfile.encoding=UTF-8
@@ -275,8 +275,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       RELEASE_MODE: ${{ inputs.mode }}
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-      RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
-      RELEASE_COMMIT: ${{ needs.prepare.outputs.release_commit }}
+      RELEASE_VERSION: ${{ needs.prepare.outputs.tag }}
+      RELEASE_BRANCH: ${{ github.ref_name }}
 
     steps:
       - name: Download release artifacts
@@ -296,7 +296,7 @@ jobs:
           release_args=(
             "${RELEASE_TAG}"
             --repo "${GITHUB_REPOSITORY}"
-            --target "${RELEASE_COMMIT}"
+            --target "${RELEASE_BRANCH}"
             --title "${RELEASE_VERSION}"
             --notes-file release-assets/release-notes.md
           )

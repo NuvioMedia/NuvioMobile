@@ -7,7 +7,6 @@ import com.nuvio.app.core.time.parseEpisodeReleaseEpochMs
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
-import co.touchlab.kermit.Logger
 
 @Composable
 fun computeAirDateBadgeText(
@@ -54,19 +53,13 @@ fun calculateReleaseAlertState(
     seedSeasonNumber: Int?,
     nextSeasonNumber: Int?,
     releasedIso: String?,
+    releaseEpochMs: Long? = parseReleaseDateToEpochMs(releasedIso),
+    nowEpochMs: Long = WatchProgressClock.nowEpochMs(),
 ): ReleaseAlertState {
-    val releaseEpoch = parseReleaseDateToEpochMs(releasedIso)
-    val nowMs = WatchProgressClock.nowEpochMs()
-
-    val log = Logger.withTag("ReleaseAlert")
-    log.d {
-        "calculateReleaseAlertState inputs: releasedIso=$releasedIso, " +
-        "releaseEpoch=$releaseEpoch, seedLastUpdatedEpochMs=$seedLastUpdatedEpochMs, " +
-        "seedSeasonNumber=$seedSeasonNumber, nextSeasonNumber=$nextSeasonNumber, nowMs=$nowMs"
-    }
+    val releaseEpoch = releaseEpochMs
+    val nowMs = nowEpochMs
 
     if (releaseEpoch == null) {
-        log.d { "calculateReleaseAlertState failed: releaseEpoch is null" }
         return ReleaseAlertState(false, false)
     }
 
@@ -80,12 +73,6 @@ fun calculateReleaseAlertState(
         seedSeasonNumber != null &&
         nextSeasonNumber != null &&
         nextSeasonNumber != seedSeasonNumber
-
-    log.d {
-        "calculateReleaseAlertState result: isReleaseAlert=$isReleaseAlert (hasAired=$hasAired, " +
-        "epoch>seed=${releaseEpoch > seedLastUpdatedEpochMs}, ageMs=${nowMs - releaseEpoch}), " +
-        "isNewSeasonRelease=$isNewSeasonRelease"
-    }
 
     return ReleaseAlertState(
         isReleaseAlert = isReleaseAlert,

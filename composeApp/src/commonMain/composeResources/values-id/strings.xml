@@ -893,11 +893,8 @@
     <string name="settings_playback_timeout_unlimited">Tak Terbatas</string>
     <string name="settings_playback_tunneled_playback">Pemutaran Tunneled</string>
     <string name="settings_playback_tunneled_playback_description">Sinkronisasi audio/video tingkat hardware. Dapat meningkatkan pemutaran di beberapa perangkat Android TV</string>
-    <string name="settings_tmdb_add_api_key_first">Tambahkan kunci API TMDB Anda sendiri di bawah sebelum mengaktifkan pengayaan.</string>
-    <string name="settings_tmdb_api_key_label">Kunci API</string>
     <string name="settings_tmdb_enable_enrichment">Aktifkan Pengayaan TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Gunakan TMDB sebagai sumber metadata untuk meningkatkan data addon</string>
-    <string name="settings_tmdb_enter_api_key">Masukkan kunci API v3 TMDB Anda.</string>
     <string name="settings_tmdb_language_code_label">Kode bahasa</string>
     <string name="settings_tmdb_module_artwork">Gambar</string>
     <string name="settings_tmdb_module_artwork_description">Gambar logo dan latar dari TMDB</string>
@@ -921,10 +918,8 @@
     <string name="settings_tmdb_module_season_posters_description">Gunakan poster musim TMDB di pemilih musim layar metadata untuk serial.</string>
     <string name="settings_tmdb_module_trailers">Trailer</string>
     <string name="settings_tmdb_module_trailers_description">Kandidat trailer dari video TMDB untuk bagian trailer detail</string>
-    <string name="settings_tmdb_personal_api_key">Kunci API pribadi</string>
     <string name="settings_tmdb_preferred_language">Bahasa</string>
     <string name="settings_tmdb_preferred_language_description">Bahasa metadata TMDB untuk judul, logo, dan kolom yang diaktifkan</string>
-    <string name="settings_tmdb_section_credentials">KREDENSIAL</string>
     <string name="settings_tmdb_section_localization">LOKALISASI</string>
     <string name="settings_tmdb_section_modules">MODUL</string>
     <string name="settings_tmdb_section_title">PENGAYAAN TMDB</string>

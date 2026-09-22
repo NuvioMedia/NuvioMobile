@@ -57,6 +57,7 @@ internal actual fun NuvioNativeModalBottomSheet(
     val themeTokens = LocalNuvioThemeTokens.current
     val typeScale = LocalNuvioTypeScale.current
     val appTheme = LocalAppTheme.current
+    val themePalette = LocalThemePalette.current
     val density = LocalDensity.current
     val rippleConfiguration = LocalRippleConfiguration.current
 
@@ -66,6 +67,7 @@ internal actual fun NuvioNativeModalBottomSheet(
     val latestThemeTokens = rememberUpdatedState(themeTokens)
     val latestTypeScale = rememberUpdatedState(typeScale)
     val latestAppTheme = rememberUpdatedState(appTheme)
+    val latestThemePalette = rememberUpdatedState(themePalette)
     val latestDensity = rememberUpdatedState(density)
     val latestRippleConfiguration = rememberUpdatedState(rippleConfiguration)
 
@@ -79,6 +81,7 @@ internal actual fun NuvioNativeModalBottomSheet(
                 LocalNuvioThemeTokens provides latestThemeTokens.value,
                 LocalNuvioTypeScale provides latestTypeScale.value,
                 LocalAppTheme provides latestAppTheme.value,
+                LocalThemePalette provides latestThemePalette.value,
                 LocalRippleConfiguration provides latestRippleConfiguration.value,
             ) {
                 MaterialTheme(

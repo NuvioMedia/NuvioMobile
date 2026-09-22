@@ -117,6 +117,54 @@ class SimklMutationReconciliationTest {
     }
 
     @Test
+    fun `newly watched movie has a poster before the next library refresh`() {
+        val posterUrl = "https://catalog.example/poster.webp"
+        val receipt = movieHistoryReceipt(posterUrl)
+        val snapshot = SimklSyncSnapshot(
+            isInitialized = true,
+            watermark = "v1",
+            lastCheckedAtEpochMs = 1_700_000_000_000L,
+        )
+
+        val updated = snapshot.applyMutationReceipt(receipt, 1_700_000_100_000L)
+        val item = updated.toSimklLibraryProjection().items.single()
+
+        assertEquals("tt1375666", item.id)
+        assertEquals(setOf("simkl:status:completed"), item.listKeys)
+        assertEquals(posterUrl, item.poster)
+        assertNull(updated.entries.single().media?.poster)
+        assertEquals("v1", updated.watermark)
+        assertEquals(snapshot.lastCheckedAtEpochMs, updated.lastCheckedAtEpochMs)
+        assertFalse(receipt.requiresReconciliation)
+    }
+
+    @Test
+    fun `marking a movie watched preserves existing library artwork`() {
+        val existingPoster = "https://catalog.example/existing.webp"
+        val receipt = movieHistoryReceipt("https://catalog.example/new.webp")
+        listOf(null, "movie-poster").forEach { simklPoster ->
+            val snapshot = SimklSyncSnapshot(
+                entries = listOf(
+                    SimklLibraryEntry(
+                        mediaType = SimklMediaType.MOVIES,
+                        status = SimklListStatus.PLAN_TO_WATCH,
+                        localPosterUrl = existingPoster,
+                        movie = movieMedia().copy(poster = simklPoster),
+                    ),
+                ),
+            )
+
+            val updated = snapshot.applyMutationReceipt(receipt, 1_700_000_100_000L)
+
+            assertEquals(existingPoster, updated.entries.single().localPosterUrl)
+            assertEquals(
+                simklPosterUrl(simklPoster) ?: existingPoster,
+                updated.toSimklLibraryProjection().items.single().poster,
+            )
+        }
+    }
+
+    @Test
     fun `history response records episode and resolved anime classification locally`() {
         val request = TrackingHistoryItem(
             media = anime(TrackingEpisode(number = 3)),
@@ -259,6 +307,28 @@ class SimklMutationReconciliationTest {
         assertEquals("v1", updated.watermark)
         assertFalse(receipt.requiresReconciliation)
     }
+
+    private fun movieHistoryReceipt(posterUrl: String): SimklMutationReceipt = response(
+        """
+        {
+          "added": {
+            "movies": 1,
+            "shows": 0,
+            "episodes": 0,
+            "statuses": [
+              {
+                "request": {"ids": {"simkl": 472214, "imdb": "tt1375666"}, "type": "movie"},
+                "response": {"status": "completed", "simkl_type": "movie"}
+              }
+            ]
+          },
+          "not_found": {"movies": [], "shows": [], "episodes": []}
+        }
+        """,
+    ).toHistoryMutationReceipt(
+        listOf(TrackingHistoryItem(media = movie().copy(posterUrl = posterUrl))),
+        json,
+    )
 
     private fun response(body: String) = SimklApiResponse(
         status = 201,
