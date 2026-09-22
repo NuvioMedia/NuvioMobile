@@ -1190,8 +1190,6 @@
     <string name="settings_tmdb_module_credits_description">Актьорски състав със снимки, режисьор и сценарист от TMDB</string>
     <string name="settings_tmdb_module_details">Детайли</string>
     <string name="settings_tmdb_module_details_description">Продължителност, статус, страна и език от TMDB</string>
-    <string name="settings_tmdb_module_release_dates">Дата на излъчване</string>
-    <string name="settings_tmdb_module_release_dates_description">Използвай TMDB дати на излъчване вместо точни времена от добавките</string>
     <string name="settings_tmdb_module_episodes">Епизоди</string>
     <string name="settings_tmdb_module_episodes_description">Заглавия, описания, миниатюри и продължителност на епизоди от TMDB</string>
     <string name="settings_tmdb_module_more_like_this">Подобни</string>

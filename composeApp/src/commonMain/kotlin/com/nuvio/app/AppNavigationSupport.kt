@@ -12,9 +12,11 @@ import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.player.ExternalPlayerPlaybackRequest
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
+import com.nuvio.app.features.player.externalPlaybackSession
 import com.nuvio.app.features.streams.StreamLaunchStore
 import com.nuvio.app.features.streams.StreamsRepository
 import com.nuvio.app.features.watchprogress.ResumePromptRepository
+import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.navigation.*
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
@@ -90,6 +92,13 @@ internal fun PlayerLaunch.toExternalPlayerPlaybackRequest(): ExternalPlayerPlayb
         streamTitle = streamTitle,
         sourceHeaders = sourceHeaders,
         resumePositionMs = initialPositionMs,
+        durationMs = WatchProgressRepository.progressForVideo(
+            videoId = videoId ?: parentMetaId,
+            parentMetaId = parentMetaId,
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+        )?.durationMs?.takeIf { it > 0L },
+        playbackSession = externalPlaybackSession(),
         season = seasonNumber,
         episode = episodeNumber,
         episodeTitle = episodeTitle,

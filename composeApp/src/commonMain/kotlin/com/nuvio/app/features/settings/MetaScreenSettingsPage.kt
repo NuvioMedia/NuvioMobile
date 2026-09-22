@@ -162,6 +162,8 @@ internal fun LazyListScope.metaScreenSettingsContent(
                     onCheckedChange = { MetaScreenSettingsRepository.setTabLayout(it) },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
+                RatingsSettings(isTablet = isTablet, uiState = uiState)
+                SettingsGroupDivider(isTablet = isTablet)
                 MetaEpisodeCardStyleSelector(
                     isTablet = isTablet,
                     selectedStyle = uiState.episodeCardStyle,

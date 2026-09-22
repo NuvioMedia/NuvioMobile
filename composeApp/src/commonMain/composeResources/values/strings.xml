@@ -13,6 +13,8 @@
     <string name="action_back">Back</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_close">Close</string>
+    <string name="action_collapse">Collapse</string>
+    <string name="action_expand">Expand</string>
     <string name="action_delete">Delete</string>
     <string name="action_delete_confirm_message">Are you sure you want to delete it?</string>
     <string name="action_delete_confirm_title">Delete?</string>
@@ -591,7 +593,7 @@
     <string name="settings_licenses_attributions_torbox_title">TorBox</string>
     <string name="settings_licenses_attributions_torbox_body">Nuvio connects to TorBox for account authentication, cloud library access, cache checks, and cloud playback features. Nuvio is not affiliated with or endorsed by TorBox.</string>
     <string name="settings_licenses_attributions_mdblist_title">MDBList</string>
-    <string name="settings_licenses_attributions_mdblist_body">Nuvio uses MDBList for ratings and external score provider data. Nuvio is not affiliated with or endorsed by MDBList.</string>
+    <string name="settings_licenses_attributions_mdblist_body">Nuvio uses MDBList for ratings, watched history and playback tracking. Nuvio is not affiliated with or endorsed by MDBList.</string>
     <string name="settings_licenses_attributions_introdb_title">IntroDB</string>
     <string name="settings_licenses_attributions_introdb_body">Nuvio uses the IntroDB API for community-provided intro, recap, credits, and preview timestamps used by skip controls. Nuvio is not affiliated with or endorsed by IntroDB.</string>
     <string name="settings_licenses_attributions_mpvkit_title">MPVKit</string>
@@ -780,6 +782,14 @@
     <string name="settings_poster_width_dense">Dense</string>
     <string name="settings_poster_width_large">Large</string>
     <string name="settings_poster_width_standard">Standard</string>
+    <!-- Custom Poster URL -->
+    <string name="settings_custom_poster_title">CUSTOM POSTER SOURCE</string>
+    <string name="settings_custom_poster_description">Provide a poster URL pattern from an external service. If a placeholder has no value for a given title, the original poster is used instead.</string>
+    <string name="settings_custom_poster_placeholder">https://example.com/poster?id={id}&amp;id_type={id_type}&amp;type={type}</string>
+    <string name="settings_custom_poster_active">Custom poster source active</string>
+    <string name="settings_custom_poster_none">No pattern configured</string>
+    <string name="settings_custom_poster_save">Save</string>
+    <string name="settings_custom_poster_clear">Clear</string>
     <string name="settings_show_secret">Show value</string>
     <string name="settings_continue_watching_resume_prompt_description">Show a popup to continue where you left off when opening the app after leaving from the player.</string>
     <string name="settings_continue_watching_resume_prompt_title">Resume prompt on launch</string>
@@ -1061,7 +1071,7 @@
     <string name="settings_playback_external_player_forward_subtitles">Forward Subtitles to External Player</string>
     <string name="settings_playback_external_player_forward_subtitles_description">Fetch addon subtitles in your preferred language and pass them to the external player.</string>
     <string name="settings_playback_external_player_send_skip_segments">Send Intro and Outro Timestamps</string>
-    <string name="settings_playback_external_player_send_skip_segments_description">Pass resolved intro and outro skip timestamps to the external player for auto-skipping. Only works in players that support it; other players ignore it.</string>
+    <string name="settings_playback_external_player_send_skip_segments_description">Send all available episode and movie skip timestamps. The external player controls skipping, independently of these settings.</string>
     <string name="settings_playback_external_player_none_available">No supported external players installed</string>
     <string name="settings_playback_player_preference">Player</string>
     <string name="settings_playback_player_preference_internal">Internal</string>
@@ -1200,6 +1210,9 @@
     <string name="settings_playback_timeout_unlimited">Unlimited</string>
     <string name="settings_playback_tunneled_playback">Tunneled Playback</string>
     <string name="settings_playback_tunneled_playback_description">Hardware-level audio/video sync. May improve playback on some Android TV devices</string>
+    <string name="settings_tmdb_api_key_label">API key</string>
+    <string name="settings_tmdb_api_key_override_description">Use your own TMDB API key, or leave blank to use the default.</string>
+    <string name="settings_tmdb_personal_api_key">Personal API key</string>
     <string name="settings_tmdb_enable_enrichment">Enable TMDB Enrichment</string>
     <string name="settings_tmdb_enable_enrichment_description">Use TMDB as a metadata source to enhance addon data</string>
     <string name="settings_tmdb_language_code_label">Language code</string>
@@ -1213,8 +1226,6 @@
     <string name="settings_tmdb_module_credits_description">Cast with photos, director, and writer from TMDB</string>
     <string name="settings_tmdb_module_details">Details</string>
     <string name="settings_tmdb_module_details_description">Runtime, status, country, and language from TMDB</string>
-    <string name="settings_tmdb_module_release_dates">Release dates</string>
-    <string name="settings_tmdb_module_release_dates_description">Use TMDB broadcaster air dates instead of precise add-on release times</string>
     <string name="settings_tmdb_module_episodes">Episodes</string>
     <string name="settings_tmdb_module_episodes_description">Episode titles, overviews, thumbnails, and runtime from TMDB</string>
     <string name="settings_tmdb_module_more_like_this">More Like This</string>
@@ -1304,6 +1315,7 @@
     <string name="settings_simkl_sync_info_library_statuses">Shows placed in Simkl’s On Hold or Dropped lists are hidden from Continue Watching. They remain hidden for as long as they stay in either list.</string>
     <string name="settings_simkl_sync_info_docs">Read the Simkl sync guide</string>
     <string name="settings_simkl_authorization_revoked">Simkl authorization was revoked. Connect again.</string>
+    <string name="settings_tracking_not_connected">Not connected</string>
     <string name="tracking_source_simkl">Simkl</string>
     <string name="tracking_library_source_simkl_selected">Simkl watchlist selected</string>
     <string name="tracking_watch_progress_simkl_selected">Watch progress source set to Simkl</string>
@@ -2215,6 +2227,13 @@
     <string name="updates_empty_download_body">Empty download body</string>
     <string name="updates_github_api_error">GitHub releases API error: %1$d</string>
     <string name="updates_no_channel_release">No update has been published yet.</string>
+    <string name="updates_channel_title">Update channel</string>
+    <string name="updates_channel_description">Choose the type of app updates to receive</string>
+    <string name="updates_channel_stable">Stable</string>
+    <string name="updates_channel_beta">Beta</string>
+    <string name="updates_channel_stable_description">Intended for everyday use.</string>
+    <string name="updates_channel_beta_description">Early updates that may contain bugs, break features, or behave unexpectedly.</string>
+    <string name="updates_waiting_for_stable">You’ll receive the next stable release when it becomes available</string>
     <string name="updates_release_missing_title">Release has no tag or name</string>
     <!-- Continue Watching air date display -->
     <string name="cw_airs_date">Airs %1$s</string>
@@ -2292,4 +2311,35 @@
         <item quantity="one">%d title</item>
         <item quantity="other">%d titles</item>
     </plurals>
+    <string name="settings_playback_auto_skip_segments">Automatic Skipping</string>
+    <string name="settings_playback_auto_skip_none">None</string>
+    <string name="settings_playback_auto_skip_intro">Intro / Opening</string>
+    <string name="settings_playback_auto_skip_intro_description">Skip intros and anime openings automatically.</string>
+    <string name="settings_playback_auto_skip_recap">Recap</string>
+    <string name="settings_playback_auto_skip_recap_description">Skip recap segments automatically.</string>
+    <string name="settings_playback_auto_skip_outro">Outro / Ending</string>
+    <string name="settings_playback_auto_skip_outro_description">Skip outros and anime endings automatically.</string>
+    <string name="settings_playback_auto_skip_movie_credits">End Credits</string>
+    <string name="settings_playback_auto_skip_movie_credits_description">Skip movie credits, keeping post-credits scenes.</string>
+    <string name="player_skip_movie_credits">Skip Credits</string>
+    <string name="player_skip_to_post_credits">Skip to Post-Credits</string>
+    <string name="layout_overall_ratings">Overall Ratings</string>
+    <string name="layout_overall_ratings_sub_on">Standard and TMDB ratings are shown.</string>
+    <string name="layout_overall_ratings_sub_off">Standard and TMDB ratings are Hidden. MDBList provider settings take priority on detail pages.</string>
+    <string name="layout_episode_ratings">Episode Ratings</string>
+    <string name="layout_episode_ratings_sub">Choose which episode ratings are visible.</string>
+    <string name="layout_ratings_show">Show</string>
+    <string name="layout_ratings_hide">Hide</string>
+    <string name="layout_ratings_hide_unwatched">Hide Unwatched</string>
+    <string name="settings_playback_legacy_layout">Legacy layout</string>
+    <string name="settings_playback_legacy_layout_description">Use the original player controls.</string>
+    <string name="compose_player_via">Via %1$s</string>
+    <string name="compose_player_episode_code">S%1$d E%2$d</string>
+    <string name="compose_player_more_actions">More controls</string>
+    <string name="compose_player_fewer_actions">Fewer controls</string>
+    <string name="compose_player_speed">Playback speed</string>
+    <string name="compose_player_show_elapsed_time">Show elapsed time</string>
+    <string name="compose_player_show_remaining_time">Show remaining time</string>
+    <string name="compose_player_brightness">Brightness</string>
+    <string name="compose_player_volume">Volume</string>
 </resources>

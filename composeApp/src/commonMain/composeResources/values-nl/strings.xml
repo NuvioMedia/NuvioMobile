@@ -1190,8 +1190,6 @@
     <string name="settings_tmdb_module_credits_description">Cast met foto's, regisseur en schrijver van TMDB</string>
     <string name="settings_tmdb_module_details">Details</string>
     <string name="settings_tmdb_module_details_description">Speelduur, status, land en taal van TMDB</string>
-    <string name="settings_tmdb_module_release_dates">Releasedata</string>
-    <string name="settings_tmdb_module_release_dates_description">Gebruik uitzenddata van TMDB-zenders in plaats van exacte releasetijden van add-ons</string>
     <string name="settings_tmdb_module_episodes">Afleveringen</string>
     <string name="settings_tmdb_module_episodes_description">Afleveringstitels, overzichten, miniaturen en speelduur van TMDB</string>
     <string name="settings_tmdb_module_more_like_this">Meer zoals dit</string>
@@ -2254,4 +2252,12 @@
         <item quantity="one">%d titel</item>
         <item quantity="other">%d titels</item>
     </plurals>
+    <string name="layout_overall_ratings">Algemene beoordelingen</string>
+    <string name="layout_overall_ratings_sub_on">Standaard- en TMDB-beoordelingen worden getoond.</string>
+    <string name="layout_overall_ratings_sub_off">Standaard- en TMDB-beoordelingen zijn verborgen. Instellingen van MDBList-providers hebben voorrang op detailpagina\'s.</string>
+    <string name="layout_episode_ratings">Beoordelingen van afleveringen</string>
+    <string name="layout_episode_ratings_sub">Kies welke beoordelingen van afleveringen zichtbaar zijn.</string>
+    <string name="layout_ratings_show">Tonen</string>
+    <string name="layout_ratings_hide">Verbergen</string>
+    <string name="layout_ratings_hide_unwatched">Onbekeken verbergen</string>
 </resources>

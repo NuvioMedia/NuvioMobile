@@ -122,7 +122,7 @@ actual fun rememberIsInPictureInPicture(): Boolean {
 }
 
 @Composable
-actual fun rememberPlayerGestureController(): PlayerGestureController? {
+internal actual fun rememberPlatformPlayerGestureController(): PlayerGestureController? {
     val context = LocalContext.current
     val activity = context.findActivity() ?: return null
     val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return null

@@ -728,4 +728,12 @@
     <string name="entity_browse_type">סוג</string>
     <string name="entity_browse_catalogue">קטלוג</string>
     <string name="entity_browse_about">אודות</string>
+    <string name="layout_overall_ratings">דירוגים כלליים</string>
+    <string name="layout_overall_ratings_sub_on">דירוגי סטנדרט ו-TMDB מוצגים.</string>
+    <string name="layout_overall_ratings_sub_off">דירוגי סטנדרט ו-TMDB מוסתרים. הגדרות ספק MDBList מקבלות עדיפות בעמודי הפרטים.</string>
+    <string name="layout_episode_ratings">דירוגי פרקים</string>
+    <string name="layout_episode_ratings_sub">בחר אילו דירוגי פרקים גלויים.</string>
+    <string name="layout_ratings_show">הצג</string>
+    <string name="layout_ratings_hide">הסתר</string>
+    <string name="layout_ratings_hide_unwatched">הסתר לא נצפו</string>
 </resources>

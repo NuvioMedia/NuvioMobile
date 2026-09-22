@@ -11,9 +11,24 @@ data class MdbListSettings(
     val useLetterboxd: Boolean = true,
     val useAudience: Boolean = true,
     val useMal: Boolean = true,
+    val accountScope: MdbListAuthScope? = null,
 ) {
     val hasApiKey: Boolean
         get() = apiKey.isNotBlank()
+
+    val hasCredentials: Boolean
+        get() = hasApiKey || accountScope != null
+
+    val isActive: Boolean
+        get() = enabled && hasCredentials
+
+    internal val credential: MdbListRatingsCredential?
+        get() = apiKey.trim().takeIf { it.isNotEmpty() }?.let { MdbListRatingsCredential.ApiKey(it) }
+            ?: accountScope?.let { MdbListRatingsCredential.Account(it) }
+
+    internal fun withAccount(state: MdbListAuthState, profileId: Int): MdbListSettings = copy(
+        accountScope = state.scope.takeIf { state.isAuthenticated && it.profileId == profileId }
+    )
 
     fun isProviderEnabled(providerId: String): Boolean =
         when (providerId) {

@@ -2107,8 +2107,6 @@
     <string name="settings_playback_parental_guide_description">Při spuštění přehrávání zobrazit překryv s rodičovským upozorněním.</string>
     <string name="settings_playback_subtitle_strip_sdh">Odstranit prvky SDH z titulků</string>
     <string name="settings_playback_subtitle_strip_sdh_description">Skrýt v textových titulcích popisy zvuků a označení mluvčích.</string>
-    <string name="settings_tmdb_module_release_dates">Data vydání</string>
-    <string name="settings_tmdb_module_release_dates_description">Použít data vysílání od vysílatelů v TMDB místo přesných časů vydání z doplňků</string>
     <string name="settings_tracking_data_sources">Zdroje</string>
     <string name="settings_tracking_features">PŘEDVOLBY ZDROJŮ</string>
     <string name="settings_tracking_viewing_discovery">Funkce Trakt</string>

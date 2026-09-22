@@ -93,7 +93,7 @@ internal actual object ExternalPlayerPlatform {
         // Required by MX Player; harmless for other players.
         putExtra("return_result", true)
 
-        // Intro/outro skip segments for players that support auto-skipping.
+        // Episode/movie skip segments; the receiving player controls their handling.
         // Players that don't understand this extra simply ignore it.
         request.skipSegmentsJson?.let { putExtra("skip_segments", it) }
 

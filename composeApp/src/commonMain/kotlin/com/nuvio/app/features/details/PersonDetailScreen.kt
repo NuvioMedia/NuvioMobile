@@ -71,6 +71,7 @@ import com.nuvio.app.features.details.components.DetailPosterRailSection
 import com.nuvio.app.features.details.components.ExpandableDescription
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.tmdb.TmdbMetadataService
+import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import nuvio.composeapp.generated.resources.*
@@ -113,7 +114,11 @@ fun PersonDetailScreen(
             preferCrewCredits = preferCrew,
         )
         uiState = if (detail != null) {
-            PersonDetailUiState.Success(detail)
+            val pattern = com.nuvio.app.core.poster.CustomPosterUrlRepository.let { repo ->
+                repo.ensureLoaded()
+                repo.pattern.value
+            }
+            PersonDetailUiState.Success(detail.withCustomPosterUrls(pattern))
         } else {
             PersonDetailUiState.Error(getString(Res.string.person_load_failed, personName))
         }

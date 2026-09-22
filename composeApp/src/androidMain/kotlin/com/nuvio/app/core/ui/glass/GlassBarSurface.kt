@@ -28,7 +28,7 @@ private val GlassSurfaceColor = Color(0xFF1C1C1E)
 
 @Composable
 internal fun GlassBarSurface(hazeState: HazeState?, modifier: Modifier = Modifier, glowStrength: Float = 1f) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && hazeState?.blurEnabled == true) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && hazeState?.blurEnabled == true && glowStrength > 0f) {
         RefractedGlassBar(hazeState, modifier, glowStrength)
     } else {
         Box(

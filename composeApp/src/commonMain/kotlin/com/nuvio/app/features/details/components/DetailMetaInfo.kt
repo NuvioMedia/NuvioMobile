@@ -49,6 +49,8 @@ import com.nuvio.app.features.mdblist.MdbListMetadataService.PROVIDER_MAL
 import com.nuvio.app.features.mdblist.MdbListMetadataService.PROVIDER_TMDB
 import com.nuvio.app.features.mdblist.MdbListMetadataService.PROVIDER_TOMATOES
 import com.nuvio.app.features.mdblist.MdbListMetadataService.PROVIDER_TRAKT
+import com.nuvio.app.features.mdblist.RottenTomatoesStatus
+import com.nuvio.app.features.mdblist.rottenTomatoesStatus
 import nuvio.composeapp.generated.resources.*
 import nuvio.composeapp.generated.resources.rating_audience_score
 import nuvio.composeapp.generated.resources.rating_imdb
@@ -70,6 +72,8 @@ fun DetailMetaInfo(
     meta: MetaDetails,
     modifier: Modifier = Modifier,
     horizontalScrollPadding: Dp = 0.dp,
+    showOverallRatings: Boolean = true,
+    isMdbListActive: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -80,13 +84,13 @@ fun DetailMetaInfo(
         val releaseLine = formatMetaReleaseLineForDetails(meta)
         val runtimeText = formatRuntimeForDisplay(meta.runtime)
         val ageBadge = meta.ageRating?.trim()?.takeIf { it.isNotBlank() }
-        val hasMdbImdbRating = meta.externalRatings.any { it.source == PROVIDER_IMDB }
         val validImdbRating = meta.imdbRating
+            ?.takeIf { showOverallRatings && !isMdbListActive }
             ?.takeIf { raw -> raw.toDoubleOrNull()?.let { it > 0.0 } == true }
         val hasMetaRow = releaseLine != null ||
             runtimeText != null ||
             ageBadge != null ||
-            (validImdbRating != null && !hasMdbImdbRating)
+            validImdbRating != null
         if (hasMetaRow) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -111,7 +115,7 @@ fun DetailMetaInfo(
                 ageBadge?.let { badge ->
                     DetailHeroMetaBadge(text = badge)
                 }
-                if (validImdbRating != null && !hasMdbImdbRating) {
+                if (validImdbRating != null) {
                     val imdbTextStyle = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.sp,
@@ -135,7 +139,7 @@ fun DetailMetaInfo(
         }
 
         AnimatedVisibility(
-            visible = meta.externalRatings.isNotEmpty(),
+            visible = isMdbListActive && meta.externalRatings.isNotEmpty(),
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically(),
         ) {
@@ -206,10 +210,14 @@ private fun DetailRatingsRow(
                         storeTextColor = visuals.valueColor,
                     )
                 } else {
+                    val logoHeight = when (rating.rottenTomatoesStatus) {
+                        RottenTomatoesStatus.CERTIFIED_FRESH, RottenTomatoesStatus.VERIFIED_HOT -> 24.dp
+                        else -> 16.dp
+                    }
                     Image(
-                        painter = painterResource(visuals.logo),
+                        painter = painterResource(visuals.logoFor(rating)),
                         contentDescription = visuals.displayName,
-                        modifier = Modifier.size(width = visuals.logoWidth, height = 16.dp),
+                        modifier = Modifier.size(width = maxOf(visuals.logoWidth, logoHeight), height = logoHeight),
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
@@ -309,6 +317,17 @@ private data class RatingVisuals(
     val valueColor: Color,
     val format: (Double) -> String,
 )
+
+private fun RatingVisuals.logoFor(rating: MetaExternalRating): DrawableResource =
+    when (rating.rottenTomatoesStatus) {
+        RottenTomatoesStatus.FRESH -> Res.drawable.rating_rotten_tomatoes
+        RottenTomatoesStatus.ROTTEN -> Res.drawable.rating_rotten_tomatoes_rotten
+        RottenTomatoesStatus.CERTIFIED_FRESH -> Res.drawable.rating_rotten_tomatoes_certified
+        RottenTomatoesStatus.HOT -> Res.drawable.rating_audience_score
+        RottenTomatoesStatus.STALE -> Res.drawable.rating_audience_stale
+        RottenTomatoesStatus.VERIFIED_HOT -> Res.drawable.rating_audience_verified_hot
+        null -> logo
+    }
 
 private val ratingVisuals = listOf(
     RatingVisuals(

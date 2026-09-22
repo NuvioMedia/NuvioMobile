@@ -1,5 +1,7 @@
 package com.nuvio.app.features.catalog
 
+import com.nuvio.app.core.poster.CustomPosterUrlRepository
+import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.features.collection.CollectionRepository
 import com.nuvio.app.features.collection.TmdbCollectionSourceResolver
 import com.nuvio.app.features.collection.catalogRouteKey
@@ -164,8 +166,10 @@ object CatalogRepository {
                         loadedNewItems = loadedNewItems,
                         consecutiveDuplicatePages = if (reset) 0 else current.consecutiveDuplicatePages,
                     )
+                    CustomPosterUrlRepository.ensureLoaded()
+                    val posterPattern = CustomPosterUrlRepository.pattern.value
                     _uiState.value = CatalogUiState(
-                        items = mergedItems,
+                        items = mergedItems.withCustomPosterUrls(posterPattern),
                         isLoading = false,
                         nextSkip = paginationState.nextSkip,
                         consecutiveDuplicatePages = paginationState.consecutiveDuplicatePages,

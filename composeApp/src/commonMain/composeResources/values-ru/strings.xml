@@ -1190,8 +1190,6 @@
     <string name="settings_tmdb_module_credits_description">Актерский состав с фотографиями, режиссер и сценарист из TMDB</string>
     <string name="settings_tmdb_module_details">Подробности</string>
     <string name="settings_tmdb_module_details_description">Время выполнения, статус, страна и язык из TMDB</string>
-    <string name="settings_tmdb_module_release_dates">Даты выхода</string>
-    <string name="settings_tmdb_module_release_dates_description">Используйте даты выхода в эфир телеканала TMDB вместо точного времени выпуска дополнений.</string>
     <string name="settings_tmdb_module_episodes">Эпизоды</string>
     <string name="settings_tmdb_module_episodes_description">Названия эпизодов, обзоры, миниатюры и время выполнения из TMDB</string>
     <string name="settings_tmdb_module_more_like_this">Больше подобного</string>
@@ -2241,4 +2239,12 @@
         <item quantity="many">%d названий</item>
         <item quantity="other">%d названия</item>
     </plurals>
+    <string name="layout_overall_ratings">Общие рейтинги</string>
+    <string name="layout_overall_ratings_sub_on">Показываются стандартные рейтинги и рейтинги TMDB.</string>
+    <string name="layout_overall_ratings_sub_off">Стандартные рейтинги и рейтинги TMDB скрыты. На страницах с описанием приоритет имеют настройки провайдера MDBList.</string>
+    <string name="layout_episode_ratings">Рейтинги эпизодов</string>
+    <string name="layout_episode_ratings_sub">Выберите, какие рейтинги эпизодов отображать.</string>
+    <string name="layout_ratings_show">Показывать</string>
+    <string name="layout_ratings_hide">Скрывать</string>
+    <string name="layout_ratings_hide_unwatched">Скрывать для непросмотренных</string>
 </resources>

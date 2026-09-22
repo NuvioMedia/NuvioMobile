@@ -1190,8 +1190,6 @@
     <string name="settings_tmdb_module_credits_description">Usar creadores, directores, guionistas y fotos del reparto de TMDB.</string>
     <string name="settings_tmdb_module_details">Detalles</string>
     <string name="settings_tmdb_module_details_description">Usar información de estreno, duración, clasificación por edad, estado, país e idioma de TMDB.</string>
-    <string name="settings_tmdb_module_release_dates">Fechas de estreno</string>
-    <string name="settings_tmdb_module_release_dates_description">Usar las fechas de emisión de la cadena de TMDB en lugar de las horas exactas de lanzamiento del complemento</string>
     <string name="settings_tmdb_module_episodes">Episodios</string>
     <string name="settings_tmdb_module_episodes_description">Usar títulos, miniaturas, descripciones y duraciones de episodios de TMDB para series.</string>
     <string name="settings_tmdb_module_more_like_this">Más como esto</string>

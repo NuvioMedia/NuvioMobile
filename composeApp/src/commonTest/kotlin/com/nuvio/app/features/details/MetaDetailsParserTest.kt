@@ -1,9 +1,18 @@
 package com.nuvio.app.features.details
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MetaDetailsParserTest {
@@ -64,6 +73,46 @@ class MetaDetailsParserTest {
 
         assertFalse(result.videos[0].available)
         assertTrue(result.videos[1].available)
+    }
+
+    @Test
+    fun `parse converts addon episode runtimes to minutes`() {
+        val runtimes = listOf(
+            JsonPrimitive(45) to 45,
+            JsonPrimitive("45") to 45,
+            JsonPrimitive(" 45 min ") to 45,
+            JsonPrimitive("45 minutes") to 45,
+            JsonPrimitive("2h 5m") to 125,
+            JsonPrimitive("1 hr 30 min") to 90,
+            JsonPrimitive("1 hour 30 minutes") to 90,
+            JsonPrimitive("2 HOURS") to 120,
+            JsonPrimitive("1:30") to 90,
+        )
+
+        runtimes.forEach { (runtime, expected) ->
+            assertEquals(expected, parseEpisode(runtime).runtime, "Runtime: $runtime")
+        }
+    }
+
+    @Test
+    fun `parse keeps episodes with missing or invalid runtimes`() {
+        val runtimes = listOf(
+            null,
+            JsonNull,
+            JsonPrimitive(""),
+            JsonPrimitive(" "),
+            JsonPrimitive("unknown"),
+            JsonPrimitive(true),
+            JsonObject(emptyMap()),
+            JsonArray(emptyList()),
+        )
+
+        runtimes.forEach { runtime ->
+            val video = parseEpisode(runtime)
+
+            assertEquals("show:1:1", video.id)
+            assertNull(video.runtime, "Runtime: $runtime")
+        }
     }
 
     @Test
@@ -238,5 +287,21 @@ class MetaDetailsParserTest {
         )
 
         assertEquals("PG-13", result.ageRating)
+    }
+
+    private fun parseEpisode(runtime: JsonElement?): MetaVideo {
+        val payload = buildJsonObject {
+            put("id", "show")
+            put("type", "series")
+            put("name", "Show")
+            put("videos", buildJsonArray {
+                add(buildJsonObject {
+                    put("id", "show:1:1")
+                    put("title", "Episode 1")
+                    if (runtime != null) put("runtime", runtime)
+                })
+            })
+        }
+        return MetaDetailsParser.parse(payload.toString()).videos.single()
     }
 }

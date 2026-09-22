@@ -3,10 +3,12 @@ package com.nuvio.app.features.player
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
 import com.nuvio.app.features.streams.StreamsUiState
+import kotlinx.coroutines.Job
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class PlayerScreenRuntimeStateTest {
@@ -14,6 +16,109 @@ class PlayerScreenRuntimeStateTest {
     @Test
     fun controlsStartHidden() {
         assertFalse(PlayerScreenRuntime(testPlayerScreenArgs()).controlsVisible)
+    }
+
+    @Test
+    fun bufferedScrubKeepsReleasedPositionUntilThePlayerAcknowledgesIt() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val buffering = PlayerPlaybackSnapshot(isLoading = true, positionMs = 30_000L, durationMs = 120_000L)
+        runtime.playbackSnapshot = buffering
+        runtime.isScrubbingTimeline = true
+        runtime.scrubbingPositionMs = 80_000L
+
+        runtime.finishTimelineScrub(80_000L)
+        assertFalse(runtime.isScrubbingTimeline)
+        assertEquals(80_000L, runtime.scrubbingPositionMs)
+        runtime.updatePlaybackSnapshot(buffering)
+        assertEquals(80_000L, runtime.scrubbingPositionMs)
+        runtime.updatePlaybackSnapshot(buffering.copy(positionMs = 30_250L))
+        assertEquals(80_000L, runtime.scrubbingPositionMs)
+
+        runtime.updatePlaybackSnapshot(buffering.copy(positionMs = 80_000L))
+        assertNull(runtime.scrubbingPositionMs)
+        assertEquals(80_000L, runtime.playbackSnapshot.positionMs)
+    }
+
+    @Test
+    fun backwardScrubAlsoKeepsTheTargetDuringBuffering() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val buffering = PlayerPlaybackSnapshot(isLoading = true, positionMs = 90_000L, durationMs = 120_000L)
+        runtime.playbackSnapshot = buffering
+
+        runtime.finishTimelineScrub(20_000L)
+        runtime.updatePlaybackSnapshot(buffering)
+        assertEquals(20_000L, runtime.scrubbingPositionMs)
+
+        runtime.updatePlaybackSnapshot(buffering.copy(positionMs = 20_100L))
+        assertNull(runtime.scrubbingPositionMs)
+    }
+
+    @Test
+    fun bufferingEndReleasesThePreviewEvenWhenThePlayerLandsOnAnotherKeyframe() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        runtime.playbackSnapshot = PlayerPlaybackSnapshot(isLoading = true, positionMs = 30_000L)
+        runtime.finishTimelineScrub(80_000L)
+
+        runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(isLoading = false, positionMs = 78_000L))
+
+        assertNull(runtime.scrubbingPositionMs)
+        assertEquals(78_000L, runtime.playbackSnapshot.positionMs)
+    }
+
+    @Test
+    fun activePlaybackKeepsItsExistingScrubReleaseBehavior() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        runtime.playbackSnapshot = PlayerPlaybackSnapshot(isLoading = false, isPlaying = true, positionMs = 30_000L)
+        runtime.isScrubbingTimeline = true
+        runtime.scrubbingPositionMs = 80_000L
+
+        runtime.finishTimelineScrub(80_000L)
+
+        assertFalse(runtime.isScrubbingTimeline)
+        assertNull(runtime.scrubbingPositionMs)
+        assertEquals(30_000L to 80_000L, runtime.lastManualSkipSeekPositions)
+    }
+
+    @Test
+    fun oldSeekUpdatesDoNotOverrideANewerScrub() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        runtime.playbackSnapshot = PlayerPlaybackSnapshot(isLoading = true, positionMs = 30_000L)
+        runtime.finishTimelineScrub(80_000L)
+        runtime.isScrubbingTimeline = true
+        runtime.scrubbingPositionMs = 100_000L
+
+        runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(isLoading = false, positionMs = 80_000L))
+
+        assertTrue(runtime.isScrubbingTimeline)
+        assertEquals(100_000L, runtime.scrubbingPositionMs)
+    }
+
+    @Test
+    fun tappingNextEpisodeDuringSearchKeepsTheCurrentJob() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val job = Job()
+        runtime.nextEpisodeAutoPlayJob = job
+        runtime.nextEpisodeAutoPlaySearching = true
+
+        runtime.playNextEpisode()
+
+        assertSame(job, runtime.nextEpisodeAutoPlayJob)
+        assertTrue(job.isActive)
+        job.cancel()
+    }
+
+    @Test
+    fun tappingNextEpisodeDuringCountdownKeepsTheCurrentJob() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val job = Job()
+        runtime.nextEpisodeAutoPlayJob = job
+        runtime.nextEpisodeAutoPlayCountdown = 2
+
+        runtime.playNextEpisode()
+
+        assertSame(job, runtime.nextEpisodeAutoPlayJob)
+        assertTrue(job.isActive)
+        job.cancel()
     }
 
     @Test

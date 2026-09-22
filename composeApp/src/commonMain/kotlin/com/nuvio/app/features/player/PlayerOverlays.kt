@@ -73,6 +73,7 @@ internal data class GestureFeedbackState(
     val secondaryMessageRes: StringResource? = null,
     val secondaryMessageArgs: List<Any> = emptyList(),
     val secondaryMessageColor: Color? = null,
+    val level: Float? = null,
 )
 
 

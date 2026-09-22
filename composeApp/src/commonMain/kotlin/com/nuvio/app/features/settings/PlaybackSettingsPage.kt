@@ -292,6 +292,7 @@ private fun PlaybackSettingsSection(
     libassRenderType: String,
 ) {
     var showPreferredAudioDialog by remember { mutableStateOf(false) }
+    var showAutoSkipSegmentDialog by remember { mutableStateOf(false) }
     var showSecondaryAudioDialog by remember { mutableStateOf(false) }
     var showPreferredSubtitleDialog by remember { mutableStateOf(false) }
     var showSecondarySubtitleDialog by remember { mutableStateOf(false) }
@@ -351,6 +352,14 @@ private fun PlaybackSettingsSection(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_playback_legacy_layout),
+                    description = stringResource(Res.string.settings_playback_legacy_layout_description),
+                    checked = autoPlayPlayerSettings.useLegacyPlayerLayout,
+                    isTablet = isTablet,
+                    onCheckedChange = PlayerSettingsRepository::setUseLegacyPlayerLayout,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
                     title = stringResource(Res.string.settings_playback_show_loading_overlay),
                     description = stringResource(Res.string.settings_playback_show_loading_overlay_description),
@@ -1033,8 +1042,17 @@ private fun PlaybackSettingsSection(
                     title = stringResource(Res.string.settings_playback_skip_intro_outro_recap),
                     description = stringResource(Res.string.settings_playback_skip_intro_outro_recap_description),
                     checked = autoPlayPlayerSettings.skipIntroEnabled,
+                    enabled = !autoPlayPlayerSettings.externalPlayerEnabled,
                     isTablet = isTablet,
                     onCheckedChange = PlayerSettingsRepository::setSkipIntroEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.settings_playback_auto_skip_segments),
+                    description = autoSkipSelectionSummary(autoPlayPlayerSettings.autoSkipSegmentTypes),
+                    enabled = autoPlayPlayerSettings.skipIntroEnabled && !autoPlayPlayerSettings.externalPlayerEnabled,
+                    isTablet = isTablet,
+                    onClick = { showAutoSkipSegmentDialog = true },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
@@ -1267,6 +1285,14 @@ private fun PlaybackSettingsSection(
                 }
             }
         }
+    }
+
+    if (showAutoSkipSegmentDialog) {
+        AutoSkipSegmentSelectionDialog(
+            selectedTypes = autoPlayPlayerSettings.autoSkipSegmentTypes,
+            onTypeToggled = PlayerSettingsRepository::setAutoSkipSegmentTypeEnabled,
+            onDismiss = { showAutoSkipSegmentDialog = false },
+        )
     }
 
     if (showPreferredAudioDialog) {

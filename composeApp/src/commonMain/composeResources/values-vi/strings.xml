@@ -13,9 +13,9 @@
     <string name="action_back">Quay lại</string>
     <string name="action_cancel">Huỷ</string>
     <string name="action_close">Đóng</string>
-    <string name="action_delete">Xoá</string>
+    <string name="action_delete">Xóa</string>
     <string name="action_delete_confirm_message">Bạn có chắc chắn muốn xóa không?</string>
-    <string name="action_delete_confirm_title">Xoá?</string>
+    <string name="action_delete_confirm_title">Xóa?</string>
     <string name="action_done">Xong</string>
     <string name="action_edit">Chỉnh sửa</string>
     <string name="action_import">Nhập</string>
@@ -23,7 +23,7 @@
     <string name="action_ok">OK</string>
     <string name="action_play">Phát</string>
     <string name="action_previous">Trước</string>
-    <string name="action_remove">Xoá</string>
+    <string name="action_remove">Xóa</string>
     <string name="action_remove_anyway">Vẫn xóa</string>
     <string name="action_reorder">Sắp xếp</string>
     <string name="action_reset">Đặt lại mặc định</string>
@@ -139,7 +139,7 @@
     <string name="collections_editor_tmdb_person_mode">Diễn viên</string>
     <string name="collections_editor_tmdb_director_mode">Đạo diễn</string>
     <string name="collections_editor_tmdb_custom_mode">Tuỳ chỉnh</string>
-    <string name="collections_editor_tmdb_help_presets">Chọn nguồn có sẵn. Bạn có thể sửa hoặc xoá sau khi thêm</string>
+    <string name="collections_editor_tmdb_help_presets">Chọn nguồn có sẵn. Bạn có thể sửa hoặc xóa sau khi thêm</string>
     <string name="collections_editor_tmdb_help_list">Dán URL danh sách TMDB công khai hoặc chỉ nhập số trong URL.</string>
     <string name="collections_editor_tmdb_help_production">Tìm theo tên hãng sản xuất hoặc nhập ID/URL từ TMDB để thêm trực tiếp</string>
     <string name="collections_editor_tmdb_help_network">Nhập ID đơn vị phát sóng. Các đơn vị phổ biến có trong phần Mẫu có sẵn và Bộ lọc nhanh</string>
@@ -265,7 +265,7 @@
     <string name="collections_editor_tmdb_genre_animation">Hoạt hình</string>
     <string name="collections_editor_tmdb_genre_comedy">Hài</string>
     <string name="collections_editor_tmdb_genre_horror">Kinh dị</string>
-    <string name="collections_editor_tmdb_genre_scifi">Khoa học viễn tưởng</string>
+    <string name="collections_editor_tmdb_genre_scifi">Viễn tưởng</string>
     <string name="collections_editor_tmdb_genre_drama">Chính kịch</string>
     <string name="collections_editor_tmdb_genre_crime">Tội phạm</string>
     <string name="collections_editor_tmdb_genre_reality">Thực tế</string>
@@ -339,6 +339,9 @@
     <string name="compose_action_off">Tắt</string>
     <string name="compose_action_on">Bật</string>
     <string name="compose_action_pause">Tạm dừng</string>
+    <string name="trailer_enter_fullscreen">Mở toàn màn hình</string>
+    <string name="trailer_exit_fullscreen">Thoát toàn màn hình</string>
+    <string name="player_seek_position">Vị trí phát lại</string>
     <string name="compose_action_reload">Tải lại</string>
     <string name="compose_auth_already_have_account">Đã có tài khoản? </string>
     <string name="compose_auth_continue_without_account">Tiếp tục không cần tài khoản</string>
@@ -404,7 +407,7 @@
     <string name="server_error_missing_configuration">Tài liệu khám phá thiếu URL Backend hoặc khóa công khai hợp lệ.</string>
     <string name="server_error_auth">Máy chủ không cung cấp phương thức đăng nhập được hỗ trợ.</string>
     <string name="server_error_save">Không thể lưu cấu hình máy chủ.</string>
-    <string name="server_error_session_clear">Không thể xoá an toàn phiên hiện tại. Máy chủ chưa được thay đổi.</string>
+    <string name="server_error_session_clear">Không thể xóa an toàn phiên hiện tại. Máy chủ chưa được thay đổi.</string>
     <string name="server_error_restart">Đã lưu máy chủ nhưng ứng dụng không thể tự động khởi động lại. Vui lòng khởi động lại ứng dụng thủ công.</string>
     <string name="compose_catalog_subtitle_library">Thư viện</string>
     <string name="compose_catalog_subtitle_trakt_library">Thư viện Trakt</string>
@@ -477,7 +480,7 @@
     <string name="compose_player_unlock_controls">Mở khóa điều khiển trình phát</string>
     <string name="compose_player_youre_watching">Bạn đang xem</string>
     <string name="compose_profile_add_profile">Thêm hồ sơ</string>
-    <string name="compose_search_clear">Xoá tìm kiếm</string>
+    <string name="compose_search_clear">Xóa tìm kiếm</string>
     <string name="compose_search_discover_title">Khám phá</string>
     <string name="compose_search_empty_failed_message">Các tiện ích đã cài đặt không trả về kết quả tìm kiếm hợp lệ.</string>
     <string name="compose_search_empty_failed_title">Tìm kiếm thất bại</string>
@@ -562,12 +565,16 @@
     <string name="sentry_keep_enabled">Tiếp tục bật</string>
     <string name="sentry_turn_off">Tắt</string>
     <string name="sentry_turn_on">Bật</string>
-    <string name="settings_advanced_clear_cw_cache">Xoá bộ nhớ đệm Tiếp tục xem</string>
+    <string name="settings_advanced_clear_cw_cache">Xóa bộ nhớ đệm Tiếp tục xem</string>
     <string name="settings_advanced_clear_cw_cache_subtitle">Xóa dữ liệu được lưu vào bộ nhớ đệm Tiếp tục xem và làm mới tiến trình xem</string>
-    <string name="settings_advanced_clear_cw_cache_done">Đã xoá bộ nhớ đệm</string>
+    <string name="settings_advanced_clear_cw_cache_done">Đã xóa bộ nhớ đệm</string>
     <string name="settings_licenses_attributions_section_app">GIẤY PHÉP ỨNG DỤNG</string>
     <string name="settings_licenses_attributions_section_data">DỮ LIỆU &amp; DỊCH VỤ</string>
     <string name="settings_licenses_attributions_section_playback">GIẤY PHÉP PHÁT LẠI</string>
+    <string name="settings_licenses_attributions_section_ui">THƯ VIỆN GIAO DIỆN NGƯỜI DÙNG</string>
+    <string name="settings_licenses_attributions_haze_title">Haze 1.7.2</string>
+    <string name="settings_licenses_attributions_haze_body">Dùng cho hiệu ứng làm mờ ảnh nền. Được tạo bởi Chris Banes.</string>
+    <string name="settings_licenses_attributions_haze_license">Được cấp phép theo Giấy phép Apache, Phiên bản 2.0.</string>
     <string name="settings_licenses_attributions_nuvio_title">Nuvio Mobile</string>
     <string name="settings_licenses_attributions_nuvio_body">Mã nguồn và điều khoản cấp phép có trong kho lưu trữ của dự án</string>
     <string name="settings_licenses_attributions_nuvio_license">Cấp phép theo GNU General Public License v3.0</string>
@@ -600,7 +607,7 @@
     <string name="action_donate">Ủng hộ</string>
     <string name="action_support_nuvio">Tài trợ Nuvio</string>
     <string name="cw_action_go_to_details">Xem chi tiết</string>
-    <string name="cw_action_remove">Xoá</string>
+    <string name="cw_action_remove">Xóa</string>
     <string name="cw_action_start_from_beginning">Xem từ đầu</string>
     <string name="detail_btn_play">Phát</string>
     <string name="detail_comments_badge_rating">%1$d/10</string>
@@ -634,7 +641,7 @@
     <string name="hero_add_to_library">Thêm vào thư viện</string>
     <string name="hero_mark_unwatched">Đánh dấu chưa xem</string>
     <string name="hero_mark_watched">Đánh dấu đã xem</string>
-    <string name="hero_remove_from_library">Xoá khỏi thư viện</string>
+    <string name="hero_remove_from_library">Xóa khỏi thư viện</string>
     <string name="home_view_all">Xem tất cả</string>
     <string name="play_manually">Chọn nguồn phát</string>
     <string name="poster_logo_content_description">Logo %1$s</string>
@@ -669,6 +676,13 @@
     <string name="settings_appearance_app_language_sheet_title">Chọn ngôn ngữ</string>
     <string name="settings_appearance_nav_bar_style">Thanh điều hướng</string>
     <string name="settings_appearance_nav_bar_style_sheet_title">Kiểu thanh điều hướng</string>
+    <string name="settings_nav_bar_glow">Hiệu ứng vệt sáng mờ</string>
+    <string name="settings_nav_bar_glow_description">Thêm vệt sáng mờ quanh thanh điều hướng nổi.</string>
+    <string name="settings_nav_bar_glow_on">Bật phát sáng</string>
+    <string name="settings_nav_bar_glow_off">Tắt phát sáng</string>
+    <string name="settings_nav_bar_summary">%1$s · %2$s</string>
+    <string name="settings_nav_bar_preview_hint">Chạm vào thanh điều hướng để dùng thử. Cuộn phần xem trước để thử tự động thay đổi kích thước</string>
+    <string name="settings_nav_bar_preview_tap_hint">Chạm vào thanh điều hướng để dùng thử.</string>
     <string name="settings_nav_bar_style_adaptive">Tự thích ứng</string>
     <string name="settings_nav_bar_style_expanded">Luôn mở rộng</string>
     <string name="settings_nav_bar_style_compact">Luôn thu gọn</string>
@@ -800,6 +814,9 @@
     <string name="settings_continue_watching_use_episode_thumbnails_title">Ưu tiên ảnh thu nhỏ trong Tiếp tục xem</string>
     <string name="settings_content_discovery_section_home">TRANG CHỦ</string>
     <string name="settings_content_discovery_section_sources">NGUỒN</string>
+    <string name="settings_content_discovery_section_search">TÌM KIẾM</string>
+    <string name="settings_content_discovery_recent_searches">Các tìm kiếm gần đây</string>
+    <string name="settings_content_discovery_recent_searches_description">Lưu các tìm kiếm gần đây và hiển thị khi chọn vào thanh tìm kiếm.</string>
     <string name="settings_content_discovery_addons_description">Cài đặt, xóa, làm mới và sắp xếp các nguồn nội dung của bạn.</string>
     <string name="settings_content_discovery_addons_description_appstore">Thêm và quản lý các tiện ích bạn dùng với Nuvio.</string>
     <string name="settings_content_discovery_plugins_description">Cài đặt các kho lưu trữ trình thu thập dữ liệu bằng JavaScript và kiểm tra các nhà cung cấp nội bộ</string>
@@ -859,6 +876,8 @@
     <string name="settings_stream_addon_logo_title">Biểu tượng tiện ích</string>
     <string name="settings_stream_addon_logo_description">Hiển thị biểu tượng và tên tiện ích bên cạnh mỗi nguồn phát</string>
     <string name="settings_stream_display_section">HIỂN THỊ</string>
+    <string name="settings_stream_background_title">Ảnh nền</string>
+    <string name="settings_stream_background_description">Chọn ảnh nền cho màn hình luồng phát.</string>
     <string name="settings_stream_badge_position_title">Vị trí nhãn</string>
     <string name="settings_stream_badge_position_description">Chọn vị trí hiển thị nhãn Fusion và dung lượng xuất hiện phía trên hoặc phía dưới thẻ luồng.</string>
     <string name="settings_stream_badge_position_dialog_title">Vị trí nhãn</string>
@@ -866,7 +885,7 @@
     <string name="settings_stream_badge_position_top">Phía trên</string>
     <string name="settings_stream_badge_position_bottom">Phía dưới</string>
     <string name="settings_stream_badge_urls_title">URL nhãn Fusion</string>
-    <string name="settings_stream_badge_urls_description">Nhập tối đa %1$d URL JSON nhãn luồng kiểu Fusion. Bạn có thể cập nhật hoặc xoá từng URL riêng lẻ.</string>
+    <string name="settings_stream_badge_urls_description">Nhập tối đa %1$d URL JSON nhãn luồng kiểu Fusion. Bạn có thể cập nhật hoặc xóa từng URL riêng lẻ.</string>
     <string name="settings_stream_badge_urls_search_description">Quản lý các URL JSON nhãn luồng kiểu Fusion đã nhập.</string>
     <string name="settings_stream_badge_import_failed">Nhập thất bại</string>
     <string name="settings_stream_badge_enter_url">Nhập URL chuỗi JSON của nhãn</string>
@@ -885,15 +904,15 @@
     <string name="settings_fusion_badge_preview_empty">Không có hình ảnh nhãn kiểu Fusion trong URL này</string>
     <string name="settings_fusion_badge_group_title">Nhóm %1$d</string>
     <string name="settings_fusion_badge_other_group_title">Các nhãn Fusion khác</string>
-    <string name="settings_debrid_key_valid">Khóa API hợp lệ</string>
-    <string name="settings_debrid_key_invalid">Không thể xác minh khóa API này</string>
-    <string name="settings_mdb_add_api_key_first">Thêm khóa API MDBList trước khi bật tính năng hiển thị điểm đánh giá</string>
+    <string name="settings_debrid_key_valid">Mã khóa API hợp lệ</string>
+    <string name="settings_debrid_key_invalid">Không thể xác minh mã khóa API này</string>
+    <string name="settings_mdb_add_api_key_first">Thêm mã khóa API MDBList trước khi bật tính năng hiển thị điểm đánh giá</string>
     <string name="settings_mdb_api_key_description">Cần thiết để lấy điểm đánh giá từ MDBList</string>
-    <string name="settings_mdb_api_key_label">Khóa API</string>
-    <string name="settings_mdb_api_key_title">Khóa API</string>
+    <string name="settings_mdb_api_key_label">Mã khóa API</string>
+    <string name="settings_mdb_api_key_title">Mã khóa API</string>
     <string name="settings_mdb_enable_ratings">Bật điểm đánh giá MDBList</string>
     <string name="settings_mdb_enable_ratings_description">Lấy điểm đánh giá từ các nhà cung cấp bên ngoài trên màn hình chi tiết siêu dữ liệu</string>
-    <string name="settings_mdb_section_api_key">KHÓA API</string>
+    <string name="settings_mdb_section_api_key">MÃ KHÓA API</string>
     <string name="settings_mdb_section_rating_providers">NHÀ CUNG CẤP ĐIỂM ĐÁNH GIÁ BÊN NGOÀI</string>
     <string name="settings_mdb_section_title">ĐIỂM ĐÁNH GIÁ MDBList</string>
     <string name="settings_meta_actions">Thao tác</string>
@@ -1016,8 +1035,8 @@
     <string name="settings_playback_anime_skip_client_id_description">Nhập API của ID máy khách Anime Skip. Tạo tại anime-skip.com</string>
     <string name="settings_playback_intro_submit_enabled">Cho phép gửi đoạn Giới thiệu</string>
     <string name="settings_playback_intro_submit_enabled_description">Hiển thị nút gửi mốc thời gian Giới thiệu/Đoạn kết lên cơ sở dữ liệu cộng đồng</string>
-    <string name="settings_playback_introdb_api_key">Khóa API IntroDB</string>
-    <string name="settings_playback_introdb_api_key_description">Nhập khóa API IntroDB để gửi mốc thời gian. Bắt buộc để dùng tính năng này</string>
+    <string name="settings_playback_introdb_api_key">Mã khóa API IntroDB</string>
+    <string name="settings_playback_introdb_api_key_description">Nhập mã khóa API IntroDB để gửi mốc thời gian. Bắt buộc để dùng tính năng này</string>
     <string name="settings_playback_anime_skip_description">Tìm thêm mốc thời gian bỏ qua từ Anime Skip (yêu cầu ID máy khách)</string>
     <string name="settings_playback_auto_play_next_episode">Tự động phát tập tiếp theo</string>
     <string name="settings_playback_auto_play_next_episode_description">Tự động phát tập tiếp theo khi lời nhắc xuất hiện.</string>
@@ -1129,6 +1148,8 @@
     <string name="settings_playback_selected_count">Đã chọn %1$d</string>
     <string name="settings_playback_show_loading_overlay">Lớp phủ Đang tải</string>
     <string name="settings_playback_show_loading_overlay_description">Hiển thị màn hình tải đến khi khung hình video đầu tiên xuất hiện.</string>
+    <string name="settings_playback_pause_overlay">Lớp phủ Tạm dừng</string>
+    <string name="settings_playback_pause_overlay_description">Hiển thị lớp phủ chi tiết sau 5 giây khi đang tạm dừng.</string>
     <string name="settings_playback_parental_guide">Cảnh báo nội dung</string>
     <string name="settings_playback_parental_guide_description">Hiển thị lớp phủ khuyến cáo phụ huynh khi phát lại bắt đầu.</string>
     <string name="settings_playback_subtitle_background_color">Màu nền</string>
@@ -1179,6 +1200,9 @@
     <string name="settings_playback_timeout_unlimited">Không giới hạn</string>
     <string name="settings_playback_tunneled_playback">Phát trực tiếp qua phần cứng</string>
     <string name="settings_playback_tunneled_playback_description">Đồng bộ âm thanh/video ở cấp phần cứng. Có thể cải thiện việc phát lại trên một số thiết bị Android TV</string>
+    <string name="settings_tmdb_api_key_label">Mã khoá API</string>
+    <string name="settings_tmdb_api_key_override_description">Dùng mã khóa API TMDB của riêng bạn hoặc bỏ trống để sử dụng mặc định.</string>
+    <string name="settings_tmdb_personal_api_key">Mã khóa API cá nhân</string>
     <string name="settings_tmdb_enable_enrichment">Bật bổ sung dữ liệu TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Dùng TMDB làm nguồn siêu dữ liệu để bổ sung dữ liệu cho tiện ích</string>
     <string name="settings_tmdb_language_code_label">Mã ngôn ngữ</string>
@@ -1192,8 +1216,6 @@
     <string name="settings_tmdb_module_credits_description">Diễn viên kèm ảnh, đạo diễn và biên kịch từ TMDB</string>
     <string name="settings_tmdb_module_details">Chi tiết</string>
     <string name="settings_tmdb_module_details_description">Thời lượng, trạng thái, quốc gia và ngôn ngữ từ TMDB</string>
-    <string name="settings_tmdb_module_release_dates">Ngày phát hành</string>
-    <string name="settings_tmdb_module_release_dates_description">Dùng ngày phát sóng của TMDB thay vì thời điểm phát hành chi tiết của tiện ích</string>
     <string name="settings_tmdb_module_episodes">Tập phim</string>
     <string name="settings_tmdb_module_episodes_description">Tiêu đề, mô tả, ảnh thu nhỏ và thời lượng tập phim từ TMDB</string>
     <string name="settings_tmdb_module_more_like_this">Nội dung tương tự</string>
@@ -1258,6 +1280,8 @@
     <string name="settings_tracking_anime_id_mal_description">Mỗi mùa anime sẽ có một ID MAL riêng làm định danh chính.</string>
     <string name="settings_tracking_anime_id_kitsu">Ưu tiên Kitsu</string>
     <string name="settings_tracking_anime_id_kitsu_description">Mỗi mùa anime sẽ có một ID Kitsu riêng làm định danh chính.</string>
+    <string name="settings_tracking_anime_id_tvdb">Ưu tiên TVDB</string>
+    <string name="settings_tracking_anime_id_tvdb_description">Dùng ID TVDB để nhóm các mùa phim. Tùy chọn này ổn định hơn IMDb đối với anime bị IMDb tách riêng theo mùa.</string>
     <string name="settings_tracking_anime_section">Tính năng Simkl</string>
     <string name="settings_simkl_connect">Kết nối Simkl</string>
     <string name="settings_simkl_connected_as">Đã kết nối với %1$s</string>
@@ -1333,7 +1357,7 @@
     <string name="custom_theme_title">Dải màu chuyển tiếp tùy chỉnh của bạn</string>
     <string name="custom_theme_subtitle">Chọn 3 màu cho chủ đề của bạn. Chọn một màu để chỉnh sửa.</string>
     <string name="custom_theme_edit">Chỉnh sửa chủ đề tùy chỉnh</string>
-    <string name="custom_theme_solid_title">Màu tùy chỉnh của bạn</string>
+    <string name="custom_theme_solid_title">Màu tùy chỉnh</string>
     <string name="custom_theme_solid_subtitle">Chọn một màu cho chủ đề của bạn.</string>
     <string name="custom_theme_mode_gradient">Dải màu chuyển tiếp</string>
     <string name="custom_theme_mode_solid">Màu trơn</string>
@@ -1434,7 +1458,7 @@
     <string name="lang_vietnamese">Tiếng Việt</string>
     <string name="lang_welsh">Tiếng Wales</string>
     <string name="lang_zulu">Tiếng Zulu</string>
-    <string name="action_clear">Xoá</string>
+    <string name="action_clear">Xóa</string>
     <string name="action_continue">Tiếp tục</string>
     <string name="action_ignore">Bỏ qua</string>
     <string name="action_install">Cài đặt</string>
@@ -1476,11 +1500,11 @@
     <string name="discover_select_genre">Chọn thể loại</string>
     <string name="discover_select_type">Chọn loại</string>
     <string name="discover_type">Loại</string>
-    <string name="episode_mark_previous_unwatched">Đánh dấu các tập trước là chưa xem</string>
-    <string name="episode_mark_previous_watched">Đánh dấu các tập trước là đã xem</string>
-    <string name="episode_mark_season_unwatched">Đánh dấu %1$s là chưa xem</string>
-    <string name="episode_mark_season_watched">Đánh dấu %1$s là đã xem</string>
-    <string name="episode_mark_previous_seasons_watched">Đánh dấu các mùa trước là đã xem</string>
+    <string name="episode_mark_previous_unwatched">Đánh dấu chưa xem tập trước</string>
+    <string name="episode_mark_previous_watched">Đánh dấu đã xem tập trước</string>
+    <string name="episode_mark_season_unwatched">Đánh dấu chưa xem %1$s</string>
+    <string name="episode_mark_season_watched">Đánh dấu đã xem %1$s</string>
+    <string name="episode_mark_previous_seasons_watched">Đánh dấu đã xem các mùa trước</string>
     <string name="episode_mark_unwatched">Đánh dấu chưa xem</string>
     <string name="episode_mark_watched">Đánh dấu đã xem</string>
     <string name="home_continue_watching_up_next">Tiếp theo</string>
@@ -1540,7 +1564,7 @@
     <string name="profile_custom_avatar_url_description">Dán liên kết hình ảnh hoặc để trống để dùng bộ sưu tập ảnh đại diện có sẵn.</string>
     <string name="profile_custom_avatar_url_placeholder">https://example.com/avatar.png</string>
     <string name="profile_delete_confirm_message">Toàn bộ dữ liệu của "%1$s" sẽ bị xóa vĩnh viễn</string>
-    <string name="profile_delete_title">Xoá hồ sơ</string>
+    <string name="profile_delete_title">Xóa hồ sơ</string>
     <string name="profile_edit_add_title">Thêm hồ sơ</string>
     <string name="profile_edit_edit_title">Chỉnh sửa hồ sơ</string>
     <string name="profile_enter_current_pin">Nhập mã PIN hiện tại</string>
@@ -1564,6 +1588,7 @@
     <string name="profile_use_primary_addons">Dùng tiện ích chính</string>
     <string name="profile_use_primary_addons_description">Dùng cấu hình tiện ích của hồ sơ chính thay vì quản lý riêng</string>
     <string name="profile_who_is_watching">Ai đang xem?</string>
+    <string name="profile_already_active">Bạn đang trong hồ sơ &quot;%1$s&quot;</string>
     <string name="provider_downloaded">Đã tải xuống</string>
     <string name="resume_prompt_action">Xem tiếp</string>
     <string name="streams_active_scrapers">Trình thu thập dữ liệu đang hoạt động</string>
@@ -1588,12 +1613,23 @@
     <string name="streams_loading_subtitles">Đang tải phụ đề từ tiện ích…</string>
     <string name="streams_loading_skip_segments">Đang tải các đoạn bỏ qua…</string>
     <string name="streams_finding_streams">Đang tìm luồng…</string>
+    <string name="playback_show_loading_status">Hiển thị trạng thái tải</string>
+    <string name="playback_show_loading_status_sub">Hiển thị tiến trình từng bước trong khi trình phát đang khởi tạo.</string>
+    <string name="player_loading_preparing">Đang chuẩn bị luồng phát…</string>
+    <string name="player_loading_subtitles">Đang tải phụ đề…</string>
+    <string name="player_loading_subtitles_from">Đang tải phụ đề từ %1$d tiện ích…</string>
+    <string name="player_loading_subtitles_progress">Đang tải phụ đề… (%1$d / %2$d)</string>
+    <string name="player_loading_subtitles_addon">Phụ đề: %1$s (%2$d / %3$d)</string>
+    <string name="player_loading_building">Đang khởi tạo trình phát…</string>
+    <string name="player_loading_starting">Bắt đầu phát…</string>
+    <string name="player_loading_buffering">Đang tải bộ đệm…</string>
+    <string name="debrid_resolving_stream">Đang phân giải luồng debrid</string>
     <string name="streams_link_copied">Đã sao chép liên kết luồng</string>
     <string name="streams_no_direct_link">Không có sẵn liên kết phát trực tiếp nào</string>
     <string name="streams_no_metadata">Không có thông tin</string>
     <string name="streams_refresh">Làm mới luồng</string>
-    <string name="streams_resume_from_percent">Tiếp tục từ %1$d%</string>
-    <string name="streams_resume_from_time">Tiếp tục từ %1$s</string>
+    <string name="streams_resume_from_percent">Xem tiếp từ %1$d%</string>
+    <string name="streams_resume_from_time">Xem tiếp từ %1$s</string>
     <string name="streams_size">DUNG LƯỢNG %1$s</string>
     <string name="streams_torrent_not_supported">Loại luồng này không được hỗ trợ</string>
     <string name="debrid_missing_api_key">Vui lòng kết nối tài khoản trong Cài đặt</string>
@@ -1660,7 +1696,7 @@
     <string name="downloads_live_downloading_with_total">Đang tải %1$s • %2$s / %3$s</string>
     <string name="downloads_live_failed">Tải xuống thất bại</string>
     <string name="downloads_live_paused">Đã tạm dừng %1$s</string>
-    <string name="library_remove_confirm">Xoá</string>
+    <string name="library_remove_confirm">Xóa</string>
     <string name="library_remove_from_list_message">Xóa %1$s khỏi %2$s?</string>
     <string name="library_remove_message">Xóa %1$s khỏi thư viện?</string>
     <string name="library_remove_title">Xóa khỏi thư viện?</string>
@@ -1741,7 +1777,7 @@
     <string name="generic_addon">Tiện ích</string>
     <string name="action_saved">Đã lưu</string>
     <string name="action_play_episode">Phát %1$s</string>
-    <string name="action_resume_episode">Tiếp tục %1$s</string>
+    <string name="action_resume_episode">Xem tiếp %1$s</string>
     <string name="collections_import_error_empty_json">JSON trống</string>
     <string name="collections_import_error_collection_blank_id">Bộ sưu tập %1$d không có ID</string>
     <string name="collections_import_error_collection_duplicate_id">ID bộ sưu tập "%1$s" được sử dụng nhiều hơn một lần</string>
@@ -1881,7 +1917,7 @@
     <string name="notifications_channel_episode_releases_name">Tập mới phát hành</string>
     <string name="parental_alcohol">Rượu bia/Chất kích thích</string>
     <string name="parental_frightening">Cảnh đáng sợ</string>
-    <string name="parental_nudity">Cảnh khoả thân</string>
+    <string name="parental_nudity">Cảnh khỏa thân</string>
     <string name="parental_profanity">Ngôn từ thô tục</string>
     <string name="parental_severity_mild">Nhẹ</string>
     <string name="parental_severity_moderate">Vừa phải</string>
@@ -2012,12 +2048,12 @@
     <string name="settings_debrid_rule_excluded_channels">Kênh loại trừ</string>
     <string name="settings_debrid_rule_excluded_channels_desc">Ẩn các kênh âm thanh đã chọn</string>
     <!-- Debrid rule rows: encodes -->
-    <string name="settings_debrid_rule_preferred_encodes">Bản mã hoá ưu tiên</string>
-    <string name="settings_debrid_rule_preferred_encodes_desc">Ưu tiên sắp xếp các bản mã hoá như AV1, HEVC, AVC và các bản mã hoá tương tự</string>
-    <string name="settings_debrid_rule_required_encodes">Bản mã hoá bắt buộc</string>
-    <string name="settings_debrid_rule_required_encodes_desc">Chỉ hiển thị kết quả có bản mã hoá như AV1, HEVC và AVC và các bản mã hoá tương tự </string>
-    <string name="settings_debrid_rule_excluded_encodes">Bản mã hoá loại trừ</string>
-    <string name="settings_debrid_rule_excluded_encodes_desc">Ẩn các bản mã hoá đã chọn</string>
+    <string name="settings_debrid_rule_preferred_encodes">Bản mã hóa ưu tiên</string>
+    <string name="settings_debrid_rule_preferred_encodes_desc">Ưu tiên sắp xếp các bản mã hóa như AV1, HEVC, AVC và các bản mã hóa tương tự</string>
+    <string name="settings_debrid_rule_required_encodes">Bản mã hóa bắt buộc</string>
+    <string name="settings_debrid_rule_required_encodes_desc">Chỉ hiển thị kết quả có bản mã hóa như AV1, HEVC và AVC và các bản mã hóa tương tự</string>
+    <string name="settings_debrid_rule_excluded_encodes">Bản mã hóa loại trừ</string>
+    <string name="settings_debrid_rule_excluded_encodes_desc">Ẩn các bản mã hóa đã chọn</string>
     <!-- Debrid rule rows: languages -->
     <string name="settings_debrid_rule_preferred_languages">Ngôn ngữ ưu tiên</string>
     <string name="settings_debrid_rule_preferred_languages_desc">Ưu tiên sắp xếp các ngôn ngữ âm thanh đã chọn</string>
@@ -2065,7 +2101,7 @@
     <!-- Cloud library -->
     <string name="cloud_library_playback_disabled">Thư viện đám mây đang tắt</string>
     <!-- IntroDB settings -->
-    <string name="settings_playback_introdb_invalid_api_key">Khóa API không hợp lệ hoặc không thể kết nối</string>
+    <string name="settings_playback_introdb_invalid_api_key">Mã khóa API không hợp lệ hoặc không thể kết nối</string>
     <string name="addons_manifest_missing_field">Tệp kê khai thiếu \"%1$s\"</string>
     <string name="collections_editor_tmdb_collection_title_format">Bộ sưu tập TMDB %1$s</string>
     <string name="collections_editor_tmdb_director_title_format">Đạo diễn TMDB %1$s</string>
@@ -2163,7 +2199,7 @@
     <string name="plugins_test_failed">Kiểm tra nhà cung cấp thất bại</string>
     <string name="plugins_test_results_count">Kết quả kiểm tra (%1$d)</string>
     <string name="search_error_no_results_for_catalog">Không tìm thấy kết quả trong %1$s</string>
-    <string name="settings_playback_introdb_invalid_key">Khóa API không hợp lệ hoặc lỗi kết nối</string>
+    <string name="settings_playback_introdb_invalid_key">Mã khóa API không hợp lệ hoặc lỗi kết nối</string>
     <string name="streams_plugin_repository_fallback">Kho lưu trữ trình mở rộng</string>
     <string name="submit_intro_action">Gửi mốc thời gian Giới thiệu</string>
     <string name="submit_intro_button_submit">Gửi</string>
@@ -2180,6 +2216,13 @@
     <string name="updates_empty_download_body">Dữ liệu tải về trống</string>
     <string name="updates_github_api_error">Lỗi API phát hành của GitHub: %1$d</string>
     <string name="updates_no_channel_release">Chưa có bản cập nhật nào được phát hành</string>
+    <string name="updates_channel_title">Kênh cập nhật</string>
+    <string name="updates_channel_description">Chọn loại bản cập nhật ứng dụng muốn nhận</string>
+    <string name="updates_channel_stable">Ổn định</string>
+    <string name="updates_channel_beta">Thử nghiệm</string>
+    <string name="updates_channel_stable_description">Dành cho sử dụng hàng ngày.</string>
+    <string name="updates_channel_beta_description">Các bản cập nhật sớm có thể chứa lỗi, làm hỏng một số tính năng hoặc hoạt động không như mong đợi.</string>
+    <string name="updates_waiting_for_stable">Bạn sẽ nhận được bản phát hành ổn định tiếp theo khi có sẵn</string>
     <string name="updates_release_missing_title">Bản phát hành không có tên hoặc thẻ</string>
     <!-- Continue Watching air date display -->
     <string name="cw_airs_date">Phát sóng %1$s</string>
@@ -2257,4 +2300,35 @@
         <item quantity="one">%d tiêu đề</item>
         <item quantity="other">%d tiêu đề</item>
     </plurals>
+    <string name="settings_playback_auto_skip_segments">Tự động bỏ qua</string>
+    <string name="settings_playback_auto_skip_none">Không có</string>
+    <string name="settings_playback_auto_skip_intro">Giới thiệu / Mở đầu</string>
+    <string name="settings_playback_auto_skip_intro_description">Tự động bỏ qua phần giới thiệu và mở đầu anime.</string>
+    <string name="settings_playback_auto_skip_recap">Tóm tắt</string>
+    <string name="settings_playback_auto_skip_recap_description">Tự động bỏ qua các phân đoạn tóm tắt.</string>
+    <string name="settings_playback_auto_skip_outro">Đoạn kết / Kết thúc</string>
+    <string name="settings_playback_auto_skip_outro_description">Tự động bỏ qua đoạn kết và kết thúc anime.</string>
+    <string name="settings_playback_auto_skip_movie_credits">Danh đề kết thúc</string>
+    <string name="settings_playback_auto_skip_movie_credits_description">Bỏ qua danh đề phim, giữ lại các cảnh hậu danh đề.</string>
+    <string name="player_skip_movie_credits">Bỏ qua Danh đề</string>
+    <string name="player_skip_to_post_credits">Đến cảnh hậu danh đề</string>
+    <string name="layout_overall_ratings">Điểm đánh giá tổng thể</string>
+    <string name="layout_overall_ratings_sub_on">Điểm đánh giá Tiêu chuẩn và TMDB đang được hiển thị.</string>
+    <string name="layout_overall_ratings_sub_off">Ẩn điểm đánh giá Tiêu chuẩn và TMDB. Các cài đặt của nhà cung cấp MDBList sẽ được ưu tiên áp dụng trên các trang chi tiết phim.</string>
+    <string name="layout_episode_ratings">Điểm đánh giá tập phim</string>
+    <string name="layout_episode_ratings_sub">Chọn các điểm đánh giá tập phim được hiển thị.</string>
+    <string name="layout_ratings_show">Hiển thị</string>
+    <string name="layout_ratings_hide">Ẩn</string>
+    <string name="layout_ratings_hide_unwatched">Ẩn mục Chưa xem</string>
+     <string name="settings_playback_legacy_layout">Bố cục kiểu cũ</string>
+    <string name="settings_playback_legacy_layout_description">Sử dụng các nút điều khiển gốc của trình phát.</string>
+    <string name="compose_player_via">Qua %1$s</string>
+    <string name="compose_player_episode_code">M%1$d T%2$d</string>
+    <string name="compose_player_more_actions">Thêm nút điều khiển</string>
+    <string name="compose_player_fewer_actions">Ẩn nút điều khiển</string>
+    <string name="compose_player_speed">Tốc độ phát lại</string>
+    <string name="compose_player_show_elapsed_time">Hiển thị thời gian đã phát</string>
+    <string name="compose_player_show_remaining_time">Hiển thị thời gian còn lại</string>
+    <string name="compose_player_brightness">Độ sáng</string>
+    <string name="compose_player_volume">Âm lượng</string>
 </resources>

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -40,6 +41,11 @@ import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.features.streams.ProviderFilterRow
+import com.nuvio.app.features.streams.StreamsUiState
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.collections_tab_all
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun PlayerSidePanel(
@@ -174,7 +180,31 @@ internal fun PlayerModalLoading(
 }
 
 @Composable
-internal fun AddonFilterChip(
+internal fun PlayerProviderFilterRow(
+    streamsUiState: StreamsUiState,
+    onFilterSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    ProviderFilterRow(
+        groups = streamsUiState.groups,
+        selectedFilter = streamsUiState.selectedFilter,
+        onFilterSelected = onFilterSelected,
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+        spacing = 16.dp,
+    ) { group, isSelected, onClick ->
+        AddonFilterChip(
+            label = group?.addonName ?: stringResource(Res.string.collections_tab_all),
+            isSelected = isSelected,
+            isLoading = group?.isLoading == true,
+            hasError = group?.error != null,
+            onClick = onClick,
+        )
+    }
+}
+
+@Composable
+private fun AddonFilterChip(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,

@@ -5,6 +5,8 @@ import kotlinx.serialization.json.JsonObject
 internal expect object TmdbSettingsStorage {
     fun loadEnabled(): Boolean?
     fun saveEnabled(enabled: Boolean)
+    fun loadApiKey(): String?
+    fun saveApiKey(apiKey: String)
     fun loadLanguage(): String?
     fun saveLanguage(language: String)
     fun loadUseTrailers(): Boolean?
@@ -15,8 +17,6 @@ internal expect object TmdbSettingsStorage {
     fun saveUseBasicInfo(enabled: Boolean)
     fun loadUseDetails(): Boolean?
     fun saveUseDetails(enabled: Boolean)
-    fun loadUseReleaseDates(): Boolean?
-    fun saveUseReleaseDates(enabled: Boolean)
     fun loadUseCredits(): Boolean?
     fun saveUseCredits(enabled: Boolean)
     fun loadUseProductions(): Boolean?

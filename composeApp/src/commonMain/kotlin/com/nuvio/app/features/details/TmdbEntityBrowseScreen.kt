@@ -63,6 +63,7 @@ import com.nuvio.app.features.tmdb.TmdbEntityKind
 import com.nuvio.app.features.tmdb.TmdbEntityMediaType
 import com.nuvio.app.features.tmdb.TmdbEntityRailType
 import com.nuvio.app.features.tmdb.TmdbMetadataService
+import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.navigation.LocalUseNativeNavigation
 
@@ -104,7 +105,11 @@ fun TmdbEntityBrowseScreen(
             fallbackName = entityName,
         )
         uiState = if (data != null) {
-            EntityBrowseUiState.Success(data)
+            val pattern = com.nuvio.app.core.poster.CustomPosterUrlRepository.let { repo ->
+                repo.ensureLoaded()
+                repo.pattern.value
+            }
+            EntityBrowseUiState.Success(data.withCustomPosterUrls(pattern))
         } else {
             EntityBrowseUiState.Error(loadFailedMessage)
         }

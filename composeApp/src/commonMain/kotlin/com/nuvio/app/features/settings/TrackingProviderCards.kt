@@ -1,19 +1,24 @@
 package com.nuvio.app.features.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -23,6 +28,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
@@ -45,11 +51,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -74,8 +82,11 @@ import com.nuvio.app.features.trakt.TraktConnectionMode
 import com.nuvio.app.features.trakt.traktBrandPainter
 import com.nuvio.app.features.watchprogress.WatchProgressSourceCoordinator
 import kotlinx.coroutines.launch
+import nuvio.composeapp.generated.resources.settings_mdblist_disconnect_description
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_cancel
+import nuvio.composeapp.generated.resources.action_collapse
+import nuvio.composeapp.generated.resources.action_expand
 import nuvio.composeapp.generated.resources.settings_simkl_authorization_expired
 import nuvio.composeapp.generated.resources.settings_simkl_authorization_revoked
 import nuvio.composeapp.generated.resources.settings_simkl_connect
@@ -96,6 +107,7 @@ import nuvio.composeapp.generated.resources.settings_simkl_visit
 import nuvio.composeapp.generated.resources.settings_tracking_approval_redirect
 import nuvio.composeapp.generated.resources.settings_tracking_disconnect_description
 import nuvio.composeapp.generated.resources.settings_tracking_disconnect_title
+import nuvio.composeapp.generated.resources.settings_tracking_not_connected
 import nuvio.composeapp.generated.resources.settings_trakt_approval_redirect
 import nuvio.composeapp.generated.resources.settings_trakt_connect
 import nuvio.composeapp.generated.resources.settings_trakt_connected_as
@@ -114,6 +126,7 @@ internal enum class TrackingBrand(val displayName: String) {
     NUVIO("Nuvio"),
     TRAKT("Trakt"),
     SIMKL("Simkl"),
+    MDBLIST("MDBList"),
     TMDB("TMDB"),
 }
 
@@ -127,12 +140,14 @@ internal fun isTrackingBrandAvailable(
     brand: TrackingBrand,
     traktConnected: Boolean,
     simklConnected: Boolean,
+    mdblistConnected: Boolean = false,
 ): Boolean = when (brand) {
     TrackingBrand.NUVIO,
     TrackingBrand.TMDB,
     -> true
     TrackingBrand.TRAKT -> traktConnected
     TrackingBrand.SIMKL -> simklConnected
+    TrackingBrand.MDBLIST -> mdblistConnected
 }
 
 internal fun TraktConnectionMode.toTrackingConnectionCardMode(): TrackingConnectionCardMode = when (this) {
@@ -171,51 +186,23 @@ internal fun TrackingProviderCards(
         }
     }
 
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val useTwoColumns = maxWidth >= 600.dp
-        if (useTwoColumns) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(IntrinsicSize.Min),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                TraktProviderCard(
-                    uiState = traktUiState,
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                )
-                SimklProviderCard(
-                    uiState = simklUiState,
-                    isSyncing = syncState.isLoading,
-                    syncErrorMessage = syncState.errorMessage,
-                    onSyncRequested = onSimklSyncRequested,
-                    onInfoRequested = { showSyncInfo = true },
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                )
-            }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp),
-            ) {
-                TraktProviderCard(
-                    uiState = traktUiState,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                SimklProviderCard(
-                    uiState = simklUiState,
-                    isSyncing = syncState.isLoading,
-                    syncErrorMessage = syncState.errorMessage,
-                    onSyncRequested = onSimklSyncRequested,
-                    onInfoRequested = { showSyncInfo = true },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-        }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(if (isTablet) 16.dp else 12.dp),
+    ) {
+        TraktProviderCard(
+            uiState = traktUiState,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        SimklProviderCard(
+            uiState = simklUiState,
+            isSyncing = syncState.isLoading,
+            syncErrorMessage = syncState.errorMessage,
+            onSyncRequested = onSimklSyncRequested,
+            onInfoRequested = { showSyncInfo = true },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        MdbListProviderCard(Modifier.fillMaxWidth())
     }
 
     if (showSyncInfo) {
@@ -306,7 +293,7 @@ private fun SimklProviderCard(
 }
 
 @Composable
-private fun TrackingProviderCard(
+internal fun TrackingProviderCard(
     brand: TrackingBrand,
     mode: TrackingConnectionCardMode,
     credentialsConfigured: Boolean,
@@ -324,12 +311,13 @@ private fun TrackingProviderCard(
     syncLabel: String? = null,
     infoLabel: String? = null,
     isSyncing: Boolean = false,
+    authorizationCode: String? = null,
     statusMessage: String? = null,
     errorMessage: String? = null,
     websiteLabel: String? = null,
     websiteUrl: String? = null,
-    onConnectRequested: () -> String?,
-    onResumeAuthorization: () -> String?,
+    onConnectRequested: suspend () -> String?,
+    onResumeAuthorization: suspend () -> String?,
     onCancelAuthorization: () -> Unit,
     onSyncRequested: (() -> Unit)? = null,
     onInfoRequested: (() -> Unit)? = null,
@@ -337,9 +325,24 @@ private fun TrackingProviderCard(
 ) {
     val tokens = MaterialTheme.nuvio
     val uriHandler = LocalUriHandler.current
+    val actionScope = rememberCoroutineScope()
     val failedOpenBrowserMessage = stringResource(Res.string.settings_trakt_failed_open_browser)
     var browserError by rememberSaveable { mutableStateOf(false) }
     var showDisconnectDialog by rememberSaveable { mutableStateOf(false) }
+    var expanded by rememberSaveable(brand, ProfileRepository.activeProfileId) { mutableStateOf(false) }
+    val chevronRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = tween(tokens.motion.normalMillis, easing = tokens.motion.standard),
+        label = "trackingCardChevron",
+    )
+    val toggleLabel = stringResource(if (expanded) Res.string.action_collapse else Res.string.action_expand)
+    val headerError = errorMessage?.takeIf(String::isNotBlank)
+        ?: failedOpenBrowserMessage.takeIf { browserError }
+    val connectionLabel = when (mode) {
+        TrackingConnectionCardMode.CONNECTED -> connectedLabel
+        TrackingConnectionCardMode.AWAITING_APPROVAL -> finishSignInLabel
+        TrackingConnectionCardMode.DISCONNECTED -> stringResource(Res.string.settings_tracking_not_connected)
+    }
 
     fun openUrl(url: String?) {
         if (url.isNullOrBlank()) return
@@ -358,171 +361,225 @@ private fun TrackingProviderCard(
                 shape = tokens.shapes.card,
             ),
     ) {
-        TrackingBrandGlyph(
-            brand = brand,
-            contentDescription = null,
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(12.dp)
-                .size(150.dp)
-                .alpha(0.08f),
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(if (mode == TrackingConnectionCardMode.CONNECTED) 20.dp else 18.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            TrackingBrandWordmark(
+        Box(modifier = Modifier.matchParentSize()) {
+            TrackingBrandGlyph(
                 brand = brand,
-                contentDescription = brand.displayName,
+                contentDescription = null,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(12.dp)
+                    .size(150.dp)
+                    .alpha(0.08f),
             )
+        }
 
-            when (mode) {
-                TrackingConnectionCardMode.CONNECTED -> {
-                    TrackingConnectedIdentity(
-                        label = connectedLabel,
-                        description = connectedDescription,
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(
+                        role = Role.Button,
+                        onClickLabel = toggleLabel,
+                        onClick = { expanded = !expanded },
                     )
-                    if (syncLabel != null && onSyncRequested != null) {
-                        TrackingBrandPrimaryButton(
-                            label = syncLabel,
-                            loading = isSyncing,
-                            enabled = !isLoading && !isSyncing,
-                            onClick = onSyncRequested,
-                            showSyncIcon = true,
-                        )
-                    }
-                }
-
-                TrackingConnectionCardMode.AWAITING_APPROVAL -> {
-                    Text(
-                        text = finishSignInLabel,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = approvalDescription,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.78f),
-                    )
-                    TrackingBrandPrimaryButton(
-                        label = openLoginLabel,
-                        loading = isLoading,
-                        enabled = !isLoading,
-                        onClick = { openUrl(onResumeAuthorization()) },
-                    )
-                    OutlinedButton(
-                        onClick = onCancelAuthorization,
-                        enabled = !isLoading,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .heightIn(min = 48.dp),
-                        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.44f)),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            contentColor = Color.White,
-                            disabledContentColor = Color.White.copy(alpha = 0.45f),
-                        ),
-                    ) {
-                        Text(stringResource(Res.string.action_cancel))
-                    }
-                }
-
-                TrackingConnectionCardMode.DISCONNECTED -> {
-                    Text(
-                        text = signInDescription,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.82f),
-                    )
-                    TrackingBrandPrimaryButton(
-                        label = connectLabel,
-                        loading = isLoading,
-                        enabled = credentialsConfigured && !isLoading,
-                        onClick = { openUrl(onConnectRequested()) },
-                    )
-                    if (!credentialsConfigured) {
-                        TrackingBrandMessage(
-                            text = missingCredentialsMessage,
-                            isError = true,
-                        )
-                    }
-                }
-            }
-
-            statusMessage?.takeIf(String::isNotBlank)?.let { message ->
-                TrackingBrandMessage(text = message, isError = false)
-            }
-            errorMessage?.takeIf(String::isNotBlank)?.let { message ->
-                TrackingBrandMessage(text = message, isError = true)
-            }
-            if (browserError) {
-                TrackingBrandMessage(text = failedOpenBrowserMessage, isError = true)
-            }
-
-            val hasWebsiteAction = !websiteLabel.isNullOrBlank() && !websiteUrl.isNullOrBlank()
-            val hasDisconnectAction = mode == TrackingConnectionCardMode.CONNECTED
-            val hasInfoAction = mode == TrackingConnectionCardMode.CONNECTED &&
-                infoLabel != null && onInfoRequested != null
-            val footerActionCount = listOf(
-                hasWebsiteAction,
-                hasDisconnectAction,
-                hasInfoAction,
-            ).count { it }
-            if (footerActionCount > 0) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    if (hasWebsiteAction) {
-                        TextButton(
-                            onClick = { openUrl(websiteUrl) },
-                            modifier = if (footerActionCount > 1) Modifier.weight(0.95f) else Modifier,
-                            contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
-                        ) {
+                    Box(modifier = Modifier.height(38.dp), contentAlignment = Alignment.CenterStart) {
+                        TrackingBrandWordmark(
+                            brand = brand,
+                            contentDescription = brand.displayName,
+                        )
+                    }
+                    Text(
+                        text = headerError ?: connectionLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (headerError != null) TrackingErrorColor else Color.White.copy(alpha = 0.82f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (isLoading || isSyncing) {
+                    NuvioLoadingIndicator(color = Color.White, modifier = Modifier.size(18.dp))
+                }
+                Icon(
+                    imageVector = Icons.Rounded.ExpandMore,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.84f),
+                    modifier = Modifier.size(24.dp).rotate(chevronRotation),
+                )
+            }
+
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically(
+                    animationSpec = tween(tokens.motion.normalMillis, easing = tokens.motion.standard),
+                    expandFrom = Alignment.Top,
+                ) + fadeIn(tween(tokens.motion.fastMillis)),
+                exit = shrinkVertically(
+                    animationSpec = tween(tokens.motion.normalMillis, easing = tokens.motion.standard),
+                    shrinkTowards = Alignment.Top,
+                ) + fadeOut(tween(tokens.motion.fastMillis)),
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(start = 20.dp, end = 20.dp, bottom = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    when (mode) {
+                        TrackingConnectionCardMode.CONNECTED -> {
                             Text(
-                                text = websiteLabel.orEmpty(),
-                                style = MaterialTheme.typography.labelMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                                text = connectedDescription,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.76f),
                             )
+                            if (syncLabel != null && onSyncRequested != null) {
+                                TrackingBrandPrimaryButton(
+                                    label = syncLabel,
+                                    loading = isSyncing,
+                                    enabled = !isLoading && !isSyncing,
+                                    onClick = onSyncRequested,
+                                    showSyncIcon = true,
+                                )
+                            }
+                        }
+
+                        TrackingConnectionCardMode.AWAITING_APPROVAL -> {
+                            Text(
+                                text = finishSignInLabel,
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                            Text(
+                                text = approvalDescription,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.78f),
+                            )
+                            authorizationCode?.let { code ->
+                                Text(code, style = MaterialTheme.typography.headlineSmall, color = Color.White)
+                            }
+                            TrackingBrandPrimaryButton(
+                                label = openLoginLabel,
+                                loading = isLoading,
+                                enabled = !isLoading,
+                                onClick = { actionScope.launch { openUrl(onResumeAuthorization()) } },
+                            )
+                            OutlinedButton(
+                                onClick = onCancelAuthorization,
+                                enabled = !isLoading,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.44f)),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color.White,
+                                    disabledContentColor = Color.White.copy(alpha = 0.45f),
+                                ),
+                            ) {
+                                Text(stringResource(Res.string.action_cancel))
+                            }
+                        }
+
+                        TrackingConnectionCardMode.DISCONNECTED -> {
+                            Text(
+                                text = signInDescription,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.82f),
+                            )
+                            TrackingBrandPrimaryButton(
+                                label = connectLabel,
+                                loading = isLoading,
+                                enabled = credentialsConfigured && !isLoading,
+                                onClick = { actionScope.launch { openUrl(onConnectRequested()) } },
+                            )
+                            if (!credentialsConfigured) {
+                                TrackingBrandMessage(
+                                    text = missingCredentialsMessage,
+                                    isError = true,
+                                )
+                            }
                         }
                     }
-                    if (hasDisconnectAction) {
-                        TextButton(
-                            onClick = { showDisconnectDialog = true },
-                            modifier = if (footerActionCount > 1) Modifier.weight(1.05f) else Modifier,
-                            enabled = !isLoading && !isSyncing,
-                            contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = Color.White.copy(alpha = 0.84f),
-                                disabledContentColor = Color.White.copy(alpha = 0.38f),
-                            ),
-                        ) {
-                            Text(
-                                text = disconnectLabel,
-                                style = MaterialTheme.typography.labelMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+
+                    statusMessage?.takeIf(String::isNotBlank)?.let { message ->
+                        TrackingBrandMessage(text = message, isError = false)
                     }
-                    if (hasInfoAction) {
-                        TextButton(
-                            onClick = { onInfoRequested?.invoke() },
-                            modifier = if (footerActionCount > 1) Modifier.weight(1.55f) else Modifier,
-                            contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                    errorMessage?.takeIf(String::isNotBlank)?.let { message ->
+                        TrackingBrandMessage(text = message, isError = true)
+                    }
+                    if (browserError) {
+                        TrackingBrandMessage(text = failedOpenBrowserMessage, isError = true)
+                    }
+
+                    val hasWebsiteAction = !websiteLabel.isNullOrBlank() && !websiteUrl.isNullOrBlank()
+                    val hasDisconnectAction = mode == TrackingConnectionCardMode.CONNECTED
+                    val hasInfoAction = mode == TrackingConnectionCardMode.CONNECTED &&
+                        infoLabel != null && onInfoRequested != null
+                    val footerActionCount = listOf(
+                        hasWebsiteAction,
+                        hasDisconnectAction,
+                        hasInfoAction,
+                    ).count { it }
+                    if (footerActionCount > 0) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text(
-                                text = infoLabel.orEmpty(),
-                                style = MaterialTheme.typography.labelMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
+                            if (hasWebsiteAction) {
+                                TextButton(
+                                    onClick = { openUrl(websiteUrl) },
+                                    modifier = if (footerActionCount > 1) Modifier.weight(0.95f) else Modifier,
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                                ) {
+                                    Text(
+                                        text = websiteLabel.orEmpty(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            if (hasDisconnectAction) {
+                                TextButton(
+                                    onClick = { showDisconnectDialog = true },
+                                    modifier = if (footerActionCount > 1) Modifier.weight(1.05f) else Modifier,
+                                    enabled = !isLoading && !isSyncing,
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
+                                    colors = ButtonDefaults.textButtonColors(
+                                        contentColor = Color.White.copy(alpha = 0.84f),
+                                        disabledContentColor = Color.White.copy(alpha = 0.38f),
+                                    ),
+                                ) {
+                                    Text(
+                                        text = disconnectLabel,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            if (hasInfoAction) {
+                                TextButton(
+                                    onClick = { onInfoRequested?.invoke() },
+                                    modifier = if (footerActionCount > 1) Modifier.weight(1.55f) else Modifier,
+                                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 0.dp),
+                                    colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
+                                ) {
+                                    Text(
+                                        text = infoLabel.orEmpty(),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -538,29 +595,6 @@ private fun TrackingProviderCard(
                 onDisconnect()
             },
             onDismiss = { showDisconnectDialog = false },
-        )
-    }
-}
-
-@Composable
-private fun TrackingConnectedIdentity(
-    label: String,
-    description: String,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = Color.White,
-            fontWeight = FontWeight.SemiBold,
-        )
-        Text(
-            text = description,
-            style = MaterialTheme.typography.bodySmall,
-            color = Color.White.copy(alpha = 0.76f),
         )
     }
 }
@@ -655,6 +689,7 @@ private fun TrackingDisconnectDialog(
                             stringResource(Res.string.settings_trakt_disconnect_description)
                         TrackingBrand.SIMKL ->
                             stringResource(Res.string.settings_simkl_disconnect_description)
+                        TrackingBrand.MDBLIST -> stringResource(Res.string.settings_mdblist_disconnect_description)
                         TrackingBrand.NUVIO,
                         TrackingBrand.TMDB,
                         -> stringResource(
@@ -707,6 +742,12 @@ internal fun TrackingBrandGlyph(
             modifier = modifier,
             contentScale = ContentScale.Fit,
         )
+        TrackingBrand.MDBLIST -> Image(
+            painter = integrationLogoPainter(IntegrationLogo.MdbList),
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = ContentScale.Fit,
+        )
         TrackingBrand.TMDB -> Image(
             painter = integrationLogoPainter(IntegrationLogo.Tmdb),
             contentDescription = contentDescription,
@@ -730,9 +771,17 @@ private fun TrackingBrandWordmark(
     val painter: Painter = when (brand) {
         TrackingBrand.TRAKT -> traktBrandPainter(TraktBrandAsset.Wordmark)
         TrackingBrand.SIMKL -> simklBrandPainter(SimklBrandAsset.Wordmark)
+        TrackingBrand.MDBLIST -> integrationLogoPainter(IntegrationLogo.MdbList)
         TrackingBrand.NUVIO,
         TrackingBrand.TMDB,
         -> return
+    }
+    if (brand == TrackingBrand.MDBLIST) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(painter, contentDescription = null, modifier = Modifier.size(32.dp))
+            Text(contentDescription, style = MaterialTheme.typography.titleLarge, color = Color.White, fontWeight = FontWeight.Bold)
+        }
+        return
     }
     Image(
         painter = painter,
@@ -744,6 +793,7 @@ private fun TrackingBrandWordmark(
             TrackingBrand.SIMKL -> Modifier
                 .width(124.dp)
                 .height(30.dp)
+            TrackingBrand.MDBLIST -> Modifier.width(130.dp).height(32.dp)
             TrackingBrand.NUVIO,
             TrackingBrand.TMDB,
             -> Modifier
@@ -756,6 +806,9 @@ private fun TrackingBrandWordmark(
 private fun TrackingBrand.cardBrush(): Brush = when (this) {
     TrackingBrand.TRAKT -> Brush.linearGradient(
         colors = listOf(Color(0xFF7D279B), Color(0xFFD61F56), Color(0xFFF22125)),
+    )
+    TrackingBrand.MDBLIST -> Brush.linearGradient(
+        colors = listOf(Color(0xFF173D69), Color(0xFF225C97), Color(0xFF16385D)),
     )
     TrackingBrand.SIMKL -> Brush.linearGradient(
         colors = listOf(Color(0xFF050505), Color(0xFF292929), Color(0xFF111111)),

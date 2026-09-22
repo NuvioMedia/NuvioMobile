@@ -7,6 +7,7 @@ data class MetaDetails(
     val id: String,
     val type: String,
     val name: String,
+    val imdbId: String? = null,
     val poster: String? = null,
     val background: String? = null,
     val logo: String? = null,
@@ -49,6 +50,7 @@ enum class MoreLikeThisSource {
 data class MetaExternalRating(
     val source: String,
     val value: Double,
+    val isCertified: Boolean = false,
 )
 
 data class MetaTrailer(

@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.watchprogress.WatchProgressPlaybackSession
+
 data class ExternalPlayerApp(
     val id: String,
     val name: String,
@@ -21,8 +23,10 @@ data class ExternalPlayerPlaybackRequest(
     val season: Int? = null,
     val episode: Int? = null,
     val episodeTitle: String? = null,
-    // JSON array of intro/outro skip segments, passed to players that support auto-skipping.
+    // JSON array of episode/movie skip segments, passed to players that support segment skipping.
     val skipSegmentsJson: String? = null,
+    val durationMs: Long? = null,
+    val playbackSession: WatchProgressPlaybackSession? = null,
 ) {
     /**
      * Builds a display title for external players.

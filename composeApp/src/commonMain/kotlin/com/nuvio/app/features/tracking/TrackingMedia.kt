@@ -16,6 +16,7 @@ data class TrackingExternalIds(
     val anidb: Long? = null,
     val anilist: Long? = null,
     val kitsu: Long? = null,
+    val mdblist: String? = null,
 ) {
     val hasAny: Boolean
         get() = !imdb.isNullOrBlank() ||
@@ -26,7 +27,7 @@ data class TrackingExternalIds(
             mal != null ||
             anidb != null ||
             anilist != null ||
-            kitsu != null
+            kitsu != null || !mdblist.isNullOrBlank()
 
     fun mergeMissing(other: TrackingExternalIds): TrackingExternalIds =
         TrackingExternalIds(
@@ -39,6 +40,7 @@ data class TrackingExternalIds(
             anidb = anidb ?: other.anidb,
             anilist = anilist ?: other.anilist,
             kitsu = kitsu ?: other.kitsu,
+            mdblist = mdblist ?: other.mdblist,
         )
 }
 
@@ -46,6 +48,9 @@ data class TrackingEpisode(
     val season: Int? = null,
     val number: Int,
     val title: String? = null,
+    val tmdbId: Long? = null,
+    val tvdbId: Long? = null,
+    val usesTvdbSeasonMapping: Boolean = false,
 )
 
 data class TrackingCatalogReference(
@@ -80,6 +85,7 @@ data class TrackingMediaReference(
                     ?: ids.anidb?.let { "anidb:$it" }
                     ?: ids.anilist?.let { "anilist:$it" }
                     ?: ids.kitsu?.let { "kitsu:$it" }
+                    ?: ids.mdblist?.let { "mdblist:$it" }
                     ?: "title:${title.orEmpty().trim().lowercase()}:${year ?: 0}",
             )
         }
@@ -110,6 +116,7 @@ fun parseTrackingExternalIds(rawValue: String?): TrackingExternalIds {
         "anidb" -> TrackingExternalIds(anidb = value.toLongOrNull())
         "anilist" -> TrackingExternalIds(anilist = value.toLongOrNull())
         "kitsu" -> TrackingExternalIds(kitsu = value.toLongOrNull())
+        "mdblist" -> TrackingExternalIds(mdblist = value.takeIf(String::isNotBlank))
         else -> TrackingExternalIds(trakt = full.toLongOrNull())
     }
 }
