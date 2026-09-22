@@ -257,6 +257,17 @@ internal object MetaDetailsParser {
 
     private fun JsonObject.seasonPosters(videos: List<MetaVideo>): Map<Int, String> {
         val appExtras = this["app_extras"] as? JsonObject ?: return emptyMap()
+        val byNumber = appExtras["seasonPosterByNumber"] as? JsonObject
+        if (byNumber != null) {
+            return byNumber.entries.mapNotNull { (key, element) ->
+                val season = key.trim().toIntOrNull() ?: return@mapNotNull null
+                val url = (element as? JsonPrimitive)?.contentOrNull
+                    ?.trim()
+                    ?.takeIf(String::isNotBlank)
+                    ?: return@mapNotNull null
+                season to url
+            }.toMap()
+        }
         val posters = appExtras["seasonPosters"] as? JsonArray ?: return emptyMap()
         val seasons = videos
             .mapNotNull(MetaVideo::season)
