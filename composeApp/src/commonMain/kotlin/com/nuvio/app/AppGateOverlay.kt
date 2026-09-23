@@ -35,6 +35,7 @@ internal fun AppGateOverlay(
             onReplace = null,
             onActivate = currentOnActivate,
             onAppReady = currentOnAppReady,
+            onColdStartUiReady = null,
             onMainContentMountChanged = currentOnMainContentMountChanged,
             onMainContentVisibleChanged = currentOnMainContentVisibleChanged,
             onTabTitles = null,
