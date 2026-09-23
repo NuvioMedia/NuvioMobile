@@ -8,6 +8,8 @@
         <item name="windowSplashScreenBackground">@color/nuvio_background</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
         <item name="postSplashScreenTheme">@style/Theme.Nuvio</item>
+        <item name="windowSplashScreenAnimationDuration">0</item>
+        <item name="android:windowSplashScreenAnimationDuration">0</item>
     </style>
 
     <style name="Theme.Nuvio.Splash.ArcticBlue" parent="@style/Theme.Nuvio.Splash">
