@@ -38,6 +38,8 @@ data class DetailRoute(
     val type: String,
     val id: String,
     override val title: String? = null,
+    val initialSeasonNumber: Int? = null,
+    val initialEpisodeNumber: Int? = null,
 ) : AppRoute
 
 @Serializable
