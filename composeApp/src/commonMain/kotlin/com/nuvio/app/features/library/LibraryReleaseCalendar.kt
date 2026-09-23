@@ -1024,7 +1024,7 @@ private data class LibraryCalendarSelection(
     val dateIso: String,
 )
 
-private data class LibraryCalendarDate(
+internal data class LibraryCalendarDate(
     val year: Int,
     val month: Int,
     val day: Int,
