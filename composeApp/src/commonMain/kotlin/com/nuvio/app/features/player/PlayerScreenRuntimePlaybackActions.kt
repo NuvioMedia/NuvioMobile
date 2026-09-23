@@ -66,10 +66,22 @@ internal val PlayerScreenRuntime.playbackSession: WatchProgressPlaybackSession
         lastSourceUrl = activeSourceUrl,
     )
 
+internal fun PlayerScreenRuntime.resetPlaybackEndDetection() {
+    endDetectionArmed = false
+    mpvEofSeenClear = false
+}
+
+internal fun shouldTreatPlaybackAsNaturalEnd(
+    isEnded: Boolean,
+    endDetectionArmed: Boolean,
+    mpvEofSeenClear: Boolean,
+): Boolean = isEnded && endDetectionArmed && mpvEofSeenClear
+
 internal fun PlayerScreenRuntime.resetIdentityStateIfNeeded() {
     val identity = activePlaybackIdentity
     if (lastResetPlaybackIdentity != identity) {
         lastResetPlaybackIdentity = identity
+        resetPlaybackEndDetection()
         shouldPlay = true
         initialLoadCompleted = false
         speedBoostRestoreSpeed = null
@@ -92,6 +104,7 @@ internal fun PlayerScreenRuntime.resetIdentityStateIfNeeded() {
     val videoIdentity = "$identity:$activeVideoId:$activeSeasonNumber:$activeEpisodeNumber"
     if (lastResetVideoIdentity != videoIdentity) {
         lastResetVideoIdentity = videoIdentity
+        resetPlaybackEndDetection()
         hasRequestedScrobbleStartForCurrentItem = false
         scrobbleStartRequestGeneration = 0L
         pendingSeekScrobbleRestart = false

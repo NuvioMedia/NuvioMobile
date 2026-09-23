@@ -129,6 +129,10 @@ internal class PlayerScreenRuntime(
     var resizeMode by mutableStateOf(playerSettingsUiState.resizeMode)
     var layoutSize by mutableStateOf(IntSize.Zero)
     var playbackSnapshot by mutableStateOf(PlayerPlaybackSnapshot())
+    // Prevent the previous stream's end state from completing a new stream.
+    var endDetectionArmed by mutableStateOf(false)
+    // Ignore EOF until the current stream has reported a non-EOF snapshot.
+    var mpvEofSeenClear by mutableStateOf(false)
     var playerController by mutableStateOf<PlayerEngineController?>(null)
     var playerControllerSourceUrl by mutableStateOf<String?>(null)
     var errorMessage by mutableStateOf<String?>(null)

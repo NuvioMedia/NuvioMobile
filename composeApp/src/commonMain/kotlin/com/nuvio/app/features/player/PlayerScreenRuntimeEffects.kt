@@ -71,6 +71,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         errorMessage = null
         playerController = null
         playerControllerSourceUrl = null
+        resetPlaybackEndDetection()
         playbackSnapshot = PlayerPlaybackSnapshot()
         isScrubbingTimeline = false
         scrubbingPositionMs = null
@@ -407,8 +408,16 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
         playbackSnapshot.isLoading,
         playbackSnapshot.isEnded,
         playbackSnapshot.durationMs,
+        endDetectionArmed,
+        mpvEofSeenClear,
     ) {
-        if (playbackSnapshot.isEnded) {
+        if (
+            shouldTreatPlaybackAsNaturalEnd(
+                isEnded = playbackSnapshot.isEnded,
+                endDetectionArmed = endDetectionArmed,
+                mpvEofSeenClear = mpvEofSeenClear,
+            )
+        ) {
             flushWatchProgress(TrackingScrobbleAction.STOP)
             previousIsPlaying = false
             pendingSeekScrobbleRestart = false
@@ -552,6 +561,33 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
     }
 
     LaunchedEffect(
+        activeSourceUrl,
+        activeVideoId,
+        activeSeasonNumber,
+        activeEpisodeNumber,
+        playbackSnapshot.positionMs,
+        playbackSnapshot.durationMs,
+        skipIntervals,
+        playerSettingsUiState.nextEpisodeThresholdMode,
+        playerSettingsUiState.nextEpisodeThresholdPercent,
+        playerSettingsUiState.nextEpisodeThresholdMinutesBeforeEnd,
+    ) {
+        if (endDetectionArmed) return@LaunchedEffect
+        if (
+            PlayerNextEpisodeRules.isAwayFromEnd(
+                positionMs = playbackSnapshot.positionMs,
+                durationMs = playbackSnapshot.durationMs,
+                skipIntervals = skipIntervals,
+                thresholdMode = playerSettingsUiState.nextEpisodeThresholdMode,
+                thresholdPercent = playerSettingsUiState.nextEpisodeThresholdPercent,
+                thresholdMinutesBeforeEnd = playerSettingsUiState.nextEpisodeThresholdMinutesBeforeEnd,
+            )
+        ) {
+            endDetectionArmed = true
+        }
+    }
+
+    LaunchedEffect(
         playerMetaVideos,
         activeSeasonNumber,
         activeEpisodeNumber,
@@ -615,8 +651,9 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         playerSettingsUiState.nextEpisodeThresholdPercent,
         playerSettingsUiState.nextEpisodeThresholdMinutesBeforeEnd,
         nextEpisodeCardDismissed,
+        endDetectionArmed,
     ) {
-        if (nextEpisodeInfo == null || playbackSnapshot.durationMs <= 0L) {
+        if (!endDetectionArmed || nextEpisodeInfo == null || playbackSnapshot.durationMs <= 0L) {
             showNextEpisodeCard = false
             return@LaunchedEffect
         }
@@ -638,9 +675,19 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         }
     }
 
-    LaunchedEffect(playbackSnapshot.isEnded, nextEpisodeInfo, nextEpisodeCardDismissed) {
+    LaunchedEffect(
+        playbackSnapshot.isEnded,
+        nextEpisodeInfo,
+        nextEpisodeCardDismissed,
+        endDetectionArmed,
+        mpvEofSeenClear,
+    ) {
         if (
-            playbackSnapshot.isEnded &&
+            shouldTreatPlaybackAsNaturalEnd(
+                isEnded = playbackSnapshot.isEnded,
+                endDetectionArmed = endDetectionArmed,
+                mpvEofSeenClear = mpvEofSeenClear,
+            ) &&
             nextEpisodeInfo != null &&
             !showNextEpisodeCard &&
             !nextEpisodeCardDismissed
@@ -774,6 +821,7 @@ internal fun PlayerScreenRuntime.tryRefreshCredentialedSourceAfterError(message:
             }
 
             flushWatchProgress()
+            resetPlaybackEndDetection()
             stopActiveP2pStream()
             activeSourceUrl = refreshedUrl
             activeSourceAudioUrl = null
