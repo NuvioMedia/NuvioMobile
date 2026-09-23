@@ -28,12 +28,12 @@ class MdbListRatingsClientTest {
         harness.reply(body = RATINGS)
         harness.reply(body = METADATA)
 
-        assertEquals(RATINGS, client.getRating("movie", "imdb", credential, BODY))
-        val ratings = parseRottenTomatoesRatings(client.getMedia("movie", "tt1234567", credential))
+        assertEquals(RATINGS, client.getMediaBatch("movie", IDS, credential))
+        val ratings = parseMdbListRatings(client.getMedia("movie", "tt1234567", credential))
 
         assertEquals(92.0, ratings.single().value)
         assertTrue(ratings.single().isCertified)
-        assertEquals(listOf("/rating/movie/imdb", "/imdb/movie/tt1234567/"), harness.engine.requests.map { it.path })
+        assertEquals(listOf("/imdb/movie/", "/imdb/movie/tt1234567/"), harness.engine.requests.map { it.path })
         assertTrue(harness.engine.requests.all { it.accessToken == "access-one" && "apikey" !in it.query })
         assertEquals(mapOf("append_to_response" to "keyword"), harness.engine.requests.last().query)
         assertEquals(BODY, harness.engine.requests.first().body)
@@ -45,11 +45,11 @@ class MdbListRatingsClientTest {
         harness.connected()
         val credential = requireNotNull(settings(" separate+key ").credential)
 
-        assertEquals(RATINGS, client.getRating("show", "imdb", credential, BODY))
+        assertEquals(RATINGS, client.getMediaBatch("show", IDS, credential))
         assertEquals(METADATA, client.getMedia("show", "tt1234567", credential))
 
         assertEquals(listOf(
-            "https://api.mdblist.com/rating/show/imdb?apikey=separate%2Bkey" to BODY,
+            "https://api.mdblist.com/imdb/show/?apikey=separate%2Bkey" to BODY,
             "https://api.mdblist.com/imdb/show/tt1234567/?apikey=separate%2Bkey&append_to_response=keyword" to null,
         ), keyRequests)
         assertTrue(harness.engine.requests.isEmpty())
@@ -60,11 +60,11 @@ class MdbListRatingsClientTest {
     fun clearingTheKeyRestoresTheAccountAndKeepsRatingsEnabled() = runTest {
         harness.connected()
         val configured = settings("override")
-        client.getRating("movie", "imdb", requireNotNull(configured.credential), BODY)
+        client.getMediaBatch("movie", IDS, requireNotNull(configured.credential))
 
         val cleared = configured.copy(apiKey = " ")
         harness.reply(body = RATINGS)
-        client.getRating("movie", "imdb", requireNotNull(cleared.credential), BODY)
+        client.getMediaBatch("movie", IDS, requireNotNull(cleared.credential))
 
         assertTrue(cleared.enabled)
         assertTrue(cleared.isActive)
@@ -79,9 +79,9 @@ class MdbListRatingsClientTest {
         harness.reply(body = MdbListTestHarness.TOKEN_RESPONSE)
         harness.reply(body = RATINGS)
 
-        assertEquals(RATINGS, client.getRating("movie", "imdb", requireNotNull(settings().credential), BODY))
+        assertEquals(RATINGS, client.getMediaBatch("movie", IDS, requireNotNull(settings().credential)))
 
-        assertEquals(listOf("/rating/movie/imdb", "/oauth/token/", "/rating/movie/imdb"), harness.engine.requests.map { it.path })
+        assertEquals(listOf("/imdb/movie/", "/oauth/token/", "/imdb/movie/"), harness.engine.requests.map { it.path })
         assertEquals("access-two", harness.engine.requests.last().accessToken)
         assertEquals(BODY, harness.engine.requests.last().body)
     }
@@ -93,7 +93,7 @@ class MdbListRatingsClientTest {
             postJson = { _, _ -> throw IOException("Rejected key") })
 
         expectMdbListFailure<IOException> {
-            failingClient.getRating("movie", "imdb", requireNotNull(settings("override").credential), BODY)
+            failingClient.getMediaBatch("movie", IDS, requireNotNull(settings("override").credential))
         }
 
         assertTrue(harness.engine.requests.isEmpty())
@@ -107,7 +107,7 @@ class MdbListRatingsClientTest {
         harness.reply(body = RATINGS)
         harness.engine.intercept = { harness.store.selectProfile(2) }
 
-        expectMdbListFailure<CancellationException> { client.getRating("movie", "imdb", original, BODY) }
+        expectMdbListFailure<CancellationException> { client.getMediaBatch("movie", IDS, original) }
         assertNull(settings().credential)
         harness.connected("profile-two")
         assertNotEquals(original, settings().credential)
@@ -136,8 +136,9 @@ class MdbListRatingsClientTest {
         .withAccount(harness.store.state.value, harness.store.scope().profileId)
 
     private companion object {
-        const val BODY = """{"ids":["tt1234567"],"provider":"imdb"}"""
-        const val RATINGS = """{"ratings":[{"rating":8.1}]}"""
+        val IDS = listOf("tt1234567", "tt7654321")
+        const val BODY = """{"ids":["tt1234567","tt7654321"],"append_to_response":["keyword"]}"""
+        const val RATINGS = """[{"imdb_id":"tt1234567","ratings":[{"source":"imdb","value":8.1}]}]"""
         const val METADATA = """{"ratings":[{"source":"tomatoes","value":92}],"keywords":["certified-fresh"]}"""
     }
 }

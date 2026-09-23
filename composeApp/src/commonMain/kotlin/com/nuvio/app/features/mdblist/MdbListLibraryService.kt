@@ -1,5 +1,6 @@
 package com.nuvio.app.features.mdblist
 
+import com.nuvio.app.features.tracking.TrackingLibrarySorter
 import com.nuvio.app.features.tracking.TrackingListManager
 import com.nuvio.app.features.tracking.TrackingRefreshGate
 import com.nuvio.app.features.tracking.TrackingRefreshIntent
@@ -27,6 +28,7 @@ class MdbListLibraryService(
 ) {
     private val writer = MdbListLibraryWriter(api, sync, now)
     val listManager: TrackingListManager = writer
+    val listSorter: TrackingLibrarySorter = MdbListLibrarySorter(api, sync, auth, activeProfileId)
     private val refreshGate = TrackingRefreshGate()
     private val loadState = MutableStateFlow(LibraryLoadState())
     private val snapshots = combine(sync.state, auth.state, activeProfileId) { state, authorization, profileId ->

@@ -56,7 +56,8 @@ internal class MdbListLibraryWriter(
                 val body = mdbListResponseElement(response.body).objectValue()
                 if (body.flag("success") != true || body.number("id") != id) throw MdbListDecodingException()
             }
-            library.copy(lists = library.lists.filterNot { it.id == id }, itemsByList = library.itemsByList - key)
+            library.copy(lists = library.lists.filterNot { it.id == id }, itemsByList = library.itemsByList - key,
+                addedOrders = library.addedOrders - key)
         }
     }
 
@@ -83,7 +84,7 @@ internal class MdbListLibraryWriter(
                 val items = current.filterNot(target::matches) + if (desired) listOf(target.copy(
                     listedAt = now(), rank = (current.mapNotNull { it.rank }.maxOrNull() ?: 0) + 1
                 )) else emptyList()
-                library.copy(itemsByList = library.itemsByList + (key to items))
+                library.copy(itemsByList = library.itemsByList + (key to items), addedOrders = library.addedOrders - key)
             }
         }
     }

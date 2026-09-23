@@ -16,6 +16,7 @@ class MdbListTrackingLibraryProvider(
     override val changes = library.changes
     override val connectionRefreshIntent = TrackingRefreshIntent.AUTOMATIC
     override val listManager = library.listManager
+    override val listSorter = library.listSorter
 
     override fun ensureLoaded() = ensureAccountLoaded()
     override fun prepare() = library.prepare()

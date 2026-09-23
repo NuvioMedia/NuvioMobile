@@ -98,7 +98,9 @@ object CatalogRepository {
             try {
                 val target = request.target as CatalogTarget.Library
                 LibraryRepository.ensureLoaded()
-                LibraryRepository.uiState.libraryCatalogStates(target).collect { state ->
+                LibraryRepository.uiState.libraryCatalogStates(
+                    target, LibraryRepository.uiState.libraryCatalogOrders(target),
+                ).collect { state ->
                     if (activeRequest != request) return@collect
                     _uiState.value = state
                 }

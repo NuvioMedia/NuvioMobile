@@ -83,6 +83,7 @@ enum class TrackingRefreshIntent {
  */
 interface TrackingLibraryProvider {
     val providerId: TrackingProviderId
+    val listSorter: TrackingLibrarySorter? get() = null
     val listManager: TrackingListManager?
         get() = null
     val changes: Flow<Unit>

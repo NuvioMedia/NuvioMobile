@@ -13,6 +13,8 @@
     <string name="action_back">Quay lại</string>
     <string name="action_cancel">Huỷ</string>
     <string name="action_close">Đóng</string>
+    <string name="action_collapse">Thu gọn</string>
+    <string name="action_expand">Mở rộng</string>
     <string name="action_delete">Xóa</string>
     <string name="action_delete_confirm_message">Bạn có chắc chắn muốn xóa không?</string>
     <string name="action_delete_confirm_title">Xóa?</string>
@@ -123,7 +125,7 @@
     <string name="collections_editor_shape_square">Vuông</string>
     <string name="collections_editor_shape_wide">Ngang</string>
     <string name="collections_editor_show_all_tab_desc">Gộp tất cả danh mục vào một thẻ</string>
-    <string name="collections_editor_show_all_tab">Hiển thị thẻ \"Tất cả\"</string>
+    <string name="collections_editor_show_all_tab">Hiển thị thẻ &quot;Tất cả&quot;</string>
     <string name="collections_editor_show_gif_when_configured_desc">Phát ảnh động GIF đã thiết lập thay cho ảnh bìa tĩnh khi có sẵn.</string>
     <string name="collections_editor_show_gif_when_configured">Hiển thị GIF đã thiết lập</string>
     <string name="collections_editor_source_count">%1$d nguồn · %2$s</string>
@@ -758,7 +760,7 @@
     <string name="settings_card_depth_surface_cast">Diễn viên</string>
     <string name="settings_card_depth_surface_trailers">Trailer</string>
     <string name="settings_poster_card_radius">Bo tròn góc</string>
-    <string name="settings_poster_card_style">KIỂU POSTER</string>
+    <string name="settings_poster_card_style">KIỂU THẺ POSTER</string>
     <string name="settings_poster_card_width">Độ rộng</string>
     <string name="settings_poster_custom">Tuỳ chỉnh</string>
     <string name="settings_poster_description">Điều chỉnh độ rộng và bo tròn góc của thẻ.</string>
@@ -780,6 +782,14 @@
     <string name="settings_poster_width_dense">Dày đặc</string>
     <string name="settings_poster_width_large">Lớn</string>
     <string name="settings_poster_width_standard">Tiêu chuẩn</string>
+    <!-- Custom Poster URL -->
+    <string name="settings_custom_poster_title">NGUỒN POSTER TÙY CHỈNH</string>
+    <string name="settings_custom_poster_description">Cung cấp mẫu URL poster từ một dịch vụ bên ngoài. Nếu một biến giữ chỗ không có giá trị cho tiêu đề cụ thể, poster gốc sẽ được sử dụng thay thế.</string>
+    <string name="settings_custom_poster_placeholder">https://example.com/poster?id={id}&amp;id_type={id_type}&amp;type={type}</string>
+    <string name="settings_custom_poster_active">Nguồn poster tùy chỉnh đang hoạt động</string>
+    <string name="settings_custom_poster_none">Chưa thiết lập mẫu</string>
+    <string name="settings_custom_poster_save">Lưu</string>
+    <string name="settings_custom_poster_clear">Xóa</string>
     <string name="settings_show_secret">Hiện giá trị</string>
     <string name="settings_continue_watching_resume_prompt_description">Hiển thị hộp thoại để tiếp tục từ chỗ đã dừng khi mở lại ứng dụng sau khi thoát khỏi trình phát.</string>
     <string name="settings_continue_watching_resume_prompt_title">Lời nhắc Tiếp tục xem</string>
@@ -1142,7 +1152,7 @@
     <string name="settings_playback_section_player">TRÌNH PHÁT</string>
     <string name="settings_playback_section_skip_segments">BỎ QUA PHÂN ĐOẠN</string>
     <string name="settings_playback_section_stream_auto_play">TỰ ĐỘNG PHÁT</string>
-    <string name="settings_playback_section_stream_selection">CHỌN NGUỒN PHÁT</string>
+    <string name="settings_playback_section_stream_selection">CHỌN LUỒNG PHÁT</string>
     <string name="settings_playback_section_subtitle_audio">PHỤ ĐỀ VÀ ÂM THANH</string>
     <string name="settings_playback_section_subtitle_rendering">KẾT XUẤT PHỤ ĐỀ</string>
     <string name="settings_playback_selected_count">Đã chọn %1$d</string>
@@ -1305,6 +1315,7 @@
     <string name="settings_simkl_sync_info_library_statuses">Các chương trình nằm trong danh sách Tạm hoãn hoặc Đã bỏ của Simkl sẽ bị ẩn khỏi mục Tiếp tục xem. Chúng vẫn bị ẩn trong suốt thời gian nằm trong một trong hai danh sách đó.</string>
     <string name="settings_simkl_sync_info_docs">Đọc hướng dẫn đồng bộ Simkl</string>
     <string name="settings_simkl_authorization_revoked">Ủy quyền Simkl đã bị thu hồi. Vui lòng kết nối lại.</string>
+    <string name="settings_tracking_not_connected">Chưa kết nối</string>
     <string name="tracking_source_simkl">Simkl</string>
     <string name="tracking_library_source_simkl_selected">Đã chọn danh sách theo dõi Simkl</string>
     <string name="tracking_watch_progress_simkl_selected">Nguồn tiến trình xem đã được đặt thành Simkl</string>
@@ -1715,7 +1726,7 @@
     <string name="profile_pin_set_requires_internet">Vui lòng kết nối Internet để đặt mã PIN</string>
     <string name="profile_primary_addons_required">Hồ sơ này đang dùng tiện ích chính</string>
     <string name="streams_failed_to_load_scraper">Không thể tải %1$s</string>
-    <string name="stream_default_name">Nguồn phát</string>
+    <string name="stream_default_name">Luồng phát</string>
     <string name="source_embedded">Nhúng</string>
     <string name="trakt_authorization_denied">Quyền truy cập bị từ chối</string>
     <string name="trakt_authorization_expired_reconnect">Quyền truy cập Trakt của bạn không còn hợp lệ. Vui lòng kết nối lại tài khoản Trakt của bạn.</string>
@@ -2175,7 +2186,7 @@
     <string name="plugins_error_unavailable_build">Phiên bản này không hỗ trợ trình mở rộng</string>
     <string name="plugins_group_by_repo_desc">Trong danh sách nguồn phát, hiển thị một nhà cung cấp cho mỗi kho lưu trữ thay vì từng nguồn</string>
     <string name="plugins_group_by_repo_title">Nhóm các nhà cung cấp theo kho lưu trữ</string>
-    <string name="plugins_input_manifest_placeholder">URL tệp kê khai của trình mở rộng</string>
+    <string name="plugins_input_manifest_placeholder">URL tệp kê khai trình mở rộng</string>
     <string name="plugins_manifest_error_name_missing">Tên tệp kê khai bị thiếu</string>
     <string name="plugins_manifest_error_no_providers">Tệp kê khai chưa có nhà cung cấp</string>
     <string name="plugins_manifest_error_version_missing">Tệp kê khai bị thiếu phiên bản</string>

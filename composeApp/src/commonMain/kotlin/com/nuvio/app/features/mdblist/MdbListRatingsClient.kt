@@ -3,6 +3,12 @@ package com.nuvio.app.features.mdblist
 import com.nuvio.app.features.addons.httpGetText
 import com.nuvio.app.features.addons.httpPostJson
 import io.ktor.http.encodeURLParameter
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 internal sealed interface MdbListRatingsCredential {
     data class ApiKey(val value: String) : MdbListRatingsCredential {
@@ -37,20 +43,25 @@ internal class MdbListRatingsClient(
         ).body
     }
 
-    suspend fun getRating(
+    suspend fun getMediaBatch(
         mediaType: String,
-        ratingType: String,
+        imdbIds: List<String>,
         credential: MdbListRatingsCredential,
-        body: String,
-    ): String = when (credential) {
-        is MdbListRatingsCredential.ApiKey -> postJson(
-            "https://api.mdblist.com/rating/$mediaType/$ratingType?apikey=${credential.value.encodeURLParameter()}",
-            body,
-        )
-        is MdbListRatingsCredential.Account -> accountApi.post(
-            "/rating/$mediaType/$ratingType",
-            body = body,
-            scope = credential.scope,
-        ).body
+    ): String {
+        val body = buildJsonObject {
+            put("ids", JsonArray(imdbIds.map(::JsonPrimitive)))
+            put("append_to_response", buildJsonArray { add("keyword") })
+        }.toString()
+        return when (credential) {
+            is MdbListRatingsCredential.ApiKey -> postJson(
+                "https://api.mdblist.com/imdb/$mediaType/?apikey=${credential.value.encodeURLParameter()}",
+                body,
+            )
+            is MdbListRatingsCredential.Account -> accountApi.post(
+                "/imdb/$mediaType/",
+                body = body,
+                scope = credential.scope,
+            ).body
+        }
     }
 }

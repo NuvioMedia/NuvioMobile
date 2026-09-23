@@ -1871,6 +1871,7 @@
     <string name="library_sort_added_asc">Oldest added</string>
     <string name="library_sort_added_desc">Recently added</string>
     <string name="library_sort_title_asc">Title A–Z</string>
+    <string name="library_error_sort_failed">Couldn\'t load sort order. Showing provider order.</string>
     <string name="library_sort_title_desc">Title Z–A</string>
     <string name="library_sort_provider_order">Tracker order</string>
     <string name="library_source_cloud">Cloud</string>

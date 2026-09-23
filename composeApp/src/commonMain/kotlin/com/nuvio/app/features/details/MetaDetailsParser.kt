@@ -257,6 +257,10 @@ internal object MetaDetailsParser {
 
     private fun JsonObject.seasonPosters(videos: List<MetaVideo>): Map<Int, String> {
         val appExtras = this["app_extras"] as? JsonObject ?: return emptyMap()
+        val keyed = parseKeyedSeasonPosters(appExtras["seasonPosters"])
+            .ifEmpty { parseKeyedSeasonPosters(appExtras["seasonPosterByNumber"]) }
+        if (keyed.isNotEmpty()) return keyed
+
         val posters = appExtras["seasonPosters"] as? JsonArray ?: return emptyMap()
         val seasons = videos
             .mapNotNull(MetaVideo::season)
@@ -277,6 +281,17 @@ internal object MetaDetailsParser {
                 ?.trim()
                 ?.takeIf(String::isNotBlank)
                 ?.let { posterSeasons[index] to it }
+        }.toMap()
+    }
+
+    private fun parseKeyedSeasonPosters(element: JsonElement?): Map<Int, String> {
+        val posters = element as? JsonObject ?: return emptyMap()
+        return posters.entries.mapNotNull { (key, value) ->
+            val season = key.toIntOrNull() ?: return@mapNotNull null
+            (value as? JsonPrimitive)?.contentOrNull
+                ?.trim()
+                ?.takeIf(String::isNotBlank)
+                ?.let { season to it }
         }.toMap()
     }
 

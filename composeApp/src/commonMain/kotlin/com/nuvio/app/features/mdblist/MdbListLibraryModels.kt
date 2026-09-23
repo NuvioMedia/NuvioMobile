@@ -52,11 +52,18 @@ data class MdbListLibraryItem(
 }
 
 @Serializable
+data class MdbListLibraryOrderItem(
+    val type: MdbListItemType,
+    val ids: MdbListIds
+)
+
+@Serializable
 data class MdbListLibrarySnapshot(
     val lists: List<MdbListLibraryList> = emptyList(),
     val itemsByList: Map<String, List<MdbListLibraryItem>> = emptyMap(),
     val checkedAtEpochMs: Long? = null,
-    val invalidated: Boolean = false
+    val invalidated: Boolean = false,
+    val addedOrders: Map<String, Map<String, List<MdbListLibraryOrderItem>>> = emptyMap()
 ) {
     fun tabs(): List<TrackingLibraryTab> = listOf(
         TrackingLibraryTab(

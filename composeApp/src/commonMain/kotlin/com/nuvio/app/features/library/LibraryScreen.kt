@@ -146,12 +146,20 @@ fun LibraryScreen(
         selected = displaySettings.sortOption,
         sourceMode = uiState.sourceMode,
     )
-    val sortedSections = remember(uiState.sections, displaySettings, uiState.sourceMode, sourceMode) {
+    val orderListKeys = if (sourceMode != LibraryViewMode.Saved) emptyList() else {
+        if (displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL) uiState.sections.map { it.type }
+        else listOfNotNull(uiState.sections.firstOrNull { it.type == selectedLibrarySectionKey }?.type
+            ?: uiState.sections.firstOrNull()?.type)
+    }
+    val providerOrders = rememberLibraryProviderOrders(uiState.sourceMode, orderListKeys, effectiveSortOption)
+    val visibleSortOption = if (providerOrders.failed) LibrarySortOption.DEFAULT else effectiveSortOption
+    val sortedSections = remember(uiState.sections, displaySettings, uiState.sourceMode, sourceMode, providerOrders) {
         if (sourceMode == LibraryViewMode.Saved && displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL) {
             sortLibrarySections(
                 sections = uiState.sections,
-                selected = displaySettings.sortOption,
+                selected = visibleSortOption,
                 sourceMode = uiState.sourceMode,
+                providerOrders = providerOrders.ranks,
             )
         } else {
             emptyList()
@@ -164,6 +172,7 @@ fun LibraryScreen(
         selectedLibraryType,
         displaySettings,
         sourceMode,
+        providerOrders,
     ) {
         if (sourceMode == LibraryViewMode.Saved && displaySettings.layoutMode == LibraryLayoutMode.VERTICAL) {
             buildLibraryVerticalProjection(
@@ -171,7 +180,8 @@ fun LibraryScreen(
                 sourceMode = uiState.sourceMode,
                 selectedSectionKey = selectedLibrarySectionKey,
                 selectedType = selectedLibraryType,
-                sortOption = displaySettings.sortOption,
+                sortOption = visibleSortOption,
+                providerOrders = providerOrders.ranks,
             )
         } else {
             LibraryVerticalProjection(

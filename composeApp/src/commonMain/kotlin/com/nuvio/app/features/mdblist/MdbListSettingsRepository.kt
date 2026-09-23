@@ -101,7 +101,6 @@ object MdbListSettingsRepository {
             else -> return
         }
         publish()
-        MdbListMetadataService.clearCache()
     }
 
     private fun loadFromDisk() {

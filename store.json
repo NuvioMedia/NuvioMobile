@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.5.1",
+          "buildVersion": "133",
+          "date": "2026-09-23T06:37:37Z",
+          "localizedDescription": "- 0b427905 fix(mdblist): correct library sorting @tapframe  \n- 647e4c09 fix(mdblist): batch and reuse rating requests @tapframe  \n- [i18n(vi): update latest Vietnamese strings (#2037)](https://github.com/NuvioMedia/NuvioMobile/pull/2037) @blueocean2308  \n- [Fix custom posters missing in tmdb/trakt collections (#2035)](https://github.com/NuvioMedia/NuvioMobile/pull/2035) @skoruppa  \n- [fix(details) adapt to the new aiom season poster method (#2038)](https://github.com/NuvioMedia/NuvioMobile/pull/2038) @chrisk325  \n- [Feature/spanish es translation (#2039)](https://github.com/NuvioMedia/NuvioMobile/pull/2039) @IberianSoldierPC  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.1-beta/nuvio-0.5.1-full-release.ipa",
+          "size": 66042992,
+          "sha256": "801bb9d82efddbc0698ce92a4a8e6a741209b40bf5e7b6053d33a68b81d905fc",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.5.0",
           "buildVersion": "132",
           "date": "2026-09-22T10:10:10Z",
