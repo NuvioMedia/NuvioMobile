@@ -27,7 +27,6 @@ internal actual object DownloadsLiveStatusPlatform {
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
-        ensureNotificationChannel()
     }
 
     actual fun onItemsChanged(items: List<DownloadItem>) {
