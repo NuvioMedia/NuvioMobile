@@ -41,6 +41,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +52,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -97,6 +100,7 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     scrollToTopRequests: Flow<Unit> = emptyFlow(),
     onPosterClick: ((LibraryItem) -> Unit)? = null,
+    onCalendarEpisodeClick: ((LibraryItem, Int?, Int?) -> Unit)? = null,
     onPosterLongClick: ((LibraryItem, LibrarySection) -> Unit)? = null,
     onSectionViewAllClick: ((LibrarySection, LibrarySortOption) -> Unit)? = null,
     onCloudFilePlay: ((CloudLibraryItem, CloudLibraryFile) -> Unit)? = null,
@@ -127,6 +131,7 @@ fun LibraryScreen(
     val sourceMode = remember(sourceModeName) {
         runCatching { LibraryViewMode.valueOf(sourceModeName) }.getOrDefault(LibraryViewMode.Saved)
     }
+    var showReleaseCalendar by rememberSaveable { mutableStateOf(false) }
     var selectedProviderId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTypeName by rememberSaveable { mutableStateOf<String?>(null) }
     var cloudSearchQuery by rememberSaveable { mutableStateOf("") }
@@ -235,6 +240,12 @@ fun LibraryScreen(
         }
     }
 
+    LaunchedEffect(uiState.items) {
+        if (uiState.items.isNotEmpty()) {
+            LibraryReleaseCalendarCache.warm(uiState.items)
+        }
+    }
+
     ScreenActivityEffect(sourceMode, cloudSettings.cloudLibraryEnabled, cloudSettings.providerApiKeys) { screenActive ->
         if (screenActive && sourceMode == LibraryViewMode.Cloud) {
             CloudLibraryRepository.ensureLoaded()
@@ -323,6 +334,21 @@ fun LibraryScreen(
                                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             )
                                         }
+                                    }
+                                }
+                                if (sourceMode != LibraryViewMode.Cloud) {
+                                    val openCalendarLabel = stringResource(Res.string.library_calendar_open)
+                                    IconButton(
+                                        onClick = { showReleaseCalendar = true },
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .semantics { contentDescription = openCalendarLabel },
+                                    ) {
+                                        LibraryCalendarGlyph(
+                                            modifier = Modifier.size(19.dp),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            cutoutColor = MaterialTheme.colorScheme.background,
+                                        )
                                     }
                                 }
                             },
@@ -474,6 +500,15 @@ fun LibraryScreen(
                 }
             }
         }
+    }
+
+    if (showReleaseCalendar) {
+        LibraryReleaseCalendarHost(
+            items = uiState.items,
+            onDismiss = { showReleaseCalendar = false },
+            onPosterClick = onPosterClick,
+            onCalendarEpisodeClick = onCalendarEpisodeClick,
+        )
     }
 }
 
