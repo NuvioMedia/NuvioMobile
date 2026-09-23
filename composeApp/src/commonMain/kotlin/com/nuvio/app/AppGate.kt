@@ -67,6 +67,7 @@ internal fun AppGate(
     onReplace: ((AppRoute) -> Unit)?,
     onActivate: ((AppScreenTab) -> Unit)?,
     onAppReady: ((Boolean) -> Unit)?,
+    onColdStartUiReady: (() -> Unit)?,
     onMainContentMountChanged: ((Boolean) -> Unit)?,
     onMainContentVisibleChanged: ((Boolean) -> Unit)?,
     onTabTitles: ((home: String, search: String, library: String, profile: String, switchProfile: String, addProfile: String) -> Unit)?,
@@ -160,6 +161,15 @@ internal fun AppGate(
     LaunchedEffect(gateScreen, onAppReady) {
         if (gateScreen != AppGateScreen.Main.name) {
             onAppReady?.invoke(false)
+        }
+    }
+
+    LaunchedEffect(gateScreen, onColdStartUiReady) {
+        when (gateScreen) {
+            AppGateScreen.Auth.name,
+            AppGateScreen.ProfileSelection.name,
+            AppGateScreen.ProfileEdit.name,
+            -> onColdStartUiReady?.invoke()
         }
     }
 
@@ -459,7 +469,7 @@ internal fun AppGate(
                             useNativeTabBar = useNativeTabBar,
                             useTabletFloatingTabBar = useTabletFloatingTabBar,
                             ownsAppRuntime = ownsAppRuntime,
-                            showLaunchOverlay = !profileSelectionLoading,
+                            showLaunchOverlay = !profileSelectionLoading && !holdsNativeLaunchSplash,
                             onNavigate = onNavigate,
                             onGoBack = onGoBack,
                             onReplace = onReplace,
@@ -469,6 +479,7 @@ internal fun AppGate(
                             onRootContentReady = { ready ->
                                 if (ready) {
                                     profileSelectionLoading = false
+                                    onColdStartUiReady?.invoke()
                                 }
                                 onAppReady?.invoke(
                                     ready && gateScreen == AppGateScreen.Main.name,
