@@ -1006,7 +1006,7 @@ private fun LibraryCalendarEventArtwork(event: LibraryCalendarEvent) {
     }
 }
 
-private data class LibraryCalendarEvent(
+internal data class LibraryCalendarEvent(
     val key: String,
     val date: LibraryCalendarDate,
     val rawReleaseInfo: String,
@@ -1046,7 +1046,7 @@ internal data class LibraryCalendarMonth(
         if (month == 12) LibraryCalendarMonth(year + 1, 1) else copy(month = month + 1)
 }
 
-private data class LibraryReleaseCalendarCacheState(
+internal data class LibraryReleaseCalendarCacheState(
     val cacheKey: String? = null,
     val events: List<LibraryCalendarEvent> = emptyList(),
     val isWarming: Boolean = false,
