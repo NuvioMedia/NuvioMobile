@@ -9,32 +9,58 @@ import android.os.Bundle
 import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
 import java.io.File
+import java.io.FileNotFoundException
 
 internal class FakeDocumentsProvider : ContentProvider() {
+    var appendSupported: Boolean = true
+    var renameSupported: Boolean = true
+    val createdMimeTypes = mutableListOf<String>()
+
     override fun onCreate(): Boolean = true
 
     override fun call(method: String, arg: String?, extras: Bundle?): Bundle? {
-        val target = extras?.getParcelable(EXTRA_URI, Uri::class.java)
+        @Suppress("DEPRECATION")
+        val target = (extras?.getParcelable(EXTRA_URI) as? Uri)
             ?: arg?.takeIf { it.isNotBlank() }?.let(Uri::parse)
             ?: return null
         return when (method) {
             METHOD_CREATE_DOCUMENT -> {
                 val displayName = extras?.getString(EXTRA_DISPLAY_NAME) ?: return null
+                val mimeType = extras.getString(EXTRA_MIME_TYPE)
+                mimeType?.let { createdMimeTypes += it }
                 val parent = fileFor(documentIdOf(target))
                 check(parent.isDirectory || parent.mkdirs())
+                val child = File(parent, displayName)
+                val created = if (mimeType == DocumentsContract.Document.MIME_TYPE_DIR) {
+                    child.mkdirs() || child.isDirectory
+                } else {
+                    child.createNewFile() || child.exists()
+                }
+                if (!created) return null
                 Bundle().apply {
                     putParcelable(
                         EXTRA_URI,
-                        DocumentsContract.buildDocumentUri(
-                            target.authority,
-                            documentIdFor(File(parent, displayName)),
-                        ),
+                        DocumentsContract.buildDocumentUri(target.authority, documentIdFor(child)),
                     )
                 }
             }
             METHOD_DELETE_DOCUMENT -> {
                 fileFor(documentIdOf(target)).delete()
                 Bundle().apply { putBoolean(EXTRA_RESULT, true) }
+            }
+            METHOD_RENAME_DOCUMENT -> {
+                if (!renameSupported) return null
+                val displayName = extras?.getString(EXTRA_DISPLAY_NAME) ?: return null
+                val file = fileFor(documentIdOf(target))
+                if (!file.exists()) return null
+                val renamed = File(file.parentFile, displayName)
+                if (!file.renameTo(renamed)) return null
+                Bundle().apply {
+                    putParcelable(
+                        EXTRA_URI,
+                        DocumentsContract.buildDocumentUri(target.authority, documentIdFor(renamed)),
+                    )
+                }
             }
             else -> null
         }
@@ -62,12 +88,17 @@ internal class FakeDocumentsProvider : ContentProvider() {
 
     override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
         val file = fileFor(documentIdOf(uri))
-        val flags = if (mode.contains('w')) {
-            ParcelFileDescriptor.MODE_READ_WRITE or
+        val flags = when {
+            mode.contains('a') -> {
+                if (!appendSupported) throw FileNotFoundException("Append is not supported: $uri")
+                ParcelFileDescriptor.MODE_WRITE_ONLY or
+                    ParcelFileDescriptor.MODE_CREATE or
+                    ParcelFileDescriptor.MODE_APPEND
+            }
+            mode.contains('w') -> ParcelFileDescriptor.MODE_WRITE_ONLY or
                 ParcelFileDescriptor.MODE_CREATE or
                 ParcelFileDescriptor.MODE_TRUNCATE
-        } else {
-            ParcelFileDescriptor.MODE_READ_ONLY
+            else -> ParcelFileDescriptor.MODE_READ_ONLY
         }
         return ParcelFileDescriptor.open(file, flags)
     }
@@ -93,6 +124,12 @@ internal class FakeDocumentsProvider : ContentProvider() {
     }
 
     fun documentExists(documentId: String): Boolean = fileFor(documentId).exists()
+
+    fun readDocument(documentId: String): String? =
+        fileFor(documentId).takeIf { it.isFile }?.readText()
+
+    fun documentSize(documentId: String): Long =
+        fileFor(documentId).takeIf { it.isFile }?.length() ?: 0L
 
     private fun childFiles(uri: Uri): List<File>? {
         val segments = uri.pathSegments
@@ -138,8 +175,10 @@ internal class FakeDocumentsProvider : ContentProvider() {
     private companion object {
         const val METHOD_CREATE_DOCUMENT = "android:createDocument"
         const val METHOD_DELETE_DOCUMENT = "android:deleteDocument"
+        const val METHOD_RENAME_DOCUMENT = "android:renameDocument"
         const val EXTRA_URI = "uri"
         const val EXTRA_DISPLAY_NAME = "_display_name"
+        const val EXTRA_MIME_TYPE = "mime_type"
         const val EXTRA_RESULT = "result"
     }
 }

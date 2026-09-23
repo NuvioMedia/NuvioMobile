@@ -179,6 +179,42 @@ internal actual object DownloadLocationManager {
         return runCatching { file.delete() }.getOrDefault(false)
     }
 
+    internal fun currentDownloadTreeUri(): String? {
+        val pref = locationPref ?: return null
+        if (pref.mode != DownloadLocationMode.ANDROID_SAF) return null
+        return withWritableTree(pref.value) { pref.value }
+    }
+
+    internal fun createDownloadTarget(destinationTreeUri: String, destinationFileName: String): SafDownloadTarget? =
+        withWritableTree(destinationTreeUri) { SafDownloadTarget.create(destinationTreeUri, destinationFileName) }
+
+    internal fun createDownloadTarget(destinationFileName: String): SafDownloadTarget? =
+        currentDownloadTreeUri()?.let { createDownloadTarget(it, destinationFileName) }
+
+    internal fun openDownloadTarget(
+        destinationTreeUri: String,
+        destinationDocumentUri: String,
+        destinationFileName: String,
+    ): SafDownloadTarget? = withWritableTree(destinationTreeUri) {
+        SafDownloadTarget.open(destinationTreeUri, destinationDocumentUri, destinationFileName)
+    }
+
+    internal fun findFinalizedDownloadFile(destinationTreeUri: String?, destinationFileName: String): String? =
+        withWritableTree(destinationTreeUri) { SafDownloadTarget.findFinalized(destinationTreeUri, destinationFileName) }
+
+    internal fun fileSize(fileUri: String?): Long {
+        val contentUri = fileUri?.toContentUriOrNull() ?: return 0L
+        val resolver = DownloadsAndroidContext.contentResolverOrNull() ?: return 0L
+        return SafDocuments.size(resolver, contentUri)
+    }
+
+    private fun <T> withWritableTree(treeValue: String?, block: () -> T): T? {
+        val context = DownloadsAndroidContext.contextOrNull() ?: return null
+        val treeUri = treeValue?.let { runCatching { Uri.parse(it) }.getOrNull() } ?: return null
+        if (!hasWritableTreePermission(context, treeUri)) return null
+        return block()
+    }
+
     private fun copyIntoTreeLocation(treeValue: String, source: File, destinationFileName: String): String {
         val resolver = DownloadsAndroidContext.contentResolver()
         val treeUri = runCatching { Uri.parse(treeValue) }.getOrNull()

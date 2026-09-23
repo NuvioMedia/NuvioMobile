@@ -1,8 +1,10 @@
 package com.nuvio.app.features.downloads
 
+import android.app.Application
 import android.net.Uri
 import android.provider.DocumentsContract
 import org.robolectric.Robolectric
+import org.robolectric.RuntimeEnvironment
 
 internal val SAF_MOVIES_URI: Uri =
     Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMovies")
@@ -17,3 +19,15 @@ internal fun registerFakeDocumentsProvider(
 
 internal fun safDocumentUri(documentId: String, treeUri: Uri = SAF_MOVIES_URI): Uri =
     DocumentsContract.buildDocumentUriUsingTree(treeUri, documentId)
+
+internal fun setupSafDownloads(
+    context: Application = RuntimeEnvironment.getApplication(),
+    appendSupported: Boolean = true,
+    treeUri: Uri = SAF_MOVIES_URI,
+): FakeDocumentsProvider {
+    DownloadLocationManager.initialize(context)
+    val provider = registerFakeDocumentsProvider(treeUri)
+    provider.appendSupported = appendSupported
+    DownloadLocationManager.onFolderPicked(treeUri)
+    return provider
+}

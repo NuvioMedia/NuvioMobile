@@ -4,9 +4,12 @@ import android.app.job.JobInfo
 import android.net.Uri
 import org.robolectric.RuntimeEnvironment
 import java.io.File
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
@@ -17,6 +20,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
@@ -86,6 +90,8 @@ class AndroidDownloadLifecycleTest {
     fun backgroundExecutionDoesNotNeedRepositoryOrActivityCallbacks(): Unit = runBlocking {
         val context = RuntimeEnvironment.getApplication()
         DownloadLocationManager.initialize(context)
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val provider = registerFakeDocumentsProvider()
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setBody("complete video"))
             val scheduler = AndroidDownloadScheduler(context)
@@ -97,7 +103,7 @@ class AndroidDownloadLifecycleTest {
             val recreated = AndroidDownloadScheduler(context)
             val restored = recreated.restore(item)
             assertEquals(DownloadStatus.Completed, restored.status)
-            assertEquals("complete video", File(recreated.directory, item.fileName).readText())
+            assertEquals("complete video", provider.readDocument("primary:Movies/${item.fileName}"))
             assertEquals(14L, restored.downloadedBytes)
             assertNotNull(restored.localFileUri)
         }
@@ -120,12 +126,19 @@ class AndroidDownloadLifecycleTest {
     fun completedRenameIsRecoveredAfterProcessDeathBeforeStateCommit(): Unit = runBlocking {
         val context = RuntimeEnvironment.getApplication()
         DownloadLocationManager.initialize(context)
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val provider = registerFakeDocumentsProvider()
         val scheduler = AndroidDownloadScheduler(context)
         val transfer = scheduler.store.begin(downloadItem().copy(fileName = "finalized.mkv"))
-        scheduler.directory.mkdirs()
-        File(scheduler.directory, transfer.item.fileName).writeText("final data")
+        scheduler.store.update(transfer.item.fileName, transfer.generation) {
+            it.copy(
+                destinationTreeUri = SAF_MOVIES_URI.toString(),
+                destinationDocumentUri = safDocumentUri("primary:Movies/finalized.mkv.part").toString(),
+            )
+        }
+        provider.createDocument("primary:Movies/finalized.mkv", "final data")
 
-        assertFalse(scheduler.execute(transfer) { })
+        assertFalse(scheduler.execute(assertNotNull(scheduler.store.get(transfer.item.fileName))) { })
 
         assertEquals(DownloadStatus.Completed, scheduler.store.get(transfer.item.fileName)?.item?.status)
         assertEquals(10L, scheduler.store.get(transfer.item.fileName)?.item?.downloadedBytes)
@@ -156,5 +169,154 @@ class AndroidDownloadLifecycleTest {
             )
             assertFalse(File(scheduler.directory, item.fileName).exists())
         }
+    }
+
+    @Test
+    fun noLocationFailsOnceWithChooseAFolder(): Unit = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        val scheduler = AndroidDownloadScheduler(context)
+        val transfer = scheduler.store.begin(downloadItem().copy(fileName = "no-location.mkv"))
+
+        assertFalse(scheduler.execute(transfer) { })
+
+        val stored = assertNotNull(scheduler.store.get(transfer.item.fileName))
+        assertEquals(DownloadStatus.Failed, stored.item.status)
+        assertEquals(MISSING_LOCATION_MESSAGE, stored.item.errorMessage)
+        assertEquals(0, stored.retryCount)
+    }
+
+    @Test
+    fun changingTheLocationOnlyAffectsNewDownloads(): Unit = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        val provider = registerFakeDocumentsProvider()
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val scheduler = AndroidDownloadScheduler(context)
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("complete video"))
+            val item = downloadItem(server.url("/video").toString(), "move").copy(fileName = "move.mkv")
+            val target = assertNotNull(DownloadLocationManager.createDownloadTarget(item.fileName))
+            val transfer = scheduler.store.begin(item)
+            scheduler.store.update(item.fileName, transfer.generation) {
+                it.copy(
+                    destinationTreeUri = target.destinationTreeUri,
+                    destinationDocumentUri = target.destinationDocumentUri,
+                )
+            }
+
+            DownloadLocationManager.onFolderPicked(SAF_NESTED_URI)
+
+            assertFalse(scheduler.execute(assertNotNull(scheduler.store.get(item.fileName))) { })
+
+            assertEquals("complete video", provider.readDocument("primary:Movies/move.mkv"))
+            assertFalse(provider.documentExists("primary:Download/Nuvio/move.mkv"))
+        }
+    }
+
+    @Test
+    fun appendRejectedProviderFailsOnceAndDiscardsThePartial(): Unit = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        val provider = registerFakeDocumentsProvider()
+        provider.appendSupported = false
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        MockWebServer().use { server ->
+            server.enqueue(
+                MockResponse().setResponseCode(206).setHeader("Content-Range", "bytes 5-10/11").setBody(" world"),
+            )
+            val scheduler = AndroidDownloadScheduler(context)
+            val item = downloadItem(server.url("/video").toString(), "append").copy(fileName = "append.mkv")
+            provider.createDocument("primary:Movies/append.mkv.part", "hello")
+            val transfer = scheduler.store.begin(item)
+            scheduler.store.update(item.fileName, transfer.generation) { it.copy(validator = "\"v1\"") }
+
+            assertFalse(scheduler.execute(assertNotNull(scheduler.store.get(item.fileName))) { })
+
+            val stored = assertNotNull(scheduler.store.get(item.fileName))
+            assertEquals(DownloadStatus.Failed, stored.item.status)
+            assertEquals(APPEND_NOT_SUPPORTED_MESSAGE, stored.item.errorMessage)
+            assertFalse(provider.documentExists("primary:Movies/append.mkv.part"))
+            assertNull(stored.destinationDocumentUri)
+        }
+    }
+
+    @Test
+    fun retryableFailureKeepsThePartialForResume(): Unit = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        val provider = registerFakeDocumentsProvider()
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody("abcdefghij").setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY))
+            val scheduler = AndroidDownloadScheduler(context)
+            val item = downloadItem(server.url("/video").toString(), "keep").copy(fileName = "keep.mkv")
+            val transfer = scheduler.store.begin(item)
+
+            assertTrue(scheduler.execute(transfer) { })
+
+            assertEquals(DownloadStatus.Downloading, assertNotNull(scheduler.store.get(item.fileName)).item.status)
+            assertTrue(provider.documentExists("primary:Movies/keep.mkv.part"))
+        }
+    }
+
+    @Test
+    fun removingADownloadDiscardsThePartialAndFinalFile(): Unit = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        val provider = registerFakeDocumentsProvider()
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val scheduler = AndroidDownloadScheduler(context)
+        val item = downloadItem().copy(fileName = "remove.mkv")
+        val target = assertNotNull(DownloadLocationManager.createDownloadTarget(item.fileName))
+        provider.createDocument("primary:Movies/remove.mkv", "final bytes")
+        val transfer = scheduler.store.begin(item)
+        scheduler.store.update(item.fileName, transfer.generation) {
+            it.copy(
+                destinationTreeUri = target.destinationTreeUri,
+                destinationDocumentUri = target.destinationDocumentUri,
+                item = it.item.copy(localFileUri = safDocumentUri("primary:Movies/remove.mkv").toString()),
+            )
+        }
+
+        scheduler.remove(item.fileName)
+
+        withTimeout(5_000) {
+            while (
+                provider.documentExists("primary:Movies/remove.mkv") ||
+                provider.documentExists("primary:Movies/remove.mkv.part")
+            ) {
+                delay(10)
+            }
+        }
+        assertFalse(provider.documentExists("primary:Movies/remove.mkv"))
+        assertFalse(provider.documentExists("primary:Movies/remove.mkv.part"))
+    }
+
+    @Test
+    fun removingADownloadCleansUpAFinalizedFileThatWasNotCommitted(): Unit = runBlocking {
+        val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        val provider = registerFakeDocumentsProvider()
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val scheduler = AndroidDownloadScheduler(context)
+        val item = downloadItem().copy(fileName = "uncommitted.mkv")
+        val target = assertNotNull(DownloadLocationManager.createDownloadTarget(item.fileName))
+        provider.createDocument("primary:Movies/uncommitted.mkv", "final bytes")
+        val transfer = scheduler.store.begin(item)
+        scheduler.store.update(item.fileName, transfer.generation) {
+            it.copy(
+                destinationTreeUri = target.destinationTreeUri,
+                destinationDocumentUri = target.destinationDocumentUri,
+            )
+        }
+
+        scheduler.remove(item.fileName)
+
+        withTimeout(5_000) {
+            while (provider.documentExists("primary:Movies/uncommitted.mkv")) delay(10)
+        }
+        assertFalse(provider.documentExists("primary:Movies/uncommitted.mkv"))
+        assertFalse(provider.documentExists("primary:Movies/uncommitted.mkv.part"))
     }
 }

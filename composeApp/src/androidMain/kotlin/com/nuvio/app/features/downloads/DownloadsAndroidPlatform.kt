@@ -82,6 +82,20 @@ internal object SafDocuments {
     fun delete(resolver: ContentResolver, documentUri: Uri): Boolean =
         runCatching { DocumentsContract.deleteDocument(resolver, documentUri) }.getOrDefault(false)
 
+    fun documentExists(resolver: ContentResolver, documentUri: Uri): Boolean = runCatching {
+        resolver.query(
+            documentUri,
+            arrayOf(DocumentsContract.Document.COLUMN_DOCUMENT_ID),
+            null,
+            null,
+            null,
+        )?.use { it.moveToFirst() } == true
+    }.getOrDefault(false)
+
+    fun size(resolver: ContentResolver, documentUri: Uri): Long = runCatching {
+        resolver.openFileDescriptor(documentUri, "r")?.use { it.statSize } ?: 0L
+    }.getOrDefault(0L)
+
     fun isDirectory(resolver: ContentResolver, documentUri: Uri): Boolean =
         runCatching {
             resolver.query(
