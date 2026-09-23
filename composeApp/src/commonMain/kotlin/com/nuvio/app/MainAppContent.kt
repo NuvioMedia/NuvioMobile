@@ -1303,6 +1303,17 @@ internal fun MainAppContent(
                                         DetailRoute(type = item.type, id = item.id, title = item.name),
                                     )
                                 },
+                                onLibraryCalendarEpisodeClick = { item, season, episode ->
+                                    navController.navigate(
+                                        DetailRoute(
+                                            type = item.type,
+                                            id = item.id,
+                                            title = item.name,
+                                            initialSeasonNumber = season,
+                                            initialEpisodeNumber = episode,
+                                        ),
+                                    )
+                                },
                                 onLibraryPosterLongClick = { item, section ->
                                     openPosterActions(
                                         PosterActionTarget(
