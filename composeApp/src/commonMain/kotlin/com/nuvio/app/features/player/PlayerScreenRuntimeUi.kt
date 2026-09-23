@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.p2p.formatP2pMegabytes
 import com.nuvio.app.features.p2p.formatP2pSpeed
 import com.nuvio.app.features.player.skip.internalSkipAction
+import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.isIos
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -142,6 +144,9 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             ),
     ) {
         val playerSurfaceSourceUrl = if (isP2pPlaybackActive) p2pResolvedSourceUrl else activeSourceUrl
+        val lifecycleProgressHandler = remember(playbackSession.videoId, playerSurfaceSourceUrl) {
+            PlayerLifecycleProgressHandler()
+        }
         val initialPositionRequestKey = currentInitialPositionRequestKey()
         if (playerSurfaceSourceUrl != null) {
             PlatformPlayerSurface(
@@ -172,6 +177,17 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     if (snapshot.isEnded) {
                         shouldPlay = false
                         controlsVisible = !playerControlsLocked
+                    }
+                },
+                onLifecycleCheckpoint = { snapshot, shouldStopPlayback ->
+                    lifecycleProgressHandler.flush(snapshot, shouldStopPlayback) { latest, stopScrobble ->
+                        updatePlaybackSnapshot(latest)
+                        val durable = WatchProgressRepository.flushPlaybackProgress(
+                            session = playbackSession,
+                            snapshot = latest,
+                        )
+                        if (durable && stopScrobble) emitStopScrobbleForCurrentProgress()
+                        durable
                     }
                 },
                 onError = { message ->

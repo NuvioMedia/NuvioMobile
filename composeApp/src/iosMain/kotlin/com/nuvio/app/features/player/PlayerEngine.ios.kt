@@ -58,6 +58,7 @@ actual fun PlatformPlayerSurface(
     onInitialPositionHandled: (key: String, handled: Boolean) -> Unit,
     onControllerReady: (PlayerEngineController) -> Unit,
     onSnapshot: (PlayerPlaybackSnapshot) -> Unit,
+    onLifecycleCheckpoint: (PlayerPlaybackSnapshot, shouldStopPlayback: Boolean) -> Unit,
     onError: (String?) -> Unit,
 ) {
     sanitizePlaybackResponseHeaders(sourceResponseHeaders)

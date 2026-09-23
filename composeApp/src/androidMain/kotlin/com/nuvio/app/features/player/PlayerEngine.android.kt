@@ -113,6 +113,7 @@ actual fun PlatformPlayerSurface(
     onInitialPositionHandled: (key: String, handled: Boolean) -> Unit,
     onControllerReady: (PlayerEngineController) -> Unit,
     onSnapshot: (PlayerPlaybackSnapshot) -> Unit,
+    onLifecycleCheckpoint: (PlayerPlaybackSnapshot, shouldStopPlayback: Boolean) -> Unit,
     onError: (String?) -> Unit,
 ) {
     val playerSettings = remember {
@@ -150,6 +151,7 @@ actual fun PlatformPlayerSurface(
             onInitialPositionHandled = onInitialPositionHandled,
             onControllerReady = onControllerReady,
             onSnapshot = onSnapshot,
+            onLifecycleCheckpoint = onLifecycleCheckpoint,
             onError = { message ->
                 if (message != null && playerSettings.androidPlaybackEngine == AndroidPlaybackEngine.Auto) {
                     Log.w(TAG, "ExoPlayer failed; falling back to libmpv: $message")
@@ -182,6 +184,7 @@ actual fun PlatformPlayerSurface(
                 yuv420pEnabled = playerSettings.androidLibmpvYuv420pEnabled,
                 onControllerReady = onControllerReady,
                 onSnapshot = onSnapshot,
+                onLifecycleCheckpoint = onLifecycleCheckpoint,
                 onError = onError,
             )
         }
@@ -219,11 +222,13 @@ private fun ExoPlayerSurface(
     onInitialPositionHandled: (key: String, handled: Boolean) -> Unit,
     onControllerReady: (PlayerEngineController) -> Unit,
     onSnapshot: (PlayerPlaybackSnapshot) -> Unit,
+    onLifecycleCheckpoint: (PlayerPlaybackSnapshot, shouldStopPlayback: Boolean) -> Unit,
     onError: (String?) -> Unit,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val latestOnSnapshot = rememberUpdatedState(onSnapshot)
+    val latestOnLifecycleCheckpoint = rememberUpdatedState(onLifecycleCheckpoint)
     val latestOnError = rememberUpdatedState(onError)
     val latestOnInitialPositionHandled = rememberUpdatedState(onInitialPositionHandled)
     val latestPlayWhenReady = rememberUpdatedState(playWhenReady)
@@ -680,12 +685,15 @@ private fun ExoPlayerSurface(
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_START -> exoPlayer.playWhenReady = latestPlayWhenReady.value
+                Lifecycle.Event.ON_PAUSE -> latestOnLifecycleCheckpoint.value(exoPlayer.snapshot(), false)
                 Lifecycle.Event.ON_STOP -> {
                     val isInPictureInPicture =
                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity?.isInPictureInPictureMode == true
                     val isFinishing = activity?.isFinishing == true
                     val hasActiveNowPlayingSession = nowPlayingController.isActive
-                    if ((!isInPictureInPicture && !hasActiveNowPlayingSession) || isFinishing) {
+                    val shouldStopPlayback = (!isInPictureInPicture && !hasActiveNowPlayingSession) || isFinishing
+                    latestOnLifecycleCheckpoint.value(exoPlayer.snapshot(), shouldStopPlayback)
+                    if (shouldStopPlayback) {
                         exoPlayer.pause()
                     }
                 }
@@ -978,12 +986,14 @@ private fun LibmpvPlayerSurface(
     yuv420pEnabled: Boolean,
     onControllerReady: (PlayerEngineController) -> Unit,
     onSnapshot: (PlayerPlaybackSnapshot) -> Unit,
+    onLifecycleCheckpoint: (PlayerPlaybackSnapshot, shouldStopPlayback: Boolean) -> Unit,
     onError: (String?) -> Unit,
 ) {
     val context = LocalContext.current
     val isLocalFileSource = sourceUrl.startsWith("file:", ignoreCase = true)
     val lifecycleOwner = LocalLifecycleOwner.current
     val latestOnSnapshot = rememberUpdatedState(onSnapshot)
+    val latestOnLifecycleCheckpoint = rememberUpdatedState(onLifecycleCheckpoint)
     val latestOnError = rememberUpdatedState(onError)
     val latestPlayWhenReady = rememberUpdatedState(playWhenReady)
     val coroutineScope = rememberCoroutineScope()
@@ -1016,12 +1026,17 @@ private fun LibmpvPlayerSurface(
             val view = playerViewRef ?: return@LifecycleEventObserver
             when (event) {
                 Lifecycle.Event.ON_START -> view.setPaused(!latestPlayWhenReady.value)
+                Lifecycle.Event.ON_PAUSE -> latestOnLifecycleCheckpoint.value(
+                    view.snapshotForLifecycleCheckpoint(), false,
+                )
                 Lifecycle.Event.ON_STOP -> {
                     val isInPictureInPicture =
                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && activity?.isInPictureInPictureMode == true
                     val isFinishing = activity?.isFinishing == true
                     val hasActiveNowPlayingSession = nowPlayingController?.isActive == true
-                    if ((!isInPictureInPicture && !hasActiveNowPlayingSession) || isFinishing) {
+                    val shouldStopPlayback = (!isInPictureInPicture && !hasActiveNowPlayingSession) || isFinishing
+                    latestOnLifecycleCheckpoint.value(view.snapshotForLifecycleCheckpoint(), shouldStopPlayback)
+                    if (shouldStopPlayback) {
                         view.setPaused(true)
                     }
                 }
@@ -1390,6 +1405,9 @@ private class NuvioLibmpvView(
             }
         }
     }
+
+    // The mpv dispatcher publishes immutable snapshots here. Lifecycle must not block on a native read.
+    fun snapshotForLifecycleCheckpoint(): PlayerPlaybackSnapshot = latestSnapshot
 
     private fun readSnapshotNow(): PlayerPlaybackSnapshot {
         val paused = mpv.getPropertyBoolean("pause") ?: true

@@ -63,6 +63,27 @@ internal fun sanitizePlaybackResponseHeaders(headers: Map<String, String>?): Map
     return sanitized
 }
 
+internal class PlayerLifecycleProgressHandler {
+    private data class WriteKey(
+        val positionMs: Long,
+        val durationMs: Long,
+        val isEnded: Boolean,
+        val shouldStopPlayback: Boolean,
+    )
+
+    private var lastWriteKey: WriteKey? = null
+
+    fun flush(
+        snapshot: PlayerPlaybackSnapshot,
+        shouldStopPlayback: Boolean,
+        persist: (PlayerPlaybackSnapshot, shouldStopScrobble: Boolean) -> Boolean,
+    ) {
+        val key = WriteKey(snapshot.positionMs, snapshot.durationMs, snapshot.isEnded, shouldStopPlayback)
+        if (key == lastWriteKey) return
+        if (persist(snapshot, shouldStopPlayback)) lastWriteKey = key
+    }
+}
+
 @Composable
 expect fun PlatformPlayerSurface(
     sourceUrl: String,
@@ -81,5 +102,6 @@ expect fun PlatformPlayerSurface(
     onInitialPositionHandled: (key: String, handled: Boolean) -> Unit = { _, _ -> },
     onControllerReady: (PlayerEngineController) -> Unit,
     onSnapshot: (PlayerPlaybackSnapshot) -> Unit,
+    onLifecycleCheckpoint: (PlayerPlaybackSnapshot, shouldStopPlayback: Boolean) -> Unit = { _, _ -> },
     onError: (String?) -> Unit,
 )
