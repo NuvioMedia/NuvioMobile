@@ -32,6 +32,10 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
     contentType: String?,
     settings: PlayerSettingsUiState,
     currentStreamBingeGroup: String?,
+    currentStreamTitle: String? = null,
+    currentStreamProviderName: String? = null,
+    currentStreamProviderAddonId: String? = null,
+    currentStreamSubtitle: String? = null,
     onDownloadedEpisodeSelected: (DownloadItem, MetaVideo) -> Unit,
     onEpisodeStreamSelected: (StreamItem, MetaVideo) -> Unit,
     onManualSelectionRequired: (MetaVideo) -> Unit,
@@ -61,18 +65,23 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
     onCountdownChanged(null)
 
     val type = contentType ?: parentMetaType
+    val hasPreferredSameName = !currentStreamTitle.isNullOrBlank() &&
+        (!currentStreamProviderName.isNullOrBlank() || !currentStreamProviderAddonId.isNullOrBlank())
+    val hasPreferredBingeGroup = settings.streamAutoPlayPreferBingeGroup && !currentStreamBingeGroup.isNullOrBlank()
+    val hasPreferredMatch = hasPreferredSameName || hasPreferredBingeGroup
+
     val shouldAutoSelectInManualMode =
         settings.streamAutoPlayMode == StreamAutoPlayMode.MANUAL &&
             (
                 settings.streamAutoPlayNextEpisodeEnabled ||
-                    settings.streamAutoPlayPreferBingeGroup
-                )
+                    hasPreferredMatch
+            )
 
-    val bingeGroupOnlyManualMode =
+    val preferredOnlyManualMode =
         shouldAutoSelectInManualMode &&
             (!settings.streamAutoPlayNextEpisodeEnabled ||
                 !settings.streamAutoPlayNextEpisodeFallbackEnabled) &&
-            settings.streamAutoPlayPreferBingeGroup
+            hasPreferredMatch
 
     val effectiveMode = if (shouldAutoSelectInManualMode) {
         StreamAutoPlayMode.FIRST_STREAM
@@ -160,13 +169,18 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
                 selectedPlugins = effectiveSelectedPlugins,
                 preferredBingeGroup = preferredBingeGroup,
                 preferBingeGroupInSelection = settings.streamAutoPlayPreferBingeGroup,
-                bingeGroupOnly = bingeGroupOnlyManualMode,
+                preferredStreamTitle = currentStreamTitle,
+                preferredProviderName = currentStreamProviderName,
+                preferredProviderAddonId = currentStreamProviderAddonId,
+                preferredStreamSubtitle = currentStreamSubtitle,
+                preferSameNameInSelection = hasPreferredSameName,
+                bingeGroupOnly = preferredOnlyManualMode,
                 debridEnabled = debridSettings.canResolvePlayableLinks,
                 activeResolverProviderId = debridSettings.activeResolverProviderId,
             )
 
-        fun tryBingeGroupOnly(streams: List<StreamItem>): StreamItem? {
-            if (preferredBingeGroup == null || !settings.streamAutoPlayPreferBingeGroup) return null
+        fun tryPreferredOnly(streams: List<StreamItem>): StreamItem? {
+            if (!hasPreferredMatch) return null
             return StreamAutoPlaySelector.selectAutoPlayStream(
                 streams = streams,
                 mode = effectiveMode,
@@ -176,7 +190,12 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
                 selectedAddons = effectiveSelectedAddons,
                 selectedPlugins = effectiveSelectedPlugins,
                 preferredBingeGroup = preferredBingeGroup,
-                preferBingeGroupInSelection = true,
+                preferBingeGroupInSelection = settings.streamAutoPlayPreferBingeGroup,
+                preferredStreamTitle = currentStreamTitle,
+                preferredProviderName = currentStreamProviderName,
+                preferredProviderAddonId = currentStreamProviderAddonId,
+                preferredStreamSubtitle = currentStreamSubtitle,
+                preferSameNameInSelection = hasPreferredSameName,
                 bingeGroupOnly = true,
                 debridEnabled = debridSettings.canResolvePlayableLinks,
                 activeResolverProviderId = debridSettings.activeResolverProviderId,
@@ -199,7 +218,7 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
                         }
                     }
                 } else if (allStreams.isNotEmpty()) {
-                    val earlyMatch = tryBingeGroupOnly(allStreams)
+                    val earlyMatch = tryPreferredOnly(allStreams)
                     if (earlyMatch != null) {
                         selectStream(earlyMatch)
                     }
