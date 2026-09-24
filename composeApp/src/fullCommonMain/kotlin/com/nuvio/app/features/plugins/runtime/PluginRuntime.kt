@@ -103,7 +103,7 @@ internal object PluginRuntime {
                             scraperSettingsJson = "{}",
                             onResult = { deferred.complete(it) },
                         ).register(this)
-                        FetchBridge().register(this)
+                        FetchBridge(scraperId).register(this)
                         UrlBridge().register(this)
                         CryptoBridge().register(this)
 
@@ -152,7 +152,7 @@ internal object PluginRuntime {
                     onResult = { deferred.complete(it) },
                 ),
             )
-            addModule(FetchBridge())
+            addModule(FetchBridge(scraperId))
             addModule(UrlBridge())
             addModule(CryptoBridge())
             addModule(WasmBridge())

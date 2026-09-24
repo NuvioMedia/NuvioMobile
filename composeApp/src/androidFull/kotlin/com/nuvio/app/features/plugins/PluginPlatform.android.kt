@@ -48,6 +48,23 @@ internal object PluginStorage {
             ?.putString("settings_${scraperId}", payload)
             ?.apply()
     }
+
+    fun loadCfSession(host: String): String? =
+        preferences?.getString("cf_session_${host}", null)
+
+    fun saveCfSession(host: String, payload: String) {
+        preferences
+            ?.edit()
+            ?.putString("cf_session_${host}", payload)
+            ?.apply()
+    }
+
+    fun removeCfSession(host: String) {
+        preferences
+            ?.edit()
+            ?.remove("cf_session_${host}")
+            ?.apply()
+    }
 }
 
 internal fun currentPluginPlatform(): String = "android"
