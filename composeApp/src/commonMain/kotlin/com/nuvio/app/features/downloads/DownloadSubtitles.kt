@@ -66,6 +66,7 @@ internal object DownloadSubtitles {
             }
         }
         currentCoroutineContext().ensureActive()
+        if (saved.isEmpty()) return@withContext
         runCatching {
             storage.write("manifest.json", json.encodeToString(SubtitleManifest(complete = true, tracks = saved)))
         }
@@ -73,7 +74,7 @@ internal object DownloadSubtitles {
     }
 
     fun localSubtitles(localVideoUri: String): List<StreamSubtitle> {
-        if (!localVideoUri.startsWith("file:")) return emptyList()
+        if (!localVideoUri.isDownloadedVideoUri()) return emptyList()
         val storage = DownloadSubtitleStorage(localVideoUri)
         return readManifest(storage).tracks.mapNotNull { track ->
             val uri = storage.localFileUri(track.fileName) ?: return@mapNotNull null
@@ -86,6 +87,9 @@ internal object DownloadSubtitles {
             storage.read("manifest.json")?.let { json.decodeFromString<SubtitleManifest>(it) }
         }.getOrNull() ?: SubtitleManifest()
 }
+
+private fun String.isDownloadedVideoUri(): Boolean =
+    startsWith("file:") || startsWith("content:")
 
 @Serializable
 private data class SubtitleManifest(

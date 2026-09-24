@@ -252,7 +252,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         activeSourceUrl,
         addonSubtitleFetchKey,
     ) {
-        if (activeSourceUrl.startsWith("file:") && externalSubtitles.isNotEmpty()) return@LaunchedEffect
+        if (activeSourceUrl.isLocalSubtitleUri() && externalSubtitles.isNotEmpty()) return@LaunchedEffect
         val fetchKey = addonSubtitleFetchKey ?: return@LaunchedEffect
         if (autoFetchedAddonSubtitlesForKey == fetchKey) return@LaunchedEffect
         autoFetchedAddonSubtitlesForKey = fetchKey
