@@ -1,6 +1,7 @@
 package com.nuvio.app.features.servers
 
 import com.nuvio.app.features.home.MetaPreview
+import com.nuvio.app.features.servers.jellyfin.JellyfinProvider
 import com.nuvio.app.features.tracking.TrackingExternalIds
 
 enum class ServerCapability {
@@ -69,3 +70,9 @@ data class ServerIndexEntry(
 fun ServerProvider.supports(capability: ServerCapability): Boolean = capability in capabilities
 
 private fun unsupported(): Nothing = throw ServerException(ServerFailure.UNSUPPORTED)
+
+internal object ServerProviders {
+    private val registered: List<ServerProvider> = listOf(JellyfinProvider)
+
+    fun forId(id: String?): ServerProvider? = registered.firstOrNull { it.id == id }
+}

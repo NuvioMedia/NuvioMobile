@@ -1,0 +1,33 @@
+<resources>
+    <string name="compose_settings_page_media_servers">Media servers</string>
+    <string name="settings_content_discovery_media_servers_description">Connect Jellyfin to browse and play your own library.</string>
+    <string name="servers_section_connected">Servers</string>
+    <string name="servers_section_add">Add server</string>
+    <string name="servers_empty">No servers connected yet.</string>
+    <string name="servers_add_jellyfin">Jellyfin</string>
+    <string name="servers_add_jellyfin_description">Sign in with your server address and Jellyfin user.</string>
+    <string name="servers_sign_in_title">Sign in to Jellyfin</string>
+    <string name="servers_address">Server address</string>
+    <string name="servers_address_hint">http://192.168.1.10:8096</string>
+    <string name="servers_username">Username</string>
+    <string name="servers_password">Password</string>
+    <string name="servers_connect">Connect</string>
+    <string name="servers_connecting">Connecting…</string>
+    <string name="servers_libraries">Libraries</string>
+    <string name="servers_libraries_description">Selected libraries appear in home rows, search, and stream results.</string>
+    <string name="servers_no_libraries">No movie or series libraries are available to this user.</string>
+    <string name="servers_refresh_libraries">Refresh libraries</string>
+    <string name="servers_enabled">Enabled</string>
+    <string name="servers_sign_in_again">Sign in again</string>
+    <string name="servers_remove">Remove server</string>
+    <string name="servers_signed_in_as">%1$s · %2$s</string>
+    <string name="servers_status_disabled">Disabled</string>
+    <string name="servers_status_auth">Sign in again</string>
+    <string name="servers_status_unreachable">Server unavailable</string>
+    <string name="servers_error_auth">Incorrect username or password.</string>
+    <string name="servers_error_address">Enter a valid server address.</string>
+    <string name="servers_error_unreachable">Could not reach the server.</string>
+    <string name="servers_error_unsupported">Jellyfin 10.9 or later is required.</string>
+    <string name="servers_error_forbidden">This user does not have access.</string>
+    <string name="servers_error_failed">Could not connect to the server.</string>
+</resources>
