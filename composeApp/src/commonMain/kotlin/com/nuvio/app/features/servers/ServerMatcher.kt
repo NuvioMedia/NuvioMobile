@@ -67,7 +67,7 @@ internal object ServerMatcher {
             ServerRepository.provider(connection)?.supports(ServerCapability.EXTERNAL_ID_LOOKUP) == true
 
     suspend fun match(connection: ServerConnection, request: MatchRequest, forceRefresh: Boolean): List<ServerItemRef> {
-        val ids = withConvertedImdb(request)
+        val ids = withConvertedIds(request)
         val itemIds = connection.selectedLibraries(request.kind)
             .flatMap { library -> index(connection, library, forceRefresh).lookup(ids) }
             .distinct()
@@ -140,6 +140,16 @@ internal object ServerMatcher {
             val total = page.totalCount
             if (page.items.size < INDEX_PAGE_SIZE || (total != null && entries.size >= total)) return entries
         }
+    }
+
+    private suspend fun withConvertedIds(request: MatchRequest): TrackingExternalIds {
+        val ids = withConvertedImdb(request)
+        if (ids.tmdb != null) return ids
+        val imdb = ids.imdb ?: return ids
+        val tmdb = withTimeoutOrNull(CONVERSION_TIMEOUT_MS) {
+            runCatching { TmdbService.ensureTmdbId(imdb, request.kind.contentType) }.getOrNull()
+        }?.toLongOrNull() ?: return ids
+        return ids.copy(tmdb = tmdb)
     }
 
     private suspend fun withConvertedImdb(request: MatchRequest): TrackingExternalIds {
