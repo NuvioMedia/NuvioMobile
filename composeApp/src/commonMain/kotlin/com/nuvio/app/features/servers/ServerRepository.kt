@@ -144,14 +144,19 @@ object ServerRepository {
             throw CancellationException("Server scope changed")
         }
         val connection = draft.copy(libraries = mergeLibraries(existing?.libraries.orEmpty(), libraries))
-        writeCredential(connection.credentialRef, signIn.token)
+        store(connection, signIn.token)
         existing?.let { deleteCredential(it.credentialRef) }
+        return connection
+    }
+
+    internal fun store(connection: ServerConnection, token: String) {
+        ensureLoaded()
+        writeCredential(connection.credentialRef, token)
         saveConnections(
             _uiState.value.connections.filterNot { it.id == connection.id } + connection,
             invalidate = true,
         )
         setFailure(connection.id, null)
-        return connection
     }
 
     suspend fun refreshLibraries(connectionId: String) {

@@ -8,6 +8,8 @@ import com.nuvio.app.features.addons.ManagedAddon
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.firstEnabledManifestError
 import com.nuvio.app.features.addons.hasPendingEnabledManifests
+import com.nuvio.app.features.servers.ServerCatalog
+import com.nuvio.app.features.servers.ServerRepository
 import com.nuvio.app.features.catalog.CATALOG_PAGE_SIZE
 import com.nuvio.app.features.catalog.CatalogPage
 import com.nuvio.app.features.catalog.CatalogTarget
@@ -86,7 +88,8 @@ object SearchRepository {
         val hasPendingAddonManifests = enabledAddons.hasPendingEnabledManifests()
         val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
         val activeAddons = enabledAddons.filter { it.manifest != null }
-        if (activeAddons.isEmpty()) {
+        val serverLibraries = ServerCatalog.libraries()
+        if (activeAddons.isEmpty() && serverLibraries.isEmpty()) {
             activeJob?.cancel()
             lastRequestKey = null
             _uiState.value = SearchUiState(
@@ -105,7 +108,7 @@ object SearchRepository {
             addons = activeAddons,
             query = normalizedQuery,
         )
-        if (requests.isEmpty()) {
+        if (requests.isEmpty() && serverLibraries.isEmpty()) {
             activeJob?.cancel()
             lastRequestKey = null
             _uiState.value = SearchUiState(
@@ -127,7 +130,19 @@ object SearchRepository {
                     "${request.addon.manifestUrl}:${request.type}:${request.catalogId}"
                 },
             )
+            serverLibraries.forEach { ref -> append("|server:${ref.connection.id}:${ref.library.id}") }
         }
+        val loaders: List<suspend () -> HomeCatalogSection> =
+            requests.map { request -> suspend { request.toSection(forceRefresh = forceRefresh) } } +
+                serverLibraries.map { ref ->
+                    suspend {
+                        ServerCatalog.searchSection(ref, normalizedQuery).also { section ->
+                            require(section.items.isNotEmpty()) {
+                                getString(Res.string.search_error_no_results_for_catalog, section.title)
+                            }
+                        }
+                    }
+                }
         if (canReuseRequestState(forceRefresh, requestKey, lastRequestKey)) return
         lastRequestKey = requestKey
 
@@ -136,9 +151,9 @@ object SearchRepository {
 
         activeJob = scope.launch {
             val resultChannel = Channel<IndexedSearchResult>(Channel.UNLIMITED)
-            val jobs = requests.mapIndexed { index, request ->
+            val jobs = loaders.mapIndexed { index, load ->
                 launch {
-                    runCatching { request.toSection(forceRefresh = forceRefresh) }
+                    runCatching { load() }
                         .fold(
                             onSuccess = { section ->
                                 resultChannel.trySend(
@@ -164,7 +179,7 @@ object SearchRepository {
                 jobs.joinAll()
                 resultChannel.close()
             }
-            val results = arrayOfNulls<IndexedSearchResult>(requests.size)
+            val results = arrayOfNulls<IndexedSearchResult>(loaders.size)
 
             try {
                 for (result in resultChannel) {
@@ -225,7 +240,8 @@ object SearchRepository {
         val hasPendingAddonManifests = enabledAddons.hasPendingEnabledManifests()
         val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
         val activeAddons = enabledAddons.filter { it.manifest != null }
-        if (activeAddons.isEmpty()) {
+        val serverLibraries = ServerCatalog.libraries()
+        if (activeAddons.isEmpty() && serverLibraries.isEmpty()) {
             activeDiscoverJob?.cancel()
             discoverSources = emptyList()
             lastDiscoverRequestKey = null
@@ -242,7 +258,18 @@ object SearchRepository {
             return
         }
 
-        val sources = buildDiscoverSources(activeAddons)
+        val sources = buildDiscoverSources(activeAddons) + serverLibraries.map { ref ->
+            DiscoverCatalogOption(
+                key = ref.target.let { "server:${it.connectionId}:${it.libraryId}" },
+                addonName = ServerRepository.sourceLabel(ref.connection),
+                manifestUrl = "",
+                type = ref.library.kind.contentType,
+                catalogId = ref.library.id,
+                catalogName = ref.title,
+                supportsPagination = true,
+                server = ref.target,
+            )
+        }
         val current = _discoverUiState.value
         val hideUnreleasedContent = HomeCatalogSettingsRepository.snapshot().hideUnreleasedContent
         val requestKey = DiscoverRequestKey(
@@ -485,14 +512,18 @@ object SearchRepository {
         val current = _discoverUiState.value
         val selectedCatalog = current.selectedCatalog ?: return
         val requestedSkip = if (reset) 0 else current.nextSkip ?: return
-        val requestUrl = buildCatalogUrl(
-            manifestUrl = selectedCatalog.manifestUrl,
-            type = selectedCatalog.type,
-            catalogId = selectedCatalog.catalogId,
-            genre = current.selectedGenre,
-            search = null,
-            skip = requestedSkip.takeIf { it > 0 },
-        )
+        val requestUrl = if (selectedCatalog.server != null) {
+            selectedCatalog.key
+        } else {
+            buildCatalogUrl(
+                manifestUrl = selectedCatalog.manifestUrl,
+                type = selectedCatalog.type,
+                catalogId = selectedCatalog.catalogId,
+                genre = current.selectedGenre,
+                search = null,
+                skip = requestedSkip.takeIf { it > 0 },
+            )
+        }
 
         log.d {
             "Discover request reset=$reset addon=${selectedCatalog.addonName} type=${selectedCatalog.type} " +
@@ -511,14 +542,19 @@ object SearchRepository {
 
         activeDiscoverJob = scope.launch {
             runCatching {
-                fetchCatalogPage(
-                    manifestUrl = selectedCatalog.manifestUrl,
-                    type = selectedCatalog.type,
-                    catalogId = selectedCatalog.catalogId,
-                    genre = current.selectedGenre,
-                    skip = requestedSkip.takeIf { it > 0 },
-                    forceRefresh = forceRefresh,
-                ).withUnreleasedFilter()
+                val server = selectedCatalog.server
+                if (server != null) {
+                    ServerCatalog.page(server, skip = requestedSkip)
+                } else {
+                    fetchCatalogPage(
+                        manifestUrl = selectedCatalog.manifestUrl,
+                        type = selectedCatalog.type,
+                        catalogId = selectedCatalog.catalogId,
+                        genre = current.selectedGenre,
+                        skip = requestedSkip.takeIf { it > 0 },
+                        forceRefresh = forceRefresh,
+                    )
+                }.withUnreleasedFilter()
             }.fold(
                 onSuccess = { page ->
                     val latest = _discoverUiState.value

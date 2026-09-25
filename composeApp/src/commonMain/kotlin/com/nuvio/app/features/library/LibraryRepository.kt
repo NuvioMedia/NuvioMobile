@@ -1,5 +1,6 @@
 package com.nuvio.app.features.library
 
+import com.nuvio.app.features.servers.ServerItemRef
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
@@ -569,9 +570,9 @@ object LibraryRepository {
                     }
                     val upsertItems = snapshot.pendingUpsertKeys.mapNotNull { key ->
                         itemsByKey[libraryItemKey(key.contentId, key.contentType)]
-                    }
+                    }.filterNot { ServerItemRef.isServerId(it.id) }
                     syncAdapter.pushItems(profileId, upsertItems)
-                    syncAdapter.deleteItems(profileId, snapshot.pendingDeleteKeys)
+                    syncAdapter.deleteItems(profileId, snapshot.pendingDeleteKeys.filterNot { ServerItemRef.isServerId(it.contentId) })
                     localState.markPushCompleted(snapshot)?.let(::persist)
                     log.i {
                         "Library delta push completed profile=$profileId " +

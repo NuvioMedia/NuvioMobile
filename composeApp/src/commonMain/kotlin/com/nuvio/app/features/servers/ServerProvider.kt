@@ -72,7 +72,7 @@ fun ServerProvider.supports(capability: ServerCapability): Boolean = capability 
 private fun unsupported(): Nothing = throw ServerException(ServerFailure.UNSUPPORTED)
 
 internal object ServerProviders {
-    private val registered: List<ServerProvider> = listOf(JellyfinProvider)
+    internal val registered: MutableList<ServerProvider> = mutableListOf(JellyfinProvider)
 
     fun forId(id: String?): ServerProvider? = registered.firstOrNull { it.id == id }
 }
