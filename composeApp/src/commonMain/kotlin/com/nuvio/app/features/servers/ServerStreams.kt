@@ -36,8 +36,9 @@ internal object ServerStreams {
 
     fun canServe(type: String, videoId: String): Boolean {
         ServerItemRef.parse(videoId)?.let { ref -> return ServerRepository.connection(ref.connectionId)?.enabled == true }
+        val connections = ServerRepository.enabledConnections().ifEmpty { return false }
         val request = ServerMatcher.request(type, videoId, season = null, episode = null) ?: return false
-        return ServerRepository.enabledConnections().any { ServerMatcher.supports(it, request.kind) }
+        return connections.any { ServerMatcher.supports(it, request.kind) }
     }
 
     fun isServerSourceId(addonId: String?): Boolean = addonId?.startsWith(GROUP_PREFIX) == true
@@ -53,8 +54,9 @@ internal object ServerStreams {
             val connection = ServerRepository.connection(ref.connectionId) ?: return emptyList()
             return listOf(source(connection, preferred = true) { candidates(ref) })
         }
+        val connections = ServerRepository.enabledConnections().ifEmpty { return emptyList() }
         val request = ServerMatcher.request(type, videoId, season, episode) ?: return emptyList()
-        return ServerRepository.enabledConnections()
+        return connections
             .filter { ServerMatcher.supports(it, request.kind) }
             .map { connection ->
                 source(connection, preferred = connection.useCatalogMetadata) {
