@@ -34,6 +34,7 @@ internal val navigationSavedStateConfiguration = SavedStateConfiguration {
             subclass(MetaScreenSettingsRoute::class, MetaScreenSettingsRoute.serializer())
             subclass(ContinueWatchingSettingsRoute::class, ContinueWatchingSettingsRoute.serializer())
             subclass(DownloadsSettingsRoute::class, DownloadsSettingsRoute.serializer())
+            subclass(DownloadLocationSettingsRoute::class, DownloadLocationSettingsRoute.serializer())
             subclass(DownloadShowRoute::class, DownloadShowRoute.serializer())
             subclass(AddonsSettingsRoute::class, AddonsSettingsRoute.serializer())
             subclass(PluginsSettingsRoute::class, PluginsSettingsRoute.serializer())
