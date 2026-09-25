@@ -101,6 +101,8 @@ object ServerRepository {
         block: suspend (ServerProvider, ServerSession) -> T,
     ): T {
         val startedGeneration = generation
+        val connection = connection(connectionId) ?: throw ServerException(ServerFailure.NOT_FOUND)
+        if (!connection.enabled) throw ServerException(ServerFailure.UNREACHABLE)
         val session = session(connectionId) ?: throw ServerException(ServerFailure.AUTH_REQUIRED)
         val provider = provider(session.connection) ?: throw ServerException(ServerFailure.UNSUPPORTED)
         return try {
