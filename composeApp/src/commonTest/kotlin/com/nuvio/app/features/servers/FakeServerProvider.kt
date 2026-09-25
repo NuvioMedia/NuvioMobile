@@ -15,7 +15,7 @@ internal class FakeServerProvider(
     val movies = MOVIE_LIBRARY
     val shows = SERIES_LIBRARY
     val indexedIds = mutableMapOf<String, TrackingExternalIds>()
-    val episodes = mutableMapOf<Pair<Int, Int>, String>()
+    val episodes = mutableMapOf<Pair<Int, Int>, ServerEpisode>()
     val reported = mutableListOf<ServerPlaybackEventType>()
 
     override suspend fun libraries(session: ServerSession): List<ServerLibrary> = listOf(movies, shows)
@@ -90,7 +90,7 @@ internal class FakeServerProvider(
         return ServerPage(entries.drop(start).take(limit), entries.size)
     }
 
-    override suspend fun findEpisode(session: ServerSession, seriesItemId: String, season: Int, episode: Int): String? =
+    override suspend fun findEpisode(session: ServerSession, seriesItemId: String, season: Int, episode: Int): ServerEpisode? =
         episodes[season to episode]
 
     private fun preview(session: ServerSession, itemId: String) = MetaPreview(

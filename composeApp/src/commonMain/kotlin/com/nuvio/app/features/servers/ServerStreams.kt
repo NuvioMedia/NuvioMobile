@@ -4,6 +4,8 @@ import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import org.jetbrains.compose.resources.getString
 
 internal class ServerStreamSource(
@@ -16,9 +18,8 @@ internal class ServerStreamSource(
 
     suspend fun load(): AddonStreamGroup = try {
         AddonStreamGroup(addonName = addonName, addonId = addonId, streams = loader(), isLoading = false)
-    } catch (error: CancellationException) {
-        throw error
     } catch (error: Throwable) {
+        if (error is CancellationException) currentCoroutineContext().ensureActive()
         AddonStreamGroup(
             addonName = addonName,
             addonId = addonId,
@@ -34,13 +35,28 @@ internal object ServerStreams {
 
     fun isServerSourceId(addonId: String?): Boolean = addonId?.startsWith(GROUP_PREFIX) == true
 
-    fun sources(type: String, videoId: String, season: Int?, episode: Int?): List<ServerStreamSource> {
-        val ref = ServerItemRef.parse(videoId) ?: return emptyList()
-        val connection = ServerRepository.connection(ref.connectionId) ?: return emptyList()
-        return listOf(source(connection) { candidates(ref) })
+    fun sources(
+        type: String,
+        videoId: String,
+        season: Int?,
+        episode: Int?,
+        forceRefresh: Boolean = false,
+    ): List<ServerStreamSource> {
+        ServerItemRef.parse(videoId)?.let { ref ->
+            val connection = ServerRepository.connection(ref.connectionId) ?: return emptyList()
+            return listOf(source(connection) { candidates(ref) })
+        }
+        val request = ServerMatcher.request(type, videoId, season, episode) ?: return emptyList()
+        return ServerRepository.enabledConnections()
+            .filter { ServerMatcher.supports(it, request.kind) }
+            .map { connection ->
+                source(connection) {
+                    ServerMatcher.match(connection, request, forceRefresh).flatMap { candidates(it) }
+                }
+            }
     }
 
-    fun source(connection: ServerConnection, loader: suspend () -> List<StreamItem>): ServerStreamSource =
+    private fun source(connection: ServerConnection, loader: suspend () -> List<StreamItem>): ServerStreamSource =
         ServerStreamSource(
             addonId = groupId(connection.id),
             addonName = ServerRepository.sourceLabel(connection),

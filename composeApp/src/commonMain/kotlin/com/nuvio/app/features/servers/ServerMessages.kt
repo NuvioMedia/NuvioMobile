@@ -5,6 +5,7 @@ import nuvio.composeapp.generated.resources.servers_error_failed
 import nuvio.composeapp.generated.resources.servers_error_forbidden
 import nuvio.composeapp.generated.resources.servers_error_unsupported
 import nuvio.composeapp.generated.resources.servers_failure_auth
+import nuvio.composeapp.generated.resources.servers_failure_incomplete
 import nuvio.composeapp.generated.resources.servers_failure_not_found
 import nuvio.composeapp.generated.resources.servers_failure_unreachable
 import org.jetbrains.compose.resources.StringResource
@@ -15,6 +16,7 @@ internal fun ServerFailure.message(): StringResource = when (this) {
     ServerFailure.AUTH_REQUIRED -> Res.string.servers_failure_auth
     ServerFailure.UNREACHABLE -> Res.string.servers_failure_unreachable
     ServerFailure.NOT_FOUND -> Res.string.servers_failure_not_found
+    ServerFailure.INCOMPLETE -> Res.string.servers_failure_incomplete
     ServerFailure.FORBIDDEN -> Res.string.servers_error_forbidden
     ServerFailure.UNSUPPORTED -> Res.string.servers_error_unsupported
     ServerFailure.FAILED -> Res.string.servers_error_failed

@@ -225,7 +225,7 @@ object PlayerStreamsRepository {
         }
 
         val isNativeServerRequest = ServerStreams.isNativeRequest(videoId)
-        val serverSources = ServerStreams.sources(type = type, videoId = videoId, season = season, episode = episode)
+        val serverSources = ServerStreams.sources(type, videoId, season, episode, forceRefresh)
         val installedAddons = if (isNativeServerRequest) emptyList() else AddonRepository.uiState.value.addons.enabledAddons()
         PlayerSettingsRepository.ensureLoaded()
         val playerSettings = PlayerSettingsRepository.uiState.value

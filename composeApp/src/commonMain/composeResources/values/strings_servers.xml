@@ -39,4 +39,5 @@
     <string name="servers_playback_failed">Could not start playback from the server.</string>
     <string name="servers_watched_failed">Could not update watched state on the server.</string>
     <string name="servers_resume_row">Continue watching</string>
+    <string name="servers_failure_incomplete">Still checking this server's library. Try again in a moment.</string>
 </resources>

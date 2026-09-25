@@ -3,6 +3,7 @@ package com.nuvio.app.features.servers.jellyfin
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.servers.ServerCandidate
 import com.nuvio.app.features.servers.ServerCapability
+import com.nuvio.app.features.servers.ServerEpisode
 import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerIndexEntry
@@ -222,7 +223,7 @@ internal object JellyfinProvider : ServerProvider {
         seriesItemId: String,
         season: Int,
         episode: Int,
-    ): String? {
+    ): ServerEpisode? {
         val matches = get(
             session,
             "/Shows/${pathSegment(seriesItemId)}/Episodes",
@@ -230,6 +231,7 @@ internal object JellyfinProvider : ServerProvider {
             mapOf(
                 "userId" to session.userId,
                 "season" to season.toString(),
+                "fields" to "PremiereDate",
                 "enableImages" to "false",
                 "enableUserData" to "false",
             ),
@@ -239,7 +241,7 @@ internal object JellyfinProvider : ServerProvider {
                 (item.indexNumberEnd == null || item.indexNumberEnd == episode) &&
                 !item.isMissing
         }
-        return matches.singleOrNull()?.id
+        return matches.singleOrNull()?.let { ServerEpisode(itemId = it.id, premiereDate = it.premiereDate) }
     }
 
     override suspend fun preparePlayback(

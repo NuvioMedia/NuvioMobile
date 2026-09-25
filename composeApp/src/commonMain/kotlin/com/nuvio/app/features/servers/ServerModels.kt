@@ -166,6 +166,7 @@ enum class ServerFailure {
     UNREACHABLE,
     UNSUPPORTED,
     NOT_FOUND,
+    INCOMPLETE,
     FAILED,
 }
 

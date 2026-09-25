@@ -59,12 +59,17 @@ interface ServerProvider {
         seriesItemId: String,
         season: Int,
         episode: Int,
-    ): String? = unsupported()
+    ): ServerEpisode? = unsupported()
 }
 
 data class ServerIndexEntry(
     val itemId: String,
     val ids: TrackingExternalIds,
+)
+
+data class ServerEpisode(
+    val itemId: String,
+    val premiereDate: String?,
 )
 
 fun ServerProvider.supports(capability: ServerCapability): Boolean = capability in capabilities

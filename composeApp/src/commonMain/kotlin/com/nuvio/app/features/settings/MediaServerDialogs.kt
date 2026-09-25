@@ -246,5 +246,6 @@ private fun ServerFailure.signInMessage(): StringResource = when (this) {
     ServerFailure.UNREACHABLE -> Res.string.servers_error_unreachable
     ServerFailure.UNSUPPORTED -> Res.string.servers_error_unsupported
     ServerFailure.FORBIDDEN -> Res.string.servers_error_forbidden
+    ServerFailure.INCOMPLETE,
     ServerFailure.FAILED -> Res.string.servers_error_failed
 }
