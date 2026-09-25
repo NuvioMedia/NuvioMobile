@@ -82,6 +82,14 @@ class JellyfinMapperTest {
     }
 
     @Test
+    fun mapsCollectionsAndCollectionLibraries() {
+        assertEquals("collection", mapper.preview(movie.copy(type = "BoxSet"))!!.type)
+        assertEquals("collection", mapper.preview(movie.copy(type = "Folder"))!!.type)
+        assertEquals(com.nuvio.app.features.servers.ServerMediaKind.COLLECTION, libraryKind("boxsets"))
+        assertNull(libraryKind("music"))
+    }
+
+    @Test
     fun ignoresUnsupportedItemTypes() {
         assertNull(mapper.preview(movie.copy(type = "MusicAlbum")))
     }

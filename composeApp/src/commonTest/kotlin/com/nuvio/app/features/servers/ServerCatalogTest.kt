@@ -1,10 +1,12 @@
 package com.nuvio.app.features.servers
 
 import com.nuvio.app.features.catalog.CatalogTarget
+import com.nuvio.app.features.home.MetaPreview
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -43,6 +45,26 @@ class ServerCatalogTest {
         val connection = installFakeServer()
         ServerRepository.setEnabled(connection.id, false)
         assertTrue(ServerCatalog.libraries().none { it.connection.id == connection.id })
+    }
+
+    @Test
+    fun collectionCardsOpenTheirContentsAsACatalog() = runTest {
+        val connection = installFakeServer(
+            libraries = listOf(FakeServerProvider.MOVIE_LIBRARY, FakeServerProvider.COLLECTION_LIBRARY),
+        )
+        assertTrue(ServerCatalog.homeDefinitions().any { it.defaultTitle == "Box · Featured" && it.type == "collection" })
+        assertTrue(ServerCatalog.titleLibraries().none { it.library.kind == ServerMediaKind.COLLECTION })
+        assertTrue(ServerMatcher.supports(connection, ServerMediaKind.MOVIE))
+
+        val card = MetaPreview(id = ServerItemRef(connection.id, "c-popular").encode(), type = "collection", name = "Popular")
+        val target = assertNotNull(ServerCatalog.collectionTarget(card))
+        assertEquals("c-popular", target.collectionId)
+        assertEquals("Fake · Box", ServerCatalog.sourceLabel(target))
+        assertNull(ServerCatalog.collectionTarget(card.copy(type = "movie")))
+
+        val page = ServerCatalog.page(target, skip = 0)
+        assertEquals(listOf("movie", "series"), page.items.map { it.type })
+        assertNull(page.nextSkip)
     }
 
     @Test

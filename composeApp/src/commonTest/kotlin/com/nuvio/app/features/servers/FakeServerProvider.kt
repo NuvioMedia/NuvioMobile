@@ -30,6 +30,13 @@ internal class FakeServerProvider(
         return ServerPage(ids.map { preview(session, it) }, movieCount)
     }
 
+    override suspend fun collectionPage(
+        session: ServerSession,
+        collectionId: String,
+        start: Int,
+        limit: Int,
+    ): ServerPage<MetaPreview> = ServerPage(listOf(preview(session, "7"), preview(session, SHOW_ID).copy(type = "series")), 2)
+
     override suspend fun search(
         session: ServerSession,
         library: ServerLibrary,
@@ -103,12 +110,14 @@ internal class FakeServerProvider(
         const val SHOW_ID = "500"
         val MOVIE_LIBRARY = ServerLibrary(id = "10", name = "Movies", kind = ServerMediaKind.MOVIE)
         val SERIES_LIBRARY = ServerLibrary(id = "20", name = "Shows", kind = ServerMediaKind.SERIES)
+        val COLLECTION_LIBRARY = ServerLibrary(id = "30", name = "Featured", kind = ServerMediaKind.COLLECTION)
     }
 }
 
 internal fun installFakeServer(
     provider: FakeServerProvider = FakeServerProvider(),
     connectionId: String = "cfake",
+    libraries: List<ServerLibrary> = listOf(provider.movies, provider.shows),
 ): ServerConnection {
     ServerProviders.registered.removeAll { it.id == provider.id }
     ServerProviders.registered += provider
@@ -121,7 +130,7 @@ internal fun installFakeServer(
         remoteUserId = "user-1",
         userName = "viewer",
         credentialRef = "k$connectionId",
-        libraries = listOf(provider.movies, provider.shows),
+        libraries = libraries,
     )
     ServerRepository.store(connection, token = "token")
     return connection

@@ -36,6 +36,13 @@ interface ServerProvider {
 
     suspend fun signOut(session: ServerSession) = Unit
 
+    suspend fun collectionPage(
+        session: ServerSession,
+        collectionId: String,
+        start: Int,
+        limit: Int,
+    ): ServerPage<MetaPreview> = unsupported()
+
     suspend fun search(
         session: ServerSession,
         library: ServerLibrary,

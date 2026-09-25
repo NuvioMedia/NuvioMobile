@@ -88,7 +88,7 @@ object SearchRepository {
         val hasPendingAddonManifests = enabledAddons.hasPendingEnabledManifests()
         val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
         val activeAddons = enabledAddons.filter { it.manifest != null }
-        val serverLibraries = ServerCatalog.libraries()
+        val serverLibraries = ServerCatalog.titleLibraries()
         if (activeAddons.isEmpty() && serverLibraries.isEmpty()) {
             activeJob?.cancel()
             lastRequestKey = null
@@ -240,7 +240,7 @@ object SearchRepository {
         val hasPendingAddonManifests = enabledAddons.hasPendingEnabledManifests()
         val addonManifestErrorMessage = enabledAddons.firstEnabledManifestError()
         val activeAddons = enabledAddons.filter { it.manifest != null }
-        val serverLibraries = ServerCatalog.libraries()
+        val serverLibraries = ServerCatalog.titleLibraries()
         if (activeAddons.isEmpty() && serverLibraries.isEmpty()) {
             activeDiscoverJob?.cancel()
             discoverSources = emptyList()

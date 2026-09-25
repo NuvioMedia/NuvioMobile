@@ -25,8 +25,9 @@ sealed interface CatalogTarget {
 
     data class Server(
         val connectionId: String,
-        val libraryId: String,
+        val libraryId: String?,
         override val contentType: String,
+        val collectionId: String? = null,
     ) : CatalogTarget {
         override val supportsPagination: Boolean = true
     }

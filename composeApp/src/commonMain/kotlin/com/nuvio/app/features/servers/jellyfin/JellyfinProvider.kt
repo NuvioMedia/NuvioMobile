@@ -102,8 +102,8 @@ internal object JellyfinProvider : ServerProvider {
             "/Items",
             JellyfinItemsResult.serializer(),
             itemQuery(session, library) + mapOf(
-                "sortBy" to "DateCreated,SortName",
-                "sortOrder" to "Descending",
+                "sortBy" to if (library.kind == ServerMediaKind.COLLECTION) "SortName" else "DateCreated,SortName",
+                "sortOrder" to if (library.kind == ServerMediaKind.COLLECTION) "Ascending" else "Descending",
                 "startIndex" to start.toString(),
                 "limit" to limit.toString(),
                 "enableTotalRecordCount" to "true",
@@ -111,6 +111,30 @@ internal object JellyfinProvider : ServerProvider {
         )
         val mapper = mapper(session)
         return ServerPage(result.items.mapNotNull(mapper::preview), result.totalRecordCount)
+    }
+
+    override suspend fun collectionPage(
+        session: ServerSession,
+        collectionId: String,
+        start: Int,
+        limit: Int,
+    ): ServerPage<MetaPreview> {
+        val result = get(
+            session,
+            "/Items",
+            JellyfinItemsResult.serializer(),
+            mapOf(
+                "userId" to session.userId,
+                "parentId" to collectionId,
+                "fields" to LIST_FIELDS,
+                "imageTypeLimit" to "1",
+                "enableImageTypes" to "Primary,Backdrop,Logo",
+                "startIndex" to start.toString(),
+                "limit" to limit.toString(),
+                "enableTotalRecordCount" to "true",
+            ),
+        )
+        return ServerPage(result.items.mapNotNull(mapper(session)::preview), result.totalRecordCount)
     }
 
     override suspend fun search(
@@ -377,8 +401,8 @@ internal object JellyfinProvider : ServerProvider {
     private fun itemQuery(session: ServerSession, library: ServerLibrary): Map<String, String?> = mapOf(
         "userId" to session.userId,
         "parentId" to library.id,
-        "recursive" to "true",
-        "includeItemTypes" to library.itemType(),
+        "recursive" to (library.kind != ServerMediaKind.COLLECTION).toString(),
+        "includeItemTypes" to library.itemType().takeUnless { library.kind == ServerMediaKind.COLLECTION },
         "fields" to LIST_FIELDS,
         "imageTypeLimit" to "1",
         "enableImageTypes" to "Primary,Backdrop,Logo",
@@ -390,6 +414,7 @@ internal object JellyfinProvider : ServerProvider {
     private fun ServerLibrary.itemType(): String = when (kind) {
         ServerMediaKind.MOVIE -> "Movie"
         ServerMediaKind.SERIES -> "Series"
+        ServerMediaKind.COLLECTION -> "BoxSet"
     }
 
     private fun deviceProfile(capabilities: ServerPlayerCapabilities) = JellyfinDeviceProfile(

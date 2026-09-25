@@ -173,6 +173,7 @@ internal class JellyfinMapper(
 internal fun JellyfinItem.mediaKind(): ServerMediaKind? = when {
     type.equals("Movie", ignoreCase = true) -> ServerMediaKind.MOVIE
     type.equals("Series", ignoreCase = true) -> ServerMediaKind.SERIES
+    type.equals("BoxSet", ignoreCase = true) || type.equals("Folder", ignoreCase = true) -> ServerMediaKind.COLLECTION
     else -> null
 }
 
@@ -192,6 +193,7 @@ internal fun JellyfinItem.externalIds(): TrackingExternalIds {
 internal fun libraryKind(collectionType: String?): ServerMediaKind? = when (collectionType?.lowercase()) {
     "movies" -> ServerMediaKind.MOVIE
     "tvshows" -> ServerMediaKind.SERIES
+    "boxsets" -> ServerMediaKind.COLLECTION
     else -> null
 }
 

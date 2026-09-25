@@ -88,7 +88,7 @@ internal object ServerMatcher {
 
     fun warm() {
         ServerRepository.enabledConnections().forEach { connection ->
-            ServerMediaKind.entries.filter { supports(connection, it) }.forEach { kind ->
+            listOf(ServerMediaKind.MOVIE, ServerMediaKind.SERIES).filter { supports(connection, it) }.forEach { kind ->
                 connection.selectedLibraries(kind).forEach { library -> build(connection, library, forceRefresh = false) }
             }
         }

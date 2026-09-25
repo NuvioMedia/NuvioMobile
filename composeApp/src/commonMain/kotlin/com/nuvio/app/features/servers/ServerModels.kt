@@ -8,7 +8,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 enum class ServerMediaKind(val contentType: String) {
     MOVIE("movie"),
-    SERIES("series");
+    SERIES("series"),
+    COLLECTION("collection");
 
     companion object {
         fun fromContentType(type: String?): ServerMediaKind? = when (type?.trim()?.lowercase()) {

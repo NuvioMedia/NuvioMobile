@@ -4,6 +4,7 @@ import com.nuvio.app.features.catalog.CatalogPage
 import com.nuvio.app.features.catalog.CatalogTarget
 import com.nuvio.app.features.home.HomeCatalogDefinition
 import com.nuvio.app.features.home.HomeCatalogSection
+import com.nuvio.app.features.home.MetaPreview
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.servers_resume_row
@@ -28,6 +29,18 @@ internal object ServerCatalog {
         ServerRepository.enabledConnections().flatMap { connection ->
             connection.selectedLibraries.map { ServerLibraryRef(connection, it) }
         }
+
+    fun titleLibraries(): List<ServerLibraryRef> =
+        libraries().filter { it.library.kind != ServerMediaKind.COLLECTION }
+
+    fun collectionTarget(meta: MetaPreview): CatalogTarget.Server? {
+        if (meta.type != ServerMediaKind.COLLECTION.contentType) return null
+        val ref = ServerItemRef.parse(meta.id) ?: return null
+        return CatalogTarget.Server(ref.connectionId, null, meta.type, collectionId = ref.itemId)
+    }
+
+    fun sourceLabel(target: CatalogTarget.Server): String =
+        ServerRepository.connection(target.connectionId)?.let(ServerRepository::sourceLabel).orEmpty()
 
     fun homeDefinitions(): List<HomeCatalogDefinition> = resumeDefinitions() + libraries().map { ref ->
         HomeCatalogDefinition(
@@ -71,6 +84,13 @@ internal object ServerCatalog {
     fun isServerKey(key: String): Boolean = key.startsWith(HOME_KEY_PREFIX)
 
     suspend fun page(target: CatalogTarget.Server, skip: Int, limit: Int = SERVER_CATALOG_PAGE_SIZE): CatalogPage {
+        target.collectionId?.let { collectionId ->
+            return pageOf(skip, limit) {
+                ServerRepository.call(target.connectionId) { provider, session ->
+                    provider.collectionPage(session, collectionId, skip, limit)
+                }
+            }
+        }
         if (target.libraryId == RESUME_ID) {
             val items = if (skip > 0) {
                 emptyList()
@@ -83,9 +103,15 @@ internal object ServerCatalog {
             ?.libraries
             ?.firstOrNull { it.id == target.libraryId }
             ?: throw ServerException(ServerFailure.NOT_FOUND)
-        val page = ServerRepository.call(target.connectionId) { provider, session ->
-            provider.libraryPage(session, library, skip, limit)
+        return pageOf(skip, limit) {
+            ServerRepository.call(target.connectionId) { provider, session ->
+                provider.libraryPage(session, library, skip, limit)
+            }
         }
+    }
+
+    private suspend fun pageOf(skip: Int, limit: Int, load: suspend () -> ServerPage<MetaPreview>): CatalogPage {
+        val page = load()
         val loaded = skip + page.items.size
         val hasMore = page.items.isNotEmpty() && (page.totalCount?.let { loaded < it } ?: (page.items.size >= limit))
         return CatalogPage(
