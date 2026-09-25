@@ -111,6 +111,31 @@ class TrailerPlayerTest {
     }
 
     @Test
+    fun startInFullscreenDismissesInsteadOfReturningToPopup() {
+        var dismissed = false
+        compose.setContent {
+            NuvioTheme {
+                TrailerPlayerPopup(
+                    visible = true,
+                    trailerTitle = "Official trailer",
+                    trailerType = "Trailer",
+                    contentTitle = "Example movie",
+                    playbackSource = null,
+                    isLoading = false,
+                    errorMessage = "Unavailable",
+                    onDismiss = { dismissed = true },
+                    startInFullscreen = true,
+                )
+            }
+        }
+        compose.onNodeWithContentDescription("Enter fullscreen").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Exit fullscreen").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Exit fullscreen").performClick()
+        compose.runOnIdle { assertTrue(dismissed) }
+        compose.onNodeWithContentDescription("Enter fullscreen").assertDoesNotExist()
+    }
+
+    @Test
     fun controlsHideDuringPlaybackAndReturnWhenPaused() {
         val state = playingState(RecordingController())
         compose.mainClock.autoAdvance = false

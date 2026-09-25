@@ -5,6 +5,7 @@ import androidx.compose.animation.Crossfade
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -49,6 +50,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -82,6 +84,7 @@ import com.nuvio.app.core.ui.NuvioBackButton
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
 import com.nuvio.app.core.ui.NuvioPosterZoomActionOverlay
 import com.nuvio.app.core.ui.NuvioToastController
+import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.core.ui.PosterZoomAnchor
 import com.nuvio.app.core.ui.PosterZoomAnchorHolder
 import com.nuvio.app.core.ui.PosterZoomOverlayAction
@@ -116,6 +119,8 @@ import com.nuvio.app.features.library.TrackingMembershipRemovalConfirmationHost
 import com.nuvio.app.features.library.executeTrackingMembershipOperation
 import com.nuvio.app.features.library.showTrackingMembershipRewriteFeedback
 import com.nuvio.app.features.library.toLibraryItem
+import com.nuvio.app.features.player.HidePlayerSystemBars
+import com.nuvio.app.features.player.LockPlayerToLandscape
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.streams.rememberPlaybackAvailability
 import com.nuvio.app.features.streams.StreamAutoPlayPolicy
@@ -683,6 +688,11 @@ fun MetaDetailsScreen(
                 var heroTrailerPlaybackSource by remember(meta.id, heroTrailerCandidate?.id) { mutableStateOf<TrailerPlaybackSource?>(null) }
                 var heroTrailerReady by remember(meta.id, heroTrailerCandidate?.id) { mutableStateOf(false) }
                 var heroTrailerFinished by remember(meta.id, heroTrailerCandidate?.id) { mutableStateOf(false) }
+                var heroTrailerFullscreen by remember(meta.id) { mutableStateOf(false) }
+                var heroFullscreenImmersive by remember(meta.id) { mutableStateOf(false) }
+                val heroFullscreenProgress = remember(meta.id) { Animatable(0f) }
+                var heroFullscreenStartExtraPx by remember(meta.id) { mutableFloatStateOf(0f) }
+                var mutedBeforeHeroFullscreen by remember(meta.id) { mutableStateOf(true) }
                 val heroTrailerMuted by HeroTrailerAudioState.muted.collectAsStateWithLifecycle()
                 LaunchedEffect(
                     heroTrailerPlaybackEnabled,
@@ -693,6 +703,9 @@ fun MetaDetailsScreen(
                     heroTrailerPlaybackSource = null
                     heroTrailerReady = false
                     heroTrailerFinished = false
+                    heroTrailerFullscreen = false
+                    heroFullscreenImmersive = false
+                    heroFullscreenProgress.snapTo(0f)
                     if (!deferredMetaWorkAllowed || !heroTrailerPlaybackEnabled || heroTrailerCandidate == null) {
                         return@LaunchedEffect
                     }
@@ -709,6 +722,9 @@ fun MetaDetailsScreen(
                     isLeavingDetails = true
                     heroTrailerReady = false
                     heroTrailerFinished = true
+                    heroTrailerFullscreen = false
+                    heroFullscreenImmersive = false
+                    trailerScope.launch { heroFullscreenProgress.snapTo(0f) }
                     onBack()
                 }
                 val resolveTrailer: (MetaTrailer) -> Unit = remember(meta.id, inAppTrailerPlaybackEnabled, uriHandler) {
@@ -917,7 +933,55 @@ fun MetaDetailsScreen(
                     )
                 }
                 val listState = rememberLazyListState()
-                val heroStretchState = rememberHeroStretchState(listState)
+                val heroStretchState = rememberHeroStretchState(listState) { stretchPx, maxStretchPx ->
+                    val shouldOpen = !heroTrailerFullscreen &&
+                        selectedTrailer == null &&
+                        shouldOpenHeroTrailerFullscreen(
+                            stretchPx = stretchPx,
+                            maxStretchPx = maxStretchPx,
+                            trailerReady = heroTrailerPlaybackEnabled &&
+                                heroTrailerReady &&
+                                heroTrailerPlaybackSource != null &&
+                                !heroTrailerFinished &&
+                                !isLeavingDetails,
+                        )
+                    if (shouldOpen) {
+                        mutedBeforeHeroFullscreen = heroTrailerMuted
+                        heroFullscreenStartExtraPx = stretchPx
+                        heroTrailerFullscreen = true
+                        heroFullscreenImmersive = true
+                        if (heroTrailerMuted) {
+                            HeroTrailerAudioState.setMuted(false)
+                        }
+                        trailerScope.launch {
+                            heroFullscreenProgress.animateTo(
+                                targetValue = 1f,
+                                animationSpec = tween(
+                                    durationMillis = HERO_TRAILER_FULLSCREEN_ANIM_MS,
+                                    easing = HeroTrailerFullscreenEasing,
+                                ),
+                            )
+                        }
+                    }
+                    shouldOpen
+                }
+                val exitHeroTrailerFullscreen: () -> Unit = {
+                    trailerScope.launch {
+                        heroFullscreenImmersive = false
+                        delay(HERO_TRAILER_FULLSCREEN_ORIENTATION_SETTLE_MS)
+                        heroFullscreenStartExtraPx = 0f
+                        heroFullscreenProgress.animateTo(
+                            targetValue = 0f,
+                            animationSpec = tween(
+                                durationMillis = HERO_TRAILER_FULLSCREEN_ANIM_MS,
+                                easing = HeroTrailerFullscreenEasing,
+                            ),
+                        )
+                        heroStretchState.discardStretch()
+                        heroTrailerFullscreen = false
+                        HeroTrailerAudioState.setMuted(mutedBeforeHeroFullscreen)
+                    }
+                }
                 val density = LocalDensity.current
                 val safeAreaTopPx = with(density) {
                     WindowInsets.statusBars
@@ -948,6 +1012,12 @@ fun MetaDetailsScreen(
                             (listState.firstVisibleItemIndex > 0 || detailScrollOffsetPx() > thresholdPx)
                     }
                 }
+                val showHeroFullscreenControls by remember {
+                    derivedStateOf { heroFullscreenProgress.value > HERO_TRAILER_FULLSCREEN_CONTROLS_AT }
+                }
+                val showDetailHeader by remember {
+                    derivedStateOf { heroFullscreenProgress.value < 0.28f }
+                }
                 val heroTrailerSourceUrl = heroTrailerPlaybackSource
                     ?.videoUrl
                     ?.takeIf { it.isNotBlank() && heroTrailerPlaybackEnabled && !heroTrailerFinished && !isLeavingDetails }
@@ -956,8 +1026,10 @@ fun MetaDetailsScreen(
                     ?.takeIf { heroTrailerSourceUrl != null && it.isNotBlank() }
 
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                    val viewportWidthPx = constraints.maxWidth
+                    val viewportHeightPx = constraints.maxHeight
                     val colorScheme = MaterialTheme.colorScheme
-                    val isTablet = maxWidth >= 720.dp
+                    val isTablet = minOf(maxWidth, maxHeight) >= 720.dp
                     val contentHorizontalPadding = if (isTablet) 32.dp else 18.dp
                     val contentMaxWidth = detailTabletContentMaxWidth(maxWidth, isTablet)
                     val backdropUrl = meta.background ?: meta.poster
@@ -1013,6 +1085,11 @@ fun MetaDetailsScreen(
                     )
 
                     Box(modifier = Modifier.fillMaxSize()) {
+                        if (heroFullscreenImmersive) {
+                            HidePlayerSystemBars()
+                            LockPlayerToLandscape()
+                        }
+                        PlatformBackHandler(enabled = heroTrailerFullscreen, onBack = exitHeroTrailerFullscreen)
                         Box(Modifier.fillMaxSize().detailsContentReveal(metaScreenSettingsUiState.posterTransitionEnabled)) {
                             when (backgroundMode) {
                                 MetaScreenBackgroundMode.Normal -> Unit
@@ -1041,9 +1118,16 @@ fun MetaDetailsScreen(
                             }
                             LazyColumn(
                                 state = listState,
+                                userScrollEnabled = !heroTrailerFullscreen,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .nestedScroll(heroStretchState.nestedScrollConnection)
+                                    .then(
+                                        if (heroTrailerFullscreen) {
+                                            Modifier
+                                        } else {
+                                            Modifier.nestedScroll(heroStretchState.nestedScrollConnection)
+                                        },
+                                    )
                                     .zIndex(1f),
                             ) {
                                 item(key = "detail-hero") {
@@ -1052,7 +1136,24 @@ fun MetaDetailsScreen(
                                         isTablet = isTablet,
                                         contentMaxWidth = contentMaxWidth,
                                         scrollOffset = heroScrollOffset,
-                                        stretchPx = { heroStretchState.stretchPx },
+                                        stretchPx = {
+                                            val progress = heroFullscreenProgress.value
+                                            if (progress > 0f || heroTrailerFullscreen) {
+                                                heroTrailerFullscreenExtraPx(
+                                                    progress = progress,
+                                                    stretchPx = heroFullscreenStartExtraPx,
+                                                    startExtraPx = heroFullscreenStartExtraPx,
+                                                    fullExtraPx = heroTrailerFullscreenTargetExtraPx(
+                                                        viewportWidthPx = viewportWidthPx,
+                                                        viewportHeightPx = viewportHeightPx,
+                                                        heroHeightPx = heroHeightPx.intValue,
+                                                        lockToLandscape = !isTablet,
+                                                    ),
+                                                )
+                                            } else {
+                                                heroStretchState.stretchPx
+                                            }
+                                        },
                                         onHeightChanged = { heroHeightPx.intValue = it },
                                         heroTrailerSourceUrl = heroTrailerSourceUrl,
                                         heroTrailerSourceAudioUrl = heroTrailerSourceAudioUrl,
@@ -1061,7 +1162,7 @@ fun MetaDetailsScreen(
                                             heroTrailerSourceUrl != null &&
                                                 selectedTrailer == null &&
                                                 !isLeavingDetails &&
-                                                !isHeroCollapsed.value
+                                                (!isHeroCollapsed.value || heroTrailerFullscreen)
                                         },
                                         heroTrailerMuted = heroTrailerMuted,
                                         heroGradientColor = dominantBackdropColor.takeIf { dominantColorEnabled },
@@ -1080,11 +1181,24 @@ fun MetaDetailsScreen(
                                         onHeroTrailerEnded = {
                                             heroTrailerReady = false
                                             heroTrailerFinished = true
+                                            heroFullscreenImmersive = false
+                                            heroTrailerFullscreen = false
+                                            trailerScope.launch { heroFullscreenProgress.snapTo(0f) }
                                         },
                                         onHeroTrailerError = {
                                             heroTrailerReady = false
                                             heroTrailerFinished = true
+                                            heroFullscreenImmersive = false
+                                            heroTrailerFullscreen = false
+                                            trailerScope.launch { heroFullscreenProgress.snapTo(0f) }
                                         },
+                                        fullscreenProgress = { heroFullscreenProgress.value },
+                                        showFullscreenControls = showHeroFullscreenControls,
+                                        fullscreenTitle = heroTrailerCandidate?.displayName
+                                            ?: heroTrailerCandidate?.name
+                                            ?: meta.name,
+                                        onExitFullscreen = exitHeroTrailerFullscreen,
+                                        lockHeroSize = heroTrailerFullscreen,
                                     )
                                 }
 
@@ -1211,6 +1325,7 @@ fun MetaDetailsScreen(
                             backgroundColor = dominantBackdropColor.takeIf { dominantColorEnabled },
                             onBack = onBackFromDetails,
                             onToggleSaved = toggleSaved,
+                            visible = showDetailHeader,
                         )
 
                         selectedEpisodeForActions
@@ -1662,7 +1777,9 @@ private fun DetailHeaderOverlay(
     backgroundColor: Color?,
     onBack: () -> Unit,
     onToggleSaved: () -> Unit,
+    visible: Boolean = true,
 ) {
+    if (!visible) return
     val headerTarget = if (isHeroCollapsed.value) 1f else 0f
     val headerProgress by animateFloatAsState(
         targetValue = headerTarget,

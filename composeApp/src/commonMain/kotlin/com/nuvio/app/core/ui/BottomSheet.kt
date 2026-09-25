@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -26,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +40,7 @@ fun NuvioModalBottomSheet(
     shape: Shape = RoundedCornerShape(topStart = NuvioTokens.Space.s28, topEnd = NuvioTokens.Space.s28),
     showDragHandle: Boolean = true,
     fullHeight: Boolean = false,
+    sheetMaxWidth: Dp = BottomSheetDefaults.SheetMaxWidth,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     if (usesNativeNuvioBottomSheet) {
@@ -63,6 +66,7 @@ fun NuvioModalBottomSheet(
             } else {
                 null
             },
+            sheetMaxWidth = sheetMaxWidth,
             content = content,
         )
     }

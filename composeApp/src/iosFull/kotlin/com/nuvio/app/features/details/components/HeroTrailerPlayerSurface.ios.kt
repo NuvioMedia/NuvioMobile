@@ -13,4 +13,6 @@ actual fun HeroTrailerPlayerSurface(
     onReady: () -> Unit,
     onEnded: () -> Unit,
     onError: () -> Unit,
+    onControllerReady: (com.nuvio.app.features.player.PlayerEngineController) -> Unit,
+    onSnapshot: (com.nuvio.app.features.player.PlayerPlaybackSnapshot) -> Unit,
 ) = Unit
