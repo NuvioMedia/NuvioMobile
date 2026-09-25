@@ -12,6 +12,8 @@ import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.plugins.PluginsUiState
+import com.nuvio.app.features.servers.ServerRepository
+import com.nuvio.app.features.servers.ServerStreams
 
 internal fun AddonManifest.supportsStream(type: String, videoId: String): Boolean =
     resources.any { resource ->
@@ -34,7 +36,8 @@ internal class PlaybackAvailability(
 ) {
     fun canStream(type: String, videoId: String): Boolean =
         hasCompatiblePlaybackSource(addons, plugins, type, videoId) ||
-            MetaDetailsRepository.findEmbeddedStreams(videoId).isNotEmpty()
+            MetaDetailsRepository.findEmbeddedStreams(videoId).isNotEmpty() ||
+            ServerStreams.canServe(type, videoId)
 
     fun canPlay(
         type: String,
@@ -80,7 +83,11 @@ internal fun rememberPlaybackAvailability(): PlaybackAvailability {
         DownloadsRepository.ensureLoaded()
         DownloadsRepository.uiState
     }.collectAsStateWithLifecycle()
-    return remember(addons, plugins, downloads) {
+    val servers by remember {
+        ServerRepository.ensureLoaded()
+        ServerRepository.uiState
+    }.collectAsStateWithLifecycle()
+    return remember(addons, plugins, downloads, servers.revision) {
         PlaybackAvailability(addons.addons, plugins)
     }
 }

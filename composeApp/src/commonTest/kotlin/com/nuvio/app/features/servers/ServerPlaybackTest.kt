@@ -41,6 +41,20 @@ class ServerPlaybackTest {
     }
 
     @Test
+    fun serverItemsAndMatchableCatalogTitlesArePlayable() {
+        val connection = installFakeServer()
+        assertTrue(ServerStreams.canServe("movie", ServerItemRef(connection.id, "42").encode()))
+        assertTrue(ServerStreams.canServe("movie", "tt0111161"))
+        assertTrue(ServerStreams.canServe("series", "tt0944947:1:1"))
+        assertFalse(ServerStreams.canServe("movie", "kitsu:1"))
+        assertFalse(ServerStreams.canServe("movie", ServerItemRef("cmissing", "42").encode()))
+
+        ServerRepository.setEnabled(connection.id, false)
+        assertFalse(ServerStreams.canServe("movie", ServerItemRef(connection.id, "42").encode()))
+        assertFalse(ServerStreams.canServe("movie", "tt0111161"))
+    }
+
+    @Test
     fun autoplayCanChooseServerCandidates() = runTest {
         val connection = installFakeServer()
         val stream = ServerStreams.candidates(ServerItemRef(connection.id, "42")).single()

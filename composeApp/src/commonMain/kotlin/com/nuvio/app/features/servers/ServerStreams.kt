@@ -33,6 +33,12 @@ internal class ServerStreamSource(
 internal object ServerStreams {
     fun isNativeRequest(videoId: String): Boolean = ServerItemRef.isServerId(videoId)
 
+    fun canServe(type: String, videoId: String): Boolean {
+        ServerItemRef.parse(videoId)?.let { ref -> return ServerRepository.connection(ref.connectionId)?.enabled == true }
+        val request = ServerMatcher.request(type, videoId, season = null, episode = null) ?: return false
+        return ServerRepository.enabledConnections().any { ServerMatcher.supports(it, request.kind) }
+    }
+
     fun isServerSourceId(addonId: String?): Boolean = addonId?.startsWith(GROUP_PREFIX) == true
 
     fun sources(
