@@ -36,13 +36,20 @@ import okhttp3.ConnectionPool
 
 internal class AndroidDownloadScheduler(val context: Context) {
     val store = AndroidDownloadStore(File(context.filesDir, "download-transfers"))
-    val directory = File(context.filesDir, "downloads")
+    val directory = internalDownloadsDirectory(context)
     private val locks = ConcurrentHashMap<String, Mutex>()
-    private val cleanupScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val backgroundScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     fun enqueue(item: DownloadItem): AndroidDownloadTransfer {
         val previous = store.get(item.fileName)
-        val transfer = store.begin(item)
+        var transfer = store.begin(item)
+        if (transfer.destinationTreeUri == null) {
+            DownloadLocationManager.currentDownloadTreeUri()?.let { tree ->
+                transfer = store.update(item.fileName, transfer.generation) {
+                    it.copy(destinationTreeUri = tree)
+                } ?: transfer
+            }
+        }
         val existing = previous?.generation == transfer.generation
         if (existing && Build.VERSION.SDK_INT >= 34) return transfer
         try {
@@ -120,10 +127,15 @@ internal class AndroidDownloadScheduler(val context: Context) {
         store.remove(fileName)
         transfer?.let(::cancelScheduled)
         transfer?.let { DownloadsLiveStatusPlatform.removeNotification(it.item.id) }
-        cleanupScope.launch {
+        backgroundScope.launch {
             lock(fileName).withLock {
                 if (store.get(fileName) == null) {
-                    File(directory, "$fileName.part").delete()
+                    transfer?.destinationTreeUri?.let { tree ->
+                        DownloadLocationManager.findFinalizedDownloadFile(tree, fileName)
+                            ?.let(DownloadLocationManager::removeFile)
+                    }
+                    transfer?.destinationDocumentUri?.let { DownloadLocationManager.removeFile(it) }
+                    transfer?.item?.localFileUri?.let { DownloadLocationManager.removeFile(it) }
                     DownloadSubtitleStorage(File(directory, fileName).toURI().toString()).remove()
                 }
             }
@@ -142,7 +154,6 @@ internal class AndroidDownloadScheduler(val context: Context) {
     ): Boolean = lock(transfer.item.fileName).withLock {
         val fileName = transfer.item.fileName
         if (!isActive(transfer)) return@withLock false
-        val destination = File(directory, fileName)
         val client = if (network != null) {
             downloadHttpClient.newBuilder()
                 .socketFactory(network.socketFactory)
@@ -150,14 +161,28 @@ internal class AndroidDownloadScheduler(val context: Context) {
                 .connectionPool(ConnectionPool())
                 .build()
         } else downloadHttpClient
+        var target: SafDownloadTarget? = null
         try {
-            DownloadSubtitles.prepare(transfer.item, destination.toURI().toString())
             currentCoroutineContext().ensureActive()
             if (!isActive(transfer)) return@withLock false
+
+            if (transfer.destinationDocumentUri != null) {
+                DownloadLocationManager.findFinalizedDownloadFile(transfer.destinationTreeUri, fileName)
+                    ?.let { finalized ->
+                        complete(transfer, finalized, DownloadLocationManager.fileSize(finalized))
+                        return@withLock false
+                    }
+            }
+
+            DownloadSubtitles.prepare(transfer.item, File(directory, fileName).toURI().toString())
+            currentCoroutineContext().ensureActive()
+            if (!isActive(transfer)) return@withLock false
+
+            target = resolveTarget(transfer)
             var lastProgressAt = 0L
-            val partial = if (destination.isFile) destination else transferAndroidDownload(
+            transferAndroidDownload(
                 item = transfer.item,
-                directory = directory,
+                target = target,
                 validator = transfer.validator,
                 client = client,
                 onHeaders = { total, validator ->
@@ -174,19 +199,10 @@ internal class AndroidDownloadScheduler(val context: Context) {
                 },
             )
             currentCoroutineContext().ensureActive()
-            updateActive(transfer) { current ->
-                if (partial != destination && !partial.renameTo(destination)) {
-                    throw IOException("Could not finalize the downloaded file")
-                }
-                val bytes = destination.length()
-                current.copy(item = current.item.copy(
-                    status = DownloadStatus.Completed,
-                    localFileUri = destination.toURI().toString(),
-                    downloadedBytes = bytes,
-                    totalBytes = bytes,
-                    errorMessage = null,
-                ))
-            }
+            if (!isActive(transfer)) return@withLock false
+            val bytes = target.size()
+            val storedFileUri = target.finish()
+            complete(transfer, storedFileUri, bytes)
             false
         } catch (cancelled: CancellationException) {
             throw cancelled
@@ -194,11 +210,54 @@ internal class AndroidDownloadScheduler(val context: Context) {
             currentCoroutineContext().ensureActive()
             if (!isActive(transfer)) return@withLock false
             val retry = shouldRetryAndroidDownload(error, transfer.retryCount)
-            if (retry) updateActive(transfer) { it.copy(retryCount = it.retryCount + 1) }
-            else fail(transfer, error)
+            if (retry) {
+                updateActive(transfer) { it.copy(retryCount = it.retryCount + 1) }
+            } else {
+                target?.discard()
+                clearDestination(transfer)
+                fail(transfer, error)
+            }
             retry
         } finally {
             if (network != null) withContext(NonCancellable + Dispatchers.IO) { client.connectionPool.evictAll() }
+        }
+    }
+
+    private fun resolveTarget(transfer: AndroidDownloadTransfer): SafDownloadTarget {
+        val tree = transfer.destinationTreeUri
+        val document = transfer.destinationDocumentUri
+        if (tree != null && document != null) {
+            DownloadLocationManager.openDownloadTarget(tree, document, transfer.item.fileName)?.let { return it }
+        }
+        val created = if (tree != null) {
+            DownloadLocationManager.createDownloadTarget(tree, transfer.item.fileName)
+        } else {
+            DownloadLocationManager.createDownloadTarget(transfer.item.fileName)
+        } ?: throw MissingLocationException()
+        store.update(transfer.item.fileName, transfer.generation) {
+            it.copy(
+                destinationTreeUri = created.destinationTreeUri,
+                destinationDocumentUri = created.destinationDocumentUri,
+            )
+        }
+        return created
+    }
+
+    private fun complete(transfer: AndroidDownloadTransfer, storedFileUri: String, bytes: Long) {
+        updateActive(transfer) { current ->
+            current.copy(item = current.item.copy(
+                status = DownloadStatus.Completed,
+                localFileUri = storedFileUri,
+                downloadedBytes = bytes,
+                totalBytes = bytes,
+                errorMessage = null,
+            ))
+        }
+    }
+
+    private fun clearDestination(transfer: AndroidDownloadTransfer) {
+        store.update(transfer.item.fileName, transfer.generation) {
+            it.copy(destinationTreeUri = null, destinationDocumentUri = null)
         }
     }
 
@@ -237,6 +296,7 @@ internal class AndroidDownloadScheduler(val context: Context) {
 
 internal fun shouldRetryAndroidDownload(error: Exception, retries: Int): Boolean =
     retries < 4 && when (error) {
+        is AppendNotSupportedException -> false
         is DownloadHttpException -> error.statusCode == 408 || error.statusCode == 429 || error.statusCode in 500..599
         is IOException -> true
         else -> false
