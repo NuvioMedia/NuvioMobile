@@ -62,7 +62,7 @@ internal class FakeServerProvider(
     )
 
     override suspend fun preparePlayback(session: ServerSession, request: ServerPlaybackRequest): ServerPlaybackSession {
-        if (!request.capabilities.directPlayAll) throw ServerException(ServerFailure.UNSUPPORTED)
+        if (!request.capabilities.allowDirectPlay) throw ServerException(ServerFailure.UNSUPPORTED)
         return ServerPlaybackSession(
             target = request.target,
             mediaSourceId = request.target.mediaSourceId ?: "default",

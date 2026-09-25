@@ -1,5 +1,6 @@
 package com.nuvio.app.features.servers
 
+import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.streams.StreamSubtitle
 import com.nuvio.app.features.tracking.TrackingExternalIds
 import kotlinx.serialization.Serializable
@@ -93,8 +94,20 @@ data class ServerPage<T>(
 )
 
 data class ServerItemDetails(
-    val meta: com.nuvio.app.features.details.MetaDetails,
+    val meta: MetaDetails,
     val externalIds: TrackingExternalIds,
+    val userStates: List<ServerUserState> = emptyList(),
+)
+
+data class ServerUserState(
+    val videoId: String,
+    val positionMs: Long,
+    val durationMs: Long,
+    val played: Boolean,
+    val lastPlayedEpochMs: Long?,
+    val season: Int? = null,
+    val episode: Int? = null,
+    val title: String? = null,
 )
 
 data class ServerCandidate(
@@ -112,6 +125,7 @@ data class ServerPlaybackRequest(
 
 data class ServerPlayerCapabilities(
     val directPlayAll: Boolean,
+    val allowDirectPlay: Boolean = true,
 )
 
 enum class ServerPlayMethod(val wireName: String) {

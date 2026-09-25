@@ -167,7 +167,12 @@ internal object JellyfinProvider : ServerProvider {
         } else {
             emptyList()
         }
-        return ServerItemDetails(meta = mapper(session).details(item, episodes), externalIds = item.externalIds())
+        val mapper = mapper(session)
+        return ServerItemDetails(
+            meta = mapper.details(item, episodes),
+            externalIds = item.externalIds(),
+            userStates = (if (episodes.isEmpty()) listOf(item) else episodes).mapNotNull(mapper::userState),
+        )
     }
 
     override suspend fun candidates(session: ServerSession, itemId: String): List<ServerCandidate> =
@@ -246,6 +251,7 @@ internal object JellyfinProvider : ServerProvider {
             userId = session.userId,
             mediaSourceId = request.target.mediaSourceId,
             maxStreamingBitrate = MAX_STREAMING_BITRATE,
+            enableDirectPlay = request.capabilities.allowDirectPlay,
             deviceProfile = deviceProfile(request.capabilities),
         )
         val response = client.execute(
@@ -257,6 +263,16 @@ internal object JellyfinProvider : ServerProvider {
             body = client.json.encodeToString(JellyfinPlaybackInfoRequest.serializer(), body),
         )
         val info = client.json.decodeFromString(JellyfinPlaybackInfoResult.serializer(), response.body)
+        return playbackSession(session, request, info, client.deviceId)
+    }
+
+    internal fun playbackSession(
+        session: ServerSession,
+        request: ServerPlaybackRequest,
+        info: JellyfinPlaybackInfoResult,
+        deviceId: String,
+    ): ServerPlaybackSession {
+        val itemId = request.target.item.itemId
         when (info.errorCode) {
             null -> Unit
             "NotAllowed" -> throw ServerException(ServerFailure.FORBIDDEN)
@@ -267,14 +283,14 @@ internal object JellyfinProvider : ServerProvider {
             ?: throw ServerException(ServerFailure.NOT_FOUND)
         val base = session.connection.address
         val (url, method) = when {
-            source.supportsDirectPlay -> buildUrl(
+            source.supportsDirectPlay && request.capabilities.allowDirectPlay -> buildUrl(
                 base,
                 "/Videos/${pathSegment(itemId)}/stream",
                 mapOf(
                     "static" to "true",
                     "mediaSourceId" to source.id,
                     "playSessionId" to info.playSessionId,
-                    "deviceId" to client.deviceId,
+                    "deviceId" to deviceId,
                     "tag" to source.eTag,
                     API_KEY to session.token,
                 ),

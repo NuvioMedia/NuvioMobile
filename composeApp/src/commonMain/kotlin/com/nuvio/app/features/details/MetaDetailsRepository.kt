@@ -13,6 +13,7 @@ import com.nuvio.app.features.mdblist.MdbListMetadataService
 import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.servers.ServerCatalog
 import com.nuvio.app.features.servers.ServerItemRef
+import com.nuvio.app.features.servers.ServerUserStateProjection
 import com.nuvio.app.features.servers.message
 import com.nuvio.app.features.servers.serverFailure
 import com.nuvio.app.features.tmdb.TmdbMetadataService
@@ -243,10 +244,12 @@ object MetaDetailsRepository {
             meta = cachedMetaByRequestKey[requestKey]?.baseMeta,
         )
         scope.launch {
-            val result = runCatching { ServerCatalog.details(ref).meta }
+            val result = runCatching { ServerCatalog.details(ref) }
             if (activeRequestKey != requestKey) return@launch
             result.fold(
-                onSuccess = { meta ->
+                onSuccess = { details ->
+                    val meta = details.meta
+                    ServerUserStateProjection.apply(details)
                     cachedMetaByRequestKey[requestKey] = CachedMetaEntry(baseMeta = meta)
                     _uiState.value = MetaDetailsUiState(meta = meta)
                 },

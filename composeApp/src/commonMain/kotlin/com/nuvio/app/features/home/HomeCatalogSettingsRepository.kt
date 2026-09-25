@@ -1,11 +1,11 @@
 package com.nuvio.app.features.home
 
-import com.nuvio.app.features.servers.ServerCatalog
-import com.nuvio.app.features.servers.ServerRepository
 import androidx.compose.ui.text.intl.Locale
 import com.nuvio.app.features.addons.ManagedAddon
 import com.nuvio.app.features.collection.Collection
 import com.nuvio.app.features.collection.CollectionRepository
+import com.nuvio.app.features.servers.ServerCatalog
+import com.nuvio.app.features.servers.ServerRepository
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow

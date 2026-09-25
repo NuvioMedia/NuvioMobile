@@ -6,6 +6,8 @@ private val credentialQueryKeys = setOf(
     "accesssig",
     "access_token",
     "accesstoken",
+    "apikey",
+    "api_key",
     "auth",
     "authkey",
     "authsig",

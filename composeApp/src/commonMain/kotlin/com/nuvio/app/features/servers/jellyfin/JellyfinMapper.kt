@@ -9,8 +9,10 @@ import com.nuvio.app.features.servers.ServerCandidate
 import com.nuvio.app.features.servers.ServerItemRef
 import com.nuvio.app.features.servers.ServerMediaKind
 import com.nuvio.app.features.servers.ServerPlaybackTarget
+import com.nuvio.app.features.servers.ServerUserState
 import com.nuvio.app.features.tracking.TrackingExternalIds
 import kotlin.math.roundToInt
+import kotlin.time.Instant
 
 internal class JellyfinMapper(
     private val baseUrl: String,
@@ -79,6 +81,20 @@ internal class JellyfinMapper(
                     )
                 },
             videos = episodes.map(::video),
+        )
+    }
+
+    fun userState(item: JellyfinItem): ServerUserState? {
+        val data = item.userData ?: return null
+        return ServerUserState(
+            videoId = ref(item.id),
+            positionMs = (data.playbackPositionTicks ?: 0L) / TICKS_PER_MS,
+            durationMs = (item.runTimeTicks ?: 0L) / TICKS_PER_MS,
+            played = data.played,
+            lastPlayedEpochMs = data.lastPlayedDate?.let { runCatching { Instant.parse(it).toEpochMilliseconds() }.getOrNull() },
+            season = item.parentIndexNumber,
+            episode = item.indexNumber,
+            title = item.name,
         )
     }
 

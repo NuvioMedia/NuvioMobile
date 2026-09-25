@@ -20,10 +20,12 @@ internal fun StreamLoadingScreen(
     showStatus: Boolean,
     resolvingDebridStream: Boolean,
     onBack: () -> Unit,
+    preparingPlayback: Boolean = false,
 ) {
     val message = when {
         !showStatus -> null
         resolvingDebridStream -> stringResource(Res.string.debrid_resolving_stream)
+        preparingPlayback -> stringResource(Res.string.player_loading_preparing)
         state.overlayMessage == stringResource(Res.string.streams_loading_subtitles) -> subtitleLoadingStatusMessage()
         state.overlayMessage != null -> state.overlayMessage
         state.autoPlayStream != null -> stringResource(Res.string.player_loading_preparing)
