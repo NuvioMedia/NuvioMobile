@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
+import com.nuvio.app.features.streams.redactedForLogs
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
@@ -788,10 +789,10 @@ private fun ExoPlayerSurface(
                 }
 
                 override fun setSubtitleUri(url: String) {
-                    Log.d(TAG, "setSubtitleUri: url=$url")
+                    Log.d(TAG, "setSubtitleUri: url=${url.redactedForLogs()}")
                     subtitleSelectionJob?.cancel()
                     if (sidecarController.canAttachAddonSubtitleViaSidecar(url, useLibass)) {
-                        Log.d(TAG, "setSubtitleUri: using buffer-preserving sidecar for url=$url")
+                        Log.d(TAG, "setSubtitleUri: using buffer-preserving sidecar for url=${url.redactedForLogs()}")
                         val headers = externalSubtitles.firstOrNull { it.url == url }?.headers.orEmpty()
                         val attached = sidecarController.startSidecarAddonSubtitle(
                             url = url,
