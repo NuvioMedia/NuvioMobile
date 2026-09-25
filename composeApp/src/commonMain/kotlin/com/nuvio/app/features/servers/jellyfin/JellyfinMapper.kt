@@ -9,6 +9,7 @@ import com.nuvio.app.features.servers.ServerCandidate
 import com.nuvio.app.features.servers.ServerItemRef
 import com.nuvio.app.features.servers.ServerMediaKind
 import com.nuvio.app.features.servers.ServerPlaybackTarget
+import com.nuvio.app.features.servers.ServerTitle
 import com.nuvio.app.features.servers.ServerUserState
 import com.nuvio.app.features.tracking.TrackingExternalIds
 import kotlin.math.roundToInt
@@ -38,7 +39,15 @@ internal class JellyfinMapper(
         )
     }
 
-    fun resumePreview(item: JellyfinItem): MetaPreview? {
+    fun title(item: JellyfinItem): ServerTitle? = preview(item)?.let { ServerTitle(it, item.externalIds()) }
+
+    fun resumeTitle(item: JellyfinItem): ServerTitle? {
+        val preview = resumePreview(item) ?: return null
+        val isEpisode = item.type.equals("Episode", ignoreCase = true)
+        return ServerTitle(preview, if (isEpisode) TrackingExternalIds() else item.externalIds())
+    }
+
+    private fun resumePreview(item: JellyfinItem): MetaPreview? {
         if (!item.type.equals("Episode", ignoreCase = true)) return preview(item)
         val seriesId = item.seriesId ?: return null
         return MetaPreview(

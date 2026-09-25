@@ -19,6 +19,7 @@ import com.nuvio.app.features.servers.ServerPlaybackSession
 import com.nuvio.app.features.servers.ServerPlayerCapabilities
 import com.nuvio.app.features.servers.ServerProvider
 import com.nuvio.app.features.servers.ServerSession
+import com.nuvio.app.features.servers.ServerTitle
 import com.nuvio.app.features.streams.StreamSubtitle
 import io.ktor.http.HttpMethod
 import io.ktor.http.Url
@@ -96,7 +97,7 @@ internal object JellyfinProvider : ServerProvider {
         library: ServerLibrary,
         start: Int,
         limit: Int,
-    ): ServerPage<MetaPreview> {
+    ): ServerPage<ServerTitle> {
         val result = get(
             session,
             "/Items",
@@ -110,7 +111,7 @@ internal object JellyfinProvider : ServerProvider {
             ),
         )
         val mapper = mapper(session)
-        return ServerPage(result.items.mapNotNull(mapper::preview), result.totalRecordCount)
+        return ServerPage(result.items.mapNotNull(mapper::title), result.totalRecordCount)
     }
 
     override suspend fun collectionPage(
@@ -118,7 +119,7 @@ internal object JellyfinProvider : ServerProvider {
         collectionId: String,
         start: Int,
         limit: Int,
-    ): ServerPage<MetaPreview> {
+    ): ServerPage<ServerTitle> {
         val result = get(
             session,
             "/Items",
@@ -134,7 +135,7 @@ internal object JellyfinProvider : ServerProvider {
                 "enableTotalRecordCount" to "true",
             ),
         )
-        return ServerPage(result.items.mapNotNull(mapper(session)::preview), result.totalRecordCount)
+        return ServerPage(result.items.mapNotNull(mapper(session)::title), result.totalRecordCount)
     }
 
     override suspend fun search(
@@ -142,7 +143,7 @@ internal object JellyfinProvider : ServerProvider {
         library: ServerLibrary,
         query: String,
         limit: Int,
-    ): List<MetaPreview> {
+    ): List<ServerTitle> {
         val result = get(
             session,
             "/Items",
@@ -152,10 +153,10 @@ internal object JellyfinProvider : ServerProvider {
                 "limit" to limit.toString(),
             ),
         )
-        return result.items.mapNotNull(mapper(session)::preview)
+        return result.items.mapNotNull(mapper(session)::title)
     }
 
-    override suspend fun resumeItems(session: ServerSession, limit: Int): List<MetaPreview> {
+    override suspend fun resumeItems(session: ServerSession, limit: Int): List<ServerTitle> {
         val result = get(
             session,
             "/UserItems/Resume",
@@ -171,9 +172,9 @@ internal object JellyfinProvider : ServerProvider {
         )
         val allowed = session.connection.selectedLibraries.map { it.kind }.toSet()
         return result.items
-            .mapNotNull(mapper(session)::resumePreview)
-            .filter { preview -> allowed.any { it.contentType == preview.type } }
-            .distinctBy { it.id }
+            .mapNotNull(mapper(session)::resumeTitle)
+            .filter { title -> allowed.any { it.contentType == title.preview.type } }
+            .distinctBy { it.preview.id }
     }
 
     override suspend fun details(session: ServerSession, itemId: String): ServerItemDetails {

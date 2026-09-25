@@ -48,15 +48,19 @@ import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.features.servers.ServerCapability
 import com.nuvio.app.features.servers.ServerConnection
 import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerRepository
+import com.nuvio.app.features.servers.supports
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.servers_address
 import nuvio.composeapp.generated.resources.servers_address_hint
+import nuvio.composeapp.generated.resources.servers_catalog_metadata
+import nuvio.composeapp.generated.resources.servers_catalog_metadata_description
 import nuvio.composeapp.generated.resources.servers_connect
 import nuvio.composeapp.generated.resources.servers_connecting
 import nuvio.composeapp.generated.resources.servers_enabled
@@ -297,6 +301,17 @@ internal fun ServerManageSheet(
                         isTablet = false,
                         onCheckedChange = { ServerRepository.setEnabled(connection.id, it) },
                     )
+                    if (ServerRepository.provider(connection)?.supports(ServerCapability.EXTERNAL_ID_LOOKUP) == true) {
+                        NuvioBottomSheetDivider(modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16))
+                        SettingsSwitchRow(
+                            title = stringResource(Res.string.servers_catalog_metadata),
+                            description = stringResource(Res.string.servers_catalog_metadata_description),
+                            checked = connection.useCatalogMetadata,
+                            enabled = connection.enabled,
+                            isTablet = false,
+                            onCheckedChange = { ServerRepository.setCatalogMetadata(connection.id, it) },
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(NuvioTokens.Space.s20))
                 SettingsSection(

@@ -20,6 +20,8 @@
     <string name="servers_refresh_libraries">Refresh libraries</string>
     <string name="servers_enabled">Enabled</string>
     <string name="servers_enabled_description">Show this server in Home, search, and stream results.</string>
+    <string name="servers_catalog_metadata">Use catalog details</string>
+    <string name="servers_catalog_metadata_description">Titles with an IMDb or TMDB ID open like normal catalog titles: details come from your addons or TMDB, and progress, library, and tracking sync as usual. Playback still comes from this server, listed first. Titles without an ID keep using server details.</string>
     <string name="servers_sign_in_again">Sign in again</string>
     <string name="servers_remove">Remove server</string>
     <string name="servers_signed_in_as">%1$s · %2$s</string>

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.servers
 
+import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamAutoPlayMode
 import com.nuvio.app.features.streams.StreamAutoPlaySelector
 import com.nuvio.app.features.streams.StreamAutoPlaySource
@@ -52,6 +53,24 @@ class ServerPlaybackTest {
         ServerRepository.setEnabled(connection.id, false)
         assertFalse(ServerStreams.canServe("movie", ServerItemRef(connection.id, "42").encode()))
         assertFalse(ServerStreams.canServe("movie", "tt0111161"))
+    }
+
+    @Test
+    fun catalogDetailsSettingListsServerFilesFirst() = runTest {
+        val connection = installFakeServer()
+        assertFalse(ServerStreams.sources("movie", "tt0111161", null, null).single().preferred)
+
+        ServerRepository.setCatalogMetadata(connection.id, true)
+        val source = ServerStreams.sources("movie", "tt0111161", null, null).single()
+        assertTrue(source.preferred)
+
+        val addon = AddonStreamGroup(addonName = "Addon", addonId = "addon:a", streams = emptyList())
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(
+            groups = listOf(addon, source.loadingGroup()),
+            installedOrder = listOf("Addon"),
+            preferredGroupIds = setOf(source.addonId),
+        )
+        assertEquals(listOf(source.addonId, "addon:a"), ordered.map { it.addonId })
     }
 
     @Test

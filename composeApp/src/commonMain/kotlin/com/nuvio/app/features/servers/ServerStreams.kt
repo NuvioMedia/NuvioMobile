@@ -11,6 +11,7 @@ import org.jetbrains.compose.resources.getString
 internal class ServerStreamSource(
     val addonId: String,
     val addonName: String,
+    val preferred: Boolean,
     private val loader: suspend () -> List<StreamItem>,
 ) {
     fun loadingGroup(): AddonStreamGroup =
@@ -50,22 +51,27 @@ internal object ServerStreams {
     ): List<ServerStreamSource> {
         ServerItemRef.parse(videoId)?.let { ref ->
             val connection = ServerRepository.connection(ref.connectionId) ?: return emptyList()
-            return listOf(source(connection) { candidates(ref) })
+            return listOf(source(connection, preferred = true) { candidates(ref) })
         }
         val request = ServerMatcher.request(type, videoId, season, episode) ?: return emptyList()
         return ServerRepository.enabledConnections()
             .filter { ServerMatcher.supports(it, request.kind) }
             .map { connection ->
-                source(connection) {
+                source(connection, preferred = connection.useCatalogMetadata) {
                     ServerMatcher.match(connection, request, forceRefresh).flatMap { candidates(it) }
                 }
             }
     }
 
-    private fun source(connection: ServerConnection, loader: suspend () -> List<StreamItem>): ServerStreamSource =
+    private fun source(
+        connection: ServerConnection,
+        preferred: Boolean,
+        loader: suspend () -> List<StreamItem>,
+    ): ServerStreamSource =
         ServerStreamSource(
             addonId = groupId(connection.id),
             addonName = ServerRepository.sourceLabel(connection),
+            preferred = preferred,
             loader = loader,
         )
 

@@ -13,6 +13,9 @@ import org.jetbrains.compose.resources.getString
 internal const val SERVER_CATALOG_PAGE_SIZE = 50
 private const val SERVER_SEARCH_LIMIT = 30
 
+private fun ServerConnection.present(title: ServerTitle): MetaPreview =
+    if (useCatalogMetadata) title.catalogPreview() else title.preview
+
 internal data class ServerLibraryRef(
     val connection: ServerConnection,
     val library: ServerLibrary,
@@ -84,8 +87,9 @@ internal object ServerCatalog {
     fun isServerKey(key: String): Boolean = key.startsWith(HOME_KEY_PREFIX)
 
     suspend fun page(target: CatalogTarget.Server, skip: Int, limit: Int = SERVER_CATALOG_PAGE_SIZE): CatalogPage {
+        val connection = ServerRepository.connection(target.connectionId) ?: throw ServerException(ServerFailure.NOT_FOUND)
         target.collectionId?.let { collectionId ->
-            return pageOf(skip, limit) {
+            return pageOf(connection, skip, limit) {
                 ServerRepository.call(target.connectionId) { provider, session ->
                     provider.collectionPage(session, collectionId, skip, limit)
                 }
@@ -96,26 +100,29 @@ internal object ServerCatalog {
                 emptyList()
             } else {
                 ServerRepository.call(target.connectionId) { provider, session -> provider.resumeItems(session, limit) }
-            }
+            }.map(connection::present)
             return CatalogPage(items = items, rawItemCount = items.size, nextSkip = null)
         }
-        val library = ServerRepository.connection(target.connectionId)
-            ?.libraries
-            ?.firstOrNull { it.id == target.libraryId }
+        val library = connection.libraries.firstOrNull { it.id == target.libraryId }
             ?: throw ServerException(ServerFailure.NOT_FOUND)
-        return pageOf(skip, limit) {
+        return pageOf(connection, skip, limit) {
             ServerRepository.call(target.connectionId) { provider, session ->
                 provider.libraryPage(session, library, skip, limit)
             }
         }
     }
 
-    private suspend fun pageOf(skip: Int, limit: Int, load: suspend () -> ServerPage<MetaPreview>): CatalogPage {
+    private suspend fun pageOf(
+        connection: ServerConnection,
+        skip: Int,
+        limit: Int,
+        load: suspend () -> ServerPage<ServerTitle>,
+    ): CatalogPage {
         val page = load()
         val loaded = skip + page.items.size
         val hasMore = page.items.isNotEmpty() && (page.totalCount?.let { loaded < it } ?: (page.items.size >= limit))
         return CatalogPage(
-            items = page.items,
+            items = page.items.map(connection::present),
             rawItemCount = page.items.size,
             nextSkip = loaded.takeIf { hasMore },
         )
@@ -125,7 +132,7 @@ internal object ServerCatalog {
         val items = ServerRepository.call(ref.connection.id) { provider, session ->
             if (!provider.supports(ServerCapability.SEARCH)) throw ServerException(ServerFailure.UNSUPPORTED)
             provider.search(session, ref.library, query, SERVER_SEARCH_LIMIT)
-        }
+        }.map(ref.connection::present)
         val label = ServerRepository.sourceLabel(ref.connection)
         return HomeCatalogSection(
             key = "${homeKey(ref.connection.id, ref.library.id)}:search:${query.lowercase()}",

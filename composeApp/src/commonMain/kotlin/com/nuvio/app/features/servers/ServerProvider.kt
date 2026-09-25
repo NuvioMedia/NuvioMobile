@@ -1,6 +1,5 @@
 package com.nuvio.app.features.servers
 
-import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.servers.jellyfin.JellyfinProvider
 import com.nuvio.app.features.tracking.TrackingExternalIds
 
@@ -24,7 +23,7 @@ interface ServerProvider {
         library: ServerLibrary,
         start: Int,
         limit: Int,
-    ): ServerPage<MetaPreview>
+    ): ServerPage<ServerTitle>
 
     suspend fun details(session: ServerSession, itemId: String): ServerItemDetails
 
@@ -41,16 +40,16 @@ interface ServerProvider {
         collectionId: String,
         start: Int,
         limit: Int,
-    ): ServerPage<MetaPreview> = unsupported()
+    ): ServerPage<ServerTitle> = unsupported()
 
     suspend fun search(
         session: ServerSession,
         library: ServerLibrary,
         query: String,
         limit: Int,
-    ): List<MetaPreview> = unsupported()
+    ): List<ServerTitle> = unsupported()
 
-    suspend fun resumeItems(session: ServerSession, limit: Int): List<MetaPreview> = unsupported()
+    suspend fun resumeItems(session: ServerSession, limit: Int): List<ServerTitle> = unsupported()
 
     suspend fun setPlayed(session: ServerSession, itemId: String, played: Boolean): Unit = unsupported()
 

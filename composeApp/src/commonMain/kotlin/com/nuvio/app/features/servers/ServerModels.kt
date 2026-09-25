@@ -1,6 +1,7 @@
 package com.nuvio.app.features.servers
 
 import com.nuvio.app.features.details.MetaDetails
+import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.streams.StreamSubtitle
 import com.nuvio.app.features.tracking.TrackingExternalIds
 import kotlinx.serialization.Serializable
@@ -40,6 +41,7 @@ data class ServerConnection(
     val credentialRef: String,
     val libraries: List<ServerLibrary> = emptyList(),
     val enabled: Boolean = true,
+    val useCatalogMetadata: Boolean = false,
 ) {
     val selectedLibraries: List<ServerLibrary>
         get() = libraries.filter { it.selected }
@@ -93,6 +95,17 @@ data class ServerPage<T>(
     val items: List<T>,
     val totalCount: Int?,
 )
+
+data class ServerTitle(
+    val preview: MetaPreview,
+    val externalIds: TrackingExternalIds = TrackingExternalIds(),
+) {
+    fun catalogPreview(): MetaPreview {
+        if (preview.type == ServerMediaKind.COLLECTION.contentType) return preview
+        val id = externalIds.imdb ?: externalIds.tmdb?.let { "tmdb:$it" } ?: return preview
+        return preview.copy(id = id)
+    }
+}
 
 data class ServerItemDetails(
     val meta: MetaDetails,

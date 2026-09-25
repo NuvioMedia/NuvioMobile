@@ -141,6 +141,7 @@ object ServerRepository {
             credentialRef = newId("k"),
             libraries = existing?.libraries.orEmpty(),
             enabled = true,
+            useCatalogMetadata = existing?.useCatalogMetadata ?: false,
         )
         val libraries = JellyfinProvider.libraries(ServerSession(draft, signIn.token))
         if (startedGeneration != generation || profileId != loadedProfileId) {
@@ -175,6 +176,10 @@ object ServerRepository {
                 },
             )
         }
+    }
+
+    fun setCatalogMetadata(connectionId: String, enabled: Boolean) {
+        updateConnection(connectionId) { it.copy(useCatalogMetadata = enabled) }
     }
 
     fun setEnabled(connectionId: String, enabled: Boolean) {

@@ -25,9 +25,9 @@ internal class FakeServerProvider(
         library: ServerLibrary,
         start: Int,
         limit: Int,
-    ): ServerPage<MetaPreview> {
+    ): ServerPage<ServerTitle> {
         val ids = (start until minOf(start + limit, movieCount)).map { it.toString() }
-        return ServerPage(ids.map { preview(session, it) }, movieCount)
+        return ServerPage(ids.map { title(session, it) }, movieCount)
     }
 
     override suspend fun collectionPage(
@@ -35,14 +35,17 @@ internal class FakeServerProvider(
         collectionId: String,
         start: Int,
         limit: Int,
-    ): ServerPage<MetaPreview> = ServerPage(listOf(preview(session, "7"), preview(session, SHOW_ID).copy(type = "series")), 2)
+    ): ServerPage<ServerTitle> = ServerPage(
+        listOf(title(session, "7"), title(session, SHOW_ID).let { it.copy(preview = it.preview.copy(type = "series")) }),
+        2,
+    )
 
     override suspend fun search(
         session: ServerSession,
         library: ServerLibrary,
         query: String,
         limit: Int,
-    ): List<MetaPreview> = listOf(preview(session, "7"))
+    ): List<ServerTitle> = listOf(title(session, "7"))
 
     override suspend fun details(session: ServerSession, itemId: String): ServerItemDetails = ServerItemDetails(
         meta = MetaDetails(
@@ -100,10 +103,13 @@ internal class FakeServerProvider(
     override suspend fun findEpisode(session: ServerSession, seriesItemId: String, season: Int, episode: Int): ServerEpisode? =
         episodes[season to episode]
 
-    private fun preview(session: ServerSession, itemId: String) = MetaPreview(
-        id = ServerItemRef(session.connection.id, itemId).encode(),
-        type = "movie",
-        name = "Item $itemId",
+    private fun title(session: ServerSession, itemId: String) = ServerTitle(
+        preview = MetaPreview(
+            id = ServerItemRef(session.connection.id, itemId).encode(),
+            type = "movie",
+            name = "Item $itemId",
+        ),
+        externalIds = indexedIds[itemId] ?: TrackingExternalIds(),
     )
 
     companion object {

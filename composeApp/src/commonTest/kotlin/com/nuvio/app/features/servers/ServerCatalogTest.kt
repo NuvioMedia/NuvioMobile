@@ -2,6 +2,7 @@ package com.nuvio.app.features.servers
 
 import com.nuvio.app.features.catalog.CatalogTarget
 import com.nuvio.app.features.home.MetaPreview
+import com.nuvio.app.features.tracking.TrackingExternalIds
 import kotlinx.coroutines.test.runTest
 import kotlin.test.AfterTest
 import kotlin.test.Test
@@ -65,6 +66,33 @@ class ServerCatalogTest {
         val page = ServerCatalog.page(target, skip = 0)
         assertEquals(listOf("movie", "series"), page.items.map { it.type })
         assertNull(page.nextSkip)
+    }
+
+    @Test
+    fun catalogDetailsSettingUsesCompatibleIdsOnly() = runTest {
+        val provider = FakeServerProvider().apply {
+            indexedIds["0"] = TrackingExternalIds(imdb = "tt0111161", tmdb = 278)
+            indexedIds["1"] = TrackingExternalIds(tmdb = 550)
+        }
+        val connection = installFakeServer(provider)
+        val target = CatalogTarget.Server(connection.id, FakeServerProvider.MOVIE_LIBRARY.id, "movie")
+
+        val native = ServerCatalog.page(target, skip = 0).items.take(3).map { it.id }
+        assertTrue(native.all(ServerItemRef::isServerId))
+
+        ServerRepository.setCatalogMetadata(connection.id, true)
+        val catalog = ServerCatalog.page(target, skip = 0).items.take(3)
+        assertEquals(listOf("tt0111161", "tmdb:550", ServerItemRef(connection.id, "2").encode()), catalog.map { it.id })
+        assertEquals("Item 0", catalog.first().name)
+    }
+
+    @Test
+    fun collectionsKeepServerIdentity() {
+        val collection = ServerTitle(
+            MetaPreview(id = ServerItemRef("c1", "b1").encode(), type = "collection", name = "Popular"),
+            TrackingExternalIds(imdb = "tt1"),
+        )
+        assertEquals(collection.preview, collection.catalogPreview())
     }
 
     @Test
