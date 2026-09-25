@@ -90,6 +90,18 @@ class JellyfinMapperTest {
     }
 
     @Test
+    fun readsEveryKnownProviderId() {
+        val ids = movie.copy(
+            providerIds = mapOf("Imdb" to "tt1", "AniList" to "21", "Kitsu" to "7442", "MyAnimeList" to "5114", "Zap2It" to "EP1"),
+        ).externalIds()
+        assertEquals("tt1", ids.imdb)
+        assertEquals(21L, ids.anilist)
+        assertEquals(7442L, ids.kitsu)
+        assertEquals(5114L, ids.mal)
+        assertNull(ids.trakt)
+    }
+
+    @Test
     fun ignoresUnsupportedItemTypes() {
         assertNull(mapper.preview(movie.copy(type = "MusicAlbum")))
     }

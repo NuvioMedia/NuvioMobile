@@ -8,6 +8,7 @@ import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.features.addons.AddonManifest
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.ManagedAddon
+import com.nuvio.app.features.addons.supportsResource
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.plugins.PluginRepository
@@ -16,11 +17,7 @@ import com.nuvio.app.features.servers.ServerRepository
 import com.nuvio.app.features.servers.ServerStreams
 
 internal fun AddonManifest.supportsStream(type: String, videoId: String): Boolean =
-    resources.any { resource ->
-        resource.name == "stream" &&
-            resource.types.contains(type) &&
-            (resource.idPrefixes.isEmpty() || resource.idPrefixes.any { videoId.startsWith(it) })
-    }
+    supportsResource("stream", type, videoId)
 
 internal fun hasCompatiblePlaybackSource(
     addons: List<ManagedAddon>,

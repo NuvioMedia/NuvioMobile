@@ -99,13 +99,7 @@ data class ServerPage<T>(
 data class ServerTitle(
     val preview: MetaPreview,
     val externalIds: TrackingExternalIds = TrackingExternalIds(),
-) {
-    fun catalogPreview(): MetaPreview {
-        if (preview.type == ServerMediaKind.COLLECTION.contentType) return preview
-        val id = externalIds.imdb ?: externalIds.tmdb?.let { "tmdb:$it" } ?: return preview
-        return preview.copy(id = id)
-    }
-}
+)
 
 data class ServerItemDetails(
     val meta: MetaDetails,

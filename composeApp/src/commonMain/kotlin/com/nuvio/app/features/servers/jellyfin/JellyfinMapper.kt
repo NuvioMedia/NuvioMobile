@@ -12,6 +12,7 @@ import com.nuvio.app.features.servers.ServerPlaybackTarget
 import com.nuvio.app.features.servers.ServerTitle
 import com.nuvio.app.features.servers.ServerUserState
 import com.nuvio.app.features.tracking.TrackingExternalIds
+import com.nuvio.app.features.tracking.parseTrackingExternalIds
 import kotlin.math.roundToInt
 import kotlin.time.Instant
 
@@ -187,16 +188,16 @@ internal fun JellyfinItem.mediaKind(): ServerMediaKind? = when {
 }
 
 internal fun JellyfinItem.externalIds(): TrackingExternalIds {
-    fun id(name: String): String? = providerIds.entries
-        .firstOrNull { it.key.equals(name, ignoreCase = true) }
-        ?.value
-        ?.trim()
-        ?.takeIf { it.isNotEmpty() }
-    return TrackingExternalIds(
-        imdb = id("Imdb")?.takeIf { it.startsWith("tt") },
-        tmdb = id("Tmdb")?.toLongOrNull(),
-        tvdb = id("Tvdb"),
-    )
+    val ids = providerIds.entries.fold(TrackingExternalIds()) { ids, (key, value) ->
+        val id = value?.trim()?.takeIf { it.isNotEmpty() } ?: return@fold ids
+        ids.mergeMissing(parseTrackingExternalIds("${providerNamespace(key)}:$id"))
+    }
+    return ids.copy(imdb = ids.imdb?.takeIf { it.startsWith("tt") })
+}
+
+private fun providerNamespace(key: String): String = when (val name = key.trim().lowercase()) {
+    "myanimelist" -> "mal"
+    else -> name
 }
 
 internal fun libraryKind(collectionType: String?): ServerMediaKind? = when (collectionType?.lowercase()) {

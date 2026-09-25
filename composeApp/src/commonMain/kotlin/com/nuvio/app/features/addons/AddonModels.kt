@@ -25,6 +25,13 @@ data class AddonResource(
     val idPrefixes: List<String> = emptyList(),
 )
 
+fun AddonManifest.supportsResource(name: String, type: String, id: String): Boolean =
+    resources.any { resource ->
+        resource.name == name &&
+            resource.types.contains(type) &&
+            (resource.idPrefixes.isEmpty() || resource.idPrefixes.any { id.startsWith(it) })
+    }
+
 data class AddonCatalog(
     val type: String,
     val id: String,

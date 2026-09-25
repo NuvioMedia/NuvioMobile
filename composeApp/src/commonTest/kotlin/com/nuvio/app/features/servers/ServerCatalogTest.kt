@@ -1,5 +1,7 @@
 package com.nuvio.app.features.servers
 
+import com.nuvio.app.features.addons.AddonManifest
+import com.nuvio.app.features.addons.AddonResource
 import com.nuvio.app.features.catalog.CatalogTarget
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.tracking.TrackingExternalIds
@@ -82,7 +84,7 @@ class ServerCatalogTest {
 
         ServerRepository.setCatalogMetadata(connection.id, true)
         val catalog = ServerCatalog.page(target, skip = 0).items.take(3)
-        assertEquals(listOf("tt0111161", "tmdb:550", ServerItemRef(connection.id, "2").encode()), catalog.map { it.id })
+        assertEquals(listOf("tmdb:278", "tmdb:550", ServerItemRef(connection.id, "2").encode()), catalog.map { it.id })
         assertEquals("Item 0", catalog.first().name)
     }
 
@@ -92,8 +94,33 @@ class ServerCatalogTest {
             MetaPreview(id = ServerItemRef("c1", "b1").encode(), type = "collection", name = "Popular"),
             TrackingExternalIds(imdb = "tt1"),
         )
-        assertEquals(collection.preview, collection.catalogPreview())
+        assertEquals(collection.preview, collection.catalogPreview(listOf(metaAddon("any", emptyList()))))
     }
+
+    @Test
+    fun catalogIdFollowsInstalledMetaAddonsInOrder() {
+        val title = ServerTitle(
+            MetaPreview(id = ServerItemRef("c1", "7").encode(), type = "series", name = "Show"),
+            TrackingExternalIds(imdb = "tt1", tmdb = 2, kitsu = 3),
+        )
+        val kitsu = metaAddon("kitsu", listOf("kitsu:"))
+        val cinemeta = metaAddon("cinemeta", listOf("tt"))
+        assertEquals("kitsu:3", title.catalogPreview(listOf(kitsu, cinemeta)).id)
+        assertEquals("tt1", title.catalogPreview(listOf(cinemeta, kitsu)).id)
+        assertEquals("tmdb:2", title.catalogPreview(listOf(metaAddon("mal", listOf("mal:")))).id)
+        assertEquals(title.preview.id, title.copy(externalIds = TrackingExternalIds(kitsu = 3)).catalogPreview(emptyList()).id)
+    }
+
+    private fun metaAddon(id: String, prefixes: List<String>) = AddonManifest(
+        id = id,
+        name = id,
+        description = "",
+        version = "1",
+        resources = listOf(AddonResource(name = "meta", types = listOf("movie", "series"), idPrefixes = prefixes)),
+        types = listOf("movie", "series"),
+        idPrefixes = prefixes,
+        transportUrl = "https://$id.example/manifest.json",
+    )
 
     @Test
     fun loadsNativeDetailsWithoutExternalIds() = runTest {

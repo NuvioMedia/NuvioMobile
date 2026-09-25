@@ -1,5 +1,9 @@
 package com.nuvio.app.features.servers
 
+import com.nuvio.app.features.addons.AddonManifest
+import com.nuvio.app.features.addons.AddonRepository
+import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.addons.supportsResource
 import com.nuvio.app.features.catalog.CatalogPage
 import com.nuvio.app.features.catalog.CatalogTarget
 import com.nuvio.app.features.home.HomeCatalogDefinition
@@ -13,8 +17,23 @@ import org.jetbrains.compose.resources.getString
 internal const val SERVER_CATALOG_PAGE_SIZE = 50
 private const val SERVER_SEARCH_LIMIT = 30
 
-private fun ServerConnection.present(title: ServerTitle): MetaPreview =
-    if (useCatalogMetadata) title.catalogPreview() else title.preview
+internal fun ServerTitle.catalogPreview(manifests: List<AddonManifest>): MetaPreview {
+    if (preview.type == ServerMediaKind.COLLECTION.contentType) return preview
+    val ids = externalIds.catalogIds()
+    val id = manifests.firstNotNullOfOrNull { manifest ->
+        ids.firstOrNull { manifest.supportsResource("meta", preview.type, it) }
+    } ?: ids.firstOrNull { it.startsWith("tmdb:") } ?: return preview
+    return preview.copy(id = id)
+}
+
+private fun metaManifests(): List<AddonManifest> =
+    AddonRepository.uiState.value.addons.enabledAddons().mapNotNull { it.manifest }
+
+private fun ServerConnection.presenter(): (ServerTitle) -> MetaPreview {
+    if (!useCatalogMetadata) return ServerTitle::preview
+    val manifests = metaManifests()
+    return { title -> title.catalogPreview(manifests) }
+}
 
 internal data class ServerLibraryRef(
     val connection: ServerConnection,
@@ -55,7 +74,7 @@ internal object ServerCatalog {
             type = ref.library.kind.contentType,
             catalogId = ref.library.id,
             supportsPagination = true,
-            descriptorSignature = "${ref.connection.address}|${ref.connection.name}|${ref.library.name}",
+            descriptorSignature = "${ref.connection.address}|${ref.connection.name}|${ref.library.name}|${ref.connection.metaSignature()}",
             serverConnectionId = ref.connection.id,
         )
     }
@@ -78,11 +97,20 @@ internal object ServerCatalog {
                 type = ServerMediaKind.MOVIE.contentType,
                 catalogId = RESUME_ID,
                 supportsPagination = false,
-                descriptorSignature = "${connection.address}|${connection.name}|resume",
+                descriptorSignature = "${connection.address}|${connection.name}|resume|${connection.metaSignature()}",
                 serverConnectionId = connection.id,
             )
         }
     }
+
+    private fun ServerConnection.metaSignature(): String =
+        if (!useCatalogMetadata) {
+            ""
+        } else {
+            metaManifests().joinToString(",") { manifest ->
+                manifest.id + manifest.resources.filter { it.name == "meta" }.joinToString("") { "${it.types}${it.idPrefixes}" }
+            }
+        }
 
     fun isServerKey(key: String): Boolean = key.startsWith(HOME_KEY_PREFIX)
 
@@ -100,7 +128,7 @@ internal object ServerCatalog {
                 emptyList()
             } else {
                 ServerRepository.call(target.connectionId) { provider, session -> provider.resumeItems(session, limit) }
-            }.map(connection::present)
+            }.map(connection.presenter())
             return CatalogPage(items = items, rawItemCount = items.size, nextSkip = null)
         }
         val library = connection.libraries.firstOrNull { it.id == target.libraryId }
@@ -122,7 +150,7 @@ internal object ServerCatalog {
         val loaded = skip + page.items.size
         val hasMore = page.items.isNotEmpty() && (page.totalCount?.let { loaded < it } ?: (page.items.size >= limit))
         return CatalogPage(
-            items = page.items.map(connection::present),
+            items = page.items.map(connection.presenter()),
             rawItemCount = page.items.size,
             nextSkip = loaded.takeIf { hasMore },
         )
@@ -132,7 +160,7 @@ internal object ServerCatalog {
         val items = ServerRepository.call(ref.connection.id) { provider, session ->
             if (!provider.supports(ServerCapability.SEARCH)) throw ServerException(ServerFailure.UNSUPPORTED)
             provider.search(session, ref.library, query, SERVER_SEARCH_LIMIT)
-        }.map(ref.connection::present)
+        }.map(ref.connection.presenter())
         val label = ServerRepository.sourceLabel(ref.connection)
         return HomeCatalogSection(
             key = "${homeKey(ref.connection.id, ref.library.id)}:search:${query.lowercase()}",

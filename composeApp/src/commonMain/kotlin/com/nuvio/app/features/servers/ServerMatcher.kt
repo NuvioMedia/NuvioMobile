@@ -51,14 +51,15 @@ internal object ServerMatcher {
         if (ServerItemRef.isServerId(videoId)) return null
         val kind = ServerMediaKind.fromContentType(type) ?: return null
         val parts = videoId.split(':')
-        val parentId = if (videoId.startsWith("tt")) parts[0] else parts.take(2).joinToString(":")
+        val parentSize = if (videoId.startsWith("tt")) 1 else 2
+        val parentId = parts.take(parentSize).joinToString(":")
         val metaImdb = MetaDetailsRepository.peek(type, parentId)?.imdbId?.takeIf { it.startsWith("tt") }
-        val parsed = parseTrackingExternalIds(videoId).mergeMissing(TrackingExternalIds(imdb = metaImdb))
-        val ids = TrackingExternalIds(imdb = parsed.imdb, tmdb = parsed.tmdb, tvdb = parsed.tvdb)
-        if (!ids.hasAny) return null
+        val ids = parseTrackingExternalIds(parentId).mergeMissing(TrackingExternalIds(imdb = metaImdb))
+        if (ids.catalogIds().isEmpty()) return null
         if (kind == ServerMediaKind.MOVIE) return MatchRequest(kind, parentId, ids)
-        val requestedSeason = season ?: parts.getOrNull(parts.size - 2)?.toIntOrNull() ?: return null
-        val requestedEpisode = episode ?: parts.lastOrNull()?.toIntOrNull() ?: return null
+        val position = parts.drop(parentSize).map { it.toIntOrNull() }.takeIf { it.size == 2 }
+        val requestedSeason = season ?: position?.get(0) ?: return null
+        val requestedEpisode = episode ?: position?.get(1) ?: return null
         return MatchRequest(kind, parentId, ids, requestedSeason, requestedEpisode)
     }
 
@@ -187,15 +188,26 @@ internal fun datesCompatible(catalogDate: String?, serverDate: String?): Boolean
 private fun String.epochDay(): Long? =
     runCatching { Instant.parse("${take(10)}T00:00:00Z").toEpochMilliseconds() / 86_400_000L }.getOrNull()
 
-private fun TrackingExternalIds.keys(): List<String> = listOfNotNull(
-    imdb?.let { "imdb:${it.lowercase()}" },
+internal fun TrackingExternalIds.catalogIds(): List<String> = listOfNotNull(
+    imdb,
     tmdb?.let { "tmdb:$it" },
     tvdb?.let { "tvdb:$it" },
+    kitsu?.let { "kitsu:$it" },
+    mal?.let { "mal:$it" },
+    anilist?.let { "anilist:$it" },
+    anidb?.let { "anidb:$it" },
+    trakt?.let { "trakt:$it" },
+    simkl?.let { "simkl:$it" },
 )
 
-private fun TrackingExternalIds.conflictsWith(other: TrackingExternalIds): Boolean =
-    (imdb != null && other.imdb != null && !imdb.equals(other.imdb, ignoreCase = true)) ||
-        (tmdb != null && other.tmdb != null && tmdb != other.tmdb) ||
-        (tvdb != null && other.tvdb != null && tvdb != other.tvdb)
+private fun TrackingExternalIds.keys(): List<String> = catalogIds().map { it.lowercase() }
+
+private fun TrackingExternalIds.conflictsWith(other: TrackingExternalIds): Boolean {
+    val mine = catalogIds().associateBy { it.lowercase().substringBefore(':', "imdb") }
+    return other.catalogIds().any { id ->
+        val existing = mine[id.lowercase().substringBefore(':', "imdb")]
+        existing != null && !existing.equals(id, ignoreCase = true)
+    }
+}
 
 private const val MAX_AIR_DATE_DRIFT_DAYS = 2L

@@ -32,8 +32,20 @@ class ServerMatcherTest {
     }
 
     @Test
+    fun acceptsEveryCatalogIdNamespace() {
+        assertEquals(123L, ServerMatcher.request("movie", "kitsu:123", null, null)!!.ids.kitsu)
+        assertNull(ServerMatcher.request("series", "kitsu:123:5", null, null))
+        val episode = ServerMatcher.request("series", "kitsu:123:5", 1, 5)!!
+        assertEquals(1, episode.season)
+        assertEquals(5, episode.episode)
+        val index = LibraryIndex(listOf(ServerIndexEntry("a", TrackingExternalIds(kitsu = 123, anilist = 9))))
+        assertEquals(listOf("a"), index.lookup(TrackingExternalIds(kitsu = 123)))
+        assertTrue(index.lookup(TrackingExternalIds(kitsu = 123, anilist = 8)).isEmpty())
+    }
+
+    @Test
     fun skipsRequestsWithoutExactIds() {
-        assertNull(ServerMatcher.request("movie", "kitsu:123", null, null))
+        assertNull(ServerMatcher.request("movie", "someaddon:123", null, null))
         assertNull(ServerMatcher.request("movie", ServerItemRef("c1", "x").encode(), null, null))
         assertNull(ServerMatcher.request("channel", "tt0111161", null, null))
     }

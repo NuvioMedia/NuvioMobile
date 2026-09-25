@@ -47,7 +47,7 @@ class ServerPlaybackTest {
         assertTrue(ServerStreams.canServe("movie", ServerItemRef(connection.id, "42").encode()))
         assertTrue(ServerStreams.canServe("movie", "tt0111161"))
         assertTrue(ServerStreams.canServe("series", "tt0944947:1:1"))
-        assertFalse(ServerStreams.canServe("movie", "kitsu:1"))
+        assertFalse(ServerStreams.canServe("movie", "someaddon:1"))
         assertFalse(ServerStreams.canServe("movie", ServerItemRef("cmissing", "42").encode()))
 
         ServerRepository.setEnabled(connection.id, false)
