@@ -83,6 +83,9 @@ data class ContinueWatchingSettingsRoute(override val title: String = "") : Sett
 data class DownloadsSettingsRoute(override val title: String = "") : SettingsDestinationRoute
 
 @Serializable
+data class DownloadLocationSettingsRoute(override val title: String = "") : SettingsDestinationRoute
+
+@Serializable
 data class DownloadShowRoute(
     val showId: String,
     override val title: String,
