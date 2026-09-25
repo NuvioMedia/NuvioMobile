@@ -1,5 +1,7 @@
 package com.nuvio.app.features.settings
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
@@ -16,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.servers.ServerConnection
 import com.nuvio.app.features.servers.ServerFailure
@@ -67,6 +70,7 @@ internal fun LazyListScope.mediaServersSettingsContent(isTablet: Boolean) {
             }
         }
 
+        Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
         SettingsSection(
             title = stringResource(Res.string.servers_section_add),
             isTablet = isTablet,
@@ -83,7 +87,7 @@ internal fun LazyListScope.mediaServersSettingsContent(isTablet: Boolean) {
         }
 
         uiState.connections.firstOrNull { it.id == managedConnectionId }?.let { connection ->
-            ServerConnectionDialog(
+            ServerManageSheet(
                 connection = connection,
                 failure = uiState.failures[connection.id],
                 onSignInAgain = {
@@ -94,7 +98,7 @@ internal fun LazyListScope.mediaServersSettingsContent(isTablet: Boolean) {
             )
         }
         signIn?.let { request ->
-            ServerSignInDialog(
+            ServerSignInSheet(
                 request = request,
                 onConnected = { connection ->
                     signIn = null
