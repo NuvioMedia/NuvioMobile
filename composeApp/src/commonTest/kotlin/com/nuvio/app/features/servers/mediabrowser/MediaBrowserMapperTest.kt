@@ -1,4 +1,4 @@
-package com.nuvio.app.features.servers.jellyfin
+package com.nuvio.app.features.servers.mediabrowser
 
 import com.nuvio.app.features.servers.ServerItemRef
 import kotlinx.serialization.json.Json
@@ -8,12 +8,12 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JellyfinMapperTest {
+class MediaBrowserMapperTest {
     private val json = Json { ignoreUnknownKeys = true }
-    private val mapper = JellyfinMapper("https://media.example.com/jellyfin", "cabc")
+    private val mapper = MediaBrowserMapper("https://media.example.com/jellyfin", "cabc")
 
     private val movie = json.decodeFromString(
-        JellyfinItem.serializer(),
+        BaseItem.serializer(),
         """
         {
           "Id": "f1c9a0",
@@ -71,7 +71,7 @@ class JellyfinMapperTest {
     @Test
     fun mapsEpisodesWithNativeIdsAndAvailability() {
         val episode = json.decodeFromString(
-            JellyfinItem.serializer(),
+            BaseItem.serializer(),
             """{"Id": "e42", "Name": "Pilot", "Type": "Episode", "ParentIndexNumber": 0, "IndexNumber": 1, "LocationType": "Virtual"}""",
         )
         val video = mapper.video(episode)

@@ -2,7 +2,6 @@ package com.nuvio.app.features.servers
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.features.profiles.ProfileRepository
-import com.nuvio.app.features.servers.jellyfin.JellyfinProvider
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.CancellationException
@@ -120,19 +119,19 @@ object ServerRepository {
         }
     }
 
-    suspend fun connectJellyfin(address: String, username: String, password: String): ServerConnection {
+    suspend fun connect(provider: ServerProvider, address: String, username: String, password: String): ServerConnection {
         ensureLoaded()
         val startedGeneration = generation
         val profileId = loadedProfileId ?: ProfileRepository.activeProfileId
-        val signIn = JellyfinProvider.signIn(address, username, password)
+        val signIn = provider.signIn(address, username, password)
         val existing = _uiState.value.connections.firstOrNull {
-            it.providerId == JellyfinProvider.id &&
+            it.providerId == provider.id &&
                 it.remoteServerId == signIn.serverId &&
                 it.remoteUserId == signIn.userId
         }
         val draft = ServerConnection(
             id = existing?.id ?: newId("c"),
-            providerId = JellyfinProvider.id,
+            providerId = provider.id,
             name = signIn.serverName,
             address = signIn.address,
             remoteServerId = signIn.serverId,
@@ -143,7 +142,7 @@ object ServerRepository {
             enabled = true,
             useCatalogMetadata = existing?.useCatalogMetadata ?: false,
         )
-        val libraries = JellyfinProvider.libraries(ServerSession(draft, signIn.token))
+        val libraries = provider.libraries(ServerSession(draft, signIn.token))
         if (startedGeneration != generation || profileId != loadedProfileId) {
             throw CancellationException("Server scope changed")
         }

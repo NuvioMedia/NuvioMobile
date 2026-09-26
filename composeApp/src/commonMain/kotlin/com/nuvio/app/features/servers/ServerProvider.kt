@@ -15,6 +15,9 @@ interface ServerProvider {
     val id: String
     val displayName: String
     val capabilities: Set<ServerCapability>
+    val minimumVersion: String
+
+    suspend fun signIn(address: String, username: String, password: String): ServerSignIn = unsupported()
 
     suspend fun libraries(session: ServerSession): List<ServerLibrary>
 
@@ -83,7 +86,7 @@ fun ServerProvider.supports(capability: ServerCapability): Boolean = capability 
 private fun unsupported(): Nothing = throw ServerException(ServerFailure.UNSUPPORTED)
 
 internal object ServerProviders {
-    internal val registered: MutableList<ServerProvider> = mutableListOf(JellyfinProvider)
+    internal val registered: MutableList<ServerProvider> = mutableListOf(JellyfinProvider())
 
     fun forId(id: String?): ServerProvider? = registered.firstOrNull { it.id == id }
 }

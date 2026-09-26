@@ -1,4 +1,4 @@
-package com.nuvio.app.features.servers.jellyfin
+package com.nuvio.app.features.servers.mediabrowser
 
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaPerson
@@ -16,13 +16,13 @@ import com.nuvio.app.features.tracking.parseTrackingExternalIds
 import kotlin.math.roundToInt
 import kotlin.time.Instant
 
-internal class JellyfinMapper(
+internal class MediaBrowserMapper(
     private val baseUrl: String,
     private val connectionId: String,
 ) {
     fun ref(itemId: String): String = ServerItemRef(connectionId, itemId).encode()
 
-    fun preview(item: JellyfinItem): MetaPreview? {
+    fun preview(item: BaseItem): MetaPreview? {
         val kind = item.mediaKind() ?: return null
         return MetaPreview(
             id = ref(item.id),
@@ -40,15 +40,15 @@ internal class JellyfinMapper(
         )
     }
 
-    fun title(item: JellyfinItem): ServerTitle? = preview(item)?.let { ServerTitle(it, item.externalIds()) }
+    fun title(item: BaseItem): ServerTitle? = preview(item)?.let { ServerTitle(it, item.externalIds()) }
 
-    fun resumeTitle(item: JellyfinItem): ServerTitle? {
+    fun resumeTitle(item: BaseItem): ServerTitle? {
         val preview = resumePreview(item) ?: return null
         val isEpisode = item.type.equals("Episode", ignoreCase = true)
         return ServerTitle(preview, if (isEpisode) TrackingExternalIds() else item.externalIds())
     }
 
-    private fun resumePreview(item: JellyfinItem): MetaPreview? {
+    private fun resumePreview(item: BaseItem): MetaPreview? {
         if (!item.type.equals("Episode", ignoreCase = true)) return preview(item)
         val seriesId = item.seriesId ?: return null
         return MetaPreview(
@@ -62,7 +62,7 @@ internal class JellyfinMapper(
         )
     }
 
-    fun details(item: JellyfinItem, episodes: List<JellyfinItem>): MetaDetails {
+    fun details(item: BaseItem, episodes: List<BaseItem>): MetaDetails {
         val kind = item.mediaKind() ?: ServerMediaKind.MOVIE
         return MetaDetails(
             id = ref(item.id),
@@ -94,7 +94,7 @@ internal class JellyfinMapper(
         )
     }
 
-    fun userState(item: JellyfinItem): ServerUserState? {
+    fun userState(item: BaseItem): ServerUserState? {
         val data = item.userData ?: return null
         return ServerUserState(
             videoId = ref(item.id),
@@ -108,7 +108,7 @@ internal class JellyfinMapper(
         )
     }
 
-    fun video(item: JellyfinItem): MetaVideo = MetaVideo(
+    fun video(item: BaseItem): MetaVideo = MetaVideo(
         id = ref(item.id),
         title = item.name.orEmpty(),
         released = item.premiereDate,
@@ -121,7 +121,7 @@ internal class JellyfinMapper(
         rating = item.communityRating,
     )
 
-    fun candidates(item: JellyfinItem): List<ServerCandidate> {
+    fun candidates(item: BaseItem): List<ServerCandidate> {
         if (item.isMissing) return emptyList()
         val itemRef = ServerItemRef(connectionId, item.id)
         return item.mediaSources.map { source ->
@@ -155,20 +155,20 @@ internal class JellyfinMapper(
             ),
         )
 
-    private fun JellyfinItem.primaryImage(): String? =
+    private fun BaseItem.primaryImage(): String? =
         imageTags["Primary"]?.let { image(id, "Primary", it, maxHeight = 600) }
 
-    private fun JellyfinItem.backdropImage(): String? =
+    private fun BaseItem.backdropImage(): String? =
         backdropImageTags.firstOrNull()?.let { image(id, "Backdrop/0", it, maxWidth = 1920) }
             ?: parentBackdropItemId?.let { parentId ->
                 parentBackdropImageTags.firstOrNull()?.let { image(parentId, "Backdrop/0", it, maxWidth = 1920) }
             }
 
-    private fun JellyfinItem.logoImage(): String? =
+    private fun BaseItem.logoImage(): String? =
         imageTags["Logo"]?.let { image(id, "Logo", it, maxWidth = 800) }
             ?: parentLogoItemId?.let { parentId -> parentLogoImageTag?.let { image(parentId, "Logo", it, maxWidth = 800) } }
 
-    private fun JellyfinItem.releaseInfo(kind: ServerMediaKind): String? {
+    private fun BaseItem.releaseInfo(kind: ServerMediaKind): String? {
         val start = productionYear ?: return null
         if (kind != ServerMediaKind.SERIES) return start.toString()
         val end = endDate?.take(4)?.toIntOrNull()
@@ -180,14 +180,14 @@ internal class JellyfinMapper(
     }
 }
 
-internal fun JellyfinItem.mediaKind(): ServerMediaKind? = when {
+internal fun BaseItem.mediaKind(): ServerMediaKind? = when {
     type.equals("Movie", ignoreCase = true) -> ServerMediaKind.MOVIE
     type.equals("Series", ignoreCase = true) -> ServerMediaKind.SERIES
     type.equals("BoxSet", ignoreCase = true) || type.equals("Folder", ignoreCase = true) -> ServerMediaKind.COLLECTION
     else -> null
 }
 
-internal fun JellyfinItem.externalIds(): TrackingExternalIds {
+internal fun BaseItem.externalIds(): TrackingExternalIds {
     val ids = providerIds.entries.fold(TrackingExternalIds()) { ids, (key, value) ->
         val id = value?.trim()?.takeIf { it.isNotEmpty() } ?: return@fold ids
         ids.mergeMissing(parseTrackingExternalIds("${providerNamespace(key)}:$id"))
@@ -213,7 +213,7 @@ private fun ticksToMinutes(ticks: Long): Int = (ticks / TICKS_PER_MS / 60_000L).
 
 private fun Double.formatRating(): String = ((this * 10).roundToInt() / 10.0).toString()
 
-private fun resolutionLabel(stream: JellyfinMediaStream): String? {
+private fun resolutionLabel(stream: MediaStream): String? {
     val width = stream.width ?: 0
     val height = stream.height ?: 0
     return when {

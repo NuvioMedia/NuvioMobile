@@ -1,7 +1,6 @@
-package com.nuvio.app.features.servers.jellyfin
+package com.nuvio.app.features.servers.mediabrowser
 
 import com.nuvio.app.core.build.AppVersionConfig
-import com.nuvio.app.core.network.createApiHttpClient
 import com.nuvio.app.core.network.readBoundedResponseBody
 import com.nuvio.app.core.sync.SyncClientIdentity
 import com.nuvio.app.features.servers.ServerException
@@ -23,8 +22,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.DeserializationStrategy
 import kotlinx.serialization.json.Json
 
-internal class JellyfinClient(
-    private val http: HttpClient = createApiHttpClient(),
+internal class MediaBrowserClient(
+    private val authorizationHeader: String,
+    private val http: HttpClient,
 ) {
     val json = Json {
         ignoreUnknownKeys = true
@@ -51,18 +51,18 @@ internal class JellyfinClient(
         query: Map<String, String?> = emptyMap(),
         body: String? = null,
         allowRedirect: Boolean = false,
-    ): JellyfinResponse {
+    ): ApiResponse {
         val response = try {
             http.prepareRequest(buildUrl(baseUrl, path, query)) {
                 this.method = method
                 header("Accept", "application/json")
-                header("Authorization", authorizationHeader(token))
+                header(authorizationHeader, authorizationValue(token))
                 if (body != null) {
                     header("Content-Type", "application/json")
                     setBody(body)
                 }
             }.execute { response ->
-                JellyfinResponse(
+                ApiResponse(
                     status = response.status.value,
                     body = readBoundedResponseBody(response.bodyAsChannel(), response.contentLength()),
                     location = response.headers["Location"],
@@ -80,7 +80,7 @@ internal class JellyfinClient(
         return response
     }
 
-    fun authorizationHeader(token: String?): String = buildString {
+    fun authorizationValue(token: String?): String = buildString {
         append("MediaBrowser Client=\"Nuvio\", Device=\"")
         append(getPlatform().name.headerValue())
         append("\", DeviceId=\"")
@@ -108,12 +108,12 @@ internal class JellyfinClient(
     }
 }
 
-internal class JellyfinResponse(
+internal class ApiResponse(
     val status: Int,
     val body: String,
     val location: String?,
 ) {
-    override fun toString(): String = "JellyfinResponse(status=$status)"
+    override fun toString(): String = "ApiResponse(status=$status)"
 }
 
 internal fun buildUrl(baseUrl: String, path: String, query: Map<String, String?> = emptyMap()): String {
@@ -130,7 +130,7 @@ internal fun buildUrl(baseUrl: String, path: String, query: Map<String, String?>
 
 internal fun pathSegment(value: String): String = value.encodeURLPathPart()
 
-internal fun normalizeServerAddress(input: String): String? {
+internal fun normalizeServerAddress(input: String, apiPath: String = ""): String? {
     var value = input.trim().trimEnd('/')
     if (value.isEmpty()) return null
     if (!value.contains("://")) value = "http://$value"
@@ -141,6 +141,7 @@ internal fun normalizeServerAddress(input: String): String? {
         .removeSuffix("/web/index.html")
         .removeSuffix("/web")
         .trimEnd('/')
+        .let { if (apiPath.isNotEmpty() && it.endsWith(apiPath, ignoreCase = true)) it.dropLast(apiPath.length) else it }
     return URLBuilder(url).apply {
         encodedPath = path
         parameters.clear()

@@ -57,6 +57,17 @@ class ServerSession(
     override fun toString(): String = "ServerSession(connection=${connection.id})"
 }
 
+class ServerSignIn(
+    val address: String,
+    val serverName: String,
+    val serverId: String,
+    val userId: String,
+    val userName: String,
+    val token: String,
+) {
+    override fun toString(): String = "ServerSignIn(serverId=$serverId)"
+}
+
 data class ServerItemRef(
     val connectionId: String,
     val itemId: String,

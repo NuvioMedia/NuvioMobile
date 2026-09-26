@@ -1,42 +1,42 @@
-package com.nuvio.app.features.servers.jellyfin
+package com.nuvio.app.features.servers.mediabrowser
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-internal data class JellyfinPublicInfo(
+internal data class PublicInfo(
     @SerialName("ServerName") val serverName: String? = null,
     @SerialName("Version") val version: String? = null,
     @SerialName("Id") val id: String? = null,
 )
 
 @Serializable
-internal data class JellyfinAuthRequest(
+internal data class AuthRequest(
     @SerialName("Username") val username: String,
     @SerialName("Pw") val password: String,
 )
 
 @Serializable
-internal data class JellyfinAuthResult(
-    @SerialName("User") val user: JellyfinUser? = null,
+internal data class AuthResult(
+    @SerialName("User") val user: UserInfo? = null,
     @SerialName("AccessToken") val accessToken: String? = null,
     @SerialName("ServerId") val serverId: String? = null,
 )
 
 @Serializable
-internal data class JellyfinUser(
+internal data class UserInfo(
     @SerialName("Id") val id: String,
     @SerialName("Name") val name: String? = null,
 )
 
 @Serializable
-internal data class JellyfinItemsResult(
-    @SerialName("Items") val items: List<JellyfinItem> = emptyList(),
+internal data class ItemsResult(
+    @SerialName("Items") val items: List<BaseItem> = emptyList(),
     @SerialName("TotalRecordCount") val totalRecordCount: Int? = null,
 )
 
 @Serializable
-internal data class JellyfinItem(
+internal data class BaseItem(
     @SerialName("Id") val id: String,
     @SerialName("Name") val name: String? = null,
     @SerialName("Type") val type: String? = null,
@@ -50,8 +50,8 @@ internal data class JellyfinItem(
     @SerialName("OfficialRating") val officialRating: String? = null,
     @SerialName("RunTimeTicks") val runTimeTicks: Long? = null,
     @SerialName("Genres") val genres: List<String> = emptyList(),
-    @SerialName("Studios") val studios: List<JellyfinNamedItem> = emptyList(),
-    @SerialName("People") val people: List<JellyfinPerson> = emptyList(),
+    @SerialName("Studios") val studios: List<NamedItem> = emptyList(),
+    @SerialName("People") val people: List<PersonInfo> = emptyList(),
     @SerialName("ProviderIds") val providerIds: Map<String, String?> = emptyMap(),
     @SerialName("ImageTags") val imageTags: Map<String, String> = emptyMap(),
     @SerialName("BackdropImageTags") val backdropImageTags: List<String> = emptyList(),
@@ -66,20 +66,20 @@ internal data class JellyfinItem(
     @SerialName("IndexNumberEnd") val indexNumberEnd: Int? = null,
     @SerialName("ParentIndexNumber") val parentIndexNumber: Int? = null,
     @SerialName("LocationType") val locationType: String? = null,
-    @SerialName("UserData") val userData: JellyfinUserData? = null,
-    @SerialName("MediaSources") val mediaSources: List<JellyfinMediaSource> = emptyList(),
+    @SerialName("UserData") val userData: UserItemData? = null,
+    @SerialName("MediaSources") val mediaSources: List<MediaSource> = emptyList(),
 ) {
     val isMissing: Boolean
         get() = locationType.equals("Virtual", ignoreCase = true)
 }
 
 @Serializable
-internal data class JellyfinNamedItem(
+internal data class NamedItem(
     @SerialName("Name") val name: String? = null,
 )
 
 @Serializable
-internal data class JellyfinPerson(
+internal data class PersonInfo(
     @SerialName("Id") val id: String? = null,
     @SerialName("Name") val name: String? = null,
     @SerialName("Role") val role: String? = null,
@@ -88,14 +88,14 @@ internal data class JellyfinPerson(
 )
 
 @Serializable
-internal data class JellyfinUserData(
+internal data class UserItemData(
     @SerialName("PlaybackPositionTicks") val playbackPositionTicks: Long? = null,
     @SerialName("Played") val played: Boolean = false,
     @SerialName("LastPlayedDate") val lastPlayedDate: String? = null,
 )
 
 @Serializable
-internal data class JellyfinMediaSource(
+internal data class MediaSource(
     @SerialName("Id") val id: String,
     @SerialName("Name") val name: String? = null,
     @SerialName("Path") val path: String? = null,
@@ -105,11 +105,11 @@ internal data class JellyfinMediaSource(
     @SerialName("SupportsDirectPlay") val supportsDirectPlay: Boolean = false,
     @SerialName("SupportsDirectStream") val supportsDirectStream: Boolean = false,
     @SerialName("TranscodingUrl") val transcodingUrl: String? = null,
-    @SerialName("MediaStreams") val mediaStreams: List<JellyfinMediaStream> = emptyList(),
+    @SerialName("MediaStreams") val mediaStreams: List<MediaStream> = emptyList(),
 )
 
 @Serializable
-internal data class JellyfinMediaStream(
+internal data class MediaStream(
     @SerialName("Type") val type: String? = null,
     @SerialName("Index") val index: Int? = null,
     @SerialName("Codec") val codec: String? = null,
@@ -123,7 +123,7 @@ internal data class JellyfinMediaStream(
 )
 
 @Serializable
-internal data class JellyfinPlaybackInfoRequest(
+internal data class PlaybackInfoRequest(
     @SerialName("UserId") val userId: String,
     @SerialName("MediaSourceId") val mediaSourceId: String?,
     @SerialName("MaxStreamingBitrate") val maxStreamingBitrate: Long,
@@ -133,20 +133,20 @@ internal data class JellyfinPlaybackInfoRequest(
     @SerialName("AllowVideoStreamCopy") val allowVideoStreamCopy: Boolean = true,
     @SerialName("AllowAudioStreamCopy") val allowAudioStreamCopy: Boolean = true,
     @SerialName("AutoOpenLiveStream") val autoOpenLiveStream: Boolean = false,
-    @SerialName("DeviceProfile") val deviceProfile: JellyfinDeviceProfile,
+    @SerialName("DeviceProfile") val deviceProfile: DeviceProfile,
 )
 
 @Serializable
-internal data class JellyfinDeviceProfile(
+internal data class DeviceProfile(
     @SerialName("Name") val name: String,
     @SerialName("MaxStreamingBitrate") val maxStreamingBitrate: Long,
-    @SerialName("DirectPlayProfiles") val directPlayProfiles: List<JellyfinDirectPlayProfile>,
-    @SerialName("TranscodingProfiles") val transcodingProfiles: List<JellyfinTranscodingProfile>,
-    @SerialName("SubtitleProfiles") val subtitleProfiles: List<JellyfinSubtitleProfile>,
+    @SerialName("DirectPlayProfiles") val directPlayProfiles: List<DirectPlayProfile>,
+    @SerialName("TranscodingProfiles") val transcodingProfiles: List<TranscodingProfile>,
+    @SerialName("SubtitleProfiles") val subtitleProfiles: List<SubtitleProfile>,
 )
 
 @Serializable
-internal data class JellyfinDirectPlayProfile(
+internal data class DirectPlayProfile(
     @SerialName("Type") val type: String = "Video",
     @SerialName("Container") val container: String? = null,
     @SerialName("VideoCodec") val videoCodec: String? = null,
@@ -154,7 +154,7 @@ internal data class JellyfinDirectPlayProfile(
 )
 
 @Serializable
-internal data class JellyfinTranscodingProfile(
+internal data class TranscodingProfile(
     @SerialName("Type") val type: String = "Video",
     @SerialName("Container") val container: String,
     @SerialName("VideoCodec") val videoCodec: String,
@@ -167,20 +167,20 @@ internal data class JellyfinTranscodingProfile(
 )
 
 @Serializable
-internal data class JellyfinSubtitleProfile(
+internal data class SubtitleProfile(
     @SerialName("Format") val format: String,
     @SerialName("Method") val method: String,
 )
 
 @Serializable
-internal data class JellyfinPlaybackInfoResult(
-    @SerialName("MediaSources") val mediaSources: List<JellyfinMediaSource> = emptyList(),
+internal data class PlaybackInfoResult(
+    @SerialName("MediaSources") val mediaSources: List<MediaSource> = emptyList(),
     @SerialName("PlaySessionId") val playSessionId: String? = null,
     @SerialName("ErrorCode") val errorCode: String? = null,
 )
 
 @Serializable
-internal data class JellyfinPlaybackReport(
+internal data class PlaybackReport(
     @SerialName("ItemId") val itemId: String,
     @SerialName("MediaSourceId") val mediaSourceId: String,
     @SerialName("PlaySessionId") val playSessionId: String?,

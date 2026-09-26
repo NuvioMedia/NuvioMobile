@@ -1,6 +1,7 @@
-package com.nuvio.app.features.servers.jellyfin
+package com.nuvio.app.features.servers.mediabrowser
 
 import com.nuvio.app.features.servers.ServerConnection
+import com.nuvio.app.features.servers.jellyfin.JellyfinProvider
 import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerItemRef
@@ -15,7 +16,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
-class JellyfinPlaybackTest {
+class MediaBrowserPlaybackTest {
+    private val jellyfin = JellyfinProvider(TestHttp().client)
     private val json = Json { ignoreUnknownKeys = true }
     private val session = ServerSession(
         connection = ServerConnection(
@@ -36,13 +38,13 @@ class JellyfinPlaybackTest {
     )
 
     private fun info(source: String) = json.decodeFromString(
-        JellyfinPlaybackInfoResult.serializer(),
+        PlaybackInfoResult.serializer(),
         """{"PlaySessionId": "ps1", "MediaSources": [$source]}""",
     )
 
     @Test
     fun directPlayUsesStaticStreamOnOwningServer() {
-        val playback = JellyfinProvider.playbackSession(
+        val playback = jellyfin.playbackSession(
             session,
             request,
             info(
@@ -61,7 +63,7 @@ class JellyfinPlaybackTest {
 
     @Test
     fun fallsBackToServerTranscodeWithoutDuplicatingKey() {
-        val playback = JellyfinProvider.playbackSession(
+        val playback = jellyfin.playbackSession(
             session,
             request.copy(capabilities = ServerPlayerCapabilities(directPlayAll = false, allowDirectPlay = false)),
             info("""{"Id": "ms1", "SupportsDirectPlay": true, "TranscodingUrl": "/videos/item1/master.m3u8?MediaSourceId=ms1&ApiKey=secret"}"""),
@@ -73,7 +75,7 @@ class JellyfinPlaybackTest {
 
     @Test
     fun marksRemuxAsDirectStream() {
-        val playback = JellyfinProvider.playbackSession(
+        val playback = jellyfin.playbackSession(
             session,
             request,
             info("""{"Id": "ms1", "SupportsDirectStream": true, "TranscodingUrl": "/videos/item1/master.m3u8?MediaSourceId=ms1"}"""),
@@ -86,11 +88,11 @@ class JellyfinPlaybackTest {
     @Test
     fun reportsPermissionAndCompatibilityFailures() {
         val denied = assertFailsWith<ServerException> {
-            JellyfinProvider.playbackSession(session, request, json.decodeFromString(JellyfinPlaybackInfoResult.serializer(), """{"ErrorCode": "NotAllowed"}"""), "d1")
+            jellyfin.playbackSession(session, request, json.decodeFromString(PlaybackInfoResult.serializer(), """{"ErrorCode": "NotAllowed"}"""), "d1")
         }
         assertEquals(ServerFailure.FORBIDDEN, denied.failure)
         val unsupported = assertFailsWith<ServerException> {
-            JellyfinProvider.playbackSession(session, request, info("""{"Id": "ms1"}"""), "d1")
+            jellyfin.playbackSession(session, request, info("""{"Id": "ms1"}"""), "d1")
         }
         assertEquals(ServerFailure.UNSUPPORTED, unsupported.failure)
     }

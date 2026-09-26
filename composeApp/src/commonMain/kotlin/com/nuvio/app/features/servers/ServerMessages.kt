@@ -3,11 +3,11 @@ package com.nuvio.app.features.servers
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.servers_error_failed
 import nuvio.composeapp.generated.resources.servers_error_forbidden
-import nuvio.composeapp.generated.resources.servers_error_unsupported
 import nuvio.composeapp.generated.resources.servers_failure_auth
 import nuvio.composeapp.generated.resources.servers_failure_incomplete
 import nuvio.composeapp.generated.resources.servers_failure_not_found
 import nuvio.composeapp.generated.resources.servers_failure_unreachable
+import nuvio.composeapp.generated.resources.servers_failure_unsupported
 import org.jetbrains.compose.resources.StringResource
 
 internal fun Throwable.serverFailure(): ServerFailure = (this as? ServerException)?.failure ?: ServerFailure.FAILED
@@ -18,6 +18,6 @@ internal fun ServerFailure.message(): StringResource = when (this) {
     ServerFailure.NOT_FOUND -> Res.string.servers_failure_not_found
     ServerFailure.INCOMPLETE -> Res.string.servers_failure_incomplete
     ServerFailure.FORBIDDEN -> Res.string.servers_error_forbidden
-    ServerFailure.UNSUPPORTED -> Res.string.servers_error_unsupported
+    ServerFailure.UNSUPPORTED -> Res.string.servers_failure_unsupported
     ServerFailure.FAILED -> Res.string.servers_error_failed
 }

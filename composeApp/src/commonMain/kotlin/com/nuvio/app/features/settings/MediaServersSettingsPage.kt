@@ -21,10 +21,10 @@ import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.servers.ServerConnection
 import com.nuvio.app.features.servers.ServerFailure
+import com.nuvio.app.features.servers.ServerProviders
 import com.nuvio.app.features.servers.ServerRepository
 import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.servers_add_jellyfin
-import nuvio.composeapp.generated.resources.servers_add_jellyfin_description
+import nuvio.composeapp.generated.resources.servers_add_description
 import nuvio.composeapp.generated.resources.servers_empty
 import nuvio.composeapp.generated.resources.servers_section_add
 import nuvio.composeapp.generated.resources.servers_section_connected
@@ -77,13 +77,16 @@ internal fun LazyListScope.mediaServersSettingsContent(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
-                SettingsNavigationRow(
-                    title = stringResource(Res.string.servers_add_jellyfin),
-                    description = stringResource(Res.string.servers_add_jellyfin_description),
-                    icon = Icons.Rounded.Add,
-                    isTablet = isTablet,
-                    onClick = { signIn = ServerSignInRequest() },
-                )
+                ServerProviders.registered.forEachIndexed { index, provider ->
+                    if (index > 0) SettingsGroupDivider(isTablet = isTablet)
+                    SettingsNavigationRow(
+                        title = provider.displayName,
+                        description = stringResource(Res.string.servers_add_description, provider.displayName),
+                        icon = Icons.Rounded.Add,
+                        isTablet = isTablet,
+                        onClick = { signIn = ServerSignInRequest(provider) },
+                    )
+                }
             }
         }
 

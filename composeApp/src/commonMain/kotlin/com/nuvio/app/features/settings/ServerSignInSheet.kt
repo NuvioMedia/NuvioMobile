@@ -42,6 +42,7 @@ import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.servers.ServerConnection
 import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
+import com.nuvio.app.features.servers.ServerProvider
 import com.nuvio.app.features.servers.ServerRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -60,10 +61,10 @@ import nuvio.composeapp.generated.resources.servers_password
 import nuvio.composeapp.generated.resources.servers_sign_in_subtitle
 import nuvio.composeapp.generated.resources.servers_sign_in_title
 import nuvio.composeapp.generated.resources.servers_username
-import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 internal data class ServerSignInRequest(
+    val provider: ServerProvider,
     val address: String = "",
     val username: String = "",
 )
@@ -91,7 +92,7 @@ internal fun ServerSignInSheet(
         error = null
         scope.launch {
             try {
-                val connection = ServerRepository.connectJellyfin(address, username.trim(), password)
+                val connection = ServerRepository.connect(request.provider, address, username.trim(), password)
                 password = ""
                 dismissNuvioBottomSheet(sheetState) { onConnected(connection) }
             } catch (cancelled: CancellationException) {
@@ -121,8 +122,8 @@ internal fun ServerSignInSheet(
                 ),
         ) {
             SheetHeader(
-                title = stringResource(Res.string.servers_sign_in_title),
-                subtitle = stringResource(Res.string.servers_sign_in_subtitle),
+                title = stringResource(Res.string.servers_sign_in_title, request.provider.displayName),
+                subtitle = stringResource(Res.string.servers_sign_in_subtitle, request.provider.displayName),
             )
             Spacer(modifier = Modifier.height(NuvioTokens.Space.s20))
             Column(verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12)) {
@@ -182,7 +183,7 @@ internal fun ServerSignInSheet(
             error?.let { failure ->
                 Spacer(modifier = Modifier.height(NuvioTokens.Space.s10))
                 Text(
-                    text = stringResource(failure.signInMessage()),
+                    text = failure.signInMessage(request.provider),
                     style = MaterialTheme.typography.bodySmall,
                     color = tokens.colors.danger,
                 )
@@ -252,12 +253,13 @@ private fun sheetFieldColors(): TextFieldColors {
     )
 }
 
-private fun ServerFailure.signInMessage(): StringResource = when (this) {
-    ServerFailure.AUTH_REQUIRED -> Res.string.servers_error_auth
-    ServerFailure.NOT_FOUND -> Res.string.servers_error_address
-    ServerFailure.UNREACHABLE -> Res.string.servers_error_unreachable
-    ServerFailure.UNSUPPORTED -> Res.string.servers_error_unsupported
-    ServerFailure.FORBIDDEN -> Res.string.servers_error_forbidden
+@Composable
+private fun ServerFailure.signInMessage(provider: ServerProvider): String = when (this) {
+    ServerFailure.AUTH_REQUIRED -> stringResource(Res.string.servers_error_auth)
+    ServerFailure.NOT_FOUND -> stringResource(Res.string.servers_error_address)
+    ServerFailure.UNREACHABLE -> stringResource(Res.string.servers_error_unreachable)
+    ServerFailure.UNSUPPORTED -> stringResource(Res.string.servers_error_unsupported, provider.displayName, provider.minimumVersion)
+    ServerFailure.FORBIDDEN -> stringResource(Res.string.servers_error_forbidden)
     ServerFailure.INCOMPLETE,
-    ServerFailure.FAILED -> Res.string.servers_error_failed
+    ServerFailure.FAILED -> stringResource(Res.string.servers_error_failed)
 }

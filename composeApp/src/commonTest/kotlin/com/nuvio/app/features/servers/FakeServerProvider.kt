@@ -10,6 +10,7 @@ internal class FakeServerProvider(
 ) : ServerProvider {
     override val id: String = "fake"
     override val displayName: String = "Fake"
+    override val minimumVersion: String = "1.0"
     override val capabilities: Set<ServerCapability> = setOf(ServerCapability.SEARCH, ServerCapability.EXTERNAL_ID_LOOKUP)
 
     val movies = MOVIE_LIBRARY

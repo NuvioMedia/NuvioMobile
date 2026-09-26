@@ -1,12 +1,15 @@
-package com.nuvio.app.features.servers.jellyfin
+package com.nuvio.app.features.servers.mediabrowser
 
+import com.nuvio.app.features.servers.jellyfin.JellyfinProvider
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class JellyfinConnectionTest {
+class MediaBrowserConnectionTest {
+    private val jellyfin = JellyfinProvider(TestHttp().client)
+
     @Test
     fun normalizesAddresses() {
         assertEquals("http://192.168.1.10:8096", normalizeServerAddress("192.168.1.10:8096"))
@@ -31,11 +34,13 @@ class JellyfinConnectionTest {
     }
 
     @Test
-    fun requiresSupportedServerVersion() {
-        assertTrue(JellyfinProvider.isSupportedVersion("10.9.0"))
-        assertTrue(JellyfinProvider.isSupportedVersion("10.10.7"))
-        assertTrue(JellyfinProvider.isSupportedVersion("11.0.0"))
-        assertFalse(JellyfinProvider.isSupportedVersion("10.8.13"))
-        assertFalse(JellyfinProvider.isSupportedVersion(null))
+    fun requiresSupportedJellyfinVersion() {
+        assertTrue(jellyfin.isSupportedVersion("10.9.0"))
+        assertTrue(jellyfin.isSupportedVersion("10.10.7"))
+        assertTrue(jellyfin.isSupportedVersion("10.11.0-rc1"))
+        assertTrue(jellyfin.isSupportedVersion("11.0.0"))
+        assertFalse(jellyfin.isSupportedVersion("10.8.13"))
+        assertFalse(jellyfin.isSupportedVersion("4.8.10.0"))
+        assertFalse(jellyfin.isSupportedVersion(null))
     }
 }

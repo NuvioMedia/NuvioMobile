@@ -5,10 +5,9 @@
     <string name="servers_section_connected">SERVERS</string>
     <string name="servers_section_add">ADD SERVER</string>
     <string name="servers_empty">No servers connected yet.</string>
-    <string name="servers_add_jellyfin">Jellyfin</string>
-    <string name="servers_add_jellyfin_description">Sign in with your server address and Jellyfin user.</string>
-    <string name="servers_sign_in_title">Sign in to Jellyfin</string>
-    <string name="servers_sign_in_subtitle">Enter your server address and the Jellyfin user to sign in with. Your password is only used to sign in.</string>
+    <string name="servers_add_description">Sign in with your server address and %1$s user.</string>
+    <string name="servers_sign_in_title">Sign in to %1$s</string>
+    <string name="servers_sign_in_subtitle">Enter your server address and the %1$s user to sign in with. Your password is only used to sign in.</string>
     <string name="servers_address">Server address</string>
     <string name="servers_address_hint">http://192.168.1.10:8096</string>
     <string name="servers_username">Username</string>
@@ -22,7 +21,7 @@
     <string name="servers_enabled">Enabled</string>
     <string name="servers_enabled_description">Show this server in Home, search, and stream results.</string>
     <string name="servers_catalog_metadata">Use addon metadata</string>
-    <string name="servers_catalog_metadata_description">Titles open with your addons' details and sync like any other catalog title, with playback still reported to Jellyfin. Some titles may not match or play if your addons number or identify them differently.</string>
+    <string name="servers_catalog_metadata_description">Titles open with your addons' details and sync like any other catalog title, with playback still reported to %1$s. Some titles may not match or play if your addons number or identify them differently.</string>
     <string name="servers_sign_in_again">Sign in again</string>
     <string name="servers_remove">Remove server</string>
     <string name="servers_remove_confirm_title">Remove this server?</string>
@@ -34,7 +33,7 @@
     <string name="servers_error_auth">Incorrect username or password.</string>
     <string name="servers_error_address">Enter a valid server address.</string>
     <string name="servers_error_unreachable">Could not reach the server.</string>
-    <string name="servers_error_unsupported">Jellyfin 10.9 or later is required.</string>
+    <string name="servers_error_unsupported">%1$s %2$s or later is required.</string>
     <string name="servers_error_forbidden">This user does not have access.</string>
     <string name="servers_error_failed">Could not connect to the server.</string>
     <string name="home_empty_no_sources_title">No content sources</string>
@@ -46,5 +45,6 @@
     <string name="servers_playback_failed">Could not start playback from the server.</string>
     <string name="servers_watched_failed">Could not update watched state on the server.</string>
     <string name="servers_resume_row">Continue watching</string>
+    <string name="servers_failure_unsupported">The server doesn't support this item.</string>
     <string name="servers_failure_incomplete">Still checking this server's library. Try again in a moment.</string>
 </resources>

@@ -96,6 +96,7 @@ private fun MediaServerSettingsBody(
     var signIn by remember { mutableStateOf<ServerSignInRequest?>(null) }
     var confirmRemove by remember { mutableStateOf(false) }
     val rowPadding = if (isTablet) 20.dp else 16.dp
+    val provider = ServerRepository.provider(connection)
 
     Column(verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap)) {
         SettingsGroup(isTablet = isTablet) {
@@ -144,11 +145,11 @@ private fun MediaServerSettingsBody(
                 isTablet = isTablet,
                 onCheckedChange = { ServerRepository.setEnabled(connection.id, it) },
             )
-            if (ServerRepository.provider(connection)?.supports(ServerCapability.EXTERNAL_ID_LOOKUP) == true) {
+            if (provider?.supports(ServerCapability.EXTERNAL_ID_LOOKUP) == true) {
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
                     title = stringResource(Res.string.servers_catalog_metadata),
-                    description = stringResource(Res.string.servers_catalog_metadata_description),
+                    description = stringResource(Res.string.servers_catalog_metadata_description, provider.displayName),
                     checked = connection.useCatalogMetadata,
                     enabled = connection.enabled,
                     isTablet = isTablet,
@@ -216,7 +217,9 @@ private fun MediaServerSettingsBody(
                 description = null,
                 icon = Icons.Rounded.Lock,
                 isTablet = isTablet,
-                onClick = { signIn = ServerSignInRequest(address = connection.address, username = connection.userName) },
+                onClick = {
+                    signIn = provider?.let { ServerSignInRequest(it, address = connection.address, username = connection.userName) }
+                },
             )
         }
 
