@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 internal data class PublicInfo(
     @SerialName("ServerName") val serverName: String? = null,
     @SerialName("Version") val version: String? = null,
+    @SerialName("ProductName") val productName: String? = null,
     @SerialName("Id") val id: String? = null,
 )
 

@@ -1,7 +1,7 @@
 <resources>
     <string name="compose_settings_page_media_servers">Media servers</string>
     <string name="compose_settings_page_media_server">Server</string>
-    <string name="settings_content_discovery_media_servers_description">Connect Jellyfin to browse and play your own library.</string>
+    <string name="settings_content_discovery_media_servers_description">Connect Jellyfin or Emby to browse and play your own library.</string>
     <string name="servers_section_connected">SERVERS</string>
     <string name="servers_section_add">ADD SERVER</string>
     <string name="servers_empty">No servers connected yet.</string>

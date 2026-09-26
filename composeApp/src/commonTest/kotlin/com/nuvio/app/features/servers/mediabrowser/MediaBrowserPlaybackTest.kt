@@ -1,6 +1,7 @@
 package com.nuvio.app.features.servers.mediabrowser
 
 import com.nuvio.app.features.servers.ServerConnection
+import com.nuvio.app.features.servers.emby.EmbyProvider
 import com.nuvio.app.features.servers.jellyfin.JellyfinProvider
 import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
@@ -18,6 +19,7 @@ import kotlin.test.assertTrue
 
 class MediaBrowserPlaybackTest {
     private val jellyfin = JellyfinProvider(TestHttp().client)
+    private val emby = EmbyProvider(TestHttp().client)
     private val json = Json { ignoreUnknownKeys = true }
     private val session = ServerSession(
         connection = ServerConnection(
@@ -95,5 +97,46 @@ class MediaBrowserPlaybackTest {
             jellyfin.playbackSession(session, request, info("""{"Id": "ms1"}"""), "d1")
         }
         assertEquals(ServerFailure.UNSUPPORTED, unsupported.failure)
+    }
+
+    private val embySession = ServerSession(
+        connection = session.connection.copy(providerId = "emby", address = "https://media.example.com"),
+        token = "secret",
+    )
+
+    @Test
+    fun embyStreamsThroughApiRoot() {
+        val playback = emby.playbackSession(
+            embySession,
+            request,
+            info(
+                """{"Id": "ms1", "SupportsDirectPlay": true,
+                   "MediaStreams": [{"Type": "Subtitle", "Language": "eng", "DeliveryMethod": "External",
+                                     "DeliveryUrl": "/Videos/item1/ms1/Subtitles/3/Stream.srt"}]}""",
+            ),
+            deviceId = "d1",
+        )
+        assertTrue(playback.url.startsWith("https://media.example.com/emby/Videos/item1/stream?static=true&mediaSourceId=ms1&playSessionId=ps1"))
+        assertTrue(playback.url.endsWith("&api_key=secret"))
+        assertEquals("https://media.example.com/emby/Videos/item1/ms1/Subtitles/3/Stream.srt?api_key=secret", playback.subtitles.single().url)
+    }
+
+    @Test
+    fun embyResolvesRelativeTranscodeUrlsOnce() {
+        val transcode = request.copy(capabilities = ServerPlayerCapabilities(directPlayAll = false, allowDirectPlay = false))
+        val relative = emby.playbackSession(
+            embySession,
+            transcode,
+            info("""{"Id": "ms1", "TranscodingUrl": "/videos/item1/master.m3u8?MediaSourceId=ms1&api_key=secret"}"""),
+            deviceId = "d1",
+        )
+        assertEquals("https://media.example.com/emby/videos/item1/master.m3u8?MediaSourceId=ms1&api_key=secret", relative.url)
+        val prefixed = emby.playbackSession(
+            embySession,
+            transcode,
+            info("""{"Id": "ms1", "TranscodingUrl": "/emby/videos/item1/master.m3u8?MediaSourceId=ms1"}"""),
+            deviceId = "d1",
+        )
+        assertEquals("https://media.example.com/emby/videos/item1/master.m3u8?MediaSourceId=ms1&api_key=secret", prefixed.url)
     }
 }

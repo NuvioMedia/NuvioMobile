@@ -1,5 +1,6 @@
 package com.nuvio.app.features.servers
 
+import com.nuvio.app.features.servers.emby.EmbyProvider
 import com.nuvio.app.features.servers.jellyfin.JellyfinProvider
 import com.nuvio.app.features.tracking.TrackingExternalIds
 
@@ -86,7 +87,7 @@ fun ServerProvider.supports(capability: ServerCapability): Boolean = capability 
 private fun unsupported(): Nothing = throw ServerException(ServerFailure.UNSUPPORTED)
 
 internal object ServerProviders {
-    internal val registered: MutableList<ServerProvider> = mutableListOf(JellyfinProvider())
+    internal val registered: MutableList<ServerProvider> = mutableListOf(JellyfinProvider(), EmbyProvider())
 
     fun forId(id: String?): ServerProvider? = registered.firstOrNull { it.id == id }
 }

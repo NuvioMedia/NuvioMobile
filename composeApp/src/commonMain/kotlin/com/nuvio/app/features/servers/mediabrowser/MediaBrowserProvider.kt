@@ -296,7 +296,12 @@ internal abstract class MediaBrowserProvider(
             baseUrl = session.apiRoot,
             path = "/Items/${pathSegment(itemId)}/PlaybackInfo",
             token = session.token,
-            query = mapOf("userId" to session.userId),
+            query = mapOf(
+                "userId" to session.userId,
+                "mediaSourceId" to body.mediaSourceId,
+                "maxStreamingBitrate" to body.maxStreamingBitrate.toString(),
+                "enableDirectPlay" to body.enableDirectPlay.toString(),
+            ),
             body = client.json.encodeToString(PlaybackInfoRequest.serializer(), body),
         )
         val info = client.json.decodeFromString(PlaybackInfoResult.serializer(), response.body)
