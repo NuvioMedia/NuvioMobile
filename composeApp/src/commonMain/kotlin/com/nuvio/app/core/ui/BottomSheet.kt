@@ -21,7 +21,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -85,16 +84,13 @@ fun NuvioBottomSheetActionRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     icon: ImageVector? = null,
-    color: Color? = null,
-    enabled: Boolean = true,
     trailingContent: (@Composable RowScope.() -> Unit)? = null,
 ) {
     val tokens = MaterialTheme.nuvio
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(enabled = enabled, onClick = onClick)
-            .alpha(if (enabled) NuvioTokens.Opacity.visible else tokens.opacity.medium)
+            .clickable(onClick = onClick)
             .padding(horizontal = tokens.spacing.screenHorizontal, vertical = tokens.spacing.screenHorizontal),
         horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s14),
         verticalAlignment = Alignment.CenterVertically,
@@ -103,7 +99,7 @@ fun NuvioBottomSheetActionRow(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = color ?: tokens.colors.accent,
+                tint = tokens.colors.accent,
                 modifier = Modifier.size(NuvioTokens.Icon.md),
             )
         }
@@ -111,7 +107,7 @@ fun NuvioBottomSheetActionRow(
             text = title,
             modifier = Modifier.weight(1f),
             style = MaterialTheme.typography.titleMedium,
-            color = color ?: tokens.colors.textPrimary,
+            color = tokens.colors.textPrimary,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

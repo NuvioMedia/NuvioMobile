@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -29,20 +28,22 @@ import nuvio.composeapp.generated.resources.servers_add_jellyfin_description
 import nuvio.composeapp.generated.resources.servers_empty
 import nuvio.composeapp.generated.resources.servers_section_add
 import nuvio.composeapp.generated.resources.servers_section_connected
-import nuvio.composeapp.generated.resources.servers_signed_in_as
-import nuvio.composeapp.generated.resources.servers_status_auth
-import nuvio.composeapp.generated.resources.servers_status_disabled
-import nuvio.composeapp.generated.resources.servers_status_unreachable
 import org.jetbrains.compose.resources.stringResource
 
-internal fun LazyListScope.mediaServersSettingsContent(isTablet: Boolean) {
+internal fun LazyListScope.mediaServersSettingsContent(
+    isTablet: Boolean,
+    onServerClick: () -> Unit,
+) {
     item {
         val uiState by remember {
             ServerRepository.ensureLoaded()
             ServerRepository.uiState
         }.collectAsStateWithLifecycle()
-        var managedConnectionId by rememberSaveable { mutableStateOf<String?>(null) }
         var signIn by remember { mutableStateOf<ServerSignInRequest?>(null) }
+        fun open(connection: ServerConnection) {
+            MediaServerSelection.connectionId = connection.id
+            onServerClick()
+        }
 
         SettingsSection(
             title = stringResource(Res.string.servers_section_connected),
@@ -64,7 +65,7 @@ internal fun LazyListScope.mediaServersSettingsContent(isTablet: Boolean) {
                         description = connection.statusText(uiState.failures[connection.id]),
                         icon = Icons.Rounded.Dns,
                         isTablet = isTablet,
-                        onClick = { managedConnectionId = connection.id },
+                        onClick = { open(connection) },
                     )
                 }
             }
@@ -86,23 +87,12 @@ internal fun LazyListScope.mediaServersSettingsContent(isTablet: Boolean) {
             }
         }
 
-        uiState.connections.firstOrNull { it.id == managedConnectionId }?.let { connection ->
-            ServerManageSheet(
-                connection = connection,
-                failure = uiState.failures[connection.id],
-                onSignInAgain = {
-                    managedConnectionId = null
-                    signIn = ServerSignInRequest(address = connection.address, username = connection.userName)
-                },
-                onDismiss = { managedConnectionId = null },
-            )
-        }
         signIn?.let { request ->
             ServerSignInSheet(
                 request = request,
                 onConnected = { connection ->
                     signIn = null
-                    managedConnectionId = connection.id
+                    open(connection)
                 },
                 onDismiss = { signIn = null },
             )
@@ -111,17 +101,5 @@ internal fun LazyListScope.mediaServersSettingsContent(isTablet: Boolean) {
 }
 
 @Composable
-private fun ServerConnection.statusText(failure: ServerFailure?): String {
-    val status = when {
-        !enabled -> stringResource(Res.string.servers_status_disabled)
-        failure == ServerFailure.AUTH_REQUIRED -> stringResource(Res.string.servers_status_auth)
-        failure == ServerFailure.UNREACHABLE -> stringResource(Res.string.servers_status_unreachable)
-        else -> null
-    }
-    val identity = stringResource(
-        Res.string.servers_signed_in_as,
-        ServerRepository.provider(this)?.displayName ?: providerId,
-        userName,
-    )
-    return listOfNotNull(identity, status).joinToString(" · ")
-}
+private fun ServerConnection.statusText(failure: ServerFailure?): String =
+    listOfNotNull(identity(), status(failure)?.first).joinToString(" · ")

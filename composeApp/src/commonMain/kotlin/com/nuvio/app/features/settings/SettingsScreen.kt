@@ -804,7 +804,14 @@ private fun MobileSettingsScreen(
                     onMediaServersClick = { onPageChange(SettingsPage.MediaServers) },
                 )
                 SettingsPage.Addons -> addonsSettingsContent()
-                SettingsPage.MediaServers -> mediaServersSettingsContent(isTablet = false)
+                SettingsPage.MediaServers -> mediaServersSettingsContent(
+                    isTablet = false,
+                    onServerClick = { onPageChange(SettingsPage.MediaServer) },
+                )
+                SettingsPage.MediaServer -> mediaServerSettingsContent(
+                    isTablet = false,
+                    onBack = onNavigateBack,
+                )
                 SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()
                 SettingsPage.Homescreen -> homescreenSettingsContent(
                     isTablet = false,
@@ -1234,7 +1241,14 @@ private fun TabletSettingsScreen(
                         onMediaServersClick = { openInlinePage(SettingsPage.MediaServers) },
                     )
                     SettingsPage.Addons -> addonsSettingsContent()
-                    SettingsPage.MediaServers -> mediaServersSettingsContent(isTablet = true)
+                    SettingsPage.MediaServers -> mediaServersSettingsContent(
+                        isTablet = true,
+                        onServerClick = { openInlinePage(SettingsPage.MediaServer) },
+                    )
+                    SettingsPage.MediaServer -> mediaServerSettingsContent(
+                        isTablet = true,
+                        onBack = onNavigateBack,
+                    )
                     SettingsPage.Plugins -> if (AppFeaturePolicy.pluginsEnabled) pluginsSettingsContent() else addonsSettingsContent()
                     SettingsPage.Homescreen -> homescreenSettingsContent(
                         isTablet = true,

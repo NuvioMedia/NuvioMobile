@@ -21,6 +21,7 @@ import nuvio.composeapp.generated.resources.compose_settings_page_homescreen
 import nuvio.composeapp.generated.resources.compose_settings_page_integrations
 import nuvio.composeapp.generated.resources.compose_settings_page_licenses_attributions
 import nuvio.composeapp.generated.resources.compose_settings_page_mdblist_ratings
+import nuvio.composeapp.generated.resources.compose_settings_page_media_server
 import nuvio.composeapp.generated.resources.compose_settings_page_media_servers
 import nuvio.composeapp.generated.resources.compose_settings_page_meta_screen
 import nuvio.composeapp.generated.resources.compose_settings_page_notifications
@@ -125,6 +126,11 @@ internal enum class SettingsPage(
         titleRes = Res.string.compose_settings_page_media_servers,
         category = SettingsCategory.General,
         parentPage = ContentDiscovery,
+    ),
+    MediaServer(
+        titleRes = Res.string.compose_settings_page_media_server,
+        category = SettingsCategory.General,
+        parentPage = MediaServers,
     ),
     Homescreen(
         titleRes = Res.string.compose_settings_page_homescreen,

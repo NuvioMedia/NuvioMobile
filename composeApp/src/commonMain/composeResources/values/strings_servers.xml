@@ -1,5 +1,6 @@
 <resources>
     <string name="compose_settings_page_media_servers">Media servers</string>
+    <string name="compose_settings_page_media_server">Server</string>
     <string name="settings_content_discovery_media_servers_description">Connect Jellyfin to browse and play your own library.</string>
     <string name="servers_section_connected">SERVERS</string>
     <string name="servers_section_add">ADD SERVER</string>
@@ -24,6 +25,8 @@
     <string name="servers_catalog_metadata_description">Titles open with your addons' details and sync like any other catalog title, with playback still reported to Jellyfin. Some titles may not match or play if your addons number or identify them differently.</string>
     <string name="servers_sign_in_again">Sign in again</string>
     <string name="servers_remove">Remove server</string>
+    <string name="servers_remove_confirm_title">Remove this server?</string>
+    <string name="servers_remove_confirm_message">This signs you out of %1$s on this device. You can add it back anytime.</string>
     <string name="servers_signed_in_as">%1$s · %2$s</string>
     <string name="servers_status_disabled">Disabled</string>
     <string name="servers_status_auth">Sign in again</string>

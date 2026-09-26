@@ -9,14 +9,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,54 +29,36 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
-import com.nuvio.app.core.ui.NuvioBottomSheetActionRow
-import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.nuvio
-import com.nuvio.app.features.servers.ServerCapability
 import com.nuvio.app.features.servers.ServerConnection
 import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerRepository
-import com.nuvio.app.features.servers.supports
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.servers_address
 import nuvio.composeapp.generated.resources.servers_address_hint
-import nuvio.composeapp.generated.resources.servers_catalog_metadata
-import nuvio.composeapp.generated.resources.servers_catalog_metadata_description
 import nuvio.composeapp.generated.resources.servers_connect
 import nuvio.composeapp.generated.resources.servers_connecting
-import nuvio.composeapp.generated.resources.servers_enabled
-import nuvio.composeapp.generated.resources.servers_enabled_description
 import nuvio.composeapp.generated.resources.servers_error_address
 import nuvio.composeapp.generated.resources.servers_error_auth
 import nuvio.composeapp.generated.resources.servers_error_failed
 import nuvio.composeapp.generated.resources.servers_error_forbidden
 import nuvio.composeapp.generated.resources.servers_error_unreachable
 import nuvio.composeapp.generated.resources.servers_error_unsupported
-import nuvio.composeapp.generated.resources.servers_libraries
-import nuvio.composeapp.generated.resources.servers_libraries_description
-import nuvio.composeapp.generated.resources.servers_no_libraries
 import nuvio.composeapp.generated.resources.servers_password
-import nuvio.composeapp.generated.resources.servers_refresh_libraries
-import nuvio.composeapp.generated.resources.servers_remove
-import nuvio.composeapp.generated.resources.servers_sign_in_again
 import nuvio.composeapp.generated.resources.servers_sign_in_subtitle
 import nuvio.composeapp.generated.resources.servers_sign_in_title
-import nuvio.composeapp.generated.resources.servers_status_auth
-import nuvio.composeapp.generated.resources.servers_status_disabled
-import nuvio.composeapp.generated.resources.servers_status_unreachable
 import nuvio.composeapp.generated.resources.servers_username
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -243,153 +219,6 @@ internal fun ServerSignInSheet(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun ServerManageSheet(
-    connection: ServerConnection,
-    failure: ServerFailure?,
-    onSignInAgain: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val tokens = MaterialTheme.nuvio
-    val scope = rememberCoroutineScope()
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    var refreshing by remember(connection.id) { mutableStateOf(false) }
-    fun dismissThen(action: () -> Unit) {
-        scope.launch { dismissNuvioBottomSheet(sheetState) { action() } }
-    }
-
-    NuvioModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .navigationBarsPadding()
-                .padding(bottom = NuvioTokens.Space.s8),
-        ) {
-            Column(modifier = Modifier.padding(horizontal = tokens.spacing.sheetPadding)) {
-                SheetHeader(
-                    title = connection.name,
-                    subtitle = "${ServerRepository.provider(connection)?.displayName ?: connection.providerId} · ${connection.userName}",
-                )
-                Text(
-                    text = connection.address,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = tokens.colors.textMuted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = NuvioTokens.Space.s4),
-                )
-                connection.status(failure)?.let { (text, color) ->
-                    Text(
-                        text = text,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = color,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier.padding(top = NuvioTokens.Space.s8),
-                    )
-                }
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
-                SettingsGroup(isTablet = false) {
-                    SettingsSwitchRow(
-                        title = stringResource(Res.string.servers_enabled),
-                        description = stringResource(Res.string.servers_enabled_description),
-                        checked = connection.enabled,
-                        isTablet = false,
-                        onCheckedChange = { ServerRepository.setEnabled(connection.id, it) },
-                    )
-                    if (ServerRepository.provider(connection)?.supports(ServerCapability.EXTERNAL_ID_LOOKUP) == true) {
-                        NuvioBottomSheetDivider(modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16))
-                        SettingsSwitchRow(
-                            title = stringResource(Res.string.servers_catalog_metadata),
-                            description = stringResource(Res.string.servers_catalog_metadata_description),
-                            checked = connection.useCatalogMetadata,
-                            enabled = connection.enabled,
-                            isTablet = false,
-                            onCheckedChange = { ServerRepository.setCatalogMetadata(connection.id, it) },
-                        )
-                    }
-                }
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s20))
-                SettingsSection(
-                    title = stringResource(Res.string.servers_libraries),
-                    isTablet = false,
-                ) {
-                    Text(
-                        text = stringResource(
-                            if (connection.libraries.isEmpty()) {
-                                Res.string.servers_no_libraries
-                            } else {
-                                Res.string.servers_libraries_description
-                            },
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = tokens.colors.textMuted,
-                        modifier = Modifier.padding(bottom = NuvioTokens.Space.s10),
-                    )
-                    if (connection.libraries.isNotEmpty()) {
-                        SettingsGroup(isTablet = false) {
-                            connection.libraries.forEachIndexed { index, library ->
-                                if (index > 0) {
-                                    NuvioBottomSheetDivider(modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16))
-                                }
-                                SettingsSwitchRow(
-                                    title = library.name,
-                                    checked = library.selected,
-                                    enabled = connection.enabled,
-                                    isTablet = false,
-                                    onCheckedChange = { ServerRepository.setLibrarySelected(connection.id, library.id, it) },
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(NuvioTokens.Space.s12))
-            NuvioBottomSheetDivider()
-            NuvioBottomSheetActionRow(
-                title = stringResource(Res.string.servers_refresh_libraries),
-                icon = Icons.Rounded.Sync,
-                enabled = connection.enabled && !refreshing,
-                onClick = {
-                    refreshing = true
-                    scope.launch {
-                        runCatching { ServerRepository.refreshLibraries(connection.id) }
-                            .onFailure { if (it is CancellationException) throw it }
-                        refreshing = false
-                    }
-                },
-                trailingContent = if (refreshing) {
-                    { NuvioLoadingIndicator(modifier = Modifier.size(tokens.icons.sm)) }
-                } else {
-                    null
-                },
-            )
-            NuvioBottomSheetDivider()
-            NuvioBottomSheetActionRow(
-                title = stringResource(Res.string.servers_sign_in_again),
-                icon = Icons.Rounded.Lock,
-                onClick = { dismissThen(onSignInAgain) },
-            )
-            NuvioBottomSheetDivider()
-            NuvioBottomSheetActionRow(
-                title = stringResource(Res.string.servers_remove),
-                icon = Icons.Rounded.Delete,
-                color = tokens.colors.danger,
-                onClick = {
-                    dismissThen {
-                        ServerRepository.remove(connection.id)
-                        onDismiss()
-                    }
-                },
-            )
-        }
-    }
-}
-
 @Composable
 private fun SheetHeader(title: String, subtitle: String) {
     val tokens = MaterialTheme.nuvio
@@ -407,17 +236,6 @@ private fun SheetHeader(title: String, subtitle: String) {
         style = MaterialTheme.typography.bodyMedium,
         color = tokens.colors.textSecondary,
     )
-}
-
-@Composable
-private fun ServerConnection.status(failure: ServerFailure?): Pair<String, Color>? {
-    val colors = MaterialTheme.nuvio.colors
-    return when {
-        !enabled -> stringResource(Res.string.servers_status_disabled) to colors.textMuted
-        failure == ServerFailure.AUTH_REQUIRED -> stringResource(Res.string.servers_status_auth) to colors.danger
-        failure == ServerFailure.UNREACHABLE -> stringResource(Res.string.servers_status_unreachable) to colors.warning
-        else -> null
-    }
 }
 
 @Composable
