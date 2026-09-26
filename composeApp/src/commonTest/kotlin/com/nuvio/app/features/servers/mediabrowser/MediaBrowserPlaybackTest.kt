@@ -166,4 +166,21 @@ class MediaBrowserPlaybackTest {
         )
         assertEquals(1, default.audioTracks.single { it.selected }.index)
     }
+
+    @Test
+    fun leavesEmbeddedSubtitlesToThePlayer() {
+        val playback = jellyfin.playbackSession(
+            session,
+            request,
+            info(
+                """{"Id": "ms1", "SupportsDirectPlay": true,
+                   "MediaStreams": [
+                     {"Type": "Subtitle", "Index": 2, "Codec": "subrip", "Language": "eng", "DeliveryMethod": "Embed"},
+                     {"Type": "Subtitle", "Index": 3, "Codec": "subrip", "Language": "spa", "IsExternal": true,
+                      "DeliveryMethod": "External", "DeliveryUrl": "/Videos/item1/ms1/Subtitles/3/0/Stream.srt"}]}""",
+            ),
+            deviceId = "d1",
+        )
+        assertEquals(listOf("spa"), playback.subtitles.map { it.language })
+    }
 }

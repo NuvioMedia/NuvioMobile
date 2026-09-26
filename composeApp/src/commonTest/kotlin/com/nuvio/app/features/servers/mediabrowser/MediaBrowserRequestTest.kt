@@ -159,7 +159,8 @@ class MediaBrowserRequestTest {
         assertEquals("ms1", info.url.parameters["mediaSourceId"])
         assertEquals("2", info.url.parameters["audioStreamIndex"])
         assertTrue(info.text.contains("\"AudioStreamIndex\":2"))
-        assertTrue(info.text.contains("\"DeviceProfile\""))
+        assertTrue(info.text.contains("{\"Format\":\"subrip\",\"Method\":\"Embed\"}"))
+        assertTrue(info.text.contains("{\"Format\":\"subrip\",\"Method\":\"External\"}"))
         assertTrue(playback.url.startsWith("https://media.example.com/emby/Videos/i1/stream?static=true"))
         val report = http.requests[1]
         assertEquals("/emby/Sessions/Playing/Progress", report.url.encodedPath)

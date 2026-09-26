@@ -487,11 +487,8 @@ internal abstract class MediaBrowserProvider(
                 protocol = "hls",
             ),
         ),
-        subtitleProfiles = listOf("srt", "subrip", "ass", "ssa", "vtt", "webvtt").map {
-            SubtitleProfile(format = it, method = "External")
-        } + listOf("pgssub", "dvdsub", "dvbsub").map {
-            SubtitleProfile(format = it, method = "Embed")
-        },
+        subtitleProfiles = EMBEDDED_SUBTITLES.map { SubtitleProfile(format = it, method = "Embed") } +
+            TEXT_SUBTITLES.map { SubtitleProfile(format = it, method = "External") },
     )
 
     private fun withApiKey(url: String, token: String): String {
@@ -510,5 +507,7 @@ internal abstract class MediaBrowserProvider(
         const val MAX_STREAMING_BITRATE = 120_000_000L
         const val LIST_FIELDS = "Overview,Genres,ProviderIds,PremiereDate"
         const val DETAIL_FIELDS = "Overview,Genres,ProviderIds,People,Studios,PremiereDate,EndDate"
+        val TEXT_SUBTITLES = listOf("srt", "subrip", "ass", "ssa", "vtt", "webvtt")
+        val EMBEDDED_SUBTITLES = TEXT_SUBTITLES + listOf("mov_text", "pgssub", "dvdsub", "dvbsub")
     }
 }
