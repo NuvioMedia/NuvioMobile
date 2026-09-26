@@ -7,8 +7,10 @@ import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
 import org.gradle.api.tasks.TaskAction
+import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
+import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import java.util.Properties
 
@@ -521,8 +523,21 @@ kotlin {
         commonTest.dependencies {
             implementation(libs.kotlin.test)
             implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:${libs.versions.kotlinx.coroutines.get()}")
+            implementation("io.ktor:ktor-client-mock:${libs.versions.ktor.get()}")
         }
     }
+}
+
+val bootIosTestSimulator by tasks.registering(Exec::class) {
+    val device = tasks.named<KotlinNativeSimulatorTest>("iosSimulatorArm64Test").flatMap { it.device }
+    commandLine("xcrun", "simctl", "boot")
+    argumentProviders.add(CommandLineArgumentProvider { listOf(device.get()) })
+    isIgnoreExitValue = true
+}
+
+tasks.withType<KotlinNativeSimulatorTest>().configureEach {
+    standalone.set(false)
+    dependsOn(bootIosTestSimulator)
 }
 
 configurations.matching { it.name == "iosMainImplementation" }.configureEach {

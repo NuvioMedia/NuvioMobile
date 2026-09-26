@@ -197,8 +197,6 @@ internal fun FolderDestination(
     FolderDetailScreen(
         onBack = onBack,
         onCatalogClick = onCatalogClick,
-        onPosterClick = { meta: MetaPreview ->
-            navController.navigate(DetailRoute(type = meta.type, id = meta.id, title = meta.name))
-        },
+        onPosterClick = navController::openPreview,
     )
 }

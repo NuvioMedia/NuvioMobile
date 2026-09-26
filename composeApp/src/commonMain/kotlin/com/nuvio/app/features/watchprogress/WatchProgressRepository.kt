@@ -12,6 +12,7 @@ import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.player.PlayerPlaybackSnapshot
 import com.nuvio.app.features.profiles.ProfileRepository
+import com.nuvio.app.features.servers.ServerItemRef
 import com.nuvio.app.features.tracking.TrackingProgressProvider
 import com.nuvio.app.features.tracking.TrackingProgressSnapshot
 import com.nuvio.app.features.tracking.TrackingProviderId
@@ -1110,6 +1111,22 @@ object WatchProgressRepository {
         upsert(session = session, snapshot = snapshot, persist = true, syncRemote = syncRemote)
     }
 
+    fun applyExternalProgress(entries: List<WatchProgressEntry>) {
+        ensureLoaded()
+        var changed = false
+        entries.forEach { candidate ->
+            val entry = localEntriesSnapshot().resolveIdentityForUpsert(candidate)
+            val existing = localEntry(entry.resolvedProgressKey())
+            if (existing != null && existing.lastUpdatedEpochMs >= entry.lastUpdatedEpochMs) return@forEach
+            upsertLocalEntry(entry)
+            changed = true
+        }
+        if (changed) {
+            publish()
+            persist()
+        }
+    }
+
     fun clearProgress(videoId: String, parentMetaId: String? = null) {
         clearProgress(videoIds = listOf(videoId), parentMetaId = parentMetaId)
     }
@@ -1385,6 +1402,7 @@ object WatchProgressRepository {
     }
 
     private fun pushScrobbleToServer(entry: WatchProgressEntry, profileId: Int) {
+        if (ServerItemRef.isServerId(entry.parentMetaId)) return
         val operationGeneration = profileGeneration.takeIf { profileId == currentProfileId }
         accountScopeSnapshot().launch {
             runCatching {
@@ -1402,6 +1420,7 @@ object WatchProgressRepository {
 
     private fun pushDeleteToServer(entries: Collection<WatchProgressEntry>) {
         if (activeSource.providerId != null) return
+        val entries = entries.filterNot { ServerItemRef.isServerId(it.parentMetaId) }
         val profileId = currentProfileId
         accountScopeSnapshot().launch {
             runCatching {

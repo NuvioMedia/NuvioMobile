@@ -1,5 +1,6 @@
 package com.nuvio.app.features.mdblist
 
+import com.nuvio.app.core.network.readBoundedResponseBody
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.test.runTest
@@ -23,9 +24,9 @@ class MdbListNetworkEngineTest {
 
     @Test
     fun responseLimitAppliesToDeclaredAndStreamedBodies() = runTest {
-        assertEquals("雪", readMdbListResponseBody(ByteReadChannel("雪"), null, 3))
-        expectMdbListFailure<IOException> { readMdbListResponseBody(ByteReadChannel(""), 4, 3) }
-        expectMdbListFailure<IOException> { readMdbListResponseBody(ByteReadChannel("abcd"), null, 3) }
-        assertEquals("", readMdbListResponseBody(ByteReadChannel(""), null, 3))
+        assertEquals("雪", readBoundedResponseBody(ByteReadChannel("雪"), null, 3))
+        expectMdbListFailure<IOException> { readBoundedResponseBody(ByteReadChannel(""), 4, 3) }
+        expectMdbListFailure<IOException> { readBoundedResponseBody(ByteReadChannel("abcd"), null, 3) }
+        assertEquals("", readBoundedResponseBody(ByteReadChannel(""), null, 3))
     }
 }

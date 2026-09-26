@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.servers.ServerItemRef
+import com.nuvio.app.features.servers.ServerStreams
 import com.nuvio.app.features.tmdb.TmdbService
 import com.nuvio.app.features.tracking.TrackingMediaReference
 import com.nuvio.app.features.tracking.TrackingScrobbleAction
@@ -77,7 +79,7 @@ internal val PlayerScreenRuntime.playbackSession: WatchProgressPlaybackSession
         lastStreamTitle = activeStreamTitle,
         lastStreamSubtitle = activeStreamSubtitle,
         pauseDescription = activePauseDescription,
-        lastSourceUrl = activeSourceUrl,
+        lastSourceUrl = activeSourceUrl.takeUnless { ServerStreams.isServerSourceId(activeProviderAddonId) },
     )
 
 internal fun PlayerScreenRuntime.resetIdentityStateIfNeeded() {
@@ -132,15 +134,23 @@ internal data class TrackingScrobbleItemInputs(
     val episodeTitle: String?,
 )
 
-internal fun PlayerScreenRuntime.snapshotTrackingScrobbleItemInputs() = TrackingScrobbleItemInputs(
-    contentType = contentType ?: parentMetaType,
-    parentMetaId = parentMetaId,
-    videoId = activeVideoId,
-    title = title,
-    seasonNumber = activeSeasonNumber,
-    episodeNumber = activeEpisodeNumber,
-    episodeTitle = activeEpisodeTitle,
-)
+internal fun PlayerScreenRuntime.snapshotTrackingScrobbleItemInputs(): TrackingScrobbleItemInputs {
+    val inputs = TrackingScrobbleItemInputs(
+        contentType = contentType ?: parentMetaType,
+        parentMetaId = parentMetaId,
+        videoId = activeVideoId,
+        title = title,
+        seasonNumber = activeSeasonNumber,
+        episodeNumber = activeEpisodeNumber,
+        episodeTitle = activeEpisodeTitle,
+    )
+    if (!ServerItemRef.isServerId(parentMetaId)) return inputs
+    val imdbId = (metaUiState.meta ?: playerMeta)
+        ?.takeIf { it.id == parentMetaId }
+        ?.imdbId
+        ?.takeIf { it.startsWith("tt") }
+    return if (imdbId != null) inputs.copy(parentMetaId = imdbId, videoId = null) else inputs.copy(title = "")
+}
 
 private fun TrackingScrobbleItemInputs.buildMedia(): TrackingMediaReference =
     buildTrackingMediaReference(

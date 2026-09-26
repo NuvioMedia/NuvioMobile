@@ -31,6 +31,8 @@ import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.player.resolveContentLanguage
 import com.nuvio.app.features.player.sanitizePlaybackHeaders
 import com.nuvio.app.features.player.sanitizePlaybackResponseHeaders
+import com.nuvio.app.features.servers.ServerPlayback
+import com.nuvio.app.features.servers.serverPlaybackMessage
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamLaunchStore
@@ -41,6 +43,7 @@ import com.nuvio.app.features.streams.shouldShowAutoPlayLoading
 import com.nuvio.app.features.streams.shouldUseLandscapeAutoPlayLoading
 import com.nuvio.app.features.streams.StreamsUiState
 import com.nuvio.app.navigation.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -78,6 +81,7 @@ internal fun StreamDestination(
     val streamRouteScope = rememberCoroutineScope()
     var autoPlayNavigationStarted by remember(route.launchId) { mutableStateOf(false) }
     var resolvingDebridStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
+    var preparingServerStream by remember(route.launchId) { mutableStateOf(false) }
     var pendingP2pStreamOpen by remember { mutableStateOf<PendingP2pStreamOpen?>(null) }
     val shouldResolveEpisodeVideoId =
         launch.parentMetaId != null &&
@@ -360,7 +364,7 @@ internal fun StreamDestination(
         episode = launch.episodeNumber,
         manualSelection = launch.manualSelection,
     )
-    val showLoadingScreen = autoPlayNavigationStarted || resolvingDebridStream || streamsUiState.shouldShowAutoPlayLoading(
+    val showLoadingScreen = autoPlayNavigationStarted || resolvingDebridStream || preparingServerStream || streamsUiState.shouldShowAutoPlayLoading(
         expectedRequestToken = expectedStreamsRequestToken,
         settings = playerSettings,
         manualSelection = launch.manualSelection,
@@ -384,7 +388,17 @@ internal fun StreamDestination(
         if (autoPlayHandled) return@LaunchedEffect
         if (streamsUiState.requestToken != expectedStreamsRequestToken) return@LaunchedEffect
         val selectedStream = streamsUiState.autoPlayStream ?: return@LaunchedEffect
-        val stream = if (DirectDebridPlaybackResolver.shouldResolveToPlayableStream(selectedStream)) {
+        val stream = if (selectedStream.needsServerPreparation) {
+            StreamsRepository.setOverlayVisible(true, getString(Res.string.player_loading_preparing))
+            runCatching { ServerPlayback.prepare(selectedStream) }
+                .onFailure { if (it is CancellationException) throw it }
+                .getOrElse { error ->
+                    if (!StreamsRepository.skipAutoPlayStream(selectedStream)) {
+                        NuvioToastController.show(error.serverPlaybackMessage())
+                    }
+                    return@LaunchedEffect
+                }
+        } else if (DirectDebridPlaybackResolver.shouldResolveToPlayableStream(selectedStream)) {
             StreamsRepository.setOverlayVisible(true, getString(Res.string.debrid_resolving_stream))
             when (
                 val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(
@@ -434,7 +448,7 @@ internal fun StreamDestination(
             return@LaunchedEffect
         }
         autoPlayHandled = true
-        if (playerSettings.streamReuseLastLinkEnabled) {
+        if (playerSettings.streamReuseLastLinkEnabled && stream.serverTarget == null) {
             val cacheKey = StreamLinkCacheRepository.contentKey(
                 type = launch.type,
                 videoId = effectiveVideoId,
@@ -486,7 +500,7 @@ internal fun StreamDestination(
             initialProgressFraction = launch.resumeProgressFraction,
             contentLanguage = resolveLaunchContentLanguage(),
         )
-        if (playerSettings.externalPlayerEnabled) {
+        if (playerSettings.externalPlayerEnabled && stream.serverTarget == null) {
             openExternalPlayback(playerLaunch)
             StreamsRepository.consumeAutoPlay()
             StreamsRepository.cancelLoading()
@@ -528,6 +542,28 @@ internal fun StreamDestination(
         forceExternal: Boolean,
         forceInternal: Boolean,
     ) {
+        if (stream.needsServerPreparation) {
+            if (preparingServerStream) return
+            streamRouteScope.launch {
+                preparingServerStream = true
+                val prepared = runCatching { ServerPlayback.prepare(stream) }
+                    .onFailure { if (it is CancellationException) throw it }
+                    .getOrElse { error ->
+                        preparingServerStream = false
+                        NuvioToastController.show(error.serverPlaybackMessage())
+                        return@launch
+                    }
+                preparingServerStream = false
+                openSelectedStream(
+                    stream = prepared,
+                    resolvedResumePositionMs = resolvedResumePositionMs,
+                    resolvedResumeProgressFraction = resolvedResumeProgressFraction,
+                    forceExternal = false,
+                    forceInternal = true,
+                )
+            }
+            return
+        }
         if (DirectDebridPlaybackResolver.shouldResolveToPlayableStream(stream)) {
             if (resolvingDebridStream) return
             streamRouteScope.launch {
@@ -582,7 +618,7 @@ internal fun StreamDestination(
             return
         }
         val sourceUrl = stream.playableDirectUrl ?: return
-        if (playerSettings.streamReuseLastLinkEnabled) {
+        if (playerSettings.streamReuseLastLinkEnabled && stream.serverTarget == null) {
             val cacheKey = StreamLinkCacheRepository.contentKey(
                 type = launch.type,
                 videoId = effectiveVideoId,
@@ -724,6 +760,7 @@ internal fun StreamDestination(
                 showStatus = playerSettings.showPlayerLoadingStatus,
                 resolvingDebridStream = resolvingDebridStream,
                 onBack = onBack,
+                preparingPlayback = preparingServerStream,
             )
         }
     }

@@ -1,6 +1,7 @@
 package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.features.servers.ServerPlaybackTarget
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -30,6 +31,7 @@ data class StreamItem(
     val debridCacheStatus: StreamDebridCacheStatus? = null,
     val externalSubtitles: List<StreamSubtitle> = emptyList(),
     val badges: List<StreamBadge> = emptyList(),
+    val serverTarget: ServerPlaybackTarget? = null,
 ) {
     val streamLabel: String
         get() = name?.takeIf { it.isNotBlank() } ?: "Stream"
@@ -110,7 +112,10 @@ data class StreamItem(
         get() = isInstalledAddonStream && (needsLocalDebridResolve || isDirectDebridStream)
 
     val hasPlayableSource: Boolean
-        get() = url != null || infoHash != null || externalUrl != null || clientResolve != null
+        get() = url != null || infoHash != null || externalUrl != null || clientResolve != null || serverTarget != null
+
+    val needsServerPreparation: Boolean
+        get() = serverTarget != null && playableDirectUrl == null
 }
 
 data class StreamBadge(
@@ -173,6 +178,7 @@ private fun String?.extractBtihInfoHash(): String? {
 
 fun StreamItem.isSelectableForPlayback(debridEnabled: Boolean): Boolean =
     playableDirectUrl != null ||
+        serverTarget != null ||
         shouldOpenExternally ||
         (AppFeaturePolicy.p2pEnabled && needsLocalDebridResolve && p2pInfoHash != null) ||
         (debridEnabled && isAddonDebridCandidate)

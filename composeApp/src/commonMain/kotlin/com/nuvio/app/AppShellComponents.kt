@@ -166,6 +166,9 @@ internal fun AppTabHost(
                     onSectionViewAllClick = actions.onLibrarySectionViewAllClick,
                     onCloudFilePlay = actions.onCloudFilePlay,
                     onConnectCloudClick = actions.onConnectCloudClick,
+                    onCatalogClick = actions.onCatalogClick,
+                    onPreviewClick = actions.onPosterClick,
+                    onPreviewLongClick = actions.onPosterLongClick,
                     disintegrationRequest = state.libraryDisintegrationRequest,
                 )
             }

@@ -5,6 +5,7 @@ import com.nuvio.app.features.addons.AddonResource
 import com.nuvio.app.features.addons.buildAddonResourceUrl
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.fetchAddonResponseText
+import com.nuvio.app.features.servers.ServerItemRef
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -31,6 +32,7 @@ data class SubtitleAddonRequest(
 )
 
 internal fun addonSubtitleRequests(type: String, videoId: String): List<SubtitleAddonRequest> {
+    if (ServerItemRef.isServerId(videoId)) return emptyList()
     val requestType = canonicalSubtitleType(type)
     return AddonRepository.uiState.value.addons.enabledAddons().mapNotNull { addon ->
         val manifest = addon.manifest ?: return@mapNotNull null

@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -78,7 +79,10 @@ import com.nuvio.app.features.cloud.CloudLibraryItemType
 import com.nuvio.app.features.cloud.CloudLibraryRepository
 import com.nuvio.app.features.cloud.CloudLibraryUiState
 import com.nuvio.app.features.debrid.DebridSettingsRepository
+import com.nuvio.app.features.home.HomeCatalogSection
+import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.components.HomeEmptyStateCard
+import com.nuvio.app.features.servers.ServerRepository
 import com.nuvio.app.features.home.components.HomePosterCard
 import com.nuvio.app.features.home.components.HomeSkeletonRow
 import com.nuvio.app.features.home.components.posterGridColumnCountForWidth
@@ -101,6 +105,9 @@ fun LibraryScreen(
     onSectionViewAllClick: ((LibrarySection, LibrarySortOption) -> Unit)? = null,
     onCloudFilePlay: ((CloudLibraryItem, CloudLibraryFile) -> Unit)? = null,
     onConnectCloudClick: (() -> Unit)? = null,
+    onCatalogClick: ((HomeCatalogSection) -> Unit)? = null,
+    onPreviewClick: ((MetaPreview) -> Unit)? = null,
+    onPreviewLongClick: ((MetaPreview) -> Unit)? = null,
     disintegrationRequest: DisintegrationRequest<String>? = null,
 ) {
     val uiState by remember {
@@ -123,10 +130,19 @@ fun LibraryScreen(
     }.collectAsStateWithLifecycle()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()
     var observedOfflineState by remember { mutableStateOf(false) }
+    val serversUiState by remember {
+        ServerRepository.ensureLoaded()
+        ServerRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val hasServers = serversUiState.connections.any { it.enabled }
     var sourceModeName by rememberSaveable { mutableStateOf(LibraryViewMode.Saved.name) }
-    val sourceMode = remember(sourceModeName) {
+    val sourceMode = remember(sourceModeName, hasServers) {
         runCatching { LibraryViewMode.valueOf(sourceModeName) }.getOrDefault(LibraryViewMode.Saved)
+            .takeUnless { it == LibraryViewMode.Servers && !hasServers }
+            ?: LibraryViewMode.Saved
     }
+    var serverShelves by remember { mutableStateOf<List<LibraryServerShelf>?>(null) }
+    var serverShelvesRequest by remember { mutableStateOf(0) }
     var selectedProviderId by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedTypeName by rememberSaveable { mutableStateOf<String?>(null) }
     var cloudSearchQuery by rememberSaveable { mutableStateOf("") }
@@ -235,6 +251,10 @@ fun LibraryScreen(
         }
     }
 
+    LaunchedEffect(sourceMode, serversUiState.revision, serverShelvesRequest) {
+        if (sourceMode == LibraryViewMode.Servers) serverShelves = loadServerShelves()
+    }
+
     ScreenActivityEffect(sourceMode, cloudSettings.cloudLibraryEnabled, cloudSettings.providerApiKeys) { screenActive ->
         if (screenActive && sourceMode == LibraryViewMode.Cloud) {
             CloudLibraryRepository.ensureLoaded()
@@ -244,7 +264,7 @@ fun LibraryScreen(
 
     val disintegration = remember { LibraryDisintegrationHolder() }
     val librarySectionsDisplay = if (
-        sourceMode != LibraryViewMode.Cloud &&
+        sourceMode == LibraryViewMode.Saved &&
         displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL &&
         uiState.isLoaded &&
         sortedSections.isNotEmpty()
@@ -280,7 +300,7 @@ fun LibraryScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         NuvioScreenHeader(
-                            title = if (sourceMode == LibraryViewMode.Cloud) {
+                            title = if (sourceMode != LibraryViewMode.Saved) {
                                 stringResource(Res.string.library_title)
                             } else {
                                 when (uiState.sourceMode) {
@@ -329,6 +349,7 @@ fun LibraryScreen(
                         )
                         LibrarySourceSwitch(
                             selectedMode = sourceMode,
+                            showServers = hasServers,
                             onModeSelected = { mode ->
                                 sourceModeName = mode.name
                             },
@@ -370,6 +391,16 @@ fun LibraryScreen(
                     onBackToItems = { selectedCloudItemKey = null },
                     onRefresh = { CloudLibraryRepository.refresh() },
                     onConnectCloudClick = onConnectCloudClick,
+                )
+            } else if (sourceMode == LibraryViewMode.Servers) {
+                serverLibraryContent(
+                    shelves = serverShelves,
+                    watchedKeys = watchedUiState.watchedKeys,
+                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                    onCatalogClick = onCatalogClick,
+                    onPosterClick = onPreviewClick,
+                    onPosterLongClick = onPreviewLongClick,
+                    onRetry = { serverShelvesRequest++ },
                 )
             } else {
                 when {
@@ -679,6 +710,7 @@ private fun LazyListScope.cloudLibrarySkeletonItems() {
 @Composable
 private fun LibrarySourceSwitch(
     selectedMode: LibraryViewMode,
+    showServers: Boolean,
     onModeSelected: (LibraryViewMode) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -696,6 +728,13 @@ private fun LibrarySourceSwitch(
             selected = selectedMode == LibraryViewMode.Cloud,
             onClick = { onModeSelected(LibraryViewMode.Cloud) },
         )
+        if (showServers) {
+            LibraryChip(
+                label = stringResource(Res.string.library_source_servers),
+                selected = selectedMode == LibraryViewMode.Servers,
+                onClick = { onModeSelected(LibraryViewMode.Servers) },
+            )
+        }
     }
 }
 
@@ -1159,6 +1198,7 @@ private fun CloudLibrarySkeletonRow(
 private enum class LibraryViewMode {
     Saved,
     Cloud,
+    Servers,
 }
 
 private fun LazyListScope.librarySections(
