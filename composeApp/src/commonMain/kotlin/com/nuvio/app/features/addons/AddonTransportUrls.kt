@@ -3,6 +3,11 @@ package com.nuvio.app.features.addons
 internal fun addonTransportBaseUrl(manifestUrl: String): String =
     manifestUrl.substringBefore("?").removeSuffix("/manifest.json")
 
+internal fun externalAddonType(type: String, season: Int?, episode: Int?): String {
+    val normalized = type.trim().lowercase()
+    return if (normalized == "tv" && season != null && episode != null) "series" else normalized
+}
+
 internal fun buildAddonResourceUrl(
     manifestUrl: String,
     resource: String,
@@ -11,14 +16,15 @@ internal fun buildAddonResourceUrl(
     extraPathSegment: String? = null,
 ): String {
     val encodedId = id.encodeAddonPathSegment()
+    val externalType = type.trim().lowercase()
     val baseUrl = addonTransportBaseUrl(manifestUrl)
     val query = manifestUrl.substringAfter("?", "").let { query ->
         if (query.isBlank()) "" else "?$query"
     }
     val resourceUrl = if (extraPathSegment.isNullOrEmpty()) {
-        "$baseUrl/$resource/$type/$encodedId.json"
+        "$baseUrl/$resource/$externalType/$encodedId.json"
     } else {
-        "$baseUrl/$resource/$type/$encodedId/$extraPathSegment.json"
+        "$baseUrl/$resource/$externalType/$encodedId/$extraPathSegment.json"
     }
     return resourceUrl + query
 }

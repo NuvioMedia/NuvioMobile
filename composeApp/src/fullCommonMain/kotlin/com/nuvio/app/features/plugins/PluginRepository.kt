@@ -335,9 +335,12 @@ actual object PluginRepository {
         val scraper = _uiState.value.scrapers.find { it.id == scraperId }
             ?: return Result.failure(IllegalArgumentException(getString(Res.string.plugins_error_provider_not_found)))
 
-        val mediaType = if (scraper.supportsType("movie")) "movie" else "tv"
-        val season = if (mediaType == "tv") 1 else null
-        val episode = if (mediaType == "tv") 1 else null
+        val mediaType = listOf("movie", "series", "tv", "channel")
+            .firstOrNull(scraper::supportsType)
+            ?: scraper.supportedTypes.firstOrNull()?.let(::normalizePluginType)
+            ?: "movie"
+        val season = if (mediaType == "series") 1 else null
+        val episode = if (mediaType == "series") 1 else null
         return executeScraperInternal(
             scraper = scraper,
             tmdbId = "603",

@@ -303,7 +303,7 @@ object MetaDetailsRepository {
             .filter { manifest ->
                 manifest.resources.any { resource ->
                     resource.name == "meta" &&
-                        resource.types.contains(type) &&
+                        resource.types.any { it.trim().equals(type.trim(), ignoreCase = true) } &&
                         (resource.idPrefixes.isEmpty() || resource.idPrefixes.any { id.startsWith(it) })
                 }
             }

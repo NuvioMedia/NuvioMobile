@@ -83,7 +83,7 @@ class PluginPersistenceTest {
         description = "",
         version = "1.0.0",
         filename = "scraper.js",
-        supportedTypes = listOf("movie", "tv"),
+        supportedTypes = listOf("movie", "series"),
         enabled = true,
         manifestEnabled = true,
         code = code,
