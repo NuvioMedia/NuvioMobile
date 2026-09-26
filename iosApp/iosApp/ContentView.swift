@@ -793,6 +793,14 @@ struct TabContentView: View {
     let usesTabletFloatingTabBar: Bool
     @ObservedObject var coordinator: TabNavigationCoordinator
     @ObservedObject var appCoordinator: AppNavigationCoordinator
+    @AppStorage("selected_app_language") private var selectedAppLanguage = "device"
+
+    private var usesRightToLeftLanguage: Bool {
+        let language = selectedAppLanguage == "device"
+            ? (Locale.preferredLanguages.first ?? "en")
+            : selectedAppLanguage
+        return ["ar", "he", "ur"].contains(language.lowercased().split(separator: "-").first.map(String.init) ?? "en")
+    }
 
     var body: some View {
         NavigationStack(
@@ -837,6 +845,7 @@ struct TabContentView: View {
                 : Visibility.hidden,
             for: .tabBar
         )
+        .environment(\.layoutDirection, usesRightToLeftLanguage ? .rightToLeft : .leftToRight)
     }
 }
 
