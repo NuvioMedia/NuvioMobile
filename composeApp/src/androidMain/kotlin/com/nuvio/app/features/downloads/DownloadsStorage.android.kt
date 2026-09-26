@@ -7,6 +7,7 @@ import com.nuvio.app.core.storage.ProfileScopedKey
 internal actual object DownloadsStorage {
     private const val preferencesName = "nuvio_downloads"
     private const val payloadKey = "downloads_payload"
+    private const val legacyMigrationKey = "downloads_legacy_migration_complete"
 
     private var preferences: SharedPreferences? = null
 
@@ -21,6 +22,16 @@ internal actual object DownloadsStorage {
         preferences
             ?.edit()
             ?.putString(ProfileScopedKey.of(payloadKey), payload)
+            ?.apply()
+    }
+
+    actual fun isLegacyMigrationComplete(): Boolean =
+        preferences?.getBoolean(ProfileScopedKey.of(legacyMigrationKey), false) == true
+
+    actual fun markLegacyMigrationComplete() {
+        preferences
+            ?.edit()
+            ?.putBoolean(ProfileScopedKey.of(legacyMigrationKey), true)
             ?.apply()
     }
 }

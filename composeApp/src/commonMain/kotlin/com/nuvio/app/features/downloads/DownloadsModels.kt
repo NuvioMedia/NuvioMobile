@@ -5,6 +5,7 @@ import com.nuvio.app.features.streams.StreamSubtitle
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.downloads_enqueue_missing_location
 import nuvio.composeapp.generated.resources.downloads_enqueue_missing_url
 import nuvio.composeapp.generated.resources.downloads_enqueue_replaced
 import nuvio.composeapp.generated.resources.downloads_enqueue_started
@@ -46,6 +47,7 @@ data class DownloadItem(
     val localFileUri: String? = null,
     val fileName: String,
     val status: DownloadStatus,
+    val legacyMigrationPending: Boolean = false,
     val downloadedBytes: Long = 0L,
     val totalBytes: Long? = null,
     val errorMessage: String? = null,
@@ -91,15 +93,18 @@ enum class DownloadEnqueueResult {
     Started,
     Replaced,
     MissingUrl,
+    MissingLocation,
     UnsupportedFormat;
 
-    fun toastMessage(): String = runBlocking {
-        when (this@DownloadEnqueueResult) {
-            Started -> getString(Res.string.downloads_enqueue_started)
-            Replaced -> getString(Res.string.downloads_enqueue_replaced)
-            MissingUrl -> getString(Res.string.downloads_enqueue_missing_url)
-            UnsupportedFormat -> getString(Res.string.downloads_enqueue_unsupported_format)
+    fun toastMessage(): String {
+        val resource = when (this) {
+            Started -> Res.string.downloads_enqueue_started
+            Replaced -> Res.string.downloads_enqueue_replaced
+            MissingUrl -> Res.string.downloads_enqueue_missing_url
+            MissingLocation -> Res.string.downloads_enqueue_missing_location
+            UnsupportedFormat -> Res.string.downloads_enqueue_unsupported_format
         }
+        return runBlocking { getString(resource) }
     }
 }
 

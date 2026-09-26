@@ -1,7 +1,13 @@
 package com.nuvio.app.features.downloads
 
 import com.nuvio.app.features.player.addonSubtitleRequests
+import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.streams.StreamItem
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +25,8 @@ object DownloadsRepository {
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
 
     private val activeHandles = mutableMapOf<String, DownloadsTaskHandle>()
+    private val migrationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    private var migrationJob: Job? = null
     private var hasLoaded = false
     private var nextDownloadOrdinal = 0L
 
@@ -31,9 +39,19 @@ object DownloadsRepository {
         loadFromDisk()
     }
 
+    fun onDownloadLocationChanged() {
+        if (hasLoaded) {
+            scheduleLegacyMigrationIfNeeded()
+        } else {
+            ensureLoaded()
+        }
+    }
+
     fun clearLocalState() {
         activeHandles.values.forEach(DownloadsTaskHandle::cancel)
         activeHandles.clear()
+        migrationJob?.cancel()
+        migrationJob = null
         hasLoaded = false
         _uiState.value = DownloadsUiState()
         notifyLiveStatusPlatform()
@@ -80,12 +98,9 @@ object DownloadsRepository {
     fun playableLocalFileUri(item: DownloadItem): String? {
         ensureLoaded()
         if (item.status != DownloadStatus.Completed) return null
-        val resolvedUri = DownloadsPlatformDownloader.resolveLocalFileUri(
-            localFileUri = item.localFileUri,
-            destinationFileName = item.fileName,
-        ) ?: return null
+        val resolvedUri = resolveCompletedStoredFileUri(item) ?: return null
 
-        if (resolvedUri != item.localFileUri) {
+        if (resolvedUri != item.localFileUri && !item.legacyMigrationPending) {
             mutateItem(item.id) { current ->
                 if (current.fileName == item.fileName) {
                     current.copy(
@@ -127,6 +142,10 @@ object DownloadsRepository {
             return DownloadEnqueueResult.UnsupportedFormat
         }
 
+        if (!DownloadLocationManager.ensureLocationSet()) {
+            return DownloadEnqueueResult.MissingLocation
+        }
+
         val now = DownloadsClock.nowEpochMs()
         val logicalKey = buildLogicalKey(
             parentMetaId = parentMetaId,
@@ -140,7 +159,7 @@ object DownloadsRepository {
         if (existing != null) {
             replacedExisting = true
             activeHandles.remove(existing.id)?.cancel()
-            DownloadsPlatformDownloader.removeFile(playableLocalFileUri(existing) ?: existing.localFileUri)
+            DownloadLocationManager.removeFile(playableLocalFileUri(existing) ?: existing.localFileUri)
             DownloadsPlatformDownloader.removePartialFile(existing.fileName)
             currentItems.removeAll { it.id == existing.id }
         }
@@ -260,7 +279,7 @@ object DownloadsRepository {
         val item = _uiState.value.items.firstOrNull { it.id == downloadId } ?: return
 
         activeHandles.remove(downloadId)?.cancel()
-        DownloadsPlatformDownloader.removeFile(playableLocalFileUri(item) ?: item.localFileUri)
+        DownloadLocationManager.removeFile(playableLocalFileUri(item) ?: item.localFileUri)
         DownloadsPlatformDownloader.removePartialFile(item.fileName)
 
         publish(_uiState.value.items.filterNot { it.id == downloadId })
@@ -268,11 +287,14 @@ object DownloadsRepository {
     }
 
     private fun loadFromDisk() {
+        migrationJob?.cancel()
+        migrationJob = null
         hasLoaded = true
         val payload = DownloadsStorage.loadPayload().orEmpty().trim()
         if (payload.isEmpty()) {
             _uiState.value = DownloadsUiState()
             notifyLiveStatusPlatform()
+            scheduleLegacyMigrationIfNeeded()
             return
         }
 
@@ -295,6 +317,54 @@ object DownloadsRepository {
         }
         normalized.filter { it.status == DownloadStatus.Downloading && it.id !in activeHandles }
             .forEach(::startDownload)
+        scheduleLegacyMigrationIfNeeded()
+    }
+
+    private fun scheduleLegacyMigrationIfNeeded() {
+        if (migrationJob?.isActive == true) return
+        if (DownloadsStorage.isLegacyMigrationComplete()) return
+        if (!DownloadLocationManager.ensureLocationSet()) return
+
+        val legacyItems = LegacyDownloadMigration.itemsToMigrate(_uiState.value.items)
+        if (legacyItems.isEmpty()) {
+            DownloadsStorage.markLegacyMigrationComplete()
+            return
+        }
+
+        val profileId = ProfileRepository.activeProfileId
+        migrationJob = migrationScope.launch {
+            val migratedAll = LegacyDownloadMigration.migrate(
+                items = legacyItems,
+                onMigrationStarted = { item ->
+                    mutateItem(item.id) { current ->
+                        if (current.status == DownloadStatus.Completed && !current.legacyMigrationPending) {
+                            current.copy(
+                                legacyMigrationPending = true,
+                                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                            )
+                        } else {
+                            current
+                        }
+                    }
+                },
+                onMigrated = { item, migratedUri ->
+                    mutateItem(item.id) { current ->
+                        if (current.status == DownloadStatus.Completed && current.legacyMigrationPending) {
+                            current.copy(
+                                localFileUri = migratedUri,
+                                legacyMigrationPending = false,
+                                updatedAtEpochMs = DownloadsClock.nowEpochMs(),
+                            )
+                        } else {
+                            current
+                        }
+                    }
+                },
+            )
+            if (migratedAll && ProfileRepository.activeProfileId == profileId) {
+                DownloadsStorage.markLegacyMigrationComplete()
+            }
+        }
     }
 
     private fun startDownload(item: DownloadItem) {
@@ -412,12 +482,17 @@ object DownloadsRepository {
         }
     }
 
-    private fun normalizeCompletedLocalFileUri(item: DownloadItem): DownloadItem {
-        if (item.status != DownloadStatus.Completed) return item
-        val resolvedUri = DownloadsPlatformDownloader.resolveLocalFileUri(
+    private fun resolveCompletedStoredFileUri(item: DownloadItem): String? {
+        if (item.status != DownloadStatus.Completed) return null
+        return DownloadLocationManager.resolveLocalFileUri(
             localFileUri = item.localFileUri,
             destinationFileName = item.fileName,
-        ) ?: return item
+        )
+    }
+
+    private fun normalizeCompletedLocalFileUri(item: DownloadItem): DownloadItem {
+        if (item.legacyMigrationPending) return item
+        val resolvedUri = resolveCompletedStoredFileUri(item) ?: return item
         return if (resolvedUri != item.localFileUri) {
             item.copy(localFileUri = resolvedUri)
         } else {
@@ -426,11 +501,7 @@ object DownloadsRepository {
     }
 
     private fun DownloadItem.hasPlayableLocalFile(): Boolean =
-        status == DownloadStatus.Completed &&
-            DownloadsPlatformDownloader.resolveLocalFileUri(
-                localFileUri = localFileUri,
-                destinationFileName = fileName,
-            ) != null
+        resolveCompletedStoredFileUri(this) != null
 }
 
 @Serializable
