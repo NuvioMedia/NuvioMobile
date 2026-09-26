@@ -390,6 +390,7 @@ private fun ExoPlayerSurface(
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
                 DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
             )
+            .setBackBuffer(60_000, true)
             .build()
 
         val player = if (useLibass) {
