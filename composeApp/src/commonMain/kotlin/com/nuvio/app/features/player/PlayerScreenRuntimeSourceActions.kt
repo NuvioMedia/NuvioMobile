@@ -12,15 +12,13 @@ import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.p2p.P2pStreamingEngine
 import com.nuvio.app.features.servers.ServerPlayback
+import com.nuvio.app.features.servers.serverPlaybackMessage
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
-import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.servers_playback_failed
-import org.jetbrains.compose.resources.getString
 
 internal fun PlayerScreenRuntime.resolveDebridForPlayer(
     stream: StreamItem,
@@ -55,14 +53,10 @@ internal fun PlayerScreenRuntime.prepareServerForPlayer(
 ): Boolean {
     if (!stream.needsServerPreparation) return false
     scope.launch {
-        val prepared = runCatching { ServerPlayback.prepare(stream) }
+        runCatching { ServerPlayback.prepare(stream) }
             .onFailure { if (it is CancellationException) throw it }
-            .getOrNull()
-        if (prepared == null) {
-            NuvioToastController.show(getString(Res.string.servers_playback_failed))
-        } else {
-            onPrepared(prepared)
-        }
+            .onSuccess(onPrepared)
+            .onFailure { NuvioToastController.show(it.serverPlaybackMessage()) }
     }
     return true
 }

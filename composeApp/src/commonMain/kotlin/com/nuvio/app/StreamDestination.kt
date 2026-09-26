@@ -32,6 +32,7 @@ import com.nuvio.app.features.player.resolveContentLanguage
 import com.nuvio.app.features.player.sanitizePlaybackHeaders
 import com.nuvio.app.features.player.sanitizePlaybackResponseHeaders
 import com.nuvio.app.features.servers.ServerPlayback
+import com.nuvio.app.features.servers.serverPlaybackMessage
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamLaunchStore
@@ -389,16 +390,14 @@ internal fun StreamDestination(
         val selectedStream = streamsUiState.autoPlayStream ?: return@LaunchedEffect
         val stream = if (selectedStream.needsServerPreparation) {
             StreamsRepository.setOverlayVisible(true, getString(Res.string.player_loading_preparing))
-            val prepared = runCatching { ServerPlayback.prepare(selectedStream) }
+            runCatching { ServerPlayback.prepare(selectedStream) }
                 .onFailure { if (it is CancellationException) throw it }
-                .getOrNull()
-            if (prepared == null) {
-                if (!StreamsRepository.skipAutoPlayStream(selectedStream)) {
-                    NuvioToastController.show(getString(Res.string.servers_playback_failed))
+                .getOrElse { error ->
+                    if (!StreamsRepository.skipAutoPlayStream(selectedStream)) {
+                        NuvioToastController.show(error.serverPlaybackMessage())
+                    }
+                    return@LaunchedEffect
                 }
-                return@LaunchedEffect
-            }
-            prepared
         } else if (DirectDebridPlaybackResolver.shouldResolveToPlayableStream(selectedStream)) {
             StreamsRepository.setOverlayVisible(true, getString(Res.string.debrid_resolving_stream))
             when (
@@ -549,12 +548,12 @@ internal fun StreamDestination(
                 preparingServerStream = true
                 val prepared = runCatching { ServerPlayback.prepare(stream) }
                     .onFailure { if (it is CancellationException) throw it }
-                    .getOrNull()
+                    .getOrElse { error ->
+                        preparingServerStream = false
+                        NuvioToastController.show(error.serverPlaybackMessage())
+                        return@launch
+                    }
                 preparingServerStream = false
-                if (prepared == null) {
-                    NuvioToastController.show(getString(Res.string.servers_playback_failed))
-                    return@launch
-                }
                 openSelectedStream(
                     stream = prepared,
                     resolvedResumePositionMs = resolvedResumePositionMs,

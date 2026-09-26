@@ -29,12 +29,15 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.NuvioStatusModal
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.servers.ServerCapability
 import com.nuvio.app.features.servers.ServerConnection
 import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerRepository
+import com.nuvio.app.features.servers.message
+import com.nuvio.app.features.servers.serverFailure
 import com.nuvio.app.features.servers.supports
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -56,6 +59,7 @@ import nuvio.composeapp.generated.resources.servers_signed_in_as
 import nuvio.composeapp.generated.resources.servers_status_auth
 import nuvio.composeapp.generated.resources.servers_status_disabled
 import nuvio.composeapp.generated.resources.servers_status_unreachable
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 
 internal object MediaServerSelection {
@@ -207,6 +211,7 @@ private fun MediaServerSettingsBody(
                     scope.launch {
                         runCatching { ServerRepository.refreshLibraries(connection.id) }
                             .onFailure { if (it is CancellationException) throw it }
+                            .onFailure { NuvioToastController.show(getString(it.serverFailure().message())) }
                         refreshing = false
                     }
                 },
