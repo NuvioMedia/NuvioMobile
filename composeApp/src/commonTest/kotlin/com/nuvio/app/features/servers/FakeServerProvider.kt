@@ -7,6 +7,7 @@ import com.nuvio.app.features.tracking.TrackingExternalIds
 
 internal class FakeServerProvider(
     private val movieCount: Int = 120,
+    private val transcodes: Boolean = false,
 ) : ServerProvider {
     override val id: String = "fake"
     override val displayName: String = "Fake"
@@ -18,6 +19,7 @@ internal class FakeServerProvider(
     val indexedIds = mutableMapOf<String, TrackingExternalIds>()
     val episodes = mutableMapOf<Pair<Int, Int>, ServerEpisode>()
     val reported = mutableListOf<ServerPlaybackEventType>()
+    val playbackRequests = mutableListOf<ServerPlaybackRequest>()
 
     override suspend fun libraries(session: ServerSession): List<ServerLibrary> = listOf(movies, shows)
 
@@ -73,6 +75,23 @@ internal class FakeServerProvider(
     )
 
     override suspend fun preparePlayback(session: ServerSession, request: ServerPlaybackRequest): ServerPlaybackSession {
+        playbackRequests += request
+        if (transcodes) {
+            val audio = request.audioStreamIndex ?: 1
+            return ServerPlaybackSession(
+                target = request.target,
+                mediaSourceId = request.target.mediaSourceId ?: "default",
+                url = "https://fake.example/${request.target.item.itemId}/master.m3u8?AudioStreamIndex=$audio",
+                headers = emptyMap(),
+                subtitles = emptyList(),
+                playSessionId = "ps$audio",
+                playMethod = ServerPlayMethod.TRANSCODE,
+                audioTracks = listOf(
+                    ServerAudioTrack(index = 1, label = "English", language = "eng", selected = audio == 1),
+                    ServerAudioTrack(index = 2, label = "Japanese", language = "jpn", selected = audio == 2),
+                ),
+            )
+        }
         if (!request.capabilities.allowDirectPlay) throw ServerException(ServerFailure.UNSUPPORTED)
         return ServerPlaybackSession(
             target = request.target,

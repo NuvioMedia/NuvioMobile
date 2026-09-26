@@ -43,6 +43,7 @@
     <string name="servers_failure_not_found">This item is no longer available on the server.</string>
     <string name="search_empty_no_sources_message">Add an addon or connect a media server to search.</string>
     <string name="servers_playback_failed">Could not start playback from the server.</string>
+    <string name="servers_audio_switch_failed">Couldn't switch the audio track.</string>
     <string name="servers_watched_failed">Could not update watched state on the server.</string>
     <string name="servers_resume_row">Continue watching</string>
     <string name="servers_failure_unsupported">The server doesn't support this item.</string>

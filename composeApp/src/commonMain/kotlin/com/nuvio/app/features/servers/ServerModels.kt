@@ -140,6 +140,7 @@ data class ServerCandidate(
 data class ServerPlaybackRequest(
     val target: ServerPlaybackTarget,
     val capabilities: ServerPlayerCapabilities,
+    val audioStreamIndex: Int? = null,
 )
 
 data class ServerPlayerCapabilities(
@@ -161,9 +162,17 @@ class ServerPlaybackSession(
     val subtitles: List<StreamSubtitle>,
     val playSessionId: String?,
     val playMethod: ServerPlayMethod,
+    val audioTracks: List<ServerAudioTrack> = emptyList(),
 ) {
     override fun toString(): String = "ServerPlaybackSession(item=${target.item.itemId}, method=$playMethod)"
 }
+
+data class ServerAudioTrack(
+    val index: Int,
+    val label: String,
+    val language: String?,
+    val selected: Boolean,
+)
 
 enum class ServerPlaybackEventType {
     START,

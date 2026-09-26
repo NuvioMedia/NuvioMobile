@@ -1,5 +1,6 @@
 package com.nuvio.app.features.servers.mediabrowser
 
+import com.nuvio.app.features.servers.ServerAudioTrack
 import com.nuvio.app.features.servers.ServerCandidate
 import com.nuvio.app.features.servers.ServerCapability
 import com.nuvio.app.features.servers.ServerEpisode
@@ -287,6 +288,7 @@ internal abstract class MediaBrowserProvider(
         val body = PlaybackInfoRequest(
             userId = session.userId,
             mediaSourceId = request.target.mediaSourceId,
+            audioStreamIndex = request.audioStreamIndex,
             maxStreamingBitrate = MAX_STREAMING_BITRATE,
             enableDirectPlay = request.capabilities.allowDirectPlay,
             deviceProfile = deviceProfile(request.capabilities),
@@ -299,6 +301,7 @@ internal abstract class MediaBrowserProvider(
             query = mapOf(
                 "userId" to session.userId,
                 "mediaSourceId" to body.mediaSourceId,
+                "audioStreamIndex" to body.audioStreamIndex?.toString(),
                 "maxStreamingBitrate" to body.maxStreamingBitrate.toString(),
                 "enableDirectPlay" to body.enableDirectPlay.toString(),
             ),
@@ -360,7 +363,23 @@ internal abstract class MediaBrowserProvider(
             subtitles = subtitles,
             playSessionId = info.playSessionId,
             playMethod = method,
+            audioTracks = audioTracks(source, url, request.audioStreamIndex),
         )
+    }
+
+    private fun audioTracks(source: MediaSource, url: String, requestedIndex: Int?): List<ServerAudioTrack> {
+        val selected = queryValue(url, "AudioStreamIndex")?.toIntOrNull() ?: requestedIndex ?: source.defaultAudioStreamIndex
+        return source.mediaStreams
+            .filter { it.type.equals("Audio", ignoreCase = true) }
+            .mapNotNull { stream ->
+                val index = stream.index ?: return@mapNotNull null
+                ServerAudioTrack(
+                    index = index,
+                    label = stream.displayTitle ?: stream.language ?: index.toString(),
+                    language = stream.language,
+                    selected = index == selected,
+                )
+            }
     }
 
     override suspend fun report(
@@ -476,11 +495,15 @@ internal abstract class MediaBrowserProvider(
     )
 
     private fun withApiKey(url: String, token: String): String {
-        val query = url.substringAfter('?', "")
-        val hasKey = query.split('&').any { it.substringBefore('=').equals(API_KEY, true) || it.substringBefore('=').equals("ApiKey", true) }
-        if (hasKey) return url
+        if (queryValue(url, API_KEY) != null || queryValue(url, "ApiKey") != null) return url
         return url + (if ('?' in url) "&" else "?") + "$API_KEY=$token"
     }
+
+    private fun queryValue(url: String, name: String): String? =
+        url.substringAfter('?', "")
+            .split('&')
+            .firstOrNull { it.substringBefore('=').equals(name, ignoreCase = true) }
+            ?.substringAfter('=', "")
 
     private companion object {
         const val API_KEY = "api_key"

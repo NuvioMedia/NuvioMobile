@@ -148,6 +148,7 @@ class MediaBrowserRequestTest {
             ServerPlaybackRequest(
                 target = ServerPlaybackTarget(ServerItemRef("cabc", "i1"), mediaSourceId = "ms1"),
                 capabilities = ServerPlayerCapabilities(directPlayAll = true),
+                audioStreamIndex = 2,
             ),
         )
         emby.report(session, playback, ServerPlaybackEvent(ServerPlaybackEventType.PROGRESS, positionMs = 1_500, isPaused = false))
@@ -156,6 +157,8 @@ class MediaBrowserRequestTest {
         assertEquals("/emby/Items/i1/PlaybackInfo", info.url.encodedPath)
         assertEquals("u1", info.url.parameters["userId"])
         assertEquals("ms1", info.url.parameters["mediaSourceId"])
+        assertEquals("2", info.url.parameters["audioStreamIndex"])
+        assertTrue(info.text.contains("\"AudioStreamIndex\":2"))
         assertTrue(info.text.contains("\"DeviceProfile\""))
         assertTrue(playback.url.startsWith("https://media.example.com/emby/Videos/i1/stream?static=true"))
         val report = http.requests[1]

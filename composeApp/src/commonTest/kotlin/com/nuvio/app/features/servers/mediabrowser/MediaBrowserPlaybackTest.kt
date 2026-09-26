@@ -139,4 +139,31 @@ class MediaBrowserPlaybackTest {
         )
         assertEquals("https://media.example.com/emby/videos/item1/master.m3u8?MediaSourceId=ms1&api_key=secret", prefixed.url)
     }
+
+    @Test
+    fun listsSourceAudioAndMarksTheOneInTheStream() {
+        val streams = """[{"Type": "Video", "Index": 0},
+            {"Type": "Audio", "Index": 1, "Language": "eng", "DisplayTitle": "English - AC3 - 5.1 - Default"},
+            {"Type": "Audio", "Index": 2, "Language": "jpn", "DisplayTitle": "Japanese - AAC - Stereo"}]"""
+        val transcode = request.copy(capabilities = ServerPlayerCapabilities(directPlayAll = false, allowDirectPlay = false))
+        val chosen = jellyfin.playbackSession(
+            session,
+            transcode,
+            info("""{"Id": "ms1", "DefaultAudioStreamIndex": 1, "MediaStreams": $streams,
+                     "TranscodingUrl": "/videos/item1/master.m3u8?MediaSourceId=ms1&AudioStreamIndex=2"}"""),
+            deviceId = "d1",
+        )
+        assertEquals(
+            listOf(Triple(1, "eng", false), Triple(2, "jpn", true)),
+            chosen.audioTracks.map { Triple(it.index, it.language, it.selected) },
+        )
+        assertEquals("Japanese - AAC - Stereo", chosen.audioTracks.last().label)
+        val default = jellyfin.playbackSession(
+            session,
+            transcode,
+            info("""{"Id": "ms1", "DefaultAudioStreamIndex": 1, "MediaStreams": $streams, "TranscodingUrl": "/videos/item1/master.m3u8"}"""),
+            deviceId = "d1",
+        )
+        assertEquals(1, default.audioTracks.single { it.selected }.index)
+    }
 }

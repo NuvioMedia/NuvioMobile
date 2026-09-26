@@ -129,4 +129,37 @@ class ServerPlaybackTest {
         assertNull(ServerPlayback.fallback(url))
         ServerPlayback.stop(url)
     }
+
+    @Test
+    fun switchesTranscodeAudioByRestartingTheSession() = runTest {
+        val provider = FakeServerProvider(transcodes = true)
+        val connection = installFakeServer(provider)
+        val prepared = ServerPlayback.prepare(ServerStreams.candidates(ServerItemRef(connection.id, "42")).single())
+        val url = assertNotNull(prepared.playableDirectUrl)
+        assertEquals(listOf(1 to true, 2 to false), ServerPlayback.audioTracks(url).map { it.index to it.selected })
+
+        val switched = assertNotNull(ServerPlayback.switchAudio(url, 2))
+
+        val request = provider.playbackRequests.last()
+        assertEquals(2, request.audioStreamIndex)
+        assertFalse(request.capabilities.allowDirectPlay)
+        assertFalse(ServerPlayback.isServerSource(url))
+        assertTrue(ServerPlayback.isServerSource(switched.url))
+        assertEquals(listOf(1 to false, 2 to true), ServerPlayback.audioTracks(switched.url).map { it.index to it.selected })
+        withContext(Dispatchers.Default) {
+            withTimeout(5_000L) { while (ServerPlaybackEventType.STOP !in provider.reported) delay(10) }
+        }
+        ServerPlayback.stop(switched.url)
+    }
+
+    @Test
+    fun directPlayLeavesAudioToThePlayer() = runTest {
+        val connection = installFakeServer()
+        val url = assertNotNull(ServerPlayback.prepare(ServerStreams.candidates(ServerItemRef(connection.id, "7")).single()).playableDirectUrl)
+
+        assertTrue(ServerPlayback.audioTracks(url).isEmpty())
+        assertNull(ServerPlayback.switchAudio(url, 2))
+        assertTrue(ServerPlayback.isServerSource(url))
+        ServerPlayback.stop(url)
+    }
 }

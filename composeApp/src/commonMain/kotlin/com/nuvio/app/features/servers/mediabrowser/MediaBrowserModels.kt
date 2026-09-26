@@ -106,6 +106,7 @@ internal data class MediaSource(
     @SerialName("SupportsDirectPlay") val supportsDirectPlay: Boolean = false,
     @SerialName("SupportsDirectStream") val supportsDirectStream: Boolean = false,
     @SerialName("TranscodingUrl") val transcodingUrl: String? = null,
+    @SerialName("DefaultAudioStreamIndex") val defaultAudioStreamIndex: Int? = null,
     @SerialName("MediaStreams") val mediaStreams: List<MediaStream> = emptyList(),
 )
 
@@ -127,6 +128,7 @@ internal data class MediaStream(
 internal data class PlaybackInfoRequest(
     @SerialName("UserId") val userId: String,
     @SerialName("MediaSourceId") val mediaSourceId: String?,
+    @SerialName("AudioStreamIndex") val audioStreamIndex: Int? = null,
     @SerialName("MaxStreamingBitrate") val maxStreamingBitrate: Long,
     @SerialName("EnableDirectPlay") val enableDirectPlay: Boolean = true,
     @SerialName("EnableDirectStream") val enableDirectStream: Boolean = true,

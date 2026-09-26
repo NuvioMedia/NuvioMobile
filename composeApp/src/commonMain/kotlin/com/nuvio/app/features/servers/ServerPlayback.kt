@@ -47,14 +47,19 @@ internal object ServerPlayback {
     suspend fun fallback(url: String): ServerPlaybackSession? {
         val failed = synchronized(lock) { active[url] } ?: return null
         if (failed.playback.playMethod != ServerPlayMethod.DIRECT_PLAY) return null
-        val request = ServerPlaybackRequest(failed.playback.target, capabilities().copy(allowDirectPlay = false))
-        val playback = runCatching { failed.provider.preparePlayback(failed.session, request) }
-            .onFailure { if (it is CancellationException) throw it }
-            .getOrNull()
-            ?: return null
-        synchronized(lock) { active[playback.url] = ActivePlayback(failed.provider, failed.session, playback) }
-        stop(url)
-        return playback
+        return restart(url, failed, audioStreamIndex = null)
+    }
+
+    suspend fun switchAudio(url: String, audioStreamIndex: Int): ServerPlaybackSession? {
+        val current = synchronized(lock) { active[url] } ?: return null
+        if (current.playback.playMethod == ServerPlayMethod.DIRECT_PLAY) return null
+        return restart(url, current, audioStreamIndex)
+    }
+
+    fun audioTracks(url: String?): List<ServerAudioTrack> {
+        val playback = url?.let { synchronized(lock) { active[it] } }?.playback ?: return emptyList()
+        if (playback.playMethod == ServerPlayMethod.DIRECT_PLAY || playback.audioTracks.size < 2) return emptyList()
+        return playback.audioTracks
     }
 
     fun isServerSource(url: String?): Boolean = url != null && synchronized(lock) { url in active }
@@ -78,6 +83,21 @@ internal object ServerPlayback {
     fun stop(url: String?) {
         val playback = url?.let { synchronized(lock) { active.remove(it) } } ?: return
         playback.stop()
+    }
+
+    private suspend fun restart(url: String, current: ActivePlayback, audioStreamIndex: Int?): ServerPlaybackSession? {
+        val request = ServerPlaybackRequest(
+            target = current.playback.target,
+            capabilities = capabilities().copy(allowDirectPlay = false),
+            audioStreamIndex = audioStreamIndex,
+        )
+        val playback = runCatching { current.provider.preparePlayback(current.session, request) }
+            .onFailure { if (it is CancellationException) throw it }
+            .getOrNull()
+            ?: return null
+        stop(url)
+        synchronized(lock) { active[playback.url] = ActivePlayback(current.provider, current.session, playback) }
+        return playback
     }
 
     private fun capabilities() = ServerPlayerCapabilities(
