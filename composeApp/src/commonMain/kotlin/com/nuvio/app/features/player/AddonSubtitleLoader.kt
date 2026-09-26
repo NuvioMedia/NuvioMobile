@@ -3,6 +3,7 @@ package com.nuvio.app.features.player
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.AddonResource
 import com.nuvio.app.features.addons.buildAddonResourceUrl
+import com.nuvio.app.features.addons.canonicalExternalAddonType
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.fetchAddonResponseText
 import kotlinx.coroutines.CancellationException
@@ -89,7 +90,7 @@ private suspend fun parseAddonSubtitles(response: String, request: SubtitleAddon
 }
 
 private fun canonicalSubtitleType(type: String): String =
-    type.trim().lowercase()
+    canonicalExternalAddonType(type)
 
 private fun AddonResource.supportsSubtitleType(type: String, videoId: String): Boolean {
     val canonical = canonicalSubtitleType(type)

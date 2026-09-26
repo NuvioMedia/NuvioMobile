@@ -2,6 +2,8 @@ package com.nuvio.app.features.plugins
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.network.SupabaseProvider
+import com.nuvio.app.features.addons.canonicalExternalAddonType
+import com.nuvio.app.features.addons.externalAddonType
 import com.nuvio.app.features.addons.httpGetText
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.tmdb.TmdbService
@@ -337,7 +339,7 @@ actual object PluginRepository {
 
         val mediaType = listOf("movie", "series", "tv", "channel")
             .firstOrNull(scraper::supportsType)
-            ?: scraper.supportedTypes.firstOrNull()?.let(::normalizePluginType)
+            ?: scraper.supportedTypes.firstOrNull()?.let(::canonicalExternalAddonType)
             ?: "movie"
         val season = if (mediaType == "series") 1 else null
         val episode = if (mediaType == "series") 1 else null
@@ -383,7 +385,7 @@ actual object PluginRepository {
             PluginRuntime.executePlugin(
                 code = scraper.code,
                 tmdbId = resolvedTmdbId,
-                mediaType = normalizePluginType(mediaType),
+                mediaType = externalAddonType(mediaType, season, episode),
                 season = season,
                 episode = episode,
                 scraperId = scraper.id,
