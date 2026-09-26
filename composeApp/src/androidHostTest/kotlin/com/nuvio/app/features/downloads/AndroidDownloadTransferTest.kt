@@ -1,6 +1,5 @@
 package com.nuvio.app.features.downloads
 
-import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
@@ -13,8 +12,9 @@ import kotlinx.coroutines.withTimeout
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
-import org.junit.Rule
-import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -22,21 +22,20 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [34])
 class AndroidDownloadTransferTest {
-    @get:Rule val temporary = TemporaryFolder()
-
     @Test
     fun resumesPartialFileWithRangeAndValidator(): Unit = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(206).setHeader("Content-Range", "bytes 5-10/11")
                 .setHeader("ETag", "\"version-1\"").setBody(" world"))
-            val directory = temporary.newFolder()
-            File(directory, "video.mkv.part").writeText("hello")
+            val provider = setupProvider(partial = "hello")
 
-            val output = transferAndroidDownload(downloadItem(server.url("/video").toString()), directory,
+            transferAndroidDownload(downloadItem(server.url("/video").toString()), target("video.mkv"),
                 "\"version-1\"", onHeaders = { _, _ -> }, onProgress = { _, _ -> })
 
-            assertEquals("hello world", output.readText())
+            assertEquals("hello world", provider.readDocument("primary:Movies/video.mkv.part"))
             val request = server.takeRequest()
             assertEquals("bytes=5-", request.getHeader("Range"))
             assertEquals("\"version-1\"", request.getHeader("If-Range"))
@@ -49,11 +48,12 @@ class AndroidDownloadTransferTest {
     fun ignoredRangeRestartsInsteadOfAppending(): Unit = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setBody("new file"))
-            val directory = temporary.newFolder()
-            File(directory, "video.mkv.part").writeText("old prefix")
-            val output = transferAndroidDownload(downloadItem(server.url("/video").toString()), directory,
+            val provider = setupProvider(partial = "old prefix")
+
+            transferAndroidDownload(downloadItem(server.url("/video").toString()), target("video.mkv"),
                 null, onHeaders = { _, _ -> }, onProgress = { _, _ -> })
-            assertEquals("new file", output.readText())
+
+            assertEquals("new file", provider.readDocument("primary:Movies/video.mkv.part"))
         }
     }
 
@@ -62,11 +62,12 @@ class AndroidDownloadTransferTest {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(416))
             server.enqueue(MockResponse().setBody("replacement"))
-            val directory = temporary.newFolder()
-            File(directory, "video.mkv.part").writeText("old prefix")
-            val output = transferAndroidDownload(downloadItem(server.url("/video").toString()), directory,
-                null, onHeaders = { _, _ -> }, onProgress = { _, _ -> })
-            assertEquals("replacement", output.readText())
+            val provider = setupProvider(partial = "old prefix")
+
+            transferAndroidDownload(downloadItem(server.url("/video").toString()), target("video.mkv"),
+                "\"version-1\"", onHeaders = { _, _ -> }, onProgress = { _, _ -> })
+
+            assertEquals("replacement", provider.readDocument("primary:Movies/video.mkv.part"))
             assertEquals("bytes=10-", server.takeRequest().getHeader("Range"))
             assertNull(server.takeRequest().getHeader("Range"))
         }
@@ -76,13 +77,14 @@ class AndroidDownloadTransferTest {
     fun mismatchedRangeDoesNotCorruptThePartialFile(): Unit = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setResponseCode(206).setHeader("Content-Range", "bytes 2-4/5").setBody("bad"))
-            val directory = temporary.newFolder()
-            val partial = File(directory, "video.mkv.part").apply { writeText("hello") }
+            val provider = setupProvider(partial = "hello")
+
             assertFailsWith<IOException> {
-                transferAndroidDownload(downloadItem(server.url("/video").toString()), directory,
-                    null, onHeaders = { _, _ -> }, onProgress = { _, _ -> })
+                transferAndroidDownload(downloadItem(server.url("/video").toString()), target("video.mkv"),
+                    "\"version-1\"", onHeaders = { _, _ -> }, onProgress = { _, _ -> })
             }
-            assertEquals("hello", partial.readText())
+
+            assertEquals("hello", provider.readDocument("primary:Movies/video.mkv.part"))
         }
     }
 
@@ -90,13 +92,15 @@ class AndroidDownloadTransferTest {
     fun truncatedResponseNeverBecomesCompletedFile(): Unit = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setBody("abcdefghij").setSocketPolicy(SocketPolicy.DISCONNECT_DURING_RESPONSE_BODY))
-            val directory = temporary.newFolder()
+            val provider = setupProvider()
+
             assertFailsWith<IOException> {
-                transferAndroidDownload(downloadItem(server.url("/video").toString()), directory,
+                transferAndroidDownload(downloadItem(server.url("/video").toString()), target("video.mkv"),
                     null, onHeaders = { _, _ -> }, onProgress = { _, _ -> })
             }
-            assertFalse(File(directory, "video.mkv").exists())
-            assertTrue(File(directory, "video.mkv.part").length() < 10)
+
+            assertFalse(provider.documentExists("primary:Movies/video.mkv"))
+            assertTrue(provider.documentSize("primary:Movies/video.mkv.part") < 10)
         }
     }
 
@@ -104,18 +108,34 @@ class AndroidDownloadTransferTest {
     fun cancellationClosesBlockedSocketPromptlyAndKeepsPartialBytes(): Unit = runBlocking {
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setBody("abcdefghij").throttleBody(1, 10, TimeUnit.SECONDS))
-            val directory = temporary.newFolder()
+            val provider = setupProvider()
             val task = async(Dispatchers.Default) {
-                transferAndroidDownload(downloadItem(server.url("/video").toString()), directory,
+                transferAndroidDownload(downloadItem(server.url("/video").toString()), target("video.mkv"),
                     null, onHeaders = { _, _ -> }, onProgress = { _, _ -> })
             }
             withContext(Dispatchers.IO) { server.takeRequest(5, TimeUnit.SECONDS) }
             withTimeout(5_000) {
-                while (File(directory, "video.mkv.part").length() == 0L) delay(10)
+                while (provider.documentSize("primary:Movies/video.mkv.part") == 0L) delay(10)
             }
             withTimeout(2_000) { task.cancelAndJoin() }
-            assertEquals(1L, File(directory, "video.mkv.part").length())
-            assertFalse(File(directory, "video.mkv").exists())
+            assertEquals(1L, provider.documentSize("primary:Movies/video.mkv.part"))
+            assertFalse(provider.documentExists("primary:Movies/video.mkv"))
+        }
+    }
+
+    @Test
+    fun appendRejectedByProviderFailsAsNonRetryable(): Unit = runBlocking {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setResponseCode(206).setHeader("Content-Range", "bytes 5-10/11").setBody(" world"))
+            val provider = setupProvider(partial = "hello", appendSupported = false)
+
+            assertFailsWith<AppendNotSupportedException> {
+                transferAndroidDownload(downloadItem(server.url("/video").toString()), target("video.mkv"),
+                    "\"version-1\"", onHeaders = { _, _ -> }, onProgress = { _, _ -> })
+            }
+
+            assertEquals("hello", provider.readDocument("primary:Movies/video.mkv.part"))
+            assertFalse(shouldRetryAndroidDownload(AppendNotSupportedException(), 0))
         }
     }
 
@@ -126,7 +146,18 @@ class AndroidDownloadTransferTest {
         assertTrue(shouldRetryAndroidDownload(DownloadHttpException(429), 0))
         assertFalse(shouldRetryAndroidDownload(DownloadHttpException(403), 0))
         assertFalse(shouldRetryAndroidDownload(IOException("connection lost"), 4))
+        assertFalse(shouldRetryAndroidDownload(AppendNotSupportedException(), 0))
+        assertFalse(shouldRetryAndroidDownload(MissingLocationException(), 0))
     }
+
+    private fun setupProvider(partial: String? = null, appendSupported: Boolean = true): FakeDocumentsProvider {
+        val provider = setupSafDownloads(appendSupported = appendSupported)
+        partial?.let { provider.createDocument("primary:Movies/video.mkv.part", it) }
+        return provider
+    }
+
+    private fun target(fileName: String): SafDownloadTarget =
+        checkNotNull(DownloadLocationManager.createDownloadTarget(fileName))
 }
 
 internal fun downloadItem(url: String = "https://example.com/video.mkv", id: String = "test-download") = DownloadItem(

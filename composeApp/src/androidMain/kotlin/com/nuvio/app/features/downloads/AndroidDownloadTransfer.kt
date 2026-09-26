@@ -25,19 +25,17 @@ internal class DownloadHttpException(val statusCode: Int) : IOException("Downloa
 
 internal suspend fun transferAndroidDownload(
     item: DownloadItem,
-    directory: File,
+    target: SafDownloadTarget,
     validator: String?,
     client: OkHttpClient = downloadHttpClient,
     onHeaders: (totalBytes: Long?, validator: String?) -> Unit,
     onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-): File = coroutineScope {
+) = coroutineScope {
     val activeCall = AtomicReference<Call?>()
     val transfer = async(Dispatchers.IO) {
         try {
             require(File(item.fileName).name == item.fileName && item.fileName.isNotBlank())
-            check(directory.isDirectory || directory.mkdirs()) { "Cannot create downloads directory" }
-            val partial = File(directory, "${item.fileName}.part")
-            var offset = partial.takeIf(File::isFile)?.length() ?: 0L
+            var offset = if (validator != null) target.size() else 0L
             var restarted = false
 
             while (true) {
@@ -78,7 +76,7 @@ internal suspend fun transferAndroidDownload(
                     var downloaded = startingBytes
                     onProgress(downloaded, totalBytes)
                     body.byteStream().use { input ->
-                        FileOutputStream(partial, resumed && offset > 0L).use { output ->
+                        target.openStream(append = resumed && offset > 0L).use { output ->
                             val buffer = ByteArray(64 * 1024)
                             while (true) {
                                 ensureActive()
@@ -88,18 +86,19 @@ internal suspend fun transferAndroidDownload(
                                 downloaded += size
                                 onProgress(downloaded, totalBytes)
                             }
-                            output.fd.sync()
+                            output.flush()
+                            (output as? FileOutputStream)?.fd?.sync()
                         }
                     }
                     ensureActive()
                     if (totalBytes != null && downloaded != totalBytes) {
                         throw IOException("Download ended before all bytes were received")
                     }
-                    return@async partial
+                    return@async Unit
                 }
             }
             @Suppress("UNREACHABLE_CODE")
-            partial
+            Unit
         } catch (error: Exception) {
             // Closing a cancelled HTTP call throws IOException from its blocking read.
             ensureActive()

@@ -23,11 +23,5 @@ internal expect object DownloadsPlatformDownloader {
 
     fun restoreItem(item: DownloadItem): DownloadItem
 
-    fun removeFile(localFileUri: String?): Boolean
-
     fun removePartialFile(destinationFileName: String): Boolean
-
-    fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String?
-
-    fun openDownloadsDirectory(): Boolean
 }

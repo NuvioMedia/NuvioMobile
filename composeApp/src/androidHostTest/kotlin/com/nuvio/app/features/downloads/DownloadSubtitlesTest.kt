@@ -44,6 +44,9 @@ class DownloadSubtitlesTest {
     @Test
     fun backgroundDownloadSavesAddonAndStreamSubtitlesBeforeVideo(): Unit = runBlocking {
         val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        registerFakeDocumentsProvider()
         val paths = Collections.synchronizedList(mutableListOf<String>())
         val playerSubtitles = SubtitleRepository.addonSubtitles.value
         val server = MockWebServer()
@@ -87,8 +90,10 @@ class DownloadSubtitlesTest {
 
         val restored = AndroidDownloadScheduler(context).restore(item)
         val uri = assertNotNull(restored.localFileUri)
-        val tracks = DownloadSubtitles.localSubtitles(uri)
+        val internalUri = File(scheduler.directory, item.fileName).toURI().toString()
+        val tracks = DownloadSubtitles.localSubtitles(internalUri)
         assertEquals(DownloadStatus.Completed, restored.status)
+        assertTrue(uri.startsWith("content://"))
         assertEquals(setOf("en", "fr"), tracks.map { it.language }.toSet())
         assertEquals("/video", paths.last())
         assertEquals(1, paths.count { it == "/english" })
@@ -101,12 +106,12 @@ class DownloadSubtitlesTest {
             assertTrue(PlayerSubtitleCueParser.parse(File(URI(it.url)).readText(), it.url).isNotEmpty())
         }
         assertTrue(tracks.single { it.language == "fr" }.url.endsWith(".vtt"))
-        withTimeout(1_000) { DownloadSubtitles.prepare(restored, uri) }
-        assertEquals(tracks, DownloadSubtitles.localSubtitles(uri))
+        withTimeout(1_000) { DownloadSubtitles.prepare(restored, internalUri) }
+        assertEquals(tracks, DownloadSubtitles.localSubtitles(internalUri))
 
         scheduler.remove(item.fileName)
         withTimeout(5_000) {
-            while (DownloadSubtitles.localSubtitles(uri).isNotEmpty()) delay(10)
+            while (DownloadSubtitles.localSubtitles(internalUri).isNotEmpty()) delay(10)
         }
     }
 
@@ -121,7 +126,11 @@ class DownloadSubtitlesTest {
                     else -> MockResponse().setResponseCode(503)
                 }
             }
-            val scheduler = AndroidDownloadScheduler(RuntimeEnvironment.getApplication())
+            val context = RuntimeEnvironment.getApplication()
+            DownloadLocationManager.initialize(context)
+            DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+            registerFakeDocumentsProvider()
+            val scheduler = AndroidDownloadScheduler(context)
             val item = downloadItem(server.url("/video").toString()).copy(
                 fileName = "partial-subtitles.mkv",
                 subtitleRequests = listOf(SubtitleAddonRequest(server.url("/failed-addon").toString(), "failed", "Failed addon")),
@@ -133,7 +142,8 @@ class DownloadSubtitlesTest {
             assertFalse(scheduler.execute(transfer) { })
             val completed = assertNotNull(scheduler.store.get(item.fileName)).item
             assertEquals(DownloadStatus.Completed, completed.status)
-            assertEquals(listOf("valid"), DownloadSubtitles.localSubtitles(completed.localFileUri!!).map { it.name })
+            val internalUri = File(scheduler.directory, item.fileName).toURI().toString()
+            assertEquals(listOf("valid"), DownloadSubtitles.localSubtitles(internalUri).map { it.name })
         }
     }
 

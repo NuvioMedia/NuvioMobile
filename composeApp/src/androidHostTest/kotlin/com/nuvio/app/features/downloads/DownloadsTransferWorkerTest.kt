@@ -27,6 +27,9 @@ class DownloadsTransferWorkerTest {
     @Test
     fun completesDownloadsWithTheDistributionForegroundPolicy(): Unit = runBlocking {
         val context = RuntimeEnvironment.getApplication()
+        DownloadLocationManager.initialize(context)
+        DownloadLocationManager.onFolderPicked(SAF_MOVIES_URI)
+        val provider = registerFakeDocumentsProvider()
         val scheduler = DownloadsPlatformDownloader.scheduler(context)
         MockWebServer().use { server ->
             server.enqueue(MockResponse().setBody("complete video"))
@@ -49,7 +52,7 @@ class DownloadsTransferWorkerTest {
 
             val completed = assertNotNull(scheduler.store.get(item.fileName)).item
             assertEquals(DownloadStatus.Completed, completed.status)
-            assertEquals("complete video", File(scheduler.directory, item.fileName).readText())
+            assertEquals("complete video", provider.readDocument("primary:Movies/${item.fileName}"))
             assertEquals(14L, completed.downloadedBytes)
             assertEquals("Bearer test", server.takeRequest().getHeader("Authorization"))
             assertEquals(if (AppFeaturePolicy.downloadForegroundServiceEnabled) 1 else 0, promotions.size)
