@@ -20,25 +20,30 @@ internal object ServerUserStateProjection {
                 .map { state -> state.toEntry(meta, isSeries, label, connection.id) },
         )
 
-        val watched = details.userStates
-            .filter { it.played }
-            .filterNot { WatchedRepository.isWatched(meta.id, meta.type, it.season.takeIf { isSeries }, it.episode.takeIf { isSeries }) }
-        watched.forEach { state ->
-            WatchedRepository.markWatchedFromPlaybackCompletion(
-                item = WatchedItem(
-                    id = meta.id,
-                    type = meta.type,
-                    name = meta.name,
-                    poster = meta.poster,
-                    season = state.season.takeIf { isSeries },
-                    episode = state.episode.takeIf { isSeries },
-                    videoId = state.videoId.takeIf { isSeries },
-                    markedAtEpochMs = state.lastPlayedEpochMs ?: 0L,
-                ),
-                syncRemote = false,
-            )
-        }
+        val (played, unplayed) = details.userStates
+            .filter { !isSeries || (it.season != null && it.episode != null) }
+            .partition { it.played }
+        WatchedRepository.markWatchedLocally(
+            played.filterNot { it.isWatched(meta, isSeries) }.map { it.toWatchedItem(meta, isSeries) },
+        )
+        WatchedRepository.unmarkWatchedLocally(
+            unplayed.filter { it.isWatched(meta, isSeries) }.map { it.toWatchedItem(meta, isSeries) },
+        )
     }
+
+    private fun ServerUserState.isWatched(meta: MetaDetails, isSeries: Boolean): Boolean =
+        WatchedRepository.isWatched(meta.id, meta.type, season.takeIf { isSeries }, episode.takeIf { isSeries })
+
+    private fun ServerUserState.toWatchedItem(meta: MetaDetails, isSeries: Boolean): WatchedItem = WatchedItem(
+        id = meta.id,
+        type = meta.type,
+        name = meta.name,
+        poster = meta.poster,
+        season = season.takeIf { isSeries },
+        episode = episode.takeIf { isSeries },
+        videoId = videoId.takeIf { isSeries },
+        markedAtEpochMs = lastPlayedEpochMs ?: 0L,
+    )
 
     private fun ServerUserState.toEntry(
         meta: MetaDetails,

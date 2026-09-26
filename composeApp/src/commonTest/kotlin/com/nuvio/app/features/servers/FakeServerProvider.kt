@@ -4,6 +4,8 @@ import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.tracking.TrackingExternalIds
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
 internal class FakeServerProvider(
     private val movieCount: Int = 120,
@@ -25,6 +27,8 @@ internal class FakeServerProvider(
     val reported = mutableListOf<ServerPlaybackEventType>()
     val playbackRequests = mutableListOf<ServerPlaybackRequest>()
     val playedChanges = mutableListOf<Pair<String, Boolean>>()
+    val failingPlayed = mutableSetOf<String>()
+    private val lock = SynchronizedObject()
 
     override suspend fun libraries(session: ServerSession): List<ServerLibrary> = listOf(movies, shows)
 
@@ -110,7 +114,8 @@ internal class FakeServerProvider(
     }
 
     override suspend fun setPlayed(session: ServerSession, itemId: String, played: Boolean) {
-        playedChanges += itemId to played
+        synchronized(lock) { playedChanges += itemId to played }
+        if (itemId in failingPlayed) throw ServerException(ServerFailure.FORBIDDEN)
     }
 
     override suspend fun report(session: ServerSession, playback: ServerPlaybackSession, event: ServerPlaybackEvent) {

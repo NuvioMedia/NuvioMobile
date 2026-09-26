@@ -765,6 +765,14 @@ object WatchedRepository {
         )
     }
 
+    internal fun markWatchedLocally(items: Collection<WatchedItem>) {
+        markWatched(items = items, trackerHistorySync = WatchedTrackerHistorySync.Skip, syncRemote = false)
+    }
+
+    internal fun unmarkWatchedLocally(items: Collection<WatchedItem>) {
+        unmarkWatched(items = items, syncRemote = false)
+    }
+
     private fun markWatched(
         items: Collection<WatchedItem>,
         trackerHistorySync: WatchedTrackerHistorySync,
@@ -826,6 +834,10 @@ object WatchedRepository {
     }
 
     fun unmarkWatched(items: Collection<WatchedItem>) {
+        unmarkWatched(items = items, syncRemote = true)
+    }
+
+    private fun unmarkWatched(items: Collection<WatchedItem>, syncRemote: Boolean) {
         ensureLoaded()
         if (items.isEmpty()) return
         val source = activeSource
@@ -867,13 +879,13 @@ object WatchedRepository {
         if (removedItems.isNotEmpty()) {
             publish()
             persist()
-            pushDeleteToServer(items = removedItems, source = source)
+            if (syncRemote) pushDeleteToServer(items = removedItems, source = source)
         } else if (source.providerId != null) {
             if (removedExtraKeys) {
                 publish()
                 persist()
             }
-            pushDeleteToServer(items = items.toList(), source = source)
+            if (syncRemote) pushDeleteToServer(items = items.toList(), source = source)
         }
     }
 
