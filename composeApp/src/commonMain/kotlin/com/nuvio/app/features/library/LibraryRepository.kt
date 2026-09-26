@@ -46,6 +46,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.library_local_tab_title
+import nuvio.composeapp.generated.resources.library_server_title_unsupported
 import nuvio.composeapp.generated.resources.library_other
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
@@ -300,6 +301,7 @@ object LibraryRepository {
         ensureLoaded()
 
         activeLibraryProvider()?.let { provider ->
+            if (item.isServerItem) throw IllegalStateException(getString(Res.string.library_server_title_unsupported))
             val providerMembership = provider.membership(item)
             val desiredMembership = provider.toggledDefaultMembership(providerMembership)
             log.i {
@@ -406,7 +408,9 @@ object LibraryRepository {
         libraryTabsWithLocal(
             TrackingProviderRegistry.connectedLibraryProviders()
                 .flatMap { provider -> provider.snapshot().tabs },
-        ).filter { tab -> item == null || tab.supportsContentType(item.type) }
+        ).filter { tab ->
+            item == null || (tab.supportsContentType(item.type) && (!item.isServerItem || tab.key == LOCAL_LIBRARY_LIST_KEY))
+        }
 
     internal fun listManagementContext(): LibraryManagementContext? {
         val source = effectiveLibrarySourceMode()
@@ -425,8 +429,10 @@ object LibraryRepository {
         ensureLoaded()
         val inLocal = localState.contains(item.id, item.type)
         val memberships = linkedMapOf<String, Boolean>()
-        TrackingProviderRegistry.connectedLibraryProviders().forEach { provider ->
-            memberships += provider.membership(item)
+        if (!item.isServerItem) {
+            TrackingProviderRegistry.connectedLibraryProviders().forEach { provider ->
+                memberships += provider.membership(item)
+            }
         }
         return libraryMembershipWithLocal(inLocal = inLocal, providerMembership = memberships)
     }
@@ -454,7 +460,7 @@ object LibraryRepository {
         val localDesired = desiredMembership[LOCAL_LIBRARY_LIST_KEY] == true
         val currentlyInLocal = localState.contains(item.id, item.type)
         val profileId = localState.snapshot().token.profileId
-        val providerChanges = TrackingProviderRegistry.connectedLibraryProviders()
+        val requestedChanges = TrackingProviderRegistry.connectedLibraryProviders()
             .filter { provider -> targetProviderIds == null || provider.providerId in targetProviderIds }
             .mapNotNull { provider ->
                 val providerListKeys = provider.snapshot().tabs.mapTo(mutableSetOf(), TrackingLibraryTab::key)
@@ -463,6 +469,10 @@ object LibraryRepository {
                     provider to membership
                 }
             }
+        if (item.isServerItem && requestedChanges.any { (_, membership) -> membership.values.any { it } }) {
+            throw IllegalStateException(getString(Res.string.library_server_title_unsupported))
+        }
+        val providerChanges = if (item.isServerItem) emptyList() else requestedChanges
         val requiredConfirmations = providerChanges.mapNotNull { (provider, providerMembership) ->
             provider.membershipRemovalConfirmation(item, providerMembership)
                 ?.takeUnless { confirmation -> confirmation.providerId in confirmedRemovalProviders }
@@ -713,6 +723,9 @@ object LibraryRepository {
 }
 
 internal const val LOCAL_LIBRARY_LIST_KEY = "local"
+
+private val LibraryItem.isServerItem: Boolean
+    get() = ServerItemRef.isServerId(id)
 private const val DEFAULT_LOCAL_LIBRARY_TAB_TITLE = "Nuvio Library"
 private const val DEFAULT_LIBRARY_OTHER_TITLE = "Other"
 
