@@ -27,7 +27,7 @@ data class PluginManifestScraper(
     val description: String? = null,
     val version: String,
     val filename: String,
-    @SerialName("supportedTypes") val supportedTypes: List<String> = listOf("movie", "tv"),
+    @SerialName("supportedTypes") val supportedTypes: List<String> = listOf("movie", "series"),
     val enabled: Boolean = true,
     val hasSettings: Boolean = false,
     val logo: String? = null,
@@ -212,7 +212,4 @@ internal fun StoredPluginScraper.restorePluginScraper(
 }
 
 internal fun normalizePluginType(value: String): String =
-    when (value.lowercase()) {
-        "series", "show", "other" -> "tv"
-        else -> value.lowercase()
-    }
+    value.trim().lowercase()
