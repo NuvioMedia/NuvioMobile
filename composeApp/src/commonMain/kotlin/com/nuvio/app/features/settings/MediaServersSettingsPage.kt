@@ -15,19 +15,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.servers.ServerConnection
 import com.nuvio.app.features.servers.ServerFailure
+import com.nuvio.app.features.servers.ServerProvider
 import com.nuvio.app.features.servers.ServerProviders
 import com.nuvio.app.features.servers.ServerRepository
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.emby_logo
+import nuvio.composeapp.generated.resources.jellyfin_logo
 import nuvio.composeapp.generated.resources.servers_add_description
 import nuvio.composeapp.generated.resources.servers_empty
 import nuvio.composeapp.generated.resources.servers_section_add
 import nuvio.composeapp.generated.resources.servers_section_connected
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.mediaServersSettingsContent(
@@ -83,6 +88,7 @@ internal fun LazyListScope.mediaServersSettingsContent(
                         title = provider.displayName,
                         description = stringResource(Res.string.servers_add_description, provider.displayName),
                         icon = Icons.Rounded.Add,
+                        iconPainter = provider.logo(),
                         isTablet = isTablet,
                         onClick = { signIn = ServerSignInRequest(provider) },
                     )
@@ -106,3 +112,11 @@ internal fun LazyListScope.mediaServersSettingsContent(
 @Composable
 private fun ServerConnection.statusText(failure: ServerFailure?): String =
     listOfNotNull(identity(), status(failure)?.first).joinToString(" · ")
+
+@Composable
+private fun ServerProvider.logo(): Painter? = when (id) {
+    "jellyfin" -> painterResource(Res.drawable.jellyfin_logo)
+    "emby" -> painterResource(Res.drawable.emby_logo)
+    else -> null
+}
+
