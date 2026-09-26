@@ -1,6 +1,8 @@
 package com.nuvio.app.features.servers
 
 import com.nuvio.app.features.profiles.ProfileRepository
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -23,6 +25,19 @@ class ServerSyncTest {
         token = token,
         libraries = listOf(SyncedLibrary("10", "Movies", "movie", selected = true)),
     )
+
+    @Test
+    fun payloadIncludesEveryFieldEvenWhenDefault() {
+        val payload = listOf(synced("a", "s1")).toSyncPayload().jsonArray.single().jsonObject
+
+        assertEquals(
+            setOf(
+                "id", "provider_id", "name", "address", "remote_server_id", "remote_user_id",
+                "user_name", "token", "libraries", "enabled", "use_catalog_metadata",
+            ),
+            payload.keys,
+        )
+    }
 
     @Test
     fun firstMergeKeepsLocalIdsAndUnsyncedLocalServers() {

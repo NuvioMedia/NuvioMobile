@@ -9,6 +9,7 @@ import com.nuvio.app.features.servers.ServerRepository
 import com.nuvio.app.features.servers.ServerSyncSnapshot
 import com.nuvio.app.features.servers.SyncedServer
 import com.nuvio.app.features.servers.mergeSyncedServers
+import com.nuvio.app.features.servers.toSyncPayload
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CancellationException
@@ -23,9 +24,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.encodeToJsonElement
 import kotlinx.serialization.json.put
 
 private const val MEDIA_SERVER_PUSH_DEBOUNCE_MS = 500L
@@ -114,7 +113,7 @@ object MediaServerSync {
             function = "sync_push_media_servers",
             parameters = buildJsonObject {
                 put("p_profile_id", snapshot.profileId)
-                put("p_servers", Json.encodeToJsonElement(snapshot.servers))
+                put("p_servers", snapshot.servers.toSyncPayload())
                 putSyncOriginClientId()
             },
         )

@@ -2,6 +2,9 @@ package com.nuvio.app.features.servers
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.encodeToJsonElement
 
 @Serializable
 data class SyncedServer(
@@ -44,6 +47,10 @@ class ServerSyncSnapshot(
     val pendingPush: Boolean,
     val syncedKeys: Set<String>?,
 )
+
+private val syncJson = Json { encodeDefaults = true }
+
+fun List<SyncedServer>.toSyncPayload(): JsonElement = syncJson.encodeToJsonElement(this)
 
 fun serverKey(providerId: String, remoteServerId: String, remoteUserId: String): String =
     "$providerId|$remoteServerId|$remoteUserId"
