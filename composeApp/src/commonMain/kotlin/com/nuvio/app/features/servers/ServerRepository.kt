@@ -9,8 +9,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -45,6 +48,10 @@ object ServerRepository {
     @Volatile
     private var generation = 0L
     private val tokens = mutableMapOf<String, String>()
+    private var syncState = ServerSyncState()
+    private var localVersion = 0L
+    private val _localChanges = MutableSharedFlow<Int>(extraBufferCapacity = 8)
+    val localChanges: SharedFlow<Int> = _localChanges.asSharedFlow()
 
     fun ensureLoaded() {
         val profileId = ProfileRepository.activeProfileId
@@ -59,6 +66,7 @@ object ServerRepository {
         generation++
         synchronized(lock) { tokens.clear() }
         loadedProfileId = null
+        syncState = ServerSyncState()
         runCatching { ServerStorage.clear() }.onFailure { log.w(it) { "Unable to clear server storage" } }
         _uiState.value = ServersUiState(revision = _uiState.value.revision + 1)
         ServerMatcher.clear()
@@ -67,6 +75,7 @@ object ServerRepository {
     fun removeProfile(profileId: Int) {
         readConnections(profileId).forEach { deleteCredential(it.credentialRef) }
         runCatching { ServerStorage.write(connectionsKey(profileId), null) }
+        runCatching { ServerStorage.write(syncKey(profileId), null) }
         if (loadedProfileId == profileId) load(profileId)
     }
 
@@ -202,10 +211,62 @@ object ServerRepository {
         }
     }
 
+    fun syncSnapshot(profileId: Int): ServerSyncSnapshot? {
+        ensureLoaded()
+        if (loadedProfileId != profileId) return null
+        return ServerSyncSnapshot(
+            profileId = profileId,
+            version = localVersion,
+            servers = _uiState.value.connections.mapNotNull { connection ->
+                token(connection.credentialRef)?.let(connection::toSynced)
+            },
+            pendingPush = syncState.pendingPush,
+            syncedKeys = syncState.syncedKeys?.toSet(),
+        )
+    }
+
+    fun applySync(snapshot: ServerSyncSnapshot, servers: List<SyncedServer>, keys: Set<String>): Boolean {
+        if (loadedProfileId != snapshot.profileId || localVersion != snapshot.version) return false
+        val current = _uiState.value.connections
+        val currentByKey = current.associateBy { serverKey(it.providerId, it.remoteServerId, it.remoteUserId) }
+        val usedIds = mutableSetOf<String>()
+        var changed = false
+        val connections = servers.map { server ->
+            val local = currentByKey[server.key]
+            val credentialRef = local?.credentialRef ?: newId("k")
+            val id = local?.id ?: server.id.takeUnless { id -> current.any { it.id == id } || id in usedIds } ?: newId("c")
+            usedIds += id
+            if (token(credentialRef) != server.token) {
+                writeCredential(credentialRef, server.token)
+                local?.let { setFailure(it.id, null) }
+                changed = true
+            }
+            server.toConnection(id, credentialRef)
+        }
+        current.filter { it.id !in usedIds }.forEach { removed ->
+            deleteCredential(removed.credentialRef)
+            setFailure(removed.id, null)
+        }
+        syncState = ServerSyncState(pendingPush = false, syncedKeys = keys.toList())
+        if (changed || connections != current) saveConnections(connections, invalidate = true, local = false)
+        persistSyncState()
+        return true
+    }
+
+    fun markPushed(snapshot: ServerSyncSnapshot) {
+        if (loadedProfileId != snapshot.profileId) return
+        syncState = ServerSyncState(
+            pendingPush = syncState.pendingPush && localVersion != snapshot.version,
+            syncedKeys = snapshot.servers.map { it.key },
+        )
+        persistSyncState()
+    }
+
     private fun load(profileId: Int) {
         generation++
         synchronized(lock) { tokens.clear() }
         loadedProfileId = profileId
+        syncState = readSyncState(profileId)
         ServerMatcher.clear()
         _uiState.value = ServersUiState(
             connections = readConnections(profileId),
@@ -219,8 +280,13 @@ object ServerRepository {
         saveConnections(connections, invalidate = true)
     }
 
-    private fun saveConnections(connections: List<ServerConnection>, invalidate: Boolean) {
+    private fun saveConnections(connections: List<ServerConnection>, invalidate: Boolean, local: Boolean = true) {
         val profileId = loadedProfileId ?: return
+        if (local) {
+            syncState = syncState.copy(pendingPush = true)
+            localVersion++
+            persistSyncState()
+        }
         runCatching {
             ServerStorage.write(
                 connectionsKey(profileId),
@@ -231,6 +297,23 @@ object ServerRepository {
             generation++
             }
         _uiState.update { it.copy(connections = connections, revision = it.revision + 1) }
+        if (local) _localChanges.tryEmit(profileId)
+    }
+
+    private fun persistSyncState() {
+        val profileId = loadedProfileId ?: return
+        runCatching {
+            ServerStorage.write(syncKey(profileId), json.encodeToString(ServerSyncState.serializer(), syncState))
+        }.onFailure { log.w(it) { "Unable to save server sync state" } }
+    }
+
+    private fun readSyncState(profileId: Int): ServerSyncState =
+        runCatching {
+            ServerStorage.read(syncKey(profileId))?.let { json.decodeFromString(ServerSyncState.serializer(), it) }
+        }.getOrNull() ?: ServerSyncState()
+
+    private fun token(ref: String): String? = synchronized(lock) {
+        tokens[ref] ?: readCredential(ref)?.also { tokens[ref] = it }
     }
 
     private fun setFailure(connectionId: String, failure: ServerFailure?) {
@@ -266,6 +349,8 @@ object ServerRepository {
     }
 
     private fun connectionsKey(profileId: Int) = "profile.$profileId.connections"
+
+    private fun syncKey(profileId: Int) = "profile.$profileId.sync"
 
     private fun credentialKey(ref: String) = "credential.$ref"
 
