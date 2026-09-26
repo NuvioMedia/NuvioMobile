@@ -28,6 +28,7 @@ internal class FakeServerProvider(
     val playbackRequests = mutableListOf<ServerPlaybackRequest>()
     val playedChanges = mutableListOf<Pair<String, Boolean>>()
     val failingPlayed = mutableSetOf<String>()
+    val failingLibraries = mutableSetOf<String>()
     private val lock = SynchronizedObject()
 
     override suspend fun libraries(session: ServerSession): List<ServerLibrary> = listOf(movies, shows)
@@ -38,6 +39,7 @@ internal class FakeServerProvider(
         start: Int,
         limit: Int,
     ): ServerPage<ServerTitle> {
+        if (library.id in failingLibraries) throw ServerException(ServerFailure.UNREACHABLE)
         val ids = (start until minOf(start + limit, movieCount)).map { it.toString() }
         return ServerPage(ids.map { title(session, it) }, movieCount)
     }

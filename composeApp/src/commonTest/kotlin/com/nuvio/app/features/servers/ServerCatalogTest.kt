@@ -33,6 +33,20 @@ class ServerCatalogTest {
     }
 
     @Test
+    fun buildsLibraryShelvesThatOpenTheFullLibrary() = runTest {
+        val connection = installFakeServer()
+        val ref = ServerCatalog.libraries().first { it.library.kind == ServerMediaKind.MOVIE }
+
+        val section = ServerCatalog.librarySection(ref, limit = 18)
+
+        assertEquals("Box · Movies", section.title)
+        assertEquals(CatalogTarget.Server(connection.id, "10", "movie"), section.target)
+        assertEquals(18, section.items.size)
+        assertTrue(section.hasMore)
+        assertEquals(ServerItemRef(connection.id, "0"), ServerItemRef.parse(section.items.first().id))
+    }
+
+    @Test
     fun buildsAttributedHomeRowsForSelectedLibraries() {
         val connection = installFakeServer()
         ServerRepository.setLibrarySelected(connection.id, FakeServerProvider.SERIES_LIBRARY.id, false)

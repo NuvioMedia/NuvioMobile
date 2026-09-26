@@ -156,6 +156,21 @@ internal object ServerCatalog {
         )
     }
 
+    suspend fun librarySection(ref: ServerLibraryRef, limit: Int): HomeCatalogSection {
+        val page = page(ref.target, skip = 0, limit = limit)
+        val label = ServerRepository.sourceLabel(ref.connection)
+        return HomeCatalogSection(
+            key = homeKey(ref.connection.id, ref.library.id),
+            title = ref.title,
+            subtitle = label,
+            addonName = label,
+            target = ref.target,
+            items = page.items,
+            availableItemCount = page.rawItemCount,
+            hasMore = page.nextSkip != null,
+        )
+    }
+
     suspend fun searchSection(ref: ServerLibraryRef, query: String): HomeCatalogSection {
         val items = ServerRepository.call(ref.connection.id) { provider, session ->
             if (!provider.supports(ServerCapability.SEARCH)) throw ServerException(ServerFailure.UNSUPPORTED)
