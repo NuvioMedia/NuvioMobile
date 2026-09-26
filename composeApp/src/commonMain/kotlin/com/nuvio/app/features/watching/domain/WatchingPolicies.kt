@@ -8,6 +8,15 @@ import com.nuvio.app.core.time.parseEpisodeReleaseLocalDate
 
 private const val CompletionThresholdFraction = 0.90
 private const val ProgressStoreThresholdMs = 1_000L
+
+/**
+ * How far before the credits marker a playback is treated as finished.
+ *
+ * The marker comes from submissions, and a different release can shift the credits by a few seconds,
+ * so a playback that stopped just short of it is treated as finished rather than as an unfinished
+ * watch. One percentage point of the video, which is around 27 seconds of a 45 minute episode.
+ */
+internal const val ContentEndTolerancePercent = 1.0
 private const val UpcomingNextSeasonWindowDays = 7
 
 /**
@@ -28,17 +37,35 @@ fun shouldStoreProgress(
     durationMs: Long,
 ): Boolean = positionMs >= ProgressStoreThresholdMs
 
+/**
+ * Where a playback counts as finished as a fraction, from the credits marker of the release being
+ * played, read one point early so a timestamp that is a few seconds off still ends the playback.
+ *
+ * Null when nothing is known about the credits, and the percentage the app has always used decides.
+ */
+internal fun completionFractionFor(contentEndPercent: Double?): Double? =
+    contentEndPercent
+        ?.takeIf { percent -> percent.isFinite() }
+        ?.let { percent -> (percent - ContentEndTolerancePercent) / 100.0 }
+        ?.takeIf { fraction -> fraction in 0.0..1.0 }
+
+/**
+ * [completionFraction], when the caller knows it, is where the content really ends. It replaces the
+ * usual percentage, so a playback that stopped before the credits is not a finished one, whatever
+ * percentage it happens to sit at.
+ */
 fun isProgressComplete(
     positionMs: Long,
     durationMs: Long,
     isEnded: Boolean,
+    completionFraction: Double? = null,
 ): Boolean {
     if (isEnded && isShortPlaceholderDuration(durationMs)) return false
     if (isEnded) return true
     if (durationMs <= 0L) return false
 
     val watchedFraction = positionMs.toDouble() / durationMs.toDouble()
-    return watchedFraction >= CompletionThresholdFraction
+    return watchedFraction >= (completionFraction ?: CompletionThresholdFraction)
 }
 
 /**

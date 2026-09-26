@@ -1,9 +1,14 @@
 package com.nuvio.app.features.simkl
 
+import co.touchlab.kermit.Logger
+import com.nuvio.app.features.tracking.TrackingSettingsRepository
+
 internal class SimklSyncEngine(
     private val remote: SimklSyncRemote,
     private val nowEpochMs: () -> Long,
 ) {
+    private val log = Logger.withTag("SimklSync")
+
     suspend fun synchronize(current: SimklSyncSnapshot): SimklSyncSnapshot {
         if (!current.isInitialized) return initialSync()
 
@@ -34,11 +39,14 @@ internal class SimklSyncEngine(
         }
 
         val now = nowEpochMs()
+        val rewatch = readRewatchRuns(current)
         return current.copy(
             watermark = activities.all,
             activities = activities,
             entries = entries,
             playback = playback,
+            rewatchRuns = rewatch.runs,
+            rewatchSessions = rewatch.sessions,
             lastSyncedAtEpochMs = now,
             lastCheckedAtEpochMs = now,
         ).reconcileWatchedPlayback()
@@ -56,16 +64,45 @@ internal class SimklSyncEngine(
         val playback = remote.fetchPlayback()
         val activities = remote.fetchActivities()
         val now = nowEpochMs()
+        val rewatch = readRewatchRuns(current = null)
         return SimklSyncSnapshot(
             isInitialized = true,
             watermark = activities.all,
             activities = activities,
             entries = entries.distinctBy(SimklLibraryEntry::stableKey),
             playback = playback,
+            rewatchRuns = rewatch.runs,
+            rewatchSessions = rewatch.sessions,
             lastSyncedAtEpochMs = now,
             lastCheckedAtEpochMs = now,
         ).reconcileWatchedPlayback()
     }
+
+    /**
+     * Reads the rewatch sessions of the account, keeps them, and turns them into runs.
+     *
+     * A failed read keeps what the previous sync found: losing the network must not empty the
+     * Continue Watching cards the user is looking at.
+     */
+    private suspend fun readRewatchRuns(current: SimklSyncSnapshot?): SimklRewatchRead =
+        runCatching {
+            val sessions = remote.fetchRewatchSessions()
+            SimklRewatchRead(
+                runs = deriveSimklRewatchRuns(
+                    entries = sessions,
+                    animeIdPreference = TrackingSettingsRepository.uiState.value.simklAnimeIdPreference,
+                    minimumRunEpisodes = TrackingSettingsRepository.uiState.value
+                        .simklRewatchNextUpMode.minimumRunEpisodes,
+                ),
+                sessions = sessions,
+            )
+        }.getOrElse { error ->
+            log.w { "Simkl rewatch sessions could not be read: ${error.message}" }
+            SimklRewatchRead(
+                runs = current?.rewatchRuns.orEmpty(),
+                sessions = current?.rewatchSessions.orEmpty(),
+            )
+        }
 }
 
 internal fun mergeDelta(

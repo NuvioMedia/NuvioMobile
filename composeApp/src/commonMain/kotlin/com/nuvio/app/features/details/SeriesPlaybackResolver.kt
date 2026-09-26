@@ -138,6 +138,8 @@ internal data class SeriesPrimaryAction(
     val episodeTitle: String?,
     val episodeThumbnail: String?,
     val resumePositionMs: Long?,
+    /** Restarting a finished series; Continue Watching ignores these instead of offering them. */
+    val isWatchAgain: Boolean = false,
 )
 
 internal fun MetaDetails.seriesPrimaryAction(
@@ -147,6 +149,8 @@ internal fun MetaDetails.seriesPrimaryAction(
     preferFurthestEpisode: Boolean = true,
     showUnairedNextUp: Boolean = false,
     watchedKeys: Set<String> = emptySet(),
+    rewatchSeasonNumber: Int? = null,
+    rewatchEpisodeNumber: Int? = null,
 ): SeriesPrimaryAction? {
     val content = WatchingContentRef(type = type, id = id)
     val effectiveWatchedItems = buildList {
@@ -171,6 +175,8 @@ internal fun MetaDetails.seriesPrimaryAction(
         todayIsoDate = todayIsoDate,
         preferFurthestEpisode = preferFurthestEpisode,
         showUnairedNextUp = showUnairedNextUp,
+        rewatchSeasonNumber = rewatchSeasonNumber,
+        rewatchEpisodeNumber = rewatchEpisodeNumber,
     )
 }
 
@@ -181,6 +187,8 @@ internal fun MetaDetails.seriesPrimaryAction(
     todayIsoDate: String,
     preferFurthestEpisode: Boolean = true,
     showUnairedNextUp: Boolean = false,
+    rewatchSeasonNumber: Int? = null,
+    rewatchEpisodeNumber: Int? = null,
 ): SeriesPrimaryAction? =
     decideSeriesPrimaryAction(
         content = content,
@@ -194,10 +202,31 @@ internal fun MetaDetails.seriesPrimaryAction(
         preferFurthestEpisode = preferFurthestEpisode,
         showUnairedNextUp = showUnairedNextUp,
         defaultVideoId = defaultVideoId,
+        rewatchSeasonNumber = rewatchSeasonNumber,
+        rewatchEpisodeNumber = rewatchEpisodeNumber,
     )?.toLegacySeriesPrimaryAction()
 
 internal fun MetaVideo.playLabel(): String =
     playLabel(seasonNumber = season, episodeNumber = episode)
+
+/**
+ * What the primary button says for a title that is not a series with a chosen episode.
+ *
+ * A watched film kept an ordinary Play label, so nothing on the screen told the user it had been
+ * seen already and the button could not be told apart from a first viewing. It now offers the film
+ * again. Unfinished progress still wins, because continuing is what the user wants then.
+ */
+internal fun movieLikePlayLabel(
+    hasUnfinishedProgress: Boolean,
+    isWatched: Boolean,
+    resumeLabel: String,
+    watchAgainLabel: String,
+    playLabel: String,
+): String = when {
+    hasUnfinishedProgress -> resumeLabel
+    isWatched -> watchAgainLabel
+    else -> playLabel
+}
 
 internal fun MetaVideo.upNextLabel(): String =
     upNextLabel(seasonNumber = season, episodeNumber = episode)
@@ -271,6 +300,7 @@ private fun WatchingSeriesPrimaryAction.toLegacySeriesPrimaryAction(): SeriesPri
         episodeTitle = episodeTitle,
         episodeThumbnail = episodeThumbnail,
         resumePositionMs = resumePositionMs,
+        isWatchAgain = isWatchAgain,
     )
 
 private fun WatchingCompletedEpisode.toLegacyCompletedEpisode(): CompletedSeriesEpisode =

@@ -14,6 +14,7 @@ import com.nuvio.app.features.p2p.P2pStreamingEngine
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
+import com.nuvio.app.features.player.skip.SkipInterval
 import com.nuvio.app.features.player.skip.SkipIntroRepository
 import com.nuvio.app.features.player.skip.shouldAutoSkip
 import com.nuvio.app.features.player.skip.internalSkipAction
@@ -470,6 +471,7 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         playerSettingsUiState.skipIntroEnabled,
     ) {
         skipIntervals = emptyList()
+        contentEndIntervals = emptyList()
         autoSkippedIntervals.clear()
         lastManualSkipSeekPositions = null
         activeSkipInterval = null
@@ -481,8 +483,17 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         val season = activeSeasonNumber
         val episode = activeEpisodeNumber
         val vid = activeVideoId
+        val isMovie = (contentType ?: parentMetaType).equals("movie", ignoreCase = true)
+
+        // The credits marker is resolved whether or not the skip buttons are on, because it also tells
+        // the tracker where the content ends. The repository caches the answer, so with skipping on
+        // this is the request the skip button makes anyway, not a second one.
+        launch {
+            contentEndIntervals = resolveCreditsMarkerIntervals(isMovie = isMovie, vid = vid)
+        }
+
         if (!playerSettingsUiState.skipIntroEnabled) return@LaunchedEffect
-        if ((contentType ?: parentMetaType).equals("movie", ignoreCase = true)) {
+        if (isMovie) {
             skipIntervals = SkipIntroRepository.getMovieSkipIntervals(parentMetaId, vid)
             return@LaunchedEffect
         }
@@ -636,6 +647,57 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         } else if (!shouldShow) {
             showNextEpisodeCard = false
         }
+    }
+}
+
+/**
+ * Resolves the credits marker of the current item for the tracker, without regard for the skip
+ * buttons: a playback that reached the credits is over, whatever the skip settings say. The repository
+ * caches the answer, so with skipping on this is the same request the skip button makes, not a second
+ * one.
+ */
+private suspend fun PlayerScreenRuntime.resolveCreditsMarkerIntervals(
+    isMovie: Boolean,
+    vid: String?,
+): List<SkipInterval> {
+    if (isMovie) {
+        return SkipIntroRepository.getMovieSkipIntervals(
+            contentId = parentMetaId,
+            videoId = vid,
+            requireSkipIntroEnabled = false,
+        )
+    }
+    val season = activeSeasonNumber
+    val episode = activeEpisodeNumber
+    if (season == null || episode == null || vid == null) return emptyList()
+    val imdbFromContent = parentMetaId.takeIf { it.startsWith("tt") }
+        ?: (metaUiState.meta ?: playerMeta)
+            ?.takeIf { it.id == parentMetaId }
+            ?.imdbId
+            ?.takeIf { it.startsWith("tt") }
+    return when {
+        vid.startsWith("mal:") -> SkipIntroRepository.getSkipIntervalsForMal(
+            malId = vid.removePrefix("mal:").substringBefore(':'),
+            episode = episode,
+            requireSkipIntroEnabled = false,
+            imdbId = imdbFromContent,
+            imdbSeason = season,
+            imdbEpisode = episode,
+        )
+        vid.startsWith("kitsu:") -> SkipIntroRepository.getSkipIntervalsForKitsu(
+            kitsuId = vid.removePrefix("kitsu:").substringBefore(':'),
+            episode = episode,
+            requireSkipIntroEnabled = false,
+            imdbId = imdbFromContent,
+            imdbSeason = season,
+            imdbEpisode = episode,
+        )
+        else -> SkipIntroRepository.getSkipIntervals(
+            imdbId = vid.substringBefore(':').takeIf { it.startsWith("tt") },
+            season = season,
+            episode = episode,
+            requireSkipIntroEnabled = false,
+        )
     }
 }
 

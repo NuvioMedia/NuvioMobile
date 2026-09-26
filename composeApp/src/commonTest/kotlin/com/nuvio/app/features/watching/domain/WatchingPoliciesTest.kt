@@ -10,6 +10,54 @@ class WatchingPoliciesTest {
     private val show = WatchingContentRef(type = "series", id = "show")
 
     @Test
+    fun completionFractionReadsTheCreditsMarkerOnePointEarly() {
+        assertEquals(null, completionFractionFor(null))
+        assertEquals(0.95, completionFractionFor(96.0))
+        // A marker that is not a position in the video is not usable either, and the percentage decides.
+        assertEquals(null, completionFractionFor(0.0))
+        assertEquals(null, completionFractionFor(-5.0))
+        assertEquals(null, completionFractionFor(Double.NaN))
+    }
+
+    @Test
+    fun isProgressCompleteUsesTheCreditsMarkerWhenItIsKnown() {
+        // Credits at 96 percent: a playback at 94 is not finished, one that reached 95 is, because the
+        // marker is read one point early.
+        assertFalse(
+            isProgressComplete(
+                positionMs = 94_000L,
+                durationMs = 100_000L,
+                isEnded = false,
+                completionFraction = completionFractionFor(96.0),
+            ),
+        )
+        assertTrue(
+            isProgressComplete(
+                positionMs = 95_000L,
+                durationMs = 100_000L,
+                isEnded = false,
+                completionFraction = completionFractionFor(96.0),
+            ),
+        )
+
+        // Nothing known about the credits keeps the percentage the app has always used.
+        assertFalse(
+            isProgressComplete(
+                positionMs = 89_000L,
+                durationMs = 100_000L,
+                isEnded = false,
+            ),
+        )
+        assertTrue(
+            isProgressComplete(
+                positionMs = 90_000L,
+                durationMs = 100_000L,
+                isEnded = false,
+            ),
+        )
+    }
+
+    @Test
     fun isReleasedByUsesExactInstantForZonedTimestamps() {
         val exactEpochMs = 1_768_489_200_000L // 2026-01-15T15:00:00Z
 

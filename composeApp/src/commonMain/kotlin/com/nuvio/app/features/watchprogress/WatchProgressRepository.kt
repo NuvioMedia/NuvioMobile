@@ -21,6 +21,7 @@ import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.tracking.effectiveWatchProgressSource
 import com.nuvio.app.features.tracking.providerId
 import com.nuvio.app.features.watching.application.WatchingActions
+import com.nuvio.app.features.watching.domain.completionFractionFor
 import com.nuvio.app.features.watching.sync.ProgressDeltaEvent
 import com.nuvio.app.features.watching.sync.ProgressSyncRecord
 import com.nuvio.app.features.watching.sync.ProgressSyncAdapter
@@ -1096,18 +1097,32 @@ object WatchProgressRepository {
         session: WatchProgressPlaybackSession,
         snapshot: PlayerPlaybackSnapshot,
         syncRemote: Boolean = true,
+        contentEndPercent: Double? = null,
     ) {
         ensureLoaded()
-        upsert(session = session, snapshot = snapshot, persist = true, syncRemote = syncRemote)
+        upsert(
+            session = session,
+            snapshot = snapshot,
+            persist = true,
+            syncRemote = syncRemote,
+            contentEndPercent = contentEndPercent,
+        )
     }
 
     fun flushPlaybackProgress(
         session: WatchProgressPlaybackSession,
         snapshot: PlayerPlaybackSnapshot,
         syncRemote: Boolean = true,
+        contentEndPercent: Double? = null,
     ) {
         ensureLoaded()
-        upsert(session = session, snapshot = snapshot, persist = true, syncRemote = syncRemote)
+        upsert(
+            session = session,
+            snapshot = snapshot,
+            persist = true,
+            syncRemote = syncRemote,
+            contentEndPercent = contentEndPercent,
+        )
     }
 
     fun clearProgress(videoId: String, parentMetaId: String? = null) {
@@ -1237,14 +1252,19 @@ object WatchProgressRepository {
         snapshot: PlayerPlaybackSnapshot,
         persist: Boolean,
         syncRemote: Boolean,
+        contentEndPercent: Double? = null,
     ) {
         val targetProfileId = session.profileId
         val positionMs = snapshot.positionMs.coerceAtLeast(0L)
         val durationMs = snapshot.durationMs.coerceAtLeast(0L)
+        // The credits marker says where the content really ends, and the tracker reads the same number
+        // for the same release, so the local state cannot call a playback finished before it.
+        val completionFraction = completionFractionFor(contentEndPercent)
         val isCompleted = isWatchProgressComplete(
             positionMs = positionMs,
             durationMs = durationMs,
             isEnded = snapshot.isEnded,
+            completionFraction = completionFraction,
         )
         if (!isCompleted && !shouldStoreWatchProgress(positionMs = positionMs, durationMs = durationMs)) {
             return
@@ -1279,6 +1299,7 @@ object WatchProgressRepository {
             pauseDescription = session.pauseDescription,
             lastSourceUrl = session.lastSourceUrl,
             isCompleted = isCompleted,
+            completionFraction = completionFraction?.toFloat(),
         ).normalizedCompletion()
 
         if (targetProfileId != currentProfileId || ProfileRepository.activeProfileId != targetProfileId) {

@@ -45,6 +45,7 @@ import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.details.SeriesPrimaryAction
+import com.nuvio.app.features.details.isReleasedBy
 import com.nuvio.app.features.details.seriesPrimaryAction
 import com.nuvio.app.features.home.components.HomeCatalogRowSection
 import com.nuvio.app.features.home.components.HomeContinueWatchingSection
@@ -55,6 +56,8 @@ import com.nuvio.app.features.home.components.HomeSkeletonHero
 import com.nuvio.app.features.home.components.HomeSkeletonRow
 import com.nuvio.app.features.home.components.HomeContinueWatchingSectionBottomPadding
 import com.nuvio.app.features.home.components.ContinueWatchingLayout
+import com.nuvio.app.features.simkl.SimklSyncRepository
+import com.nuvio.app.features.tracking.RewatchRunPosition
 import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.watched.WatchedItem
@@ -165,6 +168,7 @@ fun HomeScreen(
         TrackingSettingsRepository.ensureLoaded()
         TrackingSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
+    val simklRewatchRuns = SimklSyncRepository.state.collectAsStateWithLifecycle().value.snapshot.rewatchRuns
     var observedOfflineState by remember { mutableStateOf(false) }
 
     ScreenActivityEffect(scrollToTopRequests) { active ->
@@ -234,6 +238,7 @@ fun HomeScreen(
         nextUpWatchedItems,
         progressProviderOwnsCompletedHistory,
         continueWatchingPreferences.upNextFromFurthestEpisode,
+        simklRewatchRuns,
     ) {
         buildHomeNextUpSeedCandidates(
             progressEntries = watchProgressUiState.entries,
@@ -246,6 +251,7 @@ fun HomeScreen(
                 contentId in watchProgressUiState.hiddenContentIds ||
                     WatchProgressRepository.isDroppedShow(contentId)
             },
+            simklRewatchRuns = simklRewatchRuns,
         )
     }
 
@@ -722,6 +728,8 @@ fun HomeScreen(
                                     showUnairedNextUp = continueWatchingPreferences.showUnairedNextUp,
                                     dismissedNextUpKeys = continueWatchingPreferences.dismissedNextUpKeys,
                                     providerOwnsCompletedHistory = progressProviderOwnsCompletedHistory,
+                                    rewatchRun = simklRewatchRuns
+                                        .firstOrNull { run -> run.matches(completedEntry.content.id) },
                                 )
                             }
                         } catch (error: Throwable) {
@@ -1285,6 +1293,7 @@ internal fun buildHomeNextUpSeedCandidates(
         entry.shouldUseAsCompletedSeedForContinueWatching()
     },
     isContentHidden: (String) -> Boolean = { false },
+    simklRewatchRuns: List<RewatchRunPosition> = emptyList(),
 ): List<CompletedSeriesCandidate> {
     val progressSeeds = progressEntries
         .asSequence()
@@ -1307,26 +1316,83 @@ internal fun buildHomeNextUpSeedCandidates(
         }
     }
 
-    return WatchingState.latestCompletedBySeries(
-        progressEntries = progressSeeds,
-        watchedItems = watchedSeeds,
-        preferFurthestEpisode = preferFurthestEpisode,
-    ).mapNotNull { (content, completed) ->
-        if (!content.type.isSeriesTypeForContinueWatching()) return@mapNotNull null
-        if (completed.seasonNumber == 0) return@mapNotNull null
-        if (isMalformedNextUpSeedContentId(content.id)) return@mapNotNull null
-        CompletedSeriesCandidate(
-            content = content,
-            seasonNumber = completed.seasonNumber,
-            episodeNumber = completed.episodeNumber,
-            markedAtEpochMs = completed.markedAtEpochMs,
+    return applyRewatchRunPositions(
+        candidates = WatchingState.latestCompletedBySeries(
+            progressEntries = progressSeeds,
+            watchedItems = watchedSeeds,
+            preferFurthestEpisode = preferFurthestEpisode,
+        ).mapNotNull { (content, completed) ->
+            if (!content.type.isSeriesTypeForContinueWatching()) return@mapNotNull null
+            if (completed.seasonNumber == 0) return@mapNotNull null
+            if (isMalformedNextUpSeedContentId(content.id)) return@mapNotNull null
+            CompletedSeriesCandidate(
+                content = content,
+                seasonNumber = completed.seasonNumber,
+                episodeNumber = completed.episodeNumber,
+                markedAtEpochMs = completed.markedAtEpochMs,
+            )
+        }.sortedWith(
+            compareByDescending<CompletedSeriesCandidate> { candidate -> candidate.markedAtEpochMs }
+                .thenByDescending { candidate -> candidate.seasonNumber }
+                .thenByDescending { candidate -> candidate.episodeNumber },
+        ),
+        runs = simklRewatchRuns,
+    )
+}
+
+/**
+ * Moves a series the user is re-watching onto its run.
+ *
+ * Simkl keeps a rewatch in its own session and never moves the canonical watch position, so "next
+ * up" would keep offering the episode after the old position, or nothing at all for a series the
+ * provider owns the history for. While the run is the newer of the two, it decides instead: a run
+ * that reached S01E02 offers S01E03 next. The canonical position takes over again as soon as it is
+ * newer than the run.
+ */
+internal fun applyRewatchRunPositions(
+    candidates: List<CompletedSeriesCandidate>,
+    runs: List<RewatchRunPosition>,
+): List<CompletedSeriesCandidate> {
+    if (runs.isEmpty()) return candidates
+    val withRunPositions = candidates.map { candidate ->
+        val run = runs
+            .filter { run -> run.matches(candidate.content.id) }
+            .maxByOrNull(RewatchRunPosition::markedAtEpochMs)
+            ?: return@map candidate
+        if (run.markedAtEpochMs < candidate.markedAtEpochMs) return@map candidate
+        if (run.seasonNumber == candidate.seasonNumber && run.episodeNumber == candidate.episodeNumber) {
+            return@map candidate
+        }
+        candidate.copy(
+            seasonNumber = run.seasonNumber,
+            episodeNumber = run.episodeNumber,
+            markedAtEpochMs = run.markedAtEpochMs,
         )
-    }.sortedWith(
+    }
+    // A run can be the only reason its series belongs in the row: with a tracking provider owning the
+    // completed history the app holds no local episode entry for that series, so there is no
+    // canonical candidate to move. Build one from the run instead of losing it.
+    val added = runs
+        .filterNot { run -> withRunPositions.any { candidate -> run.matches(candidate.content.id) } }
+        .distinctBy(RewatchRunPosition::contentId)
+        .map { run ->
+            CompletedSeriesCandidate(
+                content = WatchingContentRef(type = SERIES_CONTENT_TYPE, id = run.contentId),
+                seasonNumber = run.seasonNumber,
+                episodeNumber = run.episodeNumber,
+                markedAtEpochMs = run.markedAtEpochMs,
+            )
+        }
+    if (added.isEmpty()) return withRunPositions
+    return (withRunPositions + added).sortedWith(
         compareByDescending<CompletedSeriesCandidate> { candidate -> candidate.markedAtEpochMs }
             .thenByDescending { candidate -> candidate.seasonNumber }
             .thenByDescending { candidate -> candidate.episodeNumber },
     )
 }
+
+/** The content type the catalogue uses for series, which is what the next-up resolver fetches by. */
+private const val SERIES_CONTENT_TYPE = "series"
 
 internal fun filterNextUpItemsByCurrentSeeds(
     nextUpItemsBySeries: Map<String, Pair<Long, ContinueWatchingItem>>,
@@ -1440,6 +1506,7 @@ private suspend fun resolveHomeNextUpCandidate(
     showUnairedNextUp: Boolean,
     dismissedNextUpKeys: Set<String>,
     providerOwnsCompletedHistory: Boolean,
+    rewatchRun: RewatchRunPosition? = null,
 ): HomeNextUpResolutionAttempt {
     val contentId = completedEntry.content.id
     val meta = try {
@@ -1480,24 +1547,26 @@ private suspend fun resolveHomeNextUpCandidate(
         )
     }
 
-    val action = meta.seriesPrimaryAction(
-        content = completedEntry.content,
-        entries = resolvedProgressEntries,
-        watchedItems = resolvedWatchedItems,
-        todayIsoDate = todayIsoDate,
-        preferFurthestEpisode = preferFurthestEpisode,
-        showUnairedNextUp = showUnairedNextUp,
-    )
-    if (action == null) {
+    // A rewatch run ignores the canonical position: the card offers the episode after the one the
+    // user just rewatched, even though the usual resolver would still point at the episode the
+    // series was left at before the run started.
+    val runEpisode = rewatchRun?.let { run -> meta.episodeAfter(run.seasonNumber, run.episodeNumber) }
+    if (runEpisode != null && !showUnairedNextUp && !runEpisode.isReleasedBy(todayIsoDate)) {
         return HomeNextUpResolutionAttempt.conclusiveNone()
     }
-    if (action.resumePositionMs != null) {
-        return HomeNextUpResolutionAttempt.conclusiveNone()
-    }
-
-    val nextEpisode = meta.videoForSeriesAction(action)
-    if (nextEpisode == null) {
-        return HomeNextUpResolutionAttempt.conclusiveNone()
+    val nextEpisode = runEpisode ?: run {
+        val action = meta.seriesPrimaryAction(
+            content = completedEntry.content,
+            entries = resolvedProgressEntries,
+            watchedItems = resolvedWatchedItems,
+            todayIsoDate = todayIsoDate,
+            preferFurthestEpisode = preferFurthestEpisode,
+            showUnairedNextUp = showUnairedNextUp,
+        ) ?: return HomeNextUpResolutionAttempt.conclusiveNone()
+        if (homeNextUpOffersNothing(action)) {
+            return HomeNextUpResolutionAttempt.conclusiveNone()
+        }
+        meta.videoForSeriesAction(action) ?: return HomeNextUpResolutionAttempt.conclusiveNone()
     }
     val metadataDecision = classifyHomeNextUpCandidateMetadata(
         freshItem = completedEntry.toContinueWatchingSeed(meta)
@@ -1522,6 +1591,19 @@ private suspend fun resolveHomeNextUpCandidate(
         contentId to (sortTimestamp to item),
     )
 }
+
+/**
+ * The first episode of the series that comes after the given coordinates, aired or not. Used by a
+ * rewatch run, which needs "what comes next in the run" rather than the canonical watch position.
+ */
+internal fun MetaDetails.episodeAfter(seasonNumber: Int, episodeNumber: Int): MetaVideo? = videos
+    .filter { video -> video.season != null && video.episode != null }
+    .sortedWith(compareBy({ video -> video.season ?: 0 }, { video -> video.episode ?: 0 }))
+    .firstOrNull { video ->
+        val season = video.season ?: return@firstOrNull false
+        val episode = video.episode ?: return@firstOrNull false
+        season > seasonNumber || (season == seasonNumber && episode > episodeNumber)
+    }
 
 private fun MetaDetails.videoForSeriesAction(action: SeriesPrimaryAction): MetaVideo? {
     if (action.seasonNumber != null && action.episodeNumber != null) {

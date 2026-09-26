@@ -126,6 +126,7 @@ import com.nuvio.app.features.trakt.TraktCommentReview
 import com.nuvio.app.features.trakt.TraktCommentsRepository
 import com.nuvio.app.features.trakt.TraktCommentsSettings
 import com.nuvio.app.features.trakt.TraktConnectionMode
+import com.nuvio.app.features.simkl.SimklSyncRepository
 import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.TrackingMembershipApplyResult
 import com.nuvio.app.features.tracking.toggleTrackingLibraryMembership
@@ -145,6 +146,7 @@ import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watching.application.WatchingActions
 import com.nuvio.app.features.watching.application.WatchingState
+import com.nuvio.app.features.watching.domain.watchAgainLabel
 import com.kmpalette.rememberDominantColorState
 import com.kmpalette.extensions.painter.rememberPainterDominantColorState
 import kotlinx.coroutines.delay
@@ -588,13 +590,21 @@ fun MetaDetailsScreen(
                 val movieProgress = progressByVideoId[meta.id]
                     ?.takeUnless { it.isCompleted }
                 val cwPrefs by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
-                val seriesAction = remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, watchedUiState.watchedKeys) {
+                // A rewatch run the account is in the middle of decides which episode Play offers, so
+                // the button keeps following the run instead of the old watch position.
+                val simklRewatchRuns = SimklSyncRepository.state.collectAsStateWithLifecycle().value.snapshot.rewatchRuns
+                val rewatchRun = remember(simklRewatchRuns, meta.id) {
+                    simklRewatchRuns.firstOrNull { run -> run.matches(meta.id) }
+                }
+                val seriesAction = remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, watchedUiState.watchedKeys, rewatchRun) {
                     meta.seriesPrimaryAction(
                         entries = watchProgressUiState.entries,
                         watchedItems = watchedUiState.items,
                         todayIsoDate = todayIsoDate,
                         preferFurthestEpisode = cwPrefs.upNextFromFurthestEpisode,
                         watchedKeys = watchedUiState.watchedKeys,
+                        rewatchSeasonNumber = rewatchRun?.seasonNumber,
+                        rewatchEpisodeNumber = rewatchRun?.episodeNumber,
                     )
                 }
                 val seriesActionVideo = remember(seriesAction, meta.id, meta.videos) {
@@ -750,12 +760,27 @@ fun MetaDetailsScreen(
                 )
                 val playText = stringResource(Res.string.action_play)
                 val resumeText = stringResource(Res.string.action_resume)
-                val playButtonLabel = remember(movieProgress, seriesAction, meta.type, hasEpisodes, playText, resumeText) {
+                val watchAgainText = watchAgainLabel(seasonNumber = null, episodeNumber = null)
+                val playButtonLabel = remember(
+                    movieProgress,
+                    seriesAction,
+                    meta.type,
+                    hasEpisodes,
+                    playText,
+                    resumeText,
+                    watchAgainText,
+                    isWatched,
+                ) {
                     when {
                         (meta.type == "series" || hasEpisodes) && seriesAction != null ->
                             seriesAction.label
-                        meta.type != "series" && !hasEpisodes && movieProgress != null ->
-                            resumeText
+                        meta.type != "series" && !hasEpisodes -> movieLikePlayLabel(
+                            hasUnfinishedProgress = movieProgress != null,
+                            isWatched = isWatched,
+                            resumeLabel = resumeText,
+                            watchAgainLabel = watchAgainText,
+                            playLabel = playText,
+                        )
                         else -> playText
                     }
                 }

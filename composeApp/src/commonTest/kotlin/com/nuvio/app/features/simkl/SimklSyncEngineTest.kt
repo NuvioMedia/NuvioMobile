@@ -429,6 +429,7 @@ class SimklSyncEngineTest {
         data class Activities(val value: SimklActivities) : Step
         data class AllItems(val type: SimklMediaType?, val value: SimklAllItemsResponse) : Step
         data class Playback(val value: List<SimklPlaybackSession>) : Step
+        data class RewatchSessions(val value: List<SimklLibraryEntry>) : Step
         data class Failure(val error: Throwable) : Step
     }
 
@@ -459,6 +460,14 @@ class SimklSyncEngineTest {
             is Step.Playback -> step.value
             is Step.Failure -> throw step.error
             else -> error("Expected playback, got $step")
+        }
+
+        /** The rewatch read stays out of the scripted order: it only consumes a step when one fits. */
+        override suspend fun fetchRewatchSessions(): List<SimklLibraryEntry> {
+            val step = remaining.firstOrNull() ?: return emptyList()
+            if (step !is Step.RewatchSessions) return emptyList()
+            remaining.removeAt(0)
+            return step.value
         }
 
         private fun next(): Step = remaining.removeAt(0)

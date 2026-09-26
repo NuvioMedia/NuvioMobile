@@ -6,6 +6,8 @@ import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.action_play_episode
 import nuvio.composeapp.generated.resources.action_resume
 import nuvio.composeapp.generated.resources.action_resume_episode
+import nuvio.composeapp.generated.resources.action_watch_again
+import nuvio.composeapp.generated.resources.action_watch_again_episode
 import nuvio.composeapp.generated.resources.compose_player_episode_code_episode_only
 import nuvio.composeapp.generated.resources.compose_player_episode_code_full
 import nuvio.composeapp.generated.resources.compose_player_no_subtitle_lines_found
@@ -106,6 +108,15 @@ fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
     } else {
         resourceString("Next Up") { getString(Res.string.continue_watching_up_next) }
     }
+
+fun localizedWatchAgainLabel(seasonNumber: Int?, episodeNumber: Int?): String {
+    val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber)
+    return if (episodeCode != null) {
+        resourceString("Watch again $episodeCode") { getString(Res.string.action_watch_again_episode, episodeCode) }
+    } else {
+        resourceString("Watch again") { getString(Res.string.action_watch_again) }
+    }
+}
 
 fun localizedMonthName(month: Int): String =
     when (month) {
