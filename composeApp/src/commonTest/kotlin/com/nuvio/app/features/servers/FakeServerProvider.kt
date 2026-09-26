@@ -12,7 +12,11 @@ internal class FakeServerProvider(
     override val id: String = "fake"
     override val displayName: String = "Fake"
     override val minimumVersion: String = "1.0"
-    override val capabilities: Set<ServerCapability> = setOf(ServerCapability.SEARCH, ServerCapability.EXTERNAL_ID_LOOKUP)
+    override val capabilities: Set<ServerCapability> = setOf(
+        ServerCapability.SEARCH,
+        ServerCapability.EXTERNAL_ID_LOOKUP,
+        ServerCapability.USER_STATE_WRITE,
+    )
 
     val movies = MOVIE_LIBRARY
     val shows = SERIES_LIBRARY
@@ -20,6 +24,7 @@ internal class FakeServerProvider(
     val episodes = mutableMapOf<Pair<Int, Int>, ServerEpisode>()
     val reported = mutableListOf<ServerPlaybackEventType>()
     val playbackRequests = mutableListOf<ServerPlaybackRequest>()
+    val playedChanges = mutableListOf<Pair<String, Boolean>>()
 
     override suspend fun libraries(session: ServerSession): List<ServerLibrary> = listOf(movies, shows)
 
@@ -102,6 +107,10 @@ internal class FakeServerProvider(
             playSessionId = null,
             playMethod = ServerPlayMethod.DIRECT_PLAY,
         )
+    }
+
+    override suspend fun setPlayed(session: ServerSession, itemId: String, played: Boolean) {
+        playedChanges += itemId to played
     }
 
     override suspend fun report(session: ServerSession, playback: ServerPlaybackSession, event: ServerPlaybackEvent) {

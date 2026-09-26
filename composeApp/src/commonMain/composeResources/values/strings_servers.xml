@@ -21,7 +21,7 @@
     <string name="servers_enabled">Enabled</string>
     <string name="servers_enabled_description">Show this server in Home, search, and stream results.</string>
     <string name="servers_catalog_metadata">Use addon metadata</string>
-    <string name="servers_catalog_metadata_description">Titles open with your addons' details and sync like any other catalog title, with playback still reported to %1$s. Some titles may not match or play if your addons number or identify them differently.</string>
+    <string name="servers_catalog_metadata_description">Titles open with your addons' details and sync like any other catalog title, with playback and watched marks still sent to %1$s. Some titles may not match or play if your addons number or identify them differently.</string>
     <string name="servers_sign_in_again">Sign in again</string>
     <string name="servers_remove">Remove server</string>
     <string name="servers_remove_confirm_title">Remove this server?</string>

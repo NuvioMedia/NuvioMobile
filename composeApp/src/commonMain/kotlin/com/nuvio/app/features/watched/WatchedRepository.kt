@@ -1035,6 +1035,7 @@ object WatchedRepository {
     ) {
         val profileId = currentProfileId
         val operationGeneration = profileGeneration
+        if (trackerHistorySync == WatchedTrackerHistorySync.Mirror) ServerWatched.mirror(items, played = true)
         accountScopeSnapshot().launch {
             runCatching {
                 if (items.isEmpty()) return@runCatching
@@ -1062,6 +1063,7 @@ object WatchedRepository {
         source: WatchProgressSource,
     ) {
         val profileId = currentProfileId
+        ServerWatched.mirror(items, played = false)
         accountScopeSnapshot().launch {
             runCatching {
                 if (items.isEmpty()) return@runCatching
