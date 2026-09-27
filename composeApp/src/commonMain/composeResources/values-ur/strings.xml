@@ -2353,4 +2353,26 @@
     <string name="compose_player_show_remaining_time">باقی وقت دکھائیں</string>
     <string name="compose_player_brightness">روشنائی</string>
     <string name="compose_player_volume">آواز</string>
+    <string name="layout_random_episode_sub">کسی بھی سیریز کی اقساط بے ترتیب چلائیں۔ اسے بند کرنے سے بے ترتیب پلے بیک رک جائے گا۔</string>
+    <string name="random_episode_caught_up">آپ تمام اقساط دیکھ چکے ہیں۔ دوبارہ دیکھنے کے لیے تمام اقساط منتخب کریں۔</string>
+    <string name="random_episode_empty_subtitle">بے ترتیب چلانے کے لیے کوئی قسط دستیاب نہیں۔</string>
+    <string name="random_episode_include_watched">تمام اقساط</string>
+    <string name="random_episode_loading">اقساط لوڈ ہو رہی ہیں…</string>
+    <string name="random_episode_title">بے ترتیب چلائیں</string>
+    <string name="random_episode_unwatched">نہ دیکھی گئی اقساط</string>
+    <string name="shuffle_again">دوبارہ بے ترتیب چلائیں</string>
+    <string name="shuffle_artwork_hidden">کہانی کے اہم انکشافات سے بچانے کے لیے تصویر چھپائی گئی ہے</string>
+    <string name="shuffle_badge">اقساط بے ترتیب چلانے کا اختیار فعال ہے</string>
+    <string name="shuffle_change_selection">اقساط منتخب کریں</string>
+    <string name="shuffle_choose_episodes">منتخب کریں کہ کون سی اقساط بے ترتیب چلانی ہیں۔</string>
+    <string name="shuffle_disabled">بے ترتیب چلانا بند</string>
+    <string name="shuffle_enabled_all">بے ترتیب چلانا فعال · تمام اقساط</string>
+    <string name="shuffle_enabled_unwatched">بے ترتیب چلانا فعال · نہ دیکھی گئی اقساط</string>
+    <string name="shuffle_only_episode">آپ کے انتخاب میں صرف یہی ایک قسط ہے۔</string>
+    <string name="shuffle_play_episode">قسط چلائیں</string>
+    <string name="shuffle_preview_title">آپ کی قسط</string>
+    <string name="shuffle_save_failed">بے ترتیب چلانے کی ترتیبات اپ ڈیٹ نہیں ہو سکیں۔ دوبارہ کوشش کریں۔</string>
+    <string name="shuffle_starting">بے ترتیب چلانا شروع ہو رہا ہے…</string>
+    <string name="shuffle_stop">بے ترتیب چلانا بند کریں</string>
+    <string name="shuffle_unwatched">نہ دیکھی گئی</string>
 </resources>
