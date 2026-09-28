@@ -147,7 +147,6 @@ internal fun LazyListScope.homescreenSettingsContent(
             ) {
                 NuvioLoadingIndicator(
                     modifier = Modifier.size(28.dp),
-                    color = MaterialTheme.colorScheme.primary,
                 )
             }
         } else if (catalogErrorMessage != null && items.isEmpty()) {

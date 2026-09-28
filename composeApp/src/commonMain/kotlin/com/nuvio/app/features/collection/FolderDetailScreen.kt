@@ -297,6 +297,7 @@ private fun TabbedGridContent(
                             NuvioPosterCard(
                                 title = item.name,
                                 imageUrl = item.poster,
+                                fallbackImageUrl = item.rawPosterUrl,
                                 shape = NuvioPosterShape.Poster,
                                 detailLine = item.releaseInfo,
                                 isWatched = WatchingState.isPosterWatched(
@@ -376,7 +377,6 @@ private fun PaginationLoadingFooter() {
     ) {
         NuvioLoadingIndicator(
             modifier = Modifier.size(28.dp),
-            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -398,7 +398,6 @@ private fun LoadingIndicator() {
     ) {
         NuvioLoadingIndicator(
             modifier = Modifier.size(32.dp),
-            color = MaterialTheme.colorScheme.primary,
         )
     }
 }

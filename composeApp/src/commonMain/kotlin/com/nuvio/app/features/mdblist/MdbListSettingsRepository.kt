@@ -1,12 +1,21 @@
 package com.nuvio.app.features.mdblist
 
+import com.nuvio.app.features.profiles.ProfileRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 
 object MdbListSettingsRepository {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val _uiState = MutableStateFlow(MdbListSettings())
-    val uiState: StateFlow<MdbListSettings> = _uiState.asStateFlow()
+    val uiState: StateFlow<MdbListSettings> = combine(_uiState, MdbListTracker.auth.state) { settings, auth ->
+        settings.withAccount(auth, ProfileRepository.activeProfileId)
+    }.stateIn(scope, SharingStarted.Eagerly, MdbListSettings())
 
     private var hasLoaded = false
 
@@ -22,6 +31,7 @@ object MdbListSettingsRepository {
     private var useMal = true
 
     fun ensureLoaded() {
+        MdbListTracker.ensureLoaded()
         if (hasLoaded) return
         loadFromDisk()
     }
@@ -32,12 +42,11 @@ object MdbListSettingsRepository {
 
     fun snapshot(): MdbListSettings {
         ensureLoaded()
-        return _uiState.value
+        return _uiState.value.withAccount(MdbListTracker.auth.state.value, ProfileRepository.activeProfileId)
     }
 
     fun setEnabled(value: Boolean) {
         ensureLoaded()
-        if (value && apiKey.isBlank()) return
         if (enabled == value) return
         enabled = value
         publish()
@@ -49,10 +58,6 @@ object MdbListSettingsRepository {
         val normalized = value.trim()
         if (apiKey == normalized) return
         apiKey = normalized
-        if (apiKey.isBlank()) {
-            enabled = false
-            MdbListSettingsStorage.saveEnabled(false)
-        }
         publish()
         MdbListSettingsStorage.saveApiKey(normalized)
         MdbListMetadataService.clearCache()
@@ -96,13 +101,12 @@ object MdbListSettingsRepository {
             else -> return
         }
         publish()
-        MdbListMetadataService.clearCache()
     }
 
     private fun loadFromDisk() {
         hasLoaded = true
         apiKey = MdbListSettingsStorage.loadApiKey().orEmpty().trim()
-        enabled = (MdbListSettingsStorage.loadEnabled() ?: false) && apiKey.isNotBlank()
+        enabled = MdbListSettingsStorage.loadEnabled() ?: false
         useImdb = MdbListSettingsStorage.loadUseImdb() ?: true
         useTmdb = MdbListSettingsStorage.loadUseTmdb() ?: true
         useTomatoes = MdbListSettingsStorage.loadUseTomatoes() ?: true

@@ -347,8 +347,8 @@
     <string name="compose_player_color">色</string>
     <string name="compose_player_currently_playing">再生中</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">エピソード</string>
     <string name="compose_player_font_size">フォントサイズ</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1309,7 +1309,7 @@
     <string name="streams_empty_no_streams_message">インストール済みアドオンがこのタイトルのストリームを返しませんでした。</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">エピソード</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">取得中…</string>
     <string name="streams_finding_source">ソースを検索中…</string>
     <string name="streams_loading_subtitles">アドオンから字幕を読み込み中…</string>
@@ -1361,7 +1361,7 @@
     <string name="auth_sign_up_failed">サインアップに失敗しました</string>
     <string name="catalog_load_failed">カタログアイテムを読み込めませんでした。</string>
     <string name="continue_watching_up_next">次のエピソード</string>
-    <string name="continue_watching_up_next_episode">次のエピソード • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">次のエピソード • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">%1$s ロゴ</string>
     <string name="details_comments_load_failed">コメントの読み込みに失敗しました</string>
     <string name="details_load_failed_all_addons">どのアドオンからも詳細を読み込めませんでした。</string>
@@ -1913,4 +1913,22 @@
     <string name="player_torrent_starting_engine">P2Pエンジンを起動中…</string>
     <string name="player_error_failed_start_torrent">トレントの開始に失敗しました：%1$s</string>
     <string name="player_error_torrent">トレントエラー：%1$s</string>
+    <string name="series_status_ended">終了</string>
+    <string name="series_status_continuing">放送中</string>
+    <string name="series_status_current">放送中</string>
+    <string name="series_status_cancelled">打ち切り</string>
+    <string name="series_status_released">公開</string>
+    <string name="series_status_planned">予定</string>
+    <string name="series_status_rumored">噂</string>
+    <string name="series_status_in_production">製作中</string>
+    <string name="series_status_post_production">ポストプロダクション</string>
+    <string name="movie_status_ended">終了</string>
+    <string name="movie_status_continuing">放送中</string>
+    <string name="movie_status_current">放送中</string>
+    <string name="movie_status_cancelled">打ち切り</string>
+    <string name="movie_status_released">公開</string>
+    <string name="movie_status_planned">予定</string>
+    <string name="movie_status_rumored">噂</string>
+    <string name="movie_status_in_production">製作中</string>
+    <string name="movie_status_post_production">ポストプロダクション</string>
 </resources>

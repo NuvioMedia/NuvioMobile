@@ -424,8 +424,8 @@
     <string name="compose_player_color">Цвет</string>
     <string name="compose_player_currently_playing">Сейчас воспроизводится</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">Эпизоды</string>
     <string name="compose_player_font_size">Размер шрифта</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1190,8 +1190,6 @@
     <string name="settings_tmdb_module_credits_description">Актерский состав с фотографиями, режиссер и сценарист из TMDB</string>
     <string name="settings_tmdb_module_details">Подробности</string>
     <string name="settings_tmdb_module_details_description">Время выполнения, статус, страна и язык из TMDB</string>
-    <string name="settings_tmdb_module_release_dates">Даты выхода</string>
-    <string name="settings_tmdb_module_release_dates_description">Используйте даты выхода в эфир телеканала TMDB вместо точного времени выпуска дополнений.</string>
     <string name="settings_tmdb_module_episodes">Эпизоды</string>
     <string name="settings_tmdb_module_episodes_description">Названия эпизодов, обзоры, миниатюры и время выполнения из TMDB</string>
     <string name="settings_tmdb_module_more_like_this">Больше подобного</string>
@@ -1328,7 +1326,7 @@
     <string name="theme_white">Белый</string>
     <string name="player_next_episode">Следующий эпизод</string>
     <string name="player_next_episode_finding_source">Поиск источника…</string>
-    <string name="player_next_episode_playing_via_countdown">Воспроизведение через %1$s начнется через %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">Воспроизведение через %1$s начнется через %2$d с…</string>
     <string name="player_next_episode_thumbnail">Миниатюра следующей серии</string>
     <string name="player_next_episode_unaired">Еще не вышел</string>
     <string name="player_skip">Пропустить</string>
@@ -1560,7 +1558,7 @@
     <string name="streams_empty_no_streams_message">Ни один из установленных аддонов не вернул потоки для этого фильма или сериала.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Эпизод</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Получение…</string>
     <string name="streams_finding_source">Поиск источника…</string>
     <string name="streams_loading_subtitles">Загрузка субтитров из аддонов…</string>
@@ -1624,7 +1622,7 @@
     <string name="auth_sign_up_failed">Регистрация не удалась</string>
     <string name="catalog_load_failed">Невозможно загрузить элементы каталога.</string>
     <string name="continue_watching_up_next">Далее</string>
-    <string name="continue_watching_up_next_episode">Далее • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Далее • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">Логотип %1$s</string>
     <string name="details_comments_load_failed">Не удалось загрузить комментарии.</string>
     <string name="details_load_failed_all_addons">Не удалось загрузить данные из какого-либо дополнения.</string>
@@ -2241,4 +2239,30 @@
         <item quantity="many">%d названий</item>
         <item quantity="other">%d названия</item>
     </plurals>
+    <string name="layout_overall_ratings">Общие рейтинги</string>
+    <string name="layout_overall_ratings_sub_on">Показываются стандартные рейтинги и рейтинги TMDB.</string>
+    <string name="layout_overall_ratings_sub_off">Стандартные рейтинги и рейтинги TMDB скрыты. На страницах с описанием приоритет имеют настройки провайдера MDBList.</string>
+    <string name="layout_episode_ratings">Рейтинги эпизодов</string>
+    <string name="layout_episode_ratings_sub">Выберите, какие рейтинги эпизодов отображать.</string>
+    <string name="layout_ratings_show">Показывать</string>
+    <string name="layout_ratings_hide">Скрывать</string>
+    <string name="layout_ratings_hide_unwatched">Скрывать для непросмотренных</string>
+    <string name="series_status_ended">Завершен</string>
+    <string name="series_status_continuing">В эфире</string>
+    <string name="series_status_current">Текущий</string>
+    <string name="series_status_cancelled">Отменен</string>
+    <string name="series_status_released">Вышел</string>
+    <string name="series_status_planned">Запланирован</string>
+    <string name="series_status_rumored">Слухи</string>
+    <string name="series_status_in_production">В производстве</string>
+    <string name="series_status_post_production">Пост-продакшн</string>
+    <string name="movie_status_ended">Завершен</string>
+    <string name="movie_status_continuing">В эфире</string>
+    <string name="movie_status_current">Текущий</string>
+    <string name="movie_status_cancelled">Отменен</string>
+    <string name="movie_status_released">Вышел</string>
+    <string name="movie_status_planned">Запланирован</string>
+    <string name="movie_status_rumored">Слухи</string>
+    <string name="movie_status_in_production">В производстве</string>
+    <string name="movie_status_post_production">Пост-продакшн</string>
 </resources>

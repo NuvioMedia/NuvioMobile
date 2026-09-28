@@ -42,12 +42,13 @@ internal object HomeCatalogParser {
                     continue
                 }
 
+                val landscapePoster = meta.string("landscapePoster")?.takeIf { it.isNotBlank() }
                 val item = MetaPreview(
                     id = id,
                     type = type,
                     name = name,
                     poster = meta.string("poster"),
-                    banner = meta.string("banner") ?: meta.string("background"),
+                    banner = meta.string("banner") ?: meta.string("background") ?: landscapePoster,
                     logo = meta.string("logo"),
                     posterShape = meta.string("posterShape").toPosterShape(),
                     description = meta.string("description"),
@@ -57,6 +58,7 @@ internal object HomeCatalogParser {
                     genres = meta.array("genres").mapNotNull { genre ->
                         genre.jsonPrimitive.contentOrNull?.takeIf { it.isNotBlank() }
                     },
+                    landscapePoster = landscapePoster,
                 )
                 if (seenKeys.add(item.stableKey())) {
                     add(item)

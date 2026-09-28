@@ -19,6 +19,7 @@ object TraktTrackingProgressProvider : TrackingProgressProvider {
     override val changes: Flow<Unit> = TraktProgressRepository.uiState.map { Unit }
     override val providesCompleteMetadata: Boolean = true
     override val ownsCompletedHistoryProjection: Boolean = true
+    override fun showIdSiblings() = TraktProgressRepository.getShowIdSiblings()
 
     override fun continueWatchingCutoffEpochMs(daysCap: Int, nowEpochMs: Long): Long? {
         val normalizedDaysCap = normalizeTraktContinueWatchingDaysCap(daysCap)

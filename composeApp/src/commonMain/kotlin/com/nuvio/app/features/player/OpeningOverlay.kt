@@ -200,7 +200,6 @@ internal fun OpeningOverlay(
                         )
                     } else {
                         NuvioLoadingIndicator(
-                            color = Color(0xFFE50914),
                             modifier = Modifier.size(54.dp),
                         )
                     }

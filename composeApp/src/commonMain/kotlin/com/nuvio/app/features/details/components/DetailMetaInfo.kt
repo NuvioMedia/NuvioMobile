@@ -72,6 +72,8 @@ fun DetailMetaInfo(
     meta: MetaDetails,
     modifier: Modifier = Modifier,
     horizontalScrollPadding: Dp = 0.dp,
+    showOverallRatings: Boolean = true,
+    isMdbListActive: Boolean = false,
 ) {
     Column(
         modifier = modifier
@@ -82,13 +84,13 @@ fun DetailMetaInfo(
         val releaseLine = formatMetaReleaseLineForDetails(meta)
         val runtimeText = formatRuntimeForDisplay(meta.runtime)
         val ageBadge = meta.ageRating?.trim()?.takeIf { it.isNotBlank() }
-        val hasMdbImdbRating = meta.externalRatings.any { it.source == PROVIDER_IMDB }
         val validImdbRating = meta.imdbRating
+            ?.takeIf { showOverallRatings && !isMdbListActive }
             ?.takeIf { raw -> raw.toDoubleOrNull()?.let { it > 0.0 } == true }
         val hasMetaRow = releaseLine != null ||
             runtimeText != null ||
             ageBadge != null ||
-            (validImdbRating != null && !hasMdbImdbRating)
+            validImdbRating != null
         if (hasMetaRow) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -113,7 +115,7 @@ fun DetailMetaInfo(
                 ageBadge?.let { badge ->
                     DetailHeroMetaBadge(text = badge)
                 }
-                if (validImdbRating != null && !hasMdbImdbRating) {
+                if (validImdbRating != null) {
                     val imdbTextStyle = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.sp,
@@ -137,7 +139,7 @@ fun DetailMetaInfo(
         }
 
         AnimatedVisibility(
-            visible = meta.externalRatings.isNotEmpty(),
+            visible = isMdbListActive && meta.externalRatings.isNotEmpty(),
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically(),
         ) {

@@ -347,8 +347,8 @@
     <string name="compose_player_color">Culoare</string>
     <string name="compose_player_currently_playing">Rulează în prezent</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">Episoade</string>
     <string name="compose_player_font_size">Dimensiune font</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1107,7 +1107,7 @@
     <string name="theme_white">Alb</string>
     <string name="player_next_episode">Episodul următor</string>
     <string name="player_next_episode_finding_source">Se caută sursa…</string>
-    <string name="player_next_episode_playing_via_countdown">Redare prin %1$s în %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">Redare prin %1$s în %2$ds…</string>
     <string name="player_next_episode_thumbnail">Miniatură episodul următor</string>
     <string name="player_next_episode_unaired">Nedifuzat</string>
     <string name="player_skip">Sari peste</string>
@@ -1337,7 +1337,7 @@
     <string name="streams_empty_no_streams_message">Nicio extensie instalată nu a returnat fluxuri pentru acest titlu.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Episod</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Se preia…</string>
     <string name="streams_finding_source">Se caută sursa…</string>
     <string name="streams_loading_subtitles">Se încarcă subtitrările din extensii…</string>
@@ -1390,7 +1390,7 @@
     <string name="auth_sign_up_failed">Înregistrarea a eșuat</string>
     <string name="catalog_load_failed">Nu s-au putut încărca elementele din catalog.</string>
     <string name="continue_watching_up_next">Următorul la rând</string>
-    <string name="continue_watching_up_next_episode">Următorul • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Următorul • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">Siglă %1$s</string>
     <string name="details_comments_load_failed">Nu s-au putut încărca comentariile</string>
     <string name="details_load_failed_all_addons">Nu s-au putut încărca detaliile din nicio extensie.</string>
@@ -1927,4 +1927,22 @@
         <item quantity="one">%d titlu</item>
         <item quantity="other">%d titluri</item>
     </plurals>
+    <string name="series_status_ended">Încheiat</string>
+    <string name="series_status_continuing">În desfășurare</string>
+    <string name="series_status_current">Actual</string>
+    <string name="series_status_cancelled">Anulat</string>
+    <string name="series_status_released">Lansat</string>
+    <string name="series_status_planned">Planificat</string>
+    <string name="series_status_rumored">Zvon</string>
+    <string name="series_status_in_production">În producție</string>
+    <string name="series_status_post_production">În postproducție</string>
+    <string name="movie_status_ended">Încheiat</string>
+    <string name="movie_status_continuing">În desfășurare</string>
+    <string name="movie_status_current">Actual</string>
+    <string name="movie_status_cancelled">Anulat</string>
+    <string name="movie_status_released">Lansat</string>
+    <string name="movie_status_planned">Planificat</string>
+    <string name="movie_status_rumored">Zvon</string>
+    <string name="movie_status_in_production">În producție</string>
+    <string name="movie_status_post_production">În postproducție</string>
 </resources>

@@ -14,7 +14,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -27,7 +26,7 @@ import androidx.compose.material.icons.rounded.PlayCircleOutline
 import androidx.compose.material.icons.rounded.Replay
 import androidx.compose.material.icons.rounded.Send
 import androidx.compose.material.icons.rounded.StopCircle
-import androidx.compose.material3.BasicAlertDialog
+import com.nuvio.app.core.ui.DialogSurface
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -86,164 +85,156 @@ fun SubmitIntroDialog(
     val scrollState = rememberScrollState()
     var isSubmitting by remember { mutableStateOf(false) }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        Surface(
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        modifier = Modifier.heightIn(max = 560.dp),
+    ) {
+        Column(
             modifier = Modifier
-                .padding(horizontal = 16.dp, vertical = 24.dp)
-                .widthIn(max = 420.dp)
-                .heightIn(max = 560.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surface,
-            tonalElevation = 8.dp,
+                .weight(1f, fill = false)
+                .verticalScroll(scrollState),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .padding(24.dp)
-                    .heightIn(max = 512.dp)
-                    .verticalScroll(scrollState),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Header
+                Text(
+                    text = stringResource(Res.string.submit_intro_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                )
+                IconButton(onClick = onDismiss) {
+                    Icon(
+                        Icons.Rounded.Close,
+                        contentDescription = stringResource(Res.string.action_close),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            // Segment Type
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = stringResource(Res.string.submit_intro_segment_type_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                )
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    SegmentTypeButton(
+                        label = stringResource(Res.string.submit_intro_segment_intro),
+                        icon = Icons.Rounded.PlayCircleOutline,
+                        selected = segmentType == "intro",
+                        onClick = { onSegmentTypeChange("intro") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    SegmentTypeButton(
+                        label = stringResource(Res.string.submit_intro_segment_recap),
+                        icon = Icons.Rounded.Replay,
+                        selected = segmentType == "recap",
+                        onClick = { onSegmentTypeChange("recap") },
+                        modifier = Modifier.weight(1f)
+                    )
+                    SegmentTypeButton(
+                        label = stringResource(Res.string.submit_intro_segment_outro),
+                        icon = Icons.Rounded.StopCircle,
+                        selected = segmentType == "outro",
+                        onClick = { onSegmentTypeChange("outro") },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+
+            // Start Time
+            TimeInputRow(
+                label = stringResource(Res.string.submit_intro_start_time_label),
+                value = startTimeStr,
+                onValueChange = onStartTimeChange,
+                onCapture = { onStartTimeChange(formatSecondsToMMSS(currentTimeSec)) }
+            )
+
+            // End Time
+            TimeInputRow(
+                label = stringResource(Res.string.submit_intro_end_time_label),
+                value = endTimeStr,
+                onValueChange = onEndTimeChange,
+                onCapture = { onEndTimeChange(formatSecondsToMMSS(currentTimeSec)) }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Actions
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .clickable(enabled = !isSubmitting, onClick = onDismiss),
+                    contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = stringResource(Res.string.submit_intro_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.Bold,
-                    )
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            Icons.Rounded.Close,
-                            contentDescription = stringResource(Res.string.action_close),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-
-                // Segment Type
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = stringResource(Res.string.submit_intro_segment_type_label),
-                        style = MaterialTheme.typography.labelSmall,
+                        text = stringResource(Res.string.action_cancel),
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.SemiBold
                     )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        SegmentTypeButton(
-                            label = stringResource(Res.string.submit_intro_segment_intro),
-                            icon = Icons.Rounded.PlayCircleOutline,
-                            selected = segmentType == "intro",
-                            onClick = { onSegmentTypeChange("intro") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        SegmentTypeButton(
-                            label = stringResource(Res.string.submit_intro_segment_recap),
-                            icon = Icons.Rounded.Replay,
-                            selected = segmentType == "recap",
-                            onClick = { onSegmentTypeChange("recap") },
-                            modifier = Modifier.weight(1f)
-                        )
-                        SegmentTypeButton(
-                            label = stringResource(Res.string.submit_intro_segment_outro),
-                            icon = Icons.Rounded.StopCircle,
-                            selected = segmentType == "outro",
-                            onClick = { onSegmentTypeChange("outro") },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
                 }
-
-                // Start Time
-                TimeInputRow(
-                    label = stringResource(Res.string.submit_intro_start_time_label),
-                    value = startTimeStr,
-                    onValueChange = onStartTimeChange,
-                    onCapture = { onStartTimeChange(formatSecondsToMMSS(currentTimeSec)) }
-                )
-
-                // End Time
-                TimeInputRow(
-                    label = stringResource(Res.string.submit_intro_end_time_label),
-                    value = endTimeStr,
-                    onValueChange = onEndTimeChange,
-                    onCapture = { onEndTimeChange(formatSecondsToMMSS(currentTimeSec)) }
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                // Actions
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .clickable(enabled = !isSubmitting, onClick = onDismiss),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.action_cancel),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                    Box(
-                        modifier = Modifier
-                            .weight(2f)
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.primary)
-                            .clickable(enabled = !isSubmitting) {
-                                val start = parseTimeToSeconds(startTimeStr)
-                                val end = parseTimeToSeconds(endTimeStr)
-                                if (start != null && end != null && end > start) {
-                                    isSubmitting = true
-                                    scope.launch {
-                                        val result = SkipIntroRepository.submitIntro(
-                                            imdbId = imdbId,
-                                            season = season,
-                                            episode = episode,
-                                            startSec = start,
-                                            endSec = end,
-                                            segmentType = segmentType,
-                                        )
-                                        isSubmitting = false
-                                        if (result) {
-                                            onSuccess()
-                                        }
+                Box(
+                    modifier = Modifier
+                        .weight(2f)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable(enabled = !isSubmitting) {
+                            val start = parseTimeToSeconds(startTimeStr)
+                            val end = parseTimeToSeconds(endTimeStr)
+                            if (start != null && end != null && end > start) {
+                                isSubmitting = true
+                                scope.launch {
+                                    val result = SkipIntroRepository.submitIntro(
+                                        imdbId = imdbId,
+                                        season = season,
+                                        episode = episode,
+                                        startSec = start,
+                                        endSec = end,
+                                        segmentType = segmentType,
+                                    )
+                                    isSubmitting = false
+                                    if (result) {
+                                        onSuccess()
                                     }
                                 }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isSubmitting) {
-                            NuvioLoadingIndicator(
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                modifier = Modifier.size(24.dp),
-                            )
-                        } else {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Icon(Icons.Rounded.Send, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
-                                Text(
-                                    text = stringResource(Res.string.submit_intro_button_submit),
-                                    color = MaterialTheme.colorScheme.onPrimary,
-                                    fontWeight = FontWeight.Bold
-                                )
                             }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSubmitting) {
+                        NuvioLoadingIndicator(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    } else {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(Icons.Rounded.Send, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(18.dp))
+                            Text(
+                                text = stringResource(Res.string.submit_intro_button_submit),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }

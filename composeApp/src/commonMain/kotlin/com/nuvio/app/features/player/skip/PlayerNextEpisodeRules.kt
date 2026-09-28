@@ -36,6 +36,21 @@ object PlayerNextEpisodeRules {
 
         if (outroSegments.isNotEmpty()) {
             if (durationMs <= 0L) return false
+
+            // Use the same post-credits detection as the skip button so the
+            // next-episode card never appears over a post-credits scene.
+            val latestOutro = outroSegments.maxByOrNull { it.endTime }
+            val postCreditsScene = latestOutro?.findFollowingPostCreditsScene(skipIntervals, durationMs)
+
+            if (postCreditsScene != null) {
+                val sceneEndMs = (postCreditsScene.endTime * 1_000.0).toLong()
+                    .coerceAtMost(durationMs)
+                val userTriggerMs = userThresholdPositionMs(
+                    durationMs, thresholdMode, thresholdPercent, thresholdMinutesBeforeEnd
+                )
+                return positionMs >= maxOf(sceneEndMs, userTriggerMs)
+            }
+
             val latestOutroEndMs = (outroSegments.maxOf { it.endTime } * 1_000.0).toLong()
             val postOutroGapMs = durationMs - latestOutroEndMs
 
@@ -111,6 +126,51 @@ object PlayerNextEpisodeRules {
     }
 
     val OUTRO_SEGMENT_TYPES = setOf("outro", "ed", "mixed-ed")
+
+    private const val POST_CREDITS_GAP_MS = 5_000L
+
+    private fun SkipInterval.findFollowingPostCreditsScene(
+        intervals: List<SkipInterval>,
+        durationMs: Long,
+    ): SkipInterval? {
+        if (type !in OUTRO_SEGMENT_TYPES) return null
+        val explicit = intervals.filter {
+            it.type.trim().lowercase() == "post-credits" &&
+                it.startTime.isFinite() && it.endTime.isFinite() &&
+                it.startTime >= endTime && it.endTime > it.startTime &&
+                (durationMs <= 0L || it.startTime * 1000.0 < durationMs)
+        }.minByOrNull { it.startTime }
+        if (explicit != null) return explicit
+        if (durationMs > 0L) {
+            val creditsEndMs = (endTime * 1000.0).toLong()
+            val gapMs = durationMs - creditsEndMs
+            if (gapMs > POST_CREDITS_GAP_MS) {
+                return SkipInterval(
+                    startTime = endTime,
+                    endTime = durationMs / 1000.0,
+                    type = "post-credits",
+                    provider = "heuristic",
+                )
+            }
+        }
+        return null
+    }
+
+    private fun userThresholdPositionMs(
+        durationMs: Long,
+        thresholdMode: NextEpisodeThresholdMode,
+        thresholdPercent: Float,
+        thresholdMinutesBeforeEnd: Float,
+    ): Long = when (thresholdMode) {
+        NextEpisodeThresholdMode.PERCENTAGE -> {
+            val clampedPercent = thresholdPercent.coerceIn(97f, 100f)
+            kotlin.math.ceil(durationMs * (clampedPercent / 100.0)).toLong()
+        }
+        NextEpisodeThresholdMode.MINUTES_BEFORE_END -> {
+            val clampedMinutes = thresholdMinutesBeforeEnd.coerceIn(0f, 3.5f)
+            durationMs - (clampedMinutes * 60_000f).toLong()
+        }
+    }
 }
 
 internal expect fun currentDateComponents(): DateComponents

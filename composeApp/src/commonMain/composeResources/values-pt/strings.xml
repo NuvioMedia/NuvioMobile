@@ -344,8 +344,8 @@
     <string name="compose_player_color">Cor</string>
     <string name="compose_player_currently_playing">A reproduzir</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">T%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">T%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">T%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">T%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">Episódios</string>
     <string name="compose_player_font_size">Tamanho da letra</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1053,7 +1053,7 @@
     <string name="theme_white">Branco</string>
     <string name="player_next_episode">Próximo episódio</string>
     <string name="player_next_episode_finding_source">A procurar fonte…</string>
-    <string name="player_next_episode_playing_via_countdown">A reproduzir via %1$s em %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">A reproduzir via %1$s em %2$ds…</string>
     <string name="player_next_episode_thumbnail">Miniatura do próximo episódio</string>
     <string name="player_next_episode_unaired">Não emitido</string>
     <string name="player_skip">Saltar</string>
@@ -1282,7 +1282,7 @@
     <string name="streams_empty_no_streams_message">Nenhum dos teus addons instalados devolveu streams para este título.</string>
     <string name="streams_episode_badge">T%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Episódio</string>
-    <string name="streams_episode_title_with_name">T%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">T%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">A obter…</string>
     <string name="streams_finding_source">A procurar fonte…</string>
     <string name="streams_loading_subtitles">A carregar legendas dos addons…</string>
@@ -1334,7 +1334,7 @@
     <string name="auth_sign_up_failed">Falha no registo</string>
     <string name="catalog_load_failed">Não foi possível carregar os itens do catálogo.</string>
     <string name="continue_watching_up_next">A seguir</string>
-    <string name="continue_watching_up_next_episode">A seguir • T%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">A seguir • T%1$d E%2$d</string>
     <string name="detail_logo_content_description">Logótipo de %1$s</string>
     <string name="details_comments_load_failed">Falha ao carregar os comentários</string>
     <string name="details_load_failed_all_addons">Não foi possível carregar os detalhes de nenhum addon.</string>
@@ -1845,4 +1845,22 @@
     <string name="player_torrent_starting_engine">A iniciar motor P2P…</string>
     <string name="player_error_failed_start_torrent">Falha ao iniciar o torrent: %1$s</string>
     <string name="player_error_torrent">Erro de torrent: %1$s</string>
+    <string name="series_status_ended">Terminada</string>
+    <string name="series_status_continuing">Em exibição</string>
+    <string name="series_status_current">Atual</string>
+    <string name="series_status_cancelled">Cancelada</string>
+    <string name="series_status_released">Lançada</string>
+    <string name="series_status_planned">Planeada</string>
+    <string name="series_status_rumored">Com rumores</string>
+    <string name="series_status_in_production">Em produção</string>
+    <string name="series_status_post_production">Pós-produção</string>
+    <string name="movie_status_ended">Terminado</string>
+    <string name="movie_status_continuing">Em exibição</string>
+    <string name="movie_status_current">Atual</string>
+    <string name="movie_status_cancelled">Cancelado</string>
+    <string name="movie_status_released">Lançado</string>
+    <string name="movie_status_planned">Planeado</string>
+    <string name="movie_status_rumored">Com rumores</string>
+    <string name="movie_status_in_production">Em produção</string>
+    <string name="movie_status_post_production">Pós-produção</string>
 </resources>

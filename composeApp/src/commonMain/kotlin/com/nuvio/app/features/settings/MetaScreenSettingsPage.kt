@@ -38,6 +38,13 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.shuffle.EpisodeShuffleRepository
+import com.nuvio.app.core.ui.NuvioToastController
+import nuvio.composeapp.generated.resources.random_episode_title
+import nuvio.composeapp.generated.resources.layout_random_episode_sub
+import nuvio.composeapp.generated.resources.shuffle_save_failed
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -160,6 +167,23 @@ internal fun LazyListScope.metaScreenSettingsContent(
                     checked = uiState.tabLayout,
                     isTablet = isTablet,
                     onCheckedChange = { MetaScreenSettingsRepository.setTabLayout(it) },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                RatingsSettings(isTablet = isTablet, uiState = uiState)
+                SettingsGroupDivider(isTablet = isTablet)
+                val shuffleProfile by remember {
+                    EpisodeShuffleRepository.ensureLoaded()
+                    EpisodeShuffleRepository.uiState
+                }.collectAsStateWithLifecycle()
+                val shuffleSaveFailed = stringResource(Res.string.shuffle_save_failed)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.random_episode_title),
+                    description = stringResource(Res.string.layout_random_episode_sub),
+                    checked = shuffleProfile.available,
+                    isTablet = isTablet,
+                    onCheckedChange = {
+                        if (!EpisodeShuffleRepository.setAvailable(it)) NuvioToastController.show(shuffleSaveFailed)
+                    },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 MetaEpisodeCardStyleSelector(

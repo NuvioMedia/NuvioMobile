@@ -424,8 +424,8 @@
     <string name="compose_player_color">Цвят</string>
     <string name="compose_player_currently_playing">В момента се възпроизвежда</string>
     <string name="compose_player_episode_code_episode_only">Е%1$d</string>
-    <string name="compose_player_episode_code_full">С%1$dЕ%2$d</string>
-    <string name="compose_player_episode_title_format">С%1$dЕ%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">С%1$d Е%2$d</string>
+    <string name="compose_player_episode_title_format">С%1$d Е%2$d • %3$s</string>
     <string name="compose_player_episodes">Епизоди</string>
     <string name="compose_player_font_size">Размер на шрифта</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1190,8 +1190,6 @@
     <string name="settings_tmdb_module_credits_description">Актьорски състав със снимки, режисьор и сценарист от TMDB</string>
     <string name="settings_tmdb_module_details">Детайли</string>
     <string name="settings_tmdb_module_details_description">Продължителност, статус, страна и език от TMDB</string>
-    <string name="settings_tmdb_module_release_dates">Дата на излъчване</string>
-    <string name="settings_tmdb_module_release_dates_description">Използвай TMDB дати на излъчване вместо точни времена от добавките</string>
     <string name="settings_tmdb_module_episodes">Епизоди</string>
     <string name="settings_tmdb_module_episodes_description">Заглавия, описания, миниатюри и продължителност на епизоди от TMDB</string>
     <string name="settings_tmdb_module_more_like_this">Подобни</string>
@@ -1328,7 +1326,7 @@
     <string name="theme_white">Бял</string>
     <string name="player_next_episode">Следващ епизод</string>
     <string name="player_next_episode_finding_source">Търсене на източник…</string>
-    <string name="player_next_episode_playing_via_countdown">Пускане чрез %1$s след %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">Пускане чрез %1$s след %2$d с…</string>
     <string name="player_next_episode_thumbnail">Миниатюра на следващ епизод</string>
     <string name="player_next_episode_unaired">Неизлъчен</string>
     <string name="player_skip">Пропусни</string>
@@ -1560,7 +1558,7 @@
     <string name="streams_empty_no_streams_message">Нито една от вашите инсталирани добавки не върна източници за това заглавие.</string>
     <string name="streams_episode_badge">С%1$d Е%2$d</string>
     <string name="streams_episode_fallback_title">Епизод</string>
-    <string name="streams_episode_title_with_name">С%1$dЕ%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">С%1$d Е%2$d - %3$s</string>
     <string name="streams_fetching">Извличане…</string>
     <string name="streams_finding_source">Търсене на източник…</string>
     <string name="streams_loading_subtitles">Зареждане на субтитри от добавки…</string>
@@ -1624,7 +1622,7 @@
     <string name="auth_sign_up_failed">Регистрацията не бе успешна</string>
     <string name="catalog_load_failed">Елементите на каталога не можаха да се заредят.</string>
     <string name="continue_watching_up_next">Следва</string>
-    <string name="continue_watching_up_next_episode">Следва • С%1$dЕ%2$d</string>
+    <string name="continue_watching_up_next_episode">Следва • С%1$d Е%2$d</string>
     <string name="detail_logo_content_description">Лого на %1$s</string>
     <string name="details_comments_load_failed">Коментарите не можаха да се заредят</string>
     <string name="details_load_failed_all_addons">Детайлите не можаха да се заредят от нито една добавка.</string>
@@ -2235,4 +2233,22 @@
         <item quantity="one">%d заглавие</item>
         <item quantity="other">%d заглавия</item>
     </plurals>
+    <string name="series_status_ended">Завършен</string>
+    <string name="series_status_continuing">Продължава</string>
+    <string name="series_status_current">Текущ</string>
+    <string name="series_status_cancelled">Отменен</string>
+    <string name="series_status_released">Пуснат</string>
+    <string name="series_status_planned">Планиран</string>
+    <string name="series_status_rumored">Слух</string>
+    <string name="series_status_in_production">В продукция</string>
+    <string name="series_status_post_production">След продукция</string>
+    <string name="movie_status_ended">Завършен</string>
+    <string name="movie_status_continuing">Продължава</string>
+    <string name="movie_status_current">Текущ</string>
+    <string name="movie_status_cancelled">Отменен</string>
+    <string name="movie_status_released">Пуснат</string>
+    <string name="movie_status_planned">Планиран</string>
+    <string name="movie_status_rumored">Слух</string>
+    <string name="movie_status_in_production">В продукция</string>
+    <string name="movie_status_post_production">След продукция</string>
 </resources>

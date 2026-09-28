@@ -289,6 +289,24 @@ class MetaDetailsParserTest {
         assertEquals("PG-13", result.ageRating)
     }
 
+    @Test
+    fun `parse falls back to landscape poster when background is missing`() {
+        val result = MetaDetailsParser.parse(
+            """
+            {
+              "meta": {
+                "id": "tt1",
+                "type": "movie",
+                "name": "Movie",
+                "landscapePoster": "https://img/landscape.jpg"
+              }
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals("https://img/landscape.jpg", result.background)
+    }
+
     private fun parseEpisode(runtime: JsonElement?): MetaVideo {
         val payload = buildJsonObject {
             put("id", "show")

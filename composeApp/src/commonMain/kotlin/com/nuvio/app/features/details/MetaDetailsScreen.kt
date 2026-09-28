@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAddCheckCircle
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
@@ -85,6 +86,7 @@ import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.PosterZoomAnchor
 import com.nuvio.app.core.ui.PosterZoomAnchorHolder
 import com.nuvio.app.core.ui.PosterZoomOverlayAction
+import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.TrackingListPickerDialog
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.rememberHeroStretchState
@@ -109,6 +111,7 @@ import com.nuvio.app.features.details.components.EpisodeWatchedActionSheet
 import com.nuvio.app.features.details.components.SeasonWatchedActionSheet
 import com.nuvio.app.features.details.components.TrailerPlayerPopup
 import com.nuvio.app.features.home.MetaPreview
+import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.library.LibraryRepository
 import com.nuvio.app.features.library.PendingTrackingMembershipRemoval
 import com.nuvio.app.features.library.TrackingMembershipRemovalConfirmationHost
@@ -116,6 +119,12 @@ import com.nuvio.app.features.library.executeTrackingMembershipOperation
 import com.nuvio.app.features.library.showTrackingMembershipRewriteFeedback
 import com.nuvio.app.features.library.toLibraryItem
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.shuffle.EpisodeShuffleRepository
+import com.nuvio.app.features.shuffle.EpisodeShuffleSheet
+import com.nuvio.app.features.shuffle.ShuffleSurface
+import com.nuvio.app.features.shuffle.rememberShuffleSave
+import com.nuvio.app.features.shuffle.shufflePrimaryAction
+import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.streams.rememberPlaybackAvailability
 import com.nuvio.app.features.streams.StreamAutoPlayPolicy
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
@@ -139,6 +148,7 @@ import com.nuvio.app.features.watched.releasedEpisodesForSeason
 import com.nuvio.app.features.watched.watchedItemKey
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import com.nuvio.app.features.watchprogress.WatchProgressEntry
+import com.nuvio.app.features.watchprogress.WatchProgressClock
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
@@ -170,12 +180,28 @@ fun MetaDetailsScreen(
     modifier: Modifier = Modifier,
 ) {
     val playbackAvailability = rememberPlaybackAvailability()
+    val shuffleProfile by remember {
+        EpisodeShuffleRepository.ensureLoaded()
+        EpisodeShuffleRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val shuffleProfileId = ProfileRepository.activeProfileId
+    var shuffleVisit by remember(type, id, shuffleProfileId) { mutableStateOf(WatchProgressClock.nowEpochMs()) }
+    var shuffleWasInactive by remember(type, id, shuffleProfileId) { mutableStateOf(false) }
+    var showShuffle by remember(type, id, shuffleProfileId) { mutableStateOf(false) }
+    ScreenActivityEffect(type, id, shuffleProfileId) { active ->
+        if (active && shuffleWasInactive) shuffleVisit += 1
+        shuffleWasInactive = !active
+    }
     val uiState by MetaDetailsRepository.uiState.collectAsStateWithLifecycle()
     val displayedMeta = uiState.meta?.takeIf { it.type == type && it.id == id }
         ?: MetaDetailsRepository.peek(type, id)
     val metaScreenSettingsUiState by remember {
         MetaScreenSettingsRepository.ensureLoaded()
         MetaScreenSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val mdbListSettings by remember {
+        MdbListSettingsRepository.ensureLoaded()
+        MdbListSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
     val traktAuthUiState by remember {
         TraktAuthRepository.ensureLoaded()
@@ -329,7 +355,16 @@ fun MetaDetailsScreen(
         isCommentsLoading = false
     }
 
-    LaunchedEffect(displayedMeta?.id, displayedMeta?.videos, deferredMetaWorkAllowed) {
+    LaunchedEffect(
+        displayedMeta?.id,
+        displayedMeta?.videos,
+        deferredMetaWorkAllowed,
+        metaScreenSettingsUiState.episodeRatingsVisibility,
+    ) {
+        if (!metaScreenSettingsUiState.episodeRatingsVisibility.showRatings) {
+            episodeImdbRatings = emptyMap()
+            return@LaunchedEffect
+        }
         val metaForRatings = displayedMeta
         if (!deferredMetaWorkAllowed) return@LaunchedEffect
         if (metaForRatings == null || !metaForRatings.isSeriesLikeForEpisodeRatings()) {
@@ -371,6 +406,7 @@ fun MetaDetailsScreen(
         tmdbSettingsUiState.enabled,
         tmdbSettingsUiState.useMoreLikeThis,
         tmdbSettingsUiState.language,
+        mdbListSettings,
     ) {
         if (displayedMeta != null && !uiState.isLoading) {
             MetaDetailsRepository.load(type, id)
@@ -420,7 +456,6 @@ fun MetaDetailsScreen(
             displayedMeta == null && uiState.isLoading -> {
                 NuvioLoadingIndicator(
                     modifier = Modifier.align(Alignment.Center),
-                    color = MaterialTheme.colorScheme.primary,
                 )
             }
 
@@ -574,14 +609,32 @@ fun MetaDetailsScreen(
                 val movieProgress = progressByVideoId[meta.id]
                     ?.takeUnless { it.isCompleted }
                 val cwPrefs by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
-                val seriesAction = remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, watchedUiState.watchedKeys) {
-                    meta.seriesPrimaryAction(
+                val shuffleSettings = shuffleProfile.settings(meta.id, meta.type)
+                val hasShuffleEpisodes = remember(meta.videos) {
+                    meta.videos.any { (it.season ?: 0) > 0 && (it.episode ?: 0) > 0 }
+                }
+                val showShuffleButton = shuffleProfile.available &&
+                    meta.type.lowercase() in setOf("series", "tv", "show", "tvshow") &&
+                    (shuffleSettings.enabled || hasShuffleEpisodes)
+                val saveShuffle = rememberShuffleSave(meta.id, shuffleProfileId, shuffleSettings)
+                val seriesAction = remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, watchedUiState.watchedKeys, shuffleSettings, shuffleVisit, shuffleProfileId) {
+                    if (shuffleSettings.enabled) meta.shufflePrimaryAction(
+                        profileId = shuffleProfileId,
+                        settings = shuffleSettings,
                         entries = watchProgressUiState.entries,
-                        watchedItems = watchedUiState.items,
-                        todayIsoDate = todayIsoDate,
-                        preferFurthestEpisode = cwPrefs.upNextFromFurthestEpisode,
                         watchedKeys = watchedUiState.watchedKeys,
-                    )
+                        visit = shuffleVisit,
+                    ) else {
+                        EpisodeShuffleRepository.shuffle.clearSelection(shuffleProfileId, meta.id, ShuffleSurface.DETAIL)
+                        meta.seriesPrimaryAction(
+                            entries = watchProgressUiState.entries,
+                            watchedItems = watchedUiState.items,
+                            todayIsoDate = todayIsoDate,
+                            preferFurthestEpisode = cwPrefs.upNextFromFurthestEpisode,
+                            watchedKeys = watchedUiState.watchedKeys,
+                            allowRewatch = true,
+                        )
+                    }
                 }
                 val seriesActionVideo = remember(seriesAction, meta.id, meta.videos) {
                     val action = seriesAction ?: return@remember null
@@ -727,7 +780,8 @@ fun MetaDetailsScreen(
                     }
                 }
                 val primaryVideoId = seriesStreamVideoId ?: seriesAction?.videoId ?: meta.id
-                val isPrimaryPlayEnabled = playbackAvailability.canPlay(
+                val shufflePoolEmpty = shuffleSettings.enabled && seriesAction == null
+                val isPrimaryPlayEnabled = shufflePoolEmpty || playbackAvailability.canPlay(
                     type = meta.type,
                     videoId = primaryVideoId,
                     parentMetaId = meta.id,
@@ -736,8 +790,10 @@ fun MetaDetailsScreen(
                 )
                 val playText = stringResource(Res.string.action_play)
                 val resumeText = stringResource(Res.string.action_resume)
-                val playButtonLabel = remember(movieProgress, seriesAction, meta.type, hasEpisodes, playText, resumeText) {
+                val chooseEpisodesText = stringResource(Res.string.shuffle_change_selection)
+                val playButtonLabel = remember(movieProgress, seriesAction, meta.type, hasEpisodes, playText, resumeText, shufflePoolEmpty, chooseEpisodesText) {
                     when {
+                        shufflePoolEmpty -> chooseEpisodesText
                         (meta.type == "series" || hasEpisodes) && seriesAction != null ->
                             seriesAction.label
                         meta.type != "series" && !hasEpisodes && movieProgress != null ->
@@ -747,6 +803,7 @@ fun MetaDetailsScreen(
                 }
                 val onPrimaryPlayClick: () -> Unit = {
                     when {
+                        shufflePoolEmpty -> showShuffle = true
                         (meta.type == "series" || hasEpisodes) && seriesAction != null -> {
                             onPlay?.invoke(
                                 meta.type,
@@ -789,7 +846,7 @@ fun MetaDetailsScreen(
                 val manualPlayHandler = onPlayManually
                 val showManualPlayOption = manualPlayHandler != null && StreamAutoPlayPolicy.isEffectivelyEnabled(playerSettingsUiState)
                 val onPrimaryPlayLongClick: (() -> Unit)? = manualPlayHandler
-                    ?.takeIf { showManualPlayOption && playbackAvailability.canStream(meta.type, primaryVideoId) }
+                    ?.takeIf { !shufflePoolEmpty && showManualPlayOption && playbackAvailability.canStream(meta.type, primaryVideoId) }
                     ?.let { manualPlay ->
                         {
                             when {
@@ -899,6 +956,24 @@ fun MetaDetailsScreen(
                         video.thumbnail,
                         video.overview,
                         savedProgress?.lastPositionMs,
+                    )
+                }
+                if (showShuffle && showShuffleButton) {
+                    EpisodeShuffleSheet(
+                        meta = meta,
+                        settings = shuffleSettings,
+                        onSave = saveShuffle,
+                        watchedKeys = watchedUiState.watchedKeys,
+                        progressEntries = watchProgressUiState.entries,
+                        blurUnwatchedEpisodes = metaScreenSettingsUiState.blurUnwatchedEpisodes,
+                        onDismiss = { showShuffle = false },
+                        onPlay = onEpisodePlayClick,
+                        onPlayManually = onEpisodeManualPlayClick.takeIf { showManualPlayOption },
+                        onStartFromBeginning = { video ->
+                            onPlay?.invoke(meta.type, video.id, meta.id, meta.type, meta.name, meta.logo,
+                                meta.poster, meta.background, video.season, video.episode, video.title,
+                                video.thumbnail, video.overview, 0L)
+                        },
                     )
                 }
                 val listState = rememberLazyListState()
@@ -1075,6 +1150,7 @@ fun MetaDetailsScreen(
 
                                 configuredMetaSectionItems(
                                     settings = metaScreenSettingsUiState,
+                                    isMdbListActive = mdbListSettings.isActive,
                                     meta = meta,
                                     isTablet = isTablet,
                                     contentHorizontalPadding = contentHorizontalPadding,
@@ -1084,6 +1160,10 @@ fun MetaDetailsScreen(
                                     isSaved = isSaved,
                                     isWatched = isWatched,
                                     onPrimaryPlayClick = onPrimaryPlayClick,
+                                    onShuffleClick = if (showShuffleButton) ({
+                                        if (shuffleSettings.enabled) saveShuffle(shuffleSettings.copy(enabled = false)) else showShuffle = true
+                                    }) else null,
+                                    shuffleEnabled = shuffleSettings.enabled,
                                     onPrimaryPlayLongClick = onPrimaryPlayLongClick,
                                     onSaveClick = toggleSaved,
                                     onSaveLongClick = openLibraryListPicker,
@@ -1759,6 +1839,7 @@ private fun MetaDetails.toMetaPreview(): MetaPreview =
 
 private fun LazyListScope.configuredMetaSectionItems(
     settings: MetaScreenSettingsUiState,
+    isMdbListActive: Boolean,
     meta: MetaDetails,
     isTablet: Boolean,
     contentHorizontalPadding: Dp,
@@ -1768,6 +1849,8 @@ private fun LazyListScope.configuredMetaSectionItems(
     isSaved: Boolean,
     isWatched: Boolean,
     onPrimaryPlayClick: () -> Unit,
+    onShuffleClick: (() -> Unit)?,
+    shuffleEnabled: Boolean,
     onPrimaryPlayLongClick: (() -> Unit)?,
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
@@ -1842,6 +1925,7 @@ private fun LazyListScope.configuredMetaSectionItems(
                         items = sectionItems,
                         tabLayout = forceTabLayout,
                     ),
+                    isMdbListActive = isMdbListActive,
                     meta = meta,
                     isTablet = isTablet,
                     horizontalScrollPadding = contentHorizontalPadding,
@@ -1850,6 +1934,8 @@ private fun LazyListScope.configuredMetaSectionItems(
                     isSaved = isSaved,
                     isWatched = isWatched,
                     onPrimaryPlayClick = onPrimaryPlayClick,
+                    onShuffleClick = onShuffleClick,
+                    shuffleEnabled = shuffleEnabled,
                     onPrimaryPlayLongClick = onPrimaryPlayLongClick,
                     onSaveClick = onSaveClick,
                     onSaveLongClick = onSaveLongClick,
@@ -1935,6 +2021,7 @@ private fun LazyListScope.configuredMetaSectionItems(
                     progressByVideoId = progressByVideoId,
                     watchedKeys = watchedKeys,
                     episodeRatings = episodeImdbRatings,
+                    episodeRatingsVisibility = settings.episodeRatingsVisibility,
                     blurUnwatchedEpisodes = blurUnwatchedEpisodes,
                     onEpisodeClick = onEpisodeClick,
                     onEpisodeLongPress = onEpisodeLongPress,
@@ -2067,6 +2154,7 @@ private fun metaSectionHasContent(
 @OptIn(ExperimentalSharedTransitionApi::class)
 private fun ConfiguredMetaSections(
     settings: MetaScreenSettingsUiState,
+    isMdbListActive: Boolean,
     meta: MetaDetails,
     isTablet: Boolean,
     horizontalScrollPadding: Dp,
@@ -2075,6 +2163,8 @@ private fun ConfiguredMetaSections(
     isSaved: Boolean,
     isWatched: Boolean,
     onPrimaryPlayClick: () -> Unit,
+    onShuffleClick: (() -> Unit)?,
+    shuffleEnabled: Boolean,
     onPrimaryPlayLongClick: (() -> Unit)?,
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
@@ -2135,10 +2225,20 @@ private fun ConfiguredMetaSections(
     fun RenderSection(key: MetaScreenSectionKey, showHeader: Boolean = true) {
         when (key) {
             MetaScreenSectionKey.ACTIONS -> {
+                val shuffleAction = onShuffleClick?.let { onClick ->
+                    DetailSecondaryAction(
+                        label = stringResource(if (shuffleEnabled) Res.string.shuffle_stop else Res.string.random_episode_title),
+                        icon = Icons.Default.Shuffle,
+                        isActive = shuffleEnabled,
+                        onClick = onClick,
+                    )
+                }
                 DetailActionButtons(
                     playLabel = if (isPrimaryPlayEnabled) playButtonLabel else stringResource(Res.string.playback_unavailable),
                     playEnabled = isPrimaryPlayEnabled,
+                    pinnedAction = shuffleAction?.takeIf { shuffleEnabled },
                     secondaryActions = buildList {
+                        if (!shuffleEnabled) shuffleAction?.let(::add)
                         add(DetailSecondaryAction(
                             label = if (isWatched) {
                                 stringResource(Res.string.hero_mark_unwatched)
@@ -2177,6 +2277,8 @@ private fun ConfiguredMetaSections(
             MetaScreenSectionKey.OVERVIEW -> {
                 DetailMetaInfo(
                     meta = meta,
+                    showOverallRatings = settings.showOverallRatings,
+                    isMdbListActive = isMdbListActive,
                     horizontalScrollPadding = horizontalScrollPadding,
                 )
             }
@@ -2233,6 +2335,7 @@ private fun ConfiguredMetaSections(
                         progressByVideoId = progressByVideoId,
                         watchedKeys = watchedKeys,
                         episodeRatings = episodeImdbRatings,
+                        episodeRatingsVisibility = settings.episodeRatingsVisibility,
                         blurUnwatchedEpisodes = blurUnwatchedEpisodes,
                         onEpisodeClick = onEpisodeClick,
                         onEpisodeLongPress = onEpisodeLongPress,
@@ -2263,6 +2366,7 @@ private fun ConfiguredMetaSections(
                     val sourceLabel = when (meta.moreLikeThisSource) {
                         MoreLikeThisSource.TMDB -> stringResource(Res.string.detail_more_like_this_powered_by_tmdb)
                         MoreLikeThisSource.TRAKT -> stringResource(Res.string.detail_more_like_this_powered_by_trakt)
+                        MoreLikeThisSource.SIMKL -> stringResource(Res.string.detail_more_like_this_powered_by_simkl)
                         null -> null
                     }
                     DetailPosterRailSection(

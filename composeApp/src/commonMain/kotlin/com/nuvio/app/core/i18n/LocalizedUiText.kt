@@ -70,7 +70,7 @@ fun localizedMovieTypeLabel(): String = resourceString("Movie") { getString(Res.
 fun localizedSeasonEpisodeCode(seasonNumber: Int?, episodeNumber: Int?): String? =
     when {
         seasonNumber != null && episodeNumber != null ->
-            resourceString("S${seasonNumber}E${episodeNumber}") {
+            resourceString("S${seasonNumber} E${episodeNumber}") {
                 getString(Res.string.compose_player_episode_code_full, seasonNumber, episodeNumber)
             }
         episodeNumber != null ->
@@ -100,7 +100,7 @@ fun localizedResumeLabel(seasonNumber: Int?, episodeNumber: Int?): String {
 
 fun localizedUpNextLabel(seasonNumber: Int?, episodeNumber: Int?): String =
     if (seasonNumber != null && episodeNumber != null) {
-        resourceString("Next Up • S${seasonNumber}E${episodeNumber}") {
+        resourceString("Next Up • S${seasonNumber} E${episodeNumber}") {
             getString(Res.string.continue_watching_up_next_episode, seasonNumber, episodeNumber)
         }
     } else {

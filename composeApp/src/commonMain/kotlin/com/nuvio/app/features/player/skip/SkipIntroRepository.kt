@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player.skip
 
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.tmdb.TmdbService
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
@@ -12,6 +13,25 @@ object SkipIntroRepository {
 
     private val introDbConfigured: Boolean
         get() = IntroDbConfig.URL.isNotBlank()
+
+    suspend fun getMovieSkipIntervals(
+        contentId: String?,
+        videoId: String?,
+        requireSkipIntroEnabled: Boolean = true,
+    ): List<SkipInterval> {
+        if (!introDbConfigured ||
+            (requireSkipIntroEnabled && !PlayerSettingsRepository.uiState.value.skipIntroEnabled)
+        ) return emptyList()
+        val imdbId = resolveMovieSkipImdbId(
+            contentId, videoId,
+            resolveTmdb = { TmdbService.tmdbToImdb(it, "movie") },
+            resolveAnime = { source, id -> SimklIdResolver.resolveIds(source, id)?.imdb },
+        ) ?: return emptyList()
+        val cacheKey = "movie:$imdbId"
+        cache[cacheKey]?.let { return it }
+        val data = SkipIntroApi.getIntroDbMovieSegments(imdbId) ?: return emptyList()
+        return data.movieSkipIntervals().also { cache[cacheKey] = it }
+    }
 
     suspend fun getSkipIntervals(
         imdbId: String?,
@@ -308,5 +328,26 @@ object SkipIntroRepository {
         cache.clear()
         animeSkipShowIdCache.clear()
         SimklIdResolver.clearCache()
+    }
+}
+
+internal suspend fun resolveMovieSkipImdbId(
+    contentId: String?,
+    videoId: String?,
+    resolveTmdb: suspend (Int) -> String?,
+    resolveAnime: suspend (String, String) -> String?,
+): String? {
+    val ids = listOfNotNull(contentId, videoId).map(String::trim).distinct()
+    val imdbPattern = Regex("tt[0-9]+")
+    ids.map { it.substringBefore(':') }.firstOrNull { imdbPattern.matches(it) }?.let { return it }
+    return ids.firstNotNullOfOrNull { id ->
+        val parts = id.split(':')
+        val value = parts.getOrNull(1)?.takeIf { it.isNotEmpty() && it.all(Char::isDigit) }
+            ?: return@firstNotNullOfOrNull null
+        when (parts.first().lowercase()) {
+            "tmdb" -> value.toIntOrNull()?.takeIf { it > 0 }?.let { resolveTmdb(it) }
+            "mal", "kitsu" -> resolveAnime(parts.first().lowercase(), value)
+            else -> null
+        }?.trim()?.takeIf { imdbPattern.matches(it) }
     }
 }

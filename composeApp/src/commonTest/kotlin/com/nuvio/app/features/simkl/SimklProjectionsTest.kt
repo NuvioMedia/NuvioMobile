@@ -205,8 +205,11 @@ class SimklProjectionsTest {
         assertEquals(1, entry.seasonNumber)
         assertEquals(3, entry.episodeNumber)
         assertEquals(42.2f, entry.progressPercent)
-        assertEquals(3_000_000L, entry.durationMs)
-        assertEquals(1_266_000L, entry.lastPositionMs)
+        // No duration is invented from the show runtime, so the resume goes through the percentage:
+        // the player scales it by the duration of the episode it really opened.
+        assertEquals(0L, entry.durationMs)
+        assertEquals(0L, entry.lastPositionMs)
+        assertEquals(0.422f, entry.progressFraction, 0.0005f)
         assertEquals("simkl-playback:12345", entry.progressKey)
         assertEquals(WatchProgressSourceSimklPlayback, entry.source)
         assertEquals("simkl", entry.trackingProviderId)

@@ -362,8 +362,8 @@
     <string name="compose_player_color">اللون</string>
     <string name="compose_player_currently_playing">قيد التشغيل الآن</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">الحلقات</string>
     <string name="compose_player_font_size">حجم الخط</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1108,8 +1108,6 @@
     <string name="settings_tmdb_module_credits_description">الممثلون مع الصور، المخرج، والكاتب من TMDB</string>
     <string name="settings_tmdb_module_details">التفاصيل</string>
     <string name="settings_tmdb_module_details_description">مدة العرض، تاريخ الإصدار، الدولة، واللغة من TMDB</string>
-    <string name="settings_tmdb_module_release_dates">تواريخ الإصدار</string>
-    <string name="settings_tmdb_module_release_dates_description">استخدام تواريخ بث TMDB بدل أوقات الإصدار الدقيقة القادمة من الإضافة</string>
     <string name="settings_tmdb_module_episodes">الحلقات</string>
     <string name="settings_tmdb_module_episodes_description">عناوين الحلقات، الملخصات، الصور، ومدة العرض من TMDB</string>
     <string name="settings_tmdb_module_more_like_this">مقترحات مشابهة</string>
@@ -1246,7 +1244,7 @@
     <string name="theme_white">الأبيض</string>
     <string name="player_next_episode">الحلقة التالية</string>
     <string name="player_next_episode_finding_source">جارٍ البحث عن مصدر…</string>
-    <string name="player_next_episode_playing_via_countdown">سيبدأ التشغيل عبر %1$s خلال %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">سيبدأ التشغيل عبر %1$s خلال %2$d ث…</string>
     <string name="player_next_episode_thumbnail">الصورة المصغرة للحلقة التالية</string>
     <string name="player_next_episode_unaired">لم يعرض بعد</string>
     <string name="player_skip">تخطي</string>
@@ -1476,7 +1474,7 @@
     <string name="streams_empty_no_streams_message">لم تُرجع أي من إضافاتك المثبتة مصادر بث لهذا العنوان.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">حلقة</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">جارٍ الجلب…</string>
     <string name="streams_finding_source">جارٍ البحث عن مصدر…</string>
     <string name="streams_loading_subtitles">جارٍ تحميل الترجمات من الإضافات…</string>
@@ -1540,7 +1538,7 @@
     <string name="auth_sign_up_failed">فشل إنشاء الحساب</string>
     <string name="catalog_load_failed">تعذر تحميل عناصر الكتالوج.</string>
     <string name="continue_watching_up_next">التالي</string>
-    <string name="continue_watching_up_next_episode">التالي • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">التالي • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">شعار %1$s</string>
     <string name="details_comments_load_failed">فشل تحميل التعليقات</string>
     <string name="details_load_failed_all_addons">تعذر تحميل التفاصيل من أي إضافة.</string>
@@ -2117,4 +2115,30 @@
         <item quantity="one">%d عنوان</item>
         <item quantity="other">%d عنوان</item>
     </plurals>
+    <string name="layout_overall_ratings">التقييمات العامة</string>
+    <string name="layout_overall_ratings_sub_on">التقييمات القياسية وتقييمات TMDB ظاهرة.</string>
+    <string name="layout_overall_ratings_sub_off">التقييمات القياسية وتقييمات TMDB مخفية. إعدادات مزود MDBList لها الأولوية في صفحات التفاصيل.</string>
+    <string name="layout_episode_ratings">تقييمات الحلقات</string>
+    <string name="layout_episode_ratings_sub">اختر تقييمات الحلقات الظاهرة.</string>
+    <string name="layout_ratings_show">إظهار</string>
+    <string name="layout_ratings_hide">إخفاء</string>
+    <string name="layout_ratings_hide_unwatched">إخفاء ما لم يُشاهد</string>
+    <string name="series_status_ended">مكتمل</string>
+    <string name="series_status_continuing">مستمر</string>
+    <string name="series_status_current">الحالي</string>
+    <string name="series_status_cancelled">ملغى</string>
+    <string name="series_status_released">تم الإصدار</string>
+    <string name="series_status_planned">مخطط له</string>
+    <string name="series_status_rumored">إشاعة</string>
+    <string name="series_status_in_production">قيد الإنتاج</string>
+    <string name="series_status_post_production">مراحل ما بعد الإنتاج</string>
+    <string name="movie_status_ended">منتهي</string>
+    <string name="movie_status_continuing">مستمر</string>
+    <string name="movie_status_current">يعرض حاليا</string>
+    <string name="movie_status_cancelled">ملغي</string>
+    <string name="movie_status_released">صادر</string>
+    <string name="movie_status_planned">مُخطط له</string>
+    <string name="movie_status_rumored">إشاعة</string>
+    <string name="movie_status_in_production">قيد الانتاج</string>
+    <string name="movie_status_post_production">مابعد الانتاج</string>
 </resources>

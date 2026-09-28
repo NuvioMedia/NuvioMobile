@@ -347,8 +347,8 @@
     <string name="compose_player_color">Barva</string>
     <string name="compose_player_currently_playing">Nyní se přehrává</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">Epizody</string>
     <string name="compose_player_font_size">Velikost písma</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1081,7 +1081,7 @@
     <string name="theme_white">Bílá</string>
     <string name="player_next_episode">Další epizoda</string>
     <string name="player_next_episode_finding_source">Hledání zdroje…</string>
-    <string name="player_next_episode_playing_via_countdown">Přehrávání přes %1$s za %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">Přehrávání přes %1$s za %2$ds…</string>
     <string name="player_next_episode_thumbnail">Miniatura další epizody</string>
     <string name="player_next_episode_unaired">Neodvysíláno</string>
     <string name="player_skip">Přeskočit</string>
@@ -1311,7 +1311,7 @@
     <string name="streams_empty_no_streams_message">Žádný z vašich nainstalovaných doplňků nevrátil streamy pro tento titul.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Epizoda</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Získávání…</string>
     <string name="streams_finding_source">Hledání zdroje…</string>
     <string name="streams_loading_subtitles">Načítání titulků z doplňků…</string>
@@ -1364,7 +1364,7 @@
     <string name="auth_sign_up_failed">Registrace selhala</string>
     <string name="catalog_load_failed">Nepodařilo se načíst položky katalogu.</string>
     <string name="continue_watching_up_next">Další na řadě</string>
-    <string name="continue_watching_up_next_episode">Další na řadě • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Další na řadě • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Nepodařilo se načíst komentáře</string>
     <string name="details_load_failed_all_addons">Nepodařilo se načíst podrobnosti z žádného doplňku.</string>
@@ -2107,8 +2107,6 @@
     <string name="settings_playback_parental_guide_description">Při spuštění přehrávání zobrazit překryv s rodičovským upozorněním.</string>
     <string name="settings_playback_subtitle_strip_sdh">Odstranit prvky SDH z titulků</string>
     <string name="settings_playback_subtitle_strip_sdh_description">Skrýt v textových titulcích popisy zvuků a označení mluvčích.</string>
-    <string name="settings_tmdb_module_release_dates">Data vydání</string>
-    <string name="settings_tmdb_module_release_dates_description">Použít data vysílání od vysílatelů v TMDB místo přesných časů vydání z doplňků</string>
     <string name="settings_tracking_data_sources">Zdroje</string>
     <string name="settings_tracking_features">PŘEDVOLBY ZDROJŮ</string>
     <string name="settings_tracking_viewing_discovery">Funkce Trakt</string>
@@ -2257,4 +2255,22 @@
         <item quantity="few">%d tituly</item>
         <item quantity="other">%d titulů</item>
     </plurals>
+    <string name="series_status_ended">Ukončeno</string>
+    <string name="series_status_continuing">Pokračující</string>
+    <string name="series_status_current">Aktuální</string>
+    <string name="series_status_cancelled">Zrušeno</string>
+    <string name="series_status_released">Vydáno</string>
+    <string name="series_status_planned">Plánováno</string>
+    <string name="series_status_rumored">Fáma</string>
+    <string name="series_status_in_production">Ve výrobě</string>
+    <string name="series_status_post_production">Postprodukce</string>
+    <string name="movie_status_ended">Ukončeno</string>
+    <string name="movie_status_continuing">Pokračující</string>
+    <string name="movie_status_current">Aktuální</string>
+    <string name="movie_status_cancelled">Zrušeno</string>
+    <string name="movie_status_released">Vydáno</string>
+    <string name="movie_status_planned">Plánováno</string>
+    <string name="movie_status_rumored">Fáma</string>
+    <string name="movie_status_in_production">Ve výrobě</string>
+    <string name="movie_status_post_production">Postprodukce</string>
 </resources>

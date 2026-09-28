@@ -60,6 +60,11 @@ object PlayerLaunchStore {
 
     fun get(launchId: Long): PlayerLaunch? = launches[launchId]
 
+    fun update(launchId: Long, transform: (PlayerLaunch) -> PlayerLaunch) {
+        val launch = launches[launchId] ?: return
+        launches[launchId] = transform(launch)
+    }
+
     fun remove(launchId: Long) {
         launches.remove(launchId)
     }
@@ -208,6 +213,13 @@ fun IosHardwareDecoderMode.localizedLabel(): String = when (this) {
     IosHardwareDecoderMode.Off -> stringResource(Res.string.player_ios_hardware_decoder_off)
     else -> label
 }
+
+internal data class PlaybackKey(
+    val sourceIdentity: String,
+    val videoId: String?,
+    val seasonNumber: Int?,
+    val episodeNumber: Int?,
+)
 
 data class PlayerPlaybackSnapshot(
     val isLoading: Boolean = true,

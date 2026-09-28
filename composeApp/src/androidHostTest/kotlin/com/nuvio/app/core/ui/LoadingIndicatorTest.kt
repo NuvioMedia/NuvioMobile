@@ -56,21 +56,27 @@ class LoadingIndicatorTest {
             assertNotEquals(initial, progress.value)
             assertEquals(initialCompositions, compositions)
 
+            frame(1_032)
+            assertEquals(initial + 30f, progress.value, absoluteTolerance = 0.001f)
+            frame(2_032)
+            assertEquals(initial, progress.value, absoluteTolerance = 0.001f)
+            assertEquals(initialCompositions, compositions)
+
             active.value = false
-            frame(316)
-            frame(332)
+            frame(2_048)
+            frame(2_064)
             val stopped = progress.value
-            frame(600)
-            frame(900)
+            frame(2_300)
+            frame(2_600)
 
             assertEquals(stopped, progress.value)
             assertFalse(frameClock.hasAwaiters)
 
             active.value = true
-            frame(916)
-            frame(932)
+            frame(2_616)
+            frame(2_632)
             val restarted = progress.value
-            frame(1_200)
+            frame(2_900)
 
             assertNotEquals(restarted, progress.value)
         } finally {

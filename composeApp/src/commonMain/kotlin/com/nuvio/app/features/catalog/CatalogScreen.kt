@@ -395,7 +395,6 @@ private fun CatalogLoadingFooter() {
     ) {
         NuvioLoadingIndicator(
             modifier = Modifier.size(22.dp),
-            color = MaterialTheme.colorScheme.primary,
         )
     }
 }

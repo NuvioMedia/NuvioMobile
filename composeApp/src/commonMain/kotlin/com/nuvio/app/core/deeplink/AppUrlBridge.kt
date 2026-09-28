@@ -1,6 +1,7 @@
 package com.nuvio.app.core.deeplink
 
 import com.nuvio.app.core.tracking.ensureTrackingProvidersRegistered
+import com.nuvio.app.features.player.infusePlaybackCallbacks
 import com.nuvio.app.features.tracking.TrackingProviderRegistry
 import io.ktor.http.Url
 import io.ktor.http.encodeURLParameter
@@ -41,6 +42,7 @@ internal object AppDeepLinkRepository {
 fun handleAppUrl(url: String) {
     val normalizedUrl = url.trim()
     if (normalizedUrl.isBlank()) return
+    if (infusePlaybackCallbacks.handleUrl(normalizedUrl)) return
 
     ensureTrackingProvidersRegistered()
     TrackingProviderRegistry.handleAuthCallback(normalizedUrl)

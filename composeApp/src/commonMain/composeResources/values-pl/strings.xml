@@ -328,8 +328,8 @@
     <string name="compose_player_color">Kolor</string>
     <string name="compose_player_currently_playing">Aktualnie odtwarzane</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">Odcinki</string>
     <string name="compose_player_font_size">Rozmiar czcionki</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -575,6 +575,22 @@
     <string name="settings_poster_width_dense">Gęsty</string>
     <string name="settings_poster_width_large">Duży</string>
     <string name="settings_poster_width_standard">Standardowy</string>
+    <!-- Custom Poster URL -->
+    <string name="settings_custom_poster_title">NIESTANDARDOWE ŹRÓDŁO PLAKATÓW</string>
+    <string name="settings_custom_poster_description">Podaj wzorzec URL z zewnętrznego serwisu. Jeśli symbol zastępczy nie ma wartości dla danego tytułu, zostanie użyty oryginalny plakat.</string>
+    <string name="settings_custom_poster_placeholder">https://example.com/poster?id={id}&amp;id_type={id_type}&amp;type={type}</string>
+    <string name="settings_custom_poster_active">Niestandardowe źródło plakatów aktywne</string>
+    <string name="settings_custom_poster_none">Brak skonfigurowanego wzorca</string>
+    <string name="settings_custom_poster_save">Zapisz</string>
+    <string name="settings_custom_poster_clear">Wyczyść</string>
+    <!-- Custom Poster URL - Screen Toggles -->
+    <string name="settings_custom_poster_apply_to">Stosuj niestandardowe plakaty w</string>
+    <string name="settings_custom_poster_screen_home">Strona główna</string>
+    <string name="settings_custom_poster_screen_continue_watching">Kontynuuj oglądanie</string>
+    <string name="settings_custom_poster_screen_collections">Kolekcje</string>
+    <string name="settings_custom_poster_screen_library">Biblioteka</string>
+    <string name="settings_custom_poster_screen_search">Wyszukiwanie</string>
+    <string name="settings_custom_poster_screen_details">Strona szczegółów</string>
     <string name="settings_show_secret">Pokaż wartość</string>
     <string name="settings_continue_watching_resume_prompt_description">Pokaż okno kontynuowania od miejsca, w którym skończyłeś, po otwarciu aplikacji po wyjściu z odtwarzacza.</string>
     <string name="settings_continue_watching_resume_prompt_title">Monit o wznowienie przy uruchomieniu</string>
@@ -990,7 +1006,7 @@
     <string name="theme_white">Biały</string>
     <string name="player_next_episode">Następny odcinek</string>
     <string name="player_next_episode_finding_source">Szukanie źródła…</string>
-    <string name="player_next_episode_playing_via_countdown">Odtwarzanie przez %1$s za %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">Odtwarzanie przez %1$s za %2$ds…</string>
     <string name="player_next_episode_thumbnail">Miniatura następnego odcinka</string>
     <string name="player_next_episode_unaired">Niewyemitowany</string>
     <string name="player_skip">Pomiń</string>
@@ -1213,7 +1229,7 @@
     <string name="streams_empty_no_streams_message">Żaden z zainstalowanych dodatków nie zwrócił strumieni dla tego tytułu.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Odcinek</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Pobieranie…</string>
     <string name="streams_finding_source">Szukanie źródła…</string>
     <string name="streams_loading_subtitles">Pobieranie napisów z dodatków…</string>
@@ -1263,7 +1279,7 @@
     <string name="auth_sign_up_failed">Rejestracja nie powiodła się</string>
     <string name="catalog_load_failed">Nie można załadować elementów katalogu.</string>
     <string name="continue_watching_up_next">Następny</string>
-    <string name="continue_watching_up_next_episode">Następny • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Następny • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Nie udało się załadować komentarzy</string>
     <string name="details_load_failed_all_addons">Nie można załadować szczegółów z żadnego dodatku.</string>
@@ -1547,6 +1563,7 @@
     <string name="compose_settings_root_streams_description">Wyświetlanie wyników źródeł i reguły badge URL.</string>
     <string name="detail_more_like_this_powered_by_tmdb">Napędzane przez TMDB</string>
     <string name="detail_more_like_this_powered_by_trakt">Napędzane przez Trakt</string>
+    <string name="detail_more_like_this_powered_by_simkl">Napędzane przez Simkl</string>
     <string name="details_actions_menu_label">Więcej akcji</string>
     <string name="details_comments_trakt_load_failed_with_code">Nie udało się załadować komentarzy Trakt (%1$d)</string>
     <string name="details_runtime_hours_minutes">%1$dh %2$dm</string>
@@ -1854,6 +1871,7 @@
     <string name="trakt_more_like_this_source_subtitle">Wybierz skąd pochodzą rekomendacje na stronach szczegółów</string>
     <string name="trakt_more_like_this_source_title">Źródło Podobnych</string>
     <string name="trakt_more_like_this_source_tmdb">TMDB</string>
+    <string name="trakt_more_like_this_source_simkl">Simkl</string>
     <string name="trakt_more_like_this_source_trakt">Trakt</string>
     <string name="trakt_public_list">Publiczna lista Trakt</string>
     <string name="trakt_public_list_enter_valid_id_or_url">Wprowadź prawidłowy ID lub URL listy Trakt</string>
@@ -2124,8 +2142,6 @@
     <string name="settings_playback_pause_overlay_description">Pokaż szczegóły po 5 sekundach pauzy.</string>
     <string name="settings_playback_subtitle_strip_sdh">Usuń napisy SDH</string>
     <string name="settings_playback_subtitle_strip_sdh_description">Ukryj opisy dźwięków i etykiety mówców z napisów tekstowych.</string>
-    <string name="settings_tmdb_module_release_dates">Daty premier</string>
-    <string name="settings_tmdb_module_release_dates_description">Używaj dat emisji TMDB zamiast dokładnych dat wydania z dodatków</string>
     <string name="settings_tracking_data_sources">Źródła</string>
     <string name="settings_tracking_features">PREFERENCJE ŹRÓDEŁ</string>
     <string name="settings_tracking_viewing_discovery">Funkcje Trakt</string>
@@ -2147,6 +2163,7 @@
     <string name="settings_tracking_simkl_progress_description">Wznawiaj z postępem odtwarzania z Simkl.</string>
     <string name="settings_tracking_tmdb_recommendations_description">Używaj rekomendacji TMDB na stronach szczegółów.</string>
     <string name="settings_tracking_trakt_recommendations_description">Używaj spersonalizowanych powiązanych tytułów z Trakt.</string>
+    <string name="settings_tracking_simkl_recommendations_description">Używaj podobnych tytułów i rekomendacji społeczności z Simkl.</string>
     <string name="settings_tracking_anime_id_title">Preferencja ID anime</string>
     <string name="settings_tracking_anime_id_subtitle">Wybierz, który zewnętrzny ID jest głównym identyfikatorem wpisów anime.</string>
     <string name="settings_tracking_anime_id_dialog_title">Preferencja ID anime</string>
@@ -2265,4 +2282,34 @@
     <string name="player_torrent_preparing_stream">Przygotowywanie strumienia torrent…</string>
     <string name="player_torrent_connecting_status">%1$s · %2$s · %3$s</string>
     <string name="player_torrent_loading_status">%1$s pobrano · %2$s · %3$s</string>
+    <string name="player_skip_movie_credits">Pomiń napisy końcowe</string>
+    <string name="player_skip_to_post_credits">Do sceny po napisach</string>
+    <string name="settings_playback_auto_skip_movie_credits">Napisy końcowe</string>
+    <string name="settings_playback_auto_skip_movie_credits_description">Automatycznie pomijaj napisy końcowe filmów, zachowując sceny po napisach.</string>
+    <string name="layout_overall_ratings">Ogólne oceny</string>
+    <string name="layout_overall_ratings_sub_on">Standardowe oceny i TMDB są wyświetlane.</string>
+    <string name="layout_overall_ratings_sub_off">Standardowe oceny i TMDB są ukryte. Ustawienia MDBList mają priorytet na stronach szczegółów.</string>
+    <string name="layout_episode_ratings">Oceny odcinków</string>
+    <string name="layout_episode_ratings_sub">Wybierz, które oceny odcinków mają być widoczne.</string>
+    <string name="layout_ratings_show">Pokaż</string>
+    <string name="layout_ratings_hide">Ukryj</string>
+    <string name="layout_ratings_hide_unwatched">Ukryj nieobejrzane</string>
+    <string name="series_status_ended">Zakończony</string>
+    <string name="series_status_continuing">W trakcie</string>
+    <string name="series_status_current">Na żywo</string>
+    <string name="series_status_cancelled">Anulowany</string>
+    <string name="series_status_released">Wydany</string>
+    <string name="series_status_planned">Planowany</string>
+    <string name="series_status_rumored">Plotki</string>
+    <string name="series_status_in_production">W produkcji</string>
+    <string name="series_status_post_production">Postprodukcja</string>
+    <string name="movie_status_ended">Zakończony</string>
+    <string name="movie_status_continuing">W trakcie</string>
+    <string name="movie_status_current">Na żywo</string>
+    <string name="movie_status_cancelled">Anulowany</string>
+    <string name="movie_status_released">Wydany</string>
+    <string name="movie_status_planned">Planowany</string>
+    <string name="movie_status_rumored">Plotki</string>
+    <string name="movie_status_in_production">W produkcji</string>
+    <string name="movie_status_post_production">Postprodukcja</string>
 </resources>

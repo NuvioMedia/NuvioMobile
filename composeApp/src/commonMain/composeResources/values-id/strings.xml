@@ -328,8 +328,8 @@
     <string name="compose_player_color">Warna</string>
     <string name="compose_player_currently_playing">Sedang diputar</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">Episode</string>
     <string name="compose_player_font_size">Ukuran Font</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -978,7 +978,7 @@
     <string name="theme_white">Melati</string>
     <string name="player_next_episode">Episode Berikutnya</string>
     <string name="player_next_episode_finding_source">Mencari sumber…</string>
-    <string name="player_next_episode_playing_via_countdown">Memutar melalui %1$s dalam %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">Memutar melalui %1$s dalam %2$dd…</string>
     <string name="player_next_episode_thumbnail">Thumbnail episode berikutnya</string>
     <string name="player_next_episode_unaired">Belum Tayang</string>
     <string name="player_skip">Lewati</string>
@@ -1201,7 +1201,7 @@
     <string name="streams_empty_no_streams_message">Tidak ada addon yang terpasang yang menyediakan stream untuk judul ini.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Episode</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Mengambil…</string>
     <string name="streams_finding_source">Mencari sumber…</string>
     <string name="streams_finding_streams">Mencari stream…</string>
@@ -1250,7 +1250,7 @@
     <string name="auth_sign_up_failed">Pendaftaran gagal</string>
     <string name="catalog_load_failed">Tidak dapat memuat item katalog.</string>
     <string name="continue_watching_up_next">Berikutnya</string>
-    <string name="continue_watching_up_next_episode">Berikutnya • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Berikutnya • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Gagal memuat komentar</string>
     <string name="details_load_failed_all_addons">Tidak dapat memuat detail dari addon mana pun.</string>
@@ -1446,4 +1446,22 @@
     <plurals name="cw_airs_in_days_short">
         <item quantity="other">%1$d hari lagi</item>
     </plurals>
+    <string name="series_status_ended">Tamat</string>
+    <string name="series_status_continuing">Berlangsung</string>
+    <string name="series_status_current">Saat Ini</string>
+    <string name="series_status_cancelled">Dibatalkan</string>
+    <string name="series_status_released">Dirilis</string>
+    <string name="series_status_planned">Direncanakan</string>
+    <string name="series_status_rumored">Dirumorkan</string>
+    <string name="series_status_in_production">Dalam Produksi</string>
+    <string name="series_status_post_production">Pasca Produksi</string>
+    <string name="movie_status_ended">Tamat</string>
+    <string name="movie_status_continuing">Berlangsung</string>
+    <string name="movie_status_current">Saat Ini</string>
+    <string name="movie_status_cancelled">Dibatalkan</string>
+    <string name="movie_status_released">Dirilis</string>
+    <string name="movie_status_planned">Direncanakan</string>
+    <string name="movie_status_rumored">Desas-desus</string>
+    <string name="movie_status_in_production">Dalam Produksi</string>
+    <string name="movie_status_post_production">Pasca Produksi</string>
 </resources>

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -49,6 +48,10 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.animation.core.animateDpAsState
+import com.nuvio.app.core.ui.DialogButton
+import com.nuvio.app.core.ui.DialogButtons
+import com.nuvio.app.core.ui.DialogButtonStyle
+import com.nuvio.app.core.ui.DialogSurface
 import com.nuvio.app.core.ui.NuvioPrimaryButton
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
@@ -207,6 +210,7 @@ fun CollectionManagementScreen(
         title = stringResource(Res.string.collections_delete_title),
         message = stringResource(Res.string.collections_delete_message, deleteCollection?.title.orEmpty()),
         isVisible = deleteId != null,
+        destructive = true,
         confirmText = stringResource(Res.string.action_delete),
         dismissText = stringResource(Res.string.action_cancel),
         onConfirm = {
@@ -357,7 +361,6 @@ private fun CollectionListItem(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ImportDialog(
     importText: String,
@@ -366,83 +369,53 @@ private fun ImportDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    androidx.compose.material3.BasicAlertDialog(
+    DialogSurface(
         onDismissRequest = onDismiss,
+        title = stringResource(Res.string.collections_import_header),
+        message = stringResource(Res.string.collections_import_paste_description),
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(24.dp),
-        ) {
-            Column(modifier = Modifier.padding(20.dp)) {
+        OutlinedTextField(
+            value = importText,
+            onValueChange = onTextChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(160.dp),
+            placeholder = {
                 Text(
-                    text = stringResource(Res.string.collections_import_header),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = stringResource(Res.string.collections_import_paste_description),
+                    stringResource(Res.string.collections_import_json_placeholder),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Spacer(modifier = Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = importText,
-                    onValueChange = onTextChange,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp),
-                    placeholder = {
-                        Text(
-                            stringResource(Res.string.collections_import_json_placeholder),
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    },
-                    isError = importError != null,
-                    supportingText = importError?.let {
-                        { Text(it, color = MaterialTheme.colorScheme.error) }
-                    },
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-                    keyboardActions = KeyboardActions(onDone = { onConfirm() }),
-                    maxLines = 10,
-                    shape = RoundedCornerShape(14.dp),
-                    textStyle = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurface,
-                    ),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.outline,
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                        cursorColor = MaterialTheme.colorScheme.primary,
-                    ),
-                )
-                Spacer(modifier = Modifier.height(18.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    androidx.compose.material3.Button(
-                        onClick = onDismiss,
-                        shape = RoundedCornerShape(16.dp),
-                        colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            contentColor = MaterialTheme.colorScheme.onSurface,
-                        ),
-                    ) {
-                        Text(stringResource(Res.string.action_cancel))
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    androidx.compose.material3.Button(
-                        onClick = onConfirm,
-                        enabled = importText.isNotBlank(),
-                        shape = RoundedCornerShape(16.dp),
-                    ) {
-                        Text(stringResource(Res.string.action_import))
-                    }
-                }
-            }
+            },
+            isError = importError != null,
+            supportingText = importError?.let {
+                { Text(it, color = MaterialTheme.colorScheme.error) }
+            },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+            keyboardActions = KeyboardActions(onDone = { onConfirm() }),
+            maxLines = 10,
+            shape = RoundedCornerShape(14.dp),
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                color = MaterialTheme.colorScheme.onSurface,
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = MaterialTheme.colorScheme.outline,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                cursorColor = MaterialTheme.colorScheme.primary,
+            ),
+        )
+        DialogButtons {
+            DialogButton(
+                text = stringResource(Res.string.action_cancel),
+                onClick = onDismiss,
+            )
+            DialogButton(
+                text = stringResource(Res.string.action_import),
+                onClick = onConfirm,
+                enabled = importText.isNotBlank(),
+                style = DialogButtonStyle.Primary,
+            )
         }
     }
 }

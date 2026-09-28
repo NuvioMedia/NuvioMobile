@@ -20,7 +20,6 @@ object TmdbSettingsRepository {
     private var useArtwork = true
     private var useBasicInfo = true
     private var useDetails = true
-    private var useReleaseDates = false
     private var useCredits = true
     private var useProductions = true
     private var useNetworks = true
@@ -100,15 +99,6 @@ object TmdbSettingsRepository {
         persist = TmdbSettingsStorage::saveUseDetails,
     )
 
-    fun setUseReleaseDates(value: Boolean) {
-        ensureLoaded()
-        if (useReleaseDates == value) return
-        useReleaseDates = value
-        publish()
-        TmdbSettingsStorage.saveUseReleaseDates(value)
-        invalidateMetadata()
-    }
-
     fun setUseCredits(value: Boolean) = setBoolean(
         current = useCredits,
         next = value,
@@ -174,7 +164,6 @@ object TmdbSettingsRepository {
     private fun loadFromDisk() {
         val wasLoaded = hasLoaded
         val previousApiKey = apiKey
-        val previousUseReleaseDates = useReleaseDates
         hasLoaded = true
         enabled = TmdbSettingsStorage.loadEnabled() ?: false
         apiKey = TmdbSettingsStorage.loadApiKey()?.trim().orEmpty()
@@ -184,7 +173,6 @@ object TmdbSettingsRepository {
         useArtwork = TmdbSettingsStorage.loadUseArtwork() ?: true
         useBasicInfo = TmdbSettingsStorage.loadUseBasicInfo() ?: true
         useDetails = TmdbSettingsStorage.loadUseDetails() ?: true
-        useReleaseDates = TmdbSettingsStorage.loadUseReleaseDates() ?: false
         useCredits = TmdbSettingsStorage.loadUseCredits() ?: true
         useProductions = TmdbSettingsStorage.loadUseProductions() ?: true
         useNetworks = TmdbSettingsStorage.loadUseNetworks() ?: true
@@ -193,7 +181,7 @@ object TmdbSettingsRepository {
         useMoreLikeThis = TmdbSettingsStorage.loadUseMoreLikeThis() ?: true
         useCollections = TmdbSettingsStorage.loadUseCollections() ?: true
         publish()
-        if (wasLoaded && (previousApiKey != apiKey || previousUseReleaseDates != useReleaseDates)) {
+        if (wasLoaded && previousApiKey != apiKey) {
             invalidateMetadata()
         }
     }
@@ -207,7 +195,6 @@ object TmdbSettingsRepository {
             useArtwork = useArtwork,
             useBasicInfo = useBasicInfo,
             useDetails = useDetails,
-            useReleaseDates = useReleaseDates,
             useCredits = useCredits,
             useProductions = useProductions,
             useNetworks = useNetworks,

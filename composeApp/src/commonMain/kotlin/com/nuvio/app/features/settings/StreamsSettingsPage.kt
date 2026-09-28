@@ -19,9 +19,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Visibility
-import androidx.compose.material3.BasicAlertDialog
-import androidx.compose.material3.Button
-import com.nuvio.app.core.ui.NuvioLoadingIndicator
+import com.nuvio.app.core.ui.DialogButton
+import com.nuvio.app.core.ui.DialogButtons
+import com.nuvio.app.core.ui.DialogButtonStyle
+import com.nuvio.app.core.ui.DialogSurface
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -219,36 +220,38 @@ private fun StreamBackgroundModeDialog(
     onDismiss: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        SettingsDialogSurface(title = stringResource(Res.string.settings_stream_background_title)) {
-            Text(
-                text = stringResource(Res.string.settings_stream_background_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = tokens.colors.textSecondary,
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = stringResource(Res.string.settings_stream_background_title),
+    ) {
+        Text(
+            text = stringResource(Res.string.settings_stream_background_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = tokens.colors.textSecondary,
+        )
+        StreamBackgroundMode.entries.forEach { mode ->
+            Row(
+                modifier = Modifier.fillMaxWidth().selectable(
+                    selected = mode == selectedMode,
+                    role = Role.RadioButton,
+                    onClick = { onModeSelected(mode) },
+                ).padding(vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
+            ) {
+                RadioButton(selected = mode == selectedMode, onClick = null)
+                Text(
+                    text = streamBackgroundModeLabel(mode),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = tokens.colors.textPrimary,
+                )
+            }
+        }
+        DialogButtons {
+            DialogButton(
+                text = stringResource(Res.string.action_cancel),
+                onClick = onDismiss,
             )
-            StreamBackgroundMode.entries.forEach { mode ->
-                Row(
-                    modifier = Modifier.fillMaxWidth().selectable(
-                        selected = mode == selectedMode,
-                        role = Role.RadioButton,
-                        onClick = { onModeSelected(mode) },
-                    ).padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
-                ) {
-                    RadioButton(selected = mode == selectedMode, onClick = null)
-                    Text(
-                        text = streamBackgroundModeLabel(mode),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = tokens.colors.textPrimary,
-                    )
-                }
-            }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(Res.string.action_cancel), maxLines = 1)
-                }
-            }
         }
     }
 }
@@ -276,38 +279,37 @@ private fun StreamBadgePositionDialog(
     onDismiss: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        SettingsDialogSurface(title = stringResource(Res.string.settings_stream_badge_position_dialog_title)) {
-            Text(
-                text = stringResource(Res.string.settings_stream_badge_position_dialog_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = tokens.colors.textSecondary,
-            )
-            StreamBadgePlacement.entries.forEach { placement ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
-                ) {
-                    RadioButton(
-                        selected = placement == selectedPlacement,
-                        onClick = { onPlacementSelected(placement) },
-                    )
-                    Text(
-                        text = streamBadgePlacementLabel(placement),
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = tokens.colors.textPrimary,
-                    )
-                }
-            }
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = stringResource(Res.string.settings_stream_badge_position_dialog_title),
+    ) {
+        Text(
+            text = stringResource(Res.string.settings_stream_badge_position_dialog_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = tokens.colors.textSecondary,
+        )
+        StreamBadgePlacement.entries.forEach { placement ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text(text = stringResource(Res.string.action_cancel), maxLines = 1)
-                }
+                RadioButton(
+                    selected = placement == selectedPlacement,
+                    onClick = { onPlacementSelected(placement) },
+                )
+                Text(
+                    text = streamBadgePlacementLabel(placement),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = tokens.colors.textPrimary,
+                )
             }
+        }
+        DialogButtons {
+            DialogButton(
+                text = stringResource(Res.string.action_cancel),
+                onClick = onDismiss,
+            )
         }
     }
 }
@@ -326,132 +328,122 @@ private fun BadgeUrlManagerDialog(
     var isImporting by rememberSaveable { mutableStateOf(false) }
     var previewImport by remember { mutableStateOf<StreamBadgeImport?>(null) }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        SettingsDialogSurface(title = stringResource(Res.string.settings_stream_badge_urls_title)) {
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = stringResource(Res.string.settings_stream_badge_urls_title),
+    ) {
+        Text(
+            text = stringResource(Res.string.settings_stream_badge_urls_description, STREAM_BADGE_IMPORT_LIMIT),
+            style = MaterialTheme.typography.bodyMedium,
+            color = tokens.colors.textSecondary,
+        )
+        OutlinedTextField(
+            value = draftUrl,
+            onValueChange = {
+                draftUrl = it
+                errorMessage = null
+            },
+            modifier = Modifier.fillMaxWidth(),
+            label = { Text(stringResource(Res.string.settings_fusion_badge_url_label)) },
+            singleLine = false,
+            minLines = 2,
+            maxLines = 4,
+            enabled = !isImporting,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = tokens.colors.borderFocus.copy(alpha = tokens.opacity.strong),
+                unfocusedBorderColor = tokens.colors.borderDefault.copy(alpha = tokens.opacity.medium),
+                focusedContainerColor = tokens.colors.surface,
+                unfocusedContainerColor = tokens.colors.surface,
+                disabledContainerColor = tokens.colors.surface,
+            ),
+        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Text(
-                text = stringResource(Res.string.settings_stream_badge_urls_description, STREAM_BADGE_IMPORT_LIMIT),
-                style = MaterialTheme.typography.bodyMedium,
-                color = tokens.colors.textSecondary,
-            )
-            OutlinedTextField(
-                value = draftUrl,
-                onValueChange = {
-                    draftUrl = it
-                    errorMessage = null
-                },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(stringResource(Res.string.settings_fusion_badge_url_label)) },
-                singleLine = false,
-                minLines = 2,
-                maxLines = 4,
-                enabled = !isImporting,
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = tokens.colors.borderFocus.copy(alpha = tokens.opacity.strong),
-                    unfocusedBorderColor = tokens.colors.borderDefault.copy(alpha = tokens.opacity.medium),
-                    focusedContainerColor = tokens.colors.surface,
-                    unfocusedContainerColor = tokens.colors.surface,
-                    disabledContainerColor = tokens.colors.surface,
+                text = stringResource(
+                    Res.string.settings_fusion_badge_urls_imported,
+                    imports.size,
+                    STREAM_BADGE_IMPORT_LIMIT,
                 ),
+                style = MaterialTheme.typography.bodySmall,
+                color = tokens.colors.textMuted,
+                modifier = Modifier.weight(1f),
             )
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap, Alignment.End),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(
-                        Res.string.settings_fusion_badge_urls_imported,
-                        imports.size,
-                        STREAM_BADGE_IMPORT_LIMIT,
-                    ),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = tokens.colors.textMuted,
-                    modifier = Modifier.weight(1f),
-                )
-                Button(
-                    enabled = !isImporting && draftUrl.isNotBlank(),
-                    onClick = {
-                        scope.launch {
-                            isImporting = true
-                            errorMessage = null
-                            when (val result = StreamBadgeSettingsRepository.importStreamBadgeRulesFromUrl(draftUrl)) {
-                                is StreamBadgeImportResult.Success -> {
-                                    draftUrl = ""
-                                    isImporting = false
-                                }
-                                is StreamBadgeImportResult.Error -> {
-                                    errorMessage = result.message
-                                    isImporting = false
-                                }
+            DialogButton(
+                text = stringResource(Res.string.action_import),
+                onClick = {
+                    scope.launch {
+                        isImporting = true
+                        errorMessage = null
+                        when (val result = StreamBadgeSettingsRepository.importStreamBadgeRulesFromUrl(draftUrl)) {
+                            is StreamBadgeImportResult.Success -> {
+                                draftUrl = ""
+                                isImporting = false
+                            }
+                            is StreamBadgeImportResult.Error -> {
+                                errorMessage = result.message
+                                isImporting = false
                             }
                         }
-                    },
-                ) {
-                    if (isImporting) {
-                        NuvioLoadingIndicator(
-                            modifier = Modifier.size(tokens.icons.sm),
-                            color = tokens.colors.onAccent,
-                        )
-                    } else {
-                        Text(text = stringResource(Res.string.action_import), maxLines = 1)
                     }
-                }
-            }
-            errorMessage?.let { message ->
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = tokens.colors.danger,
-                )
-            }
+                },
+                enabled = draftUrl.isNotBlank(),
+                style = DialogButtonStyle.Primary,
+                loading = isImporting,
+            )
+        }
+        errorMessage?.let { message ->
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodySmall,
+                color = tokens.colors.danger,
+            )
+        }
 
-            if (imports.isEmpty()) {
-                Text(
-                    text = stringResource(Res.string.settings_fusion_badges_empty),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = tokens.colors.textMuted,
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 300.dp),
-                    verticalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
-                ) {
-                    items(
-                        items = imports,
-                        key = { import -> import.sourceUrl },
-                    ) { import ->
-                        BadgeUrlRow(
-                            import = import,
-                            showActiveChoice = imports.size > 1,
-                            enabled = !isImporting,
-                            onActivate = {
-                                StreamBadgeSettingsRepository.setActiveStreamBadgeRulesSource(import.sourceUrl)
-                            },
-                            onPreview = { previewImport = import },
-                            onDelete = {
-                                StreamBadgeSettingsRepository.deleteStreamBadgeRulesSource(import.sourceUrl)
-                                if (previewImport?.sourceUrl.equals(import.sourceUrl, ignoreCase = true)) {
-                                    previewImport = null
-                                }
-                            },
-                        )
-                    }
-                }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap, Alignment.End),
-                verticalAlignment = Alignment.CenterVertically,
+        if (imports.isEmpty()) {
+            Text(
+                text = stringResource(Res.string.settings_fusion_badges_empty),
+                style = MaterialTheme.typography.bodySmall,
+                color = tokens.colors.textMuted,
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 300.dp),
+                verticalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
             ) {
-                TextButton(
-                    enabled = !isImporting,
-                    onClick = onDismiss,
-                ) {
-                    Text(text = stringResource(Res.string.action_cancel), maxLines = 1)
+                items(
+                    items = imports,
+                    key = { import -> import.sourceUrl },
+                ) { import ->
+                    BadgeUrlRow(
+                        import = import,
+                        showActiveChoice = imports.size > 1,
+                        enabled = !isImporting,
+                        onActivate = {
+                            StreamBadgeSettingsRepository.setActiveStreamBadgeRulesSource(import.sourceUrl)
+                        },
+                        onPreview = { previewImport = import },
+                        onDelete = {
+                            StreamBadgeSettingsRepository.deleteStreamBadgeRulesSource(import.sourceUrl)
+                            if (previewImport?.sourceUrl.equals(import.sourceUrl, ignoreCase = true)) {
+                                previewImport = null
+                            }
+                        },
+                    )
                 }
             }
+        }
+        DialogButtons {
+            DialogButton(
+                text = stringResource(Res.string.action_cancel),
+                onClick = onDismiss,
+                enabled = !isImporting,
+            )
         }
     }
 
@@ -567,75 +559,74 @@ private fun BadgePreviewDialog(
     val sections = badgePreviewSections(import)
     val badgeCount = sections.sumOf { it.filters.size }
 
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        SettingsDialogSurface(title = stringResource(Res.string.settings_fusion_badge_preview_title)) {
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = stringResource(Res.string.settings_fusion_badge_preview_title),
+    ) {
+        Text(
+            text = import.sourceUrl,
+            style = MaterialTheme.typography.bodyMedium,
+            color = tokens.colors.textSecondary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = stringResource(Res.string.settings_fusion_badge_preview_count, badgeCount),
+            style = MaterialTheme.typography.bodySmall,
+            color = tokens.colors.textMuted,
+        )
+        if (sections.isEmpty()) {
             Text(
-                text = import.sourceUrl,
-                style = MaterialTheme.typography.bodyMedium,
-                color = tokens.colors.textSecondary,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = stringResource(Res.string.settings_fusion_badge_preview_count, badgeCount),
+                text = stringResource(Res.string.settings_fusion_badge_preview_empty),
                 style = MaterialTheme.typography.bodySmall,
                 color = tokens.colors.textMuted,
             )
-            if (sections.isEmpty()) {
-                Text(
-                    text = stringResource(Res.string.settings_fusion_badge_preview_empty),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = tokens.colors.textMuted,
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 460.dp),
-                    verticalArrangement = Arrangement.spacedBy(tokens.spacing.railGap),
-                ) {
-                    items(
-                        items = sections,
-                        key = { section -> section.id },
-                    ) { section ->
-                        Column(
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 460.dp),
+                verticalArrangement = Arrangement.spacedBy(tokens.spacing.railGap),
+            ) {
+                items(
+                    items = sections,
+                    key = { section -> section.id },
+                ) { section ->
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
+                    ) {
+                        Text(
+                            text = section.title,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = tokens.colors.textPrimary,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        FlowRow(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
+                            horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s5),
+                            verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s5),
                         ) {
-                            Text(
-                                text = section.title,
-                                style = MaterialTheme.typography.labelLarge,
-                                color = tokens.colors.textPrimary,
-                                fontWeight = FontWeight.SemiBold,
-                            )
-                            FlowRow(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s5),
-                                verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s5),
-                            ) {
-                                section.filters.forEach { filter ->
-                                    StreamBadgeChip(
-                                        imageURL = filter.imageURL,
-                                        name = filter.name,
-                                        tagColor = filter.tagColor,
-                                        tagStyle = filter.tagStyle,
-                                        borderColor = filter.borderColor,
-                                        size = StreamBadgeChipSize.PREVIEW,
-                                    )
-                                }
+                            section.filters.forEach { filter ->
+                                StreamBadgeChip(
+                                    imageURL = filter.imageURL,
+                                    name = filter.name,
+                                    tagColor = filter.tagColor,
+                                    tagStyle = filter.tagStyle,
+                                    borderColor = filter.borderColor,
+                                    size = StreamBadgeChipSize.PREVIEW,
+                                )
                             }
                         }
                     }
                 }
             }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
-            ) {
-                TextButton(onClick = onDismiss) {
-                    Text(text = stringResource(Res.string.action_close), maxLines = 1)
-                }
-            }
+        }
+        DialogButtons {
+            DialogButton(
+                text = stringResource(Res.string.action_close),
+                onClick = onDismiss,
+            )
         }
     }
 }

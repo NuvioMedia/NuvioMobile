@@ -2,6 +2,7 @@ package com.nuvio.app.features.player
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.streams.LocalStreamSizeLabelFormat
 import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
 import com.nuvio.app.features.streams.StreamCard
+import com.nuvio.app.features.streams.StreamCardSkeleton
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamsUiState
 import com.nuvio.app.features.streams.isSelectableForPlayback
@@ -58,7 +60,14 @@ internal fun PlayerStreamList(
 
     when {
         streams.isEmpty() && streamsUiState.isAnyLoading -> {
-            PlayerModalLoading(modifier = Modifier.padding(vertical = 24.dp))
+            Column(
+                modifier = modifier.padding(contentPadding),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                repeat(4) {
+                    StreamCardSkeleton()
+                }
+            }
         }
 
         streams.isEmpty() -> {
@@ -105,7 +114,7 @@ internal fun PlayerStreamList(
                 }
                 if (streamsUiState.isAnyLoading) {
                     item {
-                        PlayerModalLoading(modifier = Modifier.padding(vertical = 16.dp))
+                        StreamCardSkeleton()
                     }
                 }
             }

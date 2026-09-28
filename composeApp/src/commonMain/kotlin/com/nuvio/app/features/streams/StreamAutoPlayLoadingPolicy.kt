@@ -15,9 +15,11 @@ internal fun StreamsUiState.shouldShowAutoPlayLoading(
 
 internal fun StreamsUiState.shouldUseLandscapeAutoPlayLoading(
     expectedRequestToken: String,
+    settings: PlayerSettingsUiState,
     manualSelection: Boolean,
 ): Boolean =
     !manualSelection &&
+        settings.streamAutoPlayMode != StreamAutoPlayMode.MANUAL &&
         requestToken == expectedRequestToken &&
         autoPlayDecided &&
         isDirectAutoPlayFlow &&

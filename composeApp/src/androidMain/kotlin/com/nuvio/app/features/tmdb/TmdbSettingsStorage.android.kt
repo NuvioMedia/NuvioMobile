@@ -20,7 +20,6 @@ actual object TmdbSettingsStorage {
     private const val useArtworkKey = "tmdb_use_artwork"
     private const val useBasicInfoKey = "tmdb_use_basic_info"
     private const val useDetailsKey = "tmdb_use_details"
-    private const val useReleaseDatesKey = "tmdb_use_release_dates"
     private const val useCreditsKey = "tmdb_use_credits"
     private const val useProductionsKey = "tmdb_use_productions"
     private const val useNetworksKey = "tmdb_use_networks"
@@ -35,7 +34,6 @@ actual object TmdbSettingsStorage {
         useArtworkKey,
         useBasicInfoKey,
         useDetailsKey,
-        useReleaseDatesKey,
         useCreditsKey,
         useProductionsKey,
         useNetworksKey,
@@ -99,12 +97,6 @@ actual object TmdbSettingsStorage {
 
     actual fun saveUseDetails(enabled: Boolean) {
         saveBoolean(useDetailsKey, enabled)
-    }
-
-    actual fun loadUseReleaseDates(): Boolean? = loadBoolean(useReleaseDatesKey)
-
-    actual fun saveUseReleaseDates(enabled: Boolean) {
-        saveBoolean(useReleaseDatesKey, enabled)
     }
 
     actual fun loadUseCredits(): Boolean? = loadBoolean(useCreditsKey)
@@ -173,7 +165,6 @@ actual object TmdbSettingsStorage {
         loadUseArtwork()?.let { put(useArtworkKey, encodeSyncBoolean(it)) }
         loadUseBasicInfo()?.let { put(useBasicInfoKey, encodeSyncBoolean(it)) }
         loadUseDetails()?.let { put(useDetailsKey, encodeSyncBoolean(it)) }
-        loadUseReleaseDates()?.let { put(useReleaseDatesKey, encodeSyncBoolean(it)) }
         loadUseCredits()?.let { put(useCreditsKey, encodeSyncBoolean(it)) }
         loadUseProductions()?.let { put(useProductionsKey, encodeSyncBoolean(it)) }
         loadUseNetworks()?.let { put(useNetworksKey, encodeSyncBoolean(it)) }
@@ -194,7 +185,6 @@ actual object TmdbSettingsStorage {
         payload.decodeSyncBoolean(useArtworkKey)?.let(::saveUseArtwork)
         payload.decodeSyncBoolean(useBasicInfoKey)?.let(::saveUseBasicInfo)
         payload.decodeSyncBoolean(useDetailsKey)?.let(::saveUseDetails)
-        payload.decodeSyncBoolean(useReleaseDatesKey)?.let(::saveUseReleaseDates)
         payload.decodeSyncBoolean(useCreditsKey)?.let(::saveUseCredits)
         payload.decodeSyncBoolean(useProductionsKey)?.let(::saveUseProductions)
         payload.decodeSyncBoolean(useNetworksKey)?.let(::saveUseNetworks)

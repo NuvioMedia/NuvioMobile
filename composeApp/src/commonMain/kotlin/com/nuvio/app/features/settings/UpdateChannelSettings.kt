@@ -11,12 +11,10 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.SystemUpdate
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -27,6 +25,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.core.ui.DialogButton
+import com.nuvio.app.core.ui.DialogButtons
+import com.nuvio.app.core.ui.DialogSurface
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.updater.UpdateChannel
 import com.nuvio.app.features.updater.UpdatePreferences
@@ -54,50 +55,52 @@ internal fun UpdateChannelSettingsRow(isTablet: Boolean) {
         onClick = { showDialog = true },
     )
     if (showDialog) {
-        BasicAlertDialog(onDismissRequest = { showDialog = false }) {
-            SettingsDialogSurface(title = stringResource(Res.string.updates_channel_title)) {
-                Column(
-                    modifier = Modifier.selectableGroup().verticalScroll(rememberScrollState()),
-                ) {
-                    UpdateChannel.entries.forEach { option ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth().selectable(
-                                selected = option == channel,
-                                role = Role.RadioButton,
-                                onClick = {
-                                    UpdatePreferences.shared.setChannel(option)
-                                    showDialog = false
-                                },
-                            ).padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
-                        ) {
-                            RadioButton(selected = option == channel, onClick = null)
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = updateChannelLabel(option),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = tokens.colors.textPrimary,
-                                )
-                                Text(
-                                    text = stringResource(
-                                        when (option) {
-                                            UpdateChannel.STABLE -> Res.string.updates_channel_stable_description
-                                            UpdateChannel.BETA -> Res.string.updates_channel_beta_description
-                                        },
-                                    ),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = tokens.colors.textSecondary,
-                                )
-                            }
+        DialogSurface(
+            onDismissRequest = { showDialog = false },
+            title = stringResource(Res.string.updates_channel_title),
+        ) {
+            Column(
+                modifier = Modifier.selectableGroup().verticalScroll(rememberScrollState()),
+            ) {
+                UpdateChannel.entries.forEach { option ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().selectable(
+                            selected = option == channel,
+                            role = Role.RadioButton,
+                            onClick = {
+                                UpdatePreferences.shared.setChannel(option)
+                                showDialog = false
+                            },
+                        ).padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
+                    ) {
+                        RadioButton(selected = option == channel, onClick = null)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = updateChannelLabel(option),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = tokens.colors.textPrimary,
+                            )
+                            Text(
+                                text = stringResource(
+                                    when (option) {
+                                        UpdateChannel.STABLE -> Res.string.updates_channel_stable_description
+                                        UpdateChannel.BETA -> Res.string.updates_channel_beta_description
+                                    },
+                                ),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = tokens.colors.textSecondary,
+                            )
                         }
                     }
                 }
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(onClick = { showDialog = false }) {
-                        Text(stringResource(Res.string.action_cancel))
-                    }
-                }
+            }
+            DialogButtons {
+                DialogButton(
+                    text = stringResource(Res.string.action_cancel),
+                    onClick = { showDialog = false },
+                )
             }
         }
     }

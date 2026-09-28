@@ -32,10 +32,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -417,80 +415,40 @@ fun NuvioInlineMetadata(
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class)
 fun NuvioStatusModal(
     title: String,
     message: String,
     modifier: Modifier = Modifier,
     isVisible: Boolean,
     isBusy: Boolean = false,
+    destructive: Boolean = false,
     confirmText: String = stringResource(Res.string.action_ok),
     dismissText: String? = null,
     onConfirm: () -> Unit,
     onDismiss: (() -> Unit)? = null,
 ) {
     if (!isVisible) return
-    val tokens = MaterialTheme.nuvio
 
-    BasicAlertDialog(
+    DialogSurface(
         onDismissRequest = {
             if (!isBusy) {
                 onDismiss?.invoke() ?: onConfirm()
             }
         },
+        modifier = modifier,
+        title = title,
+        message = message,
     ) {
-        Surface(
-            modifier = modifier.fillMaxWidth(),
-            color = tokens.colors.surfaceDialog,
-            shape = tokens.shapes.dialog,
-        ) {
-            Column(
-                modifier = Modifier.padding(tokens.spacing.dialogPadding),
-            ) {
-                if (isBusy) {
-                    NuvioLoadingIndicator(
-                        color = tokens.colors.accent,
-                    )
-                    Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
-                }
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = tokens.colors.textPrimary,
-                )
-                Spacer(modifier = Modifier.height(tokens.spacing.controlGap))
-                Text(
-                    text = message,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = tokens.colors.textMuted,
-                )
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s18))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                ) {
-                    if (!isBusy && dismissText != null && onDismiss != null) {
-                        Button(
-                            onClick = onDismiss,
-                            shape = tokens.shapes.button,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = tokens.colors.surfaceCard,
-                                contentColor = tokens.colors.textPrimary,
-                            ),
-                        ) {
-                            Text(dismissText)
-                        }
-                        Spacer(modifier = Modifier.width(NuvioTokens.Space.s10))
-                    }
-                    Button(
-                        onClick = onConfirm,
-                        enabled = !isBusy,
-                        shape = tokens.shapes.button,
-                    ) {
-                        Text(confirmText)
-                    }
-                }
+        DialogButtons {
+            if (!isBusy && dismissText != null && onDismiss != null) {
+                DialogButton(text = dismissText, onClick = onDismiss)
             }
+            DialogButton(
+                text = confirmText,
+                onClick = onConfirm,
+                style = if (destructive) DialogButtonStyle.Destructive else DialogButtonStyle.Primary,
+                loading = isBusy,
+            )
         }
     }
 }

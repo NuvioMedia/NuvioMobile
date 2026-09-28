@@ -71,4 +71,35 @@ class HomeCatalogParserTest {
         assertEquals("2027", result.items.single().releaseInfo)
         assertEquals("2027-05-12T00:00:00.000Z", result.items.single().rawReleaseDate)
     }
+
+    @Test
+    fun `parse catalog response reads addon landscape poster`() {
+        val result = HomeCatalogParser.parseCatalogResponse(
+            payload = """
+                {
+                  "metas": [
+                    {
+                      "id": "tt1",
+                      "type": "movie",
+                      "name": "One",
+                      "background": "https://img/background.jpg",
+                      "landscapePoster": "https://img/landscape-1.jpg"
+                    },
+                    {
+                      "id": "tt2",
+                      "type": "movie",
+                      "name": "Two",
+                      "landscapePoster": "https://img/landscape-2.jpg"
+                    }
+                  ]
+                }
+            """.trimIndent(),
+        )
+
+        val (withBackground, withoutBackground) = result.items
+        assertEquals("https://img/landscape-1.jpg", withBackground.landscapePoster)
+        assertEquals("https://img/background.jpg", withBackground.banner)
+        assertEquals("https://img/landscape-2.jpg", withoutBackground.landscapePoster)
+        assertEquals("https://img/landscape-2.jpg", withoutBackground.banner)
+    }
 }

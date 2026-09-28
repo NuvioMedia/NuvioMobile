@@ -13,11 +13,44 @@ import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
+
+internal fun PlayerScreenRuntime.finishTimelineScrub(positionMs: Long) {
+    lastManualSkipSeekPositions = playbackSnapshot.positionMs to positionMs
+    isScrubbingTimeline = false
+    scrubbingPositionMs = positionMs.takeIf { playbackSnapshot.isLoading }
+}
+
+internal fun PlayerScreenRuntime.updatePlaybackSnapshot(
+    snapshot: PlayerPlaybackSnapshot,
+    playbackKey: PlaybackKey = activePlaybackKey,
+): Boolean {
+    if (playbackKey != activePlaybackKey) return false
+    playbackSnapshot = snapshot
+    playbackSnapshotKey = playbackKey
+    val targetPositionMs = scrubbingPositionMs ?: return true
+    if (!isScrubbingTimeline && (
+            !snapshot.isLoading || snapshot.isEnded ||
+                abs(snapshot.positionMs - targetPositionMs) <= 1_000L
+            )
+    ) {
+        scrubbingPositionMs = null
+    }
+    return true
+}
 
 internal val PlayerScreenRuntime.activePlaybackIdentity: String
     get() = activeTorrentInfoHash
         ?.let { hash -> "torrent:$hash:${activeTorrentFileIdx ?: -1}" }
         ?: activeSourceUrl
+
+internal val PlayerScreenRuntime.activePlaybackKey: PlaybackKey
+    get() = PlaybackKey(
+        sourceIdentity = activePlaybackIdentity,
+        videoId = activeVideoId,
+        seasonNumber = activeSeasonNumber,
+        episodeNumber = activeEpisodeNumber,
+    )
 
 internal val PlayerScreenRuntime.playbackSession: WatchProgressPlaybackSession
     get() = WatchProgressPlaybackSession(
@@ -47,8 +80,39 @@ internal val PlayerScreenRuntime.playbackSession: WatchProgressPlaybackSession
         lastSourceUrl = activeSourceUrl,
     )
 
+internal fun PlayerScreenRuntime.currentLaunch(launch: PlayerLaunch): PlayerLaunch {
+    val positionMs = playbackSnapshot.positionMs.takeIf {
+        it > 0L && initialSeekApplied && playbackSnapshotKey == activePlaybackKey
+    }
+    return launch.copy(
+        sourceUrl = activeSourceUrl,
+        sourceAudioUrl = activeSourceAudioUrl,
+        sourceHeaders = activeSourceHeaders,
+        sourceResponseHeaders = activeSourceResponseHeaders,
+        externalSubtitles = externalSubtitles,
+        streamType = activeStreamType,
+        seasonNumber = activeSeasonNumber,
+        episodeNumber = activeEpisodeNumber,
+        episodeTitle = activeEpisodeTitle,
+        episodeThumbnail = activeEpisodeThumbnail,
+        streamTitle = activeStreamTitle,
+        streamSubtitle = activeStreamSubtitle,
+        bingeGroup = currentStreamBingeGroup,
+        pauseDescription = activePauseDescription,
+        providerName = activeProviderName,
+        providerAddonId = activeProviderAddonId,
+        videoId = activeVideoId,
+        torrentInfoHash = activeTorrentInfoHash,
+        torrentFileIdx = activeTorrentFileIdx,
+        torrentFilename = activeTorrentFilename,
+        torrentTrackers = activeTorrentTrackers,
+        initialPositionMs = positionMs ?: activeInitialPositionMs,
+        initialProgressFraction = activeInitialProgressFraction.takeIf { positionMs == null },
+    )
+}
+
 internal fun PlayerScreenRuntime.resetIdentityStateIfNeeded() {
-    val identity = activePlaybackIdentity
+    val identity = activePlaybackKey
     if (lastResetPlaybackIdentity != identity) {
         lastResetPlaybackIdentity = identity
         shouldPlay = true

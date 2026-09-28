@@ -1,9 +1,6 @@
 package com.nuvio.app.features.simkl
 
 import com.nuvio.app.features.tracking.TrackingRefreshIntent
-import kotlinx.atomicfu.atomic
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 
 internal const val SIMKL_AUTOMATIC_REFRESH_INTERVAL_MINUTES = 15
 internal const val SIMKL_AUTOMATIC_REFRESH_INTERVAL_MS =
@@ -25,45 +22,5 @@ internal fun shouldRunSimklRefresh(
     return elapsedMs < 0L || elapsedMs >= automaticIntervalMs
 }
 
-internal enum class SimklRefreshGateOutcome {
-    COALESCED,
-    EXECUTED,
-    FRESHNESS_SKIPPED,
-}
-
-/**
- * Serializes provider refreshes and coalesces callers that overlap for the same profile generation.
- *
- * Library, watched, and progress are projections of one Simkl snapshot. They may request the same
- * refresh concurrently, but only the first request should reach the network.
- */
-internal class SimklRefreshGate {
-    private val mutex = Mutex()
-    private val completionSequence = atomic(0L)
-    private var lastCompletedProfileGeneration: Long? = null
-
-    suspend fun runIfNeeded(
-        profileGeneration: Long,
-        shouldRun: () -> Boolean,
-        block: suspend () -> Unit,
-    ): SimklRefreshGateOutcome {
-        val observedSequence = completionSequence.value
-        return mutex.withLock {
-            if (
-                completionSequence.value != observedSequence &&
-                lastCompletedProfileGeneration == profileGeneration
-            ) {
-                return@withLock SimklRefreshGateOutcome.COALESCED
-            }
-            if (!shouldRun()) return@withLock SimklRefreshGateOutcome.FRESHNESS_SKIPPED
-
-            try {
-                block()
-                SimklRefreshGateOutcome.EXECUTED
-            } finally {
-                lastCompletedProfileGeneration = profileGeneration
-                completionSequence.incrementAndGet()
-            }
-        }
-    }
-}
+internal typealias SimklRefreshGate = com.nuvio.app.features.tracking.TrackingRefreshGate
+internal typealias SimklRefreshGateOutcome = com.nuvio.app.features.tracking.TrackingRefreshGateOutcome

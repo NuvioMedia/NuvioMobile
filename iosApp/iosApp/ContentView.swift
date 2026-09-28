@@ -73,27 +73,33 @@ final class RootComposeViewController: UIViewController {
     }
 
     override var childForHomeIndicatorAutoHidden: UIViewController? {
-        immersiveController(in: contentController) ?? contentController
+        nil
     }
 
     override var childForScreenEdgesDeferringSystemGestures: UIViewController? {
-        immersiveController(in: contentController) ?? contentController
+        nil
     }
 
     override var childForStatusBarHidden: UIViewController? {
-        immersiveController(in: contentController) ?? contentController
+        nil
     }
 
     override var prefersHomeIndicatorAutoHidden: Bool {
-        immersiveController(in: contentController)?.prefersHomeIndicatorAutoHidden ?? false
+        SystemUI.shared.activePlayer?.prefersHomeIndicatorAutoHidden
+            ?? immersiveController(in: contentController)?.prefersHomeIndicatorAutoHidden
+            ?? false
     }
 
     override var preferredScreenEdgesDeferringSystemGestures: UIRectEdge {
-        immersiveController(in: contentController)?.preferredScreenEdgesDeferringSystemGestures ?? []
+        SystemUI.shared.activePlayer?.preferredScreenEdgesDeferringSystemGestures
+            ?? immersiveController(in: contentController)?.preferredScreenEdgesDeferringSystemGestures
+            ?? []
     }
 
     override var prefersStatusBarHidden: Bool {
-        immersiveController(in: contentController)?.prefersStatusBarHidden ?? false
+        SystemUI.shared.activePlayer?.prefersStatusBarHidden
+            ?? immersiveController(in: contentController)?.prefersStatusBarHidden
+            ?? false
     }
 
     override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
@@ -1367,13 +1373,19 @@ struct NativeNavContentView: View {
 }
 
 struct ContentView: View {
+    @ObservedObject private var systemUI = SystemUI.shared
+
     var body: some View {
-        if #available(iOS 16.0, *) {
-            NativeNavContentView()
-        } else {
-            ComposeView()
-                .ignoresSafeArea(.all)
+        Group {
+            if #available(iOS 16.0, *) {
+                NativeNavContentView()
+            } else {
+                ComposeView()
+                    .ignoresSafeArea(.all)
+            }
         }
+        .persistentSystemOverlays(systemUI.isPlayerImmersive ? .hidden : .automatic)
+        .statusBarHidden(systemUI.isPlayerImmersive)
     }
 }
 

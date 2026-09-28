@@ -35,7 +35,7 @@ class RottenTomatoesRatingTest {
 
     @Test
     fun titleResponseMapsBothScoresAndCertificationKeywords() {
-        val ratings = parseRottenTomatoesRatings(
+        val ratings = parseMdbListRatings(
             """
             {
                 "title": "Example",
@@ -52,17 +52,17 @@ class RottenTomatoesRatingTest {
             """.trimIndent(),
         )
 
-        assertEquals(listOf(PROVIDER_TOMATOES, PROVIDER_AUDIENCE), ratings.map { it.source })
-        assertEquals(listOf(72.0, 85.0), ratings.map { it.value })
+        assertEquals(listOf(PROVIDER_IMDB, PROVIDER_TOMATOES, PROVIDER_AUDIENCE), ratings.map { it.source })
+        assertEquals(listOf(8.1, 72.0, 85.0), ratings.map { it.value })
         assertEquals(
-            listOf(RottenTomatoesStatus.CERTIFIED_FRESH, RottenTomatoesStatus.VERIFIED_HOT),
+            listOf(null, RottenTomatoesStatus.CERTIFIED_FRESH, RottenTomatoesStatus.VERIFIED_HOT),
             ratings.map { it.rottenTomatoesStatus },
         )
     }
 
     @Test
     fun highScoresAndVoteCountsDoNotGrantCertification() {
-        val ratings = parseRottenTomatoesRatings(
+        val ratings = parseMdbListRatings(
             """
             {
                 "ratings": [
@@ -79,7 +79,7 @@ class RottenTomatoesRatingTest {
 
     @Test
     fun missingAndInvalidScoresAreSkippedButZeroIsPreserved() {
-        val ratings = parseRottenTomatoesRatings(
+        val ratings = parseMdbListRatings(
             """
             {
                 "ratings": [
@@ -95,14 +95,14 @@ class RottenTomatoesRatingTest {
         )
 
         assertEquals(listOf(rating(PROVIDER_AUDIENCE, 0.0)), ratings)
-        assertTrue(parseRottenTomatoesRatings("{}").isEmpty())
-        assertTrue(parseRottenTomatoesRatings("""{"ratings":null}""").isEmpty())
+        assertTrue(parseMdbListRatings("{}").isEmpty())
+        assertTrue(parseMdbListRatings("""{"ratings":null}""").isEmpty())
     }
 
     @Test
     fun audienceAliasesAndStringKeywordsAreAccepted() {
         for (source in listOf("audience", "tomatoesaudience")) {
-            val ratings = parseRottenTomatoesRatings(
+            val ratings = parseMdbListRatings(
                 """{"ratings":[{"source":"$source","value":91}],"keywords":["certified-hot"]}""",
             )
             assertEquals(listOf(rating(PROVIDER_AUDIENCE, 91.0, true)), ratings)
@@ -111,7 +111,7 @@ class RottenTomatoesRatingTest {
 
     @Test
     fun unrelatedKeywordsAndProvidersKeepTheirStandardIcons() {
-        val ratings = parseRottenTomatoesRatings(
+        val ratings = parseMdbListRatings(
             """{"ratings":[{"source":"tomatoes","value":90}],"keywords":[{"name":"fresh"}]}""",
         )
 

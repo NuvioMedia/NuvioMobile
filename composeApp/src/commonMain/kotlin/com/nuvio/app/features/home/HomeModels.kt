@@ -18,6 +18,9 @@ data class MetaPreview(
     val voteCount: Int? = null,
     val imdbRating: String? = null,
     val genres: List<String> = emptyList(),
+    val rawPosterUrl: String? = null,
+    val landscapePoster: String? = null,
+    val rawLandscapePosterUrl: String? = null,
 )
 
 fun MetaPreview.stableKey(): String = "$type:$id"

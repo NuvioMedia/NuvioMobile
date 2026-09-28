@@ -337,8 +337,8 @@
     <string name="compose_player_color">Farba</string>
     <string name="compose_player_currently_playing">Práve sa prehráva</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">Epizódy</string>
     <string name="compose_player_font_size">Veľkosť písma</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1055,7 +1055,7 @@
     <string name="theme_white">Biela</string>
     <string name="player_next_episode">Ďalšia epizóda</string>
     <string name="player_next_episode_finding_source">Hľadanie zdroja…</string>
-    <string name="player_next_episode_playing_via_countdown">Prehráva sa cez %1$s za %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">Prehráva sa cez %1$s za %2$ds…</string>
     <string name="player_next_episode_thumbnail">Miniatúra ďalšej epizódy</string>
     <string name="player_next_episode_unaired">Nevysielané</string>
     <string name="player_skip">Preskočiť</string>
@@ -1285,7 +1285,7 @@
     <string name="streams_empty_no_streams_message">Žiadny z vašich nainštalovaných doplnkov nevrátil streamy pre tento titul.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Epizóda</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Načítavanie…</string>
     <string name="streams_finding_source">Hľadanie zdroja…</string>
     <string name="streams_loading_subtitles">Načítavanie titulkov z doplnkov…</string>
@@ -1337,7 +1337,7 @@
     <string name="auth_sign_up_failed">Registrácia zlyhala</string>
     <string name="catalog_load_failed">Nepodarilo sa načítať položky katalógu.</string>
     <string name="continue_watching_up_next">Ďalšie na rade</string>
-    <string name="continue_watching_up_next_episode">Ďalšie na rade • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">Ďalšie na rade • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Nepodarilo sa načítať komentáre</string>
     <string name="details_load_failed_all_addons">Nepodarilo sa načítať podrobnosti z žiadneho doplnku.</string>
@@ -1990,8 +1990,6 @@
     <string name="settings_meta_background_mode_dominant_description">Prispôsobiť pozadie stránky dominantnej farbe z obrázka na pozadí.</string>
     <string name="settings_playback_parental_guide">Upozornenia na obsah</string>
     <string name="settings_playback_parental_guide_description">Zobraziť rodičovské upozornenie pri spustení prehrávania.</string>
-    <string name="settings_tmdb_module_release_dates">Dátumy vydania</string>
-    <string name="settings_tmdb_module_release_dates_description">Používať dátumy vysielania z TMDB namiesto presných časov vydania z doplnkov</string>
     <string name="source_mal">MyAnimeList</string>
     <string name="updates_debug_test_complete">Test bannera dokončený</string>
     <string name="updates_debug_test_description">Zobraziť náhľad bannera a simulovaného priebehu sťahovania.</string>
@@ -2123,4 +2121,30 @@
     <string name="library_simkl_empty_title">Váš zoznam sledovania Simkl je prázdny</string>
     <string name="library_simkl_load_failed">Nepodarilo sa načítať zoznam sledovania Simkl</string>
     <string name="library_simkl_title">Zoznam sledovania Simkl</string>
+    <string name="layout_overall_ratings">Celkové hodnotenia</string>
+    <string name="layout_overall_ratings_sub_on">Zobrazujú sa štandardné hodnotenia a hodnotenia TMDB</string>
+    <string name="layout_overall_ratings_sub_off">Štandardné hodnotenia a hodnotenia TMDB sú skryté. Na stránkach detailov majú prioritu nastavenia poskytovateľa MDBList</string>
+    <string name="layout_episode_ratings">Hodnotenia epizód</string>
+    <string name="layout_episode_ratings_sub">Vyberte, ktoré hodnotenia epizód budú viditeľné</string>
+    <string name="layout_ratings_show">Zobraziť</string>
+    <string name="layout_ratings_hide">Skryť</string>
+    <string name="layout_ratings_hide_unwatched">Skryť nepozerané</string>
+    <string name="series_status_ended">Ukončené</string>
+    <string name="series_status_continuing">Prebieha</string>
+    <string name="series_status_current">Aktuálne</string>
+    <string name="series_status_cancelled">Zrušené</string>
+    <string name="series_status_released">Vydané</string>
+    <string name="series_status_planned">Plánované</string>
+    <string name="series_status_rumored">Nepotvrdené</string>
+    <string name="series_status_in_production">Vo výrobe</string>
+    <string name="series_status_post_production">V postprodukcii</string>
+    <string name="movie_status_ended">Ukončené</string>
+    <string name="movie_status_continuing">Prebieha</string>
+    <string name="movie_status_current">Aktuálne</string>
+    <string name="movie_status_cancelled">Zrušené</string>
+    <string name="movie_status_released">Vydané</string>
+    <string name="movie_status_planned">Plánované</string>
+    <string name="movie_status_rumored">Nepotvrdené</string>
+    <string name="movie_status_in_production">Vo výrobe</string>
+    <string name="movie_status_post_production">V postprodukcii</string>
 </resources>

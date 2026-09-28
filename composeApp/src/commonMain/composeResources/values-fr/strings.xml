@@ -339,8 +339,8 @@
     <string name="compose_player_color">Couleur</string>
     <string name="compose_player_currently_playing">En cours de lecture</string>
     <string name="compose_player_episode_code_episode_only">E%1$d</string>
-    <string name="compose_player_episode_code_full">S%1$dE%2$d</string>
-    <string name="compose_player_episode_title_format">S%1$dE%2$d • %3$s</string>
+    <string name="compose_player_episode_code_full">S%1$d E%2$d</string>
+    <string name="compose_player_episode_title_format">S%1$d E%2$d • %3$s</string>
     <string name="compose_player_episodes">Épisodes</string>
     <string name="compose_player_font_size">Taille de police</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -1099,7 +1099,7 @@
     <string name="theme_white">Blanc</string>
     <string name="player_next_episode">Épisode suivant</string>
     <string name="player_next_episode_finding_source">Recherche de la source…</string>
-    <string name="player_next_episode_playing_via_countdown">Lecture via %1$s dans %2$d…</string>
+    <string name="player_next_episode_playing_via_countdown">Lecture via %1$s dans %2$ds…</string>
     <string name="player_next_episode_thumbnail">Miniature de l’épisode suivant</string>
     <string name="player_next_episode_unaired">Non diffusé</string>
     <string name="player_skip">Passer</string>
@@ -1329,7 +1329,7 @@
     <string name="streams_empty_no_streams_message">Aucun de vos addons installés n’a renvoyé de stream pour ce titre.</string>
     <string name="streams_episode_badge">S%1$d E%2$d</string>
     <string name="streams_episode_fallback_title">Épisode</string>
-    <string name="streams_episode_title_with_name">S%1$dE%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Récupération…</string>
     <string name="streams_finding_source">Recherche de la source…</string>
     <string name="streams_loading_subtitles">Chargement des sous-titres depuis les addons…</string>
@@ -1380,7 +1380,7 @@
     <string name="auth_sign_up_failed">Échec de l’inscription</string>
     <string name="catalog_load_failed">Impossible de charger les éléments du catalogue.</string>
     <string name="continue_watching_up_next">À suivre</string>
-    <string name="continue_watching_up_next_episode">À suivre • S%1$dE%2$d</string>
+    <string name="continue_watching_up_next_episode">À suivre • S%1$d E%2$d</string>
     <string name="detail_logo_content_description">Logo de %1$s</string>
     <string name="details_comments_load_failed">Impossible de charger les commentaires</string>
     <string name="details_load_failed_all_addons">Impossible de charger les détails depuis les addons disponibles.</string>
@@ -1962,4 +1962,22 @@
         <item quantity="one">%d titre</item>
         <item quantity="other">%d titres</item>
     </plurals>
+    <string name="series_status_ended">Terminée</string>
+    <string name="series_status_continuing">En cours</string>
+    <string name="series_status_current">Actuelle</string>
+    <string name="series_status_cancelled">Annulée</string>
+    <string name="series_status_released">Sortie</string>
+    <string name="series_status_planned">Prévue</string>
+    <string name="series_status_rumored">Rumeur</string>
+    <string name="series_status_in_production">En production</string>
+    <string name="series_status_post_production">En post-production</string>
+    <string name="movie_status_ended">Terminé</string>
+    <string name="movie_status_continuing">En cours</string>
+    <string name="movie_status_current">Actuel</string>
+    <string name="movie_status_cancelled">Annulé</string>
+    <string name="movie_status_released">Sorti</string>
+    <string name="movie_status_planned">Prévu</string>
+    <string name="movie_status_rumored">Rumeur</string>
+    <string name="movie_status_in_production">En production</string>
+    <string name="movie_status_post_production">En post-production</string>
 </resources>

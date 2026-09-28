@@ -341,6 +341,7 @@ fun ProfileEditScreen(
             currentProfile?.name.orEmpty(),
         ),
         isVisible = showDeleteConfirm,
+        destructive = true,
         confirmText = stringResource(Res.string.action_delete),
         dismissText = stringResource(Res.string.action_cancel),
         onConfirm = {
