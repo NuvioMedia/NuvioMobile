@@ -645,6 +645,70 @@ class HomeScreenTest {
     }
 
     @Test
+    fun `rows of one series stored under alias ids seed next up from the newest episode`() {
+        val rawIdEpisode = progressEntry(
+            videoId = "kitsu:50452:3",
+            title = "Show",
+            seasonNumber = 1,
+            episodeNumber = 3,
+            lastUpdatedEpochMs = 1_000L,
+            isCompleted = true,
+        ).copy(parentMetaId = "kitsu:50452")
+        val canonicalIdEpisode = progressEntry(
+            videoId = "kitsu:50452:4",
+            title = "Show",
+            seasonNumber = 1,
+            episodeNumber = 4,
+            lastUpdatedEpochMs = 2_000L,
+            isCompleted = true,
+        ).copy(parentMetaId = "tt45276148")
+        val rawIdWatched = watchedItem(
+            id = "kitsu:50452",
+            season = 1,
+            episode = 1,
+            markedAtEpochMs = 500L,
+        )
+
+        val result = buildHomeNextUpSeedCandidates(
+            progressEntries = listOf(rawIdEpisode, canonicalIdEpisode),
+            watchedItems = listOf(rawIdWatched),
+            providerOwnsCompletedHistory = false,
+            preferFurthestEpisode = true,
+            nowEpochMs = 3_000L,
+            normalizeContentId = { contentId ->
+                if (contentId == "kitsu:50452") "tt45276148" else contentId
+            },
+        )
+
+        assertEquals(listOf("tt45276148"), result.map { it.content.id })
+        assertEquals(4, result.single().episodeNumber)
+    }
+
+    @Test
+    fun `normalized id is checked against hidden content`() {
+        val progress = progressEntry(
+            videoId = "kitsu:7:2",
+            title = "Dropped Show",
+            seasonNumber = 1,
+            episodeNumber = 2,
+            lastUpdatedEpochMs = 2_000L,
+            isCompleted = true,
+        ).copy(parentMetaId = "kitsu:7")
+
+        val result = buildHomeNextUpSeedCandidates(
+            progressEntries = listOf(progress),
+            watchedItems = emptyList(),
+            providerOwnsCompletedHistory = false,
+            preferFurthestEpisode = true,
+            nowEpochMs = 3_000L,
+            isContentHidden = { contentId -> contentId == "tt7" },
+            normalizeContentId = { contentId -> if (contentId == "kitsu:7") "tt7" else contentId },
+        )
+
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
     fun `stale live next up item is dropped when current seed advances`() {
         val staleNextUp = continueWatchingItem(
             videoId = "show:4:11",

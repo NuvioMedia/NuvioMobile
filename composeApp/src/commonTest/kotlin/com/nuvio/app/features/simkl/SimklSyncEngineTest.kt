@@ -464,6 +464,45 @@ class SimklSyncEngineTest {
         private fun next(): Step = remaining.removeAt(0)
     }
 
+    @Test
+    fun `delta keeps ids learned locally that Simkl does not return`() = runBlocking {
+        val learned = entry(SimklMediaType.ANIME, "1").copy(
+            show = media("1").copy(
+                ids = buildJsonObject {
+                    put("simkl", 1L)
+                    put("kitsu", 50452L)
+                    put("imdb", "tt0000000")
+                },
+            ),
+        )
+        val current = SimklSyncSnapshot(
+            isInitialized = true,
+            watermark = "v1",
+            activities = activities(all = "v1", library = "l1"),
+            entries = listOf(learned),
+        )
+        val server = entry(SimklMediaType.ANIME, "1", status = SimklListStatus.COMPLETED).copy(
+            show = media("1").copy(
+                ids = buildJsonObject {
+                    put("simkl", 1L)
+                    put("imdb", "tt45276148")
+                },
+            ),
+        )
+        val remote = ScriptedRemote(
+            Step.Activities(activities(all = "v2", library = "l2")),
+            Step.AllItems(null, responseOf(server)),
+        )
+
+        val result = SimklSyncEngine(remote) { 900L }.synchronize(current)
+
+        val merged = result.entries.single()
+        assertEquals(SimklListStatus.COMPLETED, merged.status)
+        assertEquals("50452", merged.media?.ids?.idValue("kitsu"))
+        assertEquals("tt45276148", merged.media?.ids?.idValue("imdb"))
+        assertTrue(remote.isExhausted)
+    }
+
     private companion object {
         fun entry(
             type: SimklMediaType,

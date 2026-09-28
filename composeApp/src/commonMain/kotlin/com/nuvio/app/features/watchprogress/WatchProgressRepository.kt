@@ -1692,6 +1692,11 @@ object WatchProgressRepository {
         nowEpochMs: Long,
     ): Long? = activeProgressProvider()?.continueWatchingCutoffEpochMs(daysCap, nowEpochMs)
 
+    /** Applies the same parent-id normalization that [upsert] uses when writing progress. */
+    fun normalizeParentContentId(contentId: String): String =
+        activeProgressProvider()?.normalizeParentContentId(parentContentId = contentId, videoId = null)
+            ?: contentId
+
     fun shouldUseAsNextUpSeed(entry: WatchProgressEntry, nowEpochMs: Long): Boolean =
         activeProgressProvider()?.shouldUseAsNextUpSeed(entry, nowEpochMs)
             ?: entry.shouldUseAsCompletedSeedForContinueWatching()

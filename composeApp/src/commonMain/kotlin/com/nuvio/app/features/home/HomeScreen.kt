@@ -246,6 +246,7 @@ fun HomeScreen(
                 contentId in watchProgressUiState.hiddenContentIds ||
                     WatchProgressRepository.isDroppedShow(contentId)
             },
+            normalizeContentId = WatchProgressRepository::normalizeParentContentId,
         )
     }
 
@@ -1295,9 +1296,14 @@ internal fun buildHomeNextUpSeedCandidates(
         entry.shouldUseAsCompletedSeedForContinueWatching()
     },
     isContentHidden: (String) -> Boolean = { false },
+    normalizeContentId: (String) -> String = { contentId -> contentId },
 ): List<CompletedSeriesCandidate> {
+    // Rows written before the tracking provider could resolve an alias keep the raw addon id;
+    // normalizing here groups them with later rows of the same series.
     val progressSeeds = progressEntries
         .asSequence()
+        .filterNot { entry -> isContentHidden(entry.parentMetaId) }
+        .map { entry -> entry.copy(parentMetaId = normalizeContentId(entry.parentMetaId)) }
         .filterNot { entry -> isContentHidden(entry.parentMetaId) }
         .filter { entry -> entry.parentMetaType.isSeriesTypeForContinueWatching() }
         .filter { entry -> entry.seasonNumber != null && entry.episodeNumber != null && entry.seasonNumber != 0 }
@@ -1314,7 +1320,8 @@ internal fun buildHomeNextUpSeedCandidates(
                 item.episode != null &&
                 item.season != 0 &&
                 !isMalformedNextUpSeedContentId(item.id)
-        }
+        }.map { item -> item.copy(id = normalizeContentId(item.id)) }
+            .filterNot { item -> isContentHidden(item.id) }
     }
 
     return WatchingState.latestCompletedBySeries(

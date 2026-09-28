@@ -75,10 +75,24 @@ internal fun mergeDelta(
     val merged = current.mapNotNull { entry -> entry.stableKey()?.let { key -> key to entry } }.toMap().toMutableMap()
     delta.presentTypes().forEach { type ->
         delta.entriesFor(type).forEach { entry ->
-            entry.stableKey()?.let { key -> merged[key] = entry }
+            entry.stableKey()?.let { key -> merged[key] = entry.withIdsMissingFrom(merged[key]) }
         }
     }
     return merged.values.sortedWith(simklEntryComparator)
+}
+
+/**
+ * Simkl omits ids it does not track (Kitsu for many anime), while the snapshot may have
+ * learned them from a scrobble. Dropping them makes progress identity normalization flip
+ * back to the raw addon id after every sync, splitting one series across two ids.
+ */
+private fun SimklLibraryEntry.withIdsMissingFrom(previous: SimklLibraryEntry?): SimklLibraryEntry {
+    val previousIds = previous?.media?.ids ?: return this
+    return when {
+        movie != null -> copy(movie = movie.copy(ids = previousIds + movie.ids))
+        show != null -> copy(show = show.copy(ids = previousIds + show.ids))
+        else -> this
+    }
 }
 
 internal fun reconcileRemovedEntries(
