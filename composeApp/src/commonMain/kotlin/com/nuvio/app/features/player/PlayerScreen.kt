@@ -41,6 +41,7 @@ fun PlayerScreen(
     initialPositionMs: Long = 0L,
     initialProgressFraction: Float? = null,
     contentLanguage: String? = null,
+    subtitleExtras: SubtitleRequestExtras? = null,
     launchId: Long? = null,
 ) {
     PlayerScreenContent(
@@ -81,6 +82,7 @@ fun PlayerScreen(
             initialPositionMs = initialPositionMs,
             initialProgressFraction = initialProgressFraction,
             contentLanguage = contentLanguage,
+            subtitleExtras = subtitleExtras,
             launchId = launchId,
         )
     )

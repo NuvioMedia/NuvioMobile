@@ -46,6 +46,7 @@ data class PlayerLaunch(
     val initialPositionMs: Long = 0L,
     val initialProgressFraction: Float? = null,
     val contentLanguage: String? = null,
+    val subtitleExtras: SubtitleRequestExtras? = null,
 )
 
 object PlayerLaunchStore {

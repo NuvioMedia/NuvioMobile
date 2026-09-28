@@ -15,11 +15,12 @@ object SubtitleForwarder {
         videoId: String,
         preferredLanguage: String,
         secondaryLanguage: String?,
+        extras: SubtitleRequestExtras? = null,
         timeoutMs: Long = 10_000L,
     ): List<SubtitleInput>? {
         return try {
             withTimeoutOrNull(timeoutMs) {
-                SubtitleRepository.fetchAddonSubtitles(type, videoId)
+                SubtitleRepository.fetchAddonSubtitles(type, videoId, extras)
 
                 // Give the internal coroutine a chance to start and set isLoading = true
                 kotlinx.coroutines.delay(50)
