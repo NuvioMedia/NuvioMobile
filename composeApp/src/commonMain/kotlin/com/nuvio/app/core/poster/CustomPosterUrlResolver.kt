@@ -1,5 +1,7 @@
 package com.nuvio.app.core.poster
 
+import com.nuvio.app.features.servers.ServerItemRef
+
 /**
  * Resolves custom poster URL patterns by replacing placeholders with actual content IDs.
  *
@@ -54,7 +56,7 @@ object CustomPosterUrlResolver {
         type: String,
         shape: String = "poster"
     ): String? {
-        if (pattern.isBlank()) return null
+        if (pattern.isBlank() || ServerItemRef.isServerId(ids.id)) return null
         return if (isRpdbFamily(pattern)) {
             resolveRpdbWithFallback(pattern, ids, type, shape)
         } else {

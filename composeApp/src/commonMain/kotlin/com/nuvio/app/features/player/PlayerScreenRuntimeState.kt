@@ -192,6 +192,9 @@ internal class PlayerScreenRuntime(
     var showSubtitleModal by mutableStateOf(false)
     var showVideoSettingsModal by mutableStateOf(false)
     var audioTracks by mutableStateOf<List<AudioTrack>>(emptyList())
+    var serverAudioTracks by mutableStateOf<List<AudioTrack>>(emptyList())
+    var serverAudioSwitchJob by mutableStateOf<Job?>(null)
+    var serverAudioPreferenceKey: String? = null
     var subtitleTracks by mutableStateOf<List<SubtitleTrack>>(emptyList())
     var selectedAudioIndex by mutableStateOf(-1)
     var selectedSubtitleIndex by mutableStateOf(-1)

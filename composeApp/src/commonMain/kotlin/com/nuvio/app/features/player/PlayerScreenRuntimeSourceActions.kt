@@ -11,10 +11,13 @@ import com.nuvio.app.features.downloads.DownloadSubtitles
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.p2p.P2pStreamingEngine
+import com.nuvio.app.features.servers.ServerPlayback
+import com.nuvio.app.features.servers.serverPlaybackMessage
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 internal fun PlayerScreenRuntime.resolveDebridForPlayer(
@@ -44,6 +47,20 @@ internal fun PlayerScreenRuntime.resolveDebridForPlayer(
     return true
 }
 
+internal fun PlayerScreenRuntime.prepareServerForPlayer(
+    stream: StreamItem,
+    onPrepared: (StreamItem) -> Unit,
+): Boolean {
+    if (!stream.needsServerPreparation) return false
+    scope.launch {
+        runCatching { ServerPlayback.prepare(stream) }
+            .onFailure { if (it is CancellationException) throw it }
+            .onSuccess(onPrepared)
+            .onFailure { NuvioToastController.show(it.serverPlaybackMessage()) }
+    }
+    return true
+}
+
 internal fun PlayerScreenRuntime.p2pSentinelUrl(infoHash: String, fileIdx: Int?): String =
     "torrent://$infoHash${fileIdx?.let { "?index=$it" }.orEmpty()}"
 
@@ -63,6 +80,7 @@ internal fun PlayerScreenRuntime.openExternalSourceUrl(stream: StreamItem): Bool
 }
 
 internal fun StreamItem.playerSourceIdentityKey(): String? {
+    serverTarget?.let { target -> return "server:${target.item.encode()}:${target.mediaSourceId.orEmpty()}" }
     p2pInfoHash?.trim()?.lowercase()?.takeIf { it.isNotBlank() }?.let { hash ->
         return "torrent:$hash:${p2pFileIdx ?: -1}"
     }
@@ -232,6 +250,7 @@ internal fun PlayerScreenRuntime.switchToP2pEpisodeStream(
 }
 
 internal fun PlayerScreenRuntime.switchToSource(stream: StreamItem) {
+    if (prepareServerForPlayer(stream) { switchToSource(it) }) return
     if (
         resolveDebridForPlayer(
             stream = stream,
@@ -290,6 +309,7 @@ internal fun PlayerScreenRuntime.switchToSource(stream: StreamItem) {
 }
 
 internal fun PlayerScreenRuntime.switchToEpisodeStream(stream: StreamItem, episode: MetaVideo) {
+    if (prepareServerForPlayer(stream) { switchToEpisodeStream(it, episode) }) return
     if (
         resolveDebridForPlayer(
             stream = stream,
@@ -519,6 +539,7 @@ private fun PlayerScreenRuntime.saveDirectStreamForReuse(
     season: Int?,
     episode: Int?,
 ) {
+    if (stream.serverTarget != null) return
     val cacheKey = StreamLinkCacheRepository.contentKey(
         type = contentType ?: parentMetaType,
         videoId = videoId,
