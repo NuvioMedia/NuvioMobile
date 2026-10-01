@@ -111,6 +111,8 @@ internal fun PluginRuntimeResult.toStreamItem(
         name = name ?: title,
         description = subtitleParts.joinToString(" • ").ifBlank { null },
         url = url,
+        quality = quality,
+        language = language,
         infoHash = infoHash,
         sourceName = scraper.name,
         addonName = addonName,

@@ -2132,6 +2132,11 @@ private fun StreamAutoPlayModeDialog(
             Res.string.settings_playback_stream_selection_mode_first_stream_description,
         ),
         Triple(
+            StreamAutoPlayMode.BEST_QUALITY,
+            Res.string.settings_playback_stream_selection_mode_best_quality,
+            Res.string.settings_playback_stream_selection_mode_best_quality_description,
+        ),
+        Triple(
             StreamAutoPlayMode.REGEX_MATCH,
             Res.string.settings_playback_stream_selection_mode_regex,
             Res.string.settings_playback_stream_selection_mode_regex_description,
@@ -2629,6 +2634,7 @@ private val StreamAutoPlayMode.labelRes: StringResource
     get() = when (this) {
         StreamAutoPlayMode.MANUAL -> Res.string.settings_playback_stream_selection_mode_manual
         StreamAutoPlayMode.FIRST_STREAM -> Res.string.settings_playback_stream_selection_mode_first_stream
+        StreamAutoPlayMode.BEST_QUALITY -> Res.string.settings_playback_stream_selection_mode_best_quality
         StreamAutoPlayMode.REGEX_MATCH -> Res.string.settings_playback_stream_selection_mode_regex
     }
 

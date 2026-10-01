@@ -1201,6 +1201,8 @@
     <string name="settings_playback_stream_selection_mode">Auto Stream Selection</string>
     <string name="settings_playback_stream_selection_mode_first_stream">Auto-play first source</string>
     <string name="settings_playback_stream_selection_mode_first_stream_description">Play the first available source automatically.</string>
+    <string name="settings_playback_stream_selection_mode_best_quality">Best quality (automatic)</string>
+    <string name="settings_playback_stream_selection_mode_best_quality_description">Prefer your audio language, then play the highest-quality available source.</string>
     <string name="settings_playback_stream_selection_mode_manual">Manual (choose stream)</string>
     <string name="settings_playback_stream_selection_mode_manual_description">Always show source list and let me choose.</string>
     <string name="settings_playback_stream_selection_mode_regex">Auto-play regex match</string>

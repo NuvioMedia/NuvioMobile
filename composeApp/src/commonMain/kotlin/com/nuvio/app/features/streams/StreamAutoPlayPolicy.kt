@@ -10,6 +10,7 @@ object StreamAutoPlayPolicy {
         return when (settings.streamAutoPlayMode) {
             StreamAutoPlayMode.MANUAL -> false
             StreamAutoPlayMode.FIRST_STREAM -> true
+            StreamAutoPlayMode.BEST_QUALITY -> true
             StreamAutoPlayMode.REGEX_MATCH -> isRegexSelectionConfigured(settings.streamAutoPlayRegex)
         }
     }
