@@ -782,6 +782,14 @@ private fun PlaybackSettingsSection(
                     isTablet = isTablet,
                     onClick = { showAutoPlayModeDialog = true },
                 )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.settings_playback_stream_auto_play_audio_language),
+                    description = languageLabelForCode(preferredAudioLanguage),
+                    enabled = !autoPlayPlayerSettings.externalPlayerEnabled,
+                    isTablet = isTablet,
+                    onClick = { showPreferredAudioDialog = true },
+                )
                 if (autoPlayPlayerSettings.streamAutoPlayMode == StreamAutoPlayMode.REGEX_MATCH) {
                     SettingsGroupDivider(isTablet = isTablet)
                     val notSetLabel = stringResource(Res.string.settings_playback_not_set)

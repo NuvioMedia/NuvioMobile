@@ -99,6 +99,7 @@ object AudioLanguageOption {
     const val DEFAULT = "default"
     const val DEVICE = "device"
     const val ORIGINAL = "original"
+    const val HINDI = "hi"
 }
 
 object SubtitleLanguageOption {

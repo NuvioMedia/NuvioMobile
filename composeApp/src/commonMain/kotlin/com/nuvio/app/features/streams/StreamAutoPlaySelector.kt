@@ -261,10 +261,17 @@ object StreamAutoPlaySelector {
             return false
         }
         val preferredPrimary = preferred.substringBefore('-')
-        val availableLanguages = listOfNotNull(
+        val languageHints = listOfNotNull(
             language,
             clientResolve?.stream?.raw?.parsed?.languages?.joinToString(","),
-        ).flatMap { value ->
+            name,
+            title,
+            description,
+            streamLabel,
+            quality,
+            behaviorHints.filename,
+        )
+        val availableLanguages = languageHints.flatMap { value ->
             value.split(',', '/', '|', ';', '+').mapNotNull(::normalizeLanguageCode)
         }
         return availableLanguages.any { available ->
