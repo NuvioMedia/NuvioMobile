@@ -3,6 +3,17 @@ package com.nuvio.app.features.addons
 internal fun addonTransportBaseUrl(manifestUrl: String): String =
     manifestUrl.substringBefore("?").removeSuffix("/manifest.json")
 
+internal fun canonicalExternalAddonType(type: String): String {
+    val trimmed = type.trim()
+    val normalized = trimmed.lowercase()
+    return if (normalized in STANDARD_EXTERNAL_ADDON_TYPES) normalized else trimmed
+}
+
+internal fun externalAddonType(type: String, season: Int?, episode: Int?): String {
+    val normalized = canonicalExternalAddonType(type)
+    return if (normalized == "tv" && season != null && episode != null) "series" else normalized
+}
+
 internal fun buildAddonResourceUrl(
     manifestUrl: String,
     resource: String,
@@ -11,14 +22,15 @@ internal fun buildAddonResourceUrl(
     extraPathSegment: String? = null,
 ): String {
     val encodedId = id.encodeAddonPathSegment()
+    val externalType = canonicalExternalAddonType(type)
     val baseUrl = addonTransportBaseUrl(manifestUrl)
     val query = manifestUrl.substringAfter("?", "").let { query ->
         if (query.isBlank()) "" else "?$query"
     }
     val resourceUrl = if (extraPathSegment.isNullOrEmpty()) {
-        "$baseUrl/$resource/$type/$encodedId.json"
+        "$baseUrl/$resource/$externalType/$encodedId.json"
     } else {
-        "$baseUrl/$resource/$type/$encodedId/$extraPathSegment.json"
+        "$baseUrl/$resource/$externalType/$encodedId/$extraPathSegment.json"
     }
     return resourceUrl + query
 }
@@ -48,3 +60,4 @@ internal fun String.encodeAddonPathSegment(): String =
     }
 
 private const val ADDON_URL_HEX = "0123456789ABCDEF"
+private val STANDARD_EXTERNAL_ADDON_TYPES = setOf("movie", "series", "tv", "channel")

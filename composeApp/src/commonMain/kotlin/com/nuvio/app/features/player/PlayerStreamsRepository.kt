@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.buildAddonResourceUrl
+import com.nuvio.app.features.addons.externalAddonType
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.fetchAddonResponseText
 import com.nuvio.app.features.debrid.DebridSettingsRepository
@@ -186,13 +187,14 @@ object PlayerStreamsRepository {
         jobHolder: () -> Job?,
         setJob: (Job) -> Unit,
     ) {
+        val externalType = externalAddonType(type, season, episode)
         val pluginUiState = if (AppFeaturePolicy.pluginsEnabled) {
             PluginRepository.initialize()
             PluginRepository.uiState.value
         } else {
             PluginsUiState(pluginsEnabled = false)
         }
-        val requestKey = "$type::$videoId::$season::$episode::pluginsGrouped=${pluginUiState.groupStreamsByRepository}"
+        val requestKey = "$externalType::$videoId::$season::$episode::pluginsGrouped=${pluginUiState.groupStreamsByRepository}"
         PluginRepository.setLocalPluginSearchPaused(false)
         val current = stateFlow.value
         val cachedKey = requestKeyHolder()
@@ -211,7 +213,7 @@ object PlayerStreamsRepository {
         val streamBadgeRules = StreamBadgeSettingsRepository.snapshot()
         val embeddedStreams = MetaDetailsRepository.findEmbeddedStreams(videoId)
         if (embeddedStreams.isNotEmpty()) {
-            log.d { "Using ${embeddedStreams.size} embedded streams for type=$type id=$videoId" }
+            log.d { "Using ${embeddedStreams.size} embedded streams for type=$externalType id=$videoId" }
             val group = AddonStreamGroup(
                 addonName = embeddedStreams.first().addonName,
                 addonId = "embedded",
@@ -235,7 +237,7 @@ object PlayerStreamsRepository {
         val playerSettings = PlayerSettingsRepository.uiState.value
         val debridSettings = DebridSettingsRepository.snapshot()
         val pluginScrapers = if (AppFeaturePolicy.pluginsEnabled) {
-            PluginRepository.getEnabledScrapersForType(type)
+            PluginRepository.getEnabledScrapersForType(externalType)
         } else {
             emptyList()
         }
@@ -257,7 +259,7 @@ object PlayerStreamsRepository {
                 val manifest = addon.manifest ?: return@mapNotNull null
                 val supportsRequestedStream = manifest.resources.any { resource ->
                     resource.name == "stream" &&
-                        resource.types.contains(type) &&
+                        resource.types.any { it.trim().equals(externalType, ignoreCase = true) } &&
                         (resource.idPrefixes.isEmpty() ||
                             resource.idPrefixes.any { videoId.startsWith(it) })
                 }
@@ -382,7 +384,7 @@ object PlayerStreamsRepository {
                     val url = buildAddonResourceUrl(
                         manifestUrl = addon.manifest.transportUrl,
                         resource = "stream",
-                        type = type,
+                        type = externalType,
                         id = videoId,
                     )
 
@@ -422,7 +424,7 @@ object PlayerStreamsRepository {
                                 season = season,
                                 episode = episode,
                             ),
-                            mediaType = type,
+                            mediaType = externalType,
                             season = season,
                             episode = episode,
                         ).fold(
@@ -561,4 +563,3 @@ private fun StreamsUiState.streamDiagnostics(): String {
 
 private fun com.nuvio.app.features.addons.ManagedAddon.streamAddonInstanceId(manifestId: String): String =
     "addon:$manifestId:$manifestUrl"
-
