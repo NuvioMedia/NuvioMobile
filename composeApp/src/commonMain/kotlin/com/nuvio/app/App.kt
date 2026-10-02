@@ -101,5 +101,6 @@ internal fun AppEnvironment(content: @Composable () -> Unit) {
 
     NuvioTheme(appTheme = selectedTheme, amoled = amoledEnabled, customThemeColors = customThemeColors) {
         content()
+        com.nuvio.app.features.tvremote.TvRemoteOverlay()
     }
 }

@@ -16,6 +16,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -115,6 +119,8 @@ internal fun MainTabsDestination(
             ),
         )
 
+        var remoteCardHeight by remember { mutableStateOf(0.dp) }
+        val remoteCardDensity = LocalDensity.current
         Scaffold(
             modifier = Modifier
                 .fillMaxSize()
@@ -122,36 +128,39 @@ internal fun MainTabsDestination(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (!isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
-                    NuvioClassicNavigationBar {
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Home,
-                            onClick = { onTabSelected(AppScreenTab.Home) },
-                            icon = Icons.Filled.Home,
-                            contentDescription = stringResource(Res.string.compose_nav_home),
-                        )
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Search,
-                            onClick = { onTabSelected(AppScreenTab.Search) },
-                            icon = Res.drawable.sidebar_search,
-                            contentDescription = stringResource(Res.string.compose_nav_search),
-                        )
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Library,
-                            onClick = { onTabSelected(AppScreenTab.Library) },
-                            icon = Res.drawable.sidebar_library,
-                            contentDescription = stringResource(Res.string.compose_nav_library),
-                        )
-                        NavItem(
-                            selected = selectedTab == AppScreenTab.Settings,
-                            onClick = { onTabSelected(AppScreenTab.Settings) },
-                        ) {
-                            ProfileSwitcherTab(
+                androidx.compose.foundation.layout.Column {
+                    if (!isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
+                        com.nuvio.app.features.tvremote.TvRemoteCard()
+                        NuvioClassicNavigationBar {
+                            NavItem(
+                                selected = selectedTab == AppScreenTab.Home,
+                                onClick = { onTabSelected(AppScreenTab.Home) },
+                                icon = Icons.Filled.Home,
+                                contentDescription = stringResource(Res.string.compose_nav_home),
+                            )
+                            NavItem(
+                                selected = selectedTab == AppScreenTab.Search,
+                                onClick = { onTabSelected(AppScreenTab.Search) },
+                                icon = Res.drawable.sidebar_search,
+                                contentDescription = stringResource(Res.string.compose_nav_search),
+                            )
+                            NavItem(
+                                selected = selectedTab == AppScreenTab.Library,
+                                onClick = { onTabSelected(AppScreenTab.Library) },
+                                icon = Res.drawable.sidebar_library,
+                                contentDescription = stringResource(Res.string.compose_nav_library),
+                            )
+                            NavItem(
                                 selected = selectedTab == AppScreenTab.Settings,
                                 onClick = { onTabSelected(AppScreenTab.Settings) },
-                                onProfileSelected = onProfileSelected,
-                                onAddProfileRequested = onAddProfileRequested,
-                            )
+                            ) {
+                                ProfileSwitcherTab(
+                                    selected = selectedTab == AppScreenTab.Settings,
+                                    onClick = { onTabSelected(AppScreenTab.Settings) },
+                                    onProfileSelected = onProfileSelected,
+                                    onAddProfileRequested = onAddProfileRequested,
+                                )
+                            }
                         }
                     }
                 }
@@ -159,7 +168,7 @@ internal fun MainTabsDestination(
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize()) {
                 CompositionLocalProvider(
-                    LocalNuvioBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else if (!isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC) 72.dp else 0.dp,
+                    LocalNuvioBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else if (!isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC) 72.dp + remoteCardHeight else 0.dp,
                     LocalNuvioNavBarScrollState provides navBarScrollState,
                 ) {
                     AppTabHost(
@@ -197,13 +206,18 @@ internal fun MainTabsDestination(
                         NavBarStyle.COMPACT -> navBarScrollState.collapse()
                         else -> {}
                     }
-                    FloatingNavigationBar(
-                        modifier = Modifier.align(Alignment.BottomCenter),
-                        scrollState = navBarScrollState,
-                        hazeState = navBarHazeState,
-                        items = floatingNavigationItems,
-                        glowEnabled = navBarGlowEnabled,
-                    )
+                    androidx.compose.foundation.layout.Column(Modifier.align(Alignment.BottomCenter)) {
+                        com.nuvio.app.features.tvremote.TvRemoteCard(Modifier.onSizeChanged {
+                            remoteCardHeight = with(remoteCardDensity) { it.height.toDp() }
+                        })
+                        FloatingNavigationBar(
+                            modifier = Modifier,
+                            scrollState = navBarScrollState,
+                            hazeState = navBarHazeState,
+                            items = floatingNavigationItems,
+                            glowEnabled = navBarGlowEnabled,
+                        )
+                    }
                 }
             }
         }

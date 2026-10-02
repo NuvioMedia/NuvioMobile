@@ -130,6 +130,7 @@ internal fun LazyListScope.settingsRootContent(
                 isTablet = isTablet,
             ) {
                 SettingsGroup(isTablet = isTablet) {
+                    com.nuvio.app.features.tvremote.TvConnectionSettingsRow(isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_appearance),
                         description = stringResource(Res.string.compose_settings_root_appearance_description),
