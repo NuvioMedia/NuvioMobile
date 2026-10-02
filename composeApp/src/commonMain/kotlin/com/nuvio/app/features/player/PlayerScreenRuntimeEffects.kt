@@ -13,6 +13,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
@@ -183,6 +184,44 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
             initialLoadCompleted = true
             errorMessage = getString(Res.string.player_error_torrent, state.message)
             controlsVisible = !playerControlsLocked
+        }
+    }
+
+    var autoExternalLaunched by rememberSaveable(activePlaybackIdentity) { mutableStateOf(false) }
+    LaunchedEffect(p2pResolvedSourceUrl, args.autoLaunchExternal, autoExternalLaunched) {
+        val resolvedUrl = p2pResolvedSourceUrl
+        if (args.autoLaunchExternal && !autoExternalLaunched && resolvedUrl != null) {
+            autoExternalLaunched = true
+            shouldPlay = false
+            playerController?.pause()
+            val loadedSubtitles = addonSubtitles
+                .takeIf { it.isNotEmpty() }
+                ?.map { sub ->
+                    SubtitleInput(
+                        url = sub.url,
+                        name = buildString {
+                            if (!sub.addonName.isNullOrBlank()) append("[${sub.addonName}] ")
+                            append(sub.display)
+                        },
+                        lang = sub.language,
+                    )
+                }
+            PlayerStreamsRepository.pauseSearchForPlayback()
+            args.onOpenInExternalPlayer?.invoke(
+                ExternalPlayerPlaybackRequest(
+                    sourceUrl = resolvedUrl,
+                    title = title,
+                    streamTitle = activeStreamTitle,
+                    sourceHeaders = activeSourceHeaders,
+                    resumePositionMs = playbackSnapshot.positionMs.takeIf { it > 0L } ?: activeInitialPositionMs,
+                    durationMs = playbackSnapshot.durationMs.takeIf { it > 0L },
+                    playbackSession = playbackSession,
+                    subtitles = loadedSubtitles,
+                    season = activeSeasonNumber,
+                    episode = activeEpisodeNumber,
+                    episodeTitle = activeEpisodeTitle,
+                ),
+            )
         }
     }
 
