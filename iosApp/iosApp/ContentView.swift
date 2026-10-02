@@ -102,6 +102,10 @@ final class RootComposeViewController: UIViewController {
             ?? false
     }
 
+    override var preferredStatusBarStyle: UIStatusBarStyle {
+        .lightContent
+    }
+
     override var preferredStatusBarUpdateAnimation: UIStatusBarAnimation {
         .fade
     }
