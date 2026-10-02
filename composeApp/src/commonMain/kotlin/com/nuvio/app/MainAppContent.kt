@@ -663,11 +663,18 @@ internal fun MainAppContent(
     var lastExternalPlayerLaunch by remember { mutableStateOf<PlayerLaunch?>(null) }
     val activePlaybackProfileId = profileState.activeProfile?.profileIndex ?: ProfileRepository.activeProfileId
     val launchExternalPlayer = rememberExternalPlayerLauncher { result ->
+        val externalLaunch = lastExternalPlayerLaunch
         if (result != null) {
-            val fallbackSession = lastExternalPlayerLaunch?.externalPlaybackSession()
+            val fallbackSession = externalLaunch?.externalPlaybackSession()
             coroutineScope.launch {
                 recordExternalPlaybackProgress(result, fallbackSession)
                 result.callbackId?.let(infusePlaybackCallbacks::consume)
+            }
+        }
+        if (externalLaunch?.autoLaunchExternal == true) {
+            lastExternalPlayerLaunch = null
+            if (navController.currentRoute is PlayerRoute) {
+                navController.popBackStack()
             }
         }
     }
