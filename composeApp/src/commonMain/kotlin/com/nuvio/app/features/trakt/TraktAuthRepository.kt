@@ -380,13 +380,15 @@ object TraktAuthRepository : TrackingAuthProvider {
     }
 
     private suspend fun refreshTokenIfNeeded(force: Boolean, profileId: Int = currentProfileId): Boolean = refreshMutex.withLock {
-        if (!hasRequiredCredentials()) return@withLock false
         val refreshToken = authState.refreshToken?.takeIf { it.isNotBlank() }
             ?: return@withLock false
 
         if (!force && !isTokenExpiredOrExpiring(authState)) {
             return@withLock true
         }
+
+        // Credentials only needed when actively refreshing expired tokens
+        if (!hasRequiredCredentials()) return@withLock false
 
         val body = json.encodeToString(
             TraktRefreshTokenRequest(
