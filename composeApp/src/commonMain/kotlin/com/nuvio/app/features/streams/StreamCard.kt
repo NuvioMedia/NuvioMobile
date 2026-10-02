@@ -123,6 +123,8 @@ internal fun StreamCard(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall.copy(
+                        fontFamily = streamSubtitleEmojiFontFamily
+                            ?: MaterialTheme.typography.bodySmall.fontFamily,
                         fontSize = 12.sp,
                         lineHeight = 18.sp,
                     ),
