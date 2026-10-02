@@ -297,7 +297,14 @@ class PlayerScreenRuntimeStateTest {
         )
     }
 
-    private fun testPlayerScreenArgs() = PlayerScreenArgs(
+    @Test
+    fun runtimeCarriesSubtitleRequestExtrasFromItsLaunch() {
+        val extras = SubtitleRequestExtras(filename = "Movie.2024.mkv", videoSize = 42L)
+        assertEquals(extras, PlayerScreenRuntime(testPlayerScreenArgs(subtitleExtras = extras)).activeSubtitleExtras)
+        assertNull(PlayerScreenRuntime(testPlayerScreenArgs()).activeSubtitleExtras)
+    }
+
+    private fun testPlayerScreenArgs(subtitleExtras: SubtitleRequestExtras? = null) = PlayerScreenArgs(
         profileId = 1,
         title = "Title",
         sourceUrl = "https://example.com/video.mp4",
@@ -332,6 +339,7 @@ class PlayerScreenRuntimeStateTest {
         torrentTrackers = emptyList(),
         initialPositionMs = 0L,
         initialProgressFraction = null,
+        subtitleExtras = subtitleExtras,
     )
 
     private fun testPlayerLaunch() = PlayerLaunch(

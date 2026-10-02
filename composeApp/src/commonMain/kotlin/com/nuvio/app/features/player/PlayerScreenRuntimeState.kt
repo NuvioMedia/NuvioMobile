@@ -123,6 +123,7 @@ internal class PlayerScreenRuntime(
     var activeEpisodeThumbnail by mutableStateOf(episodeThumbnail)
     var activePauseDescription by mutableStateOf(pauseDescription)
     var activeVideoId by mutableStateOf(videoId)
+    val activeSubtitleExtras: SubtitleRequestExtras? get() = args.subtitleExtras
     var activeInitialPositionMs by mutableStateOf(initialPositionMs)
     var activeInitialProgressFraction by mutableStateOf(initialProgressFraction)
     var shouldPlay by mutableStateOf(true)

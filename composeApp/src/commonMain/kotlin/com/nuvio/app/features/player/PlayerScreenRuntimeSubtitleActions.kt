@@ -12,7 +12,7 @@ internal fun PlayerScreenRuntime.fetchAddonSubtitlesForActiveItem() {
     }
     val type = activeAddonSubtitleType.takeIf { it.isNotBlank() } ?: return
     val videoId = activeVideoId?.takeIf { it.isNotBlank() } ?: return
-    SubtitleRepository.fetchAddonSubtitles(type, videoId)
+    SubtitleRepository.fetchAddonSubtitles(type, videoId, activeSubtitleExtras)
 }
 
 internal fun PlayerScreenRuntime.setSubtitleDelay(delayMs: Int) {
