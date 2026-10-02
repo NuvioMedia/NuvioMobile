@@ -11,6 +11,7 @@ import nuvio.composeapp.generated.resources.debrid_resolving_stream
 import nuvio.composeapp.generated.resources.player_loading_preparing
 import nuvio.composeapp.generated.resources.streams_finding_source
 import nuvio.composeapp.generated.resources.streams_loading_subtitles
+import nuvio.composeapp.generated.resources.youtube_resolving_stream
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -19,11 +20,13 @@ internal fun StreamLoadingScreen(
     state: StreamsUiState,
     showStatus: Boolean,
     resolvingDebridStream: Boolean,
+    resolvingYouTubeStream: Boolean = false,
     onBack: () -> Unit,
 ) {
     val message = when {
         !showStatus -> null
         resolvingDebridStream -> stringResource(Res.string.debrid_resolving_stream)
+        resolvingYouTubeStream -> stringResource(Res.string.youtube_resolving_stream)
         state.overlayMessage == stringResource(Res.string.streams_loading_subtitles) -> subtitleLoadingStatusMessage()
         state.overlayMessage != null -> state.overlayMessage
         state.autoPlayStream != null -> stringResource(Res.string.player_loading_preparing)

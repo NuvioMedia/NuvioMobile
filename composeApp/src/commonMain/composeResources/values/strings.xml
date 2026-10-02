@@ -1644,6 +1644,8 @@
     <string name="player_loading_starting">Starting stream…</string>
     <string name="player_loading_buffering">Buffering…</string>
     <string name="debrid_resolving_stream">Resolving debrid stream</string>
+    <string name="youtube_resolving_stream">Loading YouTube video</string>
+    <string name="youtube_resolution_failed">Could not load this YouTube video.</string>
     <string name="streams_loading_subtitles">Loading subtitles from addons…</string>
     <string name="streams_loading_skip_segments">Loading intro/outro segments…</string>
     <string name="streams_finding_streams">Finding streams…</string>
