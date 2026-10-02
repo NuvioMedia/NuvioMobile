@@ -59,6 +59,67 @@ internal fun pluginDigest(algorithm: String, data: ByteArray): ByteArray {
     return output
 }
 
+/**
+ * ABDX-style Proof-of-Work solver (iOS): find the smallest nonce >= 0 such
+ * that SHA-256(challenge + ":" + nonce) has at least [difficulty] leading
+ * zero bits. Runs fully native via CommonCrypto.
+ * @return nonce as decimal string
+ */
+@OptIn(ExperimentalForeignApi::class)
+internal fun pluginPowFindNonce(challenge: String, difficulty: Int): String {
+    val target = if (difficulty > 0) difficulty else 18
+    val prefix = challenge.encodeToByteArray() // ASCII hex challenge
+    // message buffer: challenge + ':' + up to 10 decimal digits
+    val msg = ByteArray(prefix.size + 1 + 10)
+    prefix.copyInto(msg, 0)
+    msg[prefix.size] = ':'.code.toByte()
+    val output = ByteArray(CC_SHA256_DIGEST_LENGTH.toInt())
+    var nonce = 0L
+    while (true) {
+        var n = nonce
+        var len = 0
+        var tail = msg.size
+        if (n == 0L) {
+            msg[tail - 1] = '0'.code.toByte()
+            len = 1
+        } else {
+            while (n > 0 && tail > prefix.size + 1) {
+                msg[--tail] = ('0'.code.toByte() + (n % 10).toInt()).toByte()
+                n /= 10
+                len++
+            }
+            if (len < 10) {
+                val dst = prefix.size + 1
+                val src = msg.size - len
+                for (i in 0 until len) msg[dst + i] = msg[src + i]
+            }
+        }
+        val total = prefix.size + 1 + len
+        msg.usePinned { pinnedMsg ->
+            output.usePinned { pinnedOut ->
+                val dataPtr = if (total > 0) pinnedMsg.addressOf(0).reinterpret<UByteVar>() else null
+                val outPtr = pinnedOut.addressOf(0).reinterpret<UByteVar>()
+                CC_SHA256(dataPtr, total.toUInt(), outPtr)
+            }
+        }
+        if (leadingZeroBitsIos(output) >= target) return nonce.toString()
+        nonce++
+        if (nonce > (1L shl 24)) throw IllegalArgumentException("abdx pow cap exceeded")
+    }
+}
+
+private fun leadingZeroBitsIos(digest: ByteArray): Int {
+    var bits = 0
+    for (b in digest) {
+        val ub = b.toInt() and 0xff
+        if (ub == 0) { bits += 8; continue }
+        var x = ub
+        while (x < 128) { bits++; x = x shl 1 }
+        return bits
+    }
+    return bits
+}
+
 @OptIn(ExperimentalForeignApi::class)
 internal fun pluginPbkdf2(
     password: ByteArray,
