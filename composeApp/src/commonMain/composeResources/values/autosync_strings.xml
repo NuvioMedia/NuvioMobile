@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Auto Sync Subtitle</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Automatically sync the preferred add-on subtitle when playback starts. Requires a preferred subtitle language.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Auto Sync Search: Thorough</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Keeps comparing other subtitles and embedded tracks for a closer match before syncing. Only confident matches are ever applied.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Auto Sync Search: Quick</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Uses the first strong match sooner. Only confident matches are ever applied, as with Thorough.</string>
+    <string name="settings_playback_auto_sync_tolerance">Auto Sync Tolerance: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Keep the original subtitle timing when the sync would move it by no more than this. Tap to change.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Off</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>
