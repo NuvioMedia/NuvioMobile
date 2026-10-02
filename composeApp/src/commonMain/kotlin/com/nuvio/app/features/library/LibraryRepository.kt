@@ -712,7 +712,7 @@ object LibraryRepository {
 }
 
 internal const val LOCAL_LIBRARY_LIST_KEY = "local"
-private const val DEFAULT_LOCAL_LIBRARY_TAB_TITLE = "Nuvio Library"
+private const val DEFAULT_LOCAL_LIBRARY_TAB_TITLE = "Lentra Library"
 private const val DEFAULT_LIBRARY_OTHER_TITLE = "Other"
 
 internal fun localLibraryListTab(): TrackingLibraryTab =

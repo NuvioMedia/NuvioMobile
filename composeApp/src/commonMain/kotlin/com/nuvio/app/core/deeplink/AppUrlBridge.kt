@@ -9,6 +9,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
+/** Custom URL scheme registered by the app for deep links, OAuth callbacks and external players. */
+internal const val APP_URL_SCHEME = "lentra"
+
 internal sealed interface AppDeepLink {
     data class Meta(
         val type: String,
@@ -53,13 +56,13 @@ fun buildMetaDeepLinkUrl(
     type: String,
     id: String,
 ): String = buildString {
-    append("nuvio://meta?type=")
+    append("$APP_URL_SCHEME://meta?type=")
     append(type.trim().encodeURLParameter())
     append("&id=")
     append(id.trim().encodeURLParameter())
 }
 
-fun buildDownloadsDeepLinkUrl(): String = "nuvio://downloads"
+fun buildDownloadsDeepLinkUrl(): String = "$APP_URL_SCHEME://downloads"
 
 internal fun parseAppDeepLink(url: String): AppDeepLink? {
     val parsedUrl = runCatching { Url(url) }.getOrNull() ?: return null
@@ -71,7 +74,7 @@ internal fun parseAppDeepLink(url: String): AppDeepLink? {
             null
         }
     }
-    if (scheme != "nuvio") return null
+    if (scheme != APP_URL_SCHEME) return null
 
     val host = parsedUrl.host.lowercase()
     val pathSegments = parsedUrl.pathSegments.map(String::trim).filter(String::isNotBlank)

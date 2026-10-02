@@ -32,7 +32,7 @@
     <string name="action_save">Lagre</string>
     <string name="action_saved">Lagret</string>
     <string name="action_saving">Lagrer…</string>
-    <string name="action_support_nuvio">Støtt Nuvio</string>
+    <string name="action_support_nuvio">Støtt Lentra</string>
     <string name="action_switch">Bytt</string>
     <string name="action_update">Oppdater</string>
     <string name="action_validate">Valider</string>
@@ -42,9 +42,9 @@
     <string name="addon_invalid_url">Skriv inn en gyldig tilleggs-URL</string>
     <string name="addon_load_manifest_failed">Kunne ikke laste manifest</string>
     <string name="addon_title">Tillegg</string>
-    <string name="addons_appstore_add_description">Ta med biblioteket ditt til Nuvio med tilleggene du bruker.</string>
+    <string name="addons_appstore_add_description">Ta med biblioteket ditt til Lentra med tilleggene du bruker.</string>
     <string name="addons_appstore_empty_subtitle">Legg til et tillegg for å begynne å bygge biblioteket ditt.</string>
-    <string name="addons_appstore_empty_title">Gjør Nuvio til ditt.</string>
+    <string name="addons_appstore_empty_title">Gjør Lentra til ditt.</string>
     <string name="addons_appstore_input_placeholder">URL til tillegg</string>
     <string name="addons_appstore_install_button">Legg til tillegg</string>
     <string name="addons_badge_active">Aktiv</string>
@@ -57,7 +57,7 @@
     <string name="addons_configure">Konfigurer tillegg</string>
     <string name="addons_delete">Slett tillegg</string>
     <string name="addons_delete_confirm_title">Slette tillegg?</string>
-    <string name="addons_empty_subtitle">Legg til en manifest-URL for å starte lasting av kataloger, metadata, strømmer eller undertekster i Nuvio.</string>
+    <string name="addons_empty_subtitle">Legg til en manifest-URL for å starte lasting av kataloger, metadata, strømmer eller undertekster i Lentra.</string>
     <string name="addons_empty_title">Ingen tillegg installert ennå.</string>
     <string name="addons_error_enter_url">Skriv inn en tilleggs-URL.</string>
     <string name="addons_input_placeholder">Tilleggs-URL</string>
@@ -80,7 +80,7 @@
     <string name="addons_section_overview">Oversikt</string>
     <string name="addons_summary_id_rules">%1$d ID-regler</string>
     <string name="addons_version_format">Versjon %1$s</string>
-    <string name="app_brand_name">Nuvio</string>
+    <string name="app_brand_name">Lentra</string>
     <string name="app_exit_message">Vil du avslutte appen?</string>
     <string name="app_exit_title">Avslutt app</string>
     <string name="auth_account_deletion_failed">Konto-sletting mislyktes</string>
@@ -330,7 +330,7 @@
     <string name="collections_editor_tmdb_subtitle_network">Nettverk</string>
     <string name="collections_editor_tmdb_subtitle_person">Person</string>
     <string name="collections_editor_tmdb_subtitle_production">Produksjon</string>
-    <string name="collections_editor_tmdb_title_helper">Vises som rad-/fane-navn. Hvis tom, lager Nuvio en automatisk.</string>
+    <string name="collections_editor_tmdb_title_helper">Vises som rad-/fane-navn. Hvis tom, lager Lentra en automatisk.</string>
     <string name="collections_editor_tmdb_title_placeholder">Marvel-filmer, Netflix Originals, Pixar</string>
     <string name="collections_editor_tmdb_type">Type</string>
     <string name="collections_editor_tmdb_votes_helper">Bruk dette for å unngå obskure titler med få stemmer. Eksempel: 100.</string>
@@ -459,9 +459,9 @@
     <string name="community_loading_contributors">Laster bidragsytere…</string>
     <string name="community_loading_donation_progress">Laster finansieringsfremdrift...</string>
     <string name="community_loading_supporters">Laster støttespillere…</string>
-    <string name="community_membership_connected_description">Ingen aktiv Nuvio-nivå ble funnet på denne Patreon-kontoen. Se tilgjengelige alternativer, eller oppdater etter at du har endret Patreon-medlemskapet.</string>
+    <string name="community_membership_connected_description">Ingen aktiv Lentra-nivå ble funnet på denne Patreon-kontoen. Se tilgjengelige alternativer, eller oppdater etter at du har endret Patreon-medlemskapet.</string>
     <string name="community_membership_connected_title">Patreon er tilkoblet</string>
-    <string name="community_membership_description">Å støtte Nuvio bidrar til infrastruktur og videreutvikling, samtidig som kjerneopplevelsen forblir gratis for alle.</string>
+    <string name="community_membership_description">Å støtte Lentra bidrar til infrastruktur og videreutvikling, samtidig som kjerneopplevelsen forblir gratis for alle.</string>
     <string name="community_membership_manage">Administrer medlemskap</string>
     <string name="community_membership_refresh">Oppdater</string>
     <string name="community_membership_refreshing">Oppdaterer</string>
@@ -469,7 +469,7 @@
     <string name="community_membership_thank_you">Takk.</string>
     <string name="community_membership_tier_supporter">Supporter</string>
     <string name="community_membership_tier_supporter_plus">Supporter Plus</string>
-    <string name="community_membership_title">Nuvio Supporter-medlemskap</string>
+    <string name="community_membership_title">Lentra Supporter-medlemskap</string>
     <string name="community_membership_unable_load">Kunne ikke laste medlemskapsstatus. Prøv på nytt.</string>
     <string name="community_membership_you_are">Du er en</string>
     <string name="community_month_apr">Apr</string>
@@ -486,7 +486,7 @@
     <string name="community_month_sep">Sep</string>
     <string name="community_no_message_attached">Ingen melding vedlagt.</string>
     <string name="community_open_github">Åpne GitHub</string>
-    <string name="community_section_description">Se menneskene som bygger og støtter Nuvio på mobil, TV og web.</string>
+    <string name="community_section_description">Se menneskene som bygger og støtter Lentra på mobil, TV og web.</string>
     <string name="community_section_title">Fellesskap</string>
     <string name="community_supporters_not_configured">Supporters API er ikke konfigurert. Legg til DONATIONS_BASE_URL i local.properties.</string>
     <string name="community_tab_contributors">Bidragsytere</string>
@@ -653,14 +653,14 @@
     <string name="compose_settings_root_check_updates_description">Last ned nyeste versjon</string>
     <string name="compose_settings_root_check_updates_title">Se etter oppdateringer</string>
     <string name="compose_settings_root_content_discovery_description">Administrer tillegg og oppdagelseskilder.</string>
-    <string name="compose_settings_root_content_discovery_description_appstore">Administrer tillegg og velg hva som vises i Nuvio.</string>
+    <string name="compose_settings_root_content_discovery_description_appstore">Administrer tillegg og velg hva som vises i Lentra.</string>
     <string name="compose_settings_root_downloads_description">Administrer nedlastede filmer og episoder.</string>
     <string name="compose_settings_root_downloads_description_appstore">Administrer det du har lagret på denne enheten.</string>
     <string name="compose_settings_root_downloads_title">Nedlastinger</string>
     <string name="compose_settings_root_general_section">GENERELT</string>
     <string name="compose_settings_root_integrations_description">Administrer tilgjengelige integrasjoner</string>
     <string name="compose_settings_root_notifications_description">Administrer episodevarsler og send testvarsel.</string>
-    <string name="compose_settings_root_privacy_policy_description">Se hvordan Nuvio håndterer dataene dine</string>
+    <string name="compose_settings_root_privacy_policy_description">Se hvordan Lentra håndterer dataene dine</string>
     <string name="compose_settings_root_streams_description">Visning av strømresultater og regler for badge-URL-er.</string>
     <string name="compose_settings_root_switch_profile_description">Bytt til en annen profil.</string>
     <string name="compose_settings_root_switch_profile_title">Bytt profil</string>
@@ -776,7 +776,7 @@
     <string name="details_series_missing_numbers">Dette tillegget returnerte videoer for serien, men ingen inkluderte sesong- eller episodenummer.</string>
     <string name="details_series_no_metadata">Dette tillegget ga ikke episode-metadata for denne serien.</string>
     <string name="details_series_unpublished">Episoder er ikke publisert av dette tillegget ennå.</string>
-    <string name="details_servers_unreachable">Enheten er online, men Nuvio kunne ikke nå nødvendige servere.</string>
+    <string name="details_servers_unreachable">Enheten er online, men Lentra kunne ikke nå nødvendige servere.</string>
     <string name="details_show_details">Seriedetaljer</string>
     <string name="details_show_less">Vis mindre</string>
     <string name="details_show_more">Vis mer ▾</string>
@@ -970,7 +970,7 @@
     <string name="library_layout_show_horizontal">Vis vannrette hyller</string>
     <string name="library_layout_show_vertical">Vis loddrett rutenett</string>
     <string name="library_load_failed">Kunne ikke laste bibliotek</string>
-    <string name="library_local_tab_title">Nuvio-bibliotek</string>
+    <string name="library_local_tab_title">Lentra-bibliotek</string>
     <string name="library_other">Annet</string>
     <string name="library_remove_confirm">Fjern</string>
     <string name="library_remove_from_list_message">Fjern %1$s fra %2$s?</string>
@@ -1037,8 +1037,8 @@
 • IP-adressen din vil være synlig for andre peers i nettverket
 • Du er alene ansvarlig for innholdet du åpner
 • Du bekrefter at du har lovlig rett til å strømme dette innholdet i din jurisdiksjon
-• Nuvio hoster, distribuerer eller kontrollerer ikke noe P2P-innhold
-• Nuvio har intet ansvar for juridiske konsekvenser som følger av din bruk av P2P-strømming
+• Lentra hoster, distribuerer eller kontrollerer ikke noe P2P-innhold
+• Lentra har intet ansvar for juridiske konsekvenser som følger av din bruk av P2P-strømming
 
 Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som helst i Innstillinger.</string>
     <string name="p2p_consent_cancel">Avbryt</string>
@@ -1199,7 +1199,7 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="profile_avatar_selected">Avatar: %1$s</string>
     <string name="profile_avatar_url_invalid">Skriv inn en gyldig http:// eller https:// bilde-URL.</string>
     <string name="profile_background_custom">Tilpasset</string>
-    <string name="profile_background_member_note">Tilpassede bakgrunns-URLer kan konfigureres fra Nuvio-nettpanelet.</string>
+    <string name="profile_background_member_note">Tilpassede bakgrunns-URLer kan konfigureres fra Lentra-nettpanelet.</string>
     <string name="profile_background_normal">Normal</string>
     <string name="profile_choose_avatar">Velg en avatar</string>
     <string name="profile_choose_avatar_below">Velg en avatar nedenfor.</string>
@@ -1324,7 +1324,7 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_appearance_amoled_black">AMOLED Svart</string>
     <string name="settings_appearance_amoled_description">Bruk ren svart bakgrunn for OLED-skjermer.</string>
     <string name="settings_appearance_app_icon">Appikon</string>
-    <string name="settings_appearance_app_icon_android_confirmation_message">Bytte til %1$s lukker Nuvio. Trykk OK for å fortsette.</string>
+    <string name="settings_appearance_app_icon_android_confirmation_message">Bytte til %1$s lukker Lentra. Trykk OK for å fortsette.</string>
     <string name="settings_appearance_app_icon_android_confirmation_title">Bytte appikon?</string>
     <string name="settings_appearance_app_icon_arctic_blue">Arctic Blue</string>
     <string name="settings_appearance_app_icon_change_failed">Ikonet kunne ikke endres. Prøv igjen.</string>
@@ -1380,7 +1380,7 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_card_depth_surface_trailers">Trailere</string>
     <string name="settings_card_depth_title">KORTDYBDE-EFFEKT</string>
     <string name="settings_content_discovery_addons_description">Installer, fjern, oppdater og sorter innholdskilder.</string>
-    <string name="settings_content_discovery_addons_description_appstore">Legg til og administrer tilleggene du bruker med Nuvio.</string>
+    <string name="settings_content_discovery_addons_description_appstore">Legg til og administrer tilleggene du bruker med Lentra.</string>
     <string name="settings_content_discovery_collections_description">Opprett egne kataloggrupperinger med mapper vist på hjem.</string>
     <string name="settings_content_discovery_homescreen_description">Juster hjemmeoppsett, synlighet og plakat-oppførsel.</string>
     <string name="settings_content_discovery_meta_screen_description">Innstillinger for detalj- og episodeskjermer.</string>
@@ -1431,7 +1431,7 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_debrid_device_auth_connected">%1$s er koblet til på denne enheten.</string>
     <string name="settings_debrid_device_auth_expired">Denne koden er utløpt. Prøv igjen.</string>
     <string name="settings_debrid_device_auth_failed">Kunne ikke starte innlogging.</string>
-    <string name="settings_debrid_device_auth_instructions">Åpne lenken og skriv inn denne koden for å godkjenne Nuvio.</string>
+    <string name="settings_debrid_device_auth_instructions">Åpne lenken og skriv inn denne koden for å godkjenne Lentra.</string>
     <string name="settings_debrid_device_auth_missing_configuration">Denne innloggingsmetoden er ikke konfigurert i denne versjonen.</string>
     <string name="settings_debrid_device_auth_open">Åpne lenke</string>
     <string name="settings_debrid_device_auth_starting">Starter sikker innlogging...</string>
@@ -1589,11 +1589,11 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_licenses_attributions_haze_body">Brukes for bakgrunnsuskarphet. Laget av Chris Banes.</string>
     <string name="settings_licenses_attributions_haze_license">Lisensiert under Apache License, Version 2.0.</string>
     <string name="settings_licenses_attributions_haze_title">Haze 1.7.2</string>
-    <string name="settings_licenses_attributions_imdb_body">Nuvio bruker IMDb Non-Commercial Datasets for vurderinger. Informasjon fra IMDb[](https://www.imdb.com). Brukt med tillatelse.</string>
+    <string name="settings_licenses_attributions_imdb_body">Lentra bruker IMDb Non-Commercial Datasets for vurderinger. Informasjon fra IMDb[](https://www.imdb.com). Brukt med tillatelse.</string>
     <string name="settings_licenses_attributions_imdb_title">IMDb Non-Commercial Datasets</string>
-    <string name="settings_licenses_attributions_introdb_body">Nuvio bruker IntroDB API for intro-, recap-, credits- og preview-tidsstempler. Nuvio er ikke tilknyttet eller godkjent av IntroDB.</string>
+    <string name="settings_licenses_attributions_introdb_body">Lentra bruker IntroDB API for intro-, recap-, credits- og preview-tidsstempler. Lentra er ikke tilknyttet eller godkjent av IntroDB.</string>
     <string name="settings_licenses_attributions_introdb_title">IntroDB</string>
-    <string name="settings_licenses_attributions_mdblist_body">Nuvio bruker MDBList for eksterne vurderinger. Nuvio er ikke tilknyttet eller godkjent av MDBList.</string>
+    <string name="settings_licenses_attributions_mdblist_body">Lentra bruker MDBList for eksterne vurderinger. Lentra er ikke tilknyttet eller godkjent av MDBList.</string>
     <string name="settings_licenses_attributions_mdblist_title">MDBList</string>
     <string name="settings_licenses_attributions_mpvkit_body">Brukes for avspilling på iOS.</string>
     <string name="settings_licenses_attributions_mpvkit_license">Lisensiert under LGPL v3.0.</string>
@@ -1601,19 +1601,19 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_licenses_attributions_nuvio_body">Kildekode og lisensvilkår finnes i prosjektets repository.</string>
     <string name="settings_licenses_attributions_nuvio_license">Lisensiert under GNU General Public License v3.0.</string>
     <string name="settings_licenses_attributions_nuvio_title">Nuvio Mobile</string>
-    <string name="settings_licenses_attributions_premiumize_body">Nuvio kobler til Premiumize for kontoautentisering, tilgang til skybibliotek, cachesjekker og skyavspillingsfunksjoner. Nuvio er ikke tilknyttet eller godkjent av Premiumize.</string>
+    <string name="settings_licenses_attributions_premiumize_body">Lentra kobler til Premiumize for kontoautentisering, tilgang til skybibliotek, cachesjekker og skyavspillingsfunksjoner. Lentra er ikke tilknyttet eller godkjent av Premiumize.</string>
     <string name="settings_licenses_attributions_premiumize_title">Premiumize</string>
     <string name="settings_licenses_attributions_section_app">APP-LISENS</string>
     <string name="settings_licenses_attributions_section_data">DATA &amp; TJENESTER</string>
     <string name="settings_licenses_attributions_section_playback">AVSPILLINGS-LISENS</string>
     <string name="settings_licenses_attributions_section_ui">UI-BIBLIOTEKER</string>
-    <string name="settings_licenses_attributions_simkl_body">Nuvio kobler til Simkl for kontoautentisering, watchlister, seerhistorikk, avspillingsfremgang og scrobbling. Film-, TV- og anime-sporingsdata leveres av Simkl. Nuvio er ikke tilknyttet eller godkjent av Simkl.</string>
+    <string name="settings_licenses_attributions_simkl_body">Lentra kobler til Simkl for kontoautentisering, watchlister, seerhistorikk, avspillingsfremgang og scrobbling. Film-, TV- og anime-sporingsdata leveres av Simkl. Lentra er ikke tilknyttet eller godkjent av Simkl.</string>
     <string name="settings_licenses_attributions_simkl_title">Simkl</string>
-    <string name="settings_licenses_attributions_tmdb_body">Nuvio bruker TMDB API for metadata, bilder, trailere, rollebesetning osv. Dette produktet bruker TMDB API men er ikke godkjent eller sertifisert av TMDB.</string>
+    <string name="settings_licenses_attributions_tmdb_body">Lentra bruker TMDB API for metadata, bilder, trailere, rollebesetning osv. Dette produktet bruker TMDB API men er ikke godkjent eller sertifisert av TMDB.</string>
     <string name="settings_licenses_attributions_tmdb_title">The Movie Database (TMDB)</string>
-    <string name="settings_licenses_attributions_torbox_body">Nuvio kobler til TorBox for kontoautentisering, tilgang til skybibliotek, cachesjekker og skyavspillingsfunksjoner. Nuvio er ikke tilknyttet eller godkjent av TorBox.</string>
+    <string name="settings_licenses_attributions_torbox_body">Lentra kobler til TorBox for kontoautentisering, tilgang til skybibliotek, cachesjekker og skyavspillingsfunksjoner. Lentra er ikke tilknyttet eller godkjent av TorBox.</string>
     <string name="settings_licenses_attributions_torbox_title">TorBox</string>
-    <string name="settings_licenses_attributions_trakt_body">Nuvio kobler til Trakt for autentisering, seerhistorikk, synkronisering osv. Nuvio er ikke tilknyttet eller godkjent av Trakt.</string>
+    <string name="settings_licenses_attributions_trakt_body">Lentra kobler til Trakt for autentisering, seerhistorikk, synkronisering osv. Lentra er ikke tilknyttet eller godkjent av Trakt.</string>
     <string name="settings_licenses_attributions_trakt_title">Trakt</string>
     <string name="settings_mdb_add_api_key_first">Legg til MDBList API-nøkkel før du skrur på vurderinger.</string>
     <string name="settings_mdb_api_key_description">Kreves for å hente vurderinger fra MDBList</string>
@@ -1684,10 +1684,10 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_nav_bar_style_compact">Alltid kompakt</string>
     <string name="settings_nav_bar_style_expanded">Alltid utvidet</string>
     <string name="settings_nav_bar_summary">%1$s · %2$s</string>
-    <string name="settings_notifications_disabled_in_app">Varsler er for øyeblikket deaktivert i Nuvio.</string>
+    <string name="settings_notifications_disabled_in_app">Varsler er for øyeblikket deaktivert i Lentra.</string>
     <string name="settings_notifications_episode_release_alerts">Episodeutgivelsesvarsler</string>
     <string name="settings_notifications_episode_release_alerts_description">Send lokale varsler når en ny episode for en lagret serie blir tilgjengelig.</string>
-    <string name="settings_notifications_permission_disabled">Systemvarsler er deaktivert for Nuvio. Skru dem på for å motta varsler.</string>
+    <string name="settings_notifications_permission_disabled">Systemvarsler er deaktivert for Lentra. Skru dem på for å motta varsler.</string>
     <string name="settings_notifications_scheduled_count">%1$d utgivelsesvarsler er planlagt på denne enheten.</string>
     <string name="settings_notifications_section_alerts">VARSLER</string>
     <string name="settings_notifications_section_test">TEST</string>
@@ -1969,10 +1969,10 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_simkl_sign_in_failed">Kunne ikke fullføre Simkl-innlogging. Prøv igjen.</string>
     <string name="settings_simkl_sync_info_action">Slik fungerer synkronisering</string>
     <string name="settings_simkl_sync_info_activity">Hver oppdatering sjekker først om Simkl melder om endringer, og laster kun ned oppdateringene. Dette følger Simkls API-regler, reduserer unødvendig databruk og bidrar til å holde tjenesten stabil.</string>
-    <string name="settings_simkl_sync_info_description">Nuvio sjekker Simkl automatisk maksimalt én gang per %1$d minutter. Endringer gjort via en annen app eller Simkl-nettstedet kan ta så lang tid før de vises.</string>
+    <string name="settings_simkl_sync_info_description">Lentra sjekker Simkl automatisk maksimalt én gang per %1$d minutter. Endringer gjort via en annen app eller Simkl-nettstedet kan ta så lang tid før de vises.</string>
     <string name="settings_simkl_sync_info_docs">Les Simkl-synkroniseringsguiden</string>
     <string name="settings_simkl_sync_info_library_statuses">Serier plassert i Simkls On Hold- eller Dropped-lister skjules fra Fortsett å se. De forblir skjult så lenge de står i én av listene.</string>
-    <string name="settings_simkl_sync_info_manual">Endringer gjort i Nuvio sendes til Simkl umiddelbart. Bruk Synkroniser nå når du vil at Nuvio skal sjekke etter eksterne endringer tidligere.</string>
+    <string name="settings_simkl_sync_info_manual">Endringer gjort i Lentra sendes til Simkl umiddelbart. Bruk Synkroniser nå når du vil at Lentra skal sjekke etter eksterne endringer tidligere.</string>
     <string name="settings_simkl_sync_info_title">Slik fungerer Simkl-synkronisering</string>
     <string name="settings_simkl_sync_now">Synkroniser nå</string>
     <string name="settings_simkl_visit">Besøk Simkl</string>
@@ -2046,11 +2046,11 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_tracking_approval_redirect">Etter godkjenning blir du automatisk sendt tilbake.</string>
     <string name="settings_tracking_connect_first">Koble til %1$s først</string>
     <string name="settings_tracking_data_sources">Kilder</string>
-    <string name="settings_tracking_disconnect_description">Dette fjerner tilkoblingen fra Nuvio. Dataene dine på %1$s forblir intakte, og utilgjengelige bibliotek- eller fremdriftskilder faller midlertidig tilbake til Nuvio.</string>
+    <string name="settings_tracking_disconnect_description">Dette fjerner tilkoblingen fra Lentra. Dataene dine på %1$s forblir intakte, og utilgjengelige bibliotek- eller fremdriftskilder faller midlertidig tilbake til Lentra.</string>
     <string name="settings_tracking_disconnect_title">Koble fra %1$s?</string>
     <string name="settings_tracking_features">KILDEPREFERANSER</string>
-    <string name="settings_tracking_nuvio_library_description">Behold lagrede titler i Nuvio-biblioteket ditt.</string>
-    <string name="settings_tracking_nuvio_progress_description">Gjenoppta med fremdrift lagret av Nuvio Sync.</string>
+    <string name="settings_tracking_nuvio_library_description">Behold lagrede titler i Lentra-biblioteket ditt.</string>
+    <string name="settings_tracking_nuvio_progress_description">Gjenoppta med fremdrift lagret av Lentra Sync.</string>
     <string name="settings_tracking_progress_refresh_failed">Kilden ble endret, men den nyeste seer-fremdriften kunne ikke oppdateres.</string>
     <string name="settings_tracking_services">Kontoer</string>
     <string name="settings_tracking_simkl_library_description">Bruk Simkl plan-to-watch- og statuslistene dine.</string>
@@ -2070,7 +2070,7 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_trakt_connected_as">Tilkoblet som %1$s</string>
     <string name="settings_trakt_default_user">Trakt-bruker</string>
     <string name="settings_trakt_disconnect">Koble fra</string>
-    <string name="settings_trakt_disconnect_description">Dette kobler Trakt-kontoen din fra Nuvio.</string>
+    <string name="settings_trakt_disconnect_description">Dette kobler Trakt-kontoen din fra Lentra.</string>
     <string name="settings_trakt_failed_open_browser">Kunne ikke åpne nettleser</string>
     <string name="settings_trakt_features">FUNKSJONER</string>
     <string name="settings_trakt_finish_sign_in">Fullfør Trakt-innlogging i nettleseren din</string>
@@ -2178,7 +2178,7 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="tracking_remove_confirmation_message">Hvis du fjerner «%1$s» fra %2$s, slettes også %3$s der. Dette kan ikke angres.</string>
     <string name="tracking_remove_confirmation_title">Fjern fra %1$s?</string>
     <string name="tracking_source_simkl">Simkl</string>
-    <string name="tracking_watch_progress_dialog_subtitle">Velg tjenesten Nuvio leser for gjenopptakelse og Fortsett å se. Scrobbling forblir aktiv for alle tilkoblede tjenester.</string>
+    <string name="tracking_watch_progress_dialog_subtitle">Velg tjenesten Lentra leser for gjenopptakelse og Fortsett å se. Scrobbling forblir aktiv for alle tilkoblede tjenester.</string>
     <string name="tracking_watch_progress_simkl_selected">Seer-fremdrift satt til Simkl</string>
     <string name="trailer_close">Lukk trailer</string>
     <string name="trailer_enter_fullscreen">Gå til fullskjerm</string>
@@ -2214,8 +2214,8 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="trakt_library_load_failed">Kunne ikke laste Trakt-bibliotek</string>
     <string name="trakt_library_source_dialog_subtitle">Velg hvor du vil lagre og administrere bibliotekelementer</string>
     <string name="trakt_library_source_dialog_title">Bibliotekkilde</string>
-    <string name="trakt_library_source_nuvio">Nuvio-bibliotek</string>
-    <string name="trakt_library_source_nuvio_selected">Nuvio-bibliotek valgt</string>
+    <string name="trakt_library_source_nuvio">Lentra-bibliotek</string>
+    <string name="trakt_library_source_nuvio_selected">Lentra-bibliotek valgt</string>
     <string name="trakt_library_source_subtitle">Velg hvilket bibliotek som skal brukes for lagring og visning av samlingen din</string>
     <string name="trakt_library_source_title">Bibliotekkilde</string>
     <string name="trakt_library_source_trakt">Trakt</string>
@@ -2244,10 +2244,10 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="trakt_public_list_request_failed">Trakt-forespørsel mislyktes</string>
     <string name="trakt_sign_in_complete_failed">Kunne ikke fullføre Trakt-innlogging</string>
     <string name="trakt_user_fallback">Trakt-bruker</string>
-    <string name="trakt_watch_progress_dialog_subtitle">Velg om resume og Fortsett å se skal bruke Trakt eller Nuvio Sync mens Trakt scrobbling er aktiv.</string>
+    <string name="trakt_watch_progress_dialog_subtitle">Velg om resume og Fortsett å se skal bruke Trakt eller Lentra Sync mens Trakt scrobbling er aktiv.</string>
     <string name="trakt_watch_progress_dialog_title">Seer-fremdrift</string>
-    <string name="trakt_watch_progress_nuvio_selected">Seer-fremdrift satt til Nuvio Sync</string>
-    <string name="trakt_watch_progress_source_nuvio">Nuvio Sync</string>
+    <string name="trakt_watch_progress_nuvio_selected">Seer-fremdrift satt til Lentra Sync</string>
+    <string name="trakt_watch_progress_source_nuvio">Lentra Sync</string>
     <string name="trakt_watch_progress_source_trakt">Trakt</string>
     <string name="trakt_watch_progress_subtitle">Velg hvilken fremdriftskilde som driver resume og Fortsett å se</string>
     <string name="trakt_watch_progress_title">Seer-fremdrift</string>
@@ -2281,7 +2281,7 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="updates_github_api_error">GitHub releases API-feil: %1$d</string>
     <string name="updates_install_failed">Kunne ikke starte installasjon</string>
     <string name="updates_latest_version">Du bruker nyeste versjon.</string>
-    <string name="updates_message_allow_installs">Skru på app-installasjoner for Nuvio, og kom tilbake.</string>
+    <string name="updates_message_allow_installs">Skru på app-installasjoner for Lentra, og kom tilbake.</string>
     <string name="updates_message_downloading">Laster ned oppdatering…</string>
     <string name="updates_message_no_updates">Ingen oppdateringer funnet.</string>
     <string name="updates_message_ready">En ny versjon er klar til installasjon.</string>

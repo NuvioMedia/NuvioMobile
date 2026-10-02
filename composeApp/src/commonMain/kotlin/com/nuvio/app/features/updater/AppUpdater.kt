@@ -289,7 +289,7 @@ class AppUpdaterController internal constructor(
             updateChannel = preferences.channel.value,
             update = AppUpdate(
                 tag = "9.9.9",
-                title = "Nuvio 9.9.9",
+                title = "Lentra 9.9.9",
                 notes = """
                     A local preview of the new update experience.
 
@@ -298,7 +298,7 @@ class AppUpdaterController internal constructor(
                     - Release notes live behind the info button.
                 """.trimIndent(),
                 releaseUrl = null,
-                assetName = "Nuvio-debug-preview.apk",
+                assetName = "Lentra-debug-preview.apk",
                 assetUrl = "debug://update-preview",
                 assetSizeBytes = 185L * 1024L * 1024L,
             ),

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.deeplink.APP_URL_SCHEME
 import com.nuvio.app.features.watchprogress.WatchProgressPlaybackSession
 import io.ktor.http.Url
 import io.ktor.http.encodeURLParameter
@@ -56,7 +57,7 @@ internal class InfusePlaybackCallbacks(
 
     fun handleUrl(value: String): Boolean {
         val url = runCatching { Url(value) }.getOrNull() ?: return false
-        if (url.protocol.name != "nuvio" || url.host != "external-player") return false
+        if (url.protocol.name != APP_URL_SCHEME || url.host != "external-player") return false
         val path = url.pathSegments.filter(String::isNotEmpty)
         if (path.size != 3 || path[0] != "infuse") return false
         val session = storedSession() ?: return true
@@ -104,7 +105,7 @@ internal fun buildInfusePlaybackUrl(request: ExternalPlayerPlaybackRequest, sess
         append(subtitle.url.encodeURLParameter())
     }
     append("&x-success=")
-    append("nuvio://external-player/infuse/$sessionId/success".encodeURLParameter())
+    append("$APP_URL_SCHEME://external-player/infuse/$sessionId/success".encodeURLParameter())
     append("&x-error=")
-    append("nuvio://external-player/infuse/$sessionId/error".encodeURLParameter())
+    append("$APP_URL_SCHEME://external-player/infuse/$sessionId/error".encodeURLParameter())
 }

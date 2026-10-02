@@ -36,8 +36,8 @@ class InfusePlaybackTest {
         assertEquals("125", url.parameters["position"])
         assertEquals("Series & Friends - S02E05 - Here + There", url.parameters["filename"])
         assertEquals(request.subtitles!!.map { it.url }, url.parameters.getAll("sub"))
-        assertEquals("nuvio://external-player/infuse/session-1/success", url.parameters["x-success"])
-        assertEquals("nuvio://external-player/infuse/session-1/error", url.parameters["x-error"])
+        assertEquals("lentra://external-player/infuse/session-1/success", url.parameters["x-success"])
+        assertEquals("lentra://external-player/infuse/session-1/error", url.parameters["x-error"])
         assertEquals("0", Url(buildInfusePlaybackUrl(request.copy(resumePositionMs = -1), "session-1")).parameters["position"])
     }
 
@@ -150,12 +150,12 @@ class InfusePlaybackTest {
     @Test
     fun unrelatedLinksAndCorruptStoredSessionsDoNotProduceResults() {
         val callbacks = callbacks()
-        assertFalse(callbacks.handleUrl("nuvio://meta?type=movie&id=tt123"))
+        assertFalse(callbacks.handleUrl("lentra://meta?type=movie&id=tt123"))
         assertFalse(callbacks.handleUrl("https://external-player/infuse/session-1/success?position=1"))
         stored = "invalid json"
         callbacks.restoreResult()
         assertNull(callbacks.results.value)
-        assertTrue(callbacks.handleUrl("nuvio://external-player/infuse/session-1/success?position=1"))
+        assertTrue(callbacks.handleUrl("lentra://external-player/infuse/session-1/success?position=1"))
     }
 
     private fun success(launch: Url, seconds: String, source: String = request.sourceUrl): String =

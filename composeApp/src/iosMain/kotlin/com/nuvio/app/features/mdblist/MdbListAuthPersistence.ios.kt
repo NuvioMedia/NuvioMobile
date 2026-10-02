@@ -68,7 +68,7 @@ internal actual object PlatformMdbListAuthPersistence : MdbListAuthPersistence {
         CFDictionaryCreateMutable(null, 0L, kCFTypeDictionaryKeyCallBacks.ptr, kCFTypeDictionaryValueCallBacks.ptr) ?: error("Unable to create credential query")
 
     private inline fun <T> query(profileId: Int?, block: (CFMutableDictionaryRef) -> T): T {
-        val service = CFStringCreateWithCString(null, "com.nuvio.media.mdblist", kCFStringEncodingUTF8)
+        val service = CFStringCreateWithCString(null, "com.lentra.app.mdblist", kCFStringEncodingUTF8)
             ?: error("Unable to encode credential service")
         val account = profileId?.let { CFStringCreateWithCString(null, "profile.$it", kCFStringEncodingUTF8) }
         val query = dictionary()

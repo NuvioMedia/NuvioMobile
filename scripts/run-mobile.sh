@@ -5,13 +5,13 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 GRADLEW="$ROOT_DIR/gradlew"
 
-ANDROID_APP_ID="com.nuvio.app"
+ANDROID_APP_ID="com.lentra.app"
 ANDROID_ACTIVITY=".MainActivity"
 IOS_PROJECT="$ROOT_DIR/iosApp/iosApp.xcodeproj"
 IOS_SCHEME="iosApp"
 IOS_DERIVED_DATA_BASE="$ROOT_DIR/build/ios-derived"
-IOS_APP_NAME="Nuvio.app"
-IOS_BUNDLE_ID="com.nuvio.app.Nuvio"
+IOS_APP_NAME="Lentra.app"
+IOS_BUNDLE_ID="com.lentra.app"
 IOS_PREFERRED_DEVICE_MODEL="iPhone 14 Pro"
 
 usage() {

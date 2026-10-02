@@ -30,9 +30,9 @@
     <string name="addons_badge_unavailable">לא זמין</string>
     <string name="addons_configure">הגדר תוסף</string>
     <string name="addons_delete">מחק תוסף</string>
-    <string name="addons_appstore_add_description">הבא את הספרייה שלך אל Nuvio עם התוספים שבהם אתה משתמש.</string>
+    <string name="addons_appstore_add_description">הבא את הספרייה שלך אל Lentra עם התוספים שבהם אתה משתמש.</string>
     <string name="addons_appstore_empty_subtitle">הוסף תוסף כדי להתחיל לבנות את הספרייה שלך.</string>
-    <string name="addons_appstore_empty_title">הפוך את Nuvio לשלך.</string>
+    <string name="addons_appstore_empty_title">הפוך את Lentra לשלך.</string>
     <string name="addons_appstore_input_placeholder">כתובת URL של תוסף</string>
     <string name="addons_appstore_install_button">הוסף תוסף</string>
     <string name="store_empty_unavailable_title">אין כאן עדיין כלום</string>
@@ -267,7 +267,7 @@
     <string name="compose_settings_root_check_updates_description">הורד את הגרסה האחרונה</string>
     <string name="compose_settings_root_check_updates_title">בדיקת עדכונים</string>
     <string name="compose_settings_root_content_discovery_description">נהל תוספים ומקורות גילוי.</string>
-    <string name="compose_settings_root_content_discovery_description_appstore">נהל תוספים ובחר מה יופיע ב-Nuvio.</string>
+    <string name="compose_settings_root_content_discovery_description_appstore">נהל תוספים ובחר מה יופיע ב-Lentra.</string>
     <string name="compose_settings_root_downloads_description">נהל את הסרטים והפרקים שהורדת.</string>
     <string name="compose_settings_root_downloads_description_appstore">נהל את מה ששמרת במכשיר זה.</string>
     <string name="compose_settings_root_downloads_title">הורדות</string>
@@ -408,13 +408,13 @@
     <string name="trakt_library_source_dialog_title">מקור ספרייה</string>
     <string name="trakt_library_source_dialog_subtitle">בחר היכן לשמור ולנהל את פריטי הספרייה שלך</string>
     <string name="trakt_library_source_trakt_selected">ספריית Trakt נבחרה</string>
-    <string name="trakt_library_source_nuvio_selected">ספריית Nuvio נבחרה</string>
+    <string name="trakt_library_source_nuvio_selected">ספריית Lentra נבחרה</string>
     <string name="trakt_watch_progress_title">התקדמות צפייה</string>
     <string name="trakt_watch_progress_subtitle">בחר מקור התקדמות שמניע המשך וצפייה מתמשכת</string>
     <string name="trakt_watch_progress_dialog_title">התקדמות צפייה</string>
-    <string name="trakt_watch_progress_dialog_subtitle">בחר איפה לשמור את התקדמות הצפייה שלך. ב-Trakt או בשרת של Nuvio.</string>
+    <string name="trakt_watch_progress_dialog_subtitle">בחר איפה לשמור את התקדמות הצפייה שלך. ב-Trakt או בשרת של Lentra.</string>
     <string name="trakt_watch_progress_trakt_selected">מקור התקדמות צפייה הוגדר ל-Trakt</string>
-    <string name="trakt_watch_progress_nuvio_selected">מקור התקדמות צפייה הוגדר ל-Nuvio Sync</string>
+    <string name="trakt_watch_progress_nuvio_selected">מקור התקדמות צפייה הוגדר ל-Lentra Sync</string>
     <string name="trakt_more_like_this_source_title">מקור \"עוד כמו זה\"</string>
     <string name="trakt_continue_watching_window">חלון  \"המשך צפייה\"</string>
     <string name="trakt_continue_watching_subtitle">היסטוריית Trakt הנחשבת להמשך צפייה</string>
