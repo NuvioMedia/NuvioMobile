@@ -3,6 +3,7 @@ package com.nuvio.app.core.auth
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.network.SupabaseProvider
 import com.nuvio.app.core.storage.LocalAccountDataCleaner
+import com.nuvio.app.core.sync.ProfileSettingsSync
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.exception.AuthRestException
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -140,6 +141,13 @@ object AuthRepository {
         _error.value = null
         val anonymousRead = runCatching { AuthStorage.loadAnonymousUserId() }
         val wasAnonymous = anonymousRead.getOrNull() != null
+        if (!wasAnonymous && _state.value is AuthState.Authenticated) {
+            runCatching { ProfileSettingsSync.flushBeforeSignOut() }
+                .onSuccess { saved ->
+                    if (!saved) log.w { "Profile settings flush did not complete before sign-out" }
+                }
+                .onFailure { error -> log.w(error) { "Failed to flush profile settings before sign-out" } }
+        }
         val anonymousClear = runCatching { AuthStorage.clearAnonymousUserId() }
         validatedRemoteUserId = null
         val remoteSignOut = if (wasAnonymous) {
