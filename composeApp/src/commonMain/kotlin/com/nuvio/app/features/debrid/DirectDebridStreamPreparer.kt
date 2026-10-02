@@ -88,6 +88,7 @@ object DirectDebridStreamPreparer {
             installedAddonNames = installedAddonNames,
             selectedAddons = playerSettings.streamAutoPlaySelectedAddons,
             selectedPlugins = playerSettings.streamAutoPlaySelectedPlugins,
+            preferredAudioLanguage = playerSettings.preferredAudioLanguage,
         )
         if (autoPlaySelection?.let { it.isAddonDebridCandidate && (it.isDirectDebridStream || it.isCachedDebridTorrentStream) } == true) {
             candidates.firstOrNull { it.preparationKey() == autoPlaySelection.preparationKey() }

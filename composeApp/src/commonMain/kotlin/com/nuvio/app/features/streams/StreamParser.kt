@@ -40,6 +40,8 @@ object StreamParser {
                 name = obj.string("name"),
                 title = obj.string("title"),
                 description = obj.string("description") ?: obj.string("title"),
+                quality = obj.string("quality"),
+                language = obj.string("language"),
                 url = url,
                 infoHash = infoHash,
                 fileIdx = obj.int("fileIdx"),
