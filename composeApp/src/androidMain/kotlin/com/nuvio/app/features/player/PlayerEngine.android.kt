@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import android.app.Activity
+import android.app.ActivityManager
 import android.content.Context
 import android.content.ContextWrapper
 import android.text.SpannableString
@@ -88,6 +89,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "NuvioPlayer"
 private const val PLAYER_DIAGNOSTIC_TAG = "NuvioPlayerDiag"
+private const val NETWORK_MIN_BUFFER_MS = 120_000
+private const val NETWORK_MAX_BUFFER_MS = 180_000
+private const val NETWORK_BUFFER_FOR_PLAYBACK_MS = 1_000
+private const val NETWORK_BUFFER_AFTER_REBUFFER_MS = 5_000
 
 private class PlaybackDiagnostics {
     var prepareStartedAtMs: Long = 0L
@@ -385,10 +390,10 @@ private fun ExoPlayerSurface(
         val loadControl = DefaultLoadControl.Builder()
             .setBackBuffer(10_000, true)
             .setBufferDurationsMs(
-                DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
-                50_000,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
+                NETWORK_MIN_BUFFER_MS,
+                NETWORK_MAX_BUFFER_MS,
+                NETWORK_BUFFER_FOR_PLAYBACK_MS,
+                NETWORK_BUFFER_AFTER_REBUFFER_MS,
             )
             .build()
 
@@ -1292,8 +1297,12 @@ private class NuvioLibmpvView(
         mpv.setOptionString("msg-level", "all=warn")
         mpv.setOptionString("tls-verify", "yes")
         mpv.setOptionString("tls-ca-file", "${context.filesDir.path}/cacert.pem")
-        mpv.setOptionString("demuxer-max-bytes", "${libmpvCacheBytes()}").logIfMpvError("demuxer-max-bytes")
-        mpv.setOptionString("demuxer-max-back-bytes", "${libmpvCacheBytes()}").logIfMpvError("demuxer-max-back-bytes")
+        mpv.setOptionString("cache", "yes").logIfMpvError("cache")
+        mpv.setOptionString("cache-secs", "${NETWORK_MAX_BUFFER_MS / 1_000}").logIfMpvError("cache-secs")
+        mpv.setOptionString("demuxer-max-bytes", "${libmpvForwardCacheBytes(context)}")
+            .logIfMpvError("demuxer-max-bytes")
+        mpv.setOptionString("demuxer-max-back-bytes", "${libmpvBackCacheBytes()}")
+            .logIfMpvError("demuxer-max-back-bytes")
         mpv.setOptionString("vd-lavc-film-grain", "cpu")
         mpv.setPropertyBoolean("keep-open", true)
         mpv.setPropertyBoolean("input-default-bindings", true)
@@ -1686,7 +1695,14 @@ private data class LibmpvTrack(
     val isForced: Boolean,
 )
 
-private fun libmpvCacheBytes(): Int =
+private fun libmpvForwardCacheBytes(context: Context): Int {
+    val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+    val isLowRamDevice = activityManager?.isLowRamDevice
+        ?: (Build.VERSION.SDK_INT < Build.VERSION_CODES.O_MR1)
+    return if (isLowRamDevice) 64 * 1024 * 1024 else 128 * 1024 * 1024
+}
+
+private fun libmpvBackCacheBytes(): Int =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 * 1024 * 1024 else 32 * 1024 * 1024
 
 private fun Int.logIfMpvError(option: String) {

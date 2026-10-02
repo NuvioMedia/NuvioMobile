@@ -1,6 +1,8 @@
 package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.features.player.AudioLanguageOption
+import com.nuvio.app.features.player.normalizeLanguageCode
 
 object StreamAutoPlaySelector {
 
@@ -45,6 +47,7 @@ object StreamAutoPlaySelector {
         bingeGroupOnly: Boolean = false,
         debridEnabled: Boolean = true,
         activeResolverProviderId: String? = null,
+        preferredAudioLanguage: String? = null,
     ): StreamItem? =
         evaluateAutoPlayStream(
             streams = streams,
@@ -59,6 +62,7 @@ object StreamAutoPlaySelector {
             bingeGroupOnly = bingeGroupOnly,
             debridEnabled = debridEnabled,
             activeResolverProviderId = activeResolverProviderId,
+            preferredAudioLanguage = preferredAudioLanguage,
         ).stream
 
     fun evaluateAutoPlayStream(
@@ -74,6 +78,7 @@ object StreamAutoPlaySelector {
         bingeGroupOnly: Boolean = false,
         debridEnabled: Boolean = true,
         activeResolverProviderId: String? = null,
+        preferredAudioLanguage: String? = null,
     ): StreamAutoPlayEvaluation {
         if (streams.isEmpty()) return StreamAutoPlayEvaluation()
 
@@ -129,6 +134,7 @@ object StreamAutoPlaySelector {
         val matchingStreams = when (mode) {
             StreamAutoPlayMode.MANUAL -> emptyList()
             StreamAutoPlayMode.FIRST_STREAM -> candidateStreams
+            StreamAutoPlayMode.BEST_QUALITY -> candidateStreams
             StreamAutoPlayMode.REGEX_MATCH -> {
                 val pattern = regexPattern.trim()
 
@@ -180,11 +186,26 @@ object StreamAutoPlaySelector {
                 .filterNot { it == preferredStream }
                 .forEach(::add)
         }
-        val selected = readyStreams.firstOrNull()
+        val orderedReadyStreams = if (mode == StreamAutoPlayMode.BEST_QUALITY) {
+            val rankedStreams = readyStreams
+                .filterNot { it == preferredStream }
+                .sortedWith(
+                    compareByDescending<StreamItem> { it.matchesPreferredAudioLanguage(preferredAudioLanguage) }
+                        .thenByDescending { it.qualityRank() },
+                )
+            if (preferredStream != null && preferredStream in readyStreams) {
+                listOf(preferredStream) + rankedStreams
+            } else {
+                rankedStreams
+            }
+        } else {
+            readyStreams
+        }
+        val selected = orderedReadyStreams.firstOrNull()
         if (selected != null) {
             return StreamAutoPlayEvaluation(
                 stream = selected,
-                readyStreams = readyStreams,
+                readyStreams = orderedReadyStreams,
             )
         }
 
@@ -208,6 +229,60 @@ object StreamAutoPlaySelector {
                     !isPendingDebridAutoPlay(debridEnabled, activeResolverProviderId)
             ) ||
             (debridEnabled && isAddonDebridCandidate && isReadyDebridAutoPlay(activeResolverProviderId))
+
+    private fun StreamItem.qualityRank(): Int {
+        val parsed = clientResolve?.stream?.raw?.parsed
+        val qualityText = listOfNotNull(
+            quality,
+            parsed?.resolution,
+            parsed?.quality,
+            streamLabel,
+            title,
+            description,
+            behaviorHints.filename,
+        ).joinToString(" ").lowercase()
+        val resolution = RESOLUTION_PATTERN.find(qualityText)?.groupValues?.getOrNull(1)?.toIntOrNull()
+        if (resolution != null) return resolution
+
+        return when {
+            "8k" in qualityText -> 4320
+            "4k" in qualityText || "uhd" in qualityText -> 2160
+            "qhd" in qualityText || "2k" in qualityText -> 1440
+            "fhd" in qualityText || "full hd" in qualityText -> 1080
+            "hd" in qualityText -> 720
+            "sd" in qualityText -> 480
+            else -> 0
+        }
+    }
+
+    private fun StreamItem.matchesPreferredAudioLanguage(preferredAudioLanguage: String?): Boolean {
+        val preferred = normalizeLanguageCode(preferredAudioLanguage) ?: return false
+        if (preferred in setOf(AudioLanguageOption.DEFAULT, AudioLanguageOption.DEVICE, AudioLanguageOption.ORIGINAL)) {
+            return false
+        }
+        val preferredPrimary = preferred.substringBefore('-')
+        val languageHints = listOfNotNull(
+            language,
+            clientResolve?.stream?.raw?.parsed?.languages?.joinToString(","),
+            name,
+            title,
+            description,
+            streamLabel,
+            quality,
+            behaviorHints.filename,
+        )
+        val availableLanguages = languageHints.flatMap { value ->
+            value.split(',', '/', '|', ';', '+').mapNotNull(::normalizeLanguageCode)
+        }
+        return availableLanguages.any { available ->
+            available == preferred || available.substringBefore('-') == preferredPrimary
+        }
+    }
+
+    private val RESOLUTION_PATTERN = Regex(
+        "(?:^|[^0-9])(4320|2160|1440|1080|960|900|720|576|540|480|360)\\s*p?(?:$|[^a-z0-9])",
+        RegexOption.IGNORE_CASE,
+    )
 
     private fun StreamItem.isReadyDebridAutoPlay(activeResolverProviderId: String?): Boolean =
         when {
