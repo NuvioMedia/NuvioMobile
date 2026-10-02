@@ -44,7 +44,7 @@ class PremiumizeDeviceAuthTest {
         val api = PremiumizeDebridProviderApi(clientIdProvider = { "" })
 
         val failed = try {
-            api.startDeviceAuthorization("Nuvio")
+            api.startDeviceAuthorization("Lentra")
             false
         } catch (_: IllegalStateException) {
             true

@@ -33,14 +33,14 @@
     <string name="addons_badge_unavailable">Kullanılamıyor</string>
     <string name="addons_configure">Eklentiyi ayarla</string>
     <string name="addons_delete">Eklentiyi sil</string>
-    <string name="addons_appstore_add_description">Kullandığın eklentilerle kitaplığını Nuvio'ya taşı.</string>
+    <string name="addons_appstore_add_description">Kullandığın eklentilerle kitaplığını Lentra'ya taşı.</string>
     <string name="addons_appstore_empty_subtitle">Kitaplığını oluşturmaya başlamak için bir eklenti ekle.</string>
-    <string name="addons_appstore_empty_title">Nuvio'yu kendine göre ayarla.</string>
+    <string name="addons_appstore_empty_title">Lentra'yu kendine göre ayarla.</string>
     <string name="addons_appstore_input_placeholder">Eklenti URL'si</string>
     <string name="addons_appstore_install_button">Eklenti ekle</string>
     <string name="store_empty_unavailable_title">Burada henüz bir şey yok</string>
     <string name="store_empty_unavailable_message">Kullandığın eklentilerin burada gösterecek bir şeyi yok.</string>
-    <string name="addons_empty_subtitle">Nuvio'ya katalog, meta veri, yayın veya altyazı yüklemeye başlamak için bir manifest URL'si ekle.</string>
+    <string name="addons_empty_subtitle">Lentra'ya katalog, meta veri, yayın veya altyazı yüklemeye başlamak için bir manifest URL'si ekle.</string>
     <string name="addons_empty_title">Henüz eklenti kurulmamış.</string>
     <string name="addons_error_enter_url">Bir eklenti URL'si gir.</string>
     <string name="addons_input_placeholder">Eklenti URL'si</string>
@@ -151,7 +151,7 @@
     <string name="collections_editor_tmdb_list_helper">Örnek: https://www.themoviedb.org/list/8504994 veya 8504994</string>
     <string name="collections_editor_tmdb_person_helper">Örnek: https://www.themoviedb.org/person/31-tom-hanks veya 31</string>
     <string name="collections_editor_tmdb_display_title">Görünen başlık</string>
-    <string name="collections_editor_tmdb_title_helper">Satır/sekme adı olarak gösterilir. Boş bırakılırsa, Nuvio kaynaktan bir tane oluşturur.</string>
+    <string name="collections_editor_tmdb_title_helper">Satır/sekme adı olarak gösterilir. Boş bırakılırsa, Lentra kaynaktan bir tane oluşturur.</string>
     <string name="collections_editor_tmdb_title_placeholder">Marvel Filmleri, Netflix Orijinalleri, Pixar</string>
     <string name="collections_editor_tmdb_person_title_placeholder">Tom Hanks Filmleri, En Sevilen Oyuncular</string>
     <string name="collections_editor_tmdb_director_title_placeholder">Christopher Nolan Filmleri, En Sevilen Yönetmenler</string>
@@ -451,14 +451,14 @@
     <string name="compose_settings_root_check_updates_description">Uygulamanın yeni sürümü var mı kontrol et.</string>
     <string name="compose_settings_root_check_updates_title">Güncellemeleri kontrol et</string>
     <string name="compose_settings_root_content_discovery_description">Eklentileri ve keşif kaynaklarını yönet.</string>
-    <string name="compose_settings_root_content_discovery_description_appstore">Eklentileri yönet ve Nuvio’da nelerin görüneceğini seç.</string>
+    <string name="compose_settings_root_content_discovery_description_appstore">Eklentileri yönet ve Lentra’da nelerin görüneceğini seç.</string>
     <string name="compose_settings_root_downloads_description">İndirdiğin film ve bölümleri yönet.</string>
     <string name="compose_settings_root_downloads_description_appstore">Bu cihaza kaydettiklerini yönet.</string>
     <string name="compose_settings_root_downloads_title">İndirilenler</string>
     <string name="compose_settings_root_general_section">GENEL</string>
     <string name="compose_settings_root_integrations_description">TMDB ve MDBList servislerini bağla.</string>
     <string name="compose_settings_root_notifications_description">Bölüm yayın bildirimlerini yönet ve test bildirimi gönder.</string>
-    <string name="compose_settings_root_privacy_policy_description">Nuvio'nun verilerinizi nasıl işlediğini öğrenin</string>
+    <string name="compose_settings_root_privacy_policy_description">Lentra'nun verilerinizi nasıl işlediğini öğrenin</string>
     <string name="compose_settings_root_streams_description">Yayın sonucu ekranı ve rozet URL kuralları.</string>
     <string name="compose_settings_root_switch_profile_description">Farklı bir profile geç.</string>
     <string name="compose_settings_root_switch_profile_title">Profil değiştir</string>
@@ -497,21 +497,21 @@
     <string name="settings_licenses_attributions_nuvio_body">Kaynak kodları ve lisans koşulları proje deposunda bulunabilir.</string>
     <string name="settings_licenses_attributions_nuvio_license">GNU Genel Kamu Lisansı v3.0 kapsamında lisanslanmıştır.</string>
     <string name="settings_licenses_attributions_tmdb_title">The Movie Database (TMDB)</string>
-    <string name="settings_licenses_attributions_tmdb_body">Nuvio; film ve TV meta verileri, görseller, fragmanlar, ekip bilgileri, yapım detayları, koleksiyonlar ve öneriler için TMDB API'sini kullanır. Bu ürün TMDB API'sini kullanmaktadır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır.</string>
+    <string name="settings_licenses_attributions_tmdb_body">Lentra; film ve TV meta verileri, görseller, fragmanlar, ekip bilgileri, yapım detayları, koleksiyonlar ve öneriler için TMDB API'sini kullanır. Bu ürün TMDB API'sini kullanmaktadır ancak TMDB tarafından onaylanmamış veya sertifikalandırılmamıştır.</string>
     <string name="settings_licenses_attributions_imdb_title">IMDb Ticari Olmayan Veri Setleri</string>
-    <string name="settings_licenses_attributions_imdb_body">Nuvio; IMDb puanları ve oy sayıları için title.ratings.tsv.gz dahil olmak üzere IMDb Ticari Olmayan Veri Setlerini kullanır. Bilgiler IMDb (https://www.imdb.com) katkılarıyla sağlanmıştır. İzinle kullanılmıştır. IMDb verileri, IMDb koşulları uyarınca kişisel ve ticari olmayan kullanım içindir.</string>
+    <string name="settings_licenses_attributions_imdb_body">Lentra; IMDb puanları ve oy sayıları için title.ratings.tsv.gz dahil olmak üzere IMDb Ticari Olmayan Veri Setlerini kullanır. Bilgiler IMDb (https://www.imdb.com) katkılarıyla sağlanmıştır. İzinle kullanılmıştır. IMDb verileri, IMDb koşulları uyarınca kişisel ve ticari olmayan kullanım içindir.</string>
     <string name="settings_licenses_attributions_trakt_title">Trakt</string>
-    <string name="settings_licenses_attributions_trakt_body">Nuvio; hesap doğrulama, izleme geçmişi, ilerleme eşitleme, kitaplık verileri, puanlar, listeler ve yorumlar için Trakt'a bağlanır. Nuvio'nun Trakt ile hiçbir bağı yoktur ve Trakt tarafından onaylanmamıştır.</string>
+    <string name="settings_licenses_attributions_trakt_body">Lentra; hesap doğrulama, izleme geçmişi, ilerleme eşitleme, kitaplık verileri, puanlar, listeler ve yorumlar için Trakt'a bağlanır. Lentra'nun Trakt ile hiçbir bağı yoktur ve Trakt tarafından onaylanmamıştır.</string>
     <string name="settings_licenses_attributions_simkl_title">Simkl</string>
-    <string name="settings_licenses_attributions_simkl_body">Nuvio; hesap kimlik doğrulaması, izleme listeleri, izleme geçmişi, oynatma ilerlemesi ve scrobbling için Simkl'ye bağlanır. Film, TV ve anime takip verileri Simkl tarafından sağlanır. Nuvio'nun Simkl ile herhangi bir bağı veya Simkl onayı yoktur.</string>
+    <string name="settings_licenses_attributions_simkl_body">Lentra; hesap kimlik doğrulaması, izleme listeleri, izleme geçmişi, oynatma ilerlemesi ve scrobbling için Simkl'ye bağlanır. Film, TV ve anime takip verileri Simkl tarafından sağlanır. Lentra'nun Simkl ile herhangi bir bağı veya Simkl onayı yoktur.</string>
     <string name="settings_licenses_attributions_premiumize_title">Premiumize</string>
-    <string name="settings_licenses_attributions_premiumize_body">Nuvio; hesap doğrulama, bulut kitaplığı erişimi, önbellek kontrolleri ve bulut oynatma özellikleri için Premiumize'a bağlanır. Nuvio'nun Premiumize ile hiçbir bağı yoktur ve Premiumize tarafından onaylanmamıştır.</string>
+    <string name="settings_licenses_attributions_premiumize_body">Lentra; hesap doğrulama, bulut kitaplığı erişimi, önbellek kontrolleri ve bulut oynatma özellikleri için Premiumize'a bağlanır. Lentra'nun Premiumize ile hiçbir bağı yoktur ve Premiumize tarafından onaylanmamıştır.</string>
     <string name="settings_licenses_attributions_torbox_title">TorBox</string>
-    <string name="settings_licenses_attributions_torbox_body">Nuvio; hesap doğrulama, bulut kitaplığı erişimi, önbellek kontrolleri ve bulut oynatma özellikleri için TorBox'a bağlanır. Nuvio'nun TorBox ile hiçbir bağı yoktur ve TorBox tarafından onaylanmamıştır.</string>
+    <string name="settings_licenses_attributions_torbox_body">Lentra; hesap doğrulama, bulut kitaplığı erişimi, önbellek kontrolleri ve bulut oynatma özellikleri için TorBox'a bağlanır. Lentra'nun TorBox ile hiçbir bağı yoktur ve TorBox tarafından onaylanmamıştır.</string>
     <string name="settings_licenses_attributions_mdblist_title">MDBList</string>
-    <string name="settings_licenses_attributions_mdblist_body">Nuvio; puanlar ve dış kaynak puan verileri için MDBList'i kullanır. Nuvio'nun MDBList ile hiçbir bağı yoktur ve MDBList tarafından onaylanmamıştır.</string>
+    <string name="settings_licenses_attributions_mdblist_body">Lentra; puanlar ve dış kaynak puan verileri için MDBList'i kullanır. Lentra'nun MDBList ile hiçbir bağı yoktur ve MDBList tarafından onaylanmamıştır.</string>
     <string name="settings_licenses_attributions_introdb_title">IntroDB</string>
-    <string name="settings_licenses_attributions_introdb_body">Nuvio; jenerik ve geçme kontrolleri tarafından kullanılan, topluluk tarafından sağlanan giriş, özet ve önizleme zaman damgaları için IntroDB API'sini kullanır. Nuvio'nun IntroDB ile hiçbir bağı yoktur ve IntroDB tarafından onaylanmamıştır.</string>
+    <string name="settings_licenses_attributions_introdb_body">Lentra; jenerik ve geçme kontrolleri tarafından kullanılan, topluluk tarafından sağlanan giriş, özet ve önizleme zaman damgaları için IntroDB API'sini kullanır. Lentra'nun IntroDB ile hiçbir bağı yoktur ve IntroDB tarafından onaylanmamıştır.</string>
     <string name="settings_licenses_attributions_mpvkit_title">MPVKit</string>
     <string name="settings_licenses_attributions_mpvkit_body">iOS sürümlerinde oynatma için kullanılır.</string>
     <string name="settings_licenses_attributions_mpvkit_license">Sadece MPVKit kaynak kodu LGPL v3.0 kapsamında lisanslanmıştır. libmpv ve FFmpeg kütüphanelerini içeren MPVKit paketleri de LGPL v3.0 kapsamında lisanslanmıştır.</string>
@@ -579,7 +579,7 @@
     <string name="settings_appearance_amoled_description">OLED ekranlar için saf siyah arka planlar kullan.</string>
     <string name="settings_appearance_app_icon">Uygulama Simgesi</string>
     <string name="settings_appearance_app_icon_arctic_blue">Kutup Mavisi</string>
-    <string name="settings_appearance_app_icon_android_confirmation_message">%1$s olarak değiştirmek Nuvio'yu kapatacaktır. Devam etmek için Tamam'a dokunun.</string>
+    <string name="settings_appearance_app_icon_android_confirmation_message">%1$s olarak değiştirmek Lentra'yu kapatacaktır. Devam etmek için Tamam'a dokunun.</string>
     <string name="settings_appearance_app_icon_android_confirmation_title">Uygulama Simgesi Değiştirilsin mi?</string>
     <string name="settings_appearance_app_icon_change_failed">Simge değiştirilemedi. Lütfen tekrar deneyin.</string>
     <string name="settings_appearance_app_icon_copper">Bakır</string>
@@ -724,7 +724,7 @@
     <string name="settings_content_discovery_section_home">ANA SAYFA</string>
     <string name="settings_content_discovery_section_sources">KAYNAKLAR</string>
     <string name="settings_content_discovery_addons_description">İçerik kaynaklarını kur, kaldır, yenile ve sırala.</string>
-    <string name="settings_content_discovery_addons_description_appstore">Nuvio ile kullandığın eklentileri ekle ve yönet.</string>
+    <string name="settings_content_discovery_addons_description_appstore">Lentra ile kullandığın eklentileri ekle ve yönet.</string>
     <string name="settings_content_discovery_plugins_description">JavaScript scraper depoları kur ve sağlayıcıları içeriden test et.</string>
     <string name="settings_content_discovery_homescreen_description">Ana sayfada hangi katalogların hangi sırayla görüneceğini kontrol et.</string>
     <string name="settings_content_discovery_meta_screen_description">Detay bölümlerini kapat ve öne çıkanların altındaki her şeyi yeniden sırala.</string>
@@ -755,7 +755,7 @@
     <string name="settings_debrid_disconnect">Bağlantıyı Kes</string>
     <string name="settings_debrid_device_auth_connected">%1$s bu cihazda bağlı.</string>
     <string name="settings_debrid_device_auth_starting">Güvenli giriş başlatılıyor...</string>
-    <string name="settings_debrid_device_auth_instructions">Bağlantıyı aç ve Nuvio'yu onaylamak için bu kodu gir.</string>
+    <string name="settings_debrid_device_auth_instructions">Bağlantıyı aç ve Lentra'yu onaylamak için bu kodu gir.</string>
     <string name="settings_debrid_device_auth_code_copied">Kod kopyalandı.</string>
     <string name="settings_debrid_device_auth_open">Bağlantıyı aç</string>
     <string name="settings_debrid_device_auth_waiting">Onay bekleniyor...</string>
@@ -866,10 +866,10 @@
     <string name="settings_meta_tab_layout_description">Bölümleri TV uygulamasındaki gibi sekmelerde grupla. Her sekme grubuna en fazla 3 bölüm ata.</string>
     <string name="settings_meta_trailers">Fragmanlar</string>
     <string name="settings_meta_trailers_description">Fragman alanı ve oynatma kısayolları.</string>
-    <string name="settings_notifications_disabled_in_app">Nuvio'da bildirimler şu anda kapalı.</string>
+    <string name="settings_notifications_disabled_in_app">Lentra'da bildirimler şu anda kapalı.</string>
     <string name="settings_notifications_episode_release_alerts">Yeni bölüm bildirimleri</string>
     <string name="settings_notifications_episode_release_alerts_description">Kaydettiğin bir dizinin yeni bölümü yayınlandığında yerel bildirim planla.</string>
-    <string name="settings_notifications_permission_disabled">Nuvio için sistem bildirimleri kapalı. Uyarıları ve test bildirimlerini almak için aç.</string>
+    <string name="settings_notifications_permission_disabled">Lentra için sistem bildirimleri kapalı. Uyarıları ve test bildirimlerini almak için aç.</string>
     <string name="settings_notifications_scheduled_count">Bu cihazda şu anda %1$d yayın bildirimi planlı.</string>
     <string name="settings_notifications_section_alerts">UYARILAR</string>
     <string name="settings_notifications_section_test">TEST</string>
@@ -879,7 +879,7 @@
     <string name="settings_notifications_test_requires_saved_show">Bildirimleri test etmek için önce kitaplığına bir dizi kaydet.</string>
     <string name="settings_notifications_test_title">Test bildirimi</string>
     <string name="community_section_title">Topluluk</string>
-    <string name="community_section_description">Nuvio'yu Mobile, TV ve Web'de geliştiren ve destekleyen kişileri gör.</string>
+    <string name="community_section_description">Lentra'yu Mobile, TV ve Web'de geliştiren ve destekleyen kişileri gör.</string>
     <string name="community_donation_progress_title">Bu ayın sunucu ve bakım giderleri</string>
     <string name="community_donation_progress_complete">Karşılandı. Ek destekler artık geliştirmeye aktarılıyor.</string>
     <string name="community_donation_progress_remaining">%100'ün ardından ek destek geliştirmeye aktarılır.</string>
@@ -1135,15 +1135,15 @@
     <string name="settings_tracking_approval_redirect">Onaylandıktan sonra otomatik olarak geri yönlendirileceksiniz.</string>
     <string name="settings_tracking_connect_first">Önce %1$s bağlayın</string>
     <string name="settings_tracking_disconnect_title">%1$s bağlantısı kesilsin mi?</string>
-    <string name="settings_tracking_disconnect_description">Bu işlem Nuvio bağlantısını kaldırır. %1$s üzerindeki verileriniz bozulmadan kalır ve erişilemeyen kitaplık veya ilerleme kaynakları geçici olarak Nuvio'ya devredilir.</string>
-    <string name="settings_trakt_disconnect_description">Bu işlem Trakt hesabınızın Nuvio ile olan bağlantısını kesecektir.</string>
+    <string name="settings_tracking_disconnect_description">Bu işlem Lentra bağlantısını kaldırır. %1$s üzerindeki verileriniz bozulmadan kalır ve erişilemeyen kitaplık veya ilerleme kaynakları geçici olarak Lentra'ya devredilir.</string>
+    <string name="settings_trakt_disconnect_description">Bu işlem Trakt hesabınızın Lentra ile olan bağlantısını kesecektir.</string>
     <string name="settings_simkl_disconnect_description">Bu işlem Simkl hesabını ve önbelleğe alınan Simkl verilerini bu profilden kaldırır.</string>
     <string name="settings_tracking_source_fallback">%1$s kullanılamıyor. Yeniden bağlanana kadar %2$s kullanılıyor.</string>
     <string name="settings_tracking_progress_refresh_failed">Kaynak değişti, ancak son izleme ilerlemesi yenilenemedi.</string>
-    <string name="settings_tracking_nuvio_library_description">Kaydedilen içerikleri Nuvio kitaplığınızda tutun.</string>
+    <string name="settings_tracking_nuvio_library_description">Kaydedilen içerikleri Lentra kitaplığınızda tutun.</string>
     <string name="settings_tracking_trakt_library_description">Trakt izleme listenizi ve kişisel listelerinizi kullanın.</string>
     <string name="settings_tracking_simkl_library_description">Simkl izlenecekler ve durum listelerinizi kullanın.</string>
-    <string name="settings_tracking_nuvio_progress_description">Nuvio Sync tarafından saklanan ilerleme ile devam edin.</string>
+    <string name="settings_tracking_nuvio_progress_description">Lentra Sync tarafından saklanan ilerleme ile devam edin.</string>
     <string name="settings_tracking_trakt_progress_description">Trakt'taki oynatma ilerlemesi ile devam edin.</string>
     <string name="settings_tracking_simkl_progress_description">Simkl'deki oynatma ilerlemesi ile devam edin.</string>
     <string name="settings_tracking_tmdb_recommendations_description">Detay sayfalarında TMDB önerilerini kullanın.</string>
@@ -1175,32 +1175,32 @@
     <string name="settings_simkl_sync_now">Şimdi senkronize et</string>
     <string name="settings_simkl_sync_info_action">Senkronizasyon nasıl çalışır</string>
     <string name="settings_simkl_sync_info_title">Simkl senkronizasyonu nasıl çalışır</string>
-    <string name="settings_simkl_sync_info_description">Nuvio, Simkl'i otomatik olarak en fazla %1$d dakikada bir kontrol eder. Başka bir uygulama veya Simkl web sitesi üzerinden yapılan değişikliklerin görünmesi bu kadar sürebilir.</string>
+    <string name="settings_simkl_sync_info_description">Lentra, Simkl'i otomatik olarak en fazla %1$d dakikada bir kontrol eder. Başka bir uygulama veya Simkl web sitesi üzerinden yapılan değişikliklerin görünmesi bu kadar sürebilir.</string>
     <string name="settings_simkl_sync_info_activity">Her yenileme öncelikle Simkl'in herhangi bir değişiklik bildirip bildirmediğini kontrol eder ve yalnızca güncellemeleri indirir. Bu, Simkl'in API kurallarına uyar, gereksiz veri kullanımını azaltır ve hizmetin kararlı kalmasına yardımcı olur.</string>
-    <string name="settings_simkl_sync_info_manual">Nuvio'da yapılan değişiklikler Simkl'e anında gönderilir. Nuvio'nun uzaktaki değişiklikleri daha erken kontrol etmesini istediğinizde "Şimdi senkronize et"i kullanın.</string>
+    <string name="settings_simkl_sync_info_manual">Lentra'da yapılan değişiklikler Simkl'e anında gönderilir. Lentra'nun uzaktaki değişiklikleri daha erken kontrol etmesini istediğinizde "Şimdi senkronize et"i kullanın.</string>
     <string name="settings_simkl_sync_info_library_statuses">Simkl'in Beklemede veya Bırakıldı listelerine yerleştirilen diziler İzlemeye Devam Et bölümünden gizlenir. Her iki listede kaldıkları sürece gizli kalırlar.</string>
     <string name="settings_simkl_sync_info_docs">Simkl senkronizasyon rehberini oku</string>
     <string name="settings_simkl_authorization_revoked">Simkl yetkilendirmesi iptal edildi. Yeniden bağlanın.</string>
     <string name="tracking_source_simkl">Simkl</string>
     <string name="tracking_library_source_simkl_selected">Simkl izleme listesi seçildi</string>
     <string name="tracking_watch_progress_simkl_selected">İzleme ilerleme kaynağı Simkl olarak ayarlandı</string>
-    <string name="tracking_watch_progress_dialog_subtitle">Kaldığı yerden devam etme ve İzlemeye Devam Et için Nuvio'nun okuduğu hizmeti seçin. Scrobble yapma, bağlı olan her hizmet için etkin kalır.</string>
+    <string name="tracking_watch_progress_dialog_subtitle">Kaldığı yerden devam etme ve İzlemeye Devam Et için Lentra'nun okuduğu hizmeti seçin. Scrobble yapma, bağlı olan her hizmet için etkin kalır.</string>
     <string name="trakt_library_source_title">Kitaplık Kaynağı</string>
     <string name="trakt_library_source_subtitle">Koleksiyonunu kaydetmek ve görüntülemek için hangi kitaplığın kullanılacağını seç</string>
     <string name="trakt_library_source_dialog_title">Kitaplık Kaynağı</string>
     <string name="trakt_library_source_dialog_subtitle">Kitaplık ögelerini nerede kaydedip yöneteceğini seç</string>
     <string name="trakt_library_source_trakt">Trakt</string>
-    <string name="trakt_library_source_nuvio">Nuvio Kitaplığı</string>
+    <string name="trakt_library_source_nuvio">Lentra Kitaplığı</string>
     <string name="trakt_library_source_trakt_selected">Trakt kitaplığı seçildi</string>
-    <string name="trakt_library_source_nuvio_selected">Nuvio kitaplığı seçildi</string>
+    <string name="trakt_library_source_nuvio_selected">Lentra kitaplığı seçildi</string>
     <string name="trakt_watch_progress_title">İzleme İlerlemesi</string>
     <string name="trakt_watch_progress_subtitle">Kaldığın yerden devam etme ve izlemeye devam etme özelliğini hangi ilerleme kaynağının besleyeceğini seç</string>
     <string name="trakt_watch_progress_dialog_title">İzleme İlerlemesi</string>
-    <string name="trakt_watch_progress_dialog_subtitle">Trakt eşitlemesi aktifken, kaldığın yerden devam etme ve izlemeye devam etmenin Trakt mı yoksa Nuvio Eşitleme mi kullanacağını seç.</string>
+    <string name="trakt_watch_progress_dialog_subtitle">Trakt eşitlemesi aktifken, kaldığın yerden devam etme ve izlemeye devam etmenin Trakt mı yoksa Lentra Eşitleme mi kullanacağını seç.</string>
     <string name="trakt_watch_progress_source_trakt">Trakt</string>
-    <string name="trakt_watch_progress_source_nuvio">Nuvio Eşitleme</string>
+    <string name="trakt_watch_progress_source_nuvio">Lentra Eşitleme</string>
     <string name="trakt_watch_progress_trakt_selected">İzleme ilerlemesi kaynağı Trakt olarak ayarlandı</string>
-    <string name="trakt_watch_progress_nuvio_selected">İzleme ilerlemesi kaynağı Nuvio Eşitleme olarak ayarlandı</string>
+    <string name="trakt_watch_progress_nuvio_selected">İzleme ilerlemesi kaynağı Lentra Eşitleme olarak ayarlandı</string>
     <string name="trakt_more_like_this_source_title">Buna Benzerler kaynağı</string>
     <string name="trakt_more_like_this_source_subtitle">Detay sayfalarındaki önerilerin nereden geleceğini seçin</string>
     <string name="trakt_more_like_this_source_dialog_title">Buna Benzerler kaynağı</string>
@@ -1340,7 +1340,7 @@
     <string name="details_series_missing_numbers">Bu eklenti dizi için videolar döndürdü ama hiçbirinde sezon veya bölüm numarası yok.</string>
     <string name="details_series_no_metadata">Bu eklenti bu dizi için bölüm meta verisi sağlamadı.</string>
     <string name="details_series_unpublished">Bölümler bu eklenti tarafından henüz yayınlanmadı.</string>
-    <string name="details_servers_unreachable">Cihazın internete bağlı ama Nuvio gerekli sunuculara ulaşamadı.</string>
+    <string name="details_servers_unreachable">Cihazın internete bağlı ama Lentra gerekli sunuculara ulaşamadı.</string>
     <string name="details_show_less">Daha az göster</string>
     <string name="details_show_more">Daha fazla göster ▾</string>
     <string name="details_writer">Yazar</string>
@@ -1504,7 +1504,7 @@
     <string name="updates_debug_test_title">Test güncelleme afişi</string>
     <string name="updates_install_failed">Kurulum başlatılamadı</string>
     <string name="updates_latest_version">En güncel sürümü kullanıyorsun.</string>
-    <string name="updates_message_allow_installs">Nuvio için uygulama kurulumlarına izin ver, sonra geri gelip devam et.</string>
+    <string name="updates_message_allow_installs">Lentra için uygulama kurulumlarına izin ver, sonra geri gelip devam et.</string>
     <string name="updates_message_downloading">Güncelleme indiriliyor...</string>
     <string name="updates_message_no_updates">Güncelleme bulunamadı.</string>
     <string name="updates_message_ready">Yeni sürüm kurulmaya hazır.</string>
@@ -1518,7 +1518,7 @@
     <string name="addon_already_installed">Bu eklenti zaten kurulu.</string>
     <string name="addon_invalid_url">Geçerli bir eklenti URL'si gir</string>
     <string name="addon_load_manifest_failed">Manifest yüklenemedi</string>
-    <string name="app_brand_name">Nuvio</string>
+    <string name="app_brand_name">Lentra</string>
     <string name="auth_account_deletion_failed">Hesap silinemedi</string>
     <string name="auth_sign_in_failed">Giriş yapılamadı</string>
     <string name="auth_sign_out_failed">Çıkış yapılamadı</string>
@@ -1983,7 +1983,7 @@
     <string name="downloads_error_open_partial_file_failed">Kısmi indirme dosyası açılamadı</string>
     <string name="downloads_error_partial_file_not_open">Kısmi indirme dosyası açık değil</string>
     <string name="downloads_error_write_partial_file_failed">Kısmi indirme dosyasına yazılamadı</string>
-    <string name="library_local_tab_title">Nuvio Kitaplığı</string>
+    <string name="library_local_tab_title">Lentra Kitaplığı</string>
     <string name="network_connection_issue">Bağlantı sorunu</string>
     <string name="network_empty_response_body">Boş yanıt gövdesi</string>
     <string name="network_please_check_connection">Lütfen bağlantınızı kontrol edip tekrar deneyin.</string>
@@ -2084,8 +2084,8 @@
 • IP adresiniz ağdaki diğer eşler tarafından görülebilir olacaktır
 • Eriştiğiniz içerikten yalnızca siz sorumlusunuz
 • Bulunduğunuz bölgede bu içeriği yayınlama/izleme konusunda yasal hakka sahip olduğunuzu onaylarsınız
-• Nuvio hiçbir P2P içeriğini barındırmaz, dağıtmaz veya denetlemez
-• Nuvio, P2P yayıncılığını kullanımınızdan doğabilecek hiçbir yasal sorumluluğu taşımaz
+• Lentra hiçbir P2P içeriğini barındırmaz, dağıtmaz veya denetlemez
+• Lentra, P2P yayıncılığını kullanımınızdan doğabilecek hiçbir yasal sorumluluğu taşımaz
 
 Bu özelliği tamamen kendi sorumluluğunuzda kullanırsınız. P2P istediğiniz zaman Ayarlar'dan devre dışı bırakılabilir.</string>
     <string name="p2p_consent_enable">P2P'yi Etkinleştir</string>

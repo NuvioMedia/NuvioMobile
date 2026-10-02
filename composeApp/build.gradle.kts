@@ -101,7 +101,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |object TraktConfig {
                 |    const val CLIENT_ID = "${props.getProperty("TRAKT_CLIENT_ID", "")}" 
                 |    const val CLIENT_SECRET = "${props.getProperty("TRAKT_CLIENT_SECRET", "")}" 
-                |    const val REDIRECT_URI = "${props.getProperty("TRAKT_REDIRECT_URI", "nuvio://auth/trakt")}" 
+                |    const val REDIRECT_URI = "${props.getProperty("TRAKT_REDIRECT_URI", "lentra://auth/trakt")}" 
                 |}
                 """.trimMargin()
             )
@@ -115,7 +115,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |
                 |object SimklConfig {
                 |    const val CLIENT_ID = "${props.getProperty("SIMKL_CLIENT_ID", "")}"
-                |    const val REDIRECT_URI = "${props.getProperty("SIMKL_REDIRECT_URI", "nuvio://auth/simkl")}"
+                |    const val REDIRECT_URI = "${props.getProperty("SIMKL_REDIRECT_URI", "lentra://auth/simkl")}"
                 |    const val APP_NAME = "${props.getProperty("SIMKL_APP_NAME", "nuvio")}"
                 |}
                 """.trimMargin()
@@ -229,6 +229,12 @@ plugins {
     alias(libs.plugins.kotlinxSerialization)
 }
 
+compose.resources {
+    // Pinned so the generated resource accessors keep their historical Kotlin package and the
+    // rename of the Gradle project does not change any imports across the source sets.
+    packageOfResClass = "nuvio.composeapp.generated.resources"
+}
+
 val supabaseProps = Properties().apply {
     val propsFile = rootProject.file("local.properties")
     if (propsFile.exists()) propsFile.inputStream().use { load(it) }
@@ -254,7 +260,7 @@ val iosDistributionSourceDir = if (iosDistribution == "full") {
 } else {
     "src/iosAppStore/kotlin"
 }
-val iosFrameworkBundleId = "com.nuvio.media"
+val iosFrameworkBundleId = "com.lentra.app"
 val nuvioEngineAppleFramework = rootProject.file("../nuvio-engine/platform/apple/NuvioEngine.xcframework")
 val fullCommonSourceDir = project.file("src/fullCommonMain/kotlin")
 val generatedRuntimeConfigDir = layout.buildDirectory.dir("generated/runtime-config/kotlin")

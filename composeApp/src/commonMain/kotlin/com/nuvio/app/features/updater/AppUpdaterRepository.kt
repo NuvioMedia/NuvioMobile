@@ -32,6 +32,15 @@ internal data class GitHubAssetDto(
 internal class NoChannelReleaseException : IllegalStateException()
 
 internal object AppUpdaterRepository {
+    /**
+     * GitHub repository that publishes Lentra builds.
+     *
+     * The in-app updater follows the releases of this repository only, so a published release in
+     * your own fork is what reaches installed apps. Change this if you move the project to a
+     * different owner or repository name.
+     */
+    internal const val RELEASE_REPOSITORY = "frRitamDas/LentraOriginal"
+
     private val json = Json {
         ignoreUnknownKeys = true
         isLenient = true
@@ -40,10 +49,10 @@ internal object AppUpdaterRepository {
     suspend fun getLatestChannelUpdate(channel: UpdateChannel): Result<AppUpdate> = runCatching {
         val response = httpRequestRaw(
             method = "GET",
-            url = "https://api.github.com/repos/NuvioMedia/NuvioMobile/${releasePath(channel)}",
+            url = "https://api.github.com/repos/$RELEASE_REPOSITORY/${releasePath(channel)}",
             headers = mapOf(
                 "Accept" to "application/vnd.github+json",
-                "User-Agent" to "NuvioMobile",
+                "User-Agent" to "Lentra",
             ),
             body = "",
         )

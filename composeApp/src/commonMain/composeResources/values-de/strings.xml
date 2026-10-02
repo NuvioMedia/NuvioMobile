@@ -27,14 +27,14 @@
     <string name="addons_badge_unavailable">Nicht verfügbar</string>
     <string name="addons_configure">Addon konfigurieren</string>
     <string name="addons_delete">Addon löschen</string>
-    <string name="addons_appstore_add_description">Bring deine Mediathek mit den Addons, die du nutzt, zu Nuvio.</string>
+    <string name="addons_appstore_add_description">Bring deine Mediathek mit den Addons, die du nutzt, zu Lentra.</string>
     <string name="addons_appstore_empty_subtitle">Füge ein Addon hinzu, um deine Mediathek aufzubauen.</string>
-    <string name="addons_appstore_empty_title">Richte Nuvio für dich ein.</string>
+    <string name="addons_appstore_empty_title">Richte Lentra für dich ein.</string>
     <string name="addons_appstore_input_placeholder">Addon-URL</string>
     <string name="addons_appstore_install_button">Addon hinzufügen</string>
     <string name="store_empty_unavailable_title">Hier gibt es noch nichts</string>
     <string name="store_empty_unavailable_message">Deine aktuellen Addons zeigen hier noch nichts an.</string>
-    <string name="addons_empty_subtitle">Füge eine Manifest-URL hinzu, um Kataloge, Metadaten, Streams oder Untertitel in Nuvio zu laden.</string>
+    <string name="addons_empty_subtitle">Füge eine Manifest-URL hinzu, um Kataloge, Metadaten, Streams oder Untertitel in Lentra zu laden.</string>
     <string name="addons_empty_title">Noch keine Addons installiert.</string>
     <string name="addons_error_enter_url">Gib eine Addon-URL ein.</string>
     <string name="addons_input_placeholder">Addon-URL</string>
@@ -145,7 +145,7 @@
     <string name="collections_editor_tmdb_list_helper">Beispiel: https://www.themoviedb.org/list/8504994 oder 8504994.</string>
     <string name="collections_editor_tmdb_person_helper">Beispiel: https://www.themoviedb.org/person/31-tom-hanks oder 31.</string>
     <string name="collections_editor_tmdb_display_title">Anzeigetitel</string>
-    <string name="collections_editor_tmdb_title_helper">Wird als Reihen-/Tab-Name angezeigt. Wenn leer, erstellt Nuvio einen aus der Quelle.</string>
+    <string name="collections_editor_tmdb_title_helper">Wird als Reihen-/Tab-Name angezeigt. Wenn leer, erstellt Lentra einen aus der Quelle.</string>
     <string name="collections_editor_tmdb_title_placeholder">Marvel-Filme, Netflix Originals, Pixar</string>
     <string name="collections_editor_tmdb_person_title_placeholder">Tom-Hanks-Filme, Lieblingsschauspieler</string>
     <string name="collections_editor_tmdb_director_title_placeholder">Christopher-Nolan-Filme, Lieblingsregisseure</string>
@@ -391,7 +391,7 @@
     <string name="compose_settings_root_check_updates_description">Suche nach neuen Versionen der App.</string>
     <string name="compose_settings_root_check_updates_title">Nach Updates suchen</string>
     <string name="compose_settings_root_content_discovery_description">Verwalte Addons und Entdeckungsquellen.</string>
-    <string name="compose_settings_root_content_discovery_description_appstore">Verwalte Addons und wähle aus, was in Nuvio angezeigt wird.</string>
+    <string name="compose_settings_root_content_discovery_description_appstore">Verwalte Addons und wähle aus, was in Lentra angezeigt wird.</string>
     <string name="compose_settings_root_downloads_description">Verwalte deine heruntergeladenen Filme und Episoden.</string>
     <string name="compose_settings_root_downloads_description_appstore">Verwalte, was du auf diesem Gerät gespeichert hast.</string>
     <string name="compose_settings_root_downloads_title">Downloads</string>
@@ -529,7 +529,7 @@
     <string name="settings_content_discovery_section_home">START</string>
     <string name="settings_content_discovery_section_sources">QUELLEN</string>
     <string name="settings_content_discovery_addons_description">Installiere, entferne, aktualisiere und sortiere deine Inhaltsquellen.</string>
-    <string name="settings_content_discovery_addons_description_appstore">Füge die Addons hinzu, die du mit Nuvio nutzt, und verwalte sie.</string>
+    <string name="settings_content_discovery_addons_description_appstore">Füge die Addons hinzu, die du mit Lentra nutzt, und verwalte sie.</string>
     <string name="settings_content_discovery_plugins_description">Installiere JavaScript-Scraper-Repositories und teste Anbieter intern.</string>
     <string name="settings_content_discovery_homescreen_description">Lege fest, welche Kataloge auf der Startseite und in welcher Reihenfolge erscheinen.</string>
     <string name="settings_content_discovery_meta_screen_description">Detail-Abschnitte deaktivieren und alles unterhalb des Hero neu anordnen.</string>
@@ -581,10 +581,10 @@
     <string name="settings_meta_tab_layout_description">Abschnitte wie in der TV-App in Tabs gruppieren. Weise bis zu 3 Abschnitte pro Tab-Gruppe zu.</string>
     <string name="settings_meta_trailers">Trailer</string>
     <string name="settings_meta_trailers_description">Trailer-Reihe und Wiedergabe-Verknüpfungen.</string>
-    <string name="settings_notifications_disabled_in_app">Benachrichtigungen sind in Nuvio derzeit deaktiviert.</string>
+    <string name="settings_notifications_disabled_in_app">Benachrichtigungen sind in Lentra derzeit deaktiviert.</string>
     <string name="settings_notifications_episode_release_alerts">Episode-Release-Benachrichtigungen</string>
     <string name="settings_notifications_episode_release_alerts_description">Lokale Benachrichtigungen planen, wenn eine neue Episode für eine gespeicherte Serie verfügbar wird.</string>
-    <string name="settings_notifications_permission_disabled">System-Benachrichtigungen sind für Nuvio deaktiviert. Aktiviere sie, um Benachrichtigungen und Tests zu erhalten.</string>
+    <string name="settings_notifications_permission_disabled">System-Benachrichtigungen sind für Lentra deaktiviert. Aktiviere sie, um Benachrichtigungen und Tests zu erhalten.</string>
     <string name="settings_notifications_scheduled_count">%1$d Release-Benachrichtigungen sind derzeit auf diesem Gerät geplant.</string>
     <string name="settings_notifications_section_alerts">BENACHRICHTIGUNGEN</string>
     <string name="settings_notifications_section_test">TEST</string>
@@ -594,7 +594,7 @@
     <string name="settings_notifications_test_requires_saved_show">Speichere zuerst eine Serie in deiner Bibliothek, um Benachrichtigungen zu testen.</string>
     <string name="settings_notifications_test_title">Test-Benachrichtigung</string>
     <string name="community_section_title">Community</string>
-    <string name="community_section_description">Sieh dir die Menschen an, die Nuvio auf Mobile, TV und Web entwickeln und unterstützen.</string>
+    <string name="community_section_description">Sieh dir die Menschen an, die Lentra auf Mobile, TV und Web entwickeln und unterstützen.</string>
     <string name="community_supporters_not_configured">Supporters-API ist nicht konfiguriert. Füge DONATIONS_BASE_URL zu local.properties hinzu.</string>
     <string name="community_tab_contributors">Mitwirkende</string>
     <string name="community_tab_supporters">Unterstützer</string>
@@ -917,7 +917,7 @@
     <string name="details_series_missing_numbers">Dieses Addon hat Videos für die Serie zurückgegeben, aber keines enthielt Staffel- oder Episodennummern.</string>
     <string name="details_series_no_metadata">Dieses Addon hat keine Episoden-Metadaten für diese Serie bereitgestellt.</string>
     <string name="details_series_unpublished">Episoden wurden von diesem Addon noch nicht veröffentlicht.</string>
-    <string name="details_servers_unreachable">Dein Gerät ist online, aber Nuvio konnte die erforderlichen Server nicht erreichen.</string>
+    <string name="details_servers_unreachable">Dein Gerät ist online, aber Lentra konnte die erforderlichen Server nicht erreichen.</string>
     <string name="details_show_less">Weniger anzeigen</string>
     <string name="details_show_more">Mehr anzeigen ▾</string>
     <string name="details_writer">Drehbuchautor</string>
@@ -1047,7 +1047,7 @@
     <string name="updates_downloading_progress">Wird heruntergeladen %1$d%</string>
     <string name="updates_install_failed">Installation kann nicht gestartet werden</string>
     <string name="updates_latest_version">Du verwendest die neueste Version.</string>
-    <string name="updates_message_allow_installs">Aktiviere App-Installationen für Nuvio und komm dann zurück, um fortzufahren.</string>
+    <string name="updates_message_allow_installs">Aktiviere App-Installationen für Lentra und komm dann zurück, um fortzufahren.</string>
     <string name="updates_message_downloading">Update wird heruntergeladen...</string>
     <string name="updates_message_no_updates">Keine Updates gefunden.</string>
     <string name="updates_message_ready">Eine neue Version ist bereit zur Installation.</string>
@@ -1060,7 +1060,7 @@
     <string name="addon_already_installed">Dieses Addon ist bereits installiert.</string>
     <string name="addon_invalid_url">Gib eine gültige Addon-URL ein</string>
     <string name="addon_load_manifest_failed">Manifest konnte nicht geladen werden</string>
-    <string name="app_brand_name">Nuvio</string>
+    <string name="app_brand_name">Lentra</string>
     <string name="auth_account_deletion_failed">Kontolöschung fehlgeschlagen</string>
     <string name="auth_sign_in_failed">Anmeldung fehlgeschlagen</string>
     <string name="auth_sign_out_failed">Abmeldung fehlgeschlagen</string>

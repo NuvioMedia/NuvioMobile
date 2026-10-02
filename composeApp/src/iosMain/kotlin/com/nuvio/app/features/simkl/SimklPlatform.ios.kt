@@ -69,7 +69,7 @@ internal actual object SimklAuthStorage {
     private const val METADATA_KEY = "simkl_auth_metadata"
     private const val ACCESS_TOKEN_KEY = "simkl_access_token"
     private const val CODE_VERIFIER_KEY = "simkl_code_verifier"
-    private const val KEYCHAIN_SERVICE = "com.nuvio.media.simkl"
+    private const val KEYCHAIN_SERVICE = "com.lentra.app.simkl"
 
     actual fun loadMetadataPayload(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(METADATA_KEY))

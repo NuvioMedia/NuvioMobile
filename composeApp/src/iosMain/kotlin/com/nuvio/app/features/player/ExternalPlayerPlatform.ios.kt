@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.deeplink.APP_URL_SCHEME
 import platform.Foundation.NSURL
 import platform.UIKit.UIApplication
 
@@ -103,7 +104,7 @@ internal actual object ExternalPlayerPlatform {
 }
 
 private fun IosExternalPlayerSpec.schemeProbeUrl(): NSURL =
-    NSURL.URLWithString("$scheme://") ?: NSURL.URLWithString("nuvio://")!!
+    NSURL.URLWithString("$scheme://") ?: NSURL.URLWithString("$APP_URL_SCHEME://")!!
 
 private fun String.urlQueryEncode(): String {
     val hex = "0123456789ABCDEF"

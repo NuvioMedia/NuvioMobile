@@ -54,7 +54,7 @@ fi
     CODE_SIGN_IDENTITY= \
     build
 
-app_path="${derived_data}/Build/Products/${configuration}-iphoneos/Nuvio.app"
+app_path="${derived_data}/Build/Products/${configuration}-iphoneos/Lentra.app"
 if [[ ! -d "${app_path}" ]]; then
     echo "iOS build did not produce ${app_path}." >&2
     exit 1
@@ -99,13 +99,13 @@ fi
 
 mkdir -p "${output_directory}"
 output_directory="$(cd "${output_directory}" && pwd -P)"
-package_root="$(mktemp -d "${TMPDIR:-/tmp}/nuvio-ios-ipa.XXXXXX")"
+package_root="$(mktemp -d "${TMPDIR:-/tmp}/lentra-ios-ipa.XXXXXX")"
 trap 'rm -rf "${package_root}"' EXIT
 mkdir -p "${package_root}/Payload"
-ditto "${app_path}" "${package_root}/Payload/Nuvio.app"
+ditto "${app_path}" "${package_root}/Payload/Lentra.app"
 
-ipa_path="${output_directory}/nuvio-${version}-full-${configuration_slug}.ipa"
-temporary_ipa="${package_root}/nuvio-${version}-full-${configuration_slug}.ipa"
+ipa_path="${output_directory}/lentra-${version}-full-${configuration_slug}.ipa"
+temporary_ipa="${package_root}/lentra-${version}-full-${configuration_slug}.ipa"
 (
     cd "${package_root}"
     /usr/bin/zip -qry "${temporary_ipa}" Payload

@@ -43,7 +43,7 @@ class SimklPkceTest {
     fun `authorization URL uses browser host and exact S256 method`() {
         val url = buildSimklAuthorizationUrl(
             clientId = "client id",
-            redirectUri = "nuvio://auth/simkl",
+            redirectUri = "lentra://auth/simkl",
             appName = "nuvio",
             appVersion = "1.2.3",
             material = SimklPkceMaterial("verifier", "challenge", "state"),
@@ -58,14 +58,14 @@ class SimklPkceTest {
     @Test
     fun `callback parser rejects other routes and missing state`() {
         assertIs<SimklAuthCallback.NotSimkl>(
-            parseSimklAuthCallback("nuvio://auth/trakt?code=a&state=b", "nuvio://auth/simkl"),
+            parseSimklAuthCallback("lentra://auth/trakt?code=a&state=b", "lentra://auth/simkl"),
         )
         assertIs<SimklAuthCallback.Invalid>(
-            parseSimklAuthCallback("nuvio://auth/simkl?code=a", "nuvio://auth/simkl"),
+            parseSimklAuthCallback("lentra://auth/simkl?code=a", "lentra://auth/simkl"),
         )
         assertEquals(
             SimklAuthCallback.AuthorizationCode(code = "a", state = "b"),
-            parseSimklAuthCallback("nuvio://auth/simkl?code=a&state=b", "nuvio://auth/simkl"),
+            parseSimklAuthCallback("lentra://auth/simkl?code=a&state=b", "lentra://auth/simkl"),
         )
     }
 

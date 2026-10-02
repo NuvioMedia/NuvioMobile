@@ -6,7 +6,7 @@
     <string name="theme_arctic_blue">আর্কটিক ব্লু</string>
     <string name="theme_graphite">গ্রাফাইট</string>
     <string name="profile_choose_background">প্রোফাইল ব্যাকগ্রাউন্ড বাছুন</string>
-    <string name="profile_background_member_note">কাস্টম ব্যাকগ্রাউন্ড ইউআরএল Nuvio ওয়েব প্যানেল থেকে কনফিগার করা যেতে পারে।</string>
+    <string name="profile_background_member_note">কাস্টম ব্যাকগ্রাউন্ড ইউআরএল Lentra ওয়েব প্যানেল থেকে কনফিগার করা যেতে পারে।</string>
     <string name="profile_background_normal">স্বাভাবিক</string>
     <string name="profile_background_custom">কাস্টম</string>
     <string name="about_licenses_attributions_subtitle">ডেটা সোর্স, স্বীকৃতি, এবং প্ল্যাটফর্ম লাইসেন্স</string>
@@ -48,14 +48,14 @@
     <string name="addons_configure">অ্যাডন কনফিগার করুন</string>
     <string name="addons_delete">অ্যাডন মুছুন</string>
     <string name="addons_delete_confirm_title">অ্যাডন মুছবেন?</string>
-    <string name="addons_appstore_add_description">আপনি যে অ্যাডনসমূহ ব্যবহার করেন তার সাহায্যে আপনার লাইব্রেরিটি Nuvio-তে আনুন।</string>
+    <string name="addons_appstore_add_description">আপনি যে অ্যাডনসমূহ ব্যবহার করেন তার সাহায্যে আপনার লাইব্রেরিটি Lentra-তে আনুন।</string>
     <string name="addons_appstore_empty_subtitle">আপনার লাইব্রেরি নির্মাণ শুরু করতে একটি অ্যাডন যোগ করুন।</string>
-    <string name="addons_appstore_empty_title">Nuvio-কে নিজের করে নিন।</string>
+    <string name="addons_appstore_empty_title">Lentra-কে নিজের করে নিন।</string>
     <string name="addons_appstore_input_placeholder">অ্যাডন URL</string>
     <string name="addons_appstore_install_button">অ্যাডন যোগ করুন</string>
     <string name="store_empty_unavailable_title">এখানে এখনো কিছুই নেই</string>
     <string name="store_empty_unavailable_message">আপনার বর্তমান অ্যাডনসমূহের এখানে দেখানোর মতো কিছু নেই।</string>
-    <string name="addons_empty_subtitle">Nuvio-তে ক্যাটালগ, মেটাডেটা, স্ট্রিম বা সাবটাইটেল লোড করা শুরু করতে একটি ম্যানিফেস্ট URL যোগ করুন।</string>
+    <string name="addons_empty_subtitle">Lentra-তে ক্যাটালগ, মেটাডেটা, স্ট্রিম বা সাবটাইটেল লোড করা শুরু করতে একটি ম্যানিফেস্ট URL যোগ করুন।</string>
     <string name="addons_empty_title">এখনো কোনো অ্যাডন ইনস্টল করা হয়নি।</string>
     <string name="addons_error_enter_url">একটি অ্যাডন URL লিখুন।</string>
     <string name="addons_input_placeholder">অ্যাডন URL</string>
@@ -167,7 +167,7 @@
     <string name="collections_editor_tmdb_list_helper">উদাহরণ: https://www.themoviedb.org/list/8504994 বা 8504994।</string>
     <string name="collections_editor_tmdb_person_helper">উদাহরণ: https://www.themoviedb.org/person/31-tom-hanks অথবা 31।</string>
     <string name="collections_editor_tmdb_display_title">ডিসপ্লে শিরোনাম</string>
-    <string name="collections_editor_tmdb_title_helper">সারি/ট্যাবের নাম হিসেবে দেখানো হয়। ফাঁকা থাকলে, Nuvio সোর্স থেকে একটি তৈরি করে।</string>
+    <string name="collections_editor_tmdb_title_helper">সারি/ট্যাবের নাম হিসেবে দেখানো হয়। ফাঁকা থাকলে, Lentra সোর্স থেকে একটি তৈরি করে।</string>
     <string name="collections_editor_tmdb_title_placeholder">মার্ভেল মুভিজ, নেটফ্লিক্স অরিজিনালস, পিক্সার</string>
     <string name="collections_editor_tmdb_person_title_placeholder">টম হ্যাঙ্কস মুভি, প্রিয় অভিনেতা</string>
     <string name="collections_editor_tmdb_director_title_placeholder">ক্রিস্টোফার নোলান মুভিজ, প্রিয় পরিচালক</string>
@@ -532,14 +532,14 @@
     <string name="compose_settings_root_check_updates_description">সর্বশেষ রিলিজ ডাউনলোড করুন</string>
     <string name="compose_settings_root_check_updates_title">আপডেটের জন্য চেক করুন</string>
     <string name="compose_settings_root_content_discovery_description">অ্যাডন এবং ডিসকভারি সোর্সসমূহ ম্যানেজ করুন।</string>
-    <string name="compose_settings_root_content_discovery_description_appstore">অ্যাডনসমূহ ম্যানেজ করুন এবং Nuvio-তে কী প্রদর্শিত হবে তা বাছুন।</string>
+    <string name="compose_settings_root_content_discovery_description_appstore">অ্যাডনসমূহ ম্যানেজ করুন এবং Lentra-তে কী প্রদর্শিত হবে তা বাছুন।</string>
     <string name="compose_settings_root_downloads_description">আপনার ডাউনলোড করা সিনেমা এবং পর্ব ম্যানেজ করুন।</string>
     <string name="compose_settings_root_downloads_description_appstore">আপনি এই ডিভাইসে কি সেভ করেছেন তা ম্যানেজ করুন।</string>
     <string name="compose_settings_root_downloads_title">ডাউনলোড</string>
     <string name="compose_settings_root_general_section">সাধারণ</string>
     <string name="compose_settings_root_integrations_description">উপলব্ধ ইন্টিগ্রেশন ম্যানেজ করুন</string>
     <string name="compose_settings_root_notifications_description">পর্ব প্রকাশের ওয়ার্নিং ম্যানেজ করুন এবং একটি পরীক্ষার নোটিফিকেশন পাঠান।</string>
-    <string name="compose_settings_root_privacy_policy_description">Nuvio কীভাবে আপনার ডেটা পরিচালনা করে তা জানুন</string>
+    <string name="compose_settings_root_privacy_policy_description">Lentra কীভাবে আপনার ডেটা পরিচালনা করে তা জানুন</string>
     <string name="compose_settings_root_streams_description">স্ট্রিম ফলাফল ডিসপ্লে এবং ব্যাজ URL নিয়ম।</string>
     <string name="compose_settings_root_switch_profile_description">অন্য প্রোফাইলে পরিবর্তন করুন।</string>
     <string name="compose_settings_root_switch_profile_title">প্রোফাইল পরিবর্তন করুন</string>
@@ -582,21 +582,21 @@
     <string name="settings_licenses_attributions_nuvio_body">সোর্স কোড এবং লাইসেন্সের শর্তাবলী প্রকল্পের রিপোজিটরিতে উপলব্ধ।</string>
     <string name="settings_licenses_attributions_nuvio_license">GNU জেনারেল পাবলিক লাইসেন্স v3.0-এর অধীনে লাইসেন্সপ্রাপ্ত।</string>
     <string name="settings_licenses_attributions_tmdb_title">The Movie Database (TMDB)</string>
-    <string name="settings_licenses_attributions_tmdb_body">Nuvio মুভি এবং টিভি মেটাডেটা, আর্টওয়ার্ক, ট্রেলার, কাস্ট, প্রোডাকশন বিবরণ, কালেকশন এবং সুপারিশের জন্য TMDB API ব্যবহার করে। এই পণ্যটি TMDB API ব্যবহার করে কিন্তু TMDB দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
+    <string name="settings_licenses_attributions_tmdb_body">Lentra মুভি এবং টিভি মেটাডেটা, আর্টওয়ার্ক, ট্রেলার, কাস্ট, প্রোডাকশন বিবরণ, কালেকশন এবং সুপারিশের জন্য TMDB API ব্যবহার করে। এই পণ্যটি TMDB API ব্যবহার করে কিন্তু TMDB দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
     <string name="settings_licenses_attributions_imdb_title">IMDb অ-বাণিজ্যিক ডেটাসেট</string>
-    <string name="settings_licenses_attributions_imdb_body">Nuvio IMDb রেটিং এবং ভোট গণনার জন্য title.ratings.tsv.gz সহ IMDb অ-বাণিজ্যিক ডেটাসেট ব্যবহার করে। তথ্য IMDb-এর সৌজন্যে (https://www.imdb.com)। অনুমতি নিয়ে ব্যবহার করা হয়। IMDb ডেটা IMDb-এর শর্তাবলীর অধীনে ব্যক্তিগত এবং অ-বাণিজ্যিক ব্যবহারের জন্য।</string>
+    <string name="settings_licenses_attributions_imdb_body">Lentra IMDb রেটিং এবং ভোট গণনার জন্য title.ratings.tsv.gz সহ IMDb অ-বাণিজ্যিক ডেটাসেট ব্যবহার করে। তথ্য IMDb-এর সৌজন্যে (https://www.imdb.com)। অনুমতি নিয়ে ব্যবহার করা হয়। IMDb ডেটা IMDb-এর শর্তাবলীর অধীনে ব্যক্তিগত এবং অ-বাণিজ্যিক ব্যবহারের জন্য।</string>
     <string name="settings_licenses_attributions_trakt_title">Trakt</string>
-    <string name="settings_licenses_attributions_trakt_body">Nuvio অ্যাকাউন্ট প্রমাণীকরণ, দেখার হিস্ট্রি, অগ্রগতি সিঙ্ক, লাইব্রেরি ডেটা, রেটিং, তালিকা এবং মন্তব্যের জন্য Trakt-এর সাথে সংযোগ করে। Nuvio Trakt দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
+    <string name="settings_licenses_attributions_trakt_body">Lentra অ্যাকাউন্ট প্রমাণীকরণ, দেখার হিস্ট্রি, অগ্রগতি সিঙ্ক, লাইব্রেরি ডেটা, রেটিং, তালিকা এবং মন্তব্যের জন্য Trakt-এর সাথে সংযোগ করে। Lentra Trakt দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
     <string name="settings_licenses_attributions_simkl_title">Simkl</string>
-    <string name="settings_licenses_attributions_simkl_body">Nuvio অ্যাকাউন্ট প্রমাণীকরণ, ওয়াচলিস্ট, দেখার হিস্ট্রি, প্লেব্যাক অগ্রগতি এবং স্ক্রবব্লিংয়ের জন্য Simkl-এর সাথে সংযোগ করে। সিনেমা, টিভি এবং অ্যানিমে ট্র্যাকিং ডেটা Simkl সরবরাহ করে। Nuvio Simkl দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
+    <string name="settings_licenses_attributions_simkl_body">Lentra অ্যাকাউন্ট প্রমাণীকরণ, ওয়াচলিস্ট, দেখার হিস্ট্রি, প্লেব্যাক অগ্রগতি এবং স্ক্রবব্লিংয়ের জন্য Simkl-এর সাথে সংযোগ করে। সিনেমা, টিভি এবং অ্যানিমে ট্র্যাকিং ডেটা Simkl সরবরাহ করে। Lentra Simkl দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
     <string name="settings_licenses_attributions_premiumize_title">Premiumize</string>
-    <string name="settings_licenses_attributions_premiumize_body">Nuvio অ্যাকাউন্ট প্রমাণীকরণ, ক্লাউড লাইব্রেরি অ্যাক্সেস, ক্যাশে চেক এবং ক্লাউড প্লেব্যাক ফিচারের জন্য Premiumize-এর সাথে সংযোগ করে। Nuvio Premiumize দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
+    <string name="settings_licenses_attributions_premiumize_body">Lentra অ্যাকাউন্ট প্রমাণীকরণ, ক্লাউড লাইব্রেরি অ্যাক্সেস, ক্যাশে চেক এবং ক্লাউড প্লেব্যাক ফিচারের জন্য Premiumize-এর সাথে সংযোগ করে। Lentra Premiumize দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
     <string name="settings_licenses_attributions_torbox_title">TorBox</string>
-    <string name="settings_licenses_attributions_torbox_body">Nuvio অ্যাকাউন্ট প্রমাণীকরণ, ক্লাউড লাইব্রেরি অ্যাক্সেস, ক্যাশে চেক এবং ক্লাউড প্লেব্যাক ফিচারের জন্য TorBox-এর সাথে সংযোগ করে। Nuvio TorBox দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
+    <string name="settings_licenses_attributions_torbox_body">Lentra অ্যাকাউন্ট প্রমাণীকরণ, ক্লাউড লাইব্রেরি অ্যাক্সেস, ক্যাশে চেক এবং ক্লাউড প্লেব্যাক ফিচারের জন্য TorBox-এর সাথে সংযোগ করে। Lentra TorBox দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
     <string name="settings_licenses_attributions_mdblist_title">MDBList</string>
-    <string name="settings_licenses_attributions_mdblist_body">Nuvio রেটিং, দেখার হিস্ট্রি এবং প্লেব্যাক ট্র্যাকিংয়ের জন্য MDBList ব্যবহার করে। Nuvio MDBList দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
+    <string name="settings_licenses_attributions_mdblist_body">Lentra রেটিং, দেখার হিস্ট্রি এবং প্লেব্যাক ট্র্যাকিংয়ের জন্য MDBList ব্যবহার করে। Lentra MDBList দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
     <string name="settings_licenses_attributions_introdb_title">IntroDB</string>
-    <string name="settings_licenses_attributions_introdb_body">Nuvio স্কিপ কন্ট্রোলের মাধ্যমে ইন্ট্রো, রিক্যাপ, ক্রেডিট এবং প্রিভিউ টাইমস্ট্যাম্পের জন্য IntroDB API ব্যবহার করে। Nuvio IntroDB দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
+    <string name="settings_licenses_attributions_introdb_body">Lentra স্কিপ কন্ট্রোলের মাধ্যমে ইন্ট্রো, রিক্যাপ, ক্রেডিট এবং প্রিভিউ টাইমস্ট্যাম্পের জন্য IntroDB API ব্যবহার করে। Lentra IntroDB দ্বারা অনুমোদিত বা প্রত্যয়িত নয়।</string>
     <string name="settings_licenses_attributions_mpvkit_title">MPVKit</string>
     <string name="settings_licenses_attributions_mpvkit_body">iOS বিল্ডে প্লেব্যাকের জন্য ব্যবহৃত হয়।</string>
     <string name="settings_licenses_attributions_mpvkit_license">MPVKit সোর্স একা LGPL v3.0-এর অধীনে লাইসেন্সপ্রাপ্ত। Libmpv এবং FFmpeg লাইব্রেরি সহ MPVKit বান্ডেলগুলিও LGPL v3.0-এর অধীনে লাইসেন্সপ্রাপ্ত।</string>
@@ -608,7 +608,7 @@
     <string name="compose_tracking_list_picker_loading">তালিকা লোড হচ্ছে…</string>
     <string name="compose_tracking_list_picker_subtitle">এই শিরোনামটি কোথায় সেভ করবেন তা বাছুন</string>
     <string name="action_donate">দান করুন</string>
-    <string name="action_support_nuvio">Nuvio-কে সাপোর্ট করুন</string>
+    <string name="action_support_nuvio">Lentra-কে সাপোর্ট করুন</string>
     <string name="cw_action_go_to_details">বিস্তারিত দেখুন</string>
     <string name="cw_action_remove">সরান</string>
     <string name="cw_action_start_from_beginning">শুরু থেকে শুরু করুন</string>
@@ -665,7 +665,7 @@
     <string name="settings_appearance_amoled_description">OLED স্ক্রিনের জন্য খাঁটি কালো ব্যাকগ্রাউন্ড ব্যবহার করুন।</string>
     <string name="settings_appearance_app_icon">অ্যাপ আইকন</string>
     <string name="settings_appearance_app_icon_arctic_blue">আর্কটিক ব্লু</string>
-    <string name="settings_appearance_app_icon_android_confirmation_message">%1$s-এ পরিবর্তন করলে Nuvio বন্ধ হয়ে যাবে। চালিয়ে যেতে 'ঠিক আছে' ট্যাপ করুন।</string>
+    <string name="settings_appearance_app_icon_android_confirmation_message">%1$s-এ পরিবর্তন করলে Lentra বন্ধ হয়ে যাবে। চালিয়ে যেতে 'ঠিক আছে' ট্যাপ করুন।</string>
     <string name="settings_appearance_app_icon_android_confirmation_title">অ্যাপ আইকন পরিবর্তন করবেন?</string>
     <string name="settings_appearance_app_icon_change_failed">আইকন পরিবর্তন করা যাবে না। আবার চেষ্টা করুন।</string>
     <string name="settings_appearance_app_icon_copper">কপার</string>
@@ -837,7 +837,7 @@
     <string name="settings_content_discovery_recent_searches">সাম্প্রতিক সার্চ</string>
     <string name="settings_content_discovery_recent_searches_description">সাম্প্রতিক সার্চগুলি সেভ করুন এবং সার্চ বার ফোকাস হলে সেগুলি দেখান।</string>
     <string name="settings_content_discovery_addons_description">আপনার কন্টেন্টের সোর্সগুলি ইনস্টল করুন, সরান, রিফ্রেশ করুন এবং সাজান।</string>
-    <string name="settings_content_discovery_addons_description_appstore">আপনি Nuvio-এর সাথে যে অ্যাডনসমূহ ব্যবহার করেন তা যোগ করুন এবং ম্যানেজ করুন।</string>
+    <string name="settings_content_discovery_addons_description_appstore">আপনি Lentra-এর সাথে যে অ্যাডনসমূহ ব্যবহার করেন তা যোগ করুন এবং ম্যানেজ করুন।</string>
     <string name="settings_content_discovery_plugins_description">জাভাস্ক্রিপ্ট স্ক্র্যাপার রিপোজিটরি এবং টেস্ট প্রোভাইডার ইনস্টল করুন।</string>
     <string name="settings_content_discovery_homescreen_description">হোম লেআউট, কন্টেন্ট ভিজিবিলিটি এবং পোস্টার আচরণ অ্যাডজাস্ট করুন</string>
     <string name="settings_content_discovery_meta_screen_description">বিস্তারিত এবং পর্বের স্ক্রিনর জন্য সেটিংস।</string>
@@ -868,7 +868,7 @@
     <string name="settings_debrid_disconnect">সংযোগ বিচ্ছিন্ন করুন</string>
     <string name="settings_debrid_device_auth_connected">%1$s এই ডিভাইসে সংযুক্ত আছে।</string>
     <string name="settings_debrid_device_auth_starting">নিরাপদ সাইন ইন শুরু হচ্ছে…</string>
-    <string name="settings_debrid_device_auth_instructions">লিঙ্ক খুলুন এবং Nuvio অনুমোদন করতে এই কোড লিখুন।</string>
+    <string name="settings_debrid_device_auth_instructions">লিঙ্ক খুলুন এবং Lentra অনুমোদন করতে এই কোড লিখুন।</string>
     <string name="settings_debrid_device_auth_code_copied">কোড কপি করা হয়েছে।</string>
     <string name="settings_debrid_device_auth_open">লিঙ্ক খুলুন</string>
     <string name="settings_debrid_device_auth_waiting">অনুমোদনের অপেক্ষায়…</string>
@@ -983,10 +983,10 @@
     <string name="settings_meta_tab_layout_description">টিভি অ্যাপের মতো ট্যাবে সেকশনগুলিকে গোষ্ঠীভুক্ত করুন। ট্যাব গ্রুপ প্রতি 3টি সেকশন পর্যন্ত বরাদ্দ করুন।</string>
     <string name="settings_meta_trailers">ট্রেলার</string>
     <string name="settings_meta_trailers_description">ট্রেলার রেল এবং প্লেব্যাক শর্টকাট।</string>
-    <string name="settings_notifications_disabled_in_app">Nuvio-তে বর্তমানে নোটিফিকেশন নিষ্ক্রিয় করা হয়েছে।</string>
+    <string name="settings_notifications_disabled_in_app">Lentra-তে বর্তমানে নোটিফিকেশন নিষ্ক্রিয় করা হয়েছে।</string>
     <string name="settings_notifications_episode_release_alerts">পর্ব প্রকাশের অ্যালার্ট</string>
     <string name="settings_notifications_episode_release_alerts_description">সংরক্ষিত শোয়ের জন্য একটি নতুন পর্ব উপলব্ধ হলে স্থানীয় নোটিফিকেশনগুলি নির্ধারণ করুন।</string>
-    <string name="settings_notifications_permission_disabled">Nuvio-এর জন্য সিস্টেম নোটিফিকেশন নিষ্ক্রিয় করা হয়েছে। অ্যালার্ট এবং পরীক্ষার নোটিফিকেশন পেতে সেগুলো চালু করুন।</string>
+    <string name="settings_notifications_permission_disabled">Lentra-এর জন্য সিস্টেম নোটিফিকেশন নিষ্ক্রিয় করা হয়েছে। অ্যালার্ট এবং পরীক্ষার নোটিফিকেশন পেতে সেগুলো চালু করুন।</string>
     <string name="settings_notifications_scheduled_count">এই ডিভাইসে বর্তমানে %1$dটি রিলিজ অ্যালার্ট নির্ধারিত আছে।</string>
     <string name="settings_notifications_section_alerts">অ্যালার্ট</string>
     <string name="settings_notifications_section_test">পরীক্ষা</string>
@@ -996,15 +996,15 @@
     <string name="settings_notifications_test_requires_saved_show">নোটিফিকেশন পরীক্ষা করার জন্য প্রথমে আপনার লাইব্রেরিতে একটি শো সেভ করুন।</string>
     <string name="settings_notifications_test_title">পরীক্ষার নোটিফিকেশন</string>
     <string name="community_section_title">সম্প্রদায়</string>
-    <string name="community_section_description">মোবাইল, টিভি এবং ওয়েব জুড়ে Nuvio তৈরি এবং সমর্থনকারী লোকেদের দেখুন।</string>
-    <string name="community_membership_title">Nuvio সাপোর্টার মেম্বারশিপ</string>
-    <string name="community_membership_description">Nuvio-কে সাপোর্ট করলে পরিকাঠামো এবং চলমান উন্নয়নের খরচ মেটাতে সাহায্য হয় এবং মূল অভিজ্ঞতা সবার জন্য বিনামূল্যে রাখা যায়।</string>
+    <string name="community_section_description">মোবাইল, টিভি এবং ওয়েব জুড়ে Lentra তৈরি এবং সমর্থনকারী লোকেদের দেখুন।</string>
+    <string name="community_membership_title">Lentra সাপোর্টার মেম্বারশিপ</string>
+    <string name="community_membership_description">Lentra-কে সাপোর্ট করলে পরিকাঠামো এবং চলমান উন্নয়নের খরচ মেটাতে সাহায্য হয় এবং মূল অভিজ্ঞতা সবার জন্য বিনামূল্যে রাখা যায়।</string>
     <string name="community_view_supporter_membership">সাপোর্টার মেম্বারশিপ দেখুন</string>
     <string name="community_membership_you_are">আপনি একজন</string>
     <string name="community_membership_thank_you">ধন্যবাদ।</string>
     <string name="community_membership_supporter_since">%1$s থেকে সমর্থক।</string>
     <string name="community_membership_connected_title">Patreon সংযুক্ত আছে</string>
-    <string name="community_membership_connected_description">এই Patreon অ্যাকাউন্টে কোনো সক্রিয় Nuvio স্তর পাওয়া যায়নি। উপলব্ধ বিকল্পগুলো দেখুন বা আপনার Patreon মেম্বারশিপ পরিবর্তন করার পরে রিফ্রেশ করুন।</string>
+    <string name="community_membership_connected_description">এই Patreon অ্যাকাউন্টে কোনো সক্রিয় Lentra স্তর পাওয়া যায়নি। উপলব্ধ বিকল্পগুলো দেখুন বা আপনার Patreon মেম্বারশিপ পরিবর্তন করার পরে রিফ্রেশ করুন।</string>
     <string name="community_membership_manage">মেম্বারশিপ ম্যানেজ করুন</string>
     <string name="community_membership_refresh">রিফ্রেশ</string>
     <string name="community_membership_refreshing">রিফ্রেশিং</string>
@@ -1275,15 +1275,15 @@
     <string name="settings_tracking_approval_redirect">অনুমোদনের পরে, আপনাকে স্বয়ংক্রিয়ভাবে ফিরিয়ে দেওয়া হবে।</string>
     <string name="settings_tracking_connect_first">প্রথমে %1$s কে সংযুক্ত করুন</string>
     <string name="settings_tracking_disconnect_title">%1$s সংযোগ বিচ্ছিন্ন করবেন?</string>
-    <string name="settings_tracking_disconnect_description">এটি Nuvio থেকে সংযোগটি সরিয়ে দেয়। %1$s-এ আপনার ডেটা অক্ষত থাকবে, এবং অনুপলব্ধ লাইব্রেরি বা প্রগ্রেস সোর্সগুলো সাময়িকভাবে Nuvio-তে ফলব্যাক করবে।</string>
-    <string name="settings_trakt_disconnect_description">এটি Nuvio থেকে আপনার Trakt অ্যাকাউন্ট সংযোগ বিচ্ছিন্ন করবে।</string>
+    <string name="settings_tracking_disconnect_description">এটি Lentra থেকে সংযোগটি সরিয়ে দেয়। %1$s-এ আপনার ডেটা অক্ষত থাকবে, এবং অনুপলব্ধ লাইব্রেরি বা প্রগ্রেস সোর্সগুলো সাময়িকভাবে Lentra-তে ফলব্যাক করবে।</string>
+    <string name="settings_trakt_disconnect_description">এটি Lentra থেকে আপনার Trakt অ্যাকাউন্ট সংযোগ বিচ্ছিন্ন করবে।</string>
     <string name="settings_simkl_disconnect_description">এটি এই প্রোফাইল থেকে Simkl অ্যাকাউন্ট এবং ক্যাশে করা Simkl ডেটা সরিয়ে দেয়।</string>
     <string name="settings_tracking_source_fallback">%1$s উপলব্ধ নেই। এটি আবার সংযোগ না হওয়া পর্যন্ত %2$s ব্যবহার করা হচ্ছে।</string>
     <string name="settings_tracking_progress_refresh_failed">সোর্স পরিবর্তন করা হয়েছে, কিন্তু সর্বশেষ ওয়াচ প্রগ্রেস রিফ্রেশ করা যায়নি।</string>
-    <string name="settings_tracking_nuvio_library_description">আপনার Nuvio লাইব্রেরিতে সংরক্ষিত শিরোনাম রাখুন।</string>
+    <string name="settings_tracking_nuvio_library_description">আপনার Lentra লাইব্রেরিতে সংরক্ষিত শিরোনাম রাখুন।</string>
     <string name="settings_tracking_trakt_library_description">আপনার Trakt ওয়াচলিস্ট এবং ব্যক্তিগত তালিকা ব্যবহার করুন।</string>
     <string name="settings_tracking_simkl_library_description">আপনার Simkl প্ল্যান-টু-ওয়াচ এবং স্ট্যাটাস তালিকা ব্যবহার করুন।</string>
-    <string name="settings_tracking_nuvio_progress_description">Nuvio Sync দ্বারা সংরক্ষিত অগ্রগতির সাথে আবার শুরু করুন।</string>
+    <string name="settings_tracking_nuvio_progress_description">Lentra Sync দ্বারা সংরক্ষিত অগ্রগতির সাথে আবার শুরু করুন।</string>
     <string name="settings_tracking_trakt_progress_description">Trakt থেকে প্লেব্যাকের অগ্রগতি সহ আবার শুরু করুন।</string>
     <string name="settings_tracking_trakt_progress_required">Trakt যখন ওয়াচ প্রগ্রেস সোর্স হয় তখন পাওয়া যায়</string>
     <string name="settings_tracking_simkl_progress_description">Simkl থেকে প্লেব্যাক অগ্রগতি সহ আবার শুরু করুন।</string>
@@ -1319,9 +1319,9 @@
     <string name="settings_simkl_sync_now">এখন সিঙ্ক করুন</string>
     <string name="settings_simkl_sync_info_action">কিভাবে সিঙ্কিং কাজ করে</string>
     <string name="settings_simkl_sync_info_title">কিভাবে Simkl সিঙ্কিং কাজ করে</string>
-    <string name="settings_simkl_sync_info_description">Nuvio স্বয়ংক্রিয়ভাবে প্রতি %1$d মিনিটে একবার Simkl চেক করে। অন্য অ্যাপ বা Simkl ওয়েবসাইটের মাধ্যমে করা পরিবর্তনগুলো প্রদর্শিত হতে অনেক সময় নিতে পারে।</string>
+    <string name="settings_simkl_sync_info_description">Lentra স্বয়ংক্রিয়ভাবে প্রতি %1$d মিনিটে একবার Simkl চেক করে। অন্য অ্যাপ বা Simkl ওয়েবসাইটের মাধ্যমে করা পরিবর্তনগুলো প্রদর্শিত হতে অনেক সময় নিতে পারে।</string>
     <string name="settings_simkl_sync_info_activity">প্রতিটি রিফ্রেশ প্রথমে পরীক্ষা করে যে Simkl কোনো পরিবর্তনের রিপোর্ট করে কিনা এবং শুধুমাত্র আপডেটগুলি ডাউনলোড করে। এটি Simkl-এর API নিয়মগুলি অনুসরণ করে, অপ্রয়োজনীয় ডেটা ব্যবহার হ্রাস করে এবং পরিষেবাটিকে স্থিতিশীল রাখতে সহায়তা করে।</string>
-    <string name="settings_simkl_sync_info_manual">Nuvio-তে করা পরিবর্তনগুলো অবিলম্বে Simkl-এ পাঠানো হয়। যখনই আপনি চান Nuvio রিমোট চেঞ্জগুলো দ্রুত চেক করুক, তখনই 'এখন সিঙ্ক করুন' ব্যবহার করুন।</string>
+    <string name="settings_simkl_sync_info_manual">Lentra-তে করা পরিবর্তনগুলো অবিলম্বে Simkl-এ পাঠানো হয়। যখনই আপনি চান Lentra রিমোট চেঞ্জগুলো দ্রুত চেক করুক, তখনই 'এখন সিঙ্ক করুন' ব্যবহার করুন।</string>
     <string name="settings_simkl_sync_info_library_statuses">Simkl-এর 'On Hold' বা 'Dropped' লিস্টে রাখা শোগুলো 'Continue Watching' থেকে হাইড করা থাকে। ওই লিস্টগুলোর যেকোনো একটিতে থাকা পর্যন্ত এগুলো হাইড করা থাকবে।</string>
     <string name="settings_simkl_sync_info_docs">Simkl সিঙ্ক গাইড পড়ুন</string>
     <string name="settings_simkl_authorization_revoked">Simkl অনুমোদন প্রত্যাহার করা হয়েছে। আবার সংযোগ করুন।</string>
@@ -1331,21 +1331,21 @@
     <string name="tracking_watch_progress_simkl_selected">ওয়াচ প্রগ্রেস সোর্স Simkl-এ সেট করা হয়েছে</string>
     <string name="tracking_watch_progress_dialog_subtitle">পুনরায় প্লেব্যাক ও দেখা চালিয়ে যাওয়ার জন্য কোনো সার্ভিস ব্যবহার করা হবে তা নির্বাচন করুন। প্রতিটি সংযুক্ত সার্ভিসের জন্য স্ক্রবলিং সক্রিয় থাকবে।</string>
     <string name="trakt_library_source_title">লাইব্রেরি সোর্স</string>
-    <string name="trakt_library_source_subtitle">Nuvio আপনার লাইব্রেরির জন্য কোনো সোর্সটি পড়বে তা বাছুন</string>
+    <string name="trakt_library_source_subtitle">Lentra আপনার লাইব্রেরির জন্য কোনো সোর্সটি পড়বে তা বাছুন</string>
     <string name="trakt_library_source_dialog_title">লাইব্রেরি সোর্স</string>
-    <string name="trakt_library_source_dialog_subtitle">লাইব্রেরির জন্য Nuvio কোনো সার্ভিস ব্যবহার করবে তা নির্বাচন করুন। প্রতিটি সংযুক্ত সার্ভিসে প্লেব্যাক স্ক্রবল হবে।</string>
+    <string name="trakt_library_source_dialog_subtitle">লাইব্রেরির জন্য Lentra কোনো সার্ভিস ব্যবহার করবে তা নির্বাচন করুন। প্রতিটি সংযুক্ত সার্ভিসে প্লেব্যাক স্ক্রবল হবে।</string>
     <string name="trakt_library_source_trakt">Trakt</string>
-    <string name="trakt_library_source_nuvio">Nuvio লাইব্রেরি</string>
+    <string name="trakt_library_source_nuvio">Lentra লাইব্রেরি</string>
     <string name="trakt_library_source_trakt_selected">Trakt লাইব্রেরি নির্বাচিত</string>
-    <string name="trakt_library_source_nuvio_selected">Nuvio লাইব্রেরি নির্বাচিত</string>
+    <string name="trakt_library_source_nuvio_selected">Lentra লাইব্রেরি নির্বাচিত</string>
     <string name="trakt_watch_progress_title">ওয়াচ প্রগ্রেস</string>
     <string name="trakt_watch_progress_subtitle">কোন প্রগ্রেস সোর্স 'রিজিউম' এবং 'Continue Watching' পরিচালনা করবে তা বাছুন।</string>
     <string name="trakt_watch_progress_dialog_title">ওয়াচ প্রগ্রেস</string>
-    <string name="trakt_watch_progress_dialog_subtitle">পুনরায় প্লেব্যাক ও দেখা চালিয়ে যাওয়ার জন্য Trakt নাকি Nuvio সিঙ্ক ব্যবহার করা হবে তা নির্বাচন করুন (Trakt স্ক্রবলিং সক্রিয় থাকবে)।</string>
+    <string name="trakt_watch_progress_dialog_subtitle">পুনরায় প্লেব্যাক ও দেখা চালিয়ে যাওয়ার জন্য Trakt নাকি Lentra সিঙ্ক ব্যবহার করা হবে তা নির্বাচন করুন (Trakt স্ক্রবলিং সক্রিয় থাকবে)।</string>
     <string name="trakt_watch_progress_source_trakt">Trakt</string>
-    <string name="trakt_watch_progress_source_nuvio">Nuvio সিঙ্ক</string>
+    <string name="trakt_watch_progress_source_nuvio">Lentra সিঙ্ক</string>
     <string name="trakt_watch_progress_trakt_selected">ওয়াচ প্রগ্রেস সোর্স Trakt-এ সেট করা হয়েছে</string>
-    <string name="trakt_watch_progress_nuvio_selected">ওয়াচ প্রগ্রেস সোর্স Nuvio Sync-এ সেট করা হয়েছে</string>
+    <string name="trakt_watch_progress_nuvio_selected">ওয়াচ প্রগ্রেস সোর্স Lentra Sync-এ সেট করা হয়েছে</string>
     <string name="trakt_more_like_this_source_title">'এরকম আরো' সোর্স</string>
     <string name="trakt_more_like_this_source_subtitle">বিস্তারিত পৃষ্ঠাগুলিতে সুপারিশগুলি কোথা থেকে আসে তা বাছুন</string>
     <string name="trakt_more_like_this_source_dialog_title">এই সোর্সের মত আরো</string>
@@ -1505,7 +1505,7 @@
     <string name="details_series_missing_numbers">এই অ্যাডন থেকে সিরিজের ভিডিও পাওয়া গেলেও, সেগুলোতে সিজন বা পর্ব নম্বর ছিল না।</string>
     <string name="details_series_no_metadata">এই অ্যাডন এই সিরিজের জন্য পর্ব মেটাডেটা প্রদান করেনি।</string>
     <string name="details_series_unpublished">এই অ্যাডন থেকে এখনও কোনো পর্ব প্রকাশিত হয়নি।</string>
-    <string name="details_servers_unreachable">আপনার ডিভাইস অনলাইন, কিন্তু Nuvio প্রয়োজনীয় সার্ভারে পৌঁছাতে পারেনি।</string>
+    <string name="details_servers_unreachable">আপনার ডিভাইস অনলাইন, কিন্তু Lentra প্রয়োজনীয় সার্ভারে পৌঁছাতে পারেনি।</string>
     <string name="details_show_less">কম দেখান</string>
     <string name="details_show_more">আরও দেখান ▾</string>
     <string name="details_writer">লেখক</string>
@@ -1684,7 +1684,7 @@
     <string name="updates_debug_test_title">পরীক্ষা আপডেট ব্যানার</string>
     <string name="updates_install_failed">ইনস্টলেশন শুরু করা যায়নি</string>
     <string name="updates_latest_version">আপনি সর্বশেষ সংস্করণ ব্যবহার করছেন।</string>
-    <string name="updates_message_allow_installs">Nuvio-এর জন্য অ্যাপ ইনস্টল চালু করুন, তারপরে ফিরে আসুন এবং চালিয়ে যান।</string>
+    <string name="updates_message_allow_installs">Lentra-এর জন্য অ্যাপ ইনস্টল চালু করুন, তারপরে ফিরে আসুন এবং চালিয়ে যান।</string>
     <string name="updates_message_downloading">আপডেট ডাউনলোড হচ্ছে…</string>
     <string name="updates_message_no_updates">কোনো আপডেট পাওয়া যায়নি।</string>
     <string name="updates_message_ready">একটি নতুন সংস্করণ ইনস্টল করার জন্য প্রস্তুত।</string>
@@ -1698,7 +1698,7 @@
     <string name="addon_already_installed">এই অ্যাডনটি ইতিমধ্যেই ইনস্টল করা আছে।</string>
     <string name="addon_invalid_url">একটি বৈধ অ্যাডন URL লিখুন</string>
     <string name="addon_load_manifest_failed">ম্যানিফেস্ট লোড করা যায়নি</string>
-    <string name="app_brand_name">Nuvio</string>
+    <string name="app_brand_name">Lentra</string>
     <string name="auth_account_deletion_failed">অ্যাকাউন্ট ডিলিট করতে ব্যর্থ</string>
     <string name="auth_sign_in_failed">সাইন ইন ব্যর্থ হয়েছে</string>
     <string name="auth_sign_out_failed">সাইন-আউট ব্যর্থ হয়েছে</string>
@@ -2166,7 +2166,7 @@
     <string name="downloads_error_open_partial_file_failed">আংশিক ডাউনলোড ফাইল খুলতে ব্যর্থ</string>
     <string name="downloads_error_partial_file_not_open">আংশিক ডাউনলোড ফাইল খোলা নেই</string>
     <string name="downloads_error_write_partial_file_failed">আংশিক ডাউনলোড ফাইল লিখতে ব্যর্থ</string>
-    <string name="library_local_tab_title">Nuvio লাইব্রেরি</string>
+    <string name="library_local_tab_title">Lentra লাইব্রেরি</string>
     <string name="network_connection_issue">সংযোগ সমস্যা</string>
     <string name="network_empty_response_body">খালি রেসপন্স বডি</string>
     <string name="network_please_check_connection">আপনার সংযোগ পরীক্ষা করুন এবং আবার চেষ্টা করুন।</string>
@@ -2274,8 +2274,8 @@
 • আপনার IP অ্যাড্রেস নেটওয়ার্কের অন্যান্য পিয়ারদের কাছে দৃশ্যমান হবে
 • আপনি যে কন্টেন্ট অ্যাক্সেস করছেন তার জন্য আপনি সম্পূর্ণভাবে দায়ী
 • আপনার অঞ্চলে এই কন্টেন্ট স্ট্রিম করার আইনগত অধিকার আপনার রয়েছে
-• Nuvio কোনো P2P কন্টেন্ট হোস্ট, বিতরণ বা নিয়ন্ত্রণ করে না
-• P2P স্ট্রিমিং ব্যবহারের ফলে সৃষ্ট কোনো আইনি পরিণতির দায় Nuvio বহন করে না
+• Lentra কোনো P2P কন্টেন্ট হোস্ট, বিতরণ বা নিয়ন্ত্রণ করে না
+• P2P স্ট্রিমিং ব্যবহারের ফলে সৃষ্ট কোনো আইনি পরিণতির দায় Lentra বহন করে না
 
 আপনি সম্পূর্ণ নিজ ঝুঁকিতে এই ফিচারটি ব্যবহার করছেন। সেটিংস থেকে যেকোনো সময় P2P বন্ধ করা যাবে।</string>
     <string name="p2p_consent_enable">P2P চালু করুন</string>

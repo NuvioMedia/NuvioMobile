@@ -1,0 +1,181 @@
+name: Lentra Auto Build & Release
+
+# Builds a signed Lentra APK and publishes it as a GitHub release on every push.
+# The in-app updater reads the releases of this repository
+# (see AppUpdaterRepository.RELEASE_REPOSITORY), so pushing here is what makes an
+# update available inside the app.
+on:
+  push:
+    branches:
+      - '**'
+    tags-ignore:
+      - '**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lentra-auto-release-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GRADLE_OPTS: -Dfile.encoding=UTF-8
+  KOTLIN_DAEMON_JVMARGS: -Xmx2048M
+  # Keystore shipped with the repository so every build is signed with the same key and
+  # in-place app updates keep working. Replace it through the secrets documented in the README.
+  CI_KEYSTORE_PATH: ${{ github.workspace }}/.github/ci-signing/lentra-release.jks
+  CI_KEYSTORE_PASSWORD: lentra-ci
+  CI_KEY_ALIAS: lentra
+  CI_KEY_PASSWORD: lentra-ci
+
+jobs:
+  build:
+    name: Build and publish Lentra APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Compute release version
+        id: version
+        run: |
+          version_file="iosApp/Configuration/Version.xcconfig"
+          base_version="$(sed -n 's/^MARKETING_VERSION=//p' "${version_file}" | tr -d '[:space:]')"
+          base_code="$(sed -n 's/^CURRENT_PROJECT_VERSION=//p' "${version_file}" | tr -d '[:space:]')"
+
+          if [[ ! "${base_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "MARKETING_VERSION in ${version_file} must be a x.y.z version, found '${base_version}'." >&2
+            exit 1
+          fi
+          if [[ ! "${base_code}" =~ ^[0-9]+$ ]]; then
+            echo "CURRENT_PROJECT_VERSION in ${version_file} must be a number, found '${base_code}'." >&2
+            exit 1
+          fi
+
+          version="${base_version}-auto.${GITHUB_RUN_NUMBER}"
+          version_code="$((base_code + GITHUB_RUN_NUMBER))"
+          printf 'CURRENT_PROJECT_VERSION=%s\nMARKETING_VERSION=%s\n' \
+            "${version_code}" "${version}" > "${version_file}"
+
+          {
+            echo "version=${version}"
+            echo "version_code=${version_code}"
+            echo "apk_prefix=lentra-${version}"
+          } >> "${GITHUB_OUTPUT}"
+          echo "Building Lentra ${version} (versionCode ${version_code})" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Configure runtime properties and signing
+        env:
+          LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.LENTRA_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.LENTRA_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.LENTRA_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.LENTRA_KEY_PASSWORD }}
+        run: |
+          if [ -n "${LOCAL_PROPERTIES_BASE64}" ]; then
+            printf '%s' "${LOCAL_PROPERTIES_BASE64}" | base64 --decode > local.properties
+          else
+            : > local.properties
+          fi
+          sed -i -E '/^[[:space:]]*(sdk\.dir|NUVIO_RELEASE_)[[:space:]]*=/d' local.properties
+
+          keystore_path="${CI_KEYSTORE_PATH}"
+          keystore_password="${CI_KEYSTORE_PASSWORD}"
+          key_alias="${CI_KEY_ALIAS}"
+          key_password="${CI_KEY_PASSWORD}"
+
+          if [ -n "${KEYSTORE_BASE64}" ]; then
+            keystore_path="${RUNNER_TEMP}/lentra-release.jks"
+            printf '%s' "${KEYSTORE_BASE64}" | base64 --decode > "${keystore_path}"
+            keystore_password="${KEYSTORE_PASSWORD}"
+            key_alias="${KEY_ALIAS}"
+            key_password="${KEY_PASSWORD}"
+          fi
+
+          if [ ! -s "${keystore_path}" ]; then
+            echo "Signing keystore is missing at ${keystore_path}." >&2
+            exit 1
+          fi
+          for value in "${keystore_password}" "${key_alias}" "${key_password}"; do
+            if [ -z "${value}" ]; then
+              echo "Signing secrets are incomplete." >&2
+              exit 1
+            fi
+          done
+
+          {
+            printf 'NUVIO_RELEASE_STORE_FILE=%s\n' "${keystore_path}"
+            printf 'NUVIO_RELEASE_STORE_PASSWORD=%s\n' "${keystore_password}"
+            printf 'NUVIO_RELEASE_KEY_ALIAS=%s\n' "${key_alias}"
+            printf 'NUVIO_RELEASE_KEY_PASSWORD=%s\n' "${key_password}"
+          } >> local.properties
+
+      - name: Build release APKs
+        run: |
+          ./gradlew :androidApp:assembleFullRelease \
+            -Pnuvio.android.distribution=full \
+            -Pnuvio.ios.distribution=appstore \
+            -Pnuvio.app.versionName="${{ steps.version.outputs.version }}" \
+            --stacktrace
+
+      - name: Collect APK artifacts
+        run: |
+          mkdir -p release-assets
+          mapfile -t apks < <(find androidApp/build/outputs/apk/full/release -maxdepth 1 -name '*.apk' | sort)
+          if (( ${#apks[@]} == 0 )); then
+            echo "No release APK was produced." >&2
+            exit 1
+          fi
+          for apk in "${apks[@]}"; do
+            cp "${apk}" "release-assets/${{ steps.version.outputs.apk_prefix }}-$(basename "${apk}")"
+          done
+          ls -l release-assets
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ steps.version.outputs.apk_prefix }}-apk
+          path: release-assets/*.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.version.outputs.version }}
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+          RELEASE_COMMIT: ${{ github.sha }}
+          RELEASE_BRANCH: ${{ github.ref_name }}
+        run: |
+          {
+            echo "Automatic Lentra build from ${RELEASE_BRANCH}."
+            echo
+            echo "- Commit: ${RELEASE_COMMIT}"
+            echo "- Version: ${RELEASE_VERSION}"
+            echo "- Installed through the in-app updater or the APK attached below."
+          } > release-notes.md
+
+          if gh release view "${RELEASE_TAG}" --repo "${GITHUB_REPOSITORY}" >/dev/null 2>&1; then
+            gh release upload "${RELEASE_TAG}" release-assets/*.apk \
+              --repo "${GITHUB_REPOSITORY}" --clobber
+          else
+            gh release create "${RELEASE_TAG}" \
+              --repo "${GITHUB_REPOSITORY}" \
+              --target "${GITHUB_SHA}" \
+              --title "Lentra ${RELEASE_VERSION}" \
+              --notes-file release-notes.md \
+              --prerelease \
+              release-assets/*.apk
+          fi

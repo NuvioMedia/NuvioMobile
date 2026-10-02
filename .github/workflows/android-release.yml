@@ -76,7 +76,7 @@ jobs:
 
           unexpected_changes="$(
             git diff --name-only "${CURRENT_BUMP}..${RELEASE_COMMIT}" \
-              | grep -Ev '^(\.github/workflows/(android-release|update-store-source)\.yml|store\.json|scripts/(build-ios-ipa|generate-release-notes|prepare-ios-dependencies|release-metadata)\.sh|scripts/update-store-source\.py)$' \
+              | grep -Ev '^(\.github/workflows/(android-release|lentra-auto-release)\.yml|scripts/(build-ios-ipa|generate-release-notes|prepare-ios-dependencies|release-metadata)\.sh)$' \
               || true
           )"
           if [[ -n "${unexpected_changes}" ]]; then
@@ -160,7 +160,7 @@ jobs:
 
       - name: Configure release properties
         run: |
-          keystore_path="${RUNNER_TEMP}/nuvio-release.jks"
+          keystore_path="${RUNNER_TEMP}/lentra-release.jks"
           printf '%s' "${RELEASE_KEYSTORE_BASE64}" | base64 --decode > "${keystore_path}"
           printf '%s' "${RELEASE_PROPERTIES_BASE64}" | base64 --decode > local.properties
 
@@ -187,7 +187,7 @@ jobs:
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-${{ needs.prepare.outputs.version }}-android-full-release
+          name: lentra-${{ needs.prepare.outputs.version }}-android-full-release
           path: androidApp/build/outputs/apk/full/release/*.apk
           if-no-files-found: error
 
@@ -257,7 +257,7 @@ jobs:
       - name: Upload iOS artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-${{ needs.prepare.outputs.version }}-ios-full-release
+          name: lentra-${{ needs.prepare.outputs.version }}-ios-full-release
           path: build/ios-ipa/*-full-release.ipa
           if-no-files-found: error
 
@@ -304,16 +304,3 @@ jobs:
             release_args+=(--draft)
           fi
           gh release create "${release_args[@]}" "${release_files[@]}"
-
-  store:
-    name: Update sideload source
-    if: inputs.mode == 'publish'
-    needs:
-      - prepare
-      - release
-    permissions:
-      contents: write
-    uses: ./.github/workflows/update-store-source.yml
-    with:
-      tag: ${{ needs.prepare.outputs.tag }}
-      version: ${{ needs.prepare.outputs.version }}

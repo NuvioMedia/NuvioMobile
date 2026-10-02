@@ -16,7 +16,7 @@ struct DownloadsLiveActivityAttributes: ActivityAttributes {
 
 @available(iOSApplicationExtension 16.1, *)
 struct DownloadsLiveActivityWidget: Widget {
-    private let downloadsUrl = URL(string: "nuvio://downloads")
+    private let downloadsUrl = URL(string: "lentra://downloads")
     private let appBlue = Color(red: 30.0 / 255.0, green: 136.0 / 255.0, blue: 229.0 / 255.0)
 
     var body: some WidgetConfiguration {
