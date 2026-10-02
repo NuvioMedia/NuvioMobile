@@ -121,6 +121,14 @@ internal fun Modifier.playerSurfaceDragGestures(
 
                 if (gestureMode == null) {
                     val holdToSpeedActive = isHoldToSpeedGestureActiveState.value
+                    // A finger that has started dragging is not a long press. Consuming the change
+                    // cancels the tap detector's pending hold-to-speed, which would otherwise fire
+                    // while a slow volume/brightness swipe is still below its activation distance.
+                    if (!holdToSpeedActive &&
+                        Offset(totalDx, totalDy).getDistance() > viewConfiguration.touchSlop
+                    ) {
+                        change.consume()
+                    }
                     val verticalGestureActivationSlop = maxOf(
                         viewConfiguration.touchSlop * PlayerVerticalGestureTouchSlopMultiplier,
                         height * PlayerVerticalGestureMinHeightFraction,
