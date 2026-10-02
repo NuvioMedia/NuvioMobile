@@ -143,6 +143,35 @@ jobs:
           done
           ls -l release-assets
 
+      - name: Verify APK identity
+        env:
+          EXPECTED_VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sdk_root="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          aapt2="$(find "${sdk_root}/build-tools" -maxdepth 2 -name aapt2 -type f | sort | tail -n 1)"
+          apksigner="$(find "${sdk_root}/build-tools" -maxdepth 2 -name apksigner -type f | sort | tail -n 1)"
+          apk="$(ls release-assets/*arm64-v8a*.apk | head -n 1)"
+
+          if [ -z "${aapt2}" ] || [ ! -f "${apk}" ]; then
+            echo "Could not locate aapt2 or the release APK." >&2
+            exit 1
+          fi
+
+          badging="$("${aapt2}" dump badging "${apk}")"
+          printf '%s\n' "${badging}" | grep -E "^package:|^application-label:|^sdkVersion:|^native-code:" || true
+
+          printf '%s\n' "${badging}" | grep -q "package: name='com.lentra.app'" \
+            || { echo "Unexpected package id, expected com.lentra.app" >&2; exit 1; }
+          printf '%s\n' "${badging}" | grep -q "versionName='${EXPECTED_VERSION}'" \
+            || { echo "Unexpected versionName, expected ${EXPECTED_VERSION}" >&2; exit 1; }
+          printf '%s\n' "${badging}" | grep -q "application-label:'Lentra'" \
+            || { echo "Unexpected application label, expected Lentra" >&2; exit 1; }
+
+          if [ -n "${apksigner}" ]; then
+            "${apksigner}" verify --verbose --print-certs "${apk}" | grep -E "Verified using|Signer #1 certificate DN|Signer #1 certificate SHA-256" || true
+          fi
+          echo "APK identity verified: com.lentra.app ${EXPECTED_VERSION} (Lentra)" >> "${GITHUB_STEP_SUMMARY}"
+
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v7
         with:
