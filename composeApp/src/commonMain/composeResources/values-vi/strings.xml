@@ -676,6 +676,8 @@
     <string name="settings_appearance_app_language">Ngôn ngữ</string>
     <string name="settings_appearance_app_language_device">Ngôn ngữ thiết bị</string>
     <string name="settings_appearance_app_language_sheet_title">Chọn ngôn ngữ</string>
+    <string name="settings_appearance_app_language_restart_title">Yêu cầu khởi động lại</string>
+    <string name="settings_appearance_app_language_restart_message">Đóng và mở lại ứng dụng để cập nhật bố cục cho ngôn ngữ này.</string>
     <string name="settings_appearance_nav_bar_style">Thanh điều hướng</string>
     <string name="settings_appearance_nav_bar_style_sheet_title">Kiểu thanh điều hướng</string>
     <string name="settings_nav_bar_glow">Hiệu ứng vệt sáng mờ</string>
@@ -1403,6 +1405,10 @@
     <string name="player_skip_intro">Bỏ qua Giới thiệu</string>
     <string name="player_skip_outro">Bỏ qua Đoạn kết</string>
     <string name="player_skip_recap">Bỏ qua Tóm tắt</string>
+    <string name="player_auto_skip_intro_notification">Đã bỏ qua giới thiệu đến %1$s</string>
+    <string name="player_auto_skip_recap_notification">Đã bỏ qua tóm tắt đến %1$s</string>
+    <string name="player_auto_skip_outro_notification">Đã bỏ qua đoạn kết đến %1$s</string>
+    <string name="player_auto_skip_movie_credits_notification">Đã bỏ qua danh đề đến %1$s</string>
     <string name="compose_player_no_subtitles_found">Không tìm thấy phụ đề</string>
     <string name="lang_afrikaans">Tiếng Afrikaans</string>
     <string name="lang_albanian">Tiếng Albania</string>
@@ -1504,6 +1510,10 @@
     <string name="detail_more_like_this_powered_by_trakt">Cung cấp bởi Trakt</string>
     <string name="detail_more_like_this_powered_by_simkl">Cung cấp bởi Simkl</string>
     <string name="details_seasons">Các mùa</string>
+    <plurals name="details_season_count">
+        <item quantity="one">%1$d Mùa</item>
+        <item quantity="other">%1$d Mùa</item>
+    </plurals>
     <string name="details_series_missing_numbers">Tiện ích này đã trả về video cho loạt phim, nhưng không có video nào bao gồm số mùa hoặc số tập.</string>
     <string name="details_series_no_metadata">Tiện ích này không cung cấp siêu dữ liệu tập phim cho loạt phim này.</string>
     <string name="details_series_unpublished">Các tập phim vẫn chưa được cập nhật bởi tiện ích này.</string>
