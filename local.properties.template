@@ -1,0 +1,83 @@
+# ---------------------------------------------------------------------------
+# Nuvio local build configuration TEMPLATE
+#
+# WHY THIS FILE EXISTS
+#   composeApp/build.gradle.kts -> GenerateRuntimeConfigsTask bakes these
+#   values into Kotlin source at BUILD TIME:
+#     build/generated/runtime-config/kotlin/com/nuvio/app/core/network/SupabaseConfig.kt
+#   Resolution order (runtimeConfigValue): local.properties -> env var -> ""
+#   With nothing set, SupabaseConfig.URL == "" so
+#   SupabaseEndpointConfig.restEndpointUrls() returns an EMPTY list,
+#   emptyList().any { } == false, and NetworkStatusRepository reports
+#   NetworkCondition.ServersUnreachable -> toast "Cannot reach servers".
+#
+# USAGE
+#   cp local.properties.template local.properties
+#   # fill in the real values, then REBUILD (values are compile-time constants)
+#   ./gradlew :androidApp:assembleFullDebug
+#
+#   local.properties is gitignored -- never commit real secrets.
+# ---------------------------------------------------------------------------
+
+# === REQUIRED: fixes "Cannot reach servers" ================================
+# Supabase project URL, e.g. https://xxxxxxxxxxxx.supabase.co
+# (the app also accepts a self-hosted / proxied PostgREST-compatible origin)
+NUVIO_SUPABASE_URL=
+# Supabase "publishable" / anon key -- sent as the `apikey` header
+NUVIO_SUPABASE_ANON_KEY=
+
+# === OPTIONAL ==============================================================
+# Secondary origin retried on 502/503/504/520-526 or TLS/connect failures
+NUVIO_SUPABASE_FALLBACK_URL=
+# Crash reporting. Blank => Sentry stays disabled.
+SENTRY_DSN=
+# Artwork / ratings / metadata. Blank => no TMDB-backed imagery.
+TMDB_API_KEY=
+
+# --- NOTE -------------------------------------------------------------------
+# Everything below is read ONLY from local.properties via props.getProperty().
+# Environment variables are NOT consulted for these keys.
+# All are optional; each blank value just disables that integration.
+# ----------------------------------------------------------------------------
+
+# Trakt scrobbling / sync
+TRAKT_CLIENT_ID=
+TRAKT_CLIENT_SECRET=
+TRAKT_REDIRECT_URI=nuvio://auth/trakt
+
+# SIMKL sync
+SIMKL_CLIENT_ID=
+SIMKL_REDIRECT_URI=nuvio://auth/simkl
+SIMKL_APP_NAME=nuvio
+
+# MDBList
+MDBLIST_CLIENT_ID=
+
+# Intro/outro skip timestamps database
+INTRODB_API_URL=
+
+# IMDb episode ratings
+IMDB_RATINGS_API_BASE_URL=
+IMDB_TAPFRAME_API_BASE_URL=
+
+# Premiumize debrid
+PREMIUMIZE_CLIENT_ID=
+
+# Community / donate links
+CONTRIBUTIONS_URL=
+SUPPORTERS_WALL_URL=https://nuvio.tv/api/supporters/wall
+DONATIONS_BASE_URL=
+DONATIONS_DONATE_URL=
+
+# === BUILD FLAVOUR (not secrets) ===========================================
+# "full" or "playstore"; also settable via -Pnuvio.android.distribution=...
+NUVIO_ANDROID_DISTRIBUTION=full
+# "full" or "appstore"; also settable via NUVIO_IOS_DISTRIBUTION env var
+NUVIO_IOS_DISTRIBUTION=full
+
+# === RELEASE SIGNING ONLY (needed for assembleFullRelease, not debug) ======
+# Read by androidApp/build.gradle.kts
+NUVIO_RELEASE_STORE_FILE=
+NUVIO_RELEASE_STORE_PASSWORD=
+NUVIO_RELEASE_KEY_ALIAS=
+NUVIO_RELEASE_KEY_PASSWORD=

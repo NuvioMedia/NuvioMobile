@@ -1,0 +1,149 @@
+# Kong declarative config for the Lentra backend.
+# Mirrors the routing the Supabase client libraries expect:
+#   /auth/v1/*     -> GoTrue
+#   /rest/v1/*     -> PostgREST   (the 40 RPCs + addons/plugins tables)
+#   /storage/v1/*  -> Storage
+#   /realtime/v1/* -> Realtime
+#
+# The anon key is accepted on all app-facing routes; service_role is
+# dashboard-only. Both are injected from .env by Kong.
+
+_format_version: "2.1"
+_transform: true
+
+consumers:
+  - username: DASHBOARD
+  - username: anon
+    keyauth_credentials:
+      - key: $(SUPABASE_ANON_KEY)
+  - username: service_role
+    keyauth_credentials:
+      - key: $(SUPABASE_SERVICE_KEY)
+
+acls:
+  - consumer: anon
+    group: anon
+  - consumer: service_role
+    group: admin
+  - consumer: DASHBOARD
+    group: admin
+
+basicauth_credentials:
+  - consumer: DASHBOARD
+    username: $(DASHBOARD_USERNAME)
+    password: $(DASHBOARD_PASSWORD)
+
+services:
+  # --- Auth -----------------------------------------------------------------
+  - name: auth-v1-open
+    _comment: "GoTrue: signup/signin/signout, anonymous sessions"
+    url: http://auth:9999/
+    routes:
+      - name: auth-v1-open
+        strip_path: true
+        paths:
+          - /auth/v1/
+    plugins:
+      - name: cors
+
+  # --- PostgREST ------------------------------------------------------------
+  - name: rest-v1-open
+    _comment: "PostgREST: tables + all 40 RPC functions"
+    url: http://rest:3000/
+    routes:
+      - name: rest-v1-open
+        strip_path: true
+        paths:
+          - /rest/v1/
+    plugins:
+      - name: cors
+
+  - name: rest-v1-key-auth
+    url: http://rest:3000/
+    routes:
+      - name: rest-v1-key-auth
+        strip_path: true
+        paths:
+          - /rest/v1-key-auth/
+    plugins:
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_consumer_header: true
+          allow:
+            - admin
+            - anon
+
+  # --- Realtime -------------------------------------------------------------
+  - name: realtime-v1-open
+    url: http://realtime:4000/api/tenants/lentra/health
+    routes:
+      - name: realtime-v1-open
+        strip_path: true
+        paths:
+          - /realtime/v1/
+    plugins:
+      - name: cors
+
+  # --- Storage --------------------------------------------------------------
+  - name: storage-v1-open
+    _comment: "Avatars / profile backgrounds"
+    url: http://storage:5000/
+    routes:
+      - name: storage-v1-open
+        strip_path: true
+        paths:
+          - /storage/v1/
+    plugins:
+      - name: cors
+
+  # --- Postgres meta (dashboard only) ---------------------------------------
+  - name: meta
+    url: http://meta:8080/
+    routes:
+      - name: meta-all
+        strip_path: true
+        paths:
+          - /pg/
+    plugins:
+      - name: key-auth
+        config:
+          hide_credentials: false
+      - name: acl
+        config:
+          hide_consumer_header: true
+          allow:
+            - admin
+
+  # --- Studio ---------------------------------------------------------------
+  - name: studio
+    url: http://studio:3000/
+    routes:
+      - name: studio-all
+        strip_path: true
+        paths:
+          - /project/
+          - /profile/
+          - /organizations/
+          - /account/
+      - name: studio-assets
+        strip_path: true
+        paths:
+          - /assets/
+      - name: studio-api-key-auth
+        strip_path: true
+        paths:
+          - /api/platform/pg-meta/
+    plugins:
+      - name: cors
+
+  # Root redirect to Studio
+  - name: root
+    url: http://studio:3000/
+    routes:
+      - name: root-all
+        strip_path: true
+        paths:
+          - /

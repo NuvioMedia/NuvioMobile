@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "service": "nuvio",
+  "self_hosted": true,
+  "backend_url": "http://192.168.1.50",
+  "publishable_key": "PASTE_YOUR_ANON_KEY_HERE",
+  "capabilities": {
+    "email_password_auth": true,
+    "tv_login": false
+  }
+}
