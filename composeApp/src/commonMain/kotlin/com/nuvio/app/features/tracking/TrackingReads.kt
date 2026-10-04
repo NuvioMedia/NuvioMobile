@@ -11,6 +11,7 @@ enum class TrackingLibraryTabKind {
     WATCHLIST,
     PERSONAL,
     STATUS,
+    EXTERNAL,
 }
 
 data class TrackingLibraryTab(

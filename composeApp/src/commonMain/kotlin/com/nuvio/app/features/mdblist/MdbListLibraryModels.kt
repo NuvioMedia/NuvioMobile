@@ -11,6 +11,7 @@ private val showContentTypes = setOf("series", "show", "tv", "anime")
 
 internal const val MDBLIST_WATCHLIST_KEY = "mdblist:watchlist"
 internal const val MDBLIST_LIST_KEY_PREFIX = "mdblist:list:"
+internal const val MDBLIST_EXTERNAL_LIST_KEY_PREFIX = "mdblist:external:"
 
 @Serializable
 data class MdbListLibraryList(
@@ -39,6 +40,32 @@ data class MdbListLibraryList(
 }
 
 @Serializable
+data class MdbListExternalList(
+    val id: Long,
+    val name: String,
+    val source: String? = null,
+    val mediaType: MdbListItemType? = null,
+    val updatedAt: String? = null
+) {
+    val key: String get() = "$MDBLIST_EXTERNAL_LIST_KEY_PREFIX$id"
+
+    // External lists mirror another service, so MDBList only allows reading them.
+    fun tab() = TrackingLibraryTab(
+        key = key,
+        title = name,
+        kind = TrackingLibraryTabKind.EXTERNAL,
+        description = source,
+        providerId = TrackingProviderId.MDBLIST,
+        supportedContentTypes = when (mediaType) {
+            MdbListItemType.MOVIE -> movieContentTypes
+            MdbListItemType.SHOW -> showContentTypes
+            else -> movieContentTypes + showContentTypes
+        },
+        isMembershipDestination = false
+    )
+}
+
+@Serializable
 data class MdbListLibraryItem(
     val type: MdbListItemType,
     val media: MdbListMedia,
@@ -63,11 +90,12 @@ data class MdbListLibrarySnapshot(
     val itemsByList: Map<String, List<MdbListLibraryItem>> = emptyMap(),
     val checkedAtEpochMs: Long? = null,
     val invalidated: Boolean = false,
-    val addedOrders: Map<String, Map<String, List<MdbListLibraryOrderItem>>> = emptyMap()
+    val addedOrders: Map<String, Map<String, List<MdbListLibraryOrderItem>>> = emptyMap(),
+    val externalLists: List<MdbListExternalList> = emptyList()
 ) {
     fun tabs(): List<TrackingLibraryTab> = listOf(
         TrackingLibraryTab(
             MDBLIST_WATCHLIST_KEY, "Watchlist", TrackingProviderId.MDBLIST, TrackingLibraryTabKind.WATCHLIST, supportedContentTypes = movieContentTypes + showContentTypes
         )
-    ) + lists.map(MdbListLibraryList::tab)
+    ) + lists.map(MdbListLibraryList::tab) + externalLists.map(MdbListExternalList::tab)
 }
