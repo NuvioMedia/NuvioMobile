@@ -110,6 +110,9 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         useCustomSubtitles = false
         showSourcesPanel = false
         showEpisodesPanel = false
+        showChaptersPanel = false
+        chapters = emptyList()
+        chaptersLoadedForSourceUrl = null
         episodeStreamsPanelState = EpisodeStreamsPanelState()
         PlayerStreamsRepository.clearEpisodeStreams()
         SubtitleRepository.clear()
@@ -276,6 +279,10 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         if (!playbackSnapshot.isLoading && playerController != null) {
             refreshTracks()
         }
+    }
+
+    LaunchedEffect(playbackSnapshot.isLoading, playerController, playerControllerSourceUrl, activeSourceUrl) {
+        if (!playbackSnapshot.isLoading) loadChaptersIfNeeded()
     }
 
     LaunchedEffect(

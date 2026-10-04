@@ -110,6 +110,8 @@ internal fun PlayerTimeline(
     onScrubFinished: (Long) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    /** Each chapter after the first gets a mark where it starts. */
+    chapters: List<PlayerChapter> = emptyList(),
 ) {
     val durationMs = snapshot.durationMs.coerceAtLeast(0L)
     val rangeEnd = durationMs.coerceAtLeast(1L).toFloat()
@@ -171,6 +173,18 @@ internal fun PlayerTimeline(
                                 size = Size(size.width * (state.value / rangeEnd).coerceIn(0f, 1f), trackHeight),
                                 cornerRadius = radius,
                             )
+                            if (durationMs > 0L) {
+                                val markWidth = 2.dp.toPx()
+                                chapters.forEach { chapter ->
+                                    val fraction = chapter.startMs / rangeEnd
+                                    if (fraction <= 0f || fraction >= 1f) return@forEach
+                                    drawRect(
+                                        color = Color.Black.copy(alpha = 0.6f),
+                                        topLeft = Offset(size.width * fraction - markWidth / 2f, trackOrigin.y),
+                                        size = Size(markWidth, trackHeight),
+                                    )
+                                }
+                            }
                         },
                 )
             },
@@ -182,4 +196,23 @@ internal fun PlayerTimeline(
                 .semantics { contentDescription = description },
         )
     }
+}
+
+/** The name of the chapter at [positionMs], or "Chapter N" when the file gives it none. */
+@Composable
+internal fun PlayerChapterTitle(
+    chapters: List<PlayerChapter>,
+    positionMs: Long,
+    modifier: Modifier = Modifier,
+) {
+    val index = PlayerChapters.indexAt(chapters, positionMs)
+    if (index < 0) return
+    Text(
+        text = chapters[index].title ?: stringResource(Res.string.compose_player_chapter_number, index + 1),
+        style = MaterialTheme.nuvioTypeScale.bodyMd,
+        color = Color.White.copy(alpha = 0.9f),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier.padding(horizontal = PlayerTimelineContentInset),
+    )
 }
