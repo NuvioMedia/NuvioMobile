@@ -260,6 +260,7 @@ object StreamsRepository {
                     bingeGroupOnly = bingeGroupOnly,
                     debridEnabled = debridSettings.canResolvePlayableLinks,
                     activeResolverProviderId = debridSettings.activeResolverProviderId,
+                    preferredAudioLanguage = playerSettings.preferredAudioLanguage,
                 )
 
             fun settleAutoPlay(evaluation: StreamAutoPlayEvaluation) {

@@ -1,0 +1,56 @@
+name: Build Fork Test APK
+
+on:
+  push:
+    branches:
+      - codex/test-apk-release
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-test-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-apk:
+    name: Build fullDebug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Configure optional runtime properties
+        env:
+          LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
+        run: |
+          if [ -n "$LOCAL_PROPERTIES_BASE64" ]; then
+            printf '%s' "$LOCAL_PROPERTIES_BASE64" | base64 --decode > local.properties
+            sed -i -E '/^[[:space:]]*(sdk\.dir|NUVIO_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
+          else
+            touch local.properties
+          fi
+
+      - name: Build test APK
+        run: ./gradlew :androidApp:assembleFullDebug -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore --stacktrace
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuvio-test-apk-${{ github.sha }}
+          path: androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 30
