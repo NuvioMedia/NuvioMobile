@@ -160,6 +160,11 @@ internal class PlayerScreenRuntime(
 
     var showSourcesPanel by mutableStateOf(false)
     var showEpisodesPanel by mutableStateOf(false)
+    var showChaptersPanel by mutableStateOf(false)
+    /** The file's chapters, sorted; empty when it has fewer than two. */
+    var chapters by mutableStateOf<List<PlayerChapter>>(emptyList())
+    /** The source whose chapters [chapters] holds, so a rebuffer does not read them again. */
+    var chaptersLoadedForSourceUrl: String? = null
     var showSubmitIntroModal by mutableStateOf(false)
     var submitIntroSegmentType by mutableStateOf("intro")
     var submitIntroStartTimeStr by mutableStateOf("00:00")

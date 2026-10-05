@@ -359,6 +359,10 @@
     <string name="compose_player_outline_color">Cor do contorno</string>
     <string name="compose_player_panel_episodes">Episódios</string>
     <string name="compose_player_panel_sources">Fontes</string>
+    <string name="compose_player_chapters">Capítulos</string>
+    <string name="compose_player_panel_chapters">Capítulos (%1$d)</string>
+    <string name="compose_player_chapter_number">Capítulo %1$d</string>
+    <string name="compose_player_chapter_remaining">faltam %1$s</string>
     <string name="compose_player_panel_streams">Streams</string>
     <string name="compose_player_playback_error">Erro de reprodução</string>
     <string name="compose_player_playing">A reproduzir</string>
@@ -962,6 +966,8 @@
     <string name="settings_playback_timeout_unlimited">Ilimitado</string>
     <string name="settings_playback_tunneled_playback">Reprodução em túnel</string>
     <string name="settings_playback_tunneled_playback_description">Sincronização de áudio/vídeo ao nível do hardware. Pode melhorar a reprodução em alguns dispositivos Android TV</string>
+    <string name="settings_playback_exo_chapters">Mostrar capítulos</string>
+    <string name="settings_playback_exo_chapters_description">Lê os capítulos dos ficheiros MKV para os marcar na barra de progresso e listar no player. Faz alguns pedidos pequenos extra quando a reprodução começa. O libmpv mostra sempre os capítulos</string>
     <string name="settings_tmdb_enable_enrichment">Ativar enriquecimento do TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Utiliza o TMDB como fonte de metadados para melhorar os dados dos addons.</string>
     <string name="settings_tmdb_language_code_label">Código do idioma</string>

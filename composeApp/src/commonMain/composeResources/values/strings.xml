@@ -447,6 +447,10 @@
     <string name="compose_player_outline_color">Outline Color</string>
     <string name="compose_player_panel_episodes">Episodes</string>
     <string name="compose_player_panel_sources">Sources</string>
+    <string name="compose_player_chapters">Chapters</string>
+    <string name="compose_player_panel_chapters">Chapters (%1$d)</string>
+    <string name="compose_player_chapter_number">Chapter %1$d</string>
+    <string name="compose_player_chapter_remaining">%1$s left</string>
     <string name="compose_player_panel_streams">Streams</string>
     <string name="compose_player_playback_error">Playback error</string>
     <string name="compose_player_playing">Playing</string>
@@ -1223,6 +1227,8 @@
     <string name="settings_playback_timeout_unlimited">Unlimited</string>
     <string name="settings_playback_tunneled_playback">Tunneled Playback</string>
     <string name="settings_playback_tunneled_playback_description">Hardware-level audio/video sync. May improve playback on some Android TV devices</string>
+    <string name="settings_playback_exo_chapters">Show Chapters</string>
+    <string name="settings_playback_exo_chapters_description">Read the chapters of MKV files to mark them on the progress bar and list them in the player. Makes a few small extra requests once playback starts. libmpv always shows chapters</string>
     <string name="settings_tmdb_api_key_label">API key</string>
     <string name="settings_tmdb_api_key_override_description">Use your own TMDB API key, or leave blank to use the default.</string>
     <string name="settings_tmdb_personal_api_key">Personal API key</string>
