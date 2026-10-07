@@ -24,35 +24,76 @@ class AutoPlaybackEngineResolverTest {
     }
 
     // --- HDR / Dolby Vision detection, one field at a time --------------------------------
+    //
+    // Every case here pairs the HDR signal with an anime signal (an anime id prefix), because
+    // ExoPlayer is also the plain fall-through result. Without the anime signal these assertions
+    // would pass even if the HDR scan did not exist at all.
 
     @Test
-    fun hdrInFilenameSelectsExoPlayer() {
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(filename = "Show.S01E01.2160p.HDR.mkv"))
+    fun hdrInFilenameOverridesAnimeDetection() {
+        assertEquals(
+            AndroidPlaybackEngine.ExoPlayer,
+            resolve(videoId = "mal:1", filename = "Show.S01E01.2160p.HDR.mkv"),
+        )
     }
 
     @Test
-    fun hdrInStreamNameSelectsExoPlayer() {
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(streamName = "1080p HDR WEB-DL"))
+    fun hdrInStreamNameOverridesAnimeDetection() {
+        assertEquals(
+            AndroidPlaybackEngine.ExoPlayer,
+            resolve(videoId = "mal:1", streamName = "1080p HDR WEB-DL"),
+        )
     }
 
     @Test
-    fun hdrInStreamDescriptionSelectsExoPlayer() {
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(description = "Dolby Vision profile 8"))
+    fun hdrInStreamDescriptionOverridesAnimeDetection() {
+        assertEquals(
+            AndroidPlaybackEngine.ExoPlayer,
+            resolve(videoId = "mal:1", description = "Dolby Vision profile 8"),
+        )
     }
 
     @Test
-    fun hdrInContentTitleSelectsExoPlayer() {
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(title = "Some Movie HDR"))
+    fun hdrInContentTitleOverridesAnimeDetection() {
+        assertEquals(
+            AndroidPlaybackEngine.ExoPlayer,
+            resolve(videoId = "mal:1", title = "Some Movie HDR"),
+        )
     }
 
     @Test
-    fun hdrTokenVariantsSelectExoPlayer() {
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(filename = "movie.hdr10.mkv"))
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(filename = "movie.hdr10plus.mkv"))
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(filename = "movie.hdr10+.mkv"))
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(filename = "movie.dv.mkv"))
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(filename = "movie.dolby.vision.mkv"))
-        assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(filename = "movie.DOLBY VISION.mkv"))
+    fun hdrTokenVariantsAreDetected() {
+        listOf(
+            "movie.hdr.mkv",
+            "movie.hdr10.mkv",
+            "movie.hdr10+.mkv",
+            "movie.dv.mkv",
+            "movie.dolby vision.mkv",
+            "movie.DOLBY VISION.mkv",
+        ).forEach { filename ->
+            assertEquals(
+                AndroidPlaybackEngine.ExoPlayer,
+                resolve(videoId = "mal:1", filename = filename),
+                "expected HDR/DV detection for $filename",
+            )
+        }
+    }
+
+    @Test
+    fun nonWordSeparatedAndSuffixedTokensAreNotDetected() {
+        // Mirrors NuvioTV exactly: the token must be a whole word, so a dotted separator
+        // ("dolby.vision") or a longer word ("hdr10plus") is not detected. Combined with an
+        // anime id, these fall through to the anime branch.
+        listOf(
+            "movie.hdr10plus.mkv",
+            "movie.dolby.vision.mkv",
+        ).forEach { filename ->
+            assertEquals(
+                AndroidPlaybackEngine.Libmpv,
+                resolve(videoId = "mal:1", filename = filename),
+                "expected no HDR/DV detection for $filename",
+            )
+        }
     }
 
     @Test
