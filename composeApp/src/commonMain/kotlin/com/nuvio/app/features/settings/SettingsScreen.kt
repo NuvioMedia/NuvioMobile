@@ -1172,6 +1172,7 @@ private fun TabletSettingsScreen(
                         streamReuseLastLinkEnabled = streamReuseLastLinkEnabled,
                         streamReuseLastLinkCacheHours = streamReuseLastLinkCacheHours,
                         androidPlaybackEngine = androidPlaybackEngine,
+                        autoSwitchPlaybackEngineOnError = autoSwitchPlaybackEngineOnError,
                         androidLibmpvVideoOutput = androidLibmpvVideoOutput,
                         androidLibmpvHardwareDecodingEnabled = androidLibmpvHardwareDecodingEnabled,
                         androidLibmpvYuv420pEnabled = androidLibmpvYuv420pEnabled,
