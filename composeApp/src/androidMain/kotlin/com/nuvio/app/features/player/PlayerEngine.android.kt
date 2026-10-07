@@ -129,7 +129,7 @@ actual fun PlatformPlayerSurface(
         initialPositionRequestKey.orEmpty(),
     )
     val requestedEngine = playbackEngine ?: playerSettings.androidPlaybackEngine
-    var activeEngine by remember(playerSourceKey, requestedEngine) {
+    val activeEngine by remember(playerSourceKey, requestedEngine) {
         mutableStateOf(requestedEngine.initialAndroidEngine())
     }
 
@@ -151,18 +151,7 @@ actual fun PlatformPlayerSurface(
             onInitialPositionHandled = onInitialPositionHandled,
             onControllerReady = onControllerReady,
             onSnapshot = onSnapshot,
-            onError = { message ->
-                if (message != null && requestedEngine == AndroidPlaybackEngine.Auto) {
-                    Log.w(TAG, "ExoPlayer failed; falling back to libmpv: $message")
-                    initialPositionRequestKey?.let { key ->
-                        onInitialPositionHandled(key, false)
-                    }
-                    activeEngine = ResolvedAndroidPlaybackEngine.Libmpv
-                    onError(null)
-                } else {
-                    onError(message)
-                }
-            },
+            onError = onError,
         )
         ResolvedAndroidPlaybackEngine.Libmpv -> {
             LaunchedEffect(initialPositionRequestKey) {

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -155,6 +156,28 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 DisposableEffect(Unit) {
                     onDispose { active.value = false }
                 }
+                // With the engine set to Auto, the concrete engine is resolved here, once per
+                // source, rather than inside the playback engine itself. HDR/Dolby Vision wins
+                // over anime; both are decided by the pure resolver so they can be unit tested.
+                val resolvedAutoEngine = remember(playbackKey, playerSettingsUiState.androidPlaybackEngine) {
+                    resolveAutoPlaybackEngine(
+                        playbackEngineSetting = playerSettingsUiState.androidPlaybackEngine,
+                        videoId = activeVideoId,
+                        streamFilename = activeTorrentFilename,
+                        streamName = activeStreamTitle,
+                        streamDescription = activeStreamSubtitle,
+                        contentTitle = title,
+                        genres = playerMeta?.genres.orEmpty(),
+                        country = playerMeta?.country,
+                    )
+                }
+                // Automatic engine failover and manual engine switches are scoped to one source:
+                // starting a source re-arms the failover and clears any previous engine choice.
+                LaunchedEffect(playbackKey) {
+                    engineFailoverTriggered = false
+                    engineFailoverDisarmed = false
+                    playbackEngineOverride = null
+                }
                 PlatformPlayerSurface(
                     sourceUrl = playerSurfaceSourceUrl,
                     sourceAudioUrl = activeSourceAudioUrl,
@@ -167,7 +190,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     initialPositionMs = activeInitialPositionMs.takeIf { it > 0L },
                     initialPositionRequestKey = initialPositionRequestKey,
                     resizeMode = resizeMode,
-                    playbackEngine = playbackEngineOverride,
+                    playbackEngine = playbackEngineOverride ?: resolvedAutoEngine,
                     onInitialPositionHandled = { key, handled ->
                         if (active.value && playbackKey == activePlaybackKey && key == currentInitialPositionRequestKey()) {
                             initialSeekApplied = handled
@@ -191,6 +214,13 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     onError = { message ->
                         if (!active.value || playbackKey != activePlaybackKey) return@PlatformPlayerSurface
                         if (message != null && tryRefreshCredentialedSourceAfterError(message)) {
+                            return@PlatformPlayerSurface
+                        }
+                        // Engine failover deliberately lives outside the engine enum. It is decided
+                        // here, driven by its own player setting, and applies whichever engine is
+                        // selected. The engine's own decoder/MIME retries have already been tried
+                        // by the time an error surfaces this far.
+                        if (message != null && maybeFailoverPlaybackEngine(resolvedAutoEngine)) {
                             return@PlatformPlayerSurface
                         }
                         errorMessage = message
