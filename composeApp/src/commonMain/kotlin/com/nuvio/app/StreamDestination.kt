@@ -28,6 +28,7 @@ import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.player.SubtitleRequestExtras
 import com.nuvio.app.features.player.resolveContentLanguage
 import com.nuvio.app.features.player.sanitizePlaybackHeaders
 import com.nuvio.app.features.player.sanitizePlaybackResponseHeaders
@@ -212,6 +213,7 @@ internal fun StreamDestination(
             torrentFileIdx = stream.p2pFileIdx,
             torrentFilename = stream.behaviorHints.filename,
             torrentTrackers = stream.p2pTrackers,
+            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints),
             initialPositionMs = resolvedResumePositionMs ?: 0L,
             initialProgressFraction = resolvedResumeProgressFraction,
             contentLanguage = resolveLaunchContentLanguage(),
@@ -333,6 +335,9 @@ internal fun StreamDestination(
                 parentMetaType = launch.parentMetaType ?: launch.type,
                 initialPositionMs = launch.resumePositionMs ?: 0L,
                 initialProgressFraction = launch.resumeProgressFraction,
+                subtitleExtras = SubtitleRequestExtras.from(
+                    StreamBehaviorHints(filename = cached.filename, videoSize = cached.videoSize),
+                ),
                 contentLanguage = resolveLaunchContentLanguage(cached.contentLanguage),
             )
             if (playerSettings.externalPlayerEnabled) {
@@ -485,6 +490,7 @@ internal fun StreamDestination(
             parentMetaType = launch.parentMetaType ?: launch.type,
             initialPositionMs = launch.resumePositionMs ?: 0L,
             initialProgressFraction = launch.resumeProgressFraction,
+            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints),
             contentLanguage = resolveLaunchContentLanguage(),
         )
         if (playerSettings.externalPlayerEnabled) {
@@ -633,6 +639,7 @@ internal fun StreamDestination(
             parentMetaType = launch.parentMetaType ?: launch.type,
             initialPositionMs = resolvedResumePositionMs ?: 0L,
             initialProgressFraction = resolvedResumeProgressFraction,
+            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints),
             contentLanguage = resolveLaunchContentLanguage(),
         )
 
