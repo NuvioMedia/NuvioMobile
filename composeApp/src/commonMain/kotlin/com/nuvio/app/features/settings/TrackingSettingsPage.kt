@@ -78,6 +78,10 @@ import nuvio.composeapp.generated.resources.settings_tracking_anime_id_mal_descr
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_subtitle
 import nuvio.composeapp.generated.resources.settings_tracking_anime_id_title
 import nuvio.composeapp.generated.resources.settings_tracking_anime_section
+import nuvio.composeapp.generated.resources.settings_tracking_mdblist_section
+import nuvio.composeapp.generated.resources.settings_mdblist_library_lists
+import nuvio.composeapp.generated.resources.settings_mdblist_library_lists_description
+import nuvio.composeapp.generated.resources.settings_mdblist_library_lists_summary
 import nuvio.composeapp.generated.resources.settings_trakt_comments
 import nuvio.composeapp.generated.resources.settings_trakt_comments_description
 import nuvio.composeapp.generated.resources.tracking_source_simkl
@@ -115,6 +119,7 @@ internal fun LazyListScope.trackingSettingsContent(
     settingsUiState: TrackingSettingsUiState,
     commentsEnabled: Boolean,
     onCommentsEnabledChange: (Boolean) -> Unit,
+    mdbListConnected: Boolean,
 ) {
     item {
         SettingsSection(
@@ -170,6 +175,17 @@ internal fun LazyListScope.trackingSettingsContent(
                     isTablet = isTablet,
                     settingsUiState = settingsUiState,
                 )
+            }
+        }
+    }
+
+    if (mdbListConnected) {
+        item {
+            SettingsSection(
+                title = stringResource(Res.string.settings_tracking_mdblist_section),
+                isTablet = isTablet,
+            ) {
+                MdbListLibraryListsSection(isTablet = isTablet)
             }
         }
     }
@@ -633,6 +649,43 @@ internal fun effectiveTrackingRecommendationsSource(
         }
     }
     return source
+}
+
+@Composable
+private fun MdbListLibraryListsSection(isTablet: Boolean) {
+    var showPicker by rememberSaveable { mutableStateOf(false) }
+    val options by remember { MdbListTracker.library.listOptions }.collectAsStateWithLifecycle(emptyList())
+    val isRefreshing by remember { MdbListTracker.library.isRefreshing }.collectAsStateWithLifecycle(false)
+
+    SettingsGroup(isTablet = isTablet) {
+        TrackingPreferenceActionRow(
+            title = stringResource(Res.string.settings_mdblist_library_lists),
+            description = stringResource(Res.string.settings_mdblist_library_lists_description),
+            value = if (options.isEmpty()) "" else stringResource(
+                Res.string.settings_mdblist_library_lists_summary,
+                options.count { it.visible },
+                options.size,
+            ),
+            isLoading = isRefreshing && options.isEmpty(),
+            isTablet = isTablet,
+            onClick = {
+                MdbListTracker.library.prepare()
+                showPicker = true
+            },
+        )
+    }
+
+    if (showPicker) {
+        MdbListLibraryListsPicker(
+            isTablet = isTablet,
+            options = options,
+            isLoading = isRefreshing,
+            onToggle = { option, onResult ->
+                MdbListTracker.library.setListVisibleAsync(option.key, !option.visible, onResult)
+            },
+            onDismiss = { showPicker = false },
+        )
+    }
 }
 
 @Composable

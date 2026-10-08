@@ -1,6 +1,7 @@
 package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.features.servers.ServerPlaybackTarget
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -19,6 +20,7 @@ data class StreamItem(
     val infoHash: String? = null,
     val fileIdx: Int? = null,
     val externalUrl: String? = null,
+    val ytId: String? = null,
     val sources: List<String> = emptyList(),
     val sourceName: String? = null,
     val addonName: String,
@@ -30,6 +32,7 @@ data class StreamItem(
     val debridCacheStatus: StreamDebridCacheStatus? = null,
     val externalSubtitles: List<StreamSubtitle> = emptyList(),
     val badges: List<StreamBadge> = emptyList(),
+    val serverTarget: ServerPlaybackTarget? = null,
 ) {
     val streamLabel: String
         get() = name?.takeIf { it.isNotBlank() } ?: "Stream"
@@ -58,6 +61,22 @@ data class StreamItem(
             infoHash.isNullOrBlank() &&
             clientResolve == null &&
             externalOpenUrl != null
+
+    /**
+     * YouTube video id to resolve on the device, set only when `ytId` is the
+     * stream's only way to play. Streams that also carry a url, externalUrl,
+     * torrent or debrid resolve keep using those.
+     */
+    val youTubeIdToResolve: String?
+        get() = ytId
+            ?.trim()
+            ?.takeIf {
+                it.isNotEmpty() &&
+                    url.isNullOrBlank() &&
+                    externalUrl.isNullOrBlank() &&
+                    infoHash.isNullOrBlank() &&
+                    clientResolve == null
+            }
 
     val torrentMagnetUri: String?
         get() = listOfNotNull(url, externalUrl)
@@ -110,7 +129,11 @@ data class StreamItem(
         get() = isInstalledAddonStream && (needsLocalDebridResolve || isDirectDebridStream)
 
     val hasPlayableSource: Boolean
-        get() = url != null || infoHash != null || externalUrl != null || clientResolve != null
+        get() = url != null || infoHash != null || externalUrl != null || clientResolve != null || ytId != null ||
+            serverTarget != null
+
+    val needsServerPreparation: Boolean
+        get() = serverTarget != null && playableDirectUrl == null
 }
 
 data class StreamBadge(
@@ -173,7 +196,9 @@ private fun String?.extractBtihInfoHash(): String? {
 
 fun StreamItem.isSelectableForPlayback(debridEnabled: Boolean): Boolean =
     playableDirectUrl != null ||
+        serverTarget != null ||
         shouldOpenExternally ||
+        youTubeIdToResolve != null ||
         (AppFeaturePolicy.p2pEnabled && needsLocalDebridResolve && p2pInfoHash != null) ||
         (debridEnabled && isAddonDebridCandidate)
 

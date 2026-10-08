@@ -81,6 +81,28 @@ internal expect object PlayerSettingsStorage {
     fun saveMapDV7ToHevc(enabled: Boolean)
     fun loadTunnelingEnabled(): Boolean?
     fun saveTunnelingEnabled(enabled: Boolean)
+    fun loadExoNativeMemoryEnabled(): Boolean?
+    fun saveExoNativeMemoryEnabled(enabled: Boolean)
+    fun loadVodCacheEnabled(): Boolean?
+    fun saveVodCacheEnabled(enabled: Boolean)
+    fun loadVodCacheSizeMode(): String?
+    fun saveVodCacheSizeMode(mode: String)
+    fun loadVodCacheSizeMb(): Int?
+    fun saveVodCacheSizeMb(sizeMb: Int)
+    fun loadBufferEngineEnabled(): Boolean?
+    fun saveBufferEngineEnabled(enabled: Boolean)
+    fun loadMinBufferMs(): Int?
+    fun saveMinBufferMs(value: Int)
+    fun loadMaxBufferMs(): Int?
+    fun saveMaxBufferMs(value: Int)
+    fun loadBufferForPlaybackMs(): Int?
+    fun saveBufferForPlaybackMs(value: Int)
+    fun loadBufferForPlaybackAfterRebufferMs(): Int?
+    fun saveBufferForPlaybackAfterRebufferMs(value: Int)
+    fun loadBackBufferDurationMs(): Int?
+    fun saveBackBufferDurationMs(value: Int)
+    fun loadTargetBufferSizeMb(): Int?
+    fun saveTargetBufferSizeMb(value: Int)
     fun loadStreamAutoPlayMode(): String?
     fun saveStreamAutoPlayMode(mode: String)
     fun loadStreamAutoPlaySource(): String?

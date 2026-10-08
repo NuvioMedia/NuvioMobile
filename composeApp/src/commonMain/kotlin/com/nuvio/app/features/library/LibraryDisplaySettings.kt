@@ -18,6 +18,8 @@ enum class LibrarySortOption {
     DEFAULT,
     ADDED_DESC,
     ADDED_ASC,
+    RELEASED_DESC,
+    RELEASED_ASC,
     TITLE_ASC,
     TITLE_DESC,
 }
@@ -84,21 +86,24 @@ internal data class LibraryVerticalProjection(
     val entries: List<LibraryVerticalEntry>,
 )
 
+private val ReleaseSortOptions = setOf(LibrarySortOption.RELEASED_DESC, LibrarySortOption.RELEASED_ASC)
+
 internal fun availableLibrarySortOptions(sourceMode: LibrarySourceMode): List<LibrarySortOption> =
-    if (sourceMode.isRemoteTrackingSource) {
-        LibrarySortOption.entries
-    } else {
-        LibrarySortOption.entries.filterNot { it == LibrarySortOption.DEFAULT }
+    when {
+        sourceMode == LibrarySourceMode.MDBLIST -> LibrarySortOption.entries
+        sourceMode.isRemoteTrackingSource -> LibrarySortOption.entries.filterNot { it in ReleaseSortOptions }
+        else -> LibrarySortOption.entries.filterNot { it == LibrarySortOption.DEFAULT || it in ReleaseSortOptions }
     }
 
+// The sort option is shared by all sources, so one a source does not offer falls back to its default.
 internal fun effectiveLibrarySortOption(
     selected: LibrarySortOption,
     sourceMode: LibrarySourceMode,
 ): LibrarySortOption =
-    if (selected == LibrarySortOption.DEFAULT && sourceMode == LibrarySourceMode.LOCAL) {
-        LibrarySortOption.ADDED_DESC
-    } else {
-        selected
+    when {
+        selected in availableLibrarySortOptions(sourceMode) -> selected
+        sourceMode.isRemoteTrackingSource -> LibrarySortOption.DEFAULT
+        else -> LibrarySortOption.ADDED_DESC
     }
 
 internal fun sortLibraryItems(
@@ -110,17 +115,10 @@ internal fun sortLibraryItems(
 ): List<LibraryItem> =
     when (effectiveLibrarySortOption(selected, sourceMode)) {
         LibrarySortOption.DEFAULT -> items.sortedWith(
-            if (sourceMode == LibrarySourceMode.MDBLIST) {
-                compareByDescending<LibraryItem> { it.savedAtEpochMs }
-                    .thenByDescending { it.listRanks[listKey] ?: Int.MIN_VALUE }
-                    .thenBy { libraryTitleTieBreakKey(it) }
-                    .thenBy { it.id }
-            } else {
-                compareBy<LibraryItem> { it.listRanks[listKey] ?: it.traktRank ?: Int.MAX_VALUE }
-                    .thenByDescending { it.savedAtEpochMs }
-                    .thenBy { libraryTitleTieBreakKey(it) }
-                    .thenBy { it.id }
-            },
+            compareBy<LibraryItem> { it.listRanks[listKey] ?: it.traktRank ?: Int.MAX_VALUE }
+                .thenByDescending { it.savedAtEpochMs }
+                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { it.id },
         )
         LibrarySortOption.ADDED_DESC -> items.sortedWith(
             providerOrder?.let(::libraryProviderOrderComparator) ?: compareByDescending<LibraryItem> { it.savedAtEpochMs }
@@ -131,6 +129,17 @@ internal fun sortLibraryItems(
             providerOrder?.let(::libraryProviderOrderComparator) ?: compareBy<LibraryItem> { it.savedAtEpochMs }
                 .thenBy { libraryTitleTieBreakKey(it) }
                 .thenBy { it.id },
+        )
+        LibrarySortOption.RELEASED_DESC -> items.sortedWith(
+            providerOrder?.let(::libraryProviderOrderComparator) ?: compareByDescending<LibraryItem> { libraryReleaseYear(it) }
+                .thenBy { libraryTitleTieBreakKey(it) }
+                .thenBy { it.id },
+        )
+        LibrarySortOption.RELEASED_ASC -> items.sortedWith(
+            providerOrder?.let(::libraryProviderOrderComparator)
+                ?: compareBy<LibraryItem, Int?>(nullsLast()) { libraryReleaseYear(it) }
+                    .thenBy { libraryTitleTieBreakKey(it) }
+                    .thenBy { it.id },
         )
         LibrarySortOption.TITLE_ASC -> items.sortedWith(
             compareBy<LibraryItem> { libraryTitleSortKey(it) }
@@ -246,6 +255,11 @@ private fun libraryTitleSortKey(item: LibraryItem): String =
     libraryTitleTieBreakKey(item)
         .trim()
         .replace(LeadingLibraryTitleArticle, "")
+
+private val LibraryReleaseYear = Regex("""\d{4}""")
+
+private fun libraryReleaseYear(item: LibraryItem): Int? =
+    item.releaseInfo?.let { LibraryReleaseYear.find(it)?.value?.toIntOrNull() }
 
 private fun libraryTitleTieBreakKey(item: LibraryItem): String =
     item.name

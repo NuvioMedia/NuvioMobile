@@ -1,10 +1,14 @@
 package com.nuvio.app.features.mdblist
 
 import com.nuvio.app.features.tracking.TrackingLibrarySorter
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+
+// Cached next to the added orders ("asc"/"desc") of each list, oldest release first.
+internal const val RELEASED_ORDER_KEY = "released_oldest"
 
 internal class MdbListLibrarySorter(
     private val api: MdbListApiClient,
@@ -18,27 +22,48 @@ internal class MdbListLibrarySorter(
         }?.let { state.scope to it }
     }.distinctUntilChanged()
 
-    override fun observeAddedOrder(listKey: String, descending: Boolean) = snapshots.map { scoped ->
-        val (scope, library) = scoped ?: return@map null
-        if (listKey !in library.itemsByList) return@map null
+    override fun observeAddedOrder(listKey: String, descending: Boolean): Flow<List<String>?> {
         // MDBList returns the newest additions for order=asc and the oldest for order=desc.
         val direction = if (descending) "asc" else "desc"
-        val cached = library.addedOrders[listKey]?.get(direction)
-        if (cached != null && !library.invalidated) return@map library.orderKeys(cached)
+        return observeOrder(listKey, direction, reversed = false) { it.items(listKey, "added", direction) }
+    }
+
+    // One oldest-first order serves both directions. Like added, MDBList returns the newest
+    // releases for order=asc, so the oldest are requested with order=desc.
+    override fun observeReleaseOrder(listKey: String, descending: Boolean): Flow<List<String>?> =
+        observeOrder(listKey, RELEASED_ORDER_KEY, reversed = descending) {
+            it.items(listKey, "released", "desc").oldestFirst()
+        }
+
+    private fun observeOrder(
+        listKey: String,
+        cacheKey: String,
+        reversed: Boolean,
+        fetch: suspend (MdbListLibraryRemote) -> List<MdbListLibraryItem>
+    ) = snapshots.map { scoped ->
+        val (scope, library) = scoped ?: return@map null
+        if (listKey !in library.itemsByList) return@map null
+        val cached = library.addedOrders[listKey]?.get(cacheKey)
+        if (cached != null && !library.invalidated) return@map library.orderKeys(cached, reversed)
         if (library.invalidated) return@map null
         sync.mutate(requireNotNull(scope)) { previous ->
             val current = previous.library ?: throw MdbListDecodingException()
             if (listKey !in current.itemsByList || current.invalidated) return@mutate previous to null
-            val order = current.addedOrders[listKey]?.get(direction)
-                ?: MdbListLibraryRemote(api, scope).items(listKey, direction)
-                    .map { MdbListLibraryOrderItem(it.type, it.media.ids) }
+            val order = current.addedOrders[listKey]?.get(cacheKey)
+                ?: fetch(MdbListLibraryRemote(api, scope)).map { MdbListLibraryOrderItem(it.type, it.media.ids) }
             val updated = current.copy(addedOrders = current.addedOrders +
-                (listKey to (current.addedOrders[listKey].orEmpty() + (direction to order))))
-            previous.copy(library = updated) to updated.orderKeys(order)
+                (listKey to (current.addedOrders[listKey].orEmpty() + (cacheKey to order))))
+            previous.copy(library = updated) to updated.orderKeys(order, reversed)
         }
     }.distinctUntilChanged()
 
-    private fun MdbListLibrarySnapshot.orderKeys(order: List<MdbListLibraryOrderItem>): List<String> {
+    // The order direction is undocumented, so it is checked against the returned release dates.
+    private fun List<MdbListLibraryItem>.oldestFirst(): List<MdbListLibraryItem> {
+        val dates = mapNotNull { it.releaseDate ?: it.media.year?.toString() }
+        return if (dates.isNotEmpty() && dates.first() > dates.last()) reversed() else this
+    }
+
+    private fun MdbListLibrarySnapshot.orderKeys(order: List<MdbListLibraryOrderItem>, reversed: Boolean): List<String> {
         val index = MdbListMediaIndex(MdbListSyncSnapshot(0))
         itemsByList.values.flatten().forEach { index.add(it.type, it.media) }
         val keys = buildMap {
@@ -48,7 +73,7 @@ internal class MdbListLibrarySorter(
                 media.ids.aliases().forEach { put(item.type to it, "$type:${media.ids.contentId}") }
             }
         }
-        return order.map { item ->
+        return (if (reversed) order.asReversed() else order).map { item ->
             val type = if (item.type == MdbListItemType.MOVIE) "movie" else "series"
             item.ids.aliases().firstNotNullOfOrNull { keys[item.type to it] } ?: "$type:${item.ids.contentId}"
         }

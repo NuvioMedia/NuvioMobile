@@ -3,8 +3,8 @@
 set -euo pipefail
 
 repository_root="$(cd "$(dirname "$0")/.." && pwd -P)"
-engine_version=0.1.2
-engine_checksum=ed35576d962930d3207b2725fa737f71ef080e35dbfa2f0bf6f21ab1719b7029
+engine_version=0.1.4
+engine_checksum=a941b1638ff725d775712aeef68beda2a3eadff3325bad017a8724d73be5043c
 engine_root="${NUVIO_ENGINE_ROOT:-${repository_root}/../nuvio-engine}"
 engine_framework="${engine_root}/platform/apple/NuvioEngine.xcframework"
 

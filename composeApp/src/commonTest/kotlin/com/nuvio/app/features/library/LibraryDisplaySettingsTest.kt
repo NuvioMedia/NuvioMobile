@@ -41,47 +41,63 @@ class LibraryDisplaySettingsTest {
     }
 
     @Test
-    fun `MDBList provider order puts the highest rank first when added dates are absent`() {
+    fun `MDBList provider order follows the saved list order rather than added dates`() {
         val listKey = "mdblist:list:1"
         val items = listOf(
-            item("zulu", name = "Zulu").copy(listRanks = mapOf(listKey to 0)),
-            item("alpha", name = "Alpha").copy(listRanks = mapOf(listKey to 1)),
+            item("alpha", name = "The Alpha", savedAt = 2L, releaseInfo = "2024").copy(listRanks = mapOf(listKey to 2)),
+            item("zulu", name = "Zulu", savedAt = 3L, releaseInfo = "1999").copy(listRanks = mapOf(listKey to 0)),
+            item("bravo", name = "Bravo", savedAt = 1L, releaseInfo = "2010").copy(listRanks = mapOf(listKey to 1)),
+        )
+        val expected = mapOf(
+            LibrarySortOption.DEFAULT to listOf("zulu", "bravo", "alpha"),
+            LibrarySortOption.ADDED_DESC to listOf("zulu", "alpha", "bravo"),
+            LibrarySortOption.ADDED_ASC to listOf("bravo", "alpha", "zulu"),
+            LibrarySortOption.RELEASED_DESC to listOf("alpha", "bravo", "zulu"),
+            LibrarySortOption.RELEASED_ASC to listOf("zulu", "bravo", "alpha"),
+            LibrarySortOption.TITLE_ASC to listOf("alpha", "bravo", "zulu"),
+            LibrarySortOption.TITLE_DESC to listOf("zulu", "bravo", "alpha"),
+        )
+        assertEquals(LibrarySortOption.entries.toSet(), expected.keys)
+        for ((option, ids) in expected) {
+            assertEquals(ids, sortLibraryItems(items, option, LibrarySourceMode.MDBLIST, listKey).map { it.id }, option.name)
+        }
+    }
+
+    @Test
+    fun `release year sorting keeps items without a year last in both directions`() {
+        val items = listOf(
+            item("unknown"),
+            item("old", releaseInfo = "1994"),
+            item("range", releaseInfo = "2008-2013"),
         )
         assertEquals(
-            listOf("alpha", "zulu"),
-            sortLibraryItems(items, LibrarySortOption.DEFAULT, LibrarySourceMode.MDBLIST, listKey).map { it.id },
+            listOf("range", "old", "unknown"),
+            sortLibraryItems(items, LibrarySortOption.RELEASED_DESC, LibrarySourceMode.MDBLIST).map { it.id },
+        )
+        assertEquals(
+            listOf("old", "range", "unknown"),
+            sortLibraryItems(items, LibrarySortOption.RELEASED_ASC, LibrarySourceMode.MDBLIST).map { it.id },
         )
     }
 
     @Test
-    fun `MDBList provider order prefers newest additions then highest rank`() {
-        val listKey = "mdblist:list:1"
-        val items = listOf(
-            item("zulu", name = "Zulu", savedAt = 1L).copy(listRanks = mapOf(listKey to 2)),
-            item("bravo", name = "Bravo", savedAt = 2L).copy(listRanks = mapOf(listKey to 1)),
-            item("alpha", name = "The Alpha", savedAt = 3L).copy(listRanks = mapOf(listKey to 0)),
+    fun `release sorts are offered only for MDBList and fall back elsewhere`() {
+        val released = setOf(LibrarySortOption.RELEASED_DESC, LibrarySortOption.RELEASED_ASC)
+        assertEquals(released, availableLibrarySortOptions(LibrarySourceMode.MDBLIST).toSet() intersect released)
+        for (source in listOf(LibrarySourceMode.LOCAL, LibrarySourceMode.TRAKT, LibrarySourceMode.SIMKL)) {
+            assertEquals(emptySet(), availableLibrarySortOptions(source).toSet() intersect released)
+        }
+        assertEquals(
+            LibrarySortOption.RELEASED_ASC,
+            effectiveLibrarySortOption(LibrarySortOption.RELEASED_ASC, LibrarySourceMode.MDBLIST),
         )
         assertEquals(
-            listOf("alpha", "bravo", "zulu"),
-            sortLibraryItems(items, LibrarySortOption.DEFAULT, LibrarySourceMode.MDBLIST, listKey).map { it.id },
+            LibrarySortOption.DEFAULT,
+            effectiveLibrarySortOption(LibrarySortOption.RELEASED_DESC, LibrarySourceMode.TRAKT),
         )
         assertEquals(
-            listOf("zulu", "bravo", "alpha"),
-            sortLibraryItems(items, LibrarySortOption.ADDED_ASC, LibrarySourceMode.MDBLIST, listKey).map { it.id },
-        )
-    }
-
-    @Test
-    fun `MDBList provider order reverses response order when rank and added date are absent`() {
-        val listKey = "mdblist:list:1"
-        val items = listOf(
-            item("zulu", name = "Zulu").copy(listRanks = mapOf(listKey to 0)),
-            item("alpha", name = "Alpha").copy(listRanks = mapOf(listKey to 1)),
-            item("bravo", name = "Bravo").copy(listRanks = mapOf(listKey to 2)),
-        )
-        assertEquals(
-            listOf("bravo", "alpha", "zulu"),
-            sortLibraryItems(items, LibrarySortOption.DEFAULT, LibrarySourceMode.MDBLIST, listKey).map { it.id },
+            LibrarySortOption.ADDED_DESC,
+            effectiveLibrarySortOption(LibrarySortOption.RELEASED_DESC, LibrarySourceMode.LOCAL),
         )
     }
 
@@ -205,11 +221,13 @@ class LibraryDisplaySettingsTest {
         name: String = id,
         savedAt: Long = 0L,
         traktRank: Int? = null,
+        releaseInfo: String? = null,
     ): LibraryItem =
         LibraryItem(
             id = id,
             type = type,
             name = name,
+            releaseInfo = releaseInfo,
             savedAtEpochMs = savedAt,
             traktRank = traktRank,
         )

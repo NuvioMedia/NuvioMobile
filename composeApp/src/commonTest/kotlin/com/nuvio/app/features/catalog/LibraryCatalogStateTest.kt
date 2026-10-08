@@ -120,7 +120,7 @@ class LibraryCatalogStateTest {
             ).collect { emissions.add(it) }
         }
         try {
-            assertEquals(listOf("alpha", "zulu"), emissions.last().items.map { it.id })
+            assertEquals(listOf("zulu", "alpha"), emissions.last().items.map { it.id })
 
             library.value = state(
                 listOf(
@@ -131,7 +131,7 @@ class LibraryCatalogStateTest {
             ).copy(sourceMode = LibrarySourceMode.MDBLIST)
             yield()
 
-            assertEquals(listOf("zulu", "alpha"), emissions.last().items.map { it.id })
+            assertEquals(listOf("alpha", "zulu"), emissions.last().items.map { it.id })
             assertEquals(2, emissions.size)
         } finally {
             job.cancelAndJoin()

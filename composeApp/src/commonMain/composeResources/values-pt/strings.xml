@@ -1882,4 +1882,9 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Integrada (Embedded)</string>
     <string name="stream_info_player_engine">Motor do Leitor</string>
+    <string name="settings_tracking_mdblist_section">Funcionalidades MDBList</string>
+    <string name="settings_mdblist_library_lists">Listas da Biblioteca</string>
+    <string name="settings_mdblist_library_lists_description">Escolhe que listas do MDBList aparecem na Biblioteca e em Gerir Listas. A Watchlist aparece sempre.</string>
+    <string name="settings_mdblist_library_lists_summary">%1$d de %2$d visíveis</string>
+    <string name="settings_mdblist_library_lists_empty">Ainda não foram encontradas listas na tua conta MDBList. Sincroniza para as carregar.</string>
 </resources>

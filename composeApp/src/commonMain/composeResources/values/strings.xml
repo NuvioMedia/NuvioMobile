@@ -1223,6 +1223,29 @@
     <string name="settings_playback_timeout_unlimited">Unlimited</string>
     <string name="settings_playback_tunneled_playback">Tunneled Playback</string>
     <string name="settings_playback_tunneled_playback_description">Hardware-level audio/video sync. May improve playback on some Android TV devices</string>
+    <string name="settings_playback_exo_native_memory">ExoPlayer Native Memory</string>
+    <string name="settings_playback_exo_native_memory_description">Keep playback buffers in native memory instead of the Java heap, so large files can buffer further without memory pressure.</string>
+    <string name="settings_playback_exo_native_memory_unsupported">This device does not support native playback memory.</string>
+    <string name="settings_playback_exo_native_memory_device">Device memory: %1$s. Safe buffer limit: %2$d MB.</string>
+    <string name="settings_playback_buffer_custom">Custom Playback Buffers</string>
+    <string name="settings_playback_buffer_custom_description">Override the player buffer. When off, ExoPlayer uses its normal buffer, or the native-memory defaults if that option is on.</string>
+    <string name="settings_playback_buffer_warning">These values change how much is buffered before and during playback. A value that is too small can stall, and one that is too large can use more memory.</string>
+    <string name="settings_playback_buffer_min">Min Buffer</string>
+    <string name="settings_playback_buffer_max">Max Buffer</string>
+    <string name="settings_playback_buffer_initial">Start Buffer</string>
+    <string name="settings_playback_buffer_rebuffer">Buffer After Stall</string>
+    <string name="settings_playback_buffer_back">Back Buffer</string>
+    <string name="settings_playback_buffer_target">Target Buffer Size</string>
+    <string name="settings_playback_buffer_seconds">%1$ds</string>
+    <string name="settings_playback_buffer_same_as_min">%1$ds (same as min)</string>
+    <string name="settings_playback_buffer_target_warning">Above the safe limit of %1$d MB. Playback can run out of memory.</string>
+    <string name="settings_playback_vod_cache">VOD Disk Cache</string>
+    <string name="settings_playback_vod_cache_description">Save the current progressive stream to disk. Seek-back stays instant past the memory buffer and short network drops keep playing. HLS and DASH are not cached.</string>
+    <string name="settings_playback_vod_cache_auto_size">Auto Size</string>
+    <string name="settings_playback_vod_cache_auto_size_description">Size the cache from free disk space. Turn off to choose a size.</string>
+    <string name="settings_playback_vod_cache_size">VOD Cache Size</string>
+    <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
+    <string name="settings_playback_vod_cache_warning">Disk writes continue while a cached stream plays. A new size applies the next time the app starts.</string>
     <string name="settings_tmdb_api_key_label">API key</string>
     <string name="settings_tmdb_api_key_override_description">Use your own TMDB API key, or leave blank to use the default.</string>
     <string name="settings_tmdb_personal_api_key">Personal API key</string>
@@ -1307,6 +1330,11 @@
     <string name="settings_tracking_anime_id_tvdb">Prefer TVDB</string>
     <string name="settings_tracking_anime_id_tvdb_description">Use TVDB ID to group seasons. More stable than IMDB for anime with per-season IMDB splits.</string>
     <string name="settings_tracking_anime_section">Simkl features</string>
+    <string name="settings_tracking_mdblist_section">MDBList features</string>
+    <string name="settings_mdblist_library_lists">Library lists</string>
+    <string name="settings_mdblist_library_lists_description">Choose which MDBList lists appear in the Library and in Manage Lists. The Watchlist is always shown.</string>
+    <string name="settings_mdblist_library_lists_summary">%1$d of %2$d shown</string>
+    <string name="settings_mdblist_library_lists_empty">No lists found in your MDBList account yet. Sync to load them.</string>
     <string name="settings_simkl_connect">Connect Simkl</string>
     <string name="settings_simkl_connected_as">Connected as %1$s</string>
     <string name="settings_simkl_default_user">Simkl user</string>
@@ -1656,6 +1684,8 @@
     <string name="player_loading_starting">Starting stream…</string>
     <string name="player_loading_buffering">Buffering…</string>
     <string name="debrid_resolving_stream">Resolving debrid stream</string>
+    <string name="youtube_resolving_stream">Loading YouTube video</string>
+    <string name="youtube_resolution_failed">Could not load this YouTube video.</string>
     <string name="streams_loading_subtitles">Loading subtitles from addons…</string>
     <string name="streams_loading_skip_segments">Loading intro/outro segments…</string>
     <string name="streams_finding_streams">Finding streams…</string>
@@ -1894,6 +1924,8 @@
     <string name="library_other">Other</string>
     <string name="library_sort_added_asc">Oldest added</string>
     <string name="library_sort_added_desc">Recently added</string>
+    <string name="library_sort_released_asc">Oldest released</string>
+    <string name="library_sort_released_desc">Recently released</string>
     <string name="library_sort_title_asc">Title A–Z</string>
     <string name="library_error_sort_failed">Couldn\'t load sort order. Showing provider order.</string>
     <string name="library_sort_title_desc">Title Z–A</string>
@@ -2426,4 +2458,5 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Embedded</string>
     <string name="stream_info_player_engine">Player Engine</string>
+    <string name="stream_info_server">Server</string>
 </resources>

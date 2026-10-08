@@ -13,7 +13,8 @@ internal fun mdbListLibraryListsBody(version: String? = "v1", count: Int = 0) = 
 internal fun mdbListLibrarySnapshot(now: Long) = MdbListLibrarySnapshot(
     lists = listOf(MdbListLibraryList(7, "Favourites", true, updatedAt = "v1")),
     itemsByList = mapOf(MDBLIST_WATCHLIST_KEY to emptyList(), MDBLIST_TEST_LIST_KEY to emptyList()),
-    checkedAtEpochMs = now
+    checkedAtEpochMs = now,
+    itemsOrder = MDBLIST_ITEMS_ORDER
 )
 
 internal fun MdbListSyncTestHarness.libraryService(coroutineScope: CoroutineScope) = MdbListLibraryService(

@@ -6,6 +6,7 @@ import com.nuvio.app.features.addons.AddonManifest
 import com.nuvio.app.features.addons.ManagedAddon
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.catalog.supportsPagination
+import com.nuvio.app.features.servers.ServerCatalog
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.home_catalog_default_title
@@ -21,6 +22,7 @@ data class HomeCatalogDefinition(
     val catalogId: String,
     val supportsPagination: Boolean,
     val descriptorSignature: String,
+    val serverConnectionId: String? = null,
 ) {
     val cacheKey: String
         get() = "$key|$descriptorSignature"
@@ -66,7 +68,7 @@ fun buildHomeCatalogDefinitions(addons: List<ManagedAddon>): List<HomeCatalogDef
                     descriptorSignature = buildHomeCatalogDescriptorSignature(addon, manifest, catalog),
                 )
             }
-    }.distinctBy(HomeCatalogDefinition::key)
+    }.distinctBy(HomeCatalogDefinition::key) + ServerCatalog.homeDefinitions()
 
 private fun buildHomeCatalogDescriptorSignature(
     addon: ManagedAddon,

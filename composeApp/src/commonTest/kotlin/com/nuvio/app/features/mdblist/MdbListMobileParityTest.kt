@@ -25,8 +25,8 @@ class MdbListMobileParityTest {
         val second = LibraryItem("tt2", "movie", "Second", listRanks = mapOf("a" to 2, "b" to 1), savedAtEpochMs = 0)
         val sections = listOf(LibrarySection("a", "A", listOf(first, second)), LibrarySection("b", "B", listOf(first, second)))
         val sorted = sortLibrarySections(sections, LibrarySortOption.DEFAULT, LibrarySourceMode.MDBLIST)
-        assertEquals(listOf("tt2", "tt1"), sorted[0].items.map { it.id })
-        assertEquals(listOf("tt1", "tt2"), sorted[1].items.map { it.id })
+        assertEquals(listOf("tt1", "tt2"), sorted[0].items.map { it.id })
+        assertEquals(listOf("tt2", "tt1"), sorted[1].items.map { it.id })
     }
 
     @Test

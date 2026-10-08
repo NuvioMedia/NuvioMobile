@@ -1397,4 +1397,9 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Embutida</string>
     <string name="stream_info_player_engine">Player</string>
+    <string name="settings_tracking_mdblist_section">Recursos do MDBList</string>
+    <string name="settings_mdblist_library_lists">Listas da Biblioteca</string>
+    <string name="settings_mdblist_library_lists_description">Escolha quais listas do MDBList aparecem na Biblioteca e em Gerenciar Listas. A Watchlist sempre aparece.</string>
+    <string name="settings_mdblist_library_lists_summary">%1$d de %2$d visíveis</string>
+    <string name="settings_mdblist_library_lists_empty">Nenhuma lista encontrada na sua conta MDBList ainda. Sincronize para carregá-las.</string>
 </resources>

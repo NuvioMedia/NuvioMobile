@@ -20,6 +20,26 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.5.8",
+          "buildVersion": "140",
+          "date": "2026-10-08T10:44:43Z",
+          "localizedDescription": "- [i18n: Add Croatian (hr) translation (#2169)](https://github.com/NuvioMedia/NuvioMobile/pull/2169) @Anarchydr  \r\n- [feat(mdblist): sort library lists by release date (#2196)](https://github.com/NuvioMedia/NuvioMobile/pull/2196) @kernexshadow  \r\n- [Reset next episode preload flag on episode transition (#2193)](https://github.com/NuvioMedia/NuvioMobile/pull/2193) @skoruppa  \r\n- [fix(UI): fix hero content shifting on horizontal and tablet layouts (#2190)](https://github.com/NuvioMedia/NuvioMobile/pull/2190) @ThEgIGN  \r\n- [feat(servers): add experimental Jellyfin and Emby support (#2081)](https://github.com/NuvioMedia/NuvioMobile/pull/2081) @tapframe  \r\n- [fix(streams): play streams that only have a ytId (#2115)](https://github.com/NuvioMedia/NuvioMobile/pull/2115) @deejay189393  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.8-beta/nuvio-0.5.8-full-release.ipa",
+          "size": 67558904,
+          "sha256": "7aa44bc33bfbf9e4edc8551fba5860d125e0ff5df418118d8bc2d668b5c4698f",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.7",
+          "buildVersion": "139",
+          "date": "2026-10-06T15:53:34Z",
+          "localizedDescription": "- c2127769 fix(p2p): correct torrent cache path and usage @tapframe  \r\n- [feat(player): add ExoPlayer native memory, VOD cache, and buffer setting (#2178)](https://github.com/NuvioMedia/NuvioMobile/pull/2178) @halibiram  \r\n- e22baece feat(details): add letterbox zoom to hero trailer @tapframe  \r\n- [feat(mdblist): choose which lists appear in the library (#2171)](https://github.com/NuvioMedia/NuvioMobile/pull/2171) @kernexshadow  \r\n- 53ac5e53 fix(player): follow system brightness when touch gestures are off @tapframe  \r\n- 459add64 feat(streams): match tv refresh spin in streams and player panels @tapframe  \r\n- d3786272 feat(player): add switch player and stream info actions @tapframe  \r\n- 909dd7dc feat(streams): spin refresh button until addons finish loading @tapframe  \r\n- [fix custom poster pattern URL validation and decoding (#2153)](https://github.com/NuvioMedia/NuvioMobile/pull/2153) @skoruppa  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.7-beta/nuvio-0.5.7-full-release.ipa",
+          "size": 66836754,
+          "sha256": "12e380470a1ba1aab42709480aa08fe440f9171d3872a91fa9ff7f9a3de194fe",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.5.6",
           "buildVersion": "138",
           "date": "2026-10-02T12:45:05Z",
@@ -252,7 +272,9 @@
       ],
       "appPermissions": {
         "entitlements": [],
-        "privacy": {}
+        "privacy": {
+          "NSLocalNetworkUsageDescription": "Nuvio connects to media servers on your local network."
+        }
       }
     }
   ],

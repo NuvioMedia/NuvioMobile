@@ -9,6 +9,7 @@ import com.nuvio.app.features.catalog.CatalogScreen
 import com.nuvio.app.features.catalog.CatalogTarget
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.library.toLibraryItem
+import com.nuvio.app.features.servers.ServerCatalog
 import com.nuvio.app.navigation.CatalogRoute
 import com.nuvio.app.navigation.DetailRoute
 import com.nuvio.app.navigation.NuvioNavigator
@@ -36,6 +37,17 @@ internal object CatalogLaunchStore {
     }
 }
 
+internal fun NuvioNavigator.openPreview(meta: MetaPreview) {
+    val collection = ServerCatalog.collectionTarget(meta)
+    if (collection == null) {
+        navigate(DetailRoute(type = meta.type, id = meta.id, title = meta.name))
+        return
+    }
+    val subtitle = ServerCatalog.sourceLabel(collection)
+    val launchId = CatalogLaunchStore.put(CatalogLaunch(title = meta.name, subtitle = subtitle, target = collection))
+    navigate(CatalogRoute(launchId = launchId, title = meta.name, subtitle = subtitle))
+}
+
 @Composable
 internal fun CatalogDestination(
     route: CatalogRoute,
@@ -55,9 +67,7 @@ internal fun CatalogDestination(
         subtitle = launch.subtitle,
         target = target,
         onBack = onBack,
-        onPosterClick = { meta ->
-            navController.navigate(DetailRoute(type = meta.type, id = meta.id, title = meta.name))
-        },
+        onPosterClick = navController::openPreview,
         onPosterLongClick = { meta: MetaPreview ->
             onPosterLongClick(
                 if (target is CatalogTarget.Library) {

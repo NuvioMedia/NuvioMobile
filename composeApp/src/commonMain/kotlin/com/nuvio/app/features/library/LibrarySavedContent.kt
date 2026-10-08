@@ -28,6 +28,8 @@ import nuvio.composeapp.generated.resources.library_sort_added_desc
 import nuvio.composeapp.generated.resources.library_sort_title_asc
 import nuvio.composeapp.generated.resources.library_sort_title_desc
 import nuvio.composeapp.generated.resources.library_sort_provider_order
+import nuvio.composeapp.generated.resources.library_sort_released_asc
+import nuvio.composeapp.generated.resources.library_sort_released_desc
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -161,6 +163,8 @@ private fun librarySortOptionLabel(option: LibrarySortOption): String =
         LibrarySortOption.DEFAULT -> stringResource(Res.string.library_sort_provider_order)
         LibrarySortOption.ADDED_DESC -> stringResource(Res.string.library_sort_added_desc)
         LibrarySortOption.ADDED_ASC -> stringResource(Res.string.library_sort_added_asc)
+        LibrarySortOption.RELEASED_DESC -> stringResource(Res.string.library_sort_released_desc)
+        LibrarySortOption.RELEASED_ASC -> stringResource(Res.string.library_sort_released_asc)
         LibrarySortOption.TITLE_ASC -> stringResource(Res.string.library_sort_title_asc)
         LibrarySortOption.TITLE_DESC -> stringResource(Res.string.library_sort_title_desc)
     }

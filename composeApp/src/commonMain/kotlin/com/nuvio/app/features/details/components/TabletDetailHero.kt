@@ -192,8 +192,6 @@ private fun BackdropArtwork(
                 muted = heroTrailerMuted,
                 modifier = artworkModifier.graphicsLayer {
                     alpha = trailerAlpha
-                    scaleX = TrailerZoom
-                    scaleY = TrailerZoom
                 },
                 onReady = onHeroTrailerReady,
                 onEnded = onHeroTrailerFinished,
@@ -438,4 +436,3 @@ private fun TabletHeroMetaRow(meta: MetaDetails, showImdbRating: Boolean) {
 private val TabletHeroHeight = 660.dp
 private val TabletHeroTopInset = 96.dp
 private const val BackdropVerticalBias = -0.6f
-private const val TrailerZoom = 1.35f

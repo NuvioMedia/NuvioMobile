@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
+import com.nuvio.app.features.streams.redactedForLogs
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
@@ -48,7 +49,6 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.TransferListener
-import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.ForwardingRenderer
@@ -302,8 +302,12 @@ private fun ExoPlayerSurface(
         sanitizedSourceResponseHeaders,
         useYoutubeChunkedPlayback,
         externalSubtitles,
+        normalizedStreamType,
+        playerSettings.vodCacheEnabled,
+        playerSettings.vodCacheSizeMode,
+        playerSettings.vodCacheSizeMb,
     ) {
-        PlatformPlaybackDataSourceFactory.create(
+        val upstream = PlatformPlaybackDataSourceFactory.create(
             context = context,
             defaultRequestHeaders = sanitizedSourceHeaders,
             defaultResponseHeaders = sanitizedSourceResponseHeaders,
@@ -311,6 +315,26 @@ private fun ExoPlayerSurface(
             useLongReadTimeout = isLoopbackPlaybackSource(sourceUrl),
             externalSubtitles = externalSubtitles,
         )
+        val mimeType = playbackMediaItemFromUrl(
+            url = sourceUrl,
+            responseHeaders = sanitizedSourceResponseHeaders,
+            streamType = normalizedStreamType,
+        ).localConfiguration?.mimeType
+        val adaptive = mimeType == MimeTypes.APPLICATION_M3U8 ||
+            mimeType == MimeTypes.APPLICATION_MPD ||
+            mimeType == MimeTypes.APPLICATION_SS
+        if (!playerSettings.vodCacheEnabled || useYoutubeChunkedPlayback || adaptive) {
+            upstream
+        } else {
+            VodCache.wrap(
+                context = context,
+                upstream = upstream,
+                url = sourceUrl,
+                enabled = true,
+                sizeMode = playerSettings.vodCacheSizeMode,
+                sizeMb = playerSettings.vodCacheSizeMb,
+            )
+        }
     }
 
     fun ExoPlayer.setPlaybackMediaItem(videoMediaItem: MediaItem, startPositionMs: Long? = null) {
@@ -340,7 +364,16 @@ private fun ExoPlayerSurface(
         useYoutubeChunkedPlayback,
         effectiveDecoderPriority,
         initialPositionRequestKey,
+        playerSettings.exoNativeMemoryEnabled,
+        playerSettings.bufferEngineEnabled,
+        playerSettings.minBufferMs,
+        playerSettings.maxBufferMs,
+        playerSettings.bufferForPlaybackMs,
+        playerSettings.bufferForPlaybackAfterRebufferMs,
+        playerSettings.backBufferDurationMs,
+        playerSettings.targetBufferSizeMb,
     ) {
+        applyExoPlayerNativeMemory(playerSettings.exoNativeMemoryEnabled)
         val renderersFactory = SubtitleOffsetRenderersFactory(
             context = context,
             subtitleDelayUsProvider = { latestSubtitleDelayMs.value.toLong() * 1_000L },
@@ -384,15 +417,18 @@ private fun ExoPlayerSurface(
             setParameters(parameters)
         }
 
-        val loadControl = DefaultLoadControl.Builder()
-            .setBackBuffer(10_000, true)
-            .setBufferDurationsMs(
-                DefaultLoadControl.DEFAULT_MIN_BUFFER_MS,
-                50_000,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_MS,
-                DefaultLoadControl.DEFAULT_BUFFER_FOR_PLAYBACK_AFTER_REBUFFER_MS
-            )
-            .build()
+        val loadControl = NuvioExoPlayerPerformanceHelper.buildLoadControl(
+            context,
+            PlaybackBufferSettings(
+                enabled = playerSettings.bufferEngineEnabled,
+                minBufferMs = playerSettings.minBufferMs,
+                maxBufferMs = playerSettings.maxBufferMs,
+                bufferForPlaybackMs = playerSettings.bufferForPlaybackMs,
+                bufferForPlaybackAfterRebufferMs = playerSettings.bufferForPlaybackAfterRebufferMs,
+                backBufferDurationMs = playerSettings.backBufferDurationMs,
+                targetBufferSizeMb = playerSettings.targetBufferSizeMb,
+            ),
+        )
 
         val player = if (useLibass) {
             ExoPlayer.Builder(context)
@@ -699,6 +735,32 @@ private fun ExoPlayerSurface(
             lifecycleOwner.lifecycle.removeObserver(observer)
             playerViewRef?.releaseLibassOverlay()
             exoPlayer.releaseWithAssSupportCompat()
+            if (VodCache.playheadBytesProvider != null) {
+                VodCache.playheadBytesProvider = null
+            }
+            VodCache.evictCachedSession()
+        }
+    }
+
+    DisposableEffect(exoPlayer, playerSettings.vodCacheEnabled) {
+        if (!playerSettings.vodCacheEnabled) {
+            return@DisposableEffect onDispose { }
+        }
+        val provider = {
+            val duration = exoPlayer.duration
+            val position = exoPlayer.currentPosition
+            val bitrate = exoPlayer.videoFormat?.bitrate ?: 0
+            if (duration > 0L && position > 0L && bitrate > 0) {
+                position * bitrate.toLong() / 8_000L
+            } else {
+                0L
+            }
+        }
+        VodCache.playheadBytesProvider = provider
+        onDispose {
+            if (VodCache.playheadBytesProvider === provider) {
+                VodCache.playheadBytesProvider = null
+            }
         }
     }
 
@@ -807,10 +869,10 @@ private fun ExoPlayerSurface(
                 }
 
                 override fun setSubtitleUri(url: String) {
-                    Log.d(TAG, "setSubtitleUri: url=$url")
+                    Log.d(TAG, "setSubtitleUri: url=${url.redactedForLogs()}")
                     subtitleSelectionJob?.cancel()
                     if (sidecarController.canAttachAddonSubtitleViaSidecar(url, useLibass)) {
-                        Log.d(TAG, "setSubtitleUri: using buffer-preserving sidecar for url=$url")
+                        Log.d(TAG, "setSubtitleUri: using buffer-preserving sidecar for url=${url.redactedForLogs()}")
                         val headers = externalSubtitles.firstOrNull { it.url == url }?.headers.orEmpty()
                         val attached = sidecarController.startSidecarAddonSubtitle(
                             url = url,
