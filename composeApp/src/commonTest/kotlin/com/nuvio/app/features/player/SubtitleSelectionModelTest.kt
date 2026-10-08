@@ -3,8 +3,30 @@ package com.nuvio.app.features.player
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertTrue
 
 class SubtitleSelectionModelTest {
+
+    @Test
+    fun providerSelectionRetainsExistingOptionIdsAndPlaybackUrls() {
+        val subtitle = addonSubtitle("en", "en", "https://example.com/en.srt")
+        val option = SubtitleSelectionOption.Addon(subtitle)
+        assertEquals("addon:Addon:en:https://example.com/en.srt", option.id)
+        assertEquals(option.id, subtitle.selectionKey)
+        assertEquals("https://example.com/en.srt", subtitle.url)
+        assertTrue(subtitle.matchesSelection(option.id))
+        assertTrue(subtitle.matchesSelection(subtitle.url))
+    }
+
+    @Test
+    fun legacyNonUrlSelectionKeysAndRawIdsStillResolve() {
+        val noUrl = addonSubtitle("en", "en", "")
+        assertEquals("addon:Addon:en:Addon:en", SubtitleSelectionOption.Addon(noUrl).id)
+        assertEquals(noUrl, listOf(noUrl).findSelectedAddon("Addon:en"))
+        assertTrue(noUrl.matchesSelection("Addon:en"))
+        assertEquals(noUrl, listOf(noUrl).findSelectedAddon("en"))
+        assertEquals(noUrl, listOf(noUrl).findSelectedAddon(noUrl.selectionKey))
+    }
 
     @Test
     fun groupsTracksAndAddonsByLanguageWithPreferredLanguagesFirst() {
