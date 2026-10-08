@@ -2456,4 +2456,8 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Embedded</string>
     <string name="stream_info_player_engine">Player Engine</string>
+    <string name="settings_playback_seek_forward_interval">Seek forward interval</string>
+    <string name="settings_playback_seek_forward_interval_value">+%1$ds</string>
+    <string name="settings_playback_seek_backward_interval">Seek backward interval</string>
+    <string name="settings_playback_seek_backward_interval_value">-%1$ds</string>
 </resources>

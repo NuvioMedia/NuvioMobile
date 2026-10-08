@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -29,10 +30,10 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Flag
-import androidx.compose.material.icons.rounded.Forward10
+import androidx.compose.material.icons.rounded.Forward
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
-import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material.icons.rounded.Replay
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +103,8 @@ internal fun PlayerControlsShell(
     onTogglePlayback: () -> Unit,
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
+    seekBackwardInterval: Int,
+    seekForwardInterval: Int,
     onResizeModeClick: () -> Unit,
     onSpeedClick: () -> Unit,
     onSubtitleClick: () -> Unit,
@@ -229,6 +232,8 @@ internal fun PlayerControlsShell(
                             if (!useLegacyLayout) onInteraction()
                             onSeekForward()
                         },
+                        seekBackwardInterval = seekBackwardInterval,
+                        seekForwardInterval = seekForwardInterval,
                         onTogglePlayback = {
                             if (!useLegacyLayout) onInteraction()
                             onTogglePlayback()
@@ -510,6 +515,8 @@ private fun CenterControls(
     metrics: PlayerLayoutMetrics,
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
+    seekBackwardInterval: Int,
+    seekForwardInterval: Int,
     onTogglePlayback: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -519,7 +526,8 @@ private fun CenterControls(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SideControlButton(
-            icon = Icons.Rounded.Replay10,
+            icon = Icons.Rounded.Replay,
+            textOverlay = seekBackwardInterval.toString(),
             contentDescription = stringResource(Res.string.compose_player_seek_back_10),
             metrics = metrics,
             onClick = onSeekBack,
@@ -531,7 +539,9 @@ private fun CenterControls(
             onClick = onTogglePlayback,
         )
         SideControlButton(
-            icon = Icons.Rounded.Forward10,
+            icon = Icons.Rounded.Replay,
+            textOverlay = seekForwardInterval.toString(),
+            flipIcon = true,
             contentDescription = stringResource(Res.string.compose_player_seek_forward_10),
             metrics = metrics,
             onClick = onSeekForward,
@@ -542,6 +552,8 @@ private fun CenterControls(
 @Composable
 private fun SideControlButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
+    textOverlay: String? = null,
+    flipIcon: Boolean = false,
     contentDescription: String,
     metrics: PlayerLayoutMetrics,
     onClick: () -> Unit,
@@ -557,8 +569,19 @@ private fun SideControlButton(
             imageVector = icon,
             contentDescription = contentDescription,
             tint = Color.White,
-            modifier = Modifier.size(metrics.playIconSize),
+            modifier = Modifier
+                .size(metrics.playIconSize)
+                .graphicsLayer(scaleX = if (flipIcon) -1f else 1f),
         )
+        if (textOverlay != null) {
+            Text(
+                text = textOverlay,
+                color = Color.White,
+                fontSize = with(LocalDensity.current) { (metrics.playIconSize.toPx() * 0.28f).toSp() },
+                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold,
+                modifier = Modifier.offset(y = 2.6.dp)
+            )
+        }
     }
 }
 

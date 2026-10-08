@@ -106,6 +106,8 @@ actual object PlayerSettingsStorage {
     private const val iosContrastKey = "ios_contrast"
     private const val iosSaturationKey = "ios_saturation"
     private const val iosGammaKey = "ios_gamma"
+    private const val seekForwardIntervalSecondsKey = "seek_forward_interval_seconds"
+    private const val seekBackwardIntervalSecondsKey = "seek_backward_interval_seconds"
     private val syncKeys = listOf(
         showLoadingOverlayKey,
         showPlayerLoadingStatusKey,
@@ -180,6 +182,8 @@ actual object PlayerSettingsStorage {
         iosContrastKey,
         iosSaturationKey,
         iosGammaKey,
+        seekForwardIntervalSecondsKey,
+        seekBackwardIntervalSecondsKey,
     )
 
     actual fun loadPendingExternalPlayback(): String? = NSUserDefaults.standardUserDefaults.stringForKey(pendingExternalPlaybackKey)
@@ -1079,6 +1083,12 @@ actual object PlayerSettingsStorage {
         saveInt(iosGammaKey, value)
     }
 
+    actual fun loadSeekForwardIntervalSeconds(): Int? = loadInt(seekForwardIntervalSecondsKey)
+    actual fun saveSeekForwardIntervalSeconds(seconds: Int) = saveInt(seekForwardIntervalSecondsKey, seconds)
+
+    actual fun loadSeekBackwardIntervalSeconds(): Int? = loadInt(seekBackwardIntervalSecondsKey)
+    actual fun saveSeekBackwardIntervalSeconds(seconds: Int) = saveInt(seekBackwardIntervalSecondsKey, seconds)
+
     actual fun exportToSyncPayload(): JsonObject = buildJsonObject {
         loadShowLoadingOverlay()?.let { put(showLoadingOverlayKey, encodeSyncBoolean(it)) }
         loadShowPlayerLoadingStatus()?.let { put(showPlayerLoadingStatusKey, encodeSyncBoolean(it)) }
@@ -1154,6 +1164,8 @@ actual object PlayerSettingsStorage {
         loadIosContrast()?.let { put(iosContrastKey, encodeSyncInt(it)) }
         loadIosSaturation()?.let { put(iosSaturationKey, encodeSyncInt(it)) }
         loadIosGamma()?.let { put(iosGammaKey, encodeSyncInt(it)) }
+        loadSeekForwardIntervalSeconds()?.let { put(seekForwardIntervalSecondsKey, encodeSyncInt(it)) }
+        loadSeekBackwardIntervalSeconds()?.let { put(seekBackwardIntervalSecondsKey, encodeSyncInt(it)) }
     }
 
     actual fun replaceFromSyncPayload(payload: JsonObject) {
@@ -1235,5 +1247,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncInt(iosContrastKey)?.let(::saveIosContrast)
         payload.decodeSyncInt(iosSaturationKey)?.let(::saveIosSaturation)
         payload.decodeSyncInt(iosGammaKey)?.let(::saveIosGamma)
+        payload.decodeSyncInt(seekForwardIntervalSecondsKey)?.let(::saveSeekForwardIntervalSeconds)
+        payload.decodeSyncInt(seekBackwardIntervalSecondsKey)?.let(::saveSeekBackwardIntervalSeconds)
     }
 }

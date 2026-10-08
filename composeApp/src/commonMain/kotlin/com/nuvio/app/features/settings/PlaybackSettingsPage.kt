@@ -500,6 +500,26 @@ private fun PlaybackSettingsSection(
                         onClick = { showHoldToSpeedValueDialog = true },
                     )
                 }
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSliderRow(
+                    title = stringResource(Res.string.settings_playback_seek_forward_interval),
+                    value = autoPlayPlayerSettings.seekForwardIntervalSeconds,
+                    valueText = stringResource(Res.string.settings_playback_seek_forward_interval_value, autoPlayPlayerSettings.seekForwardIntervalSeconds),
+                    valueRange = 5..120,
+                    step = 5,
+                    isTablet = isTablet,
+                    onValueChange = PlayerSettingsRepository::setSeekForwardIntervalSeconds,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSliderRow(
+                    title = stringResource(Res.string.settings_playback_seek_backward_interval),
+                    value = autoPlayPlayerSettings.seekBackwardIntervalSeconds,
+                    valueText = stringResource(Res.string.settings_playback_seek_backward_interval_value, autoPlayPlayerSettings.seekBackwardIntervalSeconds),
+                    valueRange = 5..120,
+                    step = 5,
+                    isTablet = isTablet,
+                    onValueChange = PlayerSettingsRepository::setSeekBackwardIntervalSeconds,
+                )
             }
         }
 

@@ -182,6 +182,11 @@ internal expect object PlayerSettingsStorage {
     fun saveIosSaturation(value: Int)
     fun loadIosGamma(): Int?
     fun saveIosGamma(value: Int)
+    fun loadSeekForwardIntervalSeconds(): Int?
+    fun saveSeekForwardIntervalSeconds(seconds: Int)
+    fun loadSeekBackwardIntervalSeconds(): Int?
+    fun saveSeekBackwardIntervalSeconds(seconds: Int)
+
     fun exportToSyncPayload(): JsonObject
     fun replaceFromSyncPayload(payload: JsonObject)
 }
