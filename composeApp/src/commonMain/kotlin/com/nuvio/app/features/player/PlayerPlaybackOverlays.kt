@@ -59,6 +59,9 @@ internal fun BoxScope.PlayerPlaybackOverlays(
     blurUnwatchedEpisodes: Boolean,
     onPlayNextEpisode: () -> Unit,
     onDismissNextEpisode: () -> Unit,
+    stillWatchingCountdown: Int?,
+    onContinueStillWatching: () -> Unit,
+    onExitStillWatching: () -> Unit,
     errorMessage: String?,
     onDismissError: () -> Unit,
 ) {
@@ -132,13 +135,15 @@ internal fun BoxScope.PlayerPlaybackOverlays(
     if (isSeries && !playerControlsLocked) {
         NextEpisodeCard(
             nextEpisode = nextEpisodeInfo,
-            visible = showNextEpisodeCard || nextEpisodeAutoPlaySearching || nextEpisodeAutoPlayCountdown != null,
+            visible = showNextEpisodeCard || nextEpisodeAutoPlaySearching || nextEpisodeAutoPlayCountdown != null ||
+                stillWatchingCountdown != null,
             isAutoPlaySearching = nextEpisodeAutoPlaySearching,
             autoPlaySourceName = nextEpisodeAutoPlaySourceName,
             autoPlayCountdownSec = nextEpisodeAutoPlayCountdown,
+            stillWatchingCountdownSec = stillWatchingCountdown,
             blurred = blurUnwatchedEpisodes && nextEpisodeInfo?.isWatched == false,
-            onPlayNext = onPlayNextEpisode,
-            onDismiss = onDismissNextEpisode,
+            onPlayNext = if (stillWatchingCountdown != null) onContinueStillWatching else onPlayNextEpisode,
+            onDismiss = if (stillWatchingCountdown != null) onExitStillWatching else onDismissNextEpisode,
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(end = sliderEdgePadding, bottom = overlayBottomPadding),

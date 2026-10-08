@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -63,6 +64,9 @@ import nuvio.composeapp.generated.resources.player_next_episode_finding_source
 import nuvio.composeapp.generated.resources.player_next_episode_playing_via_countdown
 import nuvio.composeapp.generated.resources.player_next_episode_thumbnail
 import nuvio.composeapp.generated.resources.player_next_episode_unaired
+import nuvio.composeapp.generated.resources.player_still_watching_countdown
+import nuvio.composeapp.generated.resources.player_still_watching_exit
+import nuvio.composeapp.generated.resources.player_still_watching_title
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -72,6 +76,7 @@ fun NextEpisodeCard(
     isAutoPlaySearching: Boolean,
     autoPlaySourceName: String?,
     autoPlayCountdownSec: Int?,
+    stillWatchingCountdownSec: Int?,
     blurred: Boolean,
     onPlayNext: () -> Unit,
     onDismiss: () -> Unit,
@@ -109,7 +114,7 @@ fun NextEpisodeCard(
         val shape = RoundedCornerShape(16.dp)
         Row(
             modifier = Modifier
-                .widthIn(max = 292.dp)
+                .widthIn(max = if (stillWatchingCountdownSec != null) 340.dp else 292.dp)
                 .graphicsLayer { translationX = animatedOffsetX }
                 .clip(shape)
                 .background(Color(0xFF191919).copy(alpha = 0.89f))
@@ -182,7 +187,11 @@ fun NextEpisodeCard(
                 verticalArrangement = Arrangement.Center,
             ) {
                 Text(
-                    text = stringResource(Res.string.player_next_episode),
+                    text = if (stillWatchingCountdownSec != null) {
+                        stringResource(Res.string.player_still_watching_title)
+                    } else {
+                        stringResource(Res.string.player_next_episode)
+                    },
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Medium,
@@ -202,6 +211,8 @@ fun NextEpisodeCard(
                     fontWeight = FontWeight.SemiBold,
                 )
                 val autoPlayStatus = when {
+                    stillWatchingCountdownSec != null ->
+                        stringResource(Res.string.player_still_watching_countdown, stillWatchingCountdownSec)
                     !isPlayable && !nextEpisode.unairedMessage.isNullOrBlank() -> nextEpisode.unairedMessage
                     isAutoPlaySearching -> stringResource(Res.string.player_next_episode_finding_source)
                     !autoPlaySourceName.isNullOrBlank() && autoPlayCountdownSec != null ->
@@ -224,31 +235,63 @@ fun NextEpisodeCard(
                 }
             }
 
-            // Play badge
-            Row(
-                modifier = Modifier
-                    .padding(start = 4.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
-                    .padding(horizontal = 8.dp, vertical = 5.dp),
-                verticalAlignment = Alignment.CenterVertically,
+            // Badges: the still-watching prompt stacks Exit under Play so the question keeps its width
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = null,
-                    tint = if (isPlayable) Color.White else Color.White.copy(alpha = 0.65f),
-                    modifier = Modifier.size(13.dp),
-                )
-                Text(
-                    text = if (isPlayable) {
-                        stringResource(Res.string.detail_btn_play)
-                    } else {
-                        stringResource(Res.string.player_next_episode_unaired)
-                    },
-                    color = if (isPlayable) Color.White else Color.White.copy(alpha = 0.72f),
-                    fontSize = 11.sp,
-                    modifier = Modifier.padding(start = 3.dp),
-                )
+                // Play badge
+                Row(
+                    modifier = Modifier
+                        .padding(start = 4.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                        .padding(horizontal = 8.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PlayArrow,
+                        contentDescription = null,
+                        tint = if (isPlayable) Color.White else Color.White.copy(alpha = 0.65f),
+                        modifier = Modifier.size(13.dp),
+                    )
+                    Text(
+                        text = if (isPlayable) {
+                            stringResource(Res.string.detail_btn_play)
+                        } else {
+                            stringResource(Res.string.player_next_episode_unaired)
+                        },
+                        color = if (isPlayable) Color.White else Color.White.copy(alpha = 0.72f),
+                        fontSize = 11.sp,
+                        modifier = Modifier.padding(start = 3.dp),
+                    )
+                }
+
+                // Exit badge
+                if (stillWatchingCountdownSec != null) {
+                    Row(
+                        modifier = Modifier
+                            .padding(start = 4.dp)
+                            .clip(CircleShape)
+                            .border(1.dp, Color.White.copy(alpha = 0.2f), CircleShape)
+                            .clickable(onClick = onDismiss)
+                            .padding(horizontal = 8.dp, vertical = 5.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.65f),
+                            modifier = Modifier.size(13.dp),
+                        )
+                        Text(
+                            text = stringResource(Res.string.player_still_watching_exit),
+                            color = Color.White.copy(alpha = 0.72f),
+                            fontSize = 11.sp,
+                            modifier = Modifier.padding(start = 3.dp),
+                        )
+                    }
+                }
             }
         }
     }

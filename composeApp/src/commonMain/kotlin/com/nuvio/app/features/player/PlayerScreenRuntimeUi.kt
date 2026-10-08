@@ -468,6 +468,9 @@ private fun BoxScope.RenderPlaybackOverlays(
             nextEpisodeCardDismissed = true
             showNextEpisodeCard = false
         },
+        stillWatchingCountdown = stillWatchingCountdown,
+        onContinueStillWatching = { onStillWatchingContinue() },
+        onExitStillWatching = { exitFromStillWatching() },
         errorMessage = errorMessage,
             onDismissError = {
                 flushWatchProgress()
@@ -604,7 +607,10 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             selectDownloadedEpisodeForPlayback(
                 parentMetaId = parentMetaId,
                 episode = episode,
-                onDownloadedEpisodeSelected = { item, video -> switchToDownloadedEpisode(item, video) },
+                onDownloadedEpisodeSelected = { item, video ->
+                    consecutiveAutoPlayCount = 0
+                    switchToDownloadedEpisode(item, video)
+                },
             )
         },
         onEpisodeStreamsRequested = { episode ->
@@ -617,7 +623,10 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             episodeStreamsPanelState = EpisodeStreamsPanelState(showStreams = true, selectedEpisode = episode)
         },
         onEpisodeStreamFilterSelected = PlayerStreamsRepository::selectEpisodeStreamsFilter,
-        onEpisodeStreamSelected = { stream, episode -> switchToEpisodeStream(stream, episode) },
+        onEpisodeStreamSelected = { stream, episode ->
+            consecutiveAutoPlayCount = 0
+            switchToEpisodeStream(stream, episode)
+        },
         onBackToEpisodes = {
             episodeStreamsPanelState = EpisodeStreamsPanelState()
             PlayerStreamsRepository.clearEpisodeStreams()
