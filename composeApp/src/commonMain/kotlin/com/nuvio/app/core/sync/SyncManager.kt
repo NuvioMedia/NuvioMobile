@@ -117,8 +117,8 @@ internal suspend fun runOrderedProfileSync(
         }
     }
 
-    runStep(ProfileSyncStep.ProfileSettings, operations.pullProfileSettings)
     runStep(ProfileSyncStep.ProviderCredentials, operations.syncProviderCredentials)
+    runStep(ProfileSyncStep.ProfileSettings, operations.pullProfileSettings)
     runStep(ProfileSyncStep.Addons, operations.pullAddons)
     if (pluginsEnabled) {
         runStep(ProfileSyncStep.Plugins, operations.pullPlugins)

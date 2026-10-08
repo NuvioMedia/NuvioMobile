@@ -177,6 +177,12 @@ object ProfileSettingsSync {
         }
     }
 
+    suspend fun flushBeforeSignOut(): Boolean {
+        val settingsSaved = pushCurrentProfileToRemote()
+        val credentialsSaved = ProviderCredentialSync.pushCurrentProfileToRemote()
+        return settingsSaved && credentialsSaved
+    }
+
     @OptIn(FlowPreview::class)
     private fun observeLocalChangesAndPush() {
         val signatureFlows = listOf(
