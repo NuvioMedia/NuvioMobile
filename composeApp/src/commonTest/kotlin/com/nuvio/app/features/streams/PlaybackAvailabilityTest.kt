@@ -33,6 +33,29 @@ class PlaybackAvailabilityTest {
     }
 
     @Test
+    fun `addon types match literally after trim and case normalization`() {
+        val seriesAddon = addon(types = listOf(" SERIES "))
+        assertTrue(available(addons = listOf(seriesAddon), type = "series"))
+        assertFalse(available(addons = listOf(seriesAddon), type = "tv"))
+
+        val liveAddon = addon(types = listOf("tv", "channel"), prefixes = listOf("channel:"))
+        assertTrue(available(addons = listOf(liveAddon), type = "tv", videoId = "channel:1"))
+        assertTrue(available(addons = listOf(liveAddon), type = "channel", videoId = "channel:1"))
+        assertFalse(available(addons = listOf(liveAddon), type = "series", videoId = "channel:1"))
+    }
+
+    @Test
+    fun `episode playback availability converts TMDB tv to external series`() {
+        val availability = PlaybackAvailability(
+            addons = listOf(addon(types = listOf("series"))),
+            plugins = PluginsUiState(),
+        )
+
+        assertTrue(availability.canPlay("tv", "tt123:1:1", "tt123", 1, 1))
+        assertFalse(availability.canPlay("tv", "channel:1", "channel:1"))
+    }
+
+    @Test
     fun `an enabled compatible plugin enables playback without addons`() {
         val plugins = PluginsUiState(scrapers = listOf(scraper()))
         assertTrue(available(plugins = plugins))
@@ -64,6 +87,7 @@ class PlaybackAvailabilityTest {
     private fun addon(
         resource: String = "stream",
         prefixes: List<String> = listOf("tt"),
+        types: List<String> = listOf("movie"),
     ): ManagedAddon = ManagedAddon(
         manifestUrl = "https://example.com/manifest.json",
         manifest = AddonManifest(
@@ -71,8 +95,8 @@ class PlaybackAvailabilityTest {
             name = "Test",
             description = "",
             version = "1.0.0",
-            resources = listOf(AddonResource(resource, listOf("movie"), prefixes)),
-            types = listOf("movie"),
+            resources = listOf(AddonResource(resource, types, prefixes)),
+            types = types,
             transportUrl = "https://example.com",
         ),
     )
@@ -84,7 +108,7 @@ class PlaybackAvailabilityTest {
         description = "",
         version = "1.0.0",
         filename = "test.js",
-        supportedTypes = listOf("movie", "tv"),
+        supportedTypes = listOf("movie", "series"),
         enabled = true,
         manifestEnabled = true,
         code = "",
