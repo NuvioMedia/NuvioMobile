@@ -87,6 +87,7 @@ open class MainActivity : AppCompatActivity() {
         SentrySettingsStorage.initialize(applicationContext)
         SentryInitializer.start(application)
         super.onCreate(savedInstanceState)
+        com.nuvio.app.features.tvremote.AndroidTvRemote.initialize(applicationContext)
         window.setBackgroundDrawableResource(R.color.nuvio_background)
         pipRemoteActionReceiver = PipRemoteActionReceiver.register(this)
         SyncClientIdentityStorage.initialize(applicationContext)
@@ -159,6 +160,16 @@ open class MainActivity : AppCompatActivity() {
         handleIncomingAppIntent(intent)
     }
 
+    override fun onStart() {
+        super.onStart()
+        com.nuvio.app.features.tvremote.AndroidTvRemote.foreground(true)
+    }
+
+    override fun onStop() {
+        com.nuvio.app.features.tvremote.AndroidTvRemote.foreground(false)
+        super.onStop()
+    }
+
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         PlayerPictureInPictureManager.onUserLeaveHint(this)
@@ -194,6 +205,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun handleIncomingAppIntent(intent: Intent?) {
+        com.nuvio.app.features.tvremote.AndroidTvRemote.handleIntent(intent)
         val appUrl = intent?.dataString?.trim().orEmpty()
         if (appUrl.isBlank()) return
         handleAppUrl(appUrl)

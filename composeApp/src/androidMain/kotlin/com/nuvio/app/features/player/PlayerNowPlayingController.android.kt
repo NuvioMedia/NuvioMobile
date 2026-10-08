@@ -123,6 +123,7 @@ internal class AndroidPlayerNowPlayingController(
 
             val artworkChanged = metadata?.artworkUrl != normalized.artworkUrl
             metadata = normalized
+            com.nuvio.app.features.tvremote.AndroidTvRemote.localPlayback(this, true)
             mediaSession.isActive = true
 
             if (artworkChanged) {
@@ -184,6 +185,7 @@ internal class AndroidPlayerNowPlayingController(
     }
 
     private fun clearInternal() {
+        com.nuvio.app.features.tvremote.AndroidTvRemote.localPlayback(this, false)
         artworkGeneration.incrementAndGet()
         metadata = null
         snapshot = PlayerPlaybackSnapshot()
@@ -204,19 +206,10 @@ internal class AndroidPlayerNowPlayingController(
 
     private fun publishMetadata() {
         val currentMetadata = metadata ?: return
-        val builder = MediaMetadata.Builder()
-            .putString(MediaMetadata.METADATA_KEY_TITLE, currentMetadata.title)
-            .putString(MediaMetadata.METADATA_KEY_DISPLAY_TITLE, currentMetadata.title)
-
-        currentMetadata.subtitle?.let { subtitle ->
-            builder.putString(MediaMetadata.METADATA_KEY_ARTIST, subtitle)
-            builder.putString(MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE, subtitle)
-        }
-        snapshot.durationMs.takeIf { it > 0L }?.let { durationMs ->
-            builder.putLong(MediaMetadata.METADATA_KEY_DURATION, durationMs)
-        }
-
-        val base = builder.build()
+        val base = buildNowPlayingBaseMetadata(
+            PlayerNowPlayingInfo(currentMetadata.title, currentMetadata.subtitle, currentMetadata.artworkUrl),
+            snapshot.durationMs,
+        )
         val withArtwork = artworkArt?.takeIf { !it.isRecycled }?.let { art ->
             MediaMetadata.Builder(base)
                 .putBitmap(MediaMetadata.METADATA_KEY_ART, art)
@@ -302,7 +295,7 @@ internal class AndroidPlayerNowPlayingController(
         if (urlString.isNullOrBlank()) return
 
         artworkExecutor.execute {
-            val bitmap = runCatching { downloadArtwork(urlString) }
+            val bitmap = runCatching { downloadNowPlayingArtwork(urlString) }
                 .onFailure { error -> Log.w(NOW_PLAYING_TAG, "Failed to load artwork", error) }
                 .getOrNull()
 
@@ -460,7 +453,7 @@ private fun buildContentIntent(context: Context): PendingIntent? {
     )
 }
 
-private fun downloadArtwork(urlString: String): Bitmap? {
+internal fun downloadNowPlayingArtwork(urlString: String): Bitmap? {
     val connection = (URL(urlString).openConnection() as HttpURLConnection).apply {
         connectTimeout = 10_000
         readTimeout = 15_000
