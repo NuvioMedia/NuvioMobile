@@ -91,7 +91,25 @@ object PosterZoomAnchorHolder {
         pending = anchor
     }
 
-    fun consume(): PosterZoomAnchor? = pending.also { pending = null }
+    fun consume(): PosterZoomAnchor? = pending.also { anchor ->
+        pending = null
+        if (anchor != null) {
+            PosterZoomOverlayCoordinator.show()
+        }
+    }
+}
+
+object PosterZoomOverlayCoordinator {
+    var isVisible by mutableStateOf(false)
+        private set
+
+    fun show() {
+        isVisible = true
+    }
+
+    fun hide() {
+        isVisible = false
+    }
 }
 
 enum class PosterZoomOverlayExitAnimation {
@@ -177,6 +195,13 @@ fun NuvioPosterZoomActionOverlay(
 
     var rootOrigin by remember { mutableStateOf(Offset.Zero) }
     var slotBounds by remember { mutableStateOf<Rect?>(null) }
+
+    DisposableEffect(Unit) {
+        PosterZoomOverlayCoordinator.show()
+        onDispose {
+            PosterZoomOverlayCoordinator.hide()
+        }
+    }
 
     DisposableEffect(source) {
         onDispose { source?.land() }
