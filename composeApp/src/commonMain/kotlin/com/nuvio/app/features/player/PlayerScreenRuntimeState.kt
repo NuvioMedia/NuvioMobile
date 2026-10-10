@@ -125,7 +125,7 @@ internal class PlayerScreenRuntime(
     var activeVideoId by mutableStateOf(videoId)
     var activeInitialPositionMs by mutableStateOf(initialPositionMs)
     var activeInitialProgressFraction by mutableStateOf(initialProgressFraction)
-    var shouldPlay by mutableStateOf(true)
+    var shouldPlay by mutableStateOf(!args.autoLaunchExternal)
     var resizeMode by mutableStateOf(playerSettingsUiState.resizeMode)
     var layoutSize by mutableStateOf(IntSize.Zero)
     var playbackSnapshot by mutableStateOf(PlayerPlaybackSnapshot())

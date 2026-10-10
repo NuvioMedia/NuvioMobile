@@ -329,34 +329,43 @@ private fun PlayerScreenRuntime.RenderPlayerControls(displayedPositionMs: Long, 
                 ?.takeUnless { ServerStreams.isServerSourceId(activeProviderAddonId) }
                 ?.let { openExternal ->
                 {
-                    val loadedSubtitles = addonSubtitles
-                        .takeIf { it.isNotEmpty() }
-                        ?.map { sub ->
-                            SubtitleInput(
-                                url = sub.url,
-                                name = buildString {
-                                    if (!sub.addonName.isNullOrBlank()) append("[${sub.addonName}] ")
-                                    append(sub.display)
-                                },
-                                lang = sub.language,
-                            )
-                        }
-                    PlayerStreamsRepository.pauseSearchForPlayback()
-                    openExternal(
-                        ExternalPlayerPlaybackRequest(
-                            sourceUrl = activeSourceUrl,
-                            title = title,
-                            streamTitle = activeStreamTitle,
-                            sourceHeaders = activeSourceHeaders,
-                            resumePositionMs = playbackSnapshot.positionMs,
-                            durationMs = playbackSnapshot.durationMs.takeIf { it > 0L },
-                            playbackSession = playbackSession,
-                            subtitles = loadedSubtitles,
-                            season = activeSeasonNumber,
-                            episode = activeEpisodeNumber,
-                            episodeTitle = activeEpisodeTitle,
-                        ),
-                    )
+                    val streamUrl = if (activeTorrentInfoHash != null) {
+                        p2pResolvedSourceUrl
+                    } else {
+                        activeSourceUrl
+                    }
+                    if (streamUrl != null) {
+                        val loadedSubtitles = addonSubtitles
+                            .takeIf { it.isNotEmpty() }
+                            ?.map { sub ->
+                                SubtitleInput(
+                                    url = sub.url,
+                                    name = buildString {
+                                        if (!sub.addonName.isNullOrBlank()) append("[${sub.addonName}] ")
+                                        append(sub.display)
+                                    },
+                                    lang = sub.language,
+                                )
+                            }
+                        shouldPlay = false
+                        playerController?.pause()
+                        PlayerStreamsRepository.pauseSearchForPlayback()
+                        openExternal(
+                            ExternalPlayerPlaybackRequest(
+                                sourceUrl = streamUrl,
+                                title = title,
+                                streamTitle = activeStreamTitle,
+                                sourceHeaders = activeSourceHeaders,
+                                resumePositionMs = playbackSnapshot.positionMs,
+                                durationMs = playbackSnapshot.durationMs.takeIf { it > 0L },
+                                playbackSession = playbackSession,
+                                subtitles = loadedSubtitles,
+                                season = activeSeasonNumber,
+                                episode = activeEpisodeNumber,
+                                episodeTitle = activeEpisodeTitle,
+                            ),
+                        )
+                    }
                 }
             },
             onSubmitIntroClick = if (
