@@ -69,7 +69,7 @@ object SmartStreamSelector {
     private val dolbyVisionPattern =
         Regex("""(^|[^a-z0-9])(dv|dovi|dolby[ ._-]?vision)([^a-z0-9]|$)""")
     private val dolbyVisionProfile5Pattern =
-        Regex("""(^|[^a-z0-9])(dv|dovi|dolby[ ._-]?vision)[ ._-]*(profile[ ._-]*)?5([^a-z0-9]|$)""")
+        Regex("""(^|[^a-z0-9])(dv|dovi|dolby[ ._-]?vision)[ ._-]*(profile|p)?[ ._-]*5([^a-z0-9]|$)""")
     private val hdrPattern =
         Regex("""(^|[^a-z0-9])(hdr|hdr10|hdr10\+|hdr10plus|hlg)([^a-z0-9]|$)""")
     private val hevcPattern =
