@@ -460,10 +460,16 @@ internal fun PlayerScreenRuntime.playNextEpisode(automatic: Boolean = false) {
         settings = playerSettingsUiState,
         currentStreamBingeGroup = currentStreamBingeGroup,
         onDownloadedEpisodeSelected = { item, episode ->
-            if (isCurrentRequest()) switchToDownloadedEpisode(item, episode)
+            if (isCurrentRequest()) {
+                consecutiveAutoPlayCount = nextConsecutiveAutoPlayCount(consecutiveAutoPlayCount, automatic)
+                switchToDownloadedEpisode(item, episode)
+            }
         },
         onEpisodeStreamSelected = { stream, episode ->
-            if (isCurrentRequest()) switchToEpisodeStream(stream, episode)
+            if (isCurrentRequest()) {
+                consecutiveAutoPlayCount = nextConsecutiveAutoPlayCount(consecutiveAutoPlayCount, automatic)
+                switchToEpisodeStream(stream, episode)
+            }
         },
         onManualSelectionRequired = { nextVideo ->
             if (isCurrentRequest()) {
@@ -524,6 +530,7 @@ private fun PlayerScreenRuntime.resetEpisodePanelAndNextEpisodeState() {
     showEpisodesPanel = false
     episodeStreamsPanelState = EpisodeStreamsPanelState()
     cancelNextEpisodeAutoPlay()
+    cancelStillWatchingPrompt()
     PlayerStreamsRepository.clearEpisodeStreams()
 }
 

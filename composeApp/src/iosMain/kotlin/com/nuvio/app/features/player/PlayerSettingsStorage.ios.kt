@@ -89,6 +89,8 @@ actual object PlayerSettingsStorage {
     private const val nextEpisodeThresholdPercentKey = "next_episode_threshold_percent_v2"
     private const val nextEpisodeThresholdMinutesBeforeEndKey = "next_episode_threshold_minutes_before_end_v2"
     private const val preloadNextEpisodeSourcesKey = "preload_next_episode_sources"
+    private const val stillWatchingEnabledKey = "still_watching_enabled"
+    private const val stillWatchingEpisodeThresholdKey = "still_watching_episode_threshold"
     private const val useLibassKey = "use_libass"
     private const val libassRenderTypeKey = "libass_render_type"
     private const val iosVideoOutputPresetKey = "ios_video_output_preset"
@@ -163,6 +165,8 @@ actual object PlayerSettingsStorage {
         nextEpisodeThresholdPercentKey,
         nextEpisodeThresholdMinutesBeforeEndKey,
         preloadNextEpisodeSourcesKey,
+        stillWatchingEnabledKey,
+        stillWatchingEpisodeThresholdKey,
         useLibassKey,
         libassRenderTypeKey,
         iosVideoOutputPresetKey,
@@ -970,6 +974,26 @@ actual object PlayerSettingsStorage {
         saveBoolean(preloadNextEpisodeSourcesKey, enabled)
     }
 
+    actual fun loadStillWatchingEnabled(): Boolean? = loadBoolean(stillWatchingEnabledKey)
+
+    actual fun saveStillWatchingEnabled(enabled: Boolean) {
+        saveBoolean(stillWatchingEnabledKey, enabled)
+    }
+
+    actual fun loadStillWatchingEpisodeThreshold(): Int? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(stillWatchingEpisodeThresholdKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.integerForKey(key).toInt()
+        } else {
+            null
+        }
+    }
+
+    actual fun saveStillWatchingEpisodeThreshold(threshold: Int) {
+        NSUserDefaults.standardUserDefaults.setInteger(threshold.toLong(), forKey = ProfileScopedKey.of(stillWatchingEpisodeThresholdKey))
+    }
+
     actual fun loadUseLibass(): Boolean? = null
 
     actual fun saveUseLibass(enabled: Boolean) {}
@@ -1137,6 +1161,8 @@ actual object PlayerSettingsStorage {
         loadNextEpisodeThresholdPercent()?.let { put(nextEpisodeThresholdPercentKey, encodeSyncFloat(it)) }
         loadNextEpisodeThresholdMinutesBeforeEnd()?.let { put(nextEpisodeThresholdMinutesBeforeEndKey, encodeSyncFloat(it)) }
         loadPreloadNextEpisodeSources()?.let { put(preloadNextEpisodeSourcesKey, encodeSyncBoolean(it)) }
+        loadStillWatchingEnabled()?.let { put(stillWatchingEnabledKey, encodeSyncBoolean(it)) }
+        loadStillWatchingEpisodeThreshold()?.let { put(stillWatchingEpisodeThresholdKey, encodeSyncInt(it)) }
         loadUseLibass()?.let { put(useLibassKey, encodeSyncBoolean(it)) }
         loadLibassRenderType()?.let { put(libassRenderTypeKey, encodeSyncString(it)) }
         loadIosVideoOutputPreset()?.let { put(iosVideoOutputPresetKey, encodeSyncString(it)) }
@@ -1218,6 +1244,8 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncFloat(nextEpisodeThresholdPercentKey)?.let(::saveNextEpisodeThresholdPercent)
         payload.decodeSyncFloat(nextEpisodeThresholdMinutesBeforeEndKey)?.let(::saveNextEpisodeThresholdMinutesBeforeEnd)
         payload.decodeSyncBoolean(preloadNextEpisodeSourcesKey)?.let(::savePreloadNextEpisodeSources)
+        payload.decodeSyncBoolean(stillWatchingEnabledKey)?.let(::saveStillWatchingEnabled)
+        payload.decodeSyncInt(stillWatchingEpisodeThresholdKey)?.let(::saveStillWatchingEpisodeThreshold)
         payload.decodeSyncBoolean(useLibassKey)?.let(::saveUseLibass)
         payload.decodeSyncString(libassRenderTypeKey)?.let(::saveLibassRenderType)
         payload.decodeSyncString(iosVideoOutputPresetKey)?.let(::saveIosVideoOutputPreset)

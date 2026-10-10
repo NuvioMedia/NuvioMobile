@@ -693,11 +693,21 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         }
         if (shouldShow && !showNextEpisodeCard) {
             showNextEpisodeCard = true
-            if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true) {
-                playNextEpisode(automatic = true)
+            val autoPlayNextEpisode = playerSettingsUiState.streamAutoPlayNextEpisodeEnabled
+            val nextEpisodeHasAired = nextEpisodeInfo?.hasAired == true
+            when {
+                shouldEnterStillWatchingPrompt(
+                    stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
+                    autoPlayNextEpisodeEnabled = autoPlayNextEpisode,
+                    nextEpisodeHasAired = nextEpisodeHasAired,
+                    consecutiveAutoPlayCount = consecutiveAutoPlayCount,
+                    threshold = playerSettingsUiState.stillWatchingEpisodeThreshold,
+                ) -> enterStillWatchingPrompt()
+                autoPlayNextEpisode && nextEpisodeHasAired -> playNextEpisode(automatic = true)
             }
         } else if (!shouldShow) {
             showNextEpisodeCard = false
+            cancelStillWatchingPrompt()
         }
     }
 }

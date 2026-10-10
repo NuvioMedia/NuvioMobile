@@ -118,6 +118,9 @@ class PlayerNextEpisodeTransitionTest {
                             searching.value = false
                             countdown.value = null
                         },
+                        stillWatchingCountdown = null,
+                        onContinueStillWatching = {},
+                        onExitStillWatching = {},
                         errorMessage = null,
                         onDismissError = {},
                     )
