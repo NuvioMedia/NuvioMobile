@@ -820,6 +820,7 @@ private fun PosterToggleRow(
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Medium,
+            modifier = Modifier.weight(1f).padding(end = 16.dp),
         )
         Switch(
             checked = checked,
