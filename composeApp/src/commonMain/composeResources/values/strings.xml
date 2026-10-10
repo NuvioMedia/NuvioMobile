@@ -1152,9 +1152,11 @@
     <string name="settings_playback_secondary_subtitle_language">Secondary Preferred Language</string>
     <string name="settings_playback_section_decoder">DECODER</string>
     <string name="settings_playback_engine">Playback Engine</string>
-    <string name="settings_playback_engine_auto_description">Use ExoPlayer first and fall back to libmpv if playback fails.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer for Movies &amp; TV Shows · MPV for Anime</string>
     <string name="settings_playback_engine_exoplayer_description">Use ExoPlayer and Android Media3 decoders.</string>
     <string name="settings_playback_engine_libmpv_description">Use libmpv for Android playback.</string>
+    <string name="settings_playback_auto_switch_engine_on_error">Auto-switch engine on playback error</string>
+    <string name="settings_playback_auto_switch_engine_on_error_description">Switch to the other playback engine when playback fails, no matter which engine is selected.</string>
     <string name="settings_playback_libmpv_video_output">libmpv Renderer</string>
     <string name="settings_playback_libmpv_video_output_dialog">libmpv Renderer</string>
     <string name="settings_playback_libmpv_hardware_decoding">libmpv Hardware Decoding</string>
@@ -2442,6 +2444,7 @@
     <string name="cd_switch_player_engine">Switch player engine</string>
     <string name="cd_stream_info">Stream info</string>
     <string name="player_engine_switching_manual_message">Switching to %1$s...</string>
+    <string name="player_engine_switching_automatic_message">Playback failed – switching to %1$s...</string>
     <string name="stream_info_section_source">SOURCE</string>
     <string name="stream_info_section_video">VIDEO</string>
     <string name="stream_info_section_audio">AUDIO</string>

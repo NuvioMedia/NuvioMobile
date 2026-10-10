@@ -54,6 +54,7 @@ data class PlayerSettingsUiState(
     val streamReuseLastLinkEnabled: Boolean = false,
     val streamReuseLastLinkCacheHours: Int = 24,
     val androidPlaybackEngine: AndroidPlaybackEngine = AndroidPlaybackEngine.Auto,
+    val autoSwitchPlaybackEngineOnError: Boolean = true,
     val androidLibmpvVideoOutput: AndroidLibmpvVideoOutput = AndroidLibmpvVideoOutput.GpuNext,
     val androidLibmpvHardwareDecodingEnabled: Boolean = true,
     val androidLibmpvYuv420pEnabled: Boolean = false,
@@ -136,6 +137,7 @@ object PlayerSettingsRepository {
     private var streamReuseLastLinkEnabled = false
     private var streamReuseLastLinkCacheHours = 24
     private var androidPlaybackEngine = AndroidPlaybackEngine.Auto
+    private var autoSwitchPlaybackEngineOnError = true
     private var androidLibmpvVideoOutput = AndroidLibmpvVideoOutput.GpuNext
     private var androidLibmpvHardwareDecodingEnabled = true
     private var androidLibmpvYuv420pEnabled = false
@@ -223,6 +225,7 @@ object PlayerSettingsRepository {
         streamReuseLastLinkEnabled = false
         streamReuseLastLinkCacheHours = 24
         androidPlaybackEngine = AndroidPlaybackEngine.Auto
+        autoSwitchPlaybackEngineOnError = true
         androidLibmpvVideoOutput = AndroidLibmpvVideoOutput.GpuNext
         androidLibmpvHardwareDecodingEnabled = true
         androidLibmpvYuv420pEnabled = false
@@ -338,6 +341,7 @@ object PlayerSettingsRepository {
         androidPlaybackEngine = PlayerSettingsStorage.loadAndroidPlaybackEngine()
             ?.let { runCatching { AndroidPlaybackEngine.valueOf(it) }.getOrNull() }
             ?: AndroidPlaybackEngine.Auto
+        autoSwitchPlaybackEngineOnError = PlayerSettingsStorage.loadAutoSwitchPlaybackEngineOnError() ?: true
         androidLibmpvVideoOutput = PlayerSettingsStorage.loadAndroidLibmpvVideoOutput()
             ?.let { runCatching { AndroidLibmpvVideoOutput.valueOf(it) }.getOrNull() }
             ?: AndroidLibmpvVideoOutput.GpuNext
@@ -636,6 +640,14 @@ object PlayerSettingsRepository {
         androidPlaybackEngine = engine
         publish()
         PlayerSettingsStorage.saveAndroidPlaybackEngine(engine.name)
+    }
+
+    fun setAutoSwitchPlaybackEngineOnError(enabled: Boolean) {
+        ensureLoaded()
+        if (autoSwitchPlaybackEngineOnError == enabled) return
+        autoSwitchPlaybackEngineOnError = enabled
+        publish()
+        PlayerSettingsStorage.saveAutoSwitchPlaybackEngineOnError(enabled)
     }
 
     fun setAndroidLibmpvVideoOutput(output: AndroidLibmpvVideoOutput) {
@@ -1176,6 +1188,7 @@ object PlayerSettingsRepository {
             streamReuseLastLinkEnabled = streamReuseLastLinkEnabled,
             streamReuseLastLinkCacheHours = streamReuseLastLinkCacheHours,
             androidPlaybackEngine = androidPlaybackEngine,
+            autoSwitchPlaybackEngineOnError = autoSwitchPlaybackEngineOnError,
             androidLibmpvVideoOutput = androidLibmpvVideoOutput,
             androidLibmpvHardwareDecodingEnabled = androidLibmpvHardwareDecodingEnabled,
             androidLibmpvYuv420pEnabled = androidLibmpvYuv420pEnabled,

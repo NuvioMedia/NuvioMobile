@@ -111,6 +111,7 @@ internal fun LazyListScope.playbackSettingsContent(
     streamReuseLastLinkEnabled: Boolean,
     streamReuseLastLinkCacheHours: Int,
     androidPlaybackEngine: AndroidPlaybackEngine,
+    autoSwitchPlaybackEngineOnError: Boolean,
     androidLibmpvVideoOutput: AndroidLibmpvVideoOutput,
     androidLibmpvHardwareDecodingEnabled: Boolean,
     androidLibmpvYuv420pEnabled: Boolean,
@@ -134,6 +135,7 @@ internal fun LazyListScope.playbackSettingsContent(
             streamReuseLastLinkEnabled = streamReuseLastLinkEnabled,
             streamReuseLastLinkCacheHours = streamReuseLastLinkCacheHours,
             androidPlaybackEngine = androidPlaybackEngine,
+            autoSwitchPlaybackEngineOnError = autoSwitchPlaybackEngineOnError,
             androidLibmpvVideoOutput = androidLibmpvVideoOutput,
             androidLibmpvHardwareDecodingEnabled = androidLibmpvHardwareDecodingEnabled,
             androidLibmpvYuv420pEnabled = androidLibmpvYuv420pEnabled,
@@ -320,6 +322,7 @@ private fun PlaybackSettingsSection(
     streamReuseLastLinkEnabled: Boolean,
     streamReuseLastLinkCacheHours: Int,
     androidPlaybackEngine: AndroidPlaybackEngine,
+    autoSwitchPlaybackEngineOnError: Boolean,
     androidLibmpvVideoOutput: AndroidLibmpvVideoOutput,
     androidLibmpvHardwareDecodingEnabled: Boolean,
     androidLibmpvYuv420pEnabled: Boolean,
@@ -952,6 +955,17 @@ private fun PlaybackSettingsSection(
                         enabled = decoderEnabled,
                         isTablet = isTablet,
                         onClick = { showPlaybackEngineDialog = true },
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_auto_switch_engine_on_error),
+                        description = stringResource(
+                            Res.string.settings_playback_auto_switch_engine_on_error_description,
+                        ),
+                        checked = autoSwitchPlaybackEngineOnError,
+                        enabled = decoderEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setAutoSwitchPlaybackEngineOnError,
                     )
                     if (libmpvOptionsVisible) {
                         SettingsGroupDivider(isTablet = isTablet)
