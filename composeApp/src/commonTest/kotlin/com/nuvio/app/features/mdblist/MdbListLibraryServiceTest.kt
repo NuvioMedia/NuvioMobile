@@ -1,5 +1,6 @@
 package com.nuvio.app.features.mdblist
 
+import com.nuvio.app.features.tracking.TrackingLibraryTabKind
 import com.nuvio.app.features.tracking.TrackingRefreshIntent
 import com.nuvio.app.features.library.LibraryItem
 import kotlinx.coroutines.CompletableDeferred
@@ -43,8 +44,9 @@ class MdbListLibraryServiceTest {
 
         h.http.reply(body = mdbListLibraryListsBody("v2"))
         h.http.reply(body = MDBLIST_LIBRARY_MOVIE_PAGE)
+        h.http.reply(body = "[]")
         service.refresh(TrackingRefreshIntent.USER_INITIATED)
-        assertEquals(listOf("/lists/user", "/watchlist/items"), h.http.engine.requests.map { it.path })
+        assertEquals(listOf("/lists/user", "/watchlist/items", "/external/lists/user"), h.http.engine.requests.map { it.path })
         assertEquals(setOf(MDBLIST_TEST_LIST_KEY), h.repository.currentSnapshot()!!.library!!.hiddenListKeys)
         assertEquals(listOf(setOf(MDBLIST_WATCHLIST_KEY)), service.items.first().map { it.listKeys })
         assertEquals(listOf(MDBLIST_WATCHLIST_KEY), service.snapshot().tabs.map { it.key })
@@ -86,22 +88,67 @@ class MdbListLibraryServiceTest {
     }
 
     @Test
-    fun `cold library uses three requests for a watchlist and one static list and persists them`() = runTest {
+    fun `cold library uses four requests for a watchlist one static list and no external lists and persists them`() = runTest {
         val h = MdbListSyncTestHarness(backgroundScope)
         h.http.reply(body = mdbListLibraryListsBody())
         h.http.reply(body = MDBLIST_LIBRARY_MOVIE_PAGE)
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(body = "[]")
         val service = h.libraryService(backgroundScope)
         service.refresh(TrackingRefreshIntent.USER_INITIATED)
-        assertEquals(listOf("/lists/user", "/watchlist/items", "/lists/7/items"), h.http.engine.requests.map { it.path })
+        assertEquals(listOf("/lists/user", "/watchlist/items", "/lists/7/items", "/external/lists/user"), h.http.engine.requests.map { it.path })
         assertEquals("false", h.http.engine.requests.first().query["unified"])
         val persisted = Json.decodeFromString<MdbListSyncSnapshot>(h.storage.profiles.getValue(1))
         assertEquals(h.repository.currentSnapshot()!!.library, persisted.library)
         assertEquals(listOf("Shawshank"), service.items.first().map { it.name })
         assertEquals(2, service.tabs.first().size)
         runCurrent()
-        assertEquals(3, h.http.engine.requests.size)
+        assertEquals(4, h.http.engine.requests.size)
         assertTrue(h.remote.calls.isEmpty())
+    }
+
+    @Test
+    fun `external lists become read-only tabs with their items`() = runTest {
+        val h = MdbListSyncTestHarness(backgroundScope)
+        h.http.reply(body = "[]")
+        h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(body = """[{"id":9,"name":"IMDb Top","source":"imdb","items":1}]""")
+        h.http.reply(body = MDBLIST_LIBRARY_MOVIE_PAGE)
+        val service = h.libraryService(backgroundScope)
+        service.refresh(TrackingRefreshIntent.USER_INITIATED)
+        assertEquals(listOf("/lists/user", "/watchlist/items", "/external/lists/user", "/external/lists/9/items"),
+            h.http.engine.requests.map { it.path })
+        val external = service.tabs.first().single { it.key == "mdblist:external:9" }
+        assertEquals(TrackingLibraryTabKind.EXTERNAL, external.kind)
+        assertEquals("IMDb Top", external.title)
+        assertFalse(external.isMembershipDestination)
+        assertEquals(listOf(setOf("mdblist:external:9")), service.items.first().map { it.listKeys })
+
+        service.applyMembershipChanges(LibraryItem("tt0111161", "movie", "Shawshank", savedAtEpochMs = 0),
+            mapOf("mdblist:external:9" to false))
+        assertEquals(4, h.http.engine.requests.size)
+    }
+
+    @Test
+    fun `external list failures keep the cached external lists without failing the refresh`() = runTest {
+        val h = MdbListSyncTestHarness(backgroundScope)
+        val movie = decodeMdbListLibraryPage(MDBLIST_LIBRARY_MOVIE_PAGE).items
+        h.seedLibrary(mdbListLibrarySnapshot(h.http.now).copy(
+            externalLists = listOf(MdbListExternalList(9, "IMDb Top", "imdb")),
+            itemsByList = mapOf(MDBLIST_WATCHLIST_KEY to emptyList(), MDBLIST_TEST_LIST_KEY to emptyList(), "mdblist:external:9" to movie)
+        ))
+        h.http.reply(body = mdbListLibraryListsBody())
+        h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(404, "{}")
+        val service = h.libraryService(backgroundScope)
+        service.refresh(TrackingRefreshIntent.USER_INITIATED)
+        assertEquals(listOf("/lists/user", "/watchlist/items", "/lists/7/items", "/external/lists/user"),
+            h.http.engine.requests.map { it.path })
+        val library = h.repository.currentSnapshot()!!.library!!
+        assertEquals(listOf(9L), library.externalLists.map { it.id })
+        assertEquals(movie, library.itemsByList["mdblist:external:9"])
+        assertTrue(service.tabs.first().any { it.key == "mdblist:external:9" })
     }
 
     @Test
@@ -128,8 +175,9 @@ class MdbListLibraryServiceTest {
         h.http.now += MdbListSyncRepository.AUTOMATIC_INTERVAL_MS
         h.http.reply(body = mdbListLibraryListsBody())
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(body = "[]")
         service.refresh(TrackingRefreshIntent.AUTOMATIC)
-        assertEquals(listOf("/lists/user", "/watchlist/items"), h.http.engine.requests.map { it.path })
+        assertEquals(listOf("/lists/user", "/watchlist/items", "/external/lists/user"), h.http.engine.requests.map { it.path })
     }
 
     @Test
@@ -140,13 +188,16 @@ class MdbListLibraryServiceTest {
         h.http.reply(body = mdbListLibraryListsBody())
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
         h.http.reply(body = MDBLIST_LIBRARY_MOVIE_PAGE)
+        h.http.reply(body = "[]")
         h.http.now += MdbListSyncRepository.AUTOMATIC_INTERVAL_MS
         service.refresh(TrackingRefreshIntent.AUTOMATIC)
         h.http.reply(body = mdbListLibraryListsBody())
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(body = "[]")
         h.http.now += MdbListSyncRepository.AUTOMATIC_INTERVAL_MS
         service.refresh(TrackingRefreshIntent.AUTOMATIC)
-        assertEquals(listOf("/lists/user", "/watchlist/items", "/lists/7/items", "/lists/user", "/watchlist/items"),
+        assertEquals(listOf("/lists/user", "/watchlist/items", "/lists/7/items", "/external/lists/user",
+            "/lists/user", "/watchlist/items", "/external/lists/user"),
             h.http.engine.requests.map { it.path })
         assertEquals(1, h.repository.currentSnapshot()!!.library!!.itemsByList.getValue(MDBLIST_TEST_LIST_KEY).size)
     }
@@ -158,8 +209,10 @@ class MdbListLibraryServiceTest {
         h.http.reply(body = mdbListLibraryListsBody())
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
         h.http.reply(body = MDBLIST_LIBRARY_MOVIE_PAGE)
+        h.http.reply(body = "[]")
         h.libraryService(backgroundScope).refresh(TrackingRefreshIntent.USER_INITIATED)
-        assertEquals(listOf("/lists/user", "/watchlist/items", "/lists/7/items"), h.http.engine.requests.map { it.path })
+        assertEquals(listOf("/lists/user", "/watchlist/items", "/lists/7/items", "/external/lists/user"),
+            h.http.engine.requests.map { it.path })
         assertEquals(1, h.repository.currentSnapshot()!!.library!!.itemsByList.getValue(MDBLIST_TEST_LIST_KEY).size)
     }
 
@@ -171,8 +224,9 @@ class MdbListLibraryServiceTest {
             h.http.reply(body = mdbListLibraryListsBody(version))
             h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
             h.http.reply(body = MDBLIST_LIBRARY_MOVIE_PAGE)
+            h.http.reply(body = "[]")
             h.libraryService(backgroundScope).refresh(TrackingRefreshIntent.USER_INITIATED)
-            assertEquals(3, h.http.engine.requests.size)
+            assertEquals(4, h.http.engine.requests.size)
             assertEquals(1, h.repository.currentSnapshot()!!.library!!.itemsByList.getValue(MDBLIST_TEST_LIST_KEY).size)
         }
     }
@@ -184,6 +238,7 @@ class MdbListLibraryServiceTest {
         h.seedLibrary(mdbListLibrarySnapshot(h.http.now).copy(itemsByList = mapOf(MDBLIST_TEST_LIST_KEY to movie)))
         h.http.reply(body = """[{"id":7,"type":"dynamic","name":"Changed"}]""")
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(body = "[]")
         val service = h.libraryService(backgroundScope)
         service.refresh(TrackingRefreshIntent.USER_INITIATED)
         assertEquals(listOf(MDBLIST_WATCHLIST_KEY), service.tabs.first().map { it.key })
@@ -254,6 +309,7 @@ class MdbListLibraryServiceTest {
         h.http.engine.intercept = { if (it.path == "/lists/user") { entered.complete(Unit); release.await() } }
         h.http.reply(body = "[]")
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(body = "[]")
         val service = h.libraryService(backgroundScope)
         val first = async { service.refresh(TrackingRefreshIntent.USER_INITIATED) }
         entered.await()
@@ -262,7 +318,7 @@ class MdbListLibraryServiceTest {
         release.complete(Unit)
         first.await()
         second.await()
-        assertEquals(2, h.http.engine.requests.size)
+        assertEquals(3, h.http.engine.requests.size)
     }
 
     @Test

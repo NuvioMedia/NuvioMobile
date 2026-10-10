@@ -70,6 +70,22 @@ class MdbListLibraryDecoderTest {
     }
 
     @Test
+    fun `unusual item dates do not discard the list`() {
+        val page = decodeMdbListLibraryPage("""[
+          {"id":1,"mediatype":"movie","listed_at":"2025-02-02"},
+          {"id":2,"mediatype":"movie","listed_at":"not a date"}
+        ]""")
+        assertEquals(listOf(mdbListTimestamp("2025-02-02T00:00:00Z"), 0L), page.items.map { it.listedAt })
+    }
+
+    @Test
+    fun `external lists decode their source and update time`() {
+        val lists = decodeMdbListExternalLists("""[{"id":168202,"user_id":261168,"name":"IMDb Watchlist",
+          "updated":"2026-09-29T12:32:29.000Z","items":1115,"source":"imdbwatchlist","private":false}]""")
+        assertEquals(listOf(MdbListExternalList(168202, "IMDb Watchlist", "imdbwatchlist", updatedAt = "2026-09-29T12:32:29.000Z")), lists)
+    }
+
+    @Test
     fun `unified items retain their media namespaces and ignore episodes`() {
         for (body in listOf("""[{"id":1,"mediatype":"movie"},{"id":1,"mediatype":"show"},{"mediatype":"episode"}]""",
             """{"items":[{"id":1,"mediatype":"movie"},{"id":1,"mediatype":"show"}]}""")) {
