@@ -122,6 +122,31 @@ class SmartStreamSelectorTest {
     }
 
     @Test
+    fun `dolby vision profile 5 is not treated as supported by generic hdr capability`() {
+        fun stream(name: String) = StreamItem(
+            name = name,
+            url = "https://cdn.example.com/$name.mkv",
+            addonName = "Test",
+            addonId = "addon.test",
+            clientResolve = StreamClientResolve(
+                stream = StreamClientResolveStream(
+                    raw = StreamClientResolveRaw(
+                        parsed = StreamClientResolveParsed(resolution = "1080p")
+                    )
+                )
+            )
+        )
+        val profile5 = stream("Dolby Vision Profile 5 1080p")
+        val hdr10 = stream("HDR10 1080p")
+        val context = SmartStreamSelector.Context(
+            supportsHdr = true,
+            supportedHdrTypes = setOf("hdr10"),
+        )
+
+        assertEquals(hdr10, SmartStreamSelector.rank(listOf(profile5, hdr10), context).first())
+    }
+
+    @Test
     fun `explicit stream preference outranks quality score`() {
         fun stream(name: String, resolution: String) = StreamItem(
             name = name,
