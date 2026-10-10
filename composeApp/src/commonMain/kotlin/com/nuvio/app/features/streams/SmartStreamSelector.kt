@@ -68,6 +68,8 @@ object SmartStreamSelector {
         Regex("""(?:^|\D)(4320|2160|1440|1080|720|576|540|480|360)p?(?:\D|$)""")
     private val dolbyVisionPattern =
         Regex("""(^|[^a-z0-9])(dv|dovi|dolby[ ._-]?vision)([^a-z0-9]|$)""")
+    private val dolbyVisionProfile5Pattern =
+        Regex("""(^|[^a-z0-9])(dv|dovi|dolby[ ._-]?vision)[ ._-]*(profile[ ._-]*)?5([^a-z0-9]|$)""")
     private val hdrPattern =
         Regex("""(^|[^a-z0-9])(hdr|hdr10|hdr10\+|hdr10plus|hlg)([^a-z0-9]|$)""")
     private val hevcPattern =
@@ -171,9 +173,15 @@ object SmartStreamSelector {
         val hdrTypes = hdrTypes(parsed?.hdr.orEmpty(), text)
         val isHdr = hdrTypes.isNotEmpty() || hasHdrToken(parsed?.hdr.orEmpty(), text)
         val supportedHdrTypes = context.supportedHdrTypes.map { it.lowercase() }.toSet()
+        val isDolbyVisionProfile5 = dolbyVisionProfile5Pattern.containsMatchIn(text)
+        val hasKnownHdrTypes = supportedHdrTypes.isNotEmpty()
         score += when {
+            // Profile 5 has no HDR10-compatible base layer; generic HDR support is not enough.
+            isDolbyVisionProfile5 && hasKnownHdrTypes && "dolbyvision" !in supportedHdrTypes -> ScoreWeights.HDR_UNSUPPORTED * 2
+            isDolbyVisionProfile5 && context.supportsHdr == false -> ScoreWeights.HDR_UNSUPPORTED * 2
             isHdr && hdrTypes.any { it in supportedHdrTypes } -> ScoreWeights.HDR_SUPPORTED
-            isHdr && context.supportsHdr == true -> ScoreWeights.HDR_SUPPORTED
+            // A non-empty capability list is more specific than the generic supportsHdr flag.
+            isHdr && !hasKnownHdrTypes && context.supportsHdr == true -> ScoreWeights.HDR_SUPPORTED
             isHdr && context.supportsHdr == false -> ScoreWeights.HDR_UNSUPPORTED
             !isHdr && context.supportsHdr != null -> ScoreWeights.HDR_FALLBACK
             else -> 0
