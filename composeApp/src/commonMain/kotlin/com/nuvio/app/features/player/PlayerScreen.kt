@@ -42,6 +42,7 @@ fun PlayerScreen(
     initialProgressFraction: Float? = null,
     contentLanguage: String? = null,
     launchId: Long? = null,
+    autoLaunchExternal: Boolean = false,
 ) {
     PlayerScreenContent(
         PlayerScreenArgs(
@@ -82,6 +83,7 @@ fun PlayerScreen(
             initialProgressFraction = initialProgressFraction,
             contentLanguage = contentLanguage,
             launchId = launchId,
+            autoLaunchExternal = autoLaunchExternal,
         )
     )
 }

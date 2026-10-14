@@ -40,4 +40,5 @@ internal data class PlayerScreenArgs(
     val initialProgressFraction: Float?,
     val contentLanguage: String? = null,
     val launchId: Long? = null,
+    val autoLaunchExternal: Boolean = false,
 )
