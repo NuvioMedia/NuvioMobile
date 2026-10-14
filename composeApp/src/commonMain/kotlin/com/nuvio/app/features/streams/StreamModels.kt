@@ -90,7 +90,7 @@ data class StreamItem(
         get() = clientResolve?.isDirectDebridCandidate == true
 
     val isInstalledAddonStream: Boolean
-        get() = addonId.startsWith("addon:")
+        get() = addonId.startsWith("addon:") || addonId.startsWith("plugin:")
 
     val isTorrentStream: Boolean
         get() = !isDirectDebridStream && (
