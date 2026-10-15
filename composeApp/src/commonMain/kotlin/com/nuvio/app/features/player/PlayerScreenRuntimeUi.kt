@@ -470,6 +470,9 @@ private fun BoxScope.RenderPlaybackOverlays(
             nextEpisodeCardDismissed = true
             showNextEpisodeCard = false
         },
+        stillWatchingCountdown = stillWatchingCountdown,
+        onContinueStillWatching = { onStillWatchingContinue() },
+        onExitStillWatching = { exitFromStillWatching() },
         errorMessage = errorMessage,
             onDismissError = {
                 flushWatchProgress()

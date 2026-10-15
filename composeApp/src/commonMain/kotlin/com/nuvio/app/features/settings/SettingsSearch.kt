@@ -685,6 +685,8 @@ internal fun settingsSearchEntries(
         icon = Icons.Rounded.PlayArrow,
         rows = listOf(
             PlaybackSearchRow("auto-play-next", stringResource(Res.string.settings_playback_auto_play_next_episode), stringResource(Res.string.settings_playback_auto_play_next_episode_description)),
+            PlaybackSearchRow("still-watching", stringResource(Res.string.settings_playback_still_watching), stringResource(Res.string.settings_playback_still_watching_description)),
+            PlaybackSearchRow("still-watching-threshold", stringResource(Res.string.settings_playback_still_watching_threshold)),
             PlaybackSearchRow("prefer-binge", stringResource(Res.string.settings_playback_prefer_binge_group), stringResource(Res.string.settings_playback_prefer_binge_group_description)),
             PlaybackSearchRow("threshold-mode", stringResource(Res.string.settings_playback_threshold_mode)),
             PlaybackSearchRow("threshold-percent", stringResource(Res.string.settings_playback_threshold_percentage), stringResource(Res.string.settings_playback_threshold_percentage_description)),

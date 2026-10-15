@@ -1063,6 +1063,9 @@
     <string name="settings_playback_auto_play_next_episode_description">Start next episode automatically when prompt appears.</string>
     <string name="settings_playback_auto_play_next_episode_fallback">Fallback when binge group fails</string>
     <string name="settings_playback_auto_play_next_episode_fallback_description">Auto-select first available stream if binge group is not found. When off, shows the stream picker instead.</string>
+    <string name="settings_playback_still_watching">Are You Still Watching?</string>
+    <string name="settings_playback_still_watching_description">Prompt after consecutive auto-played episodes.</string>
+    <string name="settings_playback_still_watching_threshold">Episode Threshold</string>
     <string name="settings_playback_decoder_device_only">Device decoders only</string>
     <string name="settings_playback_decoder_prefer_app">Prefer app decoders (FFmpeg)</string>
     <string name="settings_playback_decoder_prefer_device">Prefer device decoders</string>
@@ -1429,6 +1432,9 @@
     <string name="player_next_episode_playing_via_countdown">Playing via %1$s in %2$ds…</string>
     <string name="player_next_episode_thumbnail">Next episode thumbnail</string>
     <string name="player_next_episode_unaired">Unaired</string>
+    <string name="player_still_watching_title">Are you still watching?</string>
+    <string name="player_still_watching_countdown">Stopping in %1$d</string>
+    <string name="player_still_watching_exit">Exit</string>
     <string name="player_skip">Skip</string>
     <string name="player_skip_intro">Skip Intro</string>
     <string name="player_skip_outro">Skip Outro</string>
