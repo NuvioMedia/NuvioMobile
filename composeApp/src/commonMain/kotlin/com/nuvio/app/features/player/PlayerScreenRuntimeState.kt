@@ -192,6 +192,7 @@ internal class PlayerScreenRuntime(
 
     var showAudioModal by mutableStateOf(false)
     var showSubtitleModal by mutableStateOf(false)
+    var showPlaybackSpeedModal by mutableStateOf(false)
     var showVideoSettingsModal by mutableStateOf(false)
     var showStreamInfo by mutableStateOf(false)
     var streamMediaInfo by mutableStateOf(PlayerMediaInfo())
