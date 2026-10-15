@@ -55,6 +55,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -993,7 +994,7 @@ fun MetaDetailsScreen(
                         .calculateTopPadding()
                         .toPx()
                 }
-                val heroHeightPx = remember(meta.id) { mutableIntStateOf(0) }
+                val heroHeightPx = rememberSaveable(meta.id) { mutableIntStateOf(0) }
                 // Keep pixel-by-pixel list state reads out of this composition. Reading the
                 // offset here would recompose every metadata section on every scroll frame.
                 val detailScrollOffsetPx = remember(listState, heroHeightPx) {
@@ -1010,10 +1011,13 @@ fun MetaDetailsScreen(
                 }
                 val isHeroCollapsed = remember(listState, heroHeightPx, safeAreaTopPx) {
                     derivedStateOf {
-                        val measuredHeroHeightPx = heroHeightPx.intValue
-                        val thresholdPx = (measuredHeroHeightPx - safeAreaTopPx).coerceAtLeast(0f)
-                        measuredHeroHeightPx > 0 &&
-                            (listState.firstVisibleItemIndex > 0 || detailScrollOffsetPx() > thresholdPx)
+                        if (listState.firstVisibleItemIndex > 0) {
+                            true
+                        } else {
+                            val measuredHeroHeightPx = heroHeightPx.intValue
+                            val thresholdPx = (measuredHeroHeightPx - safeAreaTopPx).coerceAtLeast(0f)
+                            measuredHeroHeightPx > 0 && detailScrollOffsetPx() > thresholdPx
+                        }
                     }
                 }
                 val heroTrailerSourceUrl = heroTrailerPlaybackSource
