@@ -268,7 +268,16 @@ actual fun PlatformPlayerSurface(
                 bridge.setSubtitleDelayMs(delayMs.coerceIn(SUBTITLE_DELAY_MIN_MS, SUBTITLE_DELAY_MAX_MS))
             }
 
+            private var lastSubtitleStyle: SubtitleStyleState? = null
+            private var subtitleLiftFraction = 0f
+
+            override fun setSubtitleBottomLift(fraction: Float) {
+                subtitleLiftFraction = fraction
+                lastSubtitleStyle?.let { applySubtitleStyle(it) }
+            }
+
             override fun applySubtitleStyle(style: SubtitleStyleState) {
+                lastSubtitleStyle = style
                 bridge.applySubtitleStyle(
                     textColor = style.textColor.toMpvColorString(),
                     backgroundColor = style.backgroundColor.toMpvColorString(),
@@ -276,7 +285,7 @@ actual fun PlatformPlayerSurface(
                     outlineSize = if (style.outlineEnabled) style.outlineWidth.toFloat() else 0f,
                     bold = style.bold,
                     fontSize = style.toMpvSubtitleFontSize(),
-                    subPos = style.toMpvSubtitlePosition(),
+                    subPos = mpvSubtitlePositionWithLift(style.toMpvSubtitlePosition(), subtitleLiftFraction),
                     stripSdh = style.stripSdh,
                 )
             }

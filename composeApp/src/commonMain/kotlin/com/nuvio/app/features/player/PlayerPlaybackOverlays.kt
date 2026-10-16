@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -61,6 +63,8 @@ internal fun BoxScope.PlayerPlaybackOverlays(
     onDismissNextEpisode: () -> Unit,
     errorMessage: String?,
     onDismissError: () -> Unit,
+    subtitleGapPx: Float = 0f,
+    onSkipClearanceChanged: (Float) -> Unit = {},
 ) {
     AnimatedVisibility(
         visible = playerControlsLocked && lockedOverlayVisible,
@@ -114,19 +118,26 @@ internal fun BoxScope.PlayerPlaybackOverlays(
     )
 
     if (!playerControlsLocked) {
-        SkipIntroButton(
-            interval = if (!initialLoadCompleted || pausedOverlayVisible) null else activeSkipInterval,
-            skipsToPostCredits = skipsToPostCredits,
-            dismissed = skipIntervalDismissed,
-            controlsVisible = controlsVisible,
-            onSkip = {
-                activeSkipInterval?.let(onSkipInterval)
-            },
-            onDismiss = onDismissSkipInterval,
+        DisposableEffect(Unit) {
+            onDispose { onSkipClearanceChanged(0f) }
+        }
+        Box(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = sliderEdgePadding, bottom = overlayBottomPadding),
-        )
+                .padding(start = sliderEdgePadding, bottom = overlayBottomPadding)
+                .reportSubtitleClearance(subtitleGapPx, onSkipClearanceChanged),
+        ) {
+            SkipIntroButton(
+                interval = if (!initialLoadCompleted || pausedOverlayVisible) null else activeSkipInterval,
+                skipsToPostCredits = skipsToPostCredits,
+                dismissed = skipIntervalDismissed,
+                controlsVisible = controlsVisible,
+                onSkip = {
+                    activeSkipInterval?.let(onSkipInterval)
+                },
+                onDismiss = onDismissSkipInterval,
+            )
+        }
     }
 
     if (isSeries && !playerControlsLocked) {

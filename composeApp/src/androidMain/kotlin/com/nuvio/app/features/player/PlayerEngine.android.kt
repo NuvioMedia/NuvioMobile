@@ -270,6 +270,7 @@ private fun ExoPlayerSurface(
     var videoAspectRatio by remember(playerSourceKey) { mutableStateOf(0f) }
     val latestVideoAspectRatio = rememberUpdatedState(videoAspectRatio)
     var currentSubtitleStyle by remember { mutableStateOf(SubtitleStyleState.DEFAULT) }
+    var subtitleLiftFraction by remember { mutableStateOf(0f) }
     var decoderPriorityOverride by remember(playerSourceKey) { mutableStateOf<Int?>(null) }
     var fallbackStartPositionMs by remember(playerSourceKey) { mutableStateOf<Long?>(null) }
     val effectiveDecoderPriority = decoderPriorityOverride ?: playerSettings.decoderPriority
@@ -997,7 +998,12 @@ private fun ExoPlayerSurface(
 
                 override fun applySubtitleStyle(style: SubtitleStyleState) {
                     currentSubtitleStyle = style
-                    playerViewRef?.applySubtitleStyle(style, pipSubtitleScale)
+                    playerViewRef?.applySubtitleStyle(style, pipSubtitleScale, subtitleLiftFraction)
+                }
+
+                override fun setSubtitleBottomLift(fraction: Float) {
+                    subtitleLiftFraction = fraction
+                    playerViewRef?.applySubtitleStyle(currentSubtitleStyle, pipSubtitleScale, fraction)
                 }
 
                 override fun applySubtitlePreferences(
@@ -1048,7 +1054,7 @@ private fun ExoPlayerSurface(
                     enabled = useLibass,
                     renderType = libassRenderType,
                 )
-                applySubtitleStyle(currentSubtitleStyle, pipSubtitleScale)
+                applySubtitleStyle(currentSubtitleStyle, pipSubtitleScale, subtitleLiftFraction)
             }
         },
         update = { playerView ->
@@ -1063,7 +1069,7 @@ private fun ExoPlayerSurface(
                 enabled = useLibass,
                 renderType = libassRenderType,
             )
-            playerView.applySubtitleStyle(currentSubtitleStyle, pipSubtitleScale)
+            playerView.applySubtitleStyle(currentSubtitleStyle, pipSubtitleScale, subtitleLiftFraction)
         },
     )
 }
@@ -1392,6 +1398,8 @@ private class NuvioLibmpvView(
     private var currentExternalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> = emptyList()
     @Volatile
     private var latestSnapshot = PlayerPlaybackSnapshot()
+    private var subtitlePosition = 100
+    private var subtitleLiftFraction = 0f
     @Volatile
     private var latestAudioTracks: List<LibmpvTrack> = emptyList()
     @Volatile
@@ -1722,9 +1730,17 @@ private class NuvioLibmpvView(
                     mpv.setPropertyInt("sub-font-size", style.toMpvSubtitleFontSize())
                     mpv.setPropertyInt("sub-outline-size", style.toMpvSubtitleOutlineSize())
                     mpv.setPropertyInt("sub-border-size", style.toMpvSubtitleOutlineSize())
-                    mpv.setPropertyInt("sub-pos", (100 - style.bottomOffset / 10).coerceIn(0, 100))
+                    subtitlePosition = (100 - style.bottomOffset / 10).coerceIn(0, 100)
+                    mpv.setPropertyInt("sub-pos", mpvSubtitlePositionWithLift(subtitlePosition, subtitleLiftFraction))
                     mpv.setPropertyBoolean("sub-filter-sdh", style.stripSdh)
                     mpv.setPropertyBoolean("sub-filter-sdh-harder", style.stripSdh)
+                }
+            }
+
+            override fun setSubtitleBottomLift(fraction: Float) {
+                executeMpv {
+                    subtitleLiftFraction = fraction
+                    mpv.setPropertyInt("sub-pos", mpvSubtitlePositionWithLift(subtitlePosition, subtitleLiftFraction))
                 }
             }
 
@@ -2065,11 +2081,14 @@ private fun PlayerView.releaseLibassOverlay() {
     setTag(R.id.libass_overlay_bound_player, null)
 }
 
-private fun PlayerView.applySubtitleStyle(style: SubtitleStyleState, pipScale: Float = 1.0f) {
+private fun PlayerView.applySubtitleStyle(style: SubtitleStyleState, pipScale: Float = 1.0f, liftFraction: Float = 0f) {
     subtitleView?.apply {
         val baseBottomPaddingFraction = SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION * 2f / 3f
         val offsetFraction = (style.bottomOffset / 1000f).coerceIn(0f, 0.2f)
-        val bottomPaddingFraction = (baseBottomPaddingFraction + offsetFraction).coerceIn(0f, 0.4f)
+        val bottomPaddingFraction = maxOf(
+            (baseBottomPaddingFraction + offsetFraction).coerceIn(0f, 0.4f),
+            liftFraction.coerceIn(0f, PLAYER_SUBTITLE_MAX_LIFT),
+        )
 
         setApplyEmbeddedStyles(false)
         setApplyEmbeddedFontSizes(false)
