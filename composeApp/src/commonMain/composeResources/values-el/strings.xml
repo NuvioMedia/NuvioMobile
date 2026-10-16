@@ -1042,6 +1042,10 @@
     <string name="details_failed_to_load">Αποτυχία φόρτωσης</string>
     <string name="details_more_like_this">Περισσότερα σαν αυτό</string>
     <string name="details_seasons">Σεζόν</string>
+    <plurals name="details_season_count">
+        <item quantity="one">%1$d σεζόν</item>
+        <item quantity="other">%1$d σεζόν</item>
+    </plurals>
     <string name="details_series_missing_numbers">Αυτό το πρόσθετο επέστρεψε βίντεο για τη σειρά, αλλά κανένα δεν περιελάμβανε αριθμούς σεζόν ή επεισοδίου.</string>
     <string name="details_series_no_metadata">Αυτό το πρόσθετο δεν παρείχε μεταδεδομένα επεισοδίων για αυτή τη σειρά.</string>
     <string name="details_series_unpublished">Τα επεισόδια δεν έχουν δημοσιευτεί ακόμα από αυτό το πρόσθετο.</string>
