@@ -32,7 +32,8 @@ internal fun PlayerScreenRuntime.isAtNextEpisodeThreshold(): Boolean {
     ) return false
     // Preload: trigger source fetch before the button appears
     if (playerSettingsUiState.preloadNextEpisodeSources && !nextEpisodePreloadTriggered && nextEpisodeInfo != null) {
-        val preloadLeadMs = playerSettingsUiState.streamAutoPlayTimeoutSeconds.toLong() * 1_000L
+        val preloadLeadMs = maxOf(playerSettingsUiState.streamAutoPlayTimeoutSeconds.toLong() * 1_000L, 10_000L)
+            .coerceAtMost(30_000L)
         val shouldPreloadByCard = PlayerNextEpisodeRules.shouldShowNextEpisodeCard(
             positionMs = playbackSnapshot.positionMs + preloadLeadMs,
             durationMs = playbackSnapshot.durationMs,
