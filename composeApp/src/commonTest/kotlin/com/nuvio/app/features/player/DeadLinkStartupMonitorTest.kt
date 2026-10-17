@@ -78,6 +78,29 @@ class DeadLinkStartupMonitorTest {
     }
 
     @Test
+    fun playbackStartingBeforeDeadlineCancelsFallback() = runTest {
+        val current = stream("Current", "plugin:current", "https://media.example/current.mp4")
+        val next = stream("Next", "plugin:next", "https://media.example/next.mp4")
+        val fallbacks = mutableListOf<StreamItem>()
+        val monitor = monitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 10 },
+            candidates = { listOf(current, next) },
+            onFallback = fallbacks::add,
+        )
+
+        monitor.sourceSelected(current)
+        runCurrent()
+        advanceTimeBy(9_999)
+        monitor.playbackStateChanged(current, isPlaying = true)
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertTrue(fallbacks.isEmpty())
+        monitor.close()
+    }
+
+    @Test
     fun oldTimerCannotSwitchAfterAnotherSourceIsSelected() = runTest {
         val first = stream("First", "plugin:first", "https://media.example/first.mp4")
         val second = stream("Second", "plugin:second", "https://media.example/second.mp4")
@@ -264,6 +287,27 @@ class DeadLinkStartupMonitorTest {
 
         assertTrue(fallbacks.isEmpty())
         assertEquals(1, exhaustedCount)
+        monitor.close()
+    }
+
+    @Test
+    fun malformedSourceUrlCanFailOverWithoutCrashingTheMonitor() = runTest {
+        val malformed = stream("Malformed", "plugin:malformed", "not a valid url")
+        val valid = stream("Valid", "plugin:valid", "https://media.example/valid.mp4")
+        val fallbacks = mutableListOf<StreamItem>()
+        val monitor = monitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = { listOf(malformed, valid) },
+            onFallback = fallbacks::add,
+        )
+
+        monitor.sourceSelected(malformed)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(listOf(valid), fallbacks)
         monitor.close()
     }
 
