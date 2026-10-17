@@ -51,6 +51,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         DeadLinkStartupMonitor(
             scope = deadLinkScope,
             timeoutSeconds = { PlayerSettingsRepository.uiState.value.deadLinkTimeoutSeconds },
+            timeoutEnabled = { PlayerSettingsRepository.uiState.value.deadLinkTimeoutEnabled },
             candidateStreams = {
                 val videoId = activeVideoId
                 if (videoId == null) {
@@ -103,9 +104,14 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         deadLinkMonitor.sourceSelected(stream)
     }
 
-    LaunchedEffect(activeStream, activeSourceUrl, playbackSnapshot.isPlaying, playbackSnapshotKey, activePlaybackKey) {
+    LaunchedEffect(activeStream, activeSourceUrl, playbackSnapshot.isPlaying, playbackSnapshot.isLoading, playbackSnapshotKey, activePlaybackKey) {
         if (playbackSnapshotKey != activePlaybackKey) return@LaunchedEffect
-        deadLinkMonitor.playbackStateChanged(activeStream, playbackSnapshot.isPlaying)
+        deadLinkMonitor.playbackStateChanged(activeStream, playbackSnapshot.isPlaying, playbackSnapshot.isLoading)
+    }
+
+    val deadLinkSettings by PlayerSettingsRepository.uiState.collectAsStateWithLifecycle()
+    LaunchedEffect(deadLinkSettings.deadLinkTimeoutEnabled, deadLinkSettings.deadLinkTimeoutSeconds) {
+        deadLinkMonitor.settingsChanged()
     }
 
     val currentFeedback = liveGestureFeedback ?: gestureFeedback

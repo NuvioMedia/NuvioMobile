@@ -20,6 +20,7 @@ import kotlinx.coroutines.launch
 internal class DeadLinkStartupMonitor(
     private val scope: CoroutineScope,
     private val timeoutSeconds: () -> Int,
+    private val timeoutEnabled: () -> Boolean = { true },
     private val candidateStreams: suspend () -> List<StreamItem>,
     private val onFallback: (StreamItem) -> Unit,
     private val onExhausted: () -> Unit,
@@ -34,6 +35,7 @@ internal class DeadLinkStartupMonitor(
     private val deadMarkedKeys = linkedSetOf<String>()
     private var currentStream: StreamItem? = null
     private var playbackStarted = false
+    private var buffering = false
     private var awaitingActivation = false
     private var exhausted = false
     private var closed = false
@@ -47,6 +49,7 @@ internal class DeadLinkStartupMonitor(
         deadMarkedKeys.clear()
         currentStream = null
         playbackStarted = false
+        buffering = false
         awaitingActivation = false
         exhausted = false
     }
@@ -62,6 +65,18 @@ internal class DeadLinkStartupMonitor(
         if (closed) return
         val key = stream.playerSourceIdentityKey() ?: return
         currentStream = stream
+        if (!timeoutEnabled()) {
+            timer?.cancel()
+            timer = null
+            generation++
+            currentKey = key
+            attemptedKeys += key
+            playbackStarted = false
+            buffering = false
+            awaitingActivation = false
+            exhausted = false
+            return
+        }
 
         if (currentKey == key) {
             if (awaitingActivation) {
@@ -87,9 +102,10 @@ internal class DeadLinkStartupMonitor(
         currentKey = key
         attemptedKeys += key
         playbackStarted = false
+        buffering = false
         awaitingActivation = false
         exhausted = false
-        armTimeout(key, generation)
+        if (timeoutEnabled()) armTimeout(key, generation)
     }
 
     /** Disable fallback monitoring for non-stream playback (e.g. a local file). */
@@ -104,16 +120,49 @@ internal class DeadLinkStartupMonitor(
         exhausted = false
     }
 
-    fun playbackStateChanged(stream: StreamItem?, isPlaying: Boolean) {
-        if (closed || !isPlaying) return
+    fun playbackStateChanged(stream: StreamItem?, isPlaying: Boolean, isLoading: Boolean) {
+        if (closed) return
         val key = stream?.playerSourceIdentityKey() ?: return
-        // Ignore late events emitted by a player instance that is no longer active.
         if (key != currentKey) return
-        playbackStarted = true
-        awaitingActivation = false
+
+        if (isPlaying) {
+            playbackStarted = true
+            buffering = false
+            awaitingActivation = false
+            timer?.cancel()
+            timer = null
+            log.d { "Playback started; startup fallback disabled for $key" }
+            return
+        }
+
+        // Re-arm the deadline when a source returns to a stuck buffering state.
+        if (isLoading && !buffering && timeoutEnabled()) {
+            buffering = true
+            playbackStarted = false
+            generation++
+            timer?.cancel()
+            armTimeout(key, generation)
+            log.w { "Playback entered buffering; starting dead-link deadline for $key" }
+        } else if (!isLoading) {
+            buffering = false
+        }
+    }
+
+    fun settingsChanged() {
+        if (closed) return
+        val key = currentKey ?: return
+        if (!timeoutEnabled()) {
+            timer?.cancel()
+            timer = null
+            generation++
+            return
+        }
+        if (playbackStarted && !buffering) return
         timer?.cancel()
         timer = null
-        log.d { "Playback started; startup fallback disabled for $key" }
+        generation++
+        exhausted = false
+        armTimeout(key, generation)
     }
 
     fun close() {
@@ -124,6 +173,7 @@ internal class DeadLinkStartupMonitor(
     }
 
     private fun armTimeout(key: String, expectedGeneration: Long) {
+        if (!timeoutEnabled()) return
         timer = scope.launch {
             delay(DeadLinkTimeoutPolicy.normalizeSeconds(timeoutSeconds()).toLong() * 1000L)
             if (!isCurrent(key, expectedGeneration)) return@launch
@@ -215,7 +265,7 @@ internal class DeadLinkStartupMonitor(
 
     private fun isCurrent(key: String, expectedGeneration: Long): Boolean =
         !closed &&
-            !playbackStarted &&
+            (!playbackStarted || buffering) &&
             !exhausted &&
             generation == expectedGeneration &&
             currentKey == key

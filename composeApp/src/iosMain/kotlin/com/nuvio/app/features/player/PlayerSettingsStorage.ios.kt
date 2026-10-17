@@ -73,6 +73,7 @@ actual object PlayerSettingsStorage {
     private const val streamAutoPlaySelectedPluginsKey = "stream_auto_play_selected_plugins"
     private const val streamAutoPlayRegexKey = "stream_auto_play_regex"
     private const val streamAutoPlayTimeoutSecondsKey = "stream_auto_play_timeout_seconds"
+    private const val deadLinkTimeoutEnabledKey = "dead_link_timeout_enabled"
     private const val deadLinkTimeoutSecondsKey = "dead_link_timeout_seconds"
     private const val skipIntroEnabledKey = "skip_intro_enabled"
     private const val autoSkipMovieCreditsKey = "auto_skip_movie_credits"
@@ -775,6 +776,16 @@ actual object PlayerSettingsStorage {
 
     actual fun saveStreamAutoPlayTimeoutSeconds(seconds: Int) {
         NSUserDefaults.standardUserDefaults.setInteger(seconds.toLong(), forKey = ProfileScopedKey.of(streamAutoPlayTimeoutSecondsKey))
+    }
+
+    actual fun loadDeadLinkTimeoutEnabled(): Boolean? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(deadLinkTimeoutEnabledKey)
+        return if (defaults.objectForKey(key) != null) defaults.boolForKey(key) else null
+    }
+
+    actual fun saveDeadLinkTimeoutEnabled(enabled: Boolean) {
+        NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(deadLinkTimeoutEnabledKey))
     }
 
     actual fun loadDeadLinkTimeoutSeconds(): Int? {

@@ -115,6 +115,8 @@ internal expect object PlayerSettingsStorage {
     fun saveStreamAutoPlayRegex(regex: String)
     fun loadStreamAutoPlayTimeoutSeconds(): Int?
     fun saveStreamAutoPlayTimeoutSeconds(seconds: Int)
+    fun loadDeadLinkTimeoutEnabled(): Boolean?
+    fun saveDeadLinkTimeoutEnabled(enabled: Boolean)
     fun loadDeadLinkTimeoutSeconds(): Int?
     fun saveDeadLinkTimeoutSeconds(seconds: Int)
     fun loadSkipIntroEnabled(): Boolean?
