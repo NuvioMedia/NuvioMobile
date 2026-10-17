@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
+import co.touchlab.kermit.Logger
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.party.PartyRepository
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,7 +52,12 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
             scope = deadLinkScope,
             timeoutSeconds = { PlayerSettingsRepository.uiState.value.deadLinkTimeoutSeconds },
             candidateStreams = { PlayerStreamsRepository.currentSourceCandidates() },
-            onFallback = { next -> switchToSource(next) },
+            onFallback = { next ->
+                val sourceName = "${next.addonName} · ${next.streamLabel}"
+                deadLinkStatusMessage = "Fallback → $sourceName"
+                Logger.withTag("DeadLinkFallback").i { "Fallback triggered to source: $sourceName (addonId=${next.addonId})" }
+                switchToSource(next)
+            },
             onExhausted = {
                 errorMessage = errorMessage ?: "This source did not start and no alternate sources remain."
                 controlsVisible = !playerControlsLocked

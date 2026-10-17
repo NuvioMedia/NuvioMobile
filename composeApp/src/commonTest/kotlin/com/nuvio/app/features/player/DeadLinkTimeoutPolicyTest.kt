@@ -14,9 +14,9 @@ class DeadLinkTimeoutPolicyTest {
     }
 
     @Test
-    fun addonSourcesAreRankedBeforePluginSources() {
-        val addon = StreamItem(url = "https://example.test/addon.m3u8", addonName = "Addon", addonId = "addon:one")
-        val plugin = StreamItem(url = "https://example.test/plugin.m3u8", addonName = "Plugin", addonId = "plugin:one")
+    fun installedAddonSourcesArePrioritizedOverOtherSources() {
+        val addon = StreamItem(addonName = "Addon", addonId = "addon:one")
+        val plugin = StreamItem(addonName = "Plugin", addonId = "plugin:one")
         assertEquals(0, deadLinkSourcePriority(addon))
         assertEquals(1, deadLinkSourcePriority(plugin))
     }

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import co.touchlab.kermit.Logger
 import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -7,8 +8,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
- * Monitors initial startup for the selected source. Only playback events
- * accepted for the active PlaybackKey should be passed into this monitor.
+ * Watches startup only. A source is considered started once the player reports
+ * isPlaying=true; changing sources cancels the previous timer and invalidates
+ * its callback so stale timeouts cannot switch a newer selection.
  */
 internal class DeadLinkStartupMonitor(
     private val scope: CoroutineScope,
@@ -17,109 +19,72 @@ internal class DeadLinkStartupMonitor(
     private val onFallback: (StreamItem) -> Unit,
     private val onExhausted: () -> Unit,
 ) {
+    private val log = Logger.withTag("DeadLinkStartupMonitor")
     private var timer: Job? = null
     private var generation = 0L
-    private var activeSourceId: String? = null
-    private var started = false
-    private var timeoutHandled = false
+    private var currentKey: String? = null
+    private val attemptedKeys = linkedSetOf<String>()
+    private var playbackStarted = false
     private var closed = false
-    private val attemptedIds = linkedSetOf<String>()
 
     fun resetForContent() {
-        generation += 1
+        generation++
         timer?.cancel()
         timer = null
-        activeSourceId = null
-        started = false
-        timeoutHandled = false
-        attemptedIds.clear()
+        currentKey = null
+        attemptedKeys.clear()
+        playbackStarted = false
     }
 
     fun sourceSelected(stream: StreamItem) {
-        if (closed) return
-        val id = stream.deadLinkStableId()
-        if (id == activeSourceId) return
-
-        generation += 1
+        if (closed || playbackStarted) return
+        val key = stream.playerSourceIdentityKey() ?: return
+        if (currentKey == key && timer?.isActive == true) return
         timer?.cancel()
-        timer = null
-        activeSourceId = id
-        started = false
-        timeoutHandled = false
-        attemptedIds += id
-
-        val expectedGeneration = generation
+        generation++
+        val sourceGeneration = generation
+        currentKey = key
+        attemptedKeys += key
         timer = scope.launch {
-            delay(DeadLinkTimeoutPolicy.normalizeSeconds(timeoutSeconds()).toLong() * 1_000L)
-            if (closed || expectedGeneration != generation || activeSourceId != id || started || timeoutHandled) {
+            delay(DeadLinkTimeoutPolicy.normalizeSeconds(timeoutSeconds()).toLong() * 1000L)
+            if (closed || playbackStarted || generation != sourceGeneration || currentKey != key) return@launch
+            val candidates = candidateStreams()
+                .asSequence()
+                .filter { it.hasPlayableSource }
+                .sortedBy(::deadLinkSourcePriority)
+                .distinctBy { it.playerSourceIdentityKey() }
+                .filter { candidate ->
+                    val candidateKey = candidate.playerSourceIdentityKey()
+                    candidateKey != null && candidateKey !in attemptedKeys
+                }
+                .toList()
+            val next = candidates.firstOrNull()
+            if (next == null) {
+                log.w { "Startup timeout reached for $key; no untried source remains" }
+                onExhausted()
                 return@launch
             }
-            timeoutHandled = true
-            val next = nextCandidate()
-            if (next == null) {
-                onExhausted()
-            } else {
-                // Mark it before invoking the callback to block duplicate retries.
-                attemptedIds += next.deadLinkStableId()
-                activeSourceId = null
-                timer = null
-                onFallback(next)
-            }
+            val nextKey = next.playerSourceIdentityKey()
+            if (nextKey != null) attemptedKeys += nextKey
+            log.i { "Startup timeout reached for $key; falling back to ${next.addonName} · ${next.streamLabel}" }
+            onFallback(next)
         }
     }
 
     fun playbackStateChanged(stream: StreamItem?, isPlaying: Boolean) {
-        if (closed) return
-        val id = stream?.deadLinkStableId() ?: return
-        if (id != activeSourceId) return
-        if (isPlaying) {
-            started = true
-            timer?.cancel()
-            timer = null
-        }
+        if (closed || !isPlaying) return
+        val key = stream?.playerSourceIdentityKey()
+        if (key != null && currentKey != null && key != currentKey) return
+        playbackStarted = true
+        timer?.cancel()
+        timer = null
+        log.d { "Playback started; startup fallback disabled" }
     }
 
     fun close() {
         closed = true
-        generation += 1
+        generation++
         timer?.cancel()
         timer = null
-        activeSourceId = null
-        attemptedIds.clear()
     }
-
-    private fun nextCandidate(): StreamItem? = candidateStreams()
-        .asSequence()
-        .filter { stream ->
-            stream.playableDirectUrl != null &&
-                !stream.shouldOpenExternally &&
-                !stream.isDirectDebridStream &&
-                !stream.needsServerPreparation &&
-                !stream.needsLocalDebridResolve &&
-                stream.youTubeIdToResolve == null &&
-                (stream.isInstalledAddonStream ||
-                    stream.addonId.startsWith("plugin:") ||
-                    stream.addonId.startsWith("plugin-repo:"))
-        }
-        .distinctBy { it.deadLinkStableId() }
-        .filterNot { it.deadLinkStableId() in attemptedIds }
-        .sortedBy(::deadLinkSourcePriority)
-        .firstOrNull()
-}
-
-internal fun deadLinkSourcePriority(stream: StreamItem): Int = when {
-    stream.isInstalledAddonStream -> 0
-    stream.addonId.startsWith("plugin:") -> 1
-    else -> 2
-}
-
-internal fun StreamItem.deadLinkStableId(): String {
-    val address = playableDirectUrl
-        ?: p2pInfoHash
-        ?: youTubeIdToResolve
-        ?: externalOpenUrl
-        ?: clientResolve?.let { "${it.service}:${it.infoHash}:${it.fileIdx}:${it.filename}" }
-        ?: serverTarget?.let { "${it.item.encode()}:${it.mediaSourceId}" }
-        ?: streamLabel
-    return "${addonId.trim().lowercase()}|${address.trim()}"
 }
