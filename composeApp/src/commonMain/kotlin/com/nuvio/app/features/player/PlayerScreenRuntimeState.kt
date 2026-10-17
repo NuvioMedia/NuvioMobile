@@ -99,6 +99,8 @@ internal class PlayerScreenRuntime(
     var showRemainingTime by mutableStateOf(false)
     var playerControlsLocked by mutableStateOf(false)
     var activeSourceUrl by mutableStateOf(sourceUrl)
+    /** Monotonic token used to ignore stale async source-resolution callbacks. */
+    var sourceSwitchGeneration: Long = 0L
     var activeSourceAudioUrl by mutableStateOf(sourceAudioUrl)
     var activeSourceHeaders by mutableStateOf(sanitizePlaybackHeaders(sourceHeaders))
     var activeSourceResponseHeaders by mutableStateOf(sanitizePlaybackResponseHeaders(sourceResponseHeaders))
