@@ -118,14 +118,18 @@ object PlayerStreamsRepository {
         val identityKey = stream.playerSourceIdentityKey() ?: return
         deadSourceIdentityKeys.update { it + identityKey }
         _sourceState.update { current ->
+            val groups = current.groups.map { group ->
+                group.copy(
+                    streams = group.streams.filterNot {
+                        it.playerSourceIdentityKey() == identityKey
+                    },
+                )
+            }
+            val anyLoading = groups.any { it.isLoading }
             current.copy(
-                groups = current.groups.map { group ->
-                    group.copy(
-                        streams = group.streams.filterNot {
-                            it.playerSourceIdentityKey() == identityKey
-                        },
-                    )
-                },
+                groups = groups,
+                isAnyLoading = anyLoading,
+                emptyStateReason = groups.toEmptyStateReason(anyLoading),
             )
         }
     }
@@ -395,8 +399,10 @@ object PlayerStreamsRepository {
             }
 
             fun publishStreamGroup(group: AddonStreamGroup) {
-                val visibleGroup = group.copy(streams = filterDeadSources(stateFlow, group.streams))
                 stateFlow.update { current ->
+                    // Filter inside the StateFlow update so a concurrent prune
+                    // cannot be undone by a stale provider completion snapshot.
+                    val visibleGroup = group.copy(streams = filterDeadSources(stateFlow, group.streams))
                     val updated = StreamAutoPlaySelector.orderAddonStreams(
                         groups = current.groups.map { currentGroup ->
                             if (currentGroup.addonId == visibleGroup.addonId) visibleGroup else currentGroup
