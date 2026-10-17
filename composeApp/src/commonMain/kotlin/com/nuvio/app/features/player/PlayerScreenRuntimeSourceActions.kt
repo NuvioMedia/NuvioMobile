@@ -134,8 +134,11 @@ internal fun StreamItem.playerSourceIdentityKey(): String? {
         return "hash:$addonId:$hash:${behaviorHints.videoSize ?: ""}:${behaviorHints.filename.orEmpty()}"
     }
 
+    // A direct link belongs to one provider stream entry. Keep the addon in
+    // its identity so pruning a failed link cannot remove the same URL from
+    // another provider stream list.
     playableDirectUrl?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
-        return "url:$url"
+        return "url:$addonId:$url"
     }
 
     val fallbackParts = listOf(
@@ -151,6 +154,22 @@ internal fun StreamItem.playerSourceIdentityKey(): String? {
     return fallbackParts
         .takeIf { parts -> parts.any { it.isNotBlank() } }
         ?.joinToString(separator = "|", prefix = "meta:")
+}
+
+/**
+ * Deduplication key for equivalent playback targets. Unlike the per-entry
+ * identity, direct URLs intentionally deduplicate across addons so the same
+ * dead URL is not retried through another provider.
+ */
+internal fun StreamItem.playerPlaybackDeduplicationKey(): String? {
+    serverTarget?.let { target -> return "server:${target.item.encode()}:${target.mediaSourceId.orEmpty()}" }
+    p2pInfoHash?.trim()?.lowercase()?.takeIf { it.isNotBlank() }?.let { hash ->
+        return "torrent:$hash:${p2pFileIdx ?: -1}"
+    }
+    playableDirectUrl?.trim()?.takeIf { it.isNotBlank() }?.let { url ->
+        return "url:$url"
+    }
+    return playerSourceIdentityKey()
 }
 
 internal fun PlayerScreenRuntime.stopActiveP2pStream() {
