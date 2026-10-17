@@ -450,7 +450,7 @@ private fun BoxScope.RenderPlaybackOverlays(
         metrics = metrics,
         horizontalSafePadding = horizontalSafePadding,
         onUnlock = { unlockPlayerControls() },
-        showOpeningOverlay = playerSettingsUiState.showLoadingOverlay && !initialLoadCompleted && errorMessage == null,
+        showOpeningOverlay = playerSettingsUiState.showLoadingOverlay && (!initialLoadCompleted || deadLinkStatusMessage != null) && errorMessage == null,
         backdropArtwork = background ?: poster,
         logo = logo,
         title = title,
@@ -458,7 +458,7 @@ private fun BoxScope.RenderPlaybackOverlays(
             flushWatchProgress()
             args.onBack()
         },
-        openingLoadingMessage = if (playerSettingsUiState.showPlayerLoadingStatus) {
+        openingLoadingMessage = deadLinkStatusMessage ?: if (playerSettingsUiState.showPlayerLoadingStatus) {
             p2pInitialLoadingMessage ?: playerLoadingStatusMessage(
                 showStatus = true,
                 controllerReady = playerController != null,
