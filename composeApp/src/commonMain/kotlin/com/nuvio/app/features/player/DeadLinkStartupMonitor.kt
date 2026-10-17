@@ -42,8 +42,7 @@ internal class DeadLinkStartupMonitor(
 
     fun resetForContent() {
         generation++
-        timer?.cancel()
-        timer = null
+        cancelTimer()
         currentKey = null
         attemptedKeys.clear()
         deadMarkedKeys.clear()
@@ -66,8 +65,7 @@ internal class DeadLinkStartupMonitor(
         val key = identityKeyOverride ?: stream.playerSourceIdentityKey() ?: return
         currentStream = stream
         if (!timeoutEnabled()) {
-            timer?.cancel()
-            timer = null
+            cancelTimer()
             generation++
             currentKey = key
             attemptedKeys += key
@@ -83,8 +81,7 @@ internal class DeadLinkStartupMonitor(
                 // The player has now accepted this candidate. Start its full
                 // startup window from activation rather than from dispatch.
                 awaitingActivation = false
-                timer?.cancel()
-                timer = null
+                cancelTimer()
                 generation++
                 armTimeout(key, generation)
                 return
@@ -96,8 +93,7 @@ internal class DeadLinkStartupMonitor(
             return
         }
 
-        timer?.cancel()
-        timer = null
+        cancelTimer()
         generation++
         currentKey = key
         attemptedKeys += key
@@ -111,8 +107,7 @@ internal class DeadLinkStartupMonitor(
     /** Disable fallback monitoring for non-stream playback (e.g. a local file). */
     fun sourceCleared() {
         generation++
-        timer?.cancel()
-        timer = null
+        cancelTimer()
         currentKey = null
         currentStream = null
         playbackStarted = false
@@ -150,8 +145,7 @@ internal class DeadLinkStartupMonitor(
         if (isPlaying) {
             playbackStarted = true
             awaitingActivation = false
-            timer?.cancel()
-            timer = null
+            cancelTimer()
             log.d { "Playback confirmed started; startup fallback disabled for $key" }
         }
     }
@@ -160,14 +154,12 @@ internal class DeadLinkStartupMonitor(
         if (closed) return
         val key = currentKey ?: return
         if (!timeoutEnabled()) {
-            timer?.cancel()
-            timer = null
+            cancelTimer()
             generation++
             return
         }
         if (playbackStarted && !buffering) return
-        timer?.cancel()
-        timer = null
+        cancelTimer()
         generation++
         exhausted = false
         armTimeout(key, generation)
@@ -176,6 +168,10 @@ internal class DeadLinkStartupMonitor(
     fun close() {
         closed = true
         generation++
+        cancelTimer()
+    }
+
+    private fun cancelTimer() {
         timer?.cancel()
         timer = null
     }

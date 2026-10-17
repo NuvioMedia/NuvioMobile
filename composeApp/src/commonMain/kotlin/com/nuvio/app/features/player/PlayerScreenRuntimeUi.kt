@@ -4,16 +4,15 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.Alignment
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,9 +21,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.party.PartyRepository
@@ -170,8 +172,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             Surface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 20.dp, start = 16.dp, end = 16.dp)
-                    .clip(RoundedCornerShape(18.dp)),
+                    .padding(top = 20.dp, start = 16.dp, end = 16.dp),
                 color = Color(0xE61A202B),
                 contentColor = Color.White,
                 shape = RoundedCornerShape(18.dp),
@@ -184,13 +185,13 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(text = statusIcon, color = if (isUnavailable) Color(0xFFFFC66D) else Color(0xFF8BCBFF))
-                    androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(text = statusTitle, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(text = statusTitle, fontWeight = FontWeight.SemiBold)
                         if (detail != null) {
                             Text(
                                 text = detail,
                                 color = Color(0xFFCAD3E0),
-                                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                                style = MaterialTheme.typography.labelMedium,
                                 maxLines = 1,
                             )
                         }
