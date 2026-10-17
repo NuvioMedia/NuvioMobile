@@ -219,7 +219,7 @@ internal class DeadLinkStartupMonitor(
                 // Do not auto-open an external app: it has no in-player startup
                 // signal, so the watchdog cannot know whether it succeeded.
                 .filter { !it.shouldOpenExternally && it.isSelectableForPlayback(debridEnabled) }
-                .distinctBy { it.playerSourceIdentityKey() }
+                .distinctBy { it.playerPlaybackDeduplicationKey() }
                 .filter { candidate ->
                     val candidateKey = candidate.playerSourceIdentityKey()
                     candidateKey != null && candidateKey !in attemptedKeys
