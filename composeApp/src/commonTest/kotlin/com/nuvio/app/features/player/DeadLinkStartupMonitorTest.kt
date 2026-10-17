@@ -514,7 +514,7 @@ class DeadLinkStartupMonitorTest {
 
         monitor.sourceSelected(first)
         runCurrent()
-        monitor.playbackStateChanged(first, isPlaying = true)
+        monitor.playbackStateChanged(first, isPlaying = true, isLoading = false)
         monitor.sourceSelected(second)
         runCurrent()
         advanceTimeBy(5_000)
