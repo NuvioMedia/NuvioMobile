@@ -450,7 +450,7 @@ private fun BoxScope.RenderPlaybackOverlays(
         metrics = metrics,
         horizontalSafePadding = horizontalSafePadding,
         onUnlock = { unlockPlayerControls() },
-        showOpeningOverlay = playerSettingsUiState.showLoadingOverlay && (!initialLoadCompleted || deadLinkStatusMessage != null) && errorMessage == null,
+        showOpeningOverlay = (playerSettingsUiState.showLoadingOverlay && !initialLoadCompleted || deadLinkStatusMessage != null) && errorMessage == null,
         backdropArtwork = background ?: poster,
         logo = logo,
         title = title,
