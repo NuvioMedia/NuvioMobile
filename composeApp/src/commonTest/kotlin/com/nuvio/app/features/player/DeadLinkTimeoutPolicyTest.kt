@@ -8,9 +8,17 @@ class DeadLinkTimeoutPolicyTest {
     @Test
     fun timeoutDefaultsAndClampsToFiveThroughSixtySeconds() {
         assertEquals(10, DeadLinkTimeoutPolicy.DEFAULT_SECONDS)
+        assertEquals(5, DeadLinkTimeoutPolicy.MIN_SECONDS)
+        assertEquals(60, DeadLinkTimeoutPolicy.MAX_SECONDS)
+
+        assertEquals(5, DeadLinkTimeoutPolicy.normalizeSeconds(Int.MIN_VALUE))
         assertEquals(5, DeadLinkTimeoutPolicy.normalizeSeconds(0))
+        assertEquals(5, DeadLinkTimeoutPolicy.normalizeSeconds(4))
+        assertEquals(5, DeadLinkTimeoutPolicy.normalizeSeconds(5))
         assertEquals(10, DeadLinkTimeoutPolicy.normalizeSeconds(10))
-        assertEquals(60, DeadLinkTimeoutPolicy.normalizeSeconds(90))
+        assertEquals(60, DeadLinkTimeoutPolicy.normalizeSeconds(60))
+        assertEquals(60, DeadLinkTimeoutPolicy.normalizeSeconds(61))
+        assertEquals(60, DeadLinkTimeoutPolicy.normalizeSeconds(Int.MAX_VALUE))
     }
 
     @Test
