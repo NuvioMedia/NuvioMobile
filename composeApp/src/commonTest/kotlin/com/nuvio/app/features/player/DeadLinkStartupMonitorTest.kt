@@ -427,6 +427,46 @@ class DeadLinkStartupMonitorTest {
         monitor.close()
     }
 
+    @Test
+    fun discoveryFailureRetriesAndCanStillFallback() = runTest {
+        val current = stream("Dead source", "addon:dead", "https://media.example/dead.mp4")
+        val next = stream("Alternative", "addon:next", "https://media.example/next.mp4")
+        var discoveryCalls = 0
+        val fallbacks = mutableListOf<StreamItem>()
+        var exhaustedCount = 0
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = {
+                discoveryCalls++
+                if (discoveryCalls == 1) error("temporary discovery failure")
+                listOf(current, next)
+            },
+            onFallback = fallbacks::add,
+            onExhausted = { exhaustedCount++ },
+        )
+
+        monitor.sourceSelected(current)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(1, discoveryCalls)
+        assertTrue(fallbacks.isEmpty())
+        assertEquals(0, exhaustedCount)
+
+        advanceTimeBy(1_999)
+        runCurrent()
+        assertEquals(1, discoveryCalls)
+
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(2, discoveryCalls)
+        assertEquals(listOf(next), fallbacks)
+        assertEquals(0, exhaustedCount)
+        monitor.close()
+    }
+
     private fun stream(name: String, addonId: String, url: String) =
         StreamItem(name = name, url = url, addonName = name, addonId = addonId)
 

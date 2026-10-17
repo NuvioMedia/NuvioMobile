@@ -56,14 +56,41 @@ internal class DeadLinkStartupMonitor(
             // Discover sources before declaring exhaustion. Keep this job as the
             // active timer while suspended so source changes, playback start, and
             // close() can cancel an in-flight discovery.
-            val discoveredCandidates = try {
-                candidateStreams()
-            } catch (cancelled: kotlinx.coroutines.CancellationException) {
-                throw cancelled
-            } catch (error: Exception) {
-                log.w { "Source discovery failed after startup timeout for $key: ${error.message}" }
-                // An incomplete fetch is not evidence that all sources are exhausted.
-                return@launch
+            // A transient discovery failure must not permanently stop fallback for
+            // this source. Retry with capped backoff until discovery succeeds or this
+            // attempt is invalidated by playback, source selection, content reset, or close.
+            var discoveredCandidates = emptyList<StreamItem>()
+            var discoverySucceeded = false
+            var discoveryFailures = 0
+            while (!discoverySucceeded) {
+                try {
+                    discoveredCandidates = candidateStreams()
+                    discoverySucceeded = true
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    if (closed || playbackStarted || exhausted ||
+                        generation != sourceGeneration || currentKey != key
+                    ) {
+                        return@launch
+                    }
+
+                    val retryDelayMs = when (discoveryFailures++) {
+                        0 -> 2_000L
+                        1 -> 5_000L
+                        2 -> 15_000L
+                        else -> 30_000L
+                    }
+                    log.w {
+                        "Source discovery failed after startup timeout for $key; retrying in ${retryDelayMs}ms: ${error.message}"
+                    }
+                    delay(retryDelayMs)
+                    if (closed || playbackStarted || exhausted ||
+                        generation != sourceGeneration || currentKey != key
+                    ) {
+                        return@launch
+                    }
+                }
             }
 
             if (closed || playbackStarted || exhausted ||
