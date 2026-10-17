@@ -379,11 +379,26 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     episode: MetaVideo,
     serverResumeMs: Long? = null,
     saveForReuse: Boolean = true,
+    originIdentityKey: String? = null,
 ) {
-    if (prepareServerForPlayer(stream) { switchToEpisodeStream(it, episode, serverResumeMs = newerServerResumeMs(it, episode)) }) return
+    val stableOriginIdentityKey = originIdentityKey ?: stream.playerSourceIdentityKey()
+    if (prepareServerForPlayer(stream) {
+            switchToEpisodeStream(
+                it,
+                episode,
+                serverResumeMs = newerServerResumeMs(it, episode),
+                saveForReuse = saveForReuse,
+                originIdentityKey = stableOriginIdentityKey,
+            )
+        }) return
     if (
         resolveYouTubeForPlayer(stream) { resolved ->
-            switchToEpisodeStream(resolved, episode, saveForReuse = false)
+            switchToEpisodeStream(
+                resolved,
+                episode,
+                saveForReuse = false,
+                originIdentityKey = stableOriginIdentityKey,
+            )
         }
     ) return
     if (
@@ -391,7 +406,14 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
             stream = stream,
             season = episode.season,
             episode = episode.episode,
-            onResolved = { resolvedStream -> switchToEpisodeStream(resolvedStream, episode) },
+            onResolved = { resolvedStream ->
+                switchToEpisodeStream(
+                    resolvedStream,
+                    episode,
+                    saveForReuse = saveForReuse,
+                    originIdentityKey = stableOriginIdentityKey,
+                )
+            },
             onStale = {
                 PlayerStreamsRepository.loadEpisodeStreams(
                     type = contentType ?: parentMetaType,
@@ -424,6 +446,8 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     activeSourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response)
     activeStreamType = stream.streamType
     applyEpisodeStreamMetadata(stream, episode, resume)
+    // Keep the origin entry stable for dead-link pruning after URL resolution.
+    activeSourceIdentityKey = stableOriginIdentityKey ?: stream.playerSourceIdentityKey()
 }
 
 internal fun PlayerScreenRuntime.switchToDownloadedEpisode(downloadItem: DownloadItem, episode: MetaVideo) {
