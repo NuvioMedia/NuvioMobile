@@ -26,7 +26,10 @@
     <string name="party_end_title">End the watch party?</string>
     <string name="party_end_message">Everyone will be disconnected from the party.</string>
     <string name="party_now_watching">The party is watching %1$s</string>
-    <string name="party_play_for_everyone">Play this for everyone</string>
+    <string name="party_switch">Switch the party to %1$s</string>
+    <string name="party_switch_title">Switch the party?</string>
+    <string name="party_switch_message">Everyone will start watching %1$s with you.</string>
+    <string name="party_switch_confirm">Switch</string>
     <string name="party_watch_with_party">Watch with the party</string>
     <string name="party_waiting_for">Waiting for %1$s</string>
     <string name="party_waiting">Waiting for everyone</string>

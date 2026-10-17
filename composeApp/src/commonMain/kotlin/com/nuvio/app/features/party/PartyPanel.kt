@@ -52,12 +52,15 @@ import nuvio.composeapp.generated.resources.party_behind_title
 import nuvio.composeapp.generated.resources.party_catch_up
 import nuvio.composeapp.generated.resources.party_experimental
 import nuvio.composeapp.generated.resources.party_now_watching
-import nuvio.composeapp.generated.resources.party_play_for_everyone
 import nuvio.composeapp.generated.resources.party_share_unavailable
 import nuvio.composeapp.generated.resources.party_sign_in_required
 import nuvio.composeapp.generated.resources.party_start_action
 import nuvio.composeapp.generated.resources.party_start_description
 import nuvio.composeapp.generated.resources.party_start_title
+import nuvio.composeapp.generated.resources.party_switch
+import nuvio.composeapp.generated.resources.party_switch_confirm
+import nuvio.composeapp.generated.resources.party_switch_message
+import nuvio.composeapp.generated.resources.party_switch_title
 import nuvio.composeapp.generated.resources.party_title
 import nuvio.composeapp.generated.resources.party_unavailable
 import nuvio.composeapp.generated.resources.party_watch_with_party
@@ -67,11 +70,11 @@ import org.jetbrains.compose.resources.stringResource
 internal fun PartyPanel(
     visible: Boolean,
     state: PartyUiState,
-    playerMediaKey: String,
+    playerMedia: PartyMedia,
     isSupported: Boolean,
     canStart: Boolean,
     onStart: () -> Unit,
-    onPlayForEveryone: () -> Unit,
+    onSwitchParty: () -> Unit,
     onWatchWithParty: () -> Unit,
     onLeave: () -> Unit,
     onEnd: () -> Unit,
@@ -124,10 +127,10 @@ internal fun PartyPanel(
                 } else {
                     PartyContent(
                         party = party,
-                        playerMediaKey = playerMediaKey,
+                        playerMedia = playerMedia,
                         behindMs = behindMs,
                         onCatchUp = onCatchUp,
-                        onPlayForEveryone = onPlayForEveryone,
+                        onSwitchParty = onSwitchParty,
                         onWatchWithParty = onWatchWithParty,
                         onLeave = onLeave,
                         onEnd = onEnd,
@@ -193,10 +196,10 @@ private fun StartContent(
 @Composable
 private fun PartyContent(
     party: ActiveParty,
-    playerMediaKey: String,
+    playerMedia: PartyMedia,
     behindMs: Long?,
     onCatchUp: () -> Unit,
-    onPlayForEveryone: () -> Unit,
+    onSwitchParty: () -> Unit,
     onWatchWithParty: () -> Unit,
     onLeave: () -> Unit,
     onEnd: () -> Unit,
@@ -206,6 +209,7 @@ private fun PartyContent(
     onSharingChange: (Boolean) -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
+    var confirmSwitch by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -256,7 +260,7 @@ private fun PartyContent(
             HostOnlyNote()
         }
         AnimatedVisibility(
-            visible = playerMediaKey != party.media.key,
+            visible = playerMedia.key != party.media.key,
             enter = fadeIn() + expandVertically(),
             exit = fadeOut() + shrinkVertically(),
         ) {
@@ -272,10 +276,10 @@ private fun PartyContent(
                     style = DialogButtonStyle.Primary,
                     modifier = Modifier.fillMaxWidth(),
                 )
-                if (party.canControl) {
+                if (party.isHost) {
                     DialogButton(
-                        text = stringResource(Res.string.party_play_for_everyone),
-                        onClick = onPlayForEveryone,
+                        text = stringResource(Res.string.party_switch, playerMedia.displayTitle()),
+                        onClick = { confirmSwitch = true },
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
@@ -285,6 +289,19 @@ private fun PartyContent(
             party = party,
             onLeave = onLeave,
             onEnd = onEnd,
+        )
+    }
+    if (confirmSwitch) {
+        ConfirmDialog(
+            title = stringResource(Res.string.party_switch_title),
+            message = stringResource(Res.string.party_switch_message, playerMedia.displayTitle()),
+            confirmLabel = stringResource(Res.string.party_switch_confirm),
+            confirmStyle = DialogButtonStyle.Primary,
+            onConfirm = {
+                confirmSwitch = false
+                onSwitchParty()
+            },
+            onDismiss = { confirmSwitch = false },
         )
     }
 }

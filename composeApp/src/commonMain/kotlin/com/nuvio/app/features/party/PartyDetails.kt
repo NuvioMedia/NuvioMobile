@@ -498,12 +498,13 @@ internal fun PartyActions(
 }
 
 @Composable
-private fun ConfirmDialog(
+internal fun ConfirmDialog(
     title: String,
     message: String,
     confirmLabel: String,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
+    confirmStyle: DialogButtonStyle = DialogButtonStyle.Destructive,
 ) {
     val haptic = LocalHapticFeedback.current
     DialogSurface(
@@ -522,7 +523,7 @@ private fun ConfirmDialog(
                     haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                     onConfirm()
                 },
-                style = DialogButtonStyle.Destructive,
+                style = confirmStyle,
             )
         }
     }

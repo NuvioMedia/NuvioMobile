@@ -497,11 +497,11 @@ internal fun BoxScope.RenderParty(runtime: PlayerScreenRuntime) {
         PartyPanel(
             visible = showPartyPanel,
             state = partyState,
-            playerMediaKey = partyKey,
+            playerMedia = currentPartyMedia(),
             isSupported = PartyRepository.available.collectAsStateWithLifecycle().value,
             canStart = PartyRepository.canUse,
             onStart = { startParty() },
-            onPlayForEveryone = {
+            onSwitchParty = {
                 PartyRepository.publishMedia(currentPartyMedia(), positionMs = playbackSnapshot.positionMs)
             },
             onWatchWithParty = {

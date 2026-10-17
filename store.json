@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.6.1",
+          "buildVersion": "144",
+          "date": "2026-10-16T14:44:49Z",
+          "localizedDescription": "- f352f2b2 fix(party): let only the host change what's playing @tapframe  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.1-beta/nuvio-0.6.1-full-release.ipa",
+          "size": 68517984,
+          "sha256": "d18faf37f1304d5d2a62c302077285aedf6de973e2b6eecbff3a0bfc1d28ad2d",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.6.0",
           "buildVersion": "143",
           "date": "2026-10-16T08:52:28Z",
