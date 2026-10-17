@@ -81,8 +81,8 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                 controlsVisible = !playerControlsLocked
             },
             sourceDiscoveryLoading = { PlayerStreamsRepository.isSourceDiscoveryLoading() },
-            onDeadLink = { failed ->
-                PlayerStreamsRepository.pruneDeadSource(failed)
+            onDeadLink = { failed, stableIdentityKey ->
+                PlayerStreamsRepository.pruneDeadSource(failed, stableIdentityKey)
                 deadLinkStatusMessage = "Dead link pruned: ${failed.addonName} · ${failed.streamLabel}"
             },
         )
@@ -92,7 +92,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
     LaunchedEffect(activeVideoId, activeSeasonNumber, activeEpisodeNumber) {
         deadLinkMonitor.resetForContent()
         deadLinkStatusMessage = null
-        activeStream?.let { deadLinkMonitor.sourceSelected(it) }
+        activeStream?.let { deadLinkMonitor.sourceSelected(it, activeSourceIdentityKey) }
     }
 
     LaunchedEffect(activeStream, activeSourceUrl, activePlaybackKey) {
@@ -101,7 +101,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
             deadLinkMonitor.sourceCleared()
             return@LaunchedEffect
         }
-        deadLinkMonitor.sourceSelected(stream)
+        deadLinkMonitor.sourceSelected(stream, activeSourceIdentityKey)
     }
 
     LaunchedEffect(activeStream, activeSourceUrl, playbackSnapshot.isPlaying, playbackSnapshot.isLoading, playbackSnapshotKey, activePlaybackKey) {
@@ -109,7 +109,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         if (playbackSnapshot.isPlaying && !playbackSnapshot.isLoading) {
             deadLinkStatusMessage = null
         }
-        deadLinkMonitor.playbackStateChanged(activeStream, playbackSnapshot.isPlaying, playbackSnapshot.isLoading)
+        deadLinkMonitor.playbackStateChanged(activeStream, playbackSnapshot.isPlaying, playbackSnapshot.isLoading, activeSourceIdentityKey)
     }
 
     val deadLinkSettings by PlayerSettingsRepository.uiState.collectAsStateWithLifecycle()
