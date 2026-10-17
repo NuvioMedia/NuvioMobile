@@ -295,26 +295,29 @@ internal fun PlayerScreenRuntime.switchToSource(
     stream: StreamItem,
     saveForReuse: Boolean = true,
     attemptToken: Long? = null,
+    originIdentityKey: String? = null,
 ) {
     // Every top-level source switch invalidates async completions from earlier
-    // candidates. Recursive resolver continuations retain their original token.
+    // candidates. Recursive resolver continuations retain their original token
+    // and source identity even when resolution replaces the original URL.
+    val stableOriginIdentityKey = originIdentityKey ?: stream.playerSourceIdentityKey()
     val switchToken = attemptToken ?: (++sourceSwitchGeneration)
     if (switchToken != sourceSwitchGeneration) return
     fun isCurrentSwitch(): Boolean = switchToken == sourceSwitchGeneration
 
     if (prepareServerForPlayer(stream) {
-            if (isCurrentSwitch()) switchToSource(it, saveForReuse, switchToken)
+            if (isCurrentSwitch()) switchToSource(it, saveForReuse, switchToken, stableOriginIdentityKey)
         }) return
     // The resolved URL expires after a few hours, so it isn't kept for reuse.
     if (resolveYouTubeForPlayer(stream) {
-            if (isCurrentSwitch()) switchToSource(it, saveForReuse = false, attemptToken = switchToken)
+            if (isCurrentSwitch()) switchToSource(it, saveForReuse = false, attemptToken = switchToken, originIdentityKey = stableOriginIdentityKey)
         }) return
     if (
         resolveDebridForPlayer(
             stream = stream,
             season = activeSeasonNumber,
             episode = activeEpisodeNumber,
-            onResolved = { if (isCurrentSwitch()) switchToSource(it, saveForReuse, switchToken) },
+            onResolved = { if (isCurrentSwitch()) switchToSource(it, saveForReuse, switchToken, stableOriginIdentityKey) },
             onStale = {
                 if (isCurrentSwitch()) {
                     val vid = activeVideoId
@@ -338,7 +341,7 @@ internal fun PlayerScreenRuntime.switchToSource(
     }
     if (openExternalSourceUrl(stream)) return
     val url = stream.playableDirectUrl ?: return
-    val sourceIdentityKey = stream.playerSourceIdentityKey()
+    val sourceIdentityKey = stableOriginIdentityKey ?: stream.playerSourceIdentityKey()
     if (url == activeSourceUrl) {
         activeSourceIdentityKey = sourceIdentityKey ?: activeSourceIdentityKey
         return
