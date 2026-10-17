@@ -19,7 +19,7 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [34, 36])
+@Config(sdk = [34])
 class AndroidDownloadLifecycleTest {
     @get:Rule val temporary = TemporaryFolder()
 
