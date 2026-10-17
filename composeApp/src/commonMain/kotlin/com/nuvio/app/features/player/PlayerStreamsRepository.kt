@@ -139,8 +139,9 @@ object PlayerStreamsRepository {
     }
 
     fun pauseSearchForPlayback() {
-        PluginRepository.setLocalPluginSearchPaused(true)
-        cancelSourceJob()
+        // Source discovery must outlive playback selection so remaining add-ons
+        // and plugin scrapers can finish in the background for dead-link fallback.
+        // Episode-panel loading can still stop when playback starts.
         cancelEpisodeStreamsJob()
     }
 
