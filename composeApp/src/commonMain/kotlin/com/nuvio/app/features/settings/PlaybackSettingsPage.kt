@@ -842,6 +842,29 @@ private fun PlaybackSettingsSection(
                     )
                 }
                 SettingsGroupDivider(isTablet = isTablet)
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = if (isTablet) 18.dp else 16.dp, vertical = 10.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                            Text(text = stringResource(Res.string.settings_playback_dead_link_timeout), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                            Text(text = stringResource(Res.string.settings_playback_dead_link_timeout_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        ValueBox(text = stringResource(Res.string.settings_playback_seconds, autoPlayPlayerSettings.deadLinkTimeoutSeconds), modifier = Modifier.wrapContentWidth())
+                    }
+                    var deadLinkTimeoutSlider by remember(autoPlayPlayerSettings.deadLinkTimeoutSeconds) { mutableFloatStateOf(autoPlayPlayerSettings.deadLinkTimeoutSeconds.toFloat()) }
+                    Slider(
+                        value = deadLinkTimeoutSlider,
+                        onValueChange = { deadLinkTimeoutSlider = it.toInt().coerceIn(5, 60).toFloat() },
+                        onValueChangeFinished = { PlayerSettingsRepository.setDeadLinkTimeoutSeconds(deadLinkTimeoutSlider.toInt()) },
+                        valueRange = 5f..60f,
+                        steps = 54,
+                        colors = SliderDefaults.colors(thumbColor = MaterialTheme.colorScheme.primary, activeTrackColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                SettingsGroupDivider(isTablet = isTablet)
                 val timeoutSec = autoPlayPlayerSettings.streamAutoPlayTimeoutSeconds
                 val timeoutLabel = when (timeoutSec) {
                     0 -> stringResource(Res.string.settings_playback_timeout_instant)

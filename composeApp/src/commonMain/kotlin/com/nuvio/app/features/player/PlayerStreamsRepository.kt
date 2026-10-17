@@ -106,6 +106,8 @@ object PlayerStreamsRepository {
         )
     }
 
+    fun currentSourceCandidates(): List<StreamItem> = _sourceState.value.groups.flatMap { it.streams }
+
     fun stopSourcesLoading() {
         PluginRepository.setLocalPluginSearchPaused(true)
         cancelSourceJob()
