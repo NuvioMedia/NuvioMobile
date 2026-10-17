@@ -39,7 +39,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -110,9 +109,9 @@ object PlayerStreamsRepository {
     fun currentSourceCandidates(): List<StreamItem> = _sourceState.value.groups.flatMap { it.streams }
 
     /**
-     * Starts or joins source discovery for this title/episode and waits until
-     * the repository has finished loading. The caller's cancellation only stops
-     * waiting; it does not cancel a shared repository fetch.
+     * Starts or joins discovery and returns the current partial candidate list.
+     * It deliberately does not wait for every provider: the dead-link monitor
+     * re-reads this snapshot while providers continue filling groups in background.
      */
     suspend fun discoverSourceCandidates(
         type: String,
@@ -126,22 +125,19 @@ object PlayerStreamsRepository {
             season = season,
             episode = episode,
         )
-
-        val completedState = _sourceState.first { state -> !state.isAnyLoading }
-        return completedState.groups
-            .flatMap { it.streams }
-            .distinctBy { it.playerSourceIdentityKey() }
+        return currentSourceCandidates().distinctBy { it.playerSourceIdentityKey() }
     }
 
+    fun isSourceDiscoveryLoading(): Boolean = _sourceState.value.isAnyLoading
+
     fun stopSourcesLoading() {
-        PluginRepository.setLocalPluginSearchPaused(true)
-        cancelSourceJob()
+        // Dismissing the Sources panel must not cancel discovery needed by the
+        // dead-link monitor. clearAll() still cancels it when the player closes.
     }
 
     fun pauseSearchForPlayback() {
-        // Source discovery must outlive playback selection so remaining add-ons
-        // and plugin scrapers can finish in the background for dead-link fallback.
-        // Episode-panel loading can still stop when playback starts.
+        // Keep source and plugin fetching alive after a source is selected.
+        // Only episode-panel fetching is cancelled here; clearAll() owns cleanup.
         cancelEpisodeStreamsJob()
     }
 

@@ -467,6 +467,91 @@ class DeadLinkStartupMonitorTest {
         monitor.close()
     }
 
+    @Test
+    fun newlyArrivingCandidateIsTriedWhileOtherProvidersStillLoad() = runTest {
+        val current = stream("Current dead link", "addon:current", "https://media.example/current.mp4")
+        val next = stream("Late candidate", "addon:late", "https://media.example/late.mp4")
+        var loading = true
+        var candidates = listOf(current)
+        val fallbacks = mutableListOf<StreamItem>()
+        var exhaustedCount = 0
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = { candidates },
+            onFallback = fallbacks::add,
+            onExhausted = { exhaustedCount++ },
+            sourceDiscoveryLoading = { loading },
+        )
+
+        monitor.sourceSelected(current)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertTrue(fallbacks.isEmpty())
+        assertEquals(0, exhaustedCount)
+
+        candidates = listOf(current, next)
+        advanceTimeBy(300)
+        runCurrent()
+        assertEquals(listOf(next), fallbacks)
+        assertEquals(0, exhaustedCount)
+        monitor.close()
+    }
+
+    @Test
+    fun aDifferentSourceGetsAWatchdogAfterEarlierSourcePlayed() = runTest {
+        val first = stream("First", "addon:first", "https://media.example/first.mp4")
+        val second = stream("Second", "addon:second", "https://media.example/second.mp4")
+        val third = stream("Third", "addon:third", "https://media.example/third.mp4")
+        val fallbacks = mutableListOf<StreamItem>()
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = { listOf(first, second, third) },
+            onFallback = fallbacks::add,
+        )
+
+        monitor.sourceSelected(first)
+        runCurrent()
+        monitor.playbackStateChanged(first, isPlaying = true)
+        monitor.sourceSelected(second)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(listOf(third), fallbacks)
+        monitor.close()
+    }
+
+    @Test
+    fun fallbackChainContinuesWhenCandidateNeverBecomesActive() = runTest {
+        val first = stream("First dead link", "addon:first", "https://media.example/first.mp4")
+        val second = stream("Second candidate", "addon:second", "https://media.example/second.mp4")
+        val third = stream("Third candidate", "addon:third", "https://media.example/third.mp4")
+        val fallbacks = mutableListOf<StreamItem>()
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = { listOf(first, second, third) },
+            // Simulate asynchronous preparation failing before activeStream changes.
+            onFallback = fallbacks::add,
+        )
+
+        monitor.sourceSelected(first)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(second), fallbacks)
+
+        // No sourceSelected(second) event arrives; the activation watchdog must
+        // still advance to the next untried source.
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(second, third), fallbacks)
+        monitor.close()
+    }
+
     private fun stream(name: String, addonId: String, url: String) =
         StreamItem(name = name, url = url, addonName = name, addonId = addonId)
 
@@ -476,11 +561,13 @@ class DeadLinkStartupMonitorTest {
         candidates: suspend () -> List<StreamItem>,
         onFallback: (StreamItem) -> Unit,
         onExhausted: () -> Unit = {},
+        sourceDiscoveryLoading: () -> Boolean = { false },
     ) = DeadLinkStartupMonitor(
         scope = scope,
         timeoutSeconds = timeoutSeconds,
         candidateStreams = candidates,
         onFallback = onFallback,
         onExhausted = onExhausted,
+        sourceDiscoveryLoading = sourceDiscoveryLoading,
     )
 }

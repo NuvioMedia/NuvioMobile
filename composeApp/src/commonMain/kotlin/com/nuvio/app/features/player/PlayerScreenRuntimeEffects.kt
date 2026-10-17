@@ -74,6 +74,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                 errorMessage = errorMessage ?: "This source did not start and no alternate sources remain."
                 controlsVisible = !playerControlsLocked
             },
+            sourceDiscoveryLoading = { PlayerStreamsRepository.isSourceDiscoveryLoading() },
         )
     }
     DisposableEffect(deadLinkMonitor) { onDispose { deadLinkMonitor.close() } }
@@ -85,7 +86,11 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
     }
 
     LaunchedEffect(activeStream, activeSourceUrl, activePlaybackKey) {
-        val stream = activeStream ?: return@LaunchedEffect
+        val stream = activeStream
+        if (stream == null) {
+            deadLinkMonitor.sourceCleared()
+            return@LaunchedEffect
+        }
         deadLinkMonitor.sourceSelected(stream)
     }
 
