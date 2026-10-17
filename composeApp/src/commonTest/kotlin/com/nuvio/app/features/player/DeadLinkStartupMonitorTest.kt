@@ -618,6 +618,47 @@ class DeadLinkStartupMonitorTest {
         monitor.close()
     }
 
+
+    @Test
+    fun fallbackChecksDistinctLinksFromTheSameAddonIndividuallyBeforePlugins() = runTest {
+        val first = stream("4K BluRay", "addon:one", "https://media.example/4k.mkv")
+        val second = stream("1080p BluRay", "addon:one", "https://media.example/1080.mkv")
+        val third = stream("720p", "addon:one", "https://media.example/720.mkv")
+        val plugin = stream("Plugin 4K", "plugin:one", "https://media.example/plugin.mkv")
+        val fallbacks = mutableListOf<StreamItem>()
+        val markedDead = mutableListOf<StreamItem>()
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            // Preserve the quality/order supplied by the stream list within an addon.
+            candidates = { listOf(first, second, third, plugin) },
+            onFallback = fallbacks::add,
+            onDeadLink = markedDead::add,
+        )
+
+        monitor.sourceSelected(first)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(second), fallbacks)
+        assertEquals(listOf(first), markedDead)
+
+        monitor.sourceSelected(second)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(second, third), fallbacks)
+        assertEquals(listOf(first, second), markedDead)
+
+        monitor.sourceSelected(third)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(second, third, plugin), fallbacks)
+        assertEquals(listOf(first, second, third), markedDead)
+        monitor.close()
+    }
+
     private fun stream(name: String, addonId: String, url: String) =
         StreamItem(name = name, url = url, addonName = name, addonId = addonId)
 
