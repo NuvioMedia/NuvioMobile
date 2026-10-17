@@ -24,12 +24,15 @@ internal class DeadLinkStartupMonitor(
     private val onFallback: (StreamItem) -> Unit,
     private val onExhausted: () -> Unit,
     private val sourceDiscoveryLoading: () -> Boolean = { false },
+    private val onDeadLink: (StreamItem) -> Unit = {},
 ) {
     private val log = Logger.withTag("DeadLinkStartupMonitor")
     private var timer: Job? = null
     private var generation = 0L
     private var currentKey: String? = null
     private val attemptedKeys = linkedSetOf<String>()
+    private val deadMarkedKeys = linkedSetOf<String>()
+    private var currentStream: StreamItem? = null
     private var playbackStarted = false
     private var awaitingActivation = false
     private var exhausted = false
@@ -41,6 +44,8 @@ internal class DeadLinkStartupMonitor(
         timer = null
         currentKey = null
         attemptedKeys.clear()
+        deadMarkedKeys.clear()
+        currentStream = null
         playbackStarted = false
         awaitingActivation = false
         exhausted = false
@@ -56,6 +61,7 @@ internal class DeadLinkStartupMonitor(
     fun sourceSelected(stream: StreamItem) {
         if (closed) return
         val key = stream.playerSourceIdentityKey() ?: return
+        currentStream = stream
 
         if (currentKey == key) {
             if (awaitingActivation) {
@@ -92,6 +98,7 @@ internal class DeadLinkStartupMonitor(
         timer?.cancel()
         timer = null
         currentKey = null
+        currentStream = null
         playbackStarted = false
         awaitingActivation = false
         exhausted = false
@@ -125,6 +132,12 @@ internal class DeadLinkStartupMonitor(
     }
 
     private suspend fun findAndActivateFallback(key: String, expectedGeneration: Long) {
+        val failedStream = currentStream?.takeIf { it.playerSourceIdentityKey() == key }
+        if (failedStream != null && deadMarkedKeys.add(key)) {
+            log.w { "Startup deadline expired; pruning dead source ${failedStream.addonName} · ${failedStream.streamLabel}" }
+            onDeadLink(failedStream)
+        }
+
         var discoveryFailures = 0
         while (isCurrent(key, expectedGeneration)) {
             val discovered = try {
@@ -170,6 +183,7 @@ internal class DeadLinkStartupMonitor(
                 // YouTube, debrid or P2P preparation is underway.
                 attemptedKeys += nextKey
                 currentKey = nextKey
+                currentStream = next
                 generation++
                 playbackStarted = false
                 awaitingActivation = true

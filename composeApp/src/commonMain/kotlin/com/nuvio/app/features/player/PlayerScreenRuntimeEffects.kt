@@ -66,7 +66,12 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
             },
             onFallback = { next ->
                 val sourceName = "${next.addonName} · ${next.streamLabel}"
-                deadLinkStatusMessage = "Fallback → $sourceName"
+                val deadStatus = deadLinkStatusMessage?.takeIf { it.startsWith("Dead link pruned:") }
+                deadLinkStatusMessage = if (deadStatus != null) {
+                    "$deadStatus → Fallback → $sourceName"
+                } else {
+                    "Fallback → $sourceName"
+                }
                 Logger.withTag("DeadLinkFallback").i { "Fallback triggered to source: $sourceName (addonId=${next.addonId})" }
                 switchToSource(next)
             },
@@ -75,6 +80,10 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                 controlsVisible = !playerControlsLocked
             },
             sourceDiscoveryLoading = { PlayerStreamsRepository.isSourceDiscoveryLoading() },
+            onDeadLink = { failed ->
+                PlayerStreamsRepository.pruneDeadSource(failed)
+                deadLinkStatusMessage = "Dead link pruned: ${failed.addonName} · ${failed.streamLabel}"
+            },
         )
     }
     DisposableEffect(deadLinkMonitor) { onDispose { deadLinkMonitor.close() } }
