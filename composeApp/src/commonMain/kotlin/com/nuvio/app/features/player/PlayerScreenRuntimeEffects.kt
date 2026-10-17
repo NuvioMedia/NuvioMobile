@@ -68,6 +68,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
 
     LaunchedEffect(activeVideoId, activeSeasonNumber, activeEpisodeNumber) {
         deadLinkMonitor.resetForContent()
+        deadLinkStatusMessage = null
         activeStream?.let { deadLinkMonitor.sourceSelected(it) }
     }
 
