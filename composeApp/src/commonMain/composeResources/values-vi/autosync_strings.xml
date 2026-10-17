@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Tự động đồng bộ phụ đề</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Tự động đồng bộ phụ đề theo tiện ích được ưu tiên khi bắt đầu phát. Yêu cầu phải chọn ngôn ngữ phụ đề ưu tiên.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Tìm kiếm tự động đồng bộ: Chính xác</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Tiếp tục so sánh các phụ đề và bản nhúng khác để tìm khớp chính xác hơn trước khi đồng bộ. Chỉ kết quả khớp đáng tin cậy mới được áp dụng.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Tìm kiếm tự động đồng bộ: Nhanh</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Sử dụng kết quả khớp đầu tiên trước. Giống chế độ Chính xác, chỉ những kết quả khớp đáng tin cậy mới được áp dụng.</string>
+    <string name="settings_playback_auto_sync_tolerance">Dung sai tự động đồng bộ: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Giữ nguyên thời gian phụ đề gốc nếu việc đồng bộ không làm thay đổi quá mức này. Nhấn để thay đổi.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Tắt</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>
