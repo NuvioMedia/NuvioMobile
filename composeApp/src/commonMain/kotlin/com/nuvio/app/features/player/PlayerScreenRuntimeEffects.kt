@@ -106,6 +106,9 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
 
     LaunchedEffect(activeStream, activeSourceUrl, playbackSnapshot.isPlaying, playbackSnapshot.isLoading, playbackSnapshotKey, activePlaybackKey) {
         if (playbackSnapshotKey != activePlaybackKey) return@LaunchedEffect
+        if (playbackSnapshot.isPlaying && !playbackSnapshot.isLoading) {
+            deadLinkStatusMessage = null
+        }
         deadLinkMonitor.playbackStateChanged(activeStream, playbackSnapshot.isPlaying, playbackSnapshot.isLoading)
     }
 
