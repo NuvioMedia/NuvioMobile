@@ -8,7 +8,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Alignment
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -157,12 +163,40 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             ),
     ) {
         deadLinkStatusMessage?.let { status ->
-            Text(
-                text = status,
+            val isUnavailable = status.startsWith("Skipping unavailable source")
+            val statusIcon = if (isUnavailable) "⚠" else "↻"
+            val statusTitle = if (isUnavailable) "Source unavailable" else "Switching source"
+            val detail = status.substringAfter(" · ", "").takeIf { it.isNotBlank() }
+            Surface(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 20.dp),
-            )
+                    .padding(top = 20.dp, start = 16.dp, end = 16.dp)
+                    .clip(RoundedCornerShape(18.dp)),
+                color = Color(0xE61A202B),
+                contentColor = Color.White,
+                shape = RoundedCornerShape(18.dp),
+                tonalElevation = 0.dp,
+                shadowElevation = 8.dp,
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 11.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(text = statusIcon, color = if (isUnavailable) Color(0xFFFFC66D) else Color(0xFF8BCBFF))
+                    androidx.compose.foundation.layout.Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(text = statusTitle, fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold)
+                        if (detail != null) {
+                            Text(
+                                text = detail,
+                                color = Color(0xFFCAD3E0),
+                                style = androidx.compose.material3.MaterialTheme.typography.labelMedium,
+                                maxLines = 1,
+                            )
+                        }
+                    }
+                }
+            }
         }
         val playerSurfaceSourceUrl = if (isP2pPlaybackActive) p2pResolvedSourceUrl else activeSourceUrl
         val playbackKey = activePlaybackKey
