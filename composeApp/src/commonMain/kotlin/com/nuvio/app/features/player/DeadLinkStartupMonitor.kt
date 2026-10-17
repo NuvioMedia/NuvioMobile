@@ -25,7 +25,7 @@ internal class DeadLinkStartupMonitor(
     private val onFallback: (StreamItem) -> Unit,
     private val onExhausted: () -> Unit,
     private val sourceDiscoveryLoading: () -> Boolean = { false },
-    private val onDeadLink: (StreamItem) -> Unit = {},
+    private val onDeadLink: (StreamItem, String) -> Unit = { _, _ -> },
 ) {
     private val log = Logger.withTag("DeadLinkStartupMonitor")
     private var timer: Job? = null
@@ -61,9 +61,9 @@ internal class DeadLinkStartupMonitor(
      * asynchronous preparation is in progress, so resolver failures cannot end
      * the chain silently.
      */
-    fun sourceSelected(stream: StreamItem) {
+    fun sourceSelected(stream: StreamItem, identityKeyOverride: String? = null) {
         if (closed) return
-        val key = stream.playerSourceIdentityKey() ?: return
+        val key = identityKeyOverride ?: stream.playerSourceIdentityKey() ?: return
         currentStream = stream
         if (!timeoutEnabled()) {
             timer?.cancel()
@@ -121,9 +121,14 @@ internal class DeadLinkStartupMonitor(
         exhausted = false
     }
 
-    fun playbackStateChanged(stream: StreamItem?, isPlaying: Boolean, isLoading: Boolean) {
+    fun playbackStateChanged(
+        stream: StreamItem?,
+        isPlaying: Boolean,
+        isLoading: Boolean,
+        identityKeyOverride: String? = null,
+    ) {
         if (closed) return
-        val key = stream?.playerSourceIdentityKey() ?: return
+        val key = identityKeyOverride ?: stream?.playerSourceIdentityKey() ?: return
         if (key != currentKey) return
 
         // Some player engines report playWhenReady/isPlaying intent while the
@@ -185,10 +190,10 @@ internal class DeadLinkStartupMonitor(
     }
 
     private suspend fun findAndActivateFallback(key: String, expectedGeneration: Long) {
-        val failedStream = currentStream?.takeIf { it.playerSourceIdentityKey() == key }
+        val failedStream = currentStream
         if (failedStream != null && deadMarkedKeys.add(key)) {
             log.w { "Startup deadline expired; pruning dead source ${failedStream.addonName} · ${failedStream.streamLabel}" }
-            onDeadLink(failedStream)
+            onDeadLink(failedStream, key)
         }
 
         var discoveryFailures = 0
