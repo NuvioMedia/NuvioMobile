@@ -15,7 +15,7 @@ class DeadLinkStartupMonitorTest {
         val duplicate = stream("Duplicate URL", "addon:duplicate", "https://media.example/current.mp4")
         val next = stream("Next", "plugin:next", "https://media.example/next.mp4")
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 10 },
             candidates = { listOf(current, duplicate, next) },
@@ -37,7 +37,7 @@ class DeadLinkStartupMonitorTest {
         val plugin = stream("Other plugin", "plugin:other", "https://media.example/plugin.mp4")
         val addon = stream("Installed addon", "addon:one", "https://media.example/addon.mp4")
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 5 },
             candidates = { listOf(current, plugin, addon) },
@@ -58,7 +58,7 @@ class DeadLinkStartupMonitorTest {
         val current = stream("Current", "plugin:current", "https://media.example/current.mp4")
         val next = stream("Next", "plugin:next", "https://media.example/next.mp4")
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 10 },
             candidates = { listOf(current, next) },
@@ -82,7 +82,7 @@ class DeadLinkStartupMonitorTest {
         val current = stream("Current", "plugin:current", "https://media.example/current.mp4")
         val next = stream("Next", "plugin:next", "https://media.example/next.mp4")
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 10 },
             candidates = { listOf(current, next) },
@@ -106,7 +106,7 @@ class DeadLinkStartupMonitorTest {
         val second = stream("Second", "plugin:second", "https://media.example/second.mp4")
         val third = stream("Third", "plugin:third", "https://media.example/third.mp4")
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 10 },
             candidates = { listOf(first, second, third) },
@@ -136,7 +136,7 @@ class DeadLinkStartupMonitorTest {
         val third = stream("Third", "plugin:third", "https://media.example/third.mp4")
         val fallbacks = mutableListOf<StreamItem>()
         lateinit var monitor: DeadLinkStartupMonitor
-        monitor = monitor(
+        monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 5 },
             candidates = { listOf(first, second, third) },
@@ -172,7 +172,7 @@ class DeadLinkStartupMonitorTest {
         var exhaustedCount = 0
         var candidates = listOf(current)
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 5 },
             candidates = { candidates },
@@ -208,7 +208,7 @@ class DeadLinkStartupMonitorTest {
         val first = stream("First", "plugin:first", "https://media.example/first.mp4")
         val second = stream("Second", "plugin:second", "https://media.example/second.mp4")
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 5 },
             candidates = { listOf(first, second) },
@@ -238,7 +238,7 @@ class DeadLinkStartupMonitorTest {
         val third = stream("Third", "plugin:third", "https://media.example/third.mp4")
         var timeoutSeconds = 5
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { timeoutSeconds },
             candidates = { listOf(first, second, third) },
@@ -272,7 +272,7 @@ class DeadLinkStartupMonitorTest {
         val nonPlayable = StreamItem(addonName = "Metadata only", addonId = "plugin:metadata")
         val fallbacks = mutableListOf<StreamItem>()
         var exhaustedCount = 0
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 5 },
             candidates = { listOf(current, nonPlayable) },
@@ -295,7 +295,7 @@ class DeadLinkStartupMonitorTest {
         val malformed = stream("Malformed", "plugin:malformed", "not a valid url")
         val valid = stream("Valid", "plugin:valid", "https://media.example/valid.mp4")
         val fallbacks = mutableListOf<StreamItem>()
-        val monitor = monitor(
+        val monitor = newMonitor(
             scope = backgroundScope,
             timeoutSeconds = { 5 },
             candidates = { listOf(malformed, valid) },
@@ -314,7 +314,7 @@ class DeadLinkStartupMonitorTest {
     private fun stream(name: String, addonId: String, url: String) =
         StreamItem(name = name, url = url, addonName = name, addonId = addonId)
 
-    private fun monitor(
+    private fun newMonitor(
         scope: kotlinx.coroutines.CoroutineScope,
         timeoutSeconds: () -> Int,
         candidates: () -> List<StreamItem>,
