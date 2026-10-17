@@ -294,30 +294,44 @@ internal fun PlayerScreenRuntime.switchToP2pEpisodeStream(
 internal fun PlayerScreenRuntime.switchToSource(
     stream: StreamItem,
     saveForReuse: Boolean = true,
+    attemptToken: Long? = null,
 ) {
-    if (prepareServerForPlayer(stream) { switchToSource(it) }) return
+    // Every top-level source switch invalidates async completions from earlier
+    // candidates. Recursive resolver continuations retain their original token.
+    val switchToken = attemptToken ?: (++sourceSwitchGeneration)
+    if (switchToken != sourceSwitchGeneration) return
+    fun isCurrentSwitch(): Boolean = switchToken == sourceSwitchGeneration
+
+    if (prepareServerForPlayer(stream) {
+            if (isCurrentSwitch()) switchToSource(it, saveForReuse, switchToken)
+        }) return
     // The resolved URL expires after a few hours, so it isn't kept for reuse.
-    if (resolveYouTubeForPlayer(stream) { switchToSource(it, saveForReuse = false) }) return
+    if (resolveYouTubeForPlayer(stream) {
+            if (isCurrentSwitch()) switchToSource(it, saveForReuse = false, attemptToken = switchToken)
+        }) return
     if (
         resolveDebridForPlayer(
             stream = stream,
             season = activeSeasonNumber,
             episode = activeEpisodeNumber,
-            onResolved = { switchToSource(it) },
+            onResolved = { if (isCurrentSwitch()) switchToSource(it, saveForReuse, switchToken) },
             onStale = {
-                val vid = activeVideoId
-                if (vid != null) {
-                    PlayerStreamsRepository.loadSources(
-                        type = contentType ?: parentMetaType,
-                        videoId = vid,
-                        season = activeSeasonNumber,
-                        episode = activeEpisodeNumber,
-                        forceRefresh = true,
-                    )
+                if (isCurrentSwitch()) {
+                    val vid = activeVideoId
+                    if (vid != null) {
+                        PlayerStreamsRepository.loadSources(
+                            type = contentType ?: parentMetaType,
+                            videoId = vid,
+                            season = activeSeasonNumber,
+                            episode = activeEpisodeNumber,
+                            forceRefresh = true,
+                        )
+                    }
                 }
             },
         )
     ) return
+    if (!isCurrentSwitch()) return
     if (isP2pStream(stream)) {
         switchToP2pSourceStream(stream)
         return
