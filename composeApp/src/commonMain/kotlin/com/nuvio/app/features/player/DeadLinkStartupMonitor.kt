@@ -90,7 +90,17 @@ internal class DeadLinkStartupMonitor(
 
     private fun nextCandidate(): StreamItem? = candidateStreams()
         .asSequence()
-        .filter { it.hasPlayableSource && !it.shouldOpenExternally }
+        .filter { stream ->
+            stream.playableDirectUrl != null &&
+                !stream.shouldOpenExternally &&
+                !stream.isDirectDebridStream &&
+                !stream.needsServerPreparation &&
+                !stream.needsLocalDebridResolve &&
+                stream.youTubeIdToResolve == null &&
+                (stream.isInstalledAddonStream ||
+                    stream.addonId.startsWith("plugin:") ||
+                    stream.addonId.startsWith("plugin-repo:"))
+        }
         .distinctBy { it.deadLinkStableId() }
         .filterNot { it.deadLinkStableId() in attemptedIds }
         .sortedBy(::deadLinkSourcePriority)
