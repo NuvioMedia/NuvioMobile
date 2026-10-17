@@ -1,4 +1,3 @@
-
 name: Android Release APK
 
 on:
@@ -27,6 +26,11 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      # Runtime config generation validates local.properties even for unit tests.
+      # The signing step below replaces this placeholder with the release values.
+      - name: Prepare local properties for tests
+        run: touch local.properties
 
       - name: Run Android host unit tests
         run: ./gradlew :composeApp:testAndroidHostTest --no-daemon --max-workers=2 --stacktrace
