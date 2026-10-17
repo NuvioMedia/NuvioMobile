@@ -679,8 +679,6 @@ class DeadLinkStartupMonitorTest {
             name = "Original YouTube source",
             addonName = "YouTube addon",
             addonId = "addon:youtube",
-            streamLabel = "Episode stream",
-            streamSubtitle = "YouTube",
         )
         val resolved = original.copy(url = "https://media.example/resolved.mp4")
         val fallback = stream("Fallback", "addon:fallback", "https://media.example/fallback.mp4")
