@@ -537,7 +537,7 @@ class DeadLinkStartupMonitorTest {
             candidates = { listOf(first, second, third) },
             // Simulate asynchronous preparation failing before activeStream changes.
             onFallback = fallbacks::add,
-            onDeadLink = markedDead::add,
+            onDeadLink = { stream, _ -> markedDead.add(stream) },
         )
 
         monitor.sourceSelected(first)
@@ -633,7 +633,7 @@ class DeadLinkStartupMonitorTest {
             // Preserve the quality/order supplied by the stream list within an addon.
             candidates = { listOf(first, second, third, plugin) },
             onFallback = fallbacks::add,
-            onDeadLink = markedDead::add,
+            onDeadLink = { stream, _ -> markedDead.add(stream) },
         )
 
         monitor.sourceSelected(first)
@@ -683,7 +683,7 @@ class DeadLinkStartupMonitorTest {
         onFallback: (StreamItem) -> Unit,
         onExhausted: () -> Unit = {},
         sourceDiscoveryLoading: () -> Boolean = { false },
-        onDeadLink: (StreamItem) -> Unit = {},
+        onDeadLink: (StreamItem, String) -> Unit = { _, _ -> },
         timeoutEnabled: () -> Boolean = { true },
     ) = DeadLinkStartupMonitor(
         scope = scope,
