@@ -343,7 +343,9 @@ internal fun PlayerScreenRuntime.switchToSource(
     val url = stream.playableDirectUrl ?: return
     val sourceIdentityKey = stableOriginIdentityKey ?: stream.playerSourceIdentityKey()
     if (url == activeSourceUrl) {
-        activeSourceIdentityKey = sourceIdentityKey ?: activeSourceIdentityKey
+        // The active media URL did not change, so playback is still fed by the
+        // source already selected. Do not retarget dead-link monitoring to a
+        // different add-on that merely advertises the same URL.
         return
     }
     val currentPositionMs = playbackSnapshot.positionMs.coerceAtLeast(0L)
@@ -380,25 +382,38 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     serverResumeMs: Long? = null,
     saveForReuse: Boolean = true,
     originIdentityKey: String? = null,
+    attemptToken: Long? = null,
 ) {
+    // Episode source resolution must obey the same generation guard as normal
+    // source switching: a slow resolver must never override a newer fallback.
     val stableOriginIdentityKey = originIdentityKey ?: stream.playerSourceIdentityKey()
+    val switchToken = attemptToken ?: (++sourceSwitchGeneration)
+    if (switchToken != sourceSwitchGeneration) return
+    fun isCurrentSwitch(): Boolean = switchToken == sourceSwitchGeneration
+
     if (prepareServerForPlayer(stream) {
-            switchToEpisodeStream(
-                it,
-                episode,
-                serverResumeMs = newerServerResumeMs(it, episode),
-                saveForReuse = saveForReuse,
-                originIdentityKey = stableOriginIdentityKey,
-            )
+            if (isCurrentSwitch()) {
+                switchToEpisodeStream(
+                    it,
+                    episode,
+                    serverResumeMs = newerServerResumeMs(it, episode),
+                    saveForReuse = saveForReuse,
+                    originIdentityKey = stableOriginIdentityKey,
+                    attemptToken = switchToken,
+                )
+            }
         }) return
     if (
         resolveYouTubeForPlayer(stream) { resolved ->
-            switchToEpisodeStream(
-                resolved,
-                episode,
-                saveForReuse = false,
-                originIdentityKey = stableOriginIdentityKey,
-            )
+            if (isCurrentSwitch()) {
+                switchToEpisodeStream(
+                    resolved,
+                    episode,
+                    saveForReuse = false,
+                    originIdentityKey = stableOriginIdentityKey,
+                    attemptToken = switchToken,
+                )
+            }
         }
     ) return
     if (
@@ -407,24 +422,30 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
             season = episode.season,
             episode = episode.episode,
             onResolved = { resolvedStream ->
-                switchToEpisodeStream(
-                    resolvedStream,
-                    episode,
-                    saveForReuse = saveForReuse,
-                    originIdentityKey = stableOriginIdentityKey,
-                )
+                if (isCurrentSwitch()) {
+                    switchToEpisodeStream(
+                        resolvedStream,
+                        episode,
+                        saveForReuse = saveForReuse,
+                        originIdentityKey = stableOriginIdentityKey,
+                        attemptToken = switchToken,
+                    )
+                }
             },
             onStale = {
-                PlayerStreamsRepository.loadEpisodeStreams(
-                    type = contentType ?: parentMetaType,
-                    videoId = episode.id,
-                    season = episode.season,
-                    episode = episode.episode,
-                    forceRefresh = true,
-                )
+                if (isCurrentSwitch()) {
+                    PlayerStreamsRepository.loadEpisodeStreams(
+                        type = contentType ?: parentMetaType,
+                        videoId = episode.id,
+                        season = episode.season,
+                        episode = episode.episode,
+                        forceRefresh = true,
+                    )
+                }
             },
         )
     ) return
+    if (!isCurrentSwitch()) return
     if (isP2pStream(stream)) {
         switchToP2pEpisodeStream(stream, episode)
         return

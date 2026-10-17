@@ -95,7 +95,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         activeStream?.let { deadLinkMonitor.sourceSelected(it, activeSourceIdentityKey) }
     }
 
-    LaunchedEffect(activeStream, activeSourceUrl, activePlaybackKey) {
+    LaunchedEffect(activeStream, activeSourceUrl, activeSourceIdentityKey, activePlaybackKey) {
         val stream = activeStream
         if (stream == null) {
             deadLinkMonitor.sourceCleared()
@@ -104,7 +104,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         deadLinkMonitor.sourceSelected(stream, activeSourceIdentityKey)
     }
 
-    LaunchedEffect(activeStream, activeSourceUrl, playbackSnapshot.isPlaying, playbackSnapshot.isLoading, playbackSnapshotKey, activePlaybackKey) {
+    LaunchedEffect(activeStream, activeSourceUrl, activeSourceIdentityKey, playbackSnapshot.isPlaying, playbackSnapshot.isLoading, playbackSnapshotKey, activePlaybackKey) {
         if (playbackSnapshotKey != activePlaybackKey) return@LaunchedEffect
         if (playbackSnapshot.isPlaying && !playbackSnapshot.isLoading) {
             deadLinkStatusMessage = null

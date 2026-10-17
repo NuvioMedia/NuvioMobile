@@ -706,6 +706,37 @@ class DeadLinkStartupMonitorTest {
         monitor.close()
     }
 
+    @Test
+    fun changingIdentityForSamePlaybackUrlDoesNotKeepOldWatchdog() = runTest {
+        val first = stream("Shared URL", "addon:first", "https://media.example/shared.mp4")
+        val second = first.copy(addonName = "Second add-on", addonId = "addon:second")
+        val firstKey = first.playerSourceIdentityKey()!!
+        val secondKey = second.playerSourceIdentityKey()!!
+        val dead = mutableListOf<Pair<StreamItem, String>>()
+        val monitor = DeadLinkStartupMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidateStreams = { emptyList() },
+            onFallback = {},
+            onExhausted = {},
+            onDeadLink = { failed, key -> dead += failed to key },
+        )
+
+        monitor.sourceSelected(first, firstKey)
+        runCurrent()
+        advanceTimeBy(2_000)
+        monitor.sourceSelected(second, secondKey)
+        runCurrent()
+        advanceTimeBy(4_999)
+        runCurrent()
+        assertTrue(dead.isEmpty())
+
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(listOf(secondKey), dead.map { it.second })
+        monitor.close()
+    }
+
     private fun stream(name: String, addonId: String, url: String) =
         StreamItem(name = name, url = url, addonName = name, addonId = addonId)
 
