@@ -244,26 +244,26 @@ class DeadLinkStartupMonitorTest {
     }
 
     @Test
-    fun sourceWithoutAnIdentityIsIgnoredSafely() = runTest {
-        val noIdentity = StreamItem(addonName = "", addonId = "")
-        val valid = stream("Valid", "plugin:valid", "https://media.example/valid.mp4")
+    fun nonPlayableCandidatesAreIgnoredSafely() = runTest {
+        val current = stream("Current", "plugin:current", "https://media.example/current.mp4")
+        val nonPlayable = StreamItem(addonName = "Metadata only", addonId = "plugin:metadata")
         val fallbacks = mutableListOf<StreamItem>()
         var exhaustedCount = 0
         val monitor = monitor(
             scope = backgroundScope,
             timeoutSeconds = { 5 },
-            candidates = { listOf(noIdentity, valid) },
+            candidates = { listOf(current, nonPlayable) },
             onFallback = fallbacks::add,
             onExhausted = { exhaustedCount++ },
         )
 
-        monitor.sourceSelected(noIdentity)
+        monitor.sourceSelected(current)
         runCurrent()
-        advanceTimeBy(10_000)
+        advanceTimeBy(5_000)
         runCurrent()
 
         assertTrue(fallbacks.isEmpty())
-        assertEquals(0, exhaustedCount)
+        assertEquals(1, exhaustedCount)
         monitor.close()
     }
 
