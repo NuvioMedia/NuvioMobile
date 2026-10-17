@@ -580,6 +580,29 @@ class DeadLinkStartupMonitorTest {
     }
 
     @Test
+    fun playIntentWhileStillLoadingDoesNotCancelDeadLinkDeadline() = runTest {
+        val current = stream("Buffering dead link", "addon:current", "https://media.example/current.mp4")
+        val next = stream("Next source", "addon:next", "https://media.example/next.mp4")
+        val fallbacks = mutableListOf<StreamItem>()
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = { listOf(current, next) },
+            onFallback = fallbacks::add,
+        )
+
+        monitor.sourceSelected(current)
+        runCurrent()
+        // Simulate engines that report play intent while the stream is still buffering.
+        monitor.playbackStateChanged(current, isPlaying = true, isLoading = true)
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(listOf(next), fallbacks)
+        monitor.close()
+    }
+
+    @Test
     fun bufferingAfterInitialPlaybackRearmsDeadLinkDeadline() = runTest {
         val current = stream("Current dead link", "addon:current", "https://media.example/current.mp4")
         val next = stream("Next source", "addon:next", "https://media.example/next.mp4")

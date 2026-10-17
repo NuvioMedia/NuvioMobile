@@ -126,26 +126,28 @@ internal class DeadLinkStartupMonitor(
         val key = stream?.playerSourceIdentityKey() ?: return
         if (key != currentKey) return
 
-        if (isPlaying) {
-            playbackStarted = true
-            buffering = false
-            awaitingActivation = false
-            timer?.cancel()
-            timer = null
-            log.d { "Playback started; startup fallback disabled for $key" }
+        // Some player engines report playWhenReady/isPlaying intent while the
+        // media is still buffering. Loading must take precedence or the dead-link
+        // watchdog gets cancelled for precisely the streams it needs to recover.
+        if (isLoading) {
+            if (!buffering && timeoutEnabled()) {
+                buffering = true
+                playbackStarted = false
+                generation++
+                timer?.cancel()
+                armTimeout(key, generation)
+                log.w { "Playback is still loading; dead-link deadline armed for $key (isPlaying=$isPlaying)" }
+            }
             return
         }
 
-        // Re-arm the deadline when a source returns to a stuck buffering state.
-        if (isLoading && !buffering && timeoutEnabled()) {
-            buffering = true
-            playbackStarted = false
-            generation++
+        buffering = false
+        if (isPlaying) {
+            playbackStarted = true
+            awaitingActivation = false
             timer?.cancel()
-            armTimeout(key, generation)
-            log.w { "Playback entered buffering; starting dead-link deadline for $key" }
-        } else if (!isLoading) {
-            buffering = false
+            timer = null
+            log.d { "Playback confirmed started; startup fallback disabled for $key" }
         }
     }
 
