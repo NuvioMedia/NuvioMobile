@@ -50,6 +50,7 @@ import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.core.i18n.localizedEpisodeTitle
 
 @Composable
 internal fun TabletStreamsLayout(
@@ -334,7 +335,9 @@ private fun TabletEpisodeInfoPanel(
                 Res.string.streams_episode_title_with_name,
                 seasonNumber,
                 episodeNumber,
-                episodeTitle?.takeIf { it.isNotBlank() } ?: stringResource(Res.string.streams_episode_fallback_title),
+                localizedEpisodeTitle(episodeTitle, episodeNumber)
+                    ?: episodeTitle?.takeIf { it.isNotBlank() }
+                    ?: stringResource(Res.string.streams_episode_fallback_title),
             ),
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontSize = 16.sp,
