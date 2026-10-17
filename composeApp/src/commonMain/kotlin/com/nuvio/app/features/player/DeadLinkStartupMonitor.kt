@@ -116,6 +116,7 @@ internal class DeadLinkStartupMonitor(
         currentKey = null
         currentStream = null
         playbackStarted = false
+        buffering = false
         awaitingActivation = false
         exhausted = false
     }
@@ -236,6 +237,7 @@ internal class DeadLinkStartupMonitor(
                 currentStream = next
                 generation++
                 playbackStarted = false
+                buffering = false
                 awaitingActivation = true
                 exhausted = false
                 timer = null
