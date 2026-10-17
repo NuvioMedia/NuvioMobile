@@ -673,6 +673,41 @@ class DeadLinkStartupMonitorTest {
         assertTrue(firstAddonLink.playerSourceIdentityKey() != secondLinkFromFirstAddon.playerSourceIdentityKey())
     }
 
+    @Test
+    fun resolvedPlaybackUrlKeepsOriginalIdentityForPruningAndFallback() = runTest {
+        val original = StreamItem(
+            name = "Original YouTube source",
+            addonName = "YouTube addon",
+            addonId = "addon:youtube",
+            streamLabel = "Episode stream",
+            streamSubtitle = "YouTube",
+        )
+        val resolved = original.copy(url = "https://media.example/resolved.mp4")
+        val fallback = stream("Fallback", "addon:fallback", "https://media.example/fallback.mp4")
+        val originKey = original.playerSourceIdentityKey()!!
+        assertTrue(originKey != resolved.playerSourceIdentityKey())
+
+        val dead = mutableListOf<Pair<StreamItem, String>>()
+        val fallbacks = mutableListOf<StreamItem>()
+        val monitor = DeadLinkStartupMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidateStreams = { listOf(original, fallback) },
+            onFallback = fallbacks::add,
+            onExhausted = {},
+            onDeadLink = { failed, key -> dead += failed to key },
+        )
+
+        monitor.sourceSelected(resolved, originKey)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(listOf(originKey), dead.map { it.second })
+        assertEquals(listOf(fallback), fallbacks)
+        monitor.close()
+    }
+
     private fun stream(name: String, addonId: String, url: String) =
         StreamItem(name = name, url = url, addonName = name, addonId = addonId)
 
