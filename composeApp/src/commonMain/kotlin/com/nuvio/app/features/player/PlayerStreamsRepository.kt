@@ -114,8 +114,10 @@ object PlayerStreamsRepository {
      * The identity set also filters late provider completions, so a slow add-on
      * cannot reinsert a source that already timed out during this player session.
      */
-    fun pruneDeadSource(stream: StreamItem) {
-        val identityKey = stream.playerSourceIdentityKey() ?: return
+    fun pruneDeadSource(stream: StreamItem, identityKeyOverride: String? = null) {
+        // Resolvers can replace a metadata-only source identity with a playable
+        // URL identity. Prefer the original candidate key supplied by the monitor.
+        val identityKey = identityKeyOverride ?: stream.playerSourceIdentityKey() ?: return
         deadSourceIdentityKeys.update { it + identityKey }
         _sourceState.update { current ->
             val groups = current.groups.map { group ->
