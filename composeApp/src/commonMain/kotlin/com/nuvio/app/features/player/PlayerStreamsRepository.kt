@@ -39,6 +39,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -107,6 +108,30 @@ object PlayerStreamsRepository {
     }
 
     fun currentSourceCandidates(): List<StreamItem> = _sourceState.value.groups.flatMap { it.streams }
+
+    /**
+     * Starts or joins source discovery for this title/episode and waits until
+     * the repository has finished loading. The caller's cancellation only stops
+     * waiting; it does not cancel a shared repository fetch.
+     */
+    suspend fun discoverSourceCandidates(
+        type: String,
+        videoId: String,
+        season: Int? = null,
+        episode: Int? = null,
+    ): List<StreamItem> {
+        loadSources(
+            type = type,
+            videoId = videoId,
+            season = season,
+            episode = episode,
+        )
+
+        val completedState = _sourceState.first { state -> !state.isAnyLoading }
+        return completedState.groups
+            .flatMap { it.streams }
+            .distinctBy { it.playerSourceIdentityKey() }
+    }
 
     fun stopSourcesLoading() {
         PluginRepository.setLocalPluginSearchPaused(true)

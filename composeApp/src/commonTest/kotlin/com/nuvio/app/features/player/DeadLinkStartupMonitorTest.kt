@@ -2,6 +2,7 @@ package com.nuvio.app.features.player
 
 import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -313,13 +314,126 @@ class DeadLinkStartupMonitorTest {
         monitor.close()
     }
 
+    @Test
+    fun discoversAlternativesWhenSourcesPanelWasNeverOpened() = runTest {
+        val current = stream("Dead source", "addon:dead", "https://media.example/dead.mp4")
+        val plugin = stream("Plugin alternative", "plugin:alternative", "https://media.example/plugin.mp4")
+        val addon = stream("Installed addon alternative", "addon:alternative", "https://media.example/addon.mp4")
+        var discoveryCalls = 0
+        val fallbacks = mutableListOf<StreamItem>()
+        var exhaustedCount = 0
+
+        // No sources are cached before the timeout. Discovery only happens when
+        // the watchdog requests it, matching playback without opening Sources.
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = {
+                discoveryCalls++
+                listOf(current, plugin, addon)
+            },
+            onFallback = fallbacks::add,
+            onExhausted = { exhaustedCount++ },
+        )
+
+        monitor.sourceSelected(current)
+        runCurrent()
+        advanceTimeBy(4_999)
+        runCurrent()
+        assertEquals(0, discoveryCalls)
+        assertTrue(fallbacks.isEmpty())
+
+        advanceTimeBy(1)
+        runCurrent()
+        assertEquals(1, discoveryCalls)
+        assertEquals(listOf(addon), fallbacks)
+        assertEquals(0, exhaustedCount)
+
+        // Each failed source gets a fresh startup timeout. Attempted sources
+        // are excluded, and installed addons remain ahead of plugins.
+        monitor.sourceSelected(addon)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(addon, plugin), fallbacks)
+        assertEquals(0, exhaustedCount)
+        monitor.close()
+    }
+
+    @Test
+    fun sourceChangeCancelsSuspendedDiscoveryAndCannotUseStaleResults() = runTest {
+        val current = stream("Current", "addon:current", "https://media.example/current.mp4")
+        val stale = stream("Stale", "addon:stale", "https://media.example/stale.mp4")
+        val manuallySelected = stream("Manual", "addon:manual", "https://media.example/manual.mp4")
+        val discoveryStarted = CompletableDeferred<Unit>()
+        val completeDiscovery = CompletableDeferred<List<StreamItem>>()
+        val fallbacks = mutableListOf<StreamItem>()
+
+        val monitor = DeadLinkStartupMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidateStreams = {
+                discoveryStarted.complete(Unit)
+                completeDiscovery.await()
+            },
+            onFallback = fallbacks::add,
+            onExhausted = {},
+        )
+
+        monitor.sourceSelected(current)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertTrue(discoveryStarted.isCompleted)
+
+        // Selecting another source cancels the in-flight discovery attempt.
+        monitor.sourceSelected(manuallySelected)
+        runCurrent()
+        completeDiscovery.complete(listOf(current, stale))
+        runCurrent()
+
+        assertTrue(fallbacks.isEmpty())
+        monitor.close()
+    }
+
+    @Test
+    fun emptyDiscoveryIsNotExhaustedUntilFetchCompletes() = runTest {
+        val current = stream("Only source", "addon:only", "https://media.example/only.mp4")
+        val discoveryStarted = CompletableDeferred<Unit>()
+        val completeDiscovery = CompletableDeferred<List<StreamItem>>()
+        var exhaustedCount = 0
+
+        val monitor = DeadLinkStartupMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidateStreams = {
+                discoveryStarted.complete(Unit)
+                completeDiscovery.await()
+            },
+            onFallback = {},
+            onExhausted = { exhaustedCount++ },
+        )
+
+        monitor.sourceSelected(current)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertTrue(discoveryStarted.isCompleted)
+        assertEquals(0, exhaustedCount)
+
+        completeDiscovery.complete(listOf(current))
+        runCurrent()
+        assertEquals(1, exhaustedCount)
+        monitor.close()
+    }
+
     private fun stream(name: String, addonId: String, url: String) =
         StreamItem(name = name, url = url, addonName = name, addonId = addonId)
 
     private fun newMonitor(
         scope: kotlinx.coroutines.CoroutineScope,
         timeoutSeconds: () -> Int,
-        candidates: () -> List<StreamItem>,
+        candidates: suspend () -> List<StreamItem>,
         onFallback: (StreamItem) -> Unit,
         onExhausted: () -> Unit = {},
     ) = DeadLinkStartupMonitor(

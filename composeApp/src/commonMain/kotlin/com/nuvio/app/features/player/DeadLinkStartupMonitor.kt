@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 internal class DeadLinkStartupMonitor(
     private val scope: CoroutineScope,
     private val timeoutSeconds: () -> Int,
-    private val candidateStreams: () -> List<StreamItem>,
+    private val candidateStreams: suspend () -> List<StreamItem>,
     private val onFallback: (StreamItem) -> Unit,
     private val onExhausted: () -> Unit,
 ) {
@@ -53,10 +53,26 @@ internal class DeadLinkStartupMonitor(
                 return@launch
             }
 
-            // The timeout has fired. Clear this job before invoking callbacks so
-            // a synchronous source-selection callback can schedule the next timer.
-            timer = null
-            val candidates = candidateStreams()
+            // Discover sources before declaring exhaustion. Keep this job as the
+            // active timer while suspended so source changes, playback start, and
+            // close() can cancel an in-flight discovery.
+            val discoveredCandidates = try {
+                candidateStreams()
+            } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                log.w { "Source discovery failed after startup timeout for $key: ${error.message}" }
+                // An incomplete fetch is not evidence that all sources are exhausted.
+                return@launch
+            }
+
+            if (closed || playbackStarted || exhausted ||
+                generation != sourceGeneration || currentKey != key
+            ) {
+                return@launch
+            }
+
+            val candidates = discoveredCandidates
                 .asSequence()
                 .filter { it.hasPlayableSource }
                 .sortedBy(::deadLinkSourcePriority)
@@ -67,6 +83,7 @@ internal class DeadLinkStartupMonitor(
                 }
                 .toList()
             val next = candidates.firstOrNull()
+            timer = null
             if (next == null) {
                 exhausted = true
                 log.w { "Startup timeout reached for $key; no untried source remains" }

@@ -51,7 +51,19 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         DeadLinkStartupMonitor(
             scope = deadLinkScope,
             timeoutSeconds = { PlayerSettingsRepository.uiState.value.deadLinkTimeoutSeconds },
-            candidateStreams = { PlayerStreamsRepository.currentSourceCandidates() },
+            candidateStreams = {
+                val videoId = activeVideoId
+                if (videoId == null) {
+                    emptyList()
+                } else {
+                    PlayerStreamsRepository.discoverSourceCandidates(
+                        type = contentType ?: parentMetaType,
+                        videoId = videoId,
+                        season = activeSeasonNumber,
+                        episode = activeEpisodeNumber,
+                    )
+                }
+            },
             onFallback = { next ->
                 val sourceName = "${next.addonName} · ${next.streamLabel}"
                 deadLinkStatusMessage = "Fallback → $sourceName"
