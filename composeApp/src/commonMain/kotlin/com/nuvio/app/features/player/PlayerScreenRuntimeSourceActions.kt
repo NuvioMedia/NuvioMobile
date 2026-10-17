@@ -103,7 +103,7 @@ internal fun PlayerScreenRuntime.openExternalSourceUrl(stream: StreamItem): Bool
 internal fun StreamItem.playerSourceIdentityKey(): String? {
     serverTarget?.let { target -> return "server:${target.item.encode()}:${target.mediaSourceId.orEmpty()}" }
     p2pInfoHash?.trim()?.lowercase()?.takeIf { it.isNotBlank() }?.let { hash ->
-        return "torrent:$hash:${p2pFileIdx ?: -1}"
+        return "torrent:$addonId:$hash:${p2pFileIdx ?: -1}"
     }
 
     clientResolve?.let { resolve ->
