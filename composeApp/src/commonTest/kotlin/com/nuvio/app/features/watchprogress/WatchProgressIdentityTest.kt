@@ -97,7 +97,7 @@ class WatchProgressIdentityTest {
             """.trimIndent(),
         )
 
-        assertEquals("show_s1e2", decoded.single().progressKey)
+        assertEquals("show_s1e2", decoded.single().resolvedProgressKey())
         assertEquals(94000L, decoded.single().lastPositionMs)
         assertTrue(decoded.single().isCompleted)
     }
