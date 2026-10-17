@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import com.nuvio.app.features.streams.StreamItem
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -8,6 +9,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DeadLinkStartupMonitorTest {
     @Test
     fun duplicateSourceIdentitiesAreSkipped() = runTest {
