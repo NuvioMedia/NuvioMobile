@@ -659,6 +659,20 @@ class DeadLinkStartupMonitorTest {
         monitor.close()
     }
 
+    @Test
+    fun streamIdentityIsPerAddonEntryButPlaybackTargetDedupesExactUrls() {
+        val firstAddonLink = stream("4K", "addon:one", "https://media.example/shared.mkv")
+        val sameUrlFromAnotherAddon = stream("4K", "addon:two", "https://media.example/shared.mkv")
+        val secondLinkFromFirstAddon = stream("1080p", "addon:one", "https://media.example/1080.mkv")
+
+        assertTrue(firstAddonLink.playerSourceIdentityKey() != sameUrlFromAnotherAddon.playerSourceIdentityKey())
+        assertEquals(
+            firstAddonLink.playerPlaybackDeduplicationKey(),
+            sameUrlFromAnotherAddon.playerPlaybackDeduplicationKey(),
+        )
+        assertTrue(firstAddonLink.playerSourceIdentityKey() != secondLinkFromFirstAddon.playerSourceIdentityKey())
+    }
+
     private fun stream(name: String, addonId: String, url: String) =
         StreamItem(name = name, url = url, addonName = name, addonId = addonId)
 
