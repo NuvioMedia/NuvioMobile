@@ -1,0 +1,69 @@
+name: Local File Test Build
+
+# Manual-only test build for the branch selected in the Actions UI.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: local-file-test-build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  debug-build:
+    name: Build fullDebug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
+          cache-cleanup: on-success
+
+      - name: Prepare runtime properties
+        env:
+          LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
+        shell: bash
+        run: |
+          if [ -n "$LOCAL_PROPERTIES_BASE64" ]; then
+            printf '%s' "$LOCAL_PROPERTIES_BASE64" | base64 --decode > local.properties
+            sed -i -E '/^[[:space:]]*(sdk\.dir|NUVIO_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
+          else
+            touch local.properties
+          fi
+
+      # Avoid :composeApp:allTests here: it schedules bootIosTestSimulator on Linux
+      # and can fail before the Android APK is packaged.
+      - name: Build fullDebug APK
+        run: ./gradlew :androidApp:assembleFullDebug -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore -Pkotlin.compiler.execution.strategy=in-process -Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8" --build-cache --parallel --no-daemon --max-workers=2 --stacktrace
+
+      - name: Verify APK exists and is non-empty
+        shell: bash
+        run: |
+          APK="androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk"
+          test -s "$APK"
+          ls -lh "$APK"
+
+      - name: Upload fullDebug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuvio2gether-local-file-test-build
+          path: androidApp/build/outputs/apk/full/debug/androidApp-full-debug.apk
+          if-no-files-found: error
+          retention-days: 7

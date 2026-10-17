@@ -1211,6 +1211,9 @@
     <string name="settings_playback_stream_selection_mode_regex_description">Play first source whose text matches your regex pattern.</string>
     <string name="settings_playback_stream_timeout">Stream Selection Timeout</string>
     <string name="settings_playback_stream_timeout_description">Wait time for addons before selecting.</string>
+    <string name="settings_playback_dead_link_timeout">Dead Link Timeout</string>
+    <string name="settings_playback_dead_link_timeout_description">Try another source if playback has not started within this time.</string>
+    <string name="settings_playback_seconds">%1$d seconds</string>
     <string name="settings_playback_threshold_minutes">Threshold Minutes</string>
     <string name="settings_playback_threshold_mode">Next Episode Threshold Mode</string>
     <string name="settings_playback_threshold_mode_minutes_before_end">Minutes before end</string>

@@ -1,0 +1,75 @@
+name: Android Release APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build signed Android release
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Checkout selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # Runtime config generation validates local.properties even for unit tests.
+      # The signing step below replaces this placeholder with the release values.
+      - name: Prepare local properties for tests
+        run: touch local.properties
+
+      - name: Run Android host unit tests
+        run: ./gradlew :composeApp:testAndroidHostTest --no-daemon --max-workers=2 --stacktrace
+
+      - name: Configure signing
+        env:
+          KEYSTORE_B64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.NUVIO_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NUVIO_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.NUVIO_RELEASE_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in KEYSTORE_B64 STORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "Missing signing secret: $name" >&2
+              exit 1
+            fi
+          done
+
+          keyfile="$RUNNER_TEMP/nuvio-release.jks"
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$keyfile"
+          keytool -list -keystore "$keyfile" \
+            -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS" >/dev/null
+
+          {
+            echo "NUVIO_RELEASE_STORE_FILE=$keyfile"
+            echo "NUVIO_RELEASE_STORE_PASSWORD=$STORE_PASSWORD"
+            echo "NUVIO_RELEASE_KEY_ALIAS=$KEY_ALIAS"
+            echo "NUVIO_RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+          } > local.properties
+
+      - name: Build release APKs
+        run: ./gradlew :androidApp:assembleFullRelease --no-daemon --max-workers=2 --stacktrace
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuvio2gether-android-release
+          path: androidApp/build/outputs/apk/full/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
