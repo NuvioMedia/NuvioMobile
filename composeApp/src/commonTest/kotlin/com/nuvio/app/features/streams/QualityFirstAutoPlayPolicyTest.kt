@@ -26,7 +26,7 @@ class QualityFirstAutoPlayPolicyTest {
     }
 
     @Test
-    fun `requested quality is tried first and only lower tiers follow`() {
+    fun `selected quality only includes exact resolution tier` {
         val streams = listOf(
             stream("1080", "https://a/1080", "1080p"),
             stream("2160", "https://b/2160", "2160p"),
@@ -35,7 +35,7 @@ class QualityFirstAutoPlayPolicyTest {
         )
 
         assertEquals(
-            listOf("1440", "1080", "720"),
+            listOf("1440"),
             QualityFirstAutoPlayPolicy.rankCandidates(
                 streams,
                 StreamAutoPlayPreferredQuality.P1440,
@@ -63,7 +63,7 @@ class QualityFirstAutoPlayPolicyTest {
     }
 
     @Test
-    fun `unknown quality is retained after identified tiers`() {
+    fun `unknown quality is excluded from explicit quality selection`() {
         val streams = listOf(
             stream("unknown", "https://a/unknown", "Episode"),
             stream("720", "https://b/720", "Episode 720p"),
@@ -74,8 +74,29 @@ class QualityFirstAutoPlayPolicyTest {
             StreamAutoPlayPreferredQuality.P1080,
             debridEnabled = true,
         )
-        assertEquals(listOf("720", "unknown"), ranked.map { it.addonName })
+        assertEquals(emptyList(), ranked.map { it.addonName })
         assertTrue(ranked.all { it.playableDirectUrl != null })
+    }
+
+    @Test
+    fun `ambiguous HD label is not counted as confirmed 720p`() {
+        val streams = listOf(
+            stream("ambiguous", "https://a/hd", "HD"),
+            stream("known", "https://b/720", "720p"),
+        )
+
+        assertEquals(
+            listOf(StreamAutoPlayPreferredQuality.P720),
+            QualityFirstAutoPlayPolicy.availableQualities(streams, debridEnabled = true),
+        )
+        assertEquals(
+            listOf("known"),
+            QualityFirstAutoPlayPolicy.rankCandidates(
+                streams,
+                StreamAutoPlayPreferredQuality.P720,
+                debridEnabled = true,
+            ).map { it.addonName },
+        )
     }
 
     @Test
