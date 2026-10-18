@@ -4,8 +4,8 @@ package com.nuvio.app.features.streams
  * Quality-first ranking for automatic playback.
  *
  * This is deliberately independent from the legacy autoplay mode/regex settings:
- * the explicit quality chosen by the user drives the order, and every candidate
- * below that tier remains available as a playback fallback.
+ * an explicit quality chosen by the user locks candidate eligibility to that exact
+ * resolution tier. Other tiers must never become silent playback fallbacks.
  */
 object QualityFirstAutoPlayPolicy {
 
@@ -24,9 +24,8 @@ object QualityFirstAutoPlayPolicy {
     }
 
     /**
-     * Sorts candidates in descending preference order. For a selected quality,
-     * the exact tier is attempted first, then progressively lower tiers only.
-     * A request for ANY means best-known quality first.
+     * For an explicit quality, only streams confidently classified at that exact
+     * resolution are eligible. ANY means best-known quality first.
      */
     fun rankCandidates(
         streams: List<StreamItem>,
@@ -40,7 +39,7 @@ object QualityFirstAutoPlayPolicy {
             .distinctBy(::identityKey)
             .filter { stream ->
                 val height = detectQualityHeight(stream)
-                targetHeight == null || height == null || height <= targetHeight
+                targetHeight == null || height == targetHeight
             }
 
         val sourceRank = preferredSourceOrder.withIndex().associate { it.value to it.index }
@@ -113,23 +112,25 @@ object QualityFirstAutoPlayPolicy {
     }
 
     fun detectQualityHeight(stream: StreamItem): Int? {
-        val metadata = listOf(
+        // Explicit parser fields are more reliable than loose labels such as HD.
+        val parsed = stream.clientResolve?.stream?.raw?.parsed
+        val structured = listOfNotNull(parsed?.resolution, parsed?.quality).joinToString(" ")
+        val descriptive = listOf(
+            stream.behaviorHints.filename,
             stream.name,
             stream.title,
             stream.description,
-            stream.behaviorHints.filename,
-            stream.clientResolve?.stream?.raw?.parsed?.rawTitle,
-            stream.clientResolve?.stream?.raw?.parsed?.parsedTitle,
-            stream.clientResolve?.stream?.raw?.parsed?.resolution,
-            stream.clientResolve?.stream?.raw?.parsed?.quality,
+            parsed?.rawTitle,
+            parsed?.parsedTitle,
         ).filterNotNull().joinToString(" ")
+        val metadata = if (structured.isNotBlank()) "$structured $descriptive" else descriptive
 
         val markers = listOf(
             Regex("""(?i)(?:\b4320p?\b|\b8k\b)""") to 4320,
             Regex("""(?i)(?:\b2160p?\b|\b4k\b|\buhd\b)""") to 2160,
             Regex("""(?i)(?:\b1440p?\b|\b2k\b|\bqhd\b)""") to 1440,
             Regex("""(?i)(?:\b1080p?\b|\bfhd\b|\bfull\s*hd\b)""") to 1080,
-            Regex("""(?i)(?:\b720p?\b|\bhd\b)""") to 720,
+            Regex("""(?i)\b720p\b""") to 720,
             Regex("""(?i)\b480p?\b""") to 480,
             Regex("""(?i)\b360p?\b""") to 360,
         )
