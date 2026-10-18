@@ -1030,7 +1030,8 @@ internal fun StreamDestination(
         fun profileGlyph(quality: StreamAutoPlayPreferredQuality): String = when (quality) {
             StreamAutoPlayPreferredQuality.P2160 -> "4K"
             StreamAutoPlayPreferredQuality.P1440 -> "2K"
-            StreamAutoPlayPreferredQuality.P1080, StreamAutoPlayPreferredQuality.P720 -> "HD"
+            StreamAutoPlayPreferredQuality.P1080 -> "FHD"
+            StreamAutoPlayPreferredQuality.P720 -> "HD"
             StreamAutoPlayPreferredQuality.P480, StreamAutoPlayPreferredQuality.P360 -> "SD"
             StreamAutoPlayPreferredQuality.ANY -> "✦"
         }
