@@ -468,10 +468,31 @@ internal fun StreamDestination(
     val debridEnabledForQualitySelection = DebridSettingsRepository.snapshot().canResolvePlayableLinks
     val qualitySearchFinished = streamsUiState.requestToken == expectedStreamsRequestToken &&
         !streamsUiState.isAnyLoading && streamsUiState.groups.none { it.isLoading }
-    val qualityPreferredAddonOrder = remember(qualityEligibleStreams) {
-        qualityEligibleStreams.map { it.addonName }.distinct()
+    // The early-start threshold must follow configured addon order, not the order
+    // in which asynchronous providers happen to return their first result.
+    val configuredAddonOrder = remember(
+        addonUiState.addons,
+        playerSettings.streamAutoPlaySource,
+        playerSettings.streamAutoPlaySelectedAddons,
+    ) {
+        if (playerSettings.streamAutoPlaySource == StreamAutoPlaySource.ENABLED_PLUGINS_ONLY) {
+            emptyList()
+        } else {
+            addonUiState.addons.enabledAddons()
+                .mapNotNull { it.manifest?.name }
+                .filter { name ->
+                    playerSettings.streamAutoPlaySelectedAddons.isEmpty() ||
+                        name in playerSettings.streamAutoPlaySelectedAddons
+                }
+                .distinct()
+        }
     }
-    val topThreeQualityAddonNames = qualityPreferredAddonOrder.take(3).toSet()
+    val qualityPreferredSourceOrder = remember(configuredAddonOrder, qualityEligibleStreams) {
+        configuredAddonOrder + qualityEligibleStreams.map { it.addonName }
+            .filterNot { it in configuredAddonOrder }
+            .distinct()
+    }
+    val topThreeQualityAddonNames = configuredAddonOrder.take(3).toSet()
     val showQualityPicker = qualityFlowEnabled &&
         !qualityPickerDismissed && !qualitySelectionStarted &&
         !autoPlayNavigationStarted && !reuseNavigated
@@ -498,12 +519,14 @@ internal fun StreamDestination(
             streams = qualityEligibleStreams,
             requestedQuality = requestedQuality,
             debridEnabled = debridEnabledForQualitySelection,
+            preferredSourceOrder = qualityPreferredSourceOrder,
         )
         val targetHeight = requestedQuality.targetHeight
         val rankedTopThreeCandidates = QualityFirstAutoPlayPolicy.rankCandidates(
             streams = qualityEligibleStreams.filter { it.addonName in topThreeQualityAddonNames },
             requestedQuality = requestedQuality,
             debridEnabled = debridEnabledForQualitySelection,
+            preferredSourceOrder = qualityPreferredSourceOrder,
         )
         val earlyStartCandidates = if (targetHeight == null) rankedTopThreeCandidates else
             rankedTopThreeCandidates.filter { QualityFirstAutoPlayPolicy.detectQualityHeight(it) == targetHeight }
