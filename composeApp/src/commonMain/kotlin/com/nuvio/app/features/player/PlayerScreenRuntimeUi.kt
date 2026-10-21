@@ -30,10 +30,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.toDp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.party.PartyRepository
@@ -175,9 +173,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             val isUnavailable = status.startsWith("Skipping unavailable source")
             val statusTitle = if (isUnavailable) "Source unavailable" else "Switching source"
             val statusColor = if (isUnavailable) Color(0xFFFFC66D) else Color(0xFF8BCBFF)
-            val statusIconSize = with(LocalDensity.current) {
-                MaterialTheme.typography.bodyLarge.fontSize.toDp()
-            }
+            val statusIconSize = 18.dp
             val detail = status.substringAfter(" · ", "").takeIf { it.isNotBlank() }
             Surface(
                 modifier = Modifier
