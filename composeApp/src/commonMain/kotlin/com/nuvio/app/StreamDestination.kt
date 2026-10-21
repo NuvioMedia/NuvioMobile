@@ -478,6 +478,7 @@ internal fun StreamDestination(
         addonUiState.addons,
         playerSettings.streamAutoPlaySource,
         playerSettings.streamAutoPlaySelectedAddons,
+        playerSettings.streamAutoPlayAddonPriority,
     ) {
         if (playerSettings.streamAutoPlaySource == StreamAutoPlaySource.ENABLED_PLUGINS_ONLY) {
             emptyList()
