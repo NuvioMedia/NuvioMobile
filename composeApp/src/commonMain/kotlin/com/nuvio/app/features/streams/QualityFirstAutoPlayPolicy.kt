@@ -64,6 +64,43 @@ object QualityFirstAutoPlayPolicy {
     }
 
     /**
+     * Build the semi-automatic fallback chain. The selected resolution tier is
+     * always exhausted first; only then may lower tiers be attempted. A selected
+     * 1080p quality can therefore never jump upward to 1440p/4K.
+     *
+     * ANY keeps the existing best-known-quality-first ordering.
+     */
+    fun rankCandidatesWithFallback(
+        streams: List<StreamItem>,
+        requestedQuality: StreamAutoPlayPreferredQuality,
+        debridEnabled: Boolean,
+        preferredSourceOrder: List<String> = emptyList(),
+    ): List<StreamItem> {
+        val targetHeight = requestedQuality.targetHeight
+            ?: return rankCandidates(
+                streams = streams,
+                requestedQuality = StreamAutoPlayPreferredQuality.ANY,
+                debridEnabled = debridEnabled,
+                preferredSourceOrder = preferredSourceOrder,
+            )
+
+        return StreamAutoPlayPreferredQuality.entries
+            .asSequence()
+            .filter { quality -> quality.targetHeight != null && quality.targetHeight <= targetHeight }
+            .sortedByDescending { it.targetHeight }
+            .flatMap { quality ->
+                rankCandidates(
+                    streams = streams,
+                    requestedQuality = quality,
+                    debridEnabled = debridEnabled,
+                    preferredSourceOrder = preferredSourceOrder,
+                ).asSequence()
+            }
+            .distinctBy(::identityKey)
+            .toList()
+    }
+
+    /**
      * Prefer Blu-ray remux/disc sources, then Dolby Vision and HDR when candidates
      * are otherwise comparable. Resolution remains the primary ranking criterion,
      * so a format tag never overrides the requested quality ceiling.
