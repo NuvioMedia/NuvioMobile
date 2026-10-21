@@ -115,7 +115,6 @@ internal fun StreamDestination(
     var autoPlayNavigationStarted by remember(route.launchId) { mutableStateOf(false) }
     var qualityPickerDismissed by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var pendingQualitySelection by rememberSaveable(route.launchId) { mutableStateOf<String?>(null) }
-    var fallbackQualityAfterWait by rememberSaveable(route.launchId) { mutableStateOf<String?>(null) }
     var qualitySelectionStarted by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var selectedSemiAutoQuality by rememberSaveable(route.launchId) { mutableStateOf<String?>(null) }
     var resolvingDebridStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
@@ -506,14 +505,8 @@ internal fun StreamDestination(
         !autoPlayNavigationStarted && !reuseNavigated
     val qualityAutoPlayLoading = qualityFlowEnabled && qualitySelectionStarted &&
         streamsUiState.showDirectAutoPlayOverlay
-    LaunchedEffect(pendingQualitySelection) {
-        val selectedName = pendingQualitySelection ?: return@LaunchedEffect
-        delay(6_500)
-        if (pendingQualitySelection == selectedName) fallbackQualityAfterWait = selectedName
-    }
     LaunchedEffect(
         pendingQualitySelection,
-        fallbackQualityAfterWait,
         qualityEligibleStreams,
         qualitySearchFinished,
         streamsUiState.requestToken,
@@ -544,14 +537,13 @@ internal fun StreamDestination(
         // arrived yet. Playback must begin from an exact-tier source; lower tiers are
         // queued behind it and become eligible only after startup/resolution fallback.
         if (rankedFallbackCandidates.isNotEmpty() &&
-            (canStartEarlyFromTopThree || qualitySearchFinished || fallbackQualityAfterWait == selectedName)
+            (canStartEarlyFromTopThree || qualitySearchFinished)
         ) {
             val started = StreamsRepository.beginQualityFirstAutoPlay(
                 expectedRequestToken = expectedStreamsRequestToken,
                 candidates = (earlyStartCandidates + rankedFallbackCandidates).distinct(),
             )
             pendingQualitySelection = null
-            fallbackQualityAfterWait = null
             if (started) {
                 selectedSemiAutoQuality = requestedQuality.name
                 qualitySelectionStarted = true
@@ -1100,7 +1092,7 @@ internal fun StreamDestination(
                             rowQualities.forEach { quality ->
                                 val count = qualityCounts[quality] ?: 0
                                 TextButton(
-                                    onClick = { pendingQualitySelection = quality.name; fallbackQualityAfterWait = null },
+                                    onClick = { pendingQualitySelection = quality.name },
                                     modifier = Modifier.weight(1f).heightIn(min = 124.dp),
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally,
@@ -1138,7 +1130,6 @@ internal fun StreamDestination(
                     }
                     TextButton(onClick = {
                         pendingQualitySelection = null
-                        fallbackQualityAfterWait = null
                         qualityPickerDismissed = true
                     }) { Text("Cancel") }
                 }
