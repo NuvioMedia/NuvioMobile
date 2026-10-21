@@ -540,7 +540,10 @@ internal fun StreamDestination(
             rankedTopThreeCandidates.filter { QualityFirstAutoPlayPolicy.detectQualityHeight(it) == targetHeight }
         // Respect the intended threshold: more than ten distinct selectable links at this tier.
         val canStartEarlyFromTopThree = earlyStartCandidates.size > 10
-        if (rankedFallbackCandidates.isNotEmpty() &&
+        // Never start at a lower quality merely because the requested tier has not
+        // arrived yet. Playback must begin from an exact-tier source; lower tiers are
+        // queued behind it and become eligible only after startup/resolution fallback.
+        if (rankedCandidates.isNotEmpty() &&
             (canStartEarlyFromTopThree || qualitySearchFinished || fallbackQualityAfterWait == selectedName)
         ) {
             val started = StreamsRepository.beginQualityFirstAutoPlay(
