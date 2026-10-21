@@ -45,6 +45,45 @@ class QualityFirstAutoPlayPolicyTest {
     }
 
     @Test
+    fun `selected quality candidates precede only lower quality fallbacks`() {
+        val streams = listOf(
+            stream("4k", "https://a/2160", "2160p"),
+            stream("720-first", "https://b/720", "720p"),
+            stream("1080-second", "https://c/1080-2", "1080p WEB-DL"),
+            stream("1080-first", "https://d/1080-1", "1080p BluRay"),
+            stream("480", "https://e/480", "480p"),
+        )
+
+        assertEquals(
+            listOf("1080-first", "1080-second", "720-first", "480"),
+            QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
+                streams = streams,
+                requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+                debridEnabled = true,
+            ).map { it.addonName },
+        )
+    }
+
+    @Test
+    fun `selected quality fallback honours provider order within each tier`() {
+        val streams = listOf(
+            stream("second", "https://a/1080", "1080p"),
+            stream("first", "https://b/1080", "1080p"),
+            stream("lower", "https://c/720", "720p"),
+        )
+
+        assertEquals(
+            listOf("first", "second", "lower"),
+            QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
+                streams = streams,
+                requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+                debridEnabled = true,
+                preferredSourceOrder = listOf("first", "second"),
+            ).map { it.addonName },
+        )
+    }
+
+    @Test
     fun `best available sorts by quality regardless of provider order`() {
         val streams = listOf(
             stream("slowFirst", "https://a/720", "720p"),
