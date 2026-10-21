@@ -48,6 +48,8 @@ data class PlayerLaunch(
     val contentLanguage: String? = null,
     val sourceFilename: String? = null,
     val stream: com.nuvio.app.features.streams.StreamItem? = null,
+    /** Resolution selected in semi-automatic mode; constrains startup fallback. */
+    val semiAutoSelectedQuality: com.nuvio.app.features.streams.StreamAutoPlayPreferredQuality? = null,
 )
 
 object PlayerLaunchStore {
