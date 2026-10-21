@@ -70,6 +70,8 @@ actual object PlayerSettingsStorage {
     private const val streamAutoPlayModeKey = "stream_auto_play_mode"
     private const val streamAutoPlaySourceKey = "stream_auto_play_source"
     private const val streamAutoPlaySelectedAddonsKey = "stream_auto_play_selected_addons"
+    private const val streamAutoPlayAddonPriorityKey = "stream_auto_play_addon_priority"
+    private const val streamAutoPlayAddonPrioritySeparator = "\u001F"
     private const val streamAutoPlaySelectedPluginsKey = "stream_auto_play_selected_plugins"
     private const val streamAutoPlayRegexKey = "stream_auto_play_regex"
     private const val streamAutoPlayTimeoutSecondsKey = "stream_auto_play_timeout_seconds"
@@ -740,6 +742,19 @@ actual object PlayerSettingsStorage {
 
     actual fun saveStreamAutoPlaySelectedAddons(addons: Set<String>) {
         NSUserDefaults.standardUserDefaults.setObject(addons.toList(), forKey = ProfileScopedKey.of(streamAutoPlaySelectedAddonsKey))
+    }
+
+    actual fun loadStreamAutoPlayAddonPriority(): List<String>? =
+        NSUserDefaults.standardUserDefaults
+            .stringForKey(ProfileScopedKey.of(streamAutoPlayAddonPriorityKey))
+            ?.split(streamAutoPlayAddonPrioritySeparator)
+            ?.filter { it.isNotBlank() }
+
+    actual fun saveStreamAutoPlayAddonPriority(priority: List<String>) {
+        NSUserDefaults.standardUserDefaults.setObject(
+            priority.filter { it.isNotBlank() }.distinct().joinToString(streamAutoPlayAddonPrioritySeparator),
+            forKey = ProfileScopedKey.of(streamAutoPlayAddonPriorityKey),
+        )
     }
 
     @Suppress("UNCHECKED_CAST")
