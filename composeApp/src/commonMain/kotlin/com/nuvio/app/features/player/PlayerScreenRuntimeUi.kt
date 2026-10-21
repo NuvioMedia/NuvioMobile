@@ -166,8 +166,20 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     ) {
         deadLinkStatusMessage?.let { status ->
             val isUnavailable = status.startsWith("Skipping unavailable source")
-            val statusIcon = if (isUnavailable) "⚠" else "↻"
-            val statusTitle = if (isUnavailable) "Source unavailable" else "Switching source"
+            val isLowerQualityFallback = status.contains(" fallback ", ignoreCase = true)
+            val isSelectedQualityRetry = status.contains(" retry", ignoreCase = true) ||
+                status.contains("selected-tier", ignoreCase = true)
+            val statusIcon = when {
+                isUnavailable -> "⚠"
+                isLowerQualityFallback -> "↓"
+                else -> "↻"
+            }
+            val statusTitle = when {
+                isUnavailable -> "Source unavailable"
+                isLowerQualityFallback -> "Falling back to lower quality"
+                isSelectedQualityRetry -> "Retrying selected quality"
+                else -> "Switching source"
+            }
             val detail = status.substringAfter(" · ", "").takeIf { it.isNotBlank() }
             Surface(
                 modifier = Modifier
