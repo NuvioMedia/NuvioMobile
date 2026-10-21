@@ -35,6 +35,29 @@ class DeadLinkStartupMonitorTest {
     }
 
     @Test
+    fun semiAutomaticFallbackKeepsTheQualityRankedCandidateOrder() = runTest {
+        val current = stream("Current 1080p", "addon:current", "https://media.example/current-1080.mp4")
+        val rankedFirst = stream("Ranked first", "plugin:first", "https://media.example/ranked-first.mp4")
+        val oldPriorityWouldWin = stream("Legacy priority first", "addon:legacy", "https://media.example/legacy.mp4")
+        val fallbacks = mutableListOf<StreamItem>()
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = { listOf(current, rankedFirst, oldPriorityWouldWin) },
+            onFallback = fallbacks::add,
+            preserveCandidateOrder = { true },
+        )
+
+        monitor.sourceSelected(current)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+
+        assertEquals(listOf(rankedFirst), fallbacks)
+        monitor.close()
+    }
+
+    @Test
     fun installedAddonIsChosenBeforePluginWhenBothAreUntried() = runTest {
         val current = stream("Current plugin", "plugin:current", "https://media.example/current.mp4")
         val plugin = stream("Other plugin", "plugin:other", "https://media.example/plugin.mp4")
@@ -749,6 +772,7 @@ class DeadLinkStartupMonitorTest {
         sourceDiscoveryLoading: () -> Boolean = { false },
         onDeadLink: (StreamItem, String) -> Unit = { _, _ -> },
         timeoutEnabled: () -> Boolean = { true },
+        preserveCandidateOrder: () -> Boolean = { false },
     ) = DeadLinkStartupMonitor(
         scope = scope,
         timeoutSeconds = timeoutSeconds,
@@ -758,5 +782,6 @@ class DeadLinkStartupMonitorTest {
         onExhausted = onExhausted,
         sourceDiscoveryLoading = sourceDiscoveryLoading,
         onDeadLink = onDeadLink,
+        preserveCandidateOrder = preserveCandidateOrder,
     )
 }
