@@ -117,6 +117,7 @@ internal fun StreamDestination(
     var pendingQualitySelection by rememberSaveable(route.launchId) { mutableStateOf<String?>(null) }
     var fallbackQualityAfterWait by rememberSaveable(route.launchId) { mutableStateOf<String?>(null) }
     var qualitySelectionStarted by rememberSaveable(route.launchId) { mutableStateOf(false) }
+    var selectedSemiAutoQuality by rememberSaveable(route.launchId) { mutableStateOf<String?>(null) }
     var resolvingDebridStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var resolvingYouTubeStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var preparingServerStream by remember(route.launchId) { mutableStateOf(false) }
@@ -279,6 +280,9 @@ internal fun StreamDestination(
             contentLanguage = resolveLaunchContentLanguage(),
             sourceFilename = stream.behaviorHints.filename,
             stream = stream,
+            semiAutoSelectedQuality = selectedSemiAutoQuality?.let { selected ->
+                runCatching { StreamAutoPlayPreferredQuality.valueOf(selected) }.getOrNull()
+            },
         )
 
         autoPlayNavigationStarted = replaceStreamRoute
@@ -478,13 +482,16 @@ internal fun StreamDestination(
         if (playerSettings.streamAutoPlaySource == StreamAutoPlaySource.ENABLED_PLUGINS_ONLY) {
             emptyList()
         } else {
-            addonUiState.addons.enabledAddons()
+            val enabledAddonNames = addonUiState.addons.enabledAddons()
                 .mapNotNull { it.manifest?.name }
-                .filter { name ->
-                    playerSettings.streamAutoPlaySelectedAddons.isEmpty() ||
-                        name in playerSettings.streamAutoPlaySelectedAddons
-                }
                 .distinct()
+            val orderedAddonNames = playerSettings.streamAutoPlayAddonPriority
+                .filter { it in enabledAddonNames } +
+                enabledAddonNames.filterNot { it in playerSettings.streamAutoPlayAddonPriority }
+            orderedAddonNames.filter { name ->
+                playerSettings.streamAutoPlaySelectedAddons.isEmpty() ||
+                    name in playerSettings.streamAutoPlaySelectedAddons
+            }.distinct()
         }
     }
     val qualityPreferredSourceOrder = remember(configuredAddonOrder, qualityEligibleStreams) {
@@ -515,7 +522,7 @@ internal fun StreamDestination(
         if (streamsUiState.requestToken != expectedStreamsRequestToken) return@LaunchedEffect
         val requestedQuality = runCatching { StreamAutoPlayPreferredQuality.valueOf(selectedName) }.getOrNull()
             ?: return@LaunchedEffect
-        val rankedCandidates = QualityFirstAutoPlayPolicy.rankCandidates(
+        val rankedFallbackCandidates = QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
             streams = qualityEligibleStreams,
             requestedQuality = requestedQuality,
             debridEnabled = debridEnabledForQualitySelection,
@@ -532,17 +539,21 @@ internal fun StreamDestination(
             rankedTopThreeCandidates.filter { QualityFirstAutoPlayPolicy.detectQualityHeight(it) == targetHeight }
         // Respect the intended threshold: more than ten distinct selectable links at this tier.
         val canStartEarlyFromTopThree = earlyStartCandidates.size > 10
-        if (rankedCandidates.isNotEmpty() &&
+        if (rankedFallbackCandidates.isNotEmpty() &&
             (canStartEarlyFromTopThree || qualitySearchFinished || fallbackQualityAfterWait == selectedName)
         ) {
             val started = StreamsRepository.beginQualityFirstAutoPlay(
                 expectedRequestToken = expectedStreamsRequestToken,
-                candidates = (earlyStartCandidates + rankedCandidates).distinct(),
+                candidates = (earlyStartCandidates + rankedFallbackCandidates).distinct(),
             )
             pendingQualitySelection = null
             fallbackQualityAfterWait = null
-            if (started) qualitySelectionStarted = true
-            else NuvioToastController.show("Sources changed; please choose a quality again.")
+            if (started) {
+                selectedSemiAutoQuality = requestedQuality.name
+                qualitySelectionStarted = true
+            } else {
+                NuvioToastController.show("Sources changed; please choose a quality again.")
+            }
         } else if (qualitySearchFinished) {
             pendingQualitySelection = null
             fallbackQualityAfterWait = null
@@ -696,6 +707,9 @@ internal fun StreamDestination(
             contentLanguage = resolveLaunchContentLanguage(),
             sourceFilename = stream.behaviorHints.filename,
             stream = stream,
+            semiAutoSelectedQuality = selectedSemiAutoQuality?.let { selected ->
+                runCatching { StreamAutoPlayPreferredQuality.valueOf(selected) }.getOrNull()
+            },
         )
         if (playerSettings.externalPlayerEnabled && stream.serverTarget == null) {
             openExternalPlayback(playerLaunch)
@@ -892,6 +906,9 @@ internal fun StreamDestination(
             contentLanguage = resolveLaunchContentLanguage(),
             sourceFilename = stream.behaviorHints.filename,
             stream = stream,
+            semiAutoSelectedQuality = selectedSemiAutoQuality?.let { selected ->
+                runCatching { StreamAutoPlayPreferredQuality.valueOf(selected) }.getOrNull()
+            },
         )
 
         if (!forceInternal && (forceExternal || playerSettings.externalPlayerEnabled)) {
@@ -1111,7 +1128,7 @@ internal fun StreamDestination(
                         val pendingLabel = runCatching {
                             qualityLabel(StreamAutoPlayPreferredQuality.valueOf(pendingQualitySelection!!))
                         }.getOrDefault("selected quality")
-                        Text("Looking for $pendingLabel. A lower available quality may be tried after about 7 seconds if no exact matches arrive.",
+                        Text("Looking for $pendingLabel. Matching sources are tried first; if they fail, the fallback chain steps down to lower qualities and never jumps above your selection.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
