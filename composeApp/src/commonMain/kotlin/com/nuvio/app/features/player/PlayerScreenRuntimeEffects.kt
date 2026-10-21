@@ -128,14 +128,32 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                 switchToSource(next)
             },
             onExhausted = {
-                errorMessage = errorMessage ?: "This source did not start and no alternate sources remain."
+                val selectedHeight = args.semiAutoSelectedQuality?.targetHeight
+                errorMessage = errorMessage ?: if (selectedHeight == null) {
+                    "This source did not start and no alternate sources remain."
+                } else {
+                    "No playable ${selectedHeight}p source or lower-quality fallback remains."
+                }
                 controlsVisible = !playerControlsLocked
             },
             sourceDiscoveryLoading = { PlayerStreamsRepository.isSourceDiscoveryLoading() },
             preserveCandidateOrder = { args.semiAutoSelectedQuality != null },
             onDeadLink = { failed, stableIdentityKey ->
                 PlayerStreamsRepository.pruneDeadSource(failed, stableIdentityKey)
-                deadLinkStatusMessage = "Skipping unavailable source · ${failed.addonName} · ${failed.streamLabel}"
+                val selectedHeight = args.semiAutoSelectedQuality?.targetHeight
+                val failedHeight = QualityFirstAutoPlayPolicy.detectQualityHeight(failed)
+                val qualityDetail = when {
+                    selectedHeight == null || failedHeight == null -> null
+                    failedHeight == selectedHeight -> "${selectedHeight}p selected-tier source failed"
+                    failedHeight < selectedHeight -> "${failedHeight}p fallback failed"
+                    else -> "${failedHeight}p source failed"
+                }
+                val sourceName = "${failed.addonName} · ${failed.streamLabel}"
+                deadLinkStatusMessage = if (qualityDetail == null) {
+                    "Skipping unavailable source · $sourceName"
+                } else {
+                    "Skipping unavailable source · $qualityDetail · $sourceName"
+                }
             },
         )
     }
