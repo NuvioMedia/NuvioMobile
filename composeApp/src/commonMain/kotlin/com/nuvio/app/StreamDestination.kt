@@ -552,7 +552,6 @@ internal fun StreamDestination(
             }
         } else if (qualitySearchFinished) {
             pendingQualitySelection = null
-            fallbackQualityAfterWait = null
             NuvioToastController.show("No playable links were found. Choose another quality or try again.")
         }
     }
