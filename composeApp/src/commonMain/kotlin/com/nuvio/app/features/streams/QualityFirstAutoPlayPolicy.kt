@@ -51,14 +51,14 @@ object QualityFirstAutoPlayPolicy {
             compareBy<IndexedValue<StreamItem>> { indexed ->
                 detectQualityHeight(indexed.value)?.let { height -> -height } ?: Int.MAX_VALUE
             }.thenBy { indexed ->
-                // Prefer premium source formats within the same resolution tier.
-                formatRanks[indexed.index]
-            }.thenBy { indexed ->
-                audioRanks[indexed.index]
-            }.thenBy { indexed ->
                 sourceRank[indexed.value.addonName]
                     ?: sourceRank[indexed.value.addonId]
                     ?: Int.MAX_VALUE
+            }.thenBy { indexed ->
+                // Prefer premium source formats within a provider's configured tier.
+                formatRanks[indexed.index]
+            }.thenBy { indexed ->
+                audioRanks[indexed.index]
             }.thenBy { it.index },
         ).map { it.value }
     }
