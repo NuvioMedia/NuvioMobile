@@ -543,7 +543,7 @@ internal fun StreamDestination(
         // Never start at a lower quality merely because the requested tier has not
         // arrived yet. Playback must begin from an exact-tier source; lower tiers are
         // queued behind it and become eligible only after startup/resolution fallback.
-        if (rankedCandidates.isNotEmpty() &&
+        if (rankedFallbackCandidates.isNotEmpty() &&
             (canStartEarlyFromTopThree || qualitySearchFinished || fallbackQualityAfterWait == selectedName)
         ) {
             val started = StreamsRepository.beginQualityFirstAutoPlay(
