@@ -33,6 +33,8 @@ import com.nuvio.app.features.servers.ServerStreams
 import com.nuvio.app.features.streams.BingeGroupCacheRepository
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.streams.StreamItem
+import com.nuvio.app.features.streams.StreamAutoPlaySource
+import com.nuvio.app.features.streams.QualityFirstAutoPlayPolicy
 import com.nuvio.app.features.streams.hasLikelyExpiringPlaybackCredentials
 import com.nuvio.app.features.tracking.TrackingScrobbleAction
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
@@ -57,18 +59,71 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                 if (videoId == null) {
                     emptyList()
                 } else {
-                    PlayerStreamsRepository.discoverSourceCandidates(
+                    val discovered = PlayerStreamsRepository.discoverSourceCandidates(
                         type = contentType ?: parentMetaType,
                         videoId = videoId,
                         season = activeSeasonNumber,
                         episode = activeEpisodeNumber,
                     )
+                    val requestedQuality = args.semiAutoSelectedQuality
+                    if (requestedQuality == null) {
+                        discovered
+                    } else {
+                        val settings = PlayerSettingsRepository.uiState.value
+                        val installedAddonNames = addonsUiState.addons
+                            .filter { it.enabled }
+                            .mapNotNull { it.manifest?.name }
+                            .toSet()
+                        val sourceScoped = when (settings.streamAutoPlaySource) {
+                            StreamAutoPlaySource.ALL_SOURCES -> discovered
+                            StreamAutoPlaySource.INSTALLED_ADDONS_ONLY ->
+                                discovered.filter { it.serverTarget != null || it.addonName in installedAddonNames }
+                            StreamAutoPlaySource.ENABLED_PLUGINS_ONLY ->
+                                discovered.filter { it.addonName !in installedAddonNames }
+                        }
+                        val selectedSources = sourceScoped.filter { stream ->
+                            when {
+                                stream.serverTarget != null -> true
+                                stream.addonName in installedAddonNames ->
+                                    settings.streamAutoPlaySelectedAddons.isEmpty() ||
+                                        stream.addonName in settings.streamAutoPlaySelectedAddons
+                                else ->
+                                    settings.streamAutoPlaySelectedPlugins.isEmpty() ||
+                                        stream.addonName in settings.streamAutoPlaySelectedPlugins
+                            }
+                        }
+                        val availableSourceNames = selectedSources.map { it.addonName }.distinct()
+                        val preferredSourceOrder = settings.streamAutoPlayAddonPriority
+                            .filter { it in availableSourceNames } +
+                            availableSourceNames.filterNot { it in settings.streamAutoPlayAddonPriority }
+                        QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
+                            streams = selectedSources,
+                            requestedQuality = requestedQuality,
+                            debridEnabled = DebridSettingsRepository.snapshot().canResolvePlayableLinks,
+                            preferredSourceOrder = preferredSourceOrder,
+                        )
+                    }
                 }
             },
             onFallback = { next ->
                 val sourceName = "${next.addonName} · ${next.streamLabel}"
-                deadLinkStatusMessage = "Switching source · $sourceName"
-                Logger.withTag("DeadLinkFallback").i { "Fallback triggered to source: $sourceName (addonId=${next.addonId})" }
+                val selectedQuality = args.semiAutoSelectedQuality
+                val nextHeight = QualityFirstAutoPlayPolicy.detectQualityHeight(next)
+                val selectedHeight = selectedQuality?.targetHeight
+                val qualityStatus = when {
+                    selectedHeight == null || nextHeight == null -> null
+                    nextHeight == selectedHeight -> "${selectedHeight}p retry"
+                    nextHeight < selectedHeight -> "${nextHeight}p fallback"
+                    else -> "${nextHeight}p source"
+                }
+                deadLinkStatusMessage = if (qualityStatus == null) {
+                    "Switching source · $sourceName"
+                } else {
+                    "Switching source · $qualityStatus · $sourceName"
+                }
+                Logger.withTag("DeadLinkFallback").i {
+                    "Fallback triggered to source: $sourceName (quality=$nextHeight, selected=$selectedHeight, addonId=${next.addonId})"
+                }
                 switchToSource(next)
             },
             onExhausted = {
@@ -76,6 +131,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                 controlsVisible = !playerControlsLocked
             },
             sourceDiscoveryLoading = { PlayerStreamsRepository.isSourceDiscoveryLoading() },
+            preserveCandidateOrder = { args.semiAutoSelectedQuality != null },
             onDeadLink = { failed, stableIdentityKey ->
                 PlayerStreamsRepository.pruneDeadSource(failed, stableIdentityKey)
                 deadLinkStatusMessage = "Skipping unavailable source · ${failed.addonName} · ${failed.streamLabel}"
