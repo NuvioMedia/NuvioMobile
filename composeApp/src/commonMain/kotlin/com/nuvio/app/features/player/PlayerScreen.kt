@@ -46,6 +46,7 @@ fun PlayerScreen(
     launchId: Long? = null,
     sourceFilename: String? = null,
     stream: com.nuvio.app.features.streams.StreamItem? = null,
+    semiAutoSelectedQuality: com.nuvio.app.features.streams.StreamAutoPlayPreferredQuality? = null,
 ) {
     PlayerScreenContent(
         PlayerScreenArgs(
@@ -89,6 +90,7 @@ fun PlayerScreen(
             sourceFilename = sourceFilename,
             onOpenPartyMedia = onOpenPartyMedia,
             stream = stream,
+            semiAutoSelectedQuality = semiAutoSelectedQuality,
         )
     )
 }
