@@ -30,6 +30,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -352,6 +353,7 @@ private fun PlaybackSettingsSection(
     var showAutoPlayModeDialog by remember { mutableStateOf(false) }
     var showAutoPlaySourceDialog by remember { mutableStateOf(false) }
     var showAutoPlayAddonSelectionDialog by remember { mutableStateOf(false) }
+    var showAutoPlayAddonPriorityDialog by remember { mutableStateOf(false) }
     var showAutoPlayPluginSelectionDialog by remember { mutableStateOf(false) }
     var showAutoPlayRegexDialog by remember { mutableStateOf(false) }
     var showP2pConsentDialog by remember { mutableStateOf(false) }
@@ -955,6 +957,29 @@ private fun PlaybackSettingsSection(
                         isTablet = isTablet,
                         onClick = { showAutoPlayAddonSelectionDialog = true },
                     )
+                    if (autoPlayPlayerSettings.streamAutoPlayMode == StreamAutoPlayMode.SEMI_AUTOMATIC) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        val priorityAddonNames = addonUiState.addons
+                            .enabledAddons()
+                            .mapNotNull { addon ->
+                                addon.manifest
+                                    ?.takeIf { manifest -> manifest.resources.any { resource -> resource.name == "stream" } }
+                                    ?.name
+                            }
+                            .distinct()
+                        val configuredPriority = autoPlayPlayerSettings.streamAutoPlayAddonPriority
+                            .filter { it in priorityAddonNames }
+                        SettingsNavigationRow(
+                            title = "Semi-auto add-on priority",
+                            description = if (configuredPriority.isEmpty()) {
+                                "Use enabled add-on order; tap to customise"
+                            } else {
+                                configuredPriority.take(3).joinToString(" → ")
+                            },
+                            isTablet = isTablet,
+                            onClick = { showAutoPlayAddonPriorityDialog = true },
+                        )
+                    }
                 }
                 if (pluginsEnabled && autoPlayPlayerSettings.streamAutoPlaySource != StreamAutoPlaySource.INSTALLED_ADDONS_ONLY) {
                     SettingsGroupDivider(isTablet = isTablet)
@@ -1962,6 +1987,26 @@ private fun PlaybackSettingsSection(
         )
     }
 
+    if (showAutoPlayAddonPriorityDialog) {
+        val addonNames = addonUiState.addons
+            .enabledAddons()
+            .mapNotNull { addon ->
+                addon.manifest
+                    ?.takeIf { manifest -> manifest.resources.any { resource -> resource.name == "stream" } }
+                    ?.name
+            }
+            .distinct()
+        StreamAutoPlayProviderPriorityDialog(
+            items = addonNames,
+            currentOrder = autoPlayPlayerSettings.streamAutoPlayAddonPriority,
+            onOrderSaved = {
+                PlayerSettingsRepository.setStreamAutoPlayAddonPriority(it)
+                showAutoPlayAddonPriorityDialog = false
+            },
+            onDismiss = { showAutoPlayAddonPriorityDialog = false },
+        )
+    }
+
     if (pluginsEnabled && showAutoPlayPluginSelectionDialog) {
         val pluginNames = pluginUiState.scrapers
             .filter { it.enabled }
@@ -2542,6 +2587,92 @@ private fun StreamAutoPlaySourceDialog(
             DialogButton(
                 text = stringResource(Res.string.action_done),
                 onClick = onDismiss,
+            )
+        }
+    }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun StreamAutoPlayProviderPriorityDialog(
+    items: List<String>,
+    currentOrder: List<String>,
+    onOrderSaved: (List<String>) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var ordering by remember(currentOrder, items) {
+        val available = items.toSet()
+        mutableStateOf(
+            (currentOrder.filter { it in available } + items.filterNot { it in currentOrder })
+                .distinct(),
+        )
+    }
+
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = "Semi-auto add-on priority",
+    ) {
+        Text(
+            text = "Higher entries are tried first for the selected resolution. All matching links at that resolution are tried before the fallback chain steps down to lower qualities.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (ordering.isEmpty()) {
+            Text(
+                text = "No enabled stream add-ons are available.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxWidth().heightIn(max = 360.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                items(
+                    count = ordering.size,
+                    key = { ordering[it] },
+                ) { index ->
+                    val provider = ordering[index]
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp, horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = "${index + 1}. $provider",
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 2,
+                        )
+                        TextButton(
+                            enabled = index > 0,
+                            onClick = {
+                                ordering = ordering.toMutableList().also { list ->
+                                    val moved = list.removeAt(index)
+                                    list.add(index - 1, moved)
+                                }
+                            },
+                        ) { Text("↑") }
+                        TextButton(
+                            enabled = index < ordering.lastIndex,
+                            onClick = {
+                                ordering = ordering.toMutableList().also { list ->
+                                    val moved = list.removeAt(index)
+                                    list.add(index + 1, moved)
+                                }
+                            },
+                        ) { Text("↓") }
+                    }
+                }
+            }
+        }
+
+        DialogButtons {
+            DialogButton(text = "Cancel", onClick = onDismiss)
+            DialogButton(
+                text = "Save priority",
+                onClick = { onOrderSaved(ordering) },
             )
         }
     }
