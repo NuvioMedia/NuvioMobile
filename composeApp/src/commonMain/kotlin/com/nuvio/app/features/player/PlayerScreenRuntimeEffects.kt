@@ -35,6 +35,7 @@ import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamAutoPlaySource
 import com.nuvio.app.features.streams.QualityFirstAutoPlayPolicy
+import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.streams.hasLikelyExpiringPlaybackCredentials
 import com.nuvio.app.features.tracking.TrackingScrobbleAction
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
@@ -71,7 +72,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                     } else {
                         val settings = PlayerSettingsRepository.uiState.value
                         val installedAddonNames = addonsUiState.addons
-                            .filter { it.enabled }
+                            .enabledAddons()
                             .mapNotNull { it.manifest?.name }
                             .toSet()
                         val sourceScoped = when (settings.streamAutoPlaySource) {
