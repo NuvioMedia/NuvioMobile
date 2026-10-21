@@ -109,52 +109,22 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
             },
             onFallback = { next ->
                 val sourceName = "${next.addonName} · ${next.streamLabel}"
-                val selectedQuality = args.semiAutoSelectedQuality
-                val nextHeight = QualityFirstAutoPlayPolicy.detectQualityHeight(next)
-                val selectedHeight = selectedQuality?.targetHeight
-                val qualityStatus = when {
-                    selectedHeight == null || nextHeight == null -> null
-                    nextHeight == selectedHeight -> "${selectedHeight}p retry"
-                    nextHeight < selectedHeight -> "${nextHeight}p fallback"
-                    else -> "${nextHeight}p source"
-                }
-                deadLinkStatusMessage = if (qualityStatus == null) {
-                    "Switching source · $sourceName"
-                } else {
-                    "Switching source · $qualityStatus · $sourceName"
-                }
+                deadLinkStatusMessage = "Switching source · $sourceName"
                 Logger.withTag("DeadLinkFallback").i {
-                    "Fallback triggered to source: $sourceName (quality=$nextHeight, selected=$selectedHeight, addonId=${next.addonId})"
+                    "Fallback triggered to source: $sourceName (addonId=${next.addonId})"
                 }
                 switchToSource(next)
             },
             onExhausted = {
-                val selectedHeight = args.semiAutoSelectedQuality?.targetHeight
-                errorMessage = errorMessage ?: if (selectedHeight == null) {
-                    "This source did not start and no alternate sources remain."
-                } else {
-                    "No playable ${selectedHeight}p source or lower-quality fallback remains."
-                }
+                errorMessage = errorMessage ?: "This source did not start and no alternate sources remain."
                 controlsVisible = !playerControlsLocked
             },
             sourceDiscoveryLoading = { PlayerStreamsRepository.isSourceDiscoveryLoading() },
             preserveCandidateOrder = { args.semiAutoSelectedQuality != null },
             onDeadLink = { failed, stableIdentityKey ->
                 PlayerStreamsRepository.pruneDeadSource(failed, stableIdentityKey)
-                val selectedHeight = args.semiAutoSelectedQuality?.targetHeight
-                val failedHeight = QualityFirstAutoPlayPolicy.detectQualityHeight(failed)
-                val qualityDetail = when {
-                    selectedHeight == null || failedHeight == null -> null
-                    failedHeight == selectedHeight -> "${selectedHeight}p selected-tier source failed"
-                    failedHeight < selectedHeight -> "${failedHeight}p fallback failed"
-                    else -> "${failedHeight}p source failed"
-                }
                 val sourceName = "${failed.addonName} · ${failed.streamLabel}"
-                deadLinkStatusMessage = if (qualityDetail == null) {
-                    "Skipping unavailable source · $sourceName"
-                } else {
-                    "Skipping unavailable source · $qualityDetail · $sourceName"
-                }
+                deadLinkStatusMessage = "Skipping unavailable source · $sourceName"
             },
         )
     }
