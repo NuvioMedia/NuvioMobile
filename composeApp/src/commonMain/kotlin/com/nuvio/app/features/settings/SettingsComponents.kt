@@ -35,6 +35,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,6 +57,7 @@ import com.nuvio.app.core.ui.NuvioSectionLabel
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.nuvioConsumePointerEvents
 import com.nuvio.app.features.home.HomeCatalogSettingsItem
+import com.nuvio.app.features.home.HomeCatalogRowPlacement
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.settings_homescreen_collection_with_addon
 import nuvio.composeapp.generated.resources.settings_homescreen_display_name
@@ -63,6 +65,8 @@ import nuvio.composeapp.generated.resources.settings_homescreen_hero_source
 import nuvio.composeapp.generated.resources.settings_homescreen_hidden
 import nuvio.composeapp.generated.resources.settings_homescreen_not_in_hero
 import nuvio.composeapp.generated.resources.settings_homescreen_pinned
+import nuvio.composeapp.generated.resources.settings_homescreen_pinned_at_position
+import nuvio.composeapp.generated.resources.settings_homescreen_pinned_to_bottom
 import nuvio.composeapp.generated.resources.settings_homescreen_pinned_to_top
 import nuvio.composeapp.generated.resources.settings_homescreen_reorder
 import nuvio.composeapp.generated.resources.settings_homescreen_visible
@@ -426,6 +430,7 @@ internal fun HomescreenCatalogRow(
     onExpandedChange: (Boolean) -> Unit,
     onTitleChange: (String) -> Unit,
     onEnabledChange: (Boolean) -> Unit,
+    onRowPlacementChange: (HomeCatalogRowPlacement) -> Unit,
     dragHandleScope: ReorderableCollectionItemScope,
     onPinnedDragAttempt: () -> Unit = {},
 ) {
@@ -494,6 +499,20 @@ internal fun HomescreenCatalogRow(
                                 },
                             )
                         }
+                        if (item.rowPlacement != HomeCatalogRowPlacement.NORMAL) {
+                            append(" • ")
+                            append(
+                                when (item.rowPlacement) {
+                                    HomeCatalogRowPlacement.NORMAL -> ""
+                                    HomeCatalogRowPlacement.PINNED_POSITION ->
+                                        stringResource(Res.string.settings_homescreen_pinned_at_position)
+                                    HomeCatalogRowPlacement.PINNED_TOP ->
+                                        stringResource(Res.string.settings_homescreen_pinned_to_top)
+                                    HomeCatalogRowPlacement.PINNED_BOTTOM ->
+                                        stringResource(Res.string.settings_homescreen_pinned_to_bottom)
+                                },
+                            )
+                        }
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = tokens.colors.textMuted,
@@ -547,25 +566,54 @@ internal fun HomescreenCatalogRow(
             }
         }
 
-        AnimatedVisibility(visible = expanded && !item.isCollection) {
+        AnimatedVisibility(visible = expanded) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                OutlinedTextField(
-                    value = item.customTitle,
-                    onValueChange = onTitleChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text(stringResource(Res.string.settings_homescreen_display_name)) },
-                    placeholder = { Text(item.defaultTitle) },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = tokens.colors.borderFocus.copy(alpha = tokens.opacity.strong),
-                        unfocusedBorderColor = tokens.colors.borderDefault.copy(alpha = tokens.opacity.medium),
-                        focusedContainerColor = tokens.colors.surface,
-                        unfocusedContainerColor = tokens.colors.surface,
-                        disabledContainerColor = tokens.colors.surface,
-                    ),
+                if (!item.isCollection) {
+                    OutlinedTextField(
+                        value = item.customTitle,
+                        onValueChange = onTitleChange,
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text(stringResource(Res.string.settings_homescreen_display_name)) },
+                        placeholder = { Text(item.defaultTitle) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = tokens.colors.borderFocus.copy(alpha = tokens.opacity.strong),
+                            unfocusedBorderColor = tokens.colors.borderDefault.copy(alpha = tokens.opacity.medium),
+                            focusedContainerColor = tokens.colors.surface,
+                            unfocusedContainerColor = tokens.colors.surface,
+                            disabledContainerColor = tokens.colors.surface,
+                        ),
+                    )
+                }
+                Text(
+                    text = "Home placement",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = tokens.colors.textMuted,
                 )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TextButton(
+                        onClick = { onRowPlacementChange(HomeCatalogRowPlacement.NORMAL) },
+                        enabled = item.rowPlacement != HomeCatalogRowPlacement.NORMAL,
+                    ) { Text("Default") }
+                    TextButton(
+                        onClick = { onRowPlacementChange(HomeCatalogRowPlacement.PINNED_POSITION) },
+                        enabled = item.rowPlacement != HomeCatalogRowPlacement.PINNED_POSITION && !item.isPinnedToTop,
+                    ) { Text("Pin here") }
+                    TextButton(
+                        onClick = { onRowPlacementChange(HomeCatalogRowPlacement.PINNED_TOP) },
+                        enabled = item.rowPlacement != HomeCatalogRowPlacement.PINNED_TOP && !item.isPinnedToTop,
+                    ) { Text("Pin top") }
+                    TextButton(
+                        onClick = { onRowPlacementChange(HomeCatalogRowPlacement.PINNED_BOTTOM) },
+                        enabled = item.rowPlacement != HomeCatalogRowPlacement.PINNED_BOTTOM && !item.isPinnedToTop,
+                    ) { Text("Pin bottom") }
+                }
             }
         }
     }

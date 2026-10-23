@@ -34,7 +34,17 @@ data class SyncCatalogItem(
     @SerialName("custom_title") val customTitle: String = "",
     @SerialName("is_collection") val isCollection: Boolean = false,
     @SerialName("collection_id") val collectionId: String = "",
+    @SerialName("row_placement") val rowPlacement: String = HomeCatalogRowPlacement.NORMAL.storageValue,
     val key: String = "",
+)
+
+@Serializable
+data class SyncAddonLayoutPreference(
+    @SerialName("addon_id") val addonId: String,
+    val mode: String = HomeAddonLayoutMode.NORMAL.storageValue,
+    val order: Int = 0,
+    @SerialName("anchor_order") val anchorOrder: Int = 0,
+    @SerialName("anchor_key") val anchorKey: String? = null,
 )
 
 @Serializable
@@ -42,6 +52,9 @@ data class SyncHomeCatalogPayload(
     @SerialName("show_catalog_type") val showCatalogType: Boolean = true,
     @SerialName("hide_unreleased_content") val hideUnreleasedContent: Boolean = false,
     val items: List<SyncCatalogItem> = emptyList(),
+    @SerialName("addon_layouts") val addonLayouts: List<SyncAddonLayoutPreference>? = null,
+    @SerialName("addon_row_order_policy") val addonRowOrderPolicy: String = HomeAddonRowOrderPolicy.MOVE_UNPINNED_ROWS.storageValue,
+    @SerialName("upcoming_row_keys") val upcomingRowKeys: List<String> = emptyList(),
 )
 
 @Serializable
@@ -78,6 +91,8 @@ object HomeCatalogSettingsSyncService {
 
     private const val HIDE_UNRELEASED_CONTENT_KEY = "hide_unreleased_content"
     private const val SHOW_CATALOG_TYPE_KEY = "show_catalog_type"
+    private const val ADDON_ROW_ORDER_POLICY_KEY = "addon_row_order_policy"
+    private const val UPCOMING_ROW_KEYS_KEY = "upcoming_row_keys"
 
     @Volatile
     var isSyncingFromRemote: Boolean = false
@@ -218,6 +233,16 @@ object HomeCatalogSettingsSyncService {
                 decoded.hideUnreleasedContent
             } else {
                 localPayload.hideUnreleasedContent
+            },
+            addonRowOrderPolicy = if (settingsJson.containsKey(ADDON_ROW_ORDER_POLICY_KEY)) {
+                decoded.addonRowOrderPolicy
+            } else {
+                localPayload.addonRowOrderPolicy
+            },
+            upcomingRowKeys = if (settingsJson.containsKey(UPCOMING_ROW_KEYS_KEY)) {
+                decoded.upcomingRowKeys
+            } else {
+                localPayload.upcomingRowKeys
             },
         )
     }.getOrNull()
