@@ -511,6 +511,13 @@ internal fun PlayerScreenRuntime.BindPartyEffects() {
                 partyBehindMs = null
                 if (!party.canControl) showGestureMessage(getString(Res.string.party_caught_up))
             }
+            // A shared-source switch re-prepares the player. Do not consume a host
+            // playback sequence while loading; it must still be applied once ready.
+            if (snapshot.isLoading || isScrubbingTimeline) {
+                mismatchSince = null
+                continue
+            }
+
             val expected = PartySync.expectedPositionMs(playback, PartyRepository.nowMs(), snapshot.durationMs)
             val identity = playback.seq to playback.memberId
             if (identity != lastSeq) {
@@ -530,7 +537,7 @@ internal fun PlayerScreenRuntime.BindPartyEffects() {
                 continue
             }
 
-            if (snapshot.isLoading || isScrubbingTimeline || snapshot.isEnded) {
+            if (snapshot.isEnded) {
                 mismatchSince = null
                 continue
             }
