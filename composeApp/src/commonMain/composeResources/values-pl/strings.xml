@@ -858,11 +858,8 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Mniejsze</string>
     <string name="settings_playback_regex_preset_web_sources">Źródła WEB</string>
     <string name="settings_playback_render_type">Typ renderowania</string>
-    <string name="settings_playback_render_type_cues">Standardowy (Cues)</string>
-    <string name="settings_playback_render_type_effects_canvas">Effects Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effects OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL</string>
+    <string name="settings_playback_render_scale">Rozdzielczość renderowania napisów</string>
+    <string name="settings_playback_render_scale_description">Niższa rozdzielczość poprawia wydajność przy ciężkim typesettingu kosztem ostrości</string>
     <string name="settings_playback_reuse_last_link">Użyj ponownie ostatniego linku</string>
     <string name="settings_playback_reuse_last_link_description">Automatycznie odtwórz ostatni działający strumień dla tego samego filmu/odcinka, gdy pamięć podręczna jest nadal ważna.</string>
     <string name="settings_playback_secondary_audio_language">Drugorzędny język audio</string>

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">Error de sincronización: la sincronización automática no ha podido hacer coincidir este subtítulo con el vídeo.</string>
+    <string name="autosync_toast_failed_no_reference">Error de sincronización: no hay subtítulos integrados utilizables para comparar.</string>
+    <string name="autosync_toast_failed_unsupported">Error de sincronización: este formato de subtítulos no es compatible.</string>
+    <string name="autosync_label_synced">Sincronizado automáticamente</string>
+</resources>

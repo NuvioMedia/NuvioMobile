@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Sincronizar subtítulos automáticamente</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Sincroniza automáticamente el subtítulo preferido del complemento al iniciar la reproducción. Requiere un idioma de subtítulos preferido.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Búsqueda de sincronización automática: exhaustiva</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Compara otros subtítulos y pistas integradas para encontrar una coincidencia más precisa antes de sincronizar. Solo aplica coincidencias fiables.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Búsqueda de sincronización automática: rápida</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Usa antes la primera coincidencia clara. Al igual que en el modo exhaustivo, solo aplica coincidencias fiables.</string>
+    <string name="settings_playback_auto_sync_tolerance">Tolerancia de sincronización automática: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Mantiene la temporización original si la sincronización no la desplaza más que este valor. Toca para cambiarlo.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Desactivada</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>

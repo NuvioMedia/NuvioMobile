@@ -93,7 +93,7 @@ fun NuvioScreen(
             top = topPadding ?: tokens.spacing.screenTop + statusBarTop + nuvioPlatformExtraTopPadding,
             end = horizontalPadding,
             bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom),
-        ),
+        ).withVerticalBar(),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap),
         content = content,
     )

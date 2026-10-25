@@ -601,7 +601,6 @@
     <string name="compose_player_text_opacity">Tekstopasitet</string>
     <string name="compose_player_track_number">Spor %1$d</string>
     <string name="compose_player_unlock_controls">Lås opp avspillerkontroller</string>
-    <string name="compose_player_via">Via %1$s</string>
     <string name="compose_player_volume">Volum</string>
     <string name="compose_player_volume_level">Volum %1$s</string>
     <string name="compose_player_youre_watching">Du ser på</string>
@@ -1852,11 +1851,6 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Mindre</string>
     <string name="settings_playback_regex_preset_web_sources">WEB-kilder</string>
     <string name="settings_playback_render_type">Libass render-modus</string>
-    <string name="settings_playback_render_type_cues">Standard cues</string>
-    <string name="settings_playback_render_type_effects_canvas">Effects Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effects OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL (anbefalt)</string>
     <string name="settings_playback_reuse_binge_group">Gjenbruk binge-gruppe</string>
     <string name="settings_playback_reuse_binge_group_description">Husk og gjenbruk siste binge-gruppe på tvers av økter (Fortsett å se, Detaljer, osv.).</string>
     <string name="settings_playback_reuse_last_link">Gjenbruk siste lenke</string>

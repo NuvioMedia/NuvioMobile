@@ -73,4 +73,14 @@
     <string name="party_share_description">Οι φίλοι μπορούν να αναπαράγουν τον σύνδεσμό σας αντί να επιλέξουν τον δικό τους. Μπορεί να περιλαμβάνει το κλειδί debrid σας.</string>
     <string name="party_share_unavailable">Αυτή η ροή δεν μπορεί να κοινοποιηθεί.</string>
     <string name="party_shared_by">Κοινοποιήθηκε από %1$s</string>
+    <string name="party_tab_party">Πάρτι</string>
+    <string name="party_tab_chat">Συνομιλία</string>
+    <string name="party_chat_empty_title">Δεν υπάρχουν μηνύματα ακόμη</string>
+    <string name="party_chat_empty_message">Μόνο όσοι συμμετέχουν σε αυτό το πάρτι βλέπουν τη συνομιλία.</string>
+    <string name="party_chat_placeholder">Μήνυμα</string>
+    <string name="party_chat_send">Αποστολή</string>
+    <string name="party_chat_not_sent">Δεν στάλθηκε. Πατήστε για επανάληψη</string>
+    <string name="party_chat_new_messages">Νέα μηνύματα</string>
+    <string name="party_companion_chatting_as">Συνομιλείτε ως %1$s</string>
+    <string name="party_companion_seat_left">Η άλλη συσκευή σας αποχώρησε από το πάρτι προβολής.</string>
 </resources>

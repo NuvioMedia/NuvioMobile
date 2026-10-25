@@ -1097,11 +1097,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / По-малко</string>
     <string name="settings_playback_regex_preset_web_sources">WEB източници</string>
     <string name="settings_playback_render_type">Режим на изобразяване Libass</string>
-    <string name="settings_playback_render_type_cues">Стандартни сигнали</string>
-    <string name="settings_playback_render_type_effects_canvas">Canvas с ефекти</string>
-    <string name="settings_playback_render_type_effects_opengl">OpenGL с ефекти</string>
-    <string name="settings_playback_render_type_overlay_canvas">Canvas наслагване</string>
-    <string name="settings_playback_render_type_overlay_opengl">OpenGL наслагване (препоръчан)</string>
     <string name="settings_playback_reuse_last_link">Използвай повторно последната връзка</string>
     <string name="settings_playback_reuse_last_link_description">Автоматично пускане на последния работещ източник за същия филм/епизод, когато кешът е все още валиден</string>
     <string name="settings_playback_secondary_audio_language">Вторичен аудио език</string>

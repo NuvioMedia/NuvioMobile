@@ -81,4 +81,6 @@
     <string name="party_chat_send">Enviar</string>
     <string name="party_chat_not_sent">Não enviada. Toque para tentar novamente</string>
     <string name="party_chat_new_messages">Novas mensagens</string>
+    <string name="party_companion_chatting_as">Conversando como %1$s</string>
+    <string name="party_companion_seat_left">Seu outro dispositivo saiu da sessão.</string>
 </resources>

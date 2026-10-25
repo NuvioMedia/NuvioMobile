@@ -702,11 +702,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Μικρότερο</string>
     <string name="settings_playback_regex_preset_web_sources">Πηγές WEB</string>
     <string name="settings_playback_render_type">Λειτουργία απόδοσης Libass</string>
-    <string name="settings_playback_render_type_cues">Τυπικό (Cues)</string>
-    <string name="settings_playback_render_type_effects_canvas">Καμβάς εφέ</string>
-    <string name="settings_playback_render_type_effects_opengl">Εφέ OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Καμβάς επικάλυψης</string>
-    <string name="settings_playback_render_type_overlay_opengl">Επικάλυψη OpenGL (Προτεινόμενο)</string>
     <string name="settings_playback_reuse_last_link">Επαναχρησιμοποίηση τελευταίου συνδέσμου</string>
     <string name="settings_playback_reuse_last_link_description">Αυτόματη αναπαραγωγή της τελευταίας λειτουργικής ροής για την ίδια ταινία/επεισόδιο όταν η προσωρινή μνήμη είναι ακόμα έγκυρη.</string>
     <string name="settings_playback_secondary_audio_language">Δευτερεύουσα γλώσσα ήχου</string>
@@ -1361,6 +1356,11 @@
     <string name="library_sort_released_asc">Παλαιότερη κυκλοφορία</string>
     <string name="library_sort_released_desc">Πρόσφατη κυκλοφορία</string>
     <string name="library_sort_title_asc">Τίτλος Α–Ω</string>
+    <string name="library_status_watching">Παρακολουθώ</string>
+    <string name="library_status_plan_to_watch">Σχεδιάζω να παρακολουθήσω</string>
+    <string name="library_status_on_hold">Σε αναμονή</string>
+    <string name="library_status_completed">Ολοκληρωμένα</string>
+    <string name="library_status_dropped">Εγκαταλείφθηκαν</string>
     <string name="library_error_sort_failed">Δεν ήταν δυνατή η φόρτωση της σειράς ταξινόμησης. Εμφανίζεται η σειρά του παρόχου.</string>
     <string name="library_sort_title_desc">Τίτλος Ω–Α</string>
     <string name="library_sort_provider_order">Σειρά παρακολούθησης</string>
@@ -2221,6 +2221,11 @@
     <string name="settings_stream_badges_section">ΣΤΥΛ FUSION</string>
     <string name="settings_stream_display_section">ΟΘΟΝΗ</string>
     <string name="settings_stream_size_badges_description">Εμφάνιση σημάτων μεγέθους αρχείου στα αποτελέσματα ροής και στα πλαίσια πηγών του προγράμματος αναπαραγωγής.</string>
+    <string name="settings_stream_badges_in_player_title">Εμφάνιση στο πρόγραμμα αναπαραγωγής</string>
+    <string name="settings_stream_badges_in_player_description">Εμφάνιση σημάτων για το βίντεο και τον ήχο που αναπαράγονται κάτω από τον τίτλο του προγράμματος αναπαραγωγής. Απαιτείται πακέτο σημάτων που ταιριάζει με απλό κείμενο, όπως 2160p ή Atmos.</string>
+    <string name="settings_stream_player_badges_title">Σήματα προγράμματος αναπαραγωγής</string>
+    <string name="settings_stream_player_badges_description">Επιλέξτε το πακέτο σημάτων που χρησιμοποιεί το πρόγραμμα αναπαραγωγής.</string>
+    <string name="settings_stream_player_badges_same">Ίδια με τα σήματα ροών</string>
     <string name="settings_stream_size_badges_title">Σήματα μεγέθους</string>
     <string name="streams_loading_skip_segments">Φόρτωση τμημάτων εισαγωγής/εξόδου…</string>
     <string name="streams_loading_subtitles">Φόρτωση υποτίτλων από πρόσθετα…</string>
@@ -2357,7 +2362,6 @@
     <string name="layout_ratings_hide_unwatched">Απόκρυψη μη προβληθέντων</string>
     <string name="settings_playback_legacy_layout">Παλαιότερη διάταξη</string>
     <string name="settings_playback_legacy_layout_description">Χρήση των αρχικών ελέγχων αναπαραγωγής.</string>
-    <string name="compose_player_via">Μέσω %1$s</string>
     <string name="compose_player_episode_code">S%1$d E%2$d</string>
     <string name="compose_player_more_actions">Περισσότεροι έλεγχοι</string>
     <string name="compose_player_fewer_actions">Λιγότεροι έλεγχοι</string>
@@ -2409,6 +2413,8 @@
     <string name="cd_switch_player_engine">Εναλλαγή μηχανής αναπαραγωγής</string>
     <string name="cd_stream_info">Πληροφορίες ροής</string>
     <string name="player_engine_switching_manual_message">Εναλλαγή σε %1$s...</string>
+    <string name="player_engine_switch_title">Εναλλαγή σε %1$s;</string>
+    <string name="player_engine_switch_message">Το βίντεο θα φορτωθεί ξανά από το σημείο που βρίσκεστε.</string>
     <string name="stream_info_section_source">ΠΗΓΗ</string>
     <string name="stream_info_section_video">ΒΙΝΤΕΟ</string>
     <string name="stream_info_section_audio">ΗΧΟΣ</string>

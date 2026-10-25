@@ -296,6 +296,49 @@ class DebridStreamPresentationTest {
         assertEquals(listOf("Uncached"), presented.map { it.name })
     }
 
+    @Test
+    fun `formats filtered debrid streams with the facts computed while filtering`() {
+        val settings = DebridSettings(
+            enabled = true,
+            providerApiKeys = mapOf(DebridProviders.TORBOX_ID to "key"),
+            streamPreferences = DebridStreamPreferences(excludedEncodes = listOf(DebridStreamEncode.AVC)),
+            streamNameTemplate = "{stream.resolution} {stream.quality} {stream.encode}",
+            streamDescriptionTemplate = "{stream.filename}",
+        )
+        val passthrough = StreamItem(
+            name = "Regular",
+            url = "https://example.com/movie.mkv",
+            addonName = "Addon",
+            addonId = "addon:test",
+        )
+        val debridStreams = listOf(
+            localTorboxStream(filename = "Movie.2023.1080p.WEB-DL.DDP5.1.x265-GRP.mkv", size = 4_000_000_000),
+            localTorboxStream(filename = "Movie.2023.2160p.BluRay.Remux.DV.HDR.HEVC.DTS-HD.MA-SGF.mkv", size = 40_000_000_000),
+            localTorboxStream(filename = "Movie.2023.720p.WEBRip.AAC.x264-GRP.mkv", size = 1_000_000_000),
+            localTorboxStream(filename = "Movie.2023.1440p.HDTV.HDR.AV1.mkv", size = 6_000_000_000),
+        )
+
+        val presented = DebridStreamPresentation.apply(
+            groups = listOf(
+                AddonStreamGroup(
+                    addonName = "Addon",
+                    addonId = "addon:test",
+                    streams = debridStreams + passthrough,
+                ),
+            ),
+            settings = settings,
+        ).single().streams
+
+        val formatter = DebridStreamFormatter()
+        val expectedDebrid = DebridStreamPresentation.applyPreferences(debridStreams, settings)
+            .map { formatter.format(it, settings) }
+        assertEquals(expectedDebrid + passthrough, presented)
+        assertEquals(
+            listOf("1080p WEB-DL HEVC", "2160p BluRay REMUX HEVC", "1440p HDTV AV1"),
+            presented.dropLast(1).map { it.name },
+        )
+    }
+
     private fun localTorboxStream(
         name: String = "Torrent",
         filename: String,

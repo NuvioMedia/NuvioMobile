@@ -696,11 +696,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Kleiner</string>
     <string name="settings_playback_regex_preset_web_sources">WEB-Quellen</string>
     <string name="settings_playback_render_type">Render-Typ</string>
-    <string name="settings_playback_render_type_cues">Standard (Cues)</string>
-    <string name="settings_playback_render_type_effects_canvas">Effekte Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effekte OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL</string>
     <string name="settings_playback_reuse_last_link">Letzten Link wiederverwenden</string>
     <string name="settings_playback_reuse_last_link_description">Den letzten funktionierenden Stream für denselben Film/dieselbe Episode automatisch abspielen, solange der Cache gültig ist.</string>
     <string name="settings_playback_secondary_audio_language">Zweite Audiosprache</string>

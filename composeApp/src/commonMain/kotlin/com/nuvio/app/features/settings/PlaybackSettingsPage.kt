@@ -119,6 +119,7 @@ internal fun LazyListScope.playbackSettingsContent(
     tunnelingEnabled: Boolean,
     useLibass: Boolean,
     libassRenderType: String,
+    libassRenderScale: String,
 ) {
     item {
         PlaybackSettingsSection(
@@ -142,6 +143,7 @@ internal fun LazyListScope.playbackSettingsContent(
             tunnelingEnabled = tunnelingEnabled,
             useLibass = useLibass,
             libassRenderType = libassRenderType,
+            libassRenderScale = libassRenderScale,
         )
     }
 }
@@ -328,6 +330,7 @@ private fun PlaybackSettingsSection(
     tunnelingEnabled: Boolean,
     useLibass: Boolean,
     libassRenderType: String,
+    libassRenderScale: String,
 ) {
     var showPreferredAudioDialog by remember { mutableStateOf(false) }
     var showAutoSkipSegmentDialog by remember { mutableStateOf(false) }
@@ -342,13 +345,13 @@ private fun PlaybackSettingsSection(
     var showReuseCacheDurationDialog by remember { mutableStateOf(false) }
     var showPlaybackEngineDialog by remember { mutableStateOf(false) }
     var showLibmpvVideoOutputDialog by remember { mutableStateOf(false) }
+    var showLibassRenderScaleDialog by remember { mutableStateOf(false) }
     var showDecoderPriorityDialog by remember { mutableStateOf(false) }
     var showHoldToSpeedValueDialog by remember { mutableStateOf(false) }
     var showIosAudioOutputDialog by remember { mutableStateOf(false) }
     var showIosHardwareDecoderDialog by remember { mutableStateOf(false) }
     var showIosTargetPrimariesDialog by remember { mutableStateOf(false) }
     var showIosTargetTransferDialog by remember { mutableStateOf(false) }
-    var showLibassRenderTypeDialog by remember { mutableStateOf(false) }
     var showAutoPlayModeDialog by remember { mutableStateOf(false) }
     var showAutoPlaySourceDialog by remember { mutableStateOf(false) }
     var showAutoPlayAddonSelectionDialog by remember { mutableStateOf(false) }
@@ -704,11 +707,11 @@ private fun PlaybackSettingsSection(
                     if (useLibass) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(
-                            title = stringResource(Res.string.settings_playback_render_type),
-                            description = libassRenderTypeLabel(libassRenderType),
+                            title = stringResource(Res.string.settings_playback_render_scale),
+                            description = libassRenderScale,
                             enabled = subtitleRenderingEnabled,
                             isTablet = isTablet,
-                            onClick = { showLibassRenderTypeDialog = true },
+                            onClick = { showLibassRenderScaleDialog = true },
                         )
                     }
                 }
@@ -1875,14 +1878,14 @@ private fun PlaybackSettingsSection(
         )
     }
 
-    if (showLibassRenderTypeDialog) {
-        LibassRenderTypeDialog(
-            selectedRenderType = libassRenderType,
-            onRenderTypeSelected = { renderType ->
-                PlayerSettingsRepository.setLibassRenderType(renderType)
-                showLibassRenderTypeDialog = false
+    if (showLibassRenderScaleDialog) {
+        LibassRenderScaleDialog(
+            selectedScale = libassRenderScale,
+            onScaleSelected = { scale ->
+                PlayerSettingsRepository.setLibassRenderScale(scale)
+                showLibassRenderScaleDialog = false
             },
-            onDismiss = { showLibassRenderTypeDialog = false },
+            onDismiss = { showLibassRenderScaleDialog = false },
         )
     }
 
@@ -2295,33 +2298,33 @@ private fun HoldToSpeedValueDialog(
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun LibassRenderTypeDialog(
-    selectedRenderType: String,
-    onRenderTypeSelected: (String) -> Unit,
+private fun LibassRenderScaleDialog(
+    selectedScale: String,
+    onScaleSelected: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val options = listOf(
-        "OVERLAY_OPEN_GL" to Res.string.settings_playback_render_type_overlay_opengl,
-        "OVERLAY_CANVAS" to Res.string.settings_playback_render_type_overlay_canvas,
-        "EFFECTS_OPEN_GL" to Res.string.settings_playback_render_type_effects_opengl,
-        "EFFECTS_CANVAS" to Res.string.settings_playback_render_type_effects_canvas,
-        "CUES" to Res.string.settings_playback_render_type_cues,
+        "FULL" to "1:1",
+        "THREE_QUARTER" to "\u00BE",
+        "HALF" to "\u00BD",
+        "THIRD" to "\u2153",
+        "QUARTER" to "\u00BC",
     )
 
     DialogSurface(
         onDismissRequest = onDismiss,
-        title = stringResource(Res.string.settings_playback_render_type),
+        title = stringResource(Res.string.settings_playback_render_scale),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            options.forEach { (value, labelRes) ->
-                val isSelected = value == selectedRenderType
+            options.forEach { (value, label) ->
+                val isSelected = value == selectedScale
                 DialogOption(
-                    text = stringResource(labelRes),
+                    text = label,
                     selected = isSelected,
-                    onClick = { onRenderTypeSelected(value) },
+                    onClick = { onScaleSelected(value) },
                 )
             }
         }
@@ -2913,15 +2916,3 @@ private val com.nuvio.app.features.player.skip.NextEpisodeThresholdMode.labelRes
         com.nuvio.app.features.player.skip.NextEpisodeThresholdMode.MINUTES_BEFORE_END ->
             Res.string.settings_playback_threshold_mode_minutes_before_end
     }
-
-private fun libassRenderTypeRes(renderType: String): StringResource = when (renderType) {
-    "OVERLAY_OPEN_GL" -> Res.string.settings_playback_render_type_overlay_opengl
-    "OVERLAY_CANVAS" -> Res.string.settings_playback_render_type_overlay_canvas
-    "EFFECTS_OPEN_GL" -> Res.string.settings_playback_render_type_effects_opengl
-    "EFFECTS_CANVAS" -> Res.string.settings_playback_render_type_effects_canvas
-    "CUES" -> Res.string.settings_playback_render_type_cues
-    else -> Res.string.settings_playback_render_type_cues
-}
-
-@Composable
-private fun libassRenderTypeLabel(renderType: String): String = stringResource(libassRenderTypeRes(renderType))

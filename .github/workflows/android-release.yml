@@ -195,10 +195,10 @@ jobs:
     name: Build iOS IPA
     if: inputs.mode != 'dry-run'
     needs: prepare
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 120
     env:
-      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+      DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
       GRADLE_OPTS: -Dfile.encoding=UTF-8
       KOTLIN_DAEMON_JVMARGS: -Xmx2048M
       NUVIO_GRADLE_JVMARGS: -Xmx4608M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=768M

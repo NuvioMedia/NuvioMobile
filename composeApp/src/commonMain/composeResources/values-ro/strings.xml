@@ -940,11 +940,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Mai mic</string>
     <string name="settings_playback_regex_preset_web_sources">Surse WEB</string>
     <string name="settings_playback_render_type">Mod randare Libass</string>
-    <string name="settings_playback_render_type_cues">Standard Cues</string>
-    <string name="settings_playback_render_type_effects_canvas">Effects Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effects OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL (Recomandat)</string>
     <string name="settings_playback_reuse_last_link">Reutilizează ultimul link</string>
     <string name="settings_playback_reuse_last_link_description">Redă automat ultimul flux funcțional pentru același film/episod atunci când memoria cache este încă valabilă</string>
     <string name="settings_playback_secondary_audio_language">Limba audio secundară</string>

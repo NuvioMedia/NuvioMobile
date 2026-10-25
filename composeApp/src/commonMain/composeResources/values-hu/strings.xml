@@ -775,11 +775,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Kisebb méret</string>
     <string name="settings_playback_regex_preset_web_sources">WEB-es források</string>
     <string name="settings_playback_render_type">Libass renderelési mód</string>
-    <string name="settings_playback_render_type_cues">Szabványos Cues</string>
-    <string name="settings_playback_render_type_effects_canvas">Effects Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effects OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL (Ajánlott)</string>
     <string name="settings_playback_reuse_last_link">Utolsó link újrafelhasználása</string>
     <string name="settings_playback_reuse_last_link_description">Automatikusan játsza le az utoljára működő streamet ugyanahhoz a filmhez/epizódhoz, ha a gyorsítótár még érvényes</string>
     <string name="settings_playback_secondary_audio_language">Másodlagos hangnyelv</string>
@@ -2361,7 +2356,7 @@
     <string name="updates_channel_description">Válaszd ki a fogadni kívánt alkalmazásfrissítések típusát</string>
     <string name="updates_channel_stable">Stabil (Stable)</string>
     <string name="updates_channel_beta">Béta (Beta)</string>
-    <string name="updates_channel_stable_description">Mennaponta történő használatra javasolt.</string>
+    <string name="updates_channel_stable_description">Mindennapi használatra javasolt.</string>
     <string name="updates_channel_beta_description">Korai frissítések, amelyek hibákat tartalmazhatnak, funkciókat törhetnek meg, vagy váratlanul működhetnek.</string>
     <string name="updates_waiting_for_stable">A következő stabil kiadást fogod megkapni, amint elérhetővé válik</string>
     <string name="settings_playback_auto_skip_segments">Automatikus átugrás</string>
@@ -2378,7 +2373,6 @@
     <string name="player_skip_to_post_credits">Ugrás a stáblista utáni jelenethez</string>
     <string name="settings_playback_legacy_layout">Klasszikus elrendezés</string>
     <string name="settings_playback_legacy_layout_description">Az eredeti lejátszóvezérlők használata.</string>
-    <string name="compose_player_via">Keresztül: %1$s</string>
     <string name="compose_player_episode_code">S%1$d E%2$d</string>
     <string name="compose_player_more_actions">További vezérlők</string>
     <string name="compose_player_fewer_actions">Kevesebb vezérlő</string>
@@ -2429,4 +2423,12 @@
     <string name="stream_info_subtitle_source_embedded">Beágyazott</string>
     <string name="stream_info_player_engine">Lejátszómotor</string>
     <string name="stream_info_server">Szerver</string>
+    <string name="settings_stream_badges_in_player_title">Megjelenítés a lejátszóban</string>
+    <string name="settings_stream_badges_in_player_description">Kijelzi az épp játszott videó és hang jelvényeit (badges) a lejátszó címe alatt.</string>
+    <plurals name="details_season_count">
+        <item quantity="one">%1$d évad</item>
+        <item quantity="other">%1$d évad</item>
+    </plurals>
+    <string name="player_engine_switch_title">Váltás erre: %1$s?</string>
+    <string name="player_engine_switch_message">A videó újratöltődik attól a ponttól, ahol tartasz.</string>
 </resources>

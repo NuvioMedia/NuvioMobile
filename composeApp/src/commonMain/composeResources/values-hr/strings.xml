@@ -1141,11 +1141,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Manje</string>
     <string name="settings_playback_regex_preset_web_sources">WEB izvori</string>
     <string name="settings_playback_render_type">Način renderiranja za Libass</string>
-    <string name="settings_playback_render_type_cues">Standardni zapisi</string>
-    <string name="settings_playback_render_type_effects_canvas">Platno s efektima</string>
-    <string name="settings_playback_render_type_effects_opengl">OpenGL s efektima</string>
-    <string name="settings_playback_render_type_overlay_canvas">Platno preklapanja</string>
-    <string name="settings_playback_render_type_overlay_opengl">OpenGL preklapanje (preporučeno)</string>
     <string name="settings_playback_reuse_last_link">Ponovno koristi zadnju poveznicu</string>
     <string name="settings_playback_reuse_last_link_description">Automatski reproduciraj zadnji ispravan stream za isti film/epizodu dok je predmemorija još valjana</string>
     <string name="settings_playback_secondary_audio_language">Sekundarni jezik zvuka</string>
@@ -2362,7 +2357,6 @@
     <string name="layout_ratings_hide_unwatched">Sakrij nepogledano</string>
     <string name="settings_playback_legacy_layout">Klasični izgled</string>
     <string name="settings_playback_legacy_layout_description">Koristi izvorne kontrole reproduktora.</string>
-    <string name="compose_player_via">Putem %1$s</string>
     <string name="compose_player_episode_code">S%1$d E%2$d</string>
     <string name="compose_player_more_actions">Više kontrola</string>
     <string name="compose_player_fewer_actions">Manje kontrola</string>

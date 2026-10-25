@@ -132,10 +132,54 @@ internal fun PlayerControlsShell(
     modifier: Modifier = Modifier,
     onSubtitleClearanceChanged: (Float) -> Unit = {},
     subtitleFontSizeSp: Int = 0,
+    foldLayout: Boolean = false,
+    gestureController: PlayerGestureController? = null,
+    onWake: () -> Unit = {},
 ) {
+    if (foldLayout) {
+        FoldControls(
+            title = title,
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+            episodeTitle = episodeTitle,
+            playbackSnapshot = playbackSnapshot,
+            displayedPositionMs = displayedPositionMs,
+            badges = badges,
+            resizeMode = resizeMode,
+            showRemainingTime = showRemainingTime,
+            onRuntimeClick = onRuntimeClick,
+            onInteraction = onInteraction,
+            onBack = onBack,
+            onLockToggle = onLockToggle,
+            onPartyClick = onPartyClick,
+            partyActive = partyActive,
+            onNextEpisodeClick = onNextEpisodeClick,
+            onTogglePlayback = onTogglePlayback,
+            onSeekBack = onSeekBack,
+            onSeekForward = onSeekForward,
+            onScrubChange = onScrubChange,
+            onScrubFinished = onScrubFinished,
+            onSubtitleClick = onSubtitleClick,
+            onAudioClick = onAudioClick,
+            onSourcesClick = onSourcesClick,
+            onEpisodesClick = onEpisodesClick,
+            onSpeedClick = onSpeedClick,
+            onResizeModeClick = onResizeModeClick,
+            onVideoSettingsClick = onVideoSettingsClick,
+            onOpenInExternalPlayer = onOpenInExternalPlayer,
+            onStreamInfoClick = onStreamInfoClick,
+            onSubmitIntroClick = onSubmitIntroClick,
+            onSwitchEngineClick = onSwitchEngineClick,
+            gestureController = gestureController,
+            dimmed = !showPlaybackControls,
+            onWake = onWake,
+            horizontalSafePadding = horizontalSafePadding,
+            modifier = modifier,
+        )
+        return
+    }
     val density = LocalDensity.current
     var timelineHeight by remember { mutableStateOf(0.dp) }
-    var sourceLineHeight by remember { mutableStateOf(0.dp) }
     var toolbarActionBounds by remember { mutableStateOf(Rect.Zero) }
     var centerControlBounds by remember { mutableStateOf(Rect.Zero) }
     val safeTopPx = WindowInsets.safeContent.getTop(density).toFloat()
@@ -146,7 +190,7 @@ internal fun PlayerControlsShell(
     }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val centerControlHeight = metrics.playIconSize + maxOf(metrics.playButtonPadding, metrics.sideButtonPadding) * 2
-        val fittedCenterPadding = (timelineHeight - sourceLineHeight) * 2 + centerControlHeight + 16.dp - maxHeight
+        val fittedCenterPadding = timelineHeight * 2 + centerControlHeight + 16.dp - maxHeight
         val subtitleRoom = with(density) { (subtitleFontSizeSp * PLAYER_SUBTITLE_ROOM_LINES).sp.toDp() } +
             PlayerSubtitleRoomSpacing
         val roomyCenterPadding = fittedCenterPadding + subtitleRoom * 2
@@ -323,14 +367,8 @@ internal fun PlayerControlsShell(
                             episodeNumber = episodeNumber,
                             episodeTitle = episodeTitle,
                             releaseInfo = releaseInfo,
-                            streamTitle = streamTitle,
-                            providerName = providerName,
-                            isPlaying = playbackSnapshot.isPlaying,
                             metrics = metrics,
                             badges = badges,
-                            onSourceLineHeightChanged = { height ->
-                                sourceLineHeight = with(density) { height.toDp() }
-                            },
                         )
                     }
                     PlayerTimeline(
@@ -766,6 +804,8 @@ internal fun PlayerSeekBar(
 ) {
     val seekDurationMs = durationMs.coerceAtLeast(1L)
     val seekDescription = stringResource(Res.string.player_seek_position)
+    val seekState = remember(seekDurationMs) { SliderState(trackRange = 0f..seekDurationMs.toFloat()) }
+    seekState.value = displayedPositionMs.coerceIn(0L, seekDurationMs).toFloat()
     Column(modifier = modifier) {
         Slider(
             modifier = Modifier
@@ -773,11 +813,10 @@ internal fun PlayerSeekBar(
                 .height(metrics.sliderTouchHeight)
                 .graphicsLayer(scaleY = metrics.sliderScaleY)
                 .semantics { contentDescription = seekDescription },
-            value = displayedPositionMs.coerceIn(0L, seekDurationMs).toFloat(),
+            state = seekState,
             onValueChange = { value -> onScrubChange(value.toLong()) },
             onValueChangeFinished = { onScrubFinished(displayedPositionMs.coerceIn(0L, seekDurationMs)) },
             enabled = durationMs > 0L,
-            valueRange = 0f..seekDurationMs.toFloat(),
             track = { sliderState -> PlayerProgressTrack(sliderState) },
         )
         Row(

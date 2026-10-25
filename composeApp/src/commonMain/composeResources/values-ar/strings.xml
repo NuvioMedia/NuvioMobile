@@ -1017,11 +1017,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / أصغر</string>
     <string name="settings_playback_regex_preset_web_sources">ويب (WEB)</string>
     <string name="settings_playback_render_type">وضع عرض libass</string>
-    <string name="settings_playback_render_type_cues">إشارات قياسية</string>
-    <string name="settings_playback_render_type_effects_canvas">تأثيرات Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">تأثيرات OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">تراكب Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">تراكب OpenGL (موصى به)</string>
     <string name="settings_playback_reuse_last_link">إعادة استخدام الرابط الأخير</string>
     <string name="settings_playback_reuse_last_link_description">تشغيل آخر مصدر عمل لهذا الفيلم أو الحلقة تلقائيًا إذا كانت ذاكرة التخزين المؤقت لا تزال صالحة.</string>
     <string name="settings_playback_secondary_audio_language">لغة الصوت الثانوية</string>

@@ -93,6 +93,7 @@ actual object PlayerSettingsStorage {
     private const val preloadNextEpisodeSourcesKey = "preload_next_episode_sources"
     private const val useLibassKey = "use_libass"
     private const val libassRenderTypeKey = "libass_render_type"
+    private const val libassRenderScaleKey = "libass_render_scale"
     private const val iosVideoOutputPresetKey = "ios_video_output_preset"
     private const val iosToneMappingModeKey = "ios_tone_mapping_mode"
     private const val iosTargetPrimariesKey = "ios_target_primaries"
@@ -1196,6 +1197,16 @@ actual object PlayerSettingsStorage {
         preferences
             ?.edit()
             ?.putString(ProfileScopedKey.of(libassRenderTypeKey), renderType)
+            ?.apply()
+    }
+
+    actual fun loadLibassRenderScale(): String? =
+        preferences?.getString(ProfileScopedKey.of(libassRenderScaleKey), null)
+
+    actual fun saveLibassRenderScale(scale: String) {
+        preferences
+            ?.edit()
+            ?.putString(ProfileScopedKey.of(libassRenderScaleKey), scale)
             ?.apply()
     }
 

@@ -3,5 +3,5 @@
     <string name="autosync_toast_failed">Szinkronizálás sikertelen: Az auto szinkron nem tudta illeszteni ezt a feliratot a videóhoz.</string>
     <string name="autosync_toast_failed_no_reference">Szinkronizálás sikertelen: Nincs használható beágyazott felirat az összehasonlításhoz.</string>
     <string name="autosync_toast_failed_unsupported">Szinkronizálás sikertelen: Ez a feliratformátum nem támogatott.</string>
-    <string name="autosync_label_synced">Auto szinkronizálva</string>
+    <string name="autosync_label_synced">Automatikusan szinkronizálva</string>
 </resources>

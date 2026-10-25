@@ -81,4 +81,6 @@
     <string name="party_chat_send">Gửi</string>
     <string name="party_chat_not_sent">Không gửi được. Nhấn để thử lại</string>
     <string name="party_chat_new_messages">Tin nhắn mới</string>
+    <string name="party_companion_chatting_as">Đang trò chuyện bằng %1$s</string>
+    <string name="party_companion_seat_left">Thiết bị khác của bạn đã rời phòng xem chung.</string>
 </resources>

@@ -555,11 +555,6 @@
   <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Dimensioni ridotte</string>
   <string name="settings_playback_regex_preset_web_sources">Sorgenti WEB</string>
   <string name="settings_playback_render_type">Tipo di rendering</string>
-  <string name="settings_playback_render_type_cues">Standard (Cues)</string>
-  <string name="settings_playback_render_type_effects_canvas">Effetti Canvas</string>
-  <string name="settings_playback_render_type_effects_opengl">Effetti OpenGL</string>
-  <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-  <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL</string>
   <string name="settings_playback_reuse_last_link">Riusa l'ultimo link</string>
   <string name="settings_playback_reuse_last_link_description">Riproduci automaticamente l'ultimo flusso funzionante per lo stesso film/episodio se la cache è ancora valida.</string>
   <string name="settings_playback_secondary_audio_language">Lingua audio secondaria</string>
@@ -2227,7 +2222,6 @@
     <string name="settings_playback_auto_skip_movie_credits">Titoli di coda</string>
     <string name="player_skip_movie_credits">Salta i titoli di coda</string>
     <string name="player_skip_to_post_credits">Vai alla scena dopo i titoli di coda</string>
-    <string name="compose_player_via">tramite %1$s</string>
     <string name="compose_player_speed">Velocità di riproduzione</string>
     <string name="compose_player_brightness">Luminosità</string>
     <string name="random_episode_title">Riproduzione casuale</string>

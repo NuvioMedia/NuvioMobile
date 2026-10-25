@@ -978,6 +978,10 @@ actual object PlayerSettingsStorage {
 
     actual fun saveLibassRenderType(renderType: String) {}
 
+    actual fun loadLibassRenderScale(): String? = null
+
+    actual fun saveLibassRenderScale(scale: String) {}
+
     actual fun loadIosVideoOutputPreset(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(iosVideoOutputPresetKey))
 

@@ -76,7 +76,7 @@ import `is`.xyz.mpv.BaseMPVView
 import `is`.xyz.mpv.MPV
 import `is`.xyz.mpv.MPVNode
 import `is`.xyz.mpv.Utils
-import io.github.peerless2012.ass.media.widget.AssSubtitleView
+import com.nuvio.tv.libass.media.widget.AssSubtitleSurfaceView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -452,9 +452,17 @@ private fun ExoPlayerSurface(
             .setLoadControl(loadControl)
 
         val player = if (useLibass) {
+            // Set render scale before building the player
+            val scaleValue = when (playerSettings.libassRenderScale) {
+                "THREE_QUARTER" -> 0.75f
+                "HALF" -> 0.5f
+                "THIRD" -> 0.33f
+                "QUARTER" -> 0.25f
+                else -> 1.0f
+            }
+            com.nuvio.tv.libass.media.AssHandler.setRenderScale(scaleValue)
             playerBuilder.buildWithAssSupportCompat(
                 context = context,
-                renderType = libassRenderType.toAssRenderType(),
                 dataSourceFactory = dataSourceFactory,
                 extractorsFactory = extractorsFactory,
                 renderersFactory = renderersFactory
@@ -2106,7 +2114,7 @@ private fun PlayerView.syncLibassOverlay(
         R.id.libass_overlay_container
     }
     val overlayContainer = findViewById<android.widget.FrameLayout>(containerId) ?: return
-    val needsOverlay = enabled && renderType.usesOverlaySubtitleView()
+    val needsOverlay = enabled
     val boundPlayer = getTag(R.id.libass_overlay_bound_player) as? ExoPlayer
     val hasOverlayChild = overlayContainer.hasAssOverlayChild()
 
@@ -2115,6 +2123,7 @@ private fun PlayerView.syncLibassOverlay(
             overlayContainer.removeAssOverlayChildren()
         }
         if (boundPlayer != null) {
+            boundPlayer.getAssHandlerCompat()?.videoFrameCallback = null
             setTag(R.id.libass_overlay_bound_player, null)
         }
         return
@@ -2126,7 +2135,14 @@ private fun PlayerView.syncLibassOverlay(
     }
 
     overlayContainer.removeAssOverlayChildren()
-    val assSubtitleView = AssSubtitleView(overlayContainer.context, assHandler)
+    val assSubtitleView = AssSubtitleSurfaceView(overlayContainer.context, assHandler)
+    // Wire video frame callback to drive subtitle rendering.
+    // The primary path (VideoFrameMetadataListener) provides vsync-pinned timing.
+    // When it doesn't fire (tunneled playback), AssPositionRenderer in the
+    // RenderersFactory provides position-based fallback on every render loop.
+    assHandler.videoFrameCallback = { presentationTimeUs, releaseTimeNs ->
+        assSubtitleView.requestRender(presentationTimeUs, releaseTimeNs)
+    }
     overlayContainer.addView(
         assSubtitleView,
         android.widget.FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT)
@@ -2134,12 +2150,10 @@ private fun PlayerView.syncLibassOverlay(
     setTag(R.id.libass_overlay_bound_player, player)
 }
 
-private fun LibassRenderType.usesOverlaySubtitleView(): Boolean =
-    this == LibassRenderType.OVERLAY_CANVAS || this == LibassRenderType.OVERLAY_OPEN_GL
 
 private fun android.widget.FrameLayout.hasAssOverlayChild(): Boolean {
     for (index in 0 until childCount) {
-        if (getChildAt(index) is AssSubtitleView) {
+        if (getChildAt(index) is AssSubtitleSurfaceView) {
             return true
         }
     }
@@ -2148,7 +2162,7 @@ private fun android.widget.FrameLayout.hasAssOverlayChild(): Boolean {
 
 private fun android.widget.FrameLayout.removeAssOverlayChildren() {
     for (index in childCount - 1 downTo 0) {
-        if (getChildAt(index) is AssSubtitleView) {
+        if (getChildAt(index) is AssSubtitleSurfaceView) {
             removeViewAt(index)
         }
     }

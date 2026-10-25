@@ -894,6 +894,11 @@
     <string name="settings_stream_badges_section">ESTILO FUSION</string>
     <string name="settings_stream_size_badges_title">Emblemas de tamanho</string>
     <string name="settings_stream_size_badges_description">Mostra emblemas com o tamanho do arquivo nos resultados de streams e nos painéis de fontes do player.</string>
+    <string name="settings_stream_badges_in_player_title">Mostrar no player</string>
+    <string name="settings_stream_badges_in_player_description">Mostra emblemas do vídeo e do áudio em reprodução abaixo do título do player. Requer um pacote de emblemas compatível com texto simples, como 2160p ou Atmos.</string>
+    <string name="settings_stream_player_badges_title">Emblemas do player</string>
+    <string name="settings_stream_player_badges_description">Escolha o pacote de emblemas que o player usa.</string>
+    <string name="settings_stream_player_badges_same">Mesmos emblemas de stream</string>
     <string name="settings_stream_addon_logo_title">Logo do addon</string>
     <string name="settings_stream_addon_logo_description">Mostra o logo e o nome do addon ao lado das fontes de stream.</string>
     <string name="settings_stream_display_section">APRESENTAÇÃO</string>
@@ -1141,11 +1146,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Menor</string>
     <string name="settings_playback_regex_preset_web_sources">Fontes WEB</string>
     <string name="settings_playback_render_type">Modo de Renderização Libass</string>
-    <string name="settings_playback_render_type_cues">Cues Padrão</string>
-    <string name="settings_playback_render_type_effects_canvas">Effects Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effects OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL (Recomendado)</string>
     <string name="settings_playback_reuse_last_link">Reutilizar Último Link</string>
     <string name="settings_playback_reuse_last_link_description">Reproduzir automaticamente sua última stream funcional para este mesmo filme/episódio enquanto o cache estiver válido</string>
     <string name="settings_playback_secondary_audio_language">Segundo Idioma de Áudio</string>
@@ -2395,7 +2395,6 @@
     <string name="layout_ratings_hide_unwatched">Ocultar não assistidos</string>
     <string name="settings_playback_legacy_layout">Layout clássico</string>
     <string name="settings_playback_legacy_layout_description">Usar os controles originais do player.</string>
-    <string name="compose_player_via">Via %1$s</string>
     <string name="compose_player_episode_code">T%1$d E%2$d</string>
     <string name="compose_player_more_actions">Mais controles</string>
     <string name="compose_player_fewer_actions">Menos controles</string>
@@ -2447,6 +2446,8 @@
     <string name="cd_switch_player_engine">Alternar mecanismo do player</string>
     <string name="cd_stream_info">Informações da fonte</string>
     <string name="player_engine_switching_manual_message">Mudando para %1$s…</string>
+    <string name="player_engine_switch_title">Mudar para %1$s?</string>
+    <string name="player_engine_switch_message">O vídeo será recarregado a partir do ponto atual.</string>
     <string name="stream_info_section_source">FONTE</string>
     <string name="stream_info_section_video">VÍDEO</string>
     <string name="stream_info_section_audio">ÁUDIO</string>
