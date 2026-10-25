@@ -135,14 +135,26 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     var subtitleDropTimedOut by remember { mutableStateOf(false) }
     val subtitleCueVersion = playbackSnapshot.subtitleCueVersion
     val subtitleCueVisible = playbackSnapshot.subtitleCueVisible
-    val playbackPaused = !playbackSnapshot.isPlaying
-    LaunchedEffect(subtitleLift, subtitleCueVersion, subtitleCueVisible, playbackPaused, subtitleDropTimedOut) {
+    val bottomControlsShown = controlsVisible && !playerControlsLocked && !isInPip
+    var controlsFadeOutFinished by remember { mutableStateOf(false) }
+    LaunchedEffect(bottomControlsShown) {
+        controlsFadeOutFinished = false
+        if (!bottomControlsShown) {
+            delay(PLAYER_CONTROLS_FADE_OUT_MS)
+            controlsFadeOutFinished = true
+        }
+    }
+    val applySubtitleLiftImmediately = shouldApplySubtitleLiftImmediately(
+        paused = !playbackSnapshot.isPlaying,
+        controlsVisible = bottomControlsShown || !controlsFadeOutFinished,
+    )
+    LaunchedEffect(subtitleLift, subtitleCueVersion, subtitleCueVisible, applySubtitleLiftImmediately, subtitleDropTimedOut) {
         val decision = nextSubtitleLift(
             targetLift = subtitleLift,
             appliedLift = appliedSubtitleLift,
             cueVersion = subtitleCueVersion,
             cueVisible = subtitleCueVisible,
-            paused = playbackPaused,
+            applyImmediately = applySubtitleLiftImmediately,
             pendingDropCueVersion = pendingDropCueVersion,
             dropTimedOut = subtitleDropTimedOut,
         )

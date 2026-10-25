@@ -41,16 +41,21 @@ internal data class SubtitleLiftDecision(
     val pendingDropCueVersion: Long?,
 )
 
+internal const val PLAYER_CONTROLS_FADE_OUT_MS = 300L
+
+internal fun shouldApplySubtitleLiftImmediately(paused: Boolean, controlsVisible: Boolean): Boolean =
+    paused || !controlsVisible
+
 internal fun nextSubtitleLift(
     targetLift: Float,
     appliedLift: Float,
     cueVersion: Long,
     cueVisible: Boolean,
-    paused: Boolean,
+    applyImmediately: Boolean,
     pendingDropCueVersion: Long?,
     dropTimedOut: Boolean,
 ): SubtitleLiftDecision {
-    if (targetLift >= appliedLift || !cueVisible || paused || dropTimedOut) {
+    if (targetLift >= appliedLift || !cueVisible || applyImmediately || dropTimedOut) {
         return SubtitleLiftDecision(targetLift, null)
     }
     if (pendingDropCueVersion == null) return SubtitleLiftDecision(appliedLift, cueVersion)
