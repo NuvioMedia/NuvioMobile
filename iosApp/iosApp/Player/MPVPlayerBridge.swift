@@ -290,6 +290,10 @@ final class MPVPlayerViewController: UIViewController {
             self.publishCachedNowPlayingInfoIfNeeded()
             self.syncNowPlayingPlaybackState(isPlaying: self.isPlayerPlaying)
         }
+        controller.onSpatialAudioChanged = { [weak self] in
+            guard let self, self.mpv != nil else { return }
+            self.command("ao-reload")
+        }
         return controller
     }()
     private lazy var eventQueue = DispatchQueue(label: "mpv-events", qos: .userInitiated)
