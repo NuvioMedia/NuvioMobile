@@ -9,7 +9,7 @@ final class PlayerAudioSessionController: NSObject, CXCallObserverDelegate {
     private var spatialAudioObservers: [NSObjectProtocol] = []
     private var spatialAudioEnabled = false
     var onConfigurationChanged: (() -> Void)?
-    var onSpatialAudioChanged: (() -> Void)?
+    var onSpatialAudioEnabled: (() -> Void)?
 
     func activate() {
         if !isActive {
@@ -44,7 +44,7 @@ final class PlayerAudioSessionController: NSObject, CXCallObserverDelegate {
         let enabled = Self.isSpatialAudioEnabled(AVAudioSession.sharedInstance())
         guard enabled != spatialAudioEnabled else { return }
         spatialAudioEnabled = enabled
-        onSpatialAudioChanged?()
+        if enabled { onSpatialAudioEnabled?() }
     }
 
     private static func isSpatialAudioEnabled(_ session: AVAudioSession) -> Bool {
