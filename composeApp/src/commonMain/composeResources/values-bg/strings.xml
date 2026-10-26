@@ -1676,7 +1676,6 @@
     <string name="streams_episode_fallback_title">Епизод</string>
     <string name="streams_episode_title_with_name">Сезон %1$d Епизод %2$d - %3$s</string>
     <string name="streams_fetching">Извличане…</string>
-    <string name="streams_finding_source">Търсене на връзка към източник</string>
     <string name="playback_show_loading_status">Показване на състоянието на зареждането</string>
     <string name="playback_show_loading_status_sub">Показване на напредъка стъпка по стъпка по време на инициализирането на плейъра.</string>
     <string name="player_loading_preparing">Подготовка на източника…</string>
