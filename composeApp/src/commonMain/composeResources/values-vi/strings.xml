@@ -941,6 +941,8 @@
     <string name="settings_mdb_section_api_key">MÃ KHÓA API</string>
     <string name="settings_mdb_section_rating_providers">NHÀ CUNG CẤP ĐIỂM ĐÁNH GIÁ BÊN NGOÀI</string>
     <string name="settings_mdb_section_title">ĐIỂM ĐÁNH GIÁ MDBList</string>
+    <string name="settings_mdb_show_on_hero">Sử dụng điểm đánh giá trên Khu vực nổi bật</string>
+    <string name="settings_mdb_show_on_hero_description">Hiển thị điểm đánh giá MDBList trên khu vực nổi bật của Trang chủ</string>
     <string name="settings_meta_actions">Thao tác</string>
     <string name="settings_meta_actions_description">Phát và lưu nội dung</string>
     <string name="settings_meta_cast">Diễn viên</string>
@@ -1146,6 +1148,8 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Dung lượng nhỏ</string>
     <string name="settings_playback_regex_preset_web_sources">Nguồn WEB</string>
     <string name="settings_playback_render_type">Chế độ kết xuất libass</string>
+    <string name="settings_playback_render_scale">Độ phân giải kết xuất phụ đề</string>
+    <string name="settings_playback_render_scale_description">Độ phân giải thấp hơn giúp tăng hiệu năng khi xử lý hiệu ứng phụ đề phức tạp nhưng làm giảm độ sắc nét</string>
     <string name="settings_playback_reuse_last_link">Dùng lại liên kết cuối</string>
     <string name="settings_playback_reuse_last_link_description">Tự động phát luồng hoạt động gần nhất cho cùng một phim điện ảnh/tập phim khi bộ nhớ đệm vẫn còn hiệu lực.</string>
     <string name="settings_playback_secondary_audio_language">Ngôn ngữ âm thanh phụ</string>

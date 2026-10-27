@@ -15,16 +15,16 @@ class ServerMatcherTest {
     @AfterTest
     fun tearDown() {
         removeFakeServer()
-        ServerMatcher.clear()
+        ServerMatcher.shared.clear()
     }
 
     @Test
     fun buildsRequestsFromCatalogIds() {
-        val movie = ServerMatcher.request("movie", "tt0111161", null, null)!!
+        val movie = ServerMatcher.shared.request("movie", "tt0111161", null, null)!!
         assertEquals(ServerMediaKind.MOVIE, movie.kind)
         assertEquals("tt0111161", movie.ids.imdb)
 
-        val episode = ServerMatcher.request("series", "tmdb:1399:2:5", null, null)!!
+        val episode = ServerMatcher.shared.request("series", "tmdb:1399:2:5", null, null)!!
         assertEquals(1399L, episode.ids.tmdb)
         assertEquals("tmdb:1399", episode.parentId)
         assertEquals(2, episode.season)
@@ -33,9 +33,9 @@ class ServerMatcherTest {
 
     @Test
     fun acceptsEveryCatalogIdNamespace() {
-        assertEquals(123L, ServerMatcher.request("movie", "kitsu:123", null, null)!!.ids.kitsu)
-        assertNull(ServerMatcher.request("series", "kitsu:123:5", null, null))
-        val episode = ServerMatcher.request("series", "kitsu:123:5", 1, 5)!!
+        assertEquals(123L, ServerMatcher.shared.request("movie", "kitsu:123", null, null)!!.ids.kitsu)
+        assertNull(ServerMatcher.shared.request("series", "kitsu:123:5", null, null))
+        val episode = ServerMatcher.shared.request("series", "kitsu:123:5", 1, 5)!!
         assertEquals(1, episode.season)
         assertEquals(5, episode.episode)
         val index = LibraryIndex(listOf(ServerIndexEntry("a", TrackingExternalIds(kitsu = 123, anilist = 9))))
@@ -45,9 +45,9 @@ class ServerMatcherTest {
 
     @Test
     fun skipsRequestsWithoutExactIds() {
-        assertNull(ServerMatcher.request("movie", "someaddon:123", null, null))
-        assertNull(ServerMatcher.request("movie", ServerItemRef("c1", "x").encode(), null, null))
-        assertNull(ServerMatcher.request("channel", "tt0111161", null, null))
+        assertNull(ServerMatcher.shared.request("movie", "someaddon:123", null, null))
+        assertNull(ServerMatcher.shared.request("movie", ServerItemRef("c1", "x").encode(), null, null))
+        assertNull(ServerMatcher.shared.request("channel", "tt0111161", null, null))
     }
 
     @Test
@@ -78,10 +78,10 @@ class ServerMatcherTest {
             indexedIds["43"] = TrackingExternalIds(imdb = "tt0068646")
         }
         val connection = installFakeServer(provider)
-        val request = ServerMatcher.request("movie", "tt0111161", null, null)!!
+        val request = ServerMatcher.shared.request("movie", "tt0111161", null, null)!!
 
-        assertTrue(ServerMatcher.supports(connection, ServerMediaKind.MOVIE))
-        assertEquals(listOf(ServerItemRef(connection.id, "42")), ServerMatcher.match(connection, request, forceRefresh = false))
+        assertTrue(ServerMatcher.shared.supports(connection, ServerMediaKind.MOVIE))
+        assertEquals(listOf(ServerItemRef(connection.id, "42")), ServerMatcher.shared.match(connection, request, forceRefresh = false))
     } }
 
     @Test
@@ -92,11 +92,11 @@ class ServerMatcherTest {
         }
         val connection = installFakeServer(provider)
 
-        val hit = ServerMatcher.request("series", "tt0944947:1:1", 1, 1)!!
-        assertEquals(listOf(ServerItemRef(connection.id, "901")), ServerMatcher.match(connection, hit, forceRefresh = false))
+        val hit = ServerMatcher.shared.request("series", "tt0944947:1:1", 1, 1)!!
+        assertEquals(listOf(ServerItemRef(connection.id, "901")), ServerMatcher.shared.match(connection, hit, forceRefresh = false))
 
-        val miss = ServerMatcher.request("series", "tt0944947:1:2", 1, 2)!!
-        assertTrue(ServerMatcher.match(connection, miss, forceRefresh = false).isEmpty())
+        val miss = ServerMatcher.shared.request("series", "tt0944947:1:2", 1, 2)!!
+        assertTrue(ServerMatcher.shared.match(connection, miss, forceRefresh = false).isEmpty())
     } }
 
     @Test

@@ -124,6 +124,8 @@ internal fun FoldControls(
     onAudioClick: () -> Unit,
     onSourcesClick: (() -> Unit)?,
     onEpisodesClick: (() -> Unit)?,
+    onChaptersClick: (() -> Unit)?,
+    chapters: List<PlayerChapter>,
     onSpeedClick: () -> Unit,
     onResizeModeClick: () -> Unit,
     onVideoSettingsClick: (() -> Unit)?,
@@ -150,6 +152,7 @@ internal fun FoldControls(
         onAudioClick = onAudioClick,
         onSourcesClick = onSourcesClick,
         onEpisodesClick = onEpisodesClick,
+        onChaptersClick = onChaptersClick,
         onNextEpisodeClick = null,
         onSpeedClick = onSpeedClick,
         onResizeModeClick = onResizeModeClick,
@@ -291,7 +294,9 @@ internal fun FoldControls(
                 if (badges.isNotEmpty()) {
                     PlayerBadges(badges = badges, modifier = Modifier.padding(bottom = 10.dp))
                 }
+                PlayerChapterTitle(chapters = chapters, positionMs = displayedPositionMs)
                 TimelineRow(
+                    chapters = chapters,
                     playbackSnapshot = playbackSnapshot,
                     displayedPositionMs = displayedPositionMs,
                     showRemainingTime = showRemainingTime,
@@ -461,6 +466,7 @@ internal fun FoldLockedControls(
 
 @Composable
 private fun TimelineRow(
+    chapters: List<PlayerChapter>,
     playbackSnapshot: PlayerPlaybackSnapshot,
     displayedPositionMs: Long,
     showRemainingTime: Boolean,
@@ -474,6 +480,7 @@ private fun TimelineRow(
     ) {
         TimeLabel(formatPlaybackTime(displayedPositionMs))
         PlayerTimeline(
+            chapters = chapters,
             snapshot = playbackSnapshot,
             displayedPositionMs = displayedPositionMs,
             onScrubChange = onScrubChange,

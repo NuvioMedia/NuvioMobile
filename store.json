@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.6.5",
+          "buildVersion": "148",
+          "date": "2026-10-27T02:04:03Z",
+          "localizedDescription": "- [feat(i18n): translate subtitle render scale and hero ratings settings (#2402)](https://github.com/NuvioMedia/NuvioMobile/pull/2402) @jhojhocraazy  \r\n- 2c69902b fix(servers): keep title lookups working between episodes @tapframe  \r\n- [Updated Bulgarian translations - fixes, party file, new strings (#2397)](https://github.com/NuvioMedia/NuvioMobile/pull/2397) @viiktr  \r\n- 88c9b4ce feat(player): split video and controls at the duo fold @tapframe  \r\n- [fix(debrid): recognize language words in release names (#2364)](https://github.com/NuvioMedia/NuvioMobile/pull/2364) @kernexshadow  \r\n- [i18n(vi): update latest Vietnamese strings (#2370)](https://github.com/NuvioMedia/NuvioMobile/pull/2370) @blueocean2308  \r\n- c85dc721 feat(player): remove source name from paused player @tapframe  \r\n- [l10n: complete missing Italian translations (#2371)](https://github.com/NuvioMedia/NuvioMobile/pull/2371) @WhiteGiso  \r\n- [Player chapters: progress bar marks, chapter name and a chapters panel (#2174)](https://github.com/NuvioMedia/NuvioMobile/pull/2174) @kernexshadow  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.5-beta/nuvio-0.6.5-full-release.ipa",
+          "size": 67965485,
+          "sha256": "599eff1327f1018e65f0f577f1d3e6070833dc3d291589105dfa173ef7b41d7e",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.6.4",
           "buildVersion": "147",
           "date": "2026-10-23T23:20:42Z",

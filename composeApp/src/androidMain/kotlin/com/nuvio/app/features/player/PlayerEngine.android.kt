@@ -814,6 +814,8 @@ private fun ExoPlayerSurface(
         dispatchExoPlayerSnapshot()
     }
 
+    val latestChapterSourceUrl = rememberUpdatedState(sourceUrl)
+    val latestChapterSourceHeaders = rememberUpdatedState(sanitizedSourceHeaders)
     LaunchedEffect(exoPlayer) {
         onControllerReady(
             autoSyncCoordinator.wrap(object : PlayerEngineController { // AutoSync hook
@@ -822,6 +824,12 @@ private fun ExoPlayerSurface(
                 override fun play() {
                     exoPlayer.playWhenReady = true
                     exoPlayer.play()
+                }
+
+                // Media3's Matroska extractor skips chapters; read them from the file, if allowed.
+                override suspend fun getChapters(): List<PlayerChapter> {
+                    if (!PlayerSettingsRepository.uiState.value.androidExoChaptersEnabled) return emptyList()
+                    return MatroskaChapterLoader.load(latestChapterSourceUrl.value, latestChapterSourceHeaders.value)
                 }
 
                 override fun pause() {
@@ -1557,6 +1565,24 @@ private class NuvioLibmpvView(
         }
     }
 
+    /** mpv lists the chapters of the loaded file itself. */
+    suspend fun readChapters(): List<PlayerChapter> {
+        if (released.get()) return emptyList()
+        return runCatching {
+            withContext(mpvDispatcher) {
+                if (released.get()) return@withContext emptyList()
+                val count = mpv.getPropertyInt("chapter-list/count") ?: 0
+                (0 until count).mapNotNull { i ->
+                    val seconds = mpv.getPropertyDouble("chapter-list/$i/time") ?: return@mapNotNull null
+                    PlayerChapter(
+                        startMs = (seconds * 1000.0).toLong(),
+                        title = mpv.getPropertyString("chapter-list/$i/title")?.trim()?.takeIf { it.isNotBlank() },
+                    )
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
     suspend fun snapshot(): PlayerPlaybackSnapshot {
         if (released.get()) return latestSnapshot
         return withContext(mpvDispatcher) {
@@ -1652,6 +1678,8 @@ private class NuvioLibmpvView(
             override fun seekTo(positionMs: Long) = this@NuvioLibmpvView.seekToMs(positionMs)
 
             override fun seekBy(offsetMs: Long) = this@NuvioLibmpvView.seekByMs(offsetMs)
+
+            override suspend fun getChapters(): List<PlayerChapter> = this@NuvioLibmpvView.readChapters()
 
             override fun retry() {
                 executeMpv { loadCurrentSourceNow(playWhenReady = true) }

@@ -423,9 +423,9 @@
     <string name="compose_player_close">Затвори плейъра</string>
     <string name="compose_player_color">Цвят</string>
     <string name="compose_player_currently_playing">В момента се възпроизвежда</string>
-    <string name="compose_player_episode_code_episode_only">Е%1$d</string>
-    <string name="compose_player_episode_code_full">С%1$d Е%2$d</string>
-    <string name="compose_player_episode_title_format">С%1$d Е%2$d • %3$s</string>
+    <string name="compose_player_episode_code_episode_only">Епизод %1$d</string>
+    <string name="compose_player_episode_code_full">Сезон %1$d Епизод%2$d</string>
+    <string name="compose_player_episode_title_format">Сезон %1$d Епизод %2$d • %3$s</string>
     <string name="compose_player_episodes">Епизоди</string>
     <string name="compose_player_font_size">Размер на шрифта</string>
     <string name="compose_player_font_size_value">%1$dsp</string>
@@ -654,7 +654,7 @@
     <string name="settings_appearance_amoled_black">AMOLED черно</string>
     <string name="settings_appearance_amoled_description">Използвай чисто черни фонове за OLED екрани.</string>
     <string name="settings_appearance_app_icon">Икона на приложението</string>
-    <string name="settings_appearance_app_icon_arctic_blue">Арктиеско синьо</string>
+    <string name="settings_appearance_app_icon_arctic_blue">Арктическо синьо</string>
     <string name="settings_appearance_app_icon_android_confirmation_message">Промяната към %1$s ще затвори Nuvio. Натиснете OK, за да продължите.</string>
     <string name="settings_appearance_app_icon_android_confirmation_title">Промяна на иконата?</string>
     <string name="settings_appearance_app_icon_change_failed">Иконата не можа да бъде променена. Опитайте отново.</string>
@@ -1551,9 +1551,9 @@
     <string name="streams_empty_no_stream_addon_message">Вашите инсталирани добавки не предоставят източници за този тип заглавие.</string>
     <string name="streams_empty_no_stream_addon_title">Няма налична добавка за източници</string>
     <string name="streams_empty_no_streams_message">Нито една от вашите инсталирани добавки не върна източници за това заглавие.</string>
-    <string name="streams_episode_badge">С%1$d Е%2$d</string>
+    <string name="streams_episode_badge">Сезон %1$d Епизод %2$d</string>
     <string name="streams_episode_fallback_title">Епизод</string>
-    <string name="streams_episode_title_with_name">С%1$d Е%2$d - %3$s</string>
+    <string name="streams_episode_title_with_name">Сезон %1$d Епизод %2$d - %3$s</string>
     <string name="streams_fetching">Извличане…</string>
     <string name="streams_finding_source">Търсене на източник…</string>
     <string name="streams_loading_subtitles">Зареждане на субтитри от добавки…</string>
@@ -1617,7 +1617,7 @@
     <string name="auth_sign_up_failed">Регистрацията не бе успешна</string>
     <string name="catalog_load_failed">Елементите на каталога не можаха да се заредят.</string>
     <string name="continue_watching_up_next">Следва</string>
-    <string name="continue_watching_up_next_episode">Следва • С%1$d Е%2$d</string>
+    <string name="continue_watching_up_next_episode">Следва • Сезон %1$d Епизод %2$d</string>
     <string name="detail_logo_content_description">Лого на %1$s</string>
     <string name="details_comments_load_failed">Коментарите не можаха да се заредят</string>
     <string name="details_load_failed_all_addons">Детайлите не можаха да се заредят от нито една добавка.</string>
