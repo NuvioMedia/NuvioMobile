@@ -253,9 +253,6 @@ private fun ExoPlayerSurface(
         normalizeStreamType(streamType)
     }
     val useLibass = playerSettings.useLibass
-    val libassRenderType = runCatching {
-        LibassRenderType.valueOf(playerSettings.libassRenderType)
-    }.getOrDefault(LibassRenderType.CUES)
     val playerSourceKey = listOf(
         sourceUrl,
         sourceAudioUrl.orEmpty(),
@@ -1081,7 +1078,6 @@ private fun ExoPlayerSurface(
                 syncLibassOverlay(
                     player = exoPlayer,
                     enabled = useLibass,
-                    renderType = libassRenderType,
                 )
                 applySubtitleStyle(currentSubtitleStyle, pipVideoHeightPx)
             }
@@ -1096,7 +1092,6 @@ private fun ExoPlayerSurface(
             playerView.syncLibassOverlay(
                 player = exoPlayer,
                 enabled = useLibass,
-                renderType = libassRenderType,
             )
             playerView.applySubtitleStyle(currentSubtitleStyle, pipVideoHeightPx)
         },
@@ -2102,13 +2097,11 @@ private fun PlayerResizeMode.toExoResizeMode(): Int =
 private fun PlayerView.syncLibassOverlay(
     player: ExoPlayer,
     enabled: Boolean,
-    renderType: LibassRenderType,
 ) {
-    val containerId = if (renderType == LibassRenderType.OVERLAY_OPEN_GL) {
-        R.id.libass_overlay_container_gl
-    } else {
-        R.id.libass_overlay_container
-    }
+    // The nuvio-libass atlas pipeline always draws through AssSubtitleSurfaceView, which must sit
+    // in the top-level overlay container above the video. Mounting it inside exo_content_frame
+    // (the old non-overlay container picked by the legacy "CUES" render type) leaves ASS invisible.
+    val containerId = R.id.libass_overlay_container_gl
     val overlayContainer = findViewById<android.widget.FrameLayout>(containerId) ?: return
     val needsOverlay = enabled
     val boundPlayer = getTag(R.id.libass_overlay_bound_player) as? ExoPlayer
@@ -2165,8 +2158,6 @@ private fun android.widget.FrameLayout.removeAssOverlayChildren() {
 }
 
 private fun PlayerView.releaseLibassOverlay() {
-    findViewById<android.widget.FrameLayout>(R.id.libass_overlay_container)
-        ?.removeAssOverlayChildren()
     findViewById<android.widget.FrameLayout>(R.id.libass_overlay_container_gl)
         ?.removeAssOverlayChildren()
     setTag(R.id.libass_overlay_bound_player, null)
