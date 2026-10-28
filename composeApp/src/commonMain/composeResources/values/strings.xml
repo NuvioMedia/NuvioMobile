@@ -2067,7 +2067,7 @@
     <!-- Playback settings iOS audio output -->
     <string name="settings_playback_ios_audio_output_section">iOS AUDIO OUTPUT</string>
     <string name="settings_playback_ios_audio_output">Audio output</string>
-    <string name="settings_playback_ios_audio_output_auto_desc">Use AudioUnit while AVFoundation output is temporarily disabled.</string>
+    <string name="settings_playback_ios_audio_output_auto_desc">Use AVFoundation when spatial audio is on, otherwise AudioUnit.</string>
     <string name="settings_playback_ios_audio_output_avfoundation_desc">Experimental support for Spatial Audio and multichannel output.</string>
     <string name="settings_playback_ios_audio_output_audiounit_desc">Use the legacy AudioUnit output.</string>
     <!-- Debrid Result Management section -->

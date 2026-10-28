@@ -263,6 +263,8 @@ private struct PendingLoadRequest {
 final class MPVPlayerViewController: UIViewController {
 
     private static let defaultAudioOutput = "audiounit"
+    private static let automaticAudioOutput = "auto"
+    private static let spatialAudioOutput = "avfoundation,audiounit,"
 
     private struct CachedNowPlayingMetadata {
         let title: String
@@ -290,12 +292,17 @@ final class MPVPlayerViewController: UIViewController {
             self.publishCachedNowPlayingInfoIfNeeded()
             self.syncNowPlayingPlaybackState(isPlaying: self.isPlayerPlaying)
         }
+        controller.onSpatialAudioEnabled = { [weak self] in
+            self?.switchToSpatialAudioOutputIfNeeded()
+        }
         return controller
     }()
     private lazy var eventQueue = DispatchQueue(label: "mpv-events", qos: .userInitiated)
     private var recentPlaybackLogs: [String] = []
     private var activeRequestHeaders: [String: String] = [:]
     private var preferredAudioLanguages: [String] = []
+    private var audioOutputPreference = MPVPlayerViewController.automaticAudioOutput
+    private var appliedAudioOutput = MPVPlayerViewController.defaultAudioOutput
 
     // Cached track lists
     var audioTracks: [TrackInfo] = []
@@ -660,6 +667,7 @@ final class MPVPlayerViewController: UIViewController {
         isPlayerLoading = true
         isPlayerEnded = false
         applyAudioLanguagePreferences(preferredAudioLanguages)
+        applyAudioOutputIfIdle()
         command("loadfile", args: [request.urlString, "replace"])
         if let audioUrl = request.audioUrl, !audioUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
@@ -785,14 +793,32 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     func configureAudioOutput(audioOutput: String) {
-        guard mpv != nil else { return }
-        let resolvedAudioOutput: String
-        if audioOutput.contains("avfoundation") {
-            resolvedAudioOutput = Self.defaultAudioOutput
-        } else {
-            resolvedAudioOutput = audioOutput
-        }
+        audioOutputPreference = audioOutput
+        applyAudioOutputIfIdle()
+    }
+
+    private func applyAudioOutputIfIdle() {
+        guard mpv != nil, getString("current-ao") == nil else { return }
+        let resolvedAudioOutput = resolveAudioOutput()
+        guard resolvedAudioOutput != appliedAudioOutput else { return }
+        appliedAudioOutput = resolvedAudioOutput
         setStringProperty("ao", resolvedAudioOutput)
+    }
+
+    private func switchToSpatialAudioOutputIfNeeded() {
+        guard mpv != nil, getString("current-ao") != nil,
+              appliedAudioOutput != Self.spatialAudioOutput,
+              resolveAudioOutput() == Self.spatialAudioOutput else { return }
+        appliedAudioOutput = Self.spatialAudioOutput
+        commandAsync("set", args: ["ao", Self.spatialAudioOutput])
+    }
+
+    private func resolveAudioOutput() -> String {
+        guard audioOutputPreference == Self.automaticAudioOutput else {
+            return audioOutputPreference.contains("avfoundation") ? Self.defaultAudioOutput : audioOutputPreference
+        }
+        let spatialAudioEnabled = AVAudioSession.sharedInstance().currentRoute.outputs.contains { $0.isSpatialAudioEnabled }
+        return spatialAudioEnabled ? Self.spatialAudioOutput : Self.defaultAudioOutput
     }
 
     func setSpeed(_ speed: Float) {
@@ -1284,6 +1310,13 @@ final class MPVPlayerViewController: UIViewController {
         defer { for ptr in cargs where ptr != nil { free(UnsafeMutablePointer(mutating: ptr!)) } }
         let ret = mpv_command(mpv, &cargs)
         if checkForErrors { checkError(ret) }
+    }
+
+    private func commandAsync(_ command: String, args: [String?] = []) {
+        guard mpv != nil else { return }
+        var cargs = makeCArgs(command, args).map { $0.flatMap { UnsafePointer<CChar>(strdup($0)) } }
+        defer { for ptr in cargs where ptr != nil { free(UnsafeMutablePointer(mutating: ptr!)) } }
+        checkError(mpv_command_async(mpv, 0, &cargs))
     }
 
     private func makeCArgs(_ command: String, _ args: [String?]) -> [String?] {
