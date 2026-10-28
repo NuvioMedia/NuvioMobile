@@ -2485,4 +2485,10 @@
     <string name="stream_info_subtitle_source_embedded">Embedded</string>
     <string name="stream_info_player_engine">Player Engine</string>
     <string name="stream_info_server">Server</string>
+    <string name="library_filter_watched">Watched</string>
+    <string name="library_watched_filter_all">All</string>
+    <string name="library_watched_filter_watched">Watched</string>
+    <string name="library_watched_filter_unwatched">Not watched</string>
+    <string name="library_no_matches_title">No matching titles</string>
+    <string name="library_no_matches_message">No titles in your library match the current filter.</string>
 </resources>

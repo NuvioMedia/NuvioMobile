@@ -107,7 +107,7 @@ fun LibraryScreen(
     scrollToTopRequests: Flow<Unit> = emptyFlow(),
     onPosterClick: ((LibraryItem) -> Unit)? = null,
     onPosterLongClick: ((LibraryItem, LibrarySection) -> Unit)? = null,
-    onSectionViewAllClick: ((LibrarySection, LibrarySortOption) -> Unit)? = null,
+    onSectionViewAllClick: ((LibrarySection, LibrarySortOption, LibraryWatchedFilter) -> Unit)? = null,
     onCloudFilePlay: ((CloudLibraryItem, CloudLibraryFile) -> Unit)? = null,
     onConnectCloudClick: (() -> Unit)? = null,
     onCatalogClick: ((HomeCatalogSection) -> Unit)? = null,
@@ -166,6 +166,11 @@ fun LibraryScreen(
     var selectedCloudItemKey by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedLibrarySectionKey by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedLibraryType by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedWatchedFilterName by rememberSaveable { mutableStateOf(LibraryWatchedFilter.ALL.name) }
+    val selectedWatchedFilter = remember(selectedWatchedFilterName) {
+        runCatching { LibraryWatchedFilter.valueOf(selectedWatchedFilterName) }
+            .getOrDefault(LibraryWatchedFilter.ALL)
+    }
     val coroutineScope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     ScreenActivityEffect(listState) { screenActive ->
@@ -183,10 +188,23 @@ fun LibraryScreen(
     }
     val providerOrders = rememberLibraryProviderOrders(uiState.sourceMode, orderListKeys, effectiveSortOption)
     val visibleSortOption = if (providerOrders.failed) LibrarySortOption.DEFAULT else effectiveSortOption
-    val sortedSections = remember(uiState.sections, displaySettings, uiState.sourceMode, sourceMode, providerOrders) {
+    val watchedFilteredSections = remember(
+        uiState.sections,
+        selectedWatchedFilter,
+        watchedUiState.watchedKeys,
+        fullyWatchedSeriesKeys,
+    ) {
+        filterLibrarySectionsByWatched(
+            sections = uiState.sections,
+            filter = selectedWatchedFilter,
+            watchedKeys = watchedUiState.watchedKeys,
+            fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+        )
+    }
+    val sortedSections = remember(watchedFilteredSections, displaySettings, uiState.sourceMode, sourceMode, providerOrders) {
         if (sourceMode == LibraryViewMode.Saved && displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL) {
             sortLibrarySections(
-                sections = uiState.sections,
+                sections = watchedFilteredSections,
                 selected = visibleSortOption,
                 sourceMode = uiState.sourceMode,
                 providerOrders = providerOrders.ranks,
@@ -200,6 +218,9 @@ fun LibraryScreen(
         uiState.sourceMode,
         selectedLibrarySectionKey,
         selectedLibraryType,
+        selectedWatchedFilter,
+        watchedUiState.watchedKeys,
+        fullyWatchedSeriesKeys,
         displaySettings,
         sourceMode,
         providerOrders,
@@ -212,6 +233,9 @@ fun LibraryScreen(
                 selectedType = selectedLibraryType,
                 sortOption = visibleSortOption,
                 providerOrders = providerOrders.ranks,
+                watchedFilter = selectedWatchedFilter,
+                watchedKeys = watchedUiState.watchedKeys,
+                fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
             )
         } else {
             LibraryVerticalProjection(
@@ -494,37 +518,57 @@ fun LibraryScreen(
                                 sourceMode = uiState.sourceMode,
                                 sortOption = effectiveSortOption,
                                 verticalProjection = verticalProjection,
+                                watchedFilter = selectedWatchedFilter,
                                 onSectionSelected = { sectionKey ->
                                     selectedLibrarySectionKey = sectionKey
                                     selectedLibraryType = null
                                 },
                                 onTypeSelected = { type -> selectedLibraryType = type },
+                                onWatchedFilterSelected = { filter -> selectedWatchedFilterName = filter.name },
                                 onSortSelected = LibraryDisplaySettingsRepository::setSortOption,
                                 modifier = libraryContentTransitionModifier()
                                     .padding(horizontal = 16.dp),
                             )
                         }
-                        when (displaySettings.layoutMode) {
-                            LibraryLayoutMode.HORIZONTAL -> librarySections(
-                                displaySections = librarySectionsDisplay,
-                                watchedKeys = watchedUiState.watchedKeys,
-                                fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
-                                sortOption = effectiveSortOption,
-                                posterPattern = effectivePosterPattern,
-                                onPosterClick = onPosterClick,
-                                onSectionViewAllClick = onSectionViewAllClick,
-                                onPosterLongClick = onPosterLongClick,
-                                onDisintegrated = disintegration::onExited,
-                            )
-                            LibraryLayoutMode.VERTICAL -> libraryVerticalContent(
-                                projection = verticalProjection,
-                                columns = gridColumns,
-                                watchedKeys = watchedUiState.watchedKeys,
-                                fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
-                                posterPattern = effectivePosterPattern,
-                                onPosterClick = onPosterClick,
-                                onPosterLongClick = onPosterLongClick,
-                            )
+                        val hasWatchedFilteredResults = when (displaySettings.layoutMode) {
+                            LibraryLayoutMode.HORIZONTAL -> librarySectionsDisplay.isNotEmpty()
+                            LibraryLayoutMode.VERTICAL -> verticalProjection.entries.isNotEmpty()
+                        }
+                        if (selectedWatchedFilter != LibraryWatchedFilter.ALL && !hasWatchedFilteredResults) {
+                            item {
+                                HomeEmptyStateCard(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    title = stringResource(Res.string.library_no_matches_title),
+                                    message = stringResource(Res.string.library_no_matches_message),
+                                )
+                            }
+                        } else {
+                            when (displaySettings.layoutMode) {
+                                LibraryLayoutMode.HORIZONTAL -> librarySections(
+                                    displaySections = librarySectionsDisplay,
+                                    watchedKeys = watchedUiState.watchedKeys,
+                                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                                    sortOption = effectiveSortOption,
+                                    posterPattern = effectivePosterPattern,
+                                    onPosterClick = onPosterClick,
+                                    onSectionViewAllClick = onSectionViewAllClick?.let { callback ->
+                                        { section, sortOption ->
+                                            callback(section, sortOption, selectedWatchedFilter)
+                                        }
+                                    },
+                                    onPosterLongClick = onPosterLongClick,
+                                    onDisintegrated = disintegration::onExited,
+                                )
+                                LibraryLayoutMode.VERTICAL -> libraryVerticalContent(
+                                    projection = verticalProjection,
+                                    columns = gridColumns,
+                                    watchedKeys = watchedUiState.watchedKeys,
+                                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                                    posterPattern = effectivePosterPattern,
+                                    onPosterClick = onPosterClick,
+                                    onPosterLongClick = onPosterLongClick,
+                                )
+                            }
                         }
                     }
                 }

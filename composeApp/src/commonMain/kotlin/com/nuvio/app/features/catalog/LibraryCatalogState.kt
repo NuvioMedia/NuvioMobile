@@ -3,6 +3,8 @@ package com.nuvio.app.features.catalog
 import com.nuvio.app.features.library.LibraryUiState
 import com.nuvio.app.features.library.LibraryProviderOrders
 import com.nuvio.app.features.library.LibrarySortOption
+import com.nuvio.app.features.library.LibraryWatchedFilter
+import com.nuvio.app.features.library.filterLibrarySectionsByWatched
 import com.nuvio.app.features.library.librarySorter
 import com.nuvio.app.features.library.observeLibraryProviderOrders
 import com.nuvio.app.features.library.sortLibraryItems
@@ -25,6 +27,32 @@ internal fun Flow<LibraryUiState>.libraryCatalogStates(
 } else {
     combine(providerOrders) { libraryState, orders -> libraryState.libraryCatalogState(target, orders) }
 }.distinctUntilChanged()
+
+// The view-all catalog keeps the watched filter of the shelf it was opened from,
+// using the library screen's own sections filter so both views always agree.
+internal fun Flow<LibraryUiState>.withLibraryWatchedFilter(
+    filter: LibraryWatchedFilter,
+    watchedKeys: Flow<Set<String>>,
+    fullyWatchedSeriesKeys: Flow<Set<String>>,
+): Flow<LibraryUiState> =
+    if (filter == LibraryWatchedFilter.ALL) {
+        this
+    } else {
+        combine(
+            this,
+            watchedKeys,
+            fullyWatchedSeriesKeys,
+        ) { library, keys, fullyWatched ->
+            library.copy(
+                sections = filterLibrarySectionsByWatched(
+                    sections = library.sections,
+                    filter = filter,
+                    watchedKeys = keys,
+                    fullyWatchedSeriesKeys = fullyWatched,
+                ),
+            )
+        }
+    }
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 internal fun Flow<LibraryUiState>.libraryCatalogOrders(target: CatalogTarget.Library): Flow<LibraryProviderOrders> =

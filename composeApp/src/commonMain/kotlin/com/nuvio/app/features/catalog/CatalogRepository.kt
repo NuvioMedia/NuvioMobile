@@ -11,6 +11,7 @@ import com.nuvio.app.features.servers.serverMessage
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.filterReleasedItems
 import com.nuvio.app.features.trakt.TraktPublicListSourceResolver
+import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -20,6 +21,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
@@ -100,9 +102,15 @@ object CatalogRepository {
             try {
                 val target = request.target as CatalogTarget.Library
                 LibraryRepository.ensureLoaded()
-                LibraryRepository.uiState.libraryCatalogStates(
-                    target, LibraryRepository.uiState.libraryCatalogOrders(target),
-                ).collect { state ->
+                WatchedRepository.ensureLoaded()
+                LibraryRepository.uiState
+                    .withLibraryWatchedFilter(
+                        filter = target.watchedFilter,
+                        watchedKeys = WatchedRepository.uiState.map { it.watchedKeys },
+                        fullyWatchedSeriesKeys = WatchedRepository.fullyWatchedSeriesKeys,
+                    )
+                    .libraryCatalogStates(target, LibraryRepository.uiState.libraryCatalogOrders(target))
+                    .collect { state ->
                     if (activeRequest != request) return@collect
                     CustomPosterUrlRepository.ensureLoaded()
                     val posterPattern = CustomPosterUrlRepository.patternForScreen(

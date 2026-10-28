@@ -25,6 +25,7 @@ import nuvio.composeapp.generated.resources.library_filter_all_types
 import nuvio.composeapp.generated.resources.library_filter_list
 import nuvio.composeapp.generated.resources.library_filter_sort
 import nuvio.composeapp.generated.resources.library_filter_type
+import nuvio.composeapp.generated.resources.library_filter_watched
 import nuvio.composeapp.generated.resources.library_sort_added_asc
 import nuvio.composeapp.generated.resources.library_sort_added_desc
 import nuvio.composeapp.generated.resources.library_sort_title_asc
@@ -32,6 +33,9 @@ import nuvio.composeapp.generated.resources.library_sort_title_desc
 import nuvio.composeapp.generated.resources.library_sort_provider_order
 import nuvio.composeapp.generated.resources.library_sort_released_asc
 import nuvio.composeapp.generated.resources.library_sort_released_desc
+import nuvio.composeapp.generated.resources.library_watched_filter_all
+import nuvio.composeapp.generated.resources.library_watched_filter_unwatched
+import nuvio.composeapp.generated.resources.library_watched_filter_watched
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -40,8 +44,10 @@ internal fun LibrarySavedControls(
     sourceMode: LibrarySourceMode,
     sortOption: LibrarySortOption,
     verticalProjection: LibraryVerticalProjection,
+    watchedFilter: LibraryWatchedFilter,
     onSectionSelected: (String) -> Unit,
     onTypeSelected: (String?) -> Unit,
+    onWatchedFilterSelected: (LibraryWatchedFilter) -> Unit,
     onSortSelected: (LibrarySortOption) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -87,6 +93,20 @@ internal fun LibrarySavedControls(
                 onSelected = { option -> onTypeSelected(option.key.ifBlank { null }) },
             )
         }
+
+        NuvioDropdownChip(
+            title = stringResource(Res.string.library_filter_watched),
+            label = libraryWatchedFilterLabel(watchedFilter),
+            selectedKey = watchedFilter.name,
+            options = LibraryWatchedFilter.entries.map { filter ->
+                NuvioDropdownOption(key = filter.name, label = libraryWatchedFilterLabel(filter))
+            },
+            onSelected = { option ->
+                LibraryWatchedFilter.entries
+                    .firstOrNull { it.name == option.key }
+                    ?.let(onWatchedFilterSelected)
+            },
+        )
 
         NuvioDropdownChip(
             title = stringResource(Res.string.library_filter_sort),
@@ -166,6 +186,14 @@ internal fun LazyItemScope.libraryContentTransitionModifier(): Modifier =
         placementSpec = tween(durationMillis = 180),
         fadeOutSpec = tween(durationMillis = 90),
     )
+
+@Composable
+private fun libraryWatchedFilterLabel(filter: LibraryWatchedFilter): String =
+    when (filter) {
+        LibraryWatchedFilter.ALL -> stringResource(Res.string.library_watched_filter_all)
+        LibraryWatchedFilter.WATCHED -> stringResource(Res.string.library_watched_filter_watched)
+        LibraryWatchedFilter.UNWATCHED -> stringResource(Res.string.library_watched_filter_unwatched)
+    }
 
 @Composable
 private fun librarySortOptionLabel(option: LibrarySortOption): String =

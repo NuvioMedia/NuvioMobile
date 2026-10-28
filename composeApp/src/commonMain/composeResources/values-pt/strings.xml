@@ -1888,4 +1888,10 @@
     <string name="settings_mdblist_library_lists_description">Escolhe que listas do MDBList aparecem na Biblioteca e em Gerir Listas. A Watchlist aparece sempre.</string>
     <string name="settings_mdblist_library_lists_summary">%1$d de %2$d visíveis</string>
     <string name="settings_mdblist_library_lists_empty">Ainda não foram encontradas listas na tua conta MDBList. Sincroniza para as carregar.</string>
+    <string name="library_filter_watched">Vistos</string>
+    <string name="library_watched_filter_all">Todos</string>
+    <string name="library_watched_filter_watched">Vistos</string>
+    <string name="library_watched_filter_unwatched">Não vistos</string>
+    <string name="library_no_matches_title">Sem títulos correspondentes</string>
+    <string name="library_no_matches_message">Nenhum título na tua biblioteca corresponde ao filtro atual.</string>
 </resources>

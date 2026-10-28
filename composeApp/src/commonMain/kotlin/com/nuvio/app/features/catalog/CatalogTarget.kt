@@ -1,6 +1,7 @@
 package com.nuvio.app.features.catalog
 
 import com.nuvio.app.features.library.LibrarySortOption
+import com.nuvio.app.features.library.LibraryWatchedFilter
 import kotlinx.serialization.Serializable
 
 sealed interface CatalogTarget {
@@ -19,6 +20,7 @@ sealed interface CatalogTarget {
         override val contentType: String,
         val sectionType: String,
         val sortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
+        val watchedFilter: LibraryWatchedFilter = LibraryWatchedFilter.ALL,
     ) : CatalogTarget {
         override val supportsPagination: Boolean = false
     }

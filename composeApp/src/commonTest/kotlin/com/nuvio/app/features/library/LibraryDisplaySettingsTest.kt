@@ -1,5 +1,6 @@
 package com.nuvio.app.features.library
 
+import com.nuvio.app.features.watched.watchedItemKey
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -199,6 +200,72 @@ class LibraryDisplaySettingsTest {
         )
         assertEquals(listOf("watchlist"), simklProjection.availableSections.map { it.type })
         assertEquals("watchlist", simklProjection.selectedSectionKey)
+    }
+
+    @Test
+    fun `watched filter keeps only badged items and drops empty sections`() {
+        val sections = listOf(
+            LibrarySection(
+                type = "movie",
+                displayTitle = "Movies",
+                items = listOf(item("seen"), item("unseen")),
+            ),
+            LibrarySection(
+                type = "series",
+                displayTitle = "Series",
+                items = listOf(item("full", type = "series")),
+            ),
+        )
+        val watchedKeys = setOf(watchedItemKey("movie", "seen"))
+        val fullyWatchedSeriesKeys = setOf(watchedItemKey("series", "full"))
+
+        val watched = filterLibrarySectionsByWatched(
+            sections = sections,
+            filter = LibraryWatchedFilter.WATCHED,
+            watchedKeys = watchedKeys,
+            fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+        )
+        assertEquals(listOf("movie", "series"), watched.map { it.type })
+        assertEquals(listOf("seen"), watched[0].items.map { it.id })
+        assertEquals(listOf("full"), watched[1].items.map { it.id })
+
+        val unwatched = filterLibrarySectionsByWatched(
+            sections = sections,
+            filter = LibraryWatchedFilter.UNWATCHED,
+            watchedKeys = watchedKeys,
+            fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+        )
+        assertEquals(listOf("movie"), unwatched.map { it.type })
+        assertEquals(listOf("unseen"), unwatched[0].items.map { it.id })
+    }
+
+    @Test
+    fun `vertical projection applies the watched filter before listing types`() {
+        val sections = listOf(
+            LibrarySection(
+                type = "watchlist",
+                displayTitle = "Watchlist",
+                items = listOf(
+                    item("seen"),
+                    item("seen-series", type = "series"),
+                    item("unseen", type = "series"),
+                ),
+            ),
+        )
+
+        val projection = buildLibraryVerticalProjection(
+            sections = sections,
+            sourceMode = LibrarySourceMode.LOCAL,
+            selectedSectionKey = null,
+            selectedType = null,
+            sortOption = LibrarySortOption.ADDED_DESC,
+            watchedFilter = LibraryWatchedFilter.WATCHED,
+            watchedKeys = setOf(watchedItemKey("movie", "seen")),
+            fullyWatchedSeriesKeys = setOf(watchedItemKey("series", "seen-series")),
+        )
+
+        assertEquals(listOf("movie", "series"), projection.availableTypes)
+        assertEquals(listOf("seen", "seen-series"), projection.entries.map { it.item.id })
     }
 
     @Test

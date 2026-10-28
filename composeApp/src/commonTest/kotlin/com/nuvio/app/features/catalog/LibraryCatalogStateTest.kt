@@ -6,6 +6,8 @@ import com.nuvio.app.features.library.LibrarySortOption
 import com.nuvio.app.features.library.LibrarySourceMode
 import com.nuvio.app.features.library.LibraryUiState
 import com.nuvio.app.features.library.LibraryProviderOrders
+import com.nuvio.app.features.library.LibraryWatchedFilter
+import com.nuvio.app.features.watched.watchedItemKey
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -160,6 +162,37 @@ class LibraryCatalogStateTest {
         } finally {
             job.cancelAndJoin()
         }
+    }
+
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+    @Test
+    fun `view all keeps the watched filter and follows watched state`() = runTest {
+        val seen = item("seen")
+        val unseen = item("unseen")
+        val library = MutableStateFlow(state(listOf(seen, unseen)))
+        val watchedKeys = MutableStateFlow(setOf(watchedItemKey("movie", "seen")))
+        val fullyWatchedSeriesKeys = MutableStateFlow(emptySet<String>())
+        val target = target().copy(watchedFilter = LibraryWatchedFilter.UNWATCHED)
+        val emissions = mutableListOf<CatalogUiState>()
+        backgroundScope.launch {
+            library
+                .withLibraryWatchedFilter(
+                    filter = target.watchedFilter,
+                    watchedKeys = watchedKeys,
+                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                )
+                .libraryCatalogStates(target)
+                .collect { emissions += it }
+        }
+        runCurrent()
+        assertEquals(listOf("unseen"), emissions.last().items.map { it.id })
+
+        watchedKeys.value = setOf(
+            watchedItemKey("movie", "seen"),
+            watchedItemKey("movie", "unseen"),
+        )
+        runCurrent()
+        assertTrue(emissions.last().items.isEmpty())
     }
 
     private fun target(sectionType: String = "movie") = CatalogTarget.Library(

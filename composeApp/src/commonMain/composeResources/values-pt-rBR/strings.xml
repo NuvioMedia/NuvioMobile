@@ -2475,4 +2475,10 @@
     <string name="stream_info_subtitle_source_embedded">Embutida</string>
     <string name="stream_info_player_engine">Mecanismo do player</string>
     <string name="stream_info_server">Servidor</string>
+    <string name="library_filter_watched">Assistidos</string>
+    <string name="library_watched_filter_all">Todos</string>
+    <string name="library_watched_filter_watched">Assistidos</string>
+    <string name="library_watched_filter_unwatched">Não assistidos</string>
+    <string name="library_no_matches_title">Nenhum título correspondente</string>
+    <string name="library_no_matches_message">Nenhum título na sua biblioteca corresponde ao filtro atual.</string>
 </resources>

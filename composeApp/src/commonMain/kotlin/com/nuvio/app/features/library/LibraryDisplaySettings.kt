@@ -1,5 +1,6 @@
 package com.nuvio.app.features.library
 
+import com.nuvio.app.features.watching.application.WatchingState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,6 +23,12 @@ enum class LibrarySortOption {
     RELEASED_ASC,
     TITLE_ASC,
     TITLE_DESC,
+}
+
+enum class LibraryWatchedFilter {
+    ALL,
+    WATCHED,
+    UNWATCHED,
 }
 
 data class LibraryDisplaySettingsUiState(
@@ -161,6 +168,37 @@ internal fun sortLibrarySections(
         section.copy(items = sortLibraryItems(section.items, selected, sourceMode, section.type, providerOrders[section.type]))
     }
 
+// Reuses the same watched state that drives the poster badge, so a filtered list
+// can never disagree with the badge shown on the posters.
+internal fun LibraryItem.matchesWatchedFilter(
+    filter: LibraryWatchedFilter,
+    watchedKeys: Set<String>,
+    fullyWatchedSeriesKeys: Set<String>,
+): Boolean {
+    if (filter == LibraryWatchedFilter.ALL) return true
+    val isWatched = WatchingState.isPosterWatched(
+        watchedKeys = watchedKeys,
+        item = toMetaPreview(),
+        fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+    )
+    return isWatched == (filter == LibraryWatchedFilter.WATCHED)
+}
+
+internal fun filterLibrarySectionsByWatched(
+    sections: List<LibrarySection>,
+    filter: LibraryWatchedFilter,
+    watchedKeys: Set<String>,
+    fullyWatchedSeriesKeys: Set<String>,
+): List<LibrarySection> {
+    if (filter == LibraryWatchedFilter.ALL) return sections
+    return sections.mapNotNull { section ->
+        val items = section.items.filter { item ->
+            item.matchesWatchedFilter(filter, watchedKeys, fullyWatchedSeriesKeys)
+        }
+        if (items.isEmpty()) null else section.copy(items = items)
+    }
+}
+
 internal fun buildLibraryVerticalProjection(
     sections: List<LibrarySection>,
     sourceMode: LibrarySourceMode,
@@ -168,6 +206,9 @@ internal fun buildLibraryVerticalProjection(
     selectedType: String?,
     sortOption: LibrarySortOption,
     providerOrders: Map<String, Map<String, Int>> = emptyMap(),
+    watchedFilter: LibraryWatchedFilter = LibraryWatchedFilter.ALL,
+    watchedKeys: Set<String> = emptySet(),
+    fullyWatchedSeriesKeys: Set<String> = emptySet(),
 ): LibraryVerticalProjection {
     val availableSections = if (sourceMode.isRemoteTrackingSource) sections else emptyList()
     val selectedSection = if (sourceMode.isRemoteTrackingSource) {
@@ -182,8 +223,11 @@ internal fun buildLibraryVerticalProjection(
             section.items.map { item -> LibraryVerticalEntry(item, section) }
         }
     }
+    val watchedEntries = baseEntries.filter { entry ->
+        entry.item.matchesWatchedFilter(watchedFilter, watchedKeys, fullyWatchedSeriesKeys)
+    }
     val deduplicatedEntries = LinkedHashMap<String, LibraryVerticalEntry>()
-    baseEntries.forEach { entry ->
+    watchedEntries.forEach { entry ->
         val key = libraryDisplayItemKey(entry.item)
         if (key !in deduplicatedEntries) {
             deduplicatedEntries[key] = entry
