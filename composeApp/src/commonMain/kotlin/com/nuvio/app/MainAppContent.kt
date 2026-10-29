@@ -50,6 +50,10 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.LocalNavAnimatedContentScope
 import androidx.navigation3.ui.NavDisplay
+import com.nuvio.app.features.simkl.SimklSyncRepository
+import com.nuvio.app.features.simkl.SimklMutationRepository
+import com.nuvio.app.features.simkl.activeRewatchSessionId
+import com.nuvio.app.features.simkl.mediaReference
 import com.nuvio.app.core.ui.LocalPosterClickAnchor
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.navigation.PosterNavigationState
@@ -162,6 +166,7 @@ import com.nuvio.app.features.streams.PlaybackAvailability
 import com.nuvio.app.features.streams.rememberPlaybackAvailability
 import com.nuvio.app.features.streams.StreamLaunchStore
 import com.nuvio.app.features.streams.StreamsRepository
+import com.nuvio.app.features.tracking.RewatchPromptHost
 import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.TrackingMembershipApplyResult
 import com.nuvio.app.features.tracking.TrackingProviderId
@@ -235,6 +240,7 @@ internal fun MainAppContent(
             )
         }
         val appUpdaterController = rememberAppUpdaterController()
+        RewatchPromptHost()
         if (ownsAppRuntime) {
             remember {
                 EpisodeReleaseNotificationsRepository.ensureLoaded()
@@ -1257,7 +1263,30 @@ internal fun MainAppContent(
 
         val onContinueWatchingRemove: (ContinueWatchingItem) -> Unit = { item ->
             continueWatchingDisintegrationRequests.arm(continueWatchingItemKey(item))
-            if (item.isNextUp) {
+            // A card of a run the account is in is dropped by closing the session: that takes it out
+            // of the row on every device and keeps the watch history, which a local key cannot do.
+            val run = if (item.isNextUp) {
+                SimklSyncRepository.state.value.snapshot.rewatchRuns
+                    .firstOrNull { run -> run.matches(item.parentMetaId) }
+            } else {
+                null
+            }
+            if (run != null) {
+                coroutineScope.launch {
+                    val snapshot = SimklSyncRepository.state.value.snapshot
+                    val media = snapshot.mediaReference(
+                        contentId = run.contentId,
+                        contentType = "series",
+                    )
+                    if (!SimklMutationRepository.closeRunningRewatchSession(media)) return@launch
+                    // Closing the session removes the run everywhere, so a dismissal the row saved
+                    // under one of the run's id forms must not keep hiding the series once it is back
+                    // on its canonical card. Cleared only after the close landed.
+                    for (key in run.matchKeys) {
+                        ContinueWatchingPreferencesRepository.removeDismissedNextUpKeysForContent(key)
+                    }
+                }
+            } else if (item.isNextUp) {
                 ContinueWatchingPreferencesRepository.addDismissedNextUpKey(
                     nextUpDismissKey(
                         item.parentMetaId,

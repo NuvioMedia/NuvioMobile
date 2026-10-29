@@ -78,7 +78,12 @@ internal suspend fun dispatchTrackingScrobble(
     action: TrackingScrobbleAction,
     event: TrackingScrobbleEvent,
 ): List<TrackingScrobbleFailure> = supervisorScope {
-    scrobblers.map { scrobbler ->
+    scrobblers
+        // A playback no session owns goes only to the trackers that keep a watching state of their
+        // own: for Trakt a pause is a stop and a stop above the bar records a watch, so such an event
+        // would write a viewing that never happened.
+        .filter { scrobbler -> !event.sessionless || scrobbler.acceptsSessionlessScrobbles }
+        .map { scrobbler ->
         async {
             try {
                 scrobbler.scrobble(profileId = profileId, action = action, event = event)

@@ -10,6 +10,56 @@ class WatchingPoliciesTest {
     private val show = WatchingContentRef(type = "series", id = "show")
 
     @Test
+    fun completionFractionTurnsTheMarkerItIsGivenIntoAFraction() {
+        // The player read the tolerance off the marker already, so this only turns it into a fraction.
+        assertEquals(null, completionFractionFor(null))
+        assertEquals(0.96, completionFractionFor(96.0))
+        // A marker that is not a position in the video is not usable either, and the percentage decides.
+        // Zero is the case the tolerance can produce, by reading the margin off past the start.
+        assertEquals(null, completionFractionFor(0.0))
+        assertEquals(null, completionFractionFor(-5.0))
+        assertEquals(null, completionFractionFor(Double.NaN))
+    }
+
+    @Test
+    fun isProgressCompleteUsesTheCreditsMarkerWhenItIsKnown() {
+        // Credits at 96 percent of a 33 minute episode, read five seconds early, which is 95.75: a
+        // playback at 95.5 is not finished, one that reached 95.9 is.
+        assertFalse(
+            isProgressComplete(
+                positionMs = 1_910_000L,
+                durationMs = 2_000_000L,
+                isEnded = false,
+                completionFraction = completionFractionFor(95.75),
+            ),
+        )
+        assertTrue(
+            isProgressComplete(
+                positionMs = 1_918_000L,
+                durationMs = 2_000_000L,
+                isEnded = false,
+                completionFraction = completionFractionFor(95.75),
+            ),
+        )
+
+        // Nothing known about the credits keeps the percentage the app has always used.
+        assertFalse(
+            isProgressComplete(
+                positionMs = 1_780_000L,
+                durationMs = 2_000_000L,
+                isEnded = false,
+            ),
+        )
+        assertTrue(
+            isProgressComplete(
+                positionMs = 1_800_000L,
+                durationMs = 2_000_000L,
+                isEnded = false,
+            ),
+        )
+    }
+
+    @Test
     fun isReleasedByUsesExactInstantForZonedTimestamps() {
         val exactEpochMs = 1_768_489_200_000L // 2026-01-15T15:00:00Z
 

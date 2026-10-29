@@ -3,6 +3,7 @@ package com.nuvio.app.features.simkl
 import kotlinx.serialization.json.JsonPrimitive
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -171,6 +172,34 @@ class SimklScrobbleReconciliationTest {
         assertEquals(SimklListStatus.COMPLETED, updated.entries.single().status)
         assertEquals("2023-11-14T21:00:00Z", updated.entries.single().lastWatchedAt)
         assertEquals("tt1375666", updated.toSimklWatchedProjection().items.single().id)
+    }
+
+    @Test
+    fun `id disagreement resolves on the tv ids before the anime ids`() {
+        val local = SimklMedia(
+            title = "Show",
+            ids = mapOf(
+                "imdb" to JsonPrimitive("tt100"),
+                "mal" to JsonPrimitive(111L),
+            ),
+        )
+        val sharedAnimeId = SimklMedia(
+            title = "Show",
+            ids = mapOf(
+                "imdb" to JsonPrimitive("tt200"),
+                "mal" to JsonPrimitive(111L),
+            ),
+        )
+        val sharedImdb = SimklMedia(
+            title = "Show",
+            ids = mapOf(
+                "imdb" to JsonPrimitive("tt100"),
+                "mal" to JsonPrimitive(222L),
+            ),
+        )
+
+        assertFalse(local.matchesTarget(sharedAnimeId))
+        assertTrue(local.matchesTarget(sharedImdb))
     }
 
     private fun showMedia(simklId: Long, imdb: String) = SimklMedia(

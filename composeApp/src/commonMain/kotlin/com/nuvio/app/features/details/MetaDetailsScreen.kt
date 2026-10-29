@@ -39,7 +39,7 @@ import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAddCheckCircle
-import androidx.compose.material.icons.filled.Shuffle
+
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
@@ -139,6 +139,8 @@ import com.nuvio.app.features.trakt.TraktCommentReview
 import com.nuvio.app.features.trakt.TraktCommentsRepository
 import com.nuvio.app.features.trakt.TraktCommentsSettings
 import com.nuvio.app.features.trakt.TraktConnectionMode
+import com.nuvio.app.features.simkl.SimklSyncRepository
+import com.nuvio.app.features.simkl.rewatchedEpisodesOf
 import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.TrackingMembershipApplyResult
 import com.nuvio.app.features.tracking.toggleTrackingLibraryMembership
@@ -159,6 +161,7 @@ import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watching.application.WatchingActions
 import com.nuvio.app.features.watching.application.WatchingState
+import com.nuvio.app.features.watching.domain.watchAgainLabel
 import com.kmpalette.rememberDominantColorState
 import com.kmpalette.extensions.painter.rememberPainterDominantColorState
 import kotlinx.coroutines.delay
@@ -614,6 +617,21 @@ fun MetaDetailsScreen(
                 val movieProgress = progressByVideoId[meta.id]
                     ?.takeUnless { it.isCompleted }
                 val cwPrefs by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
+                // A rewatch run the account is in the middle of decides which episode Play offers, so
+                // the button keeps following the run instead of the old watch position.
+                val simklSnapshot = SimklSyncRepository.state.collectAsStateWithLifecycle().value.snapshot
+                val simklRewatchRuns = simklSnapshot.rewatchRuns
+                val rewatchRun = remember(simklRewatchRuns, meta.id) {
+                    simklRewatchRuns.firstOrNull { run -> run.matches(meta.id) }
+                }
+                // The episodes the running rewatch of the item has covered, for the marker the episode
+                // list draws. Only a run's own episodes are collected; without a run the set is empty
+                // and the list draws its marker exactly as it did before rewatches existed.
+                val rewatchEpisodes = remember(rewatchRun, simklSnapshot.rewatchSessions) {
+                    rewatchRun
+                        ?.let { run -> simklSnapshot.rewatchSessions.rewatchedEpisodesOf(run.contentId) }
+                        .orEmpty()
+                }
                 val shuffleSettings = shuffleProfile.settings(meta.id, meta.type)
                 val hasShuffleEpisodes = remember(meta.videos) {
                     meta.videos.any { (it.season ?: 0) > 0 && (it.episode ?: 0) > 0 }
@@ -629,7 +647,7 @@ fun MetaDetailsScreen(
                 } else {
                     null
                 }
-                val seriesAction = remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, watchedUiState.watchedKeys, shuffleSettings, shuffleVisit, shuffleProfileId) {
+                val seriesAction = remember(watchProgressUiState.entries, watchedUiState.items, meta, todayIsoDate, cwPrefs.upNextFromFurthestEpisode, cwPrefs.showUnairedNextUp, watchedUiState.watchedKeys, shuffleSettings, shuffleVisit, shuffleProfileId, rewatchRun) {
                     if (shuffleSettings.enabled) meta.shufflePrimaryAction(
                         profileId = shuffleProfileId,
                         settings = shuffleSettings,
@@ -643,8 +661,11 @@ fun MetaDetailsScreen(
                             watchedItems = watchedUiState.items,
                             todayIsoDate = todayIsoDate,
                             preferFurthestEpisode = cwPrefs.upNextFromFurthestEpisode,
+                            showUnairedNextUp = cwPrefs.showUnairedNextUp,
                             watchedKeys = watchedUiState.watchedKeys,
                             allowRewatch = true,
+                            rewatchSeasonNumber = rewatchRun?.seasonNumber,
+                            rewatchEpisodeNumber = rewatchRun?.episodeNumber,
                         )
                     }
                 }
@@ -803,13 +824,30 @@ fun MetaDetailsScreen(
                 val playText = stringResource(Res.string.action_play)
                 val resumeText = stringResource(Res.string.action_resume)
                 val chooseEpisodesText = stringResource(Res.string.shuffle_change_selection)
-                val playButtonLabel = remember(movieProgress, seriesAction, meta.type, hasEpisodes, playText, resumeText, shufflePoolEmpty, chooseEpisodesText) {
+                val watchAgainText = watchAgainLabel(seasonNumber = null, episodeNumber = null)
+                val playButtonLabel = remember(
+                    movieProgress,
+                    seriesAction,
+                    meta.type,
+                    hasEpisodes,
+                    playText,
+                    resumeText,
+                    shufflePoolEmpty,
+                    chooseEpisodesText,
+                    watchAgainText,
+                    isWatched,
+                ) {
                     when {
                         shufflePoolEmpty -> chooseEpisodesText
                         (meta.type == "series" || hasEpisodes) && seriesAction != null ->
                             seriesAction.label
-                        meta.type != "series" && !hasEpisodes && movieProgress != null ->
-                            resumeText
+                        meta.type != "series" && !hasEpisodes -> movieLikePlayLabel(
+                            hasUnfinishedProgress = movieProgress != null,
+                            isWatched = isWatched,
+                            resumeLabel = resumeText,
+                            watchAgainLabel = watchAgainText,
+                            playLabel = playText,
+                        )
                         else -> playText
                     }
                 }
@@ -1242,6 +1280,7 @@ fun MetaDetailsScreen(
                                     showManualPlayOption = showManualPlayOption,
                                     preferredEpisodeSeasonNumber = seriesAction?.seasonNumber,
                                     preferredEpisodeNumber = seriesAction?.episodeNumber,
+                                    rewatchedEpisodes = rewatchEpisodes,
                                     hasProductionSection = hasProductionSection,
                                     hasTrailersSection = hasTrailersSection,
                                     hasEpisodes = hasEpisodes,
@@ -1958,6 +1997,7 @@ private fun LazyListScope.configuredMetaSectionItems(
     watchedKeys: Set<String>,
     fullyWatchedSeriesKeys: Set<String> = emptySet(),
     blurUnwatchedEpisodes: Boolean,
+    rewatchedEpisodes: Set<Pair<Int, Int>> = emptySet(),
     onEpisodeClick: (MetaVideo) -> Unit,
     onEpisodeLongPress: (MetaVideo) -> Unit,
     onSeasonLongPress: (Int) -> Unit,
@@ -2039,6 +2079,7 @@ private fun LazyListScope.configuredMetaSectionItems(
                     watchedKeys = watchedKeys,
                     fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
                     blurUnwatchedEpisodes = blurUnwatchedEpisodes,
+                    rewatchedEpisodes = rewatchedEpisodes,
                     onEpisodeClick = onEpisodeClick,
                     onEpisodeLongPress = onEpisodeLongPress,
                     onSeasonLongPress = onSeasonLongPress,
@@ -2097,6 +2138,7 @@ private fun LazyListScope.configuredMetaSectionItems(
                     episodeRatings = episodeImdbRatings,
                     episodeRatingsVisibility = settings.episodeRatingsVisibility,
                     blurUnwatchedEpisodes = blurUnwatchedEpisodes,
+                    rewatchedEpisodes = rewatchedEpisodes,
                     onEpisodeClick = onEpisodeClick,
                     onEpisodeLongPress = onEpisodeLongPress,
                 )
@@ -2268,6 +2310,7 @@ private fun ConfiguredMetaSections(
     watchedKeys: Set<String>,
     fullyWatchedSeriesKeys: Set<String> = emptySet(),
     blurUnwatchedEpisodes: Boolean,
+    rewatchedEpisodes: Set<Pair<Int, Int>> = emptySet(),
     onEpisodeClick: (MetaVideo) -> Unit,
     onEpisodeLongPress: (MetaVideo) -> Unit,
     onSeasonLongPress: (Int) -> Unit,
@@ -2377,6 +2420,7 @@ private fun ConfiguredMetaSections(
                         episodeRatings = episodeImdbRatings,
                         episodeRatingsVisibility = settings.episodeRatingsVisibility,
                         blurUnwatchedEpisodes = blurUnwatchedEpisodes,
+                        rewatchedEpisodes = rewatchedEpisodes,
                         onEpisodeClick = onEpisodeClick,
                         onEpisodeLongPress = onEpisodeLongPress,
                         onSeasonLongPress = onSeasonLongPress,

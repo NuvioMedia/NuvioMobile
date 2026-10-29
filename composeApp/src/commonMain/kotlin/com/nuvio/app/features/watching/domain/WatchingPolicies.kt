@@ -8,6 +8,7 @@ import com.nuvio.app.core.time.parseEpisodeReleaseLocalDate
 
 private const val CompletionThresholdFraction = 0.90
 private const val ProgressStoreThresholdMs = 1_000L
+
 private const val UpcomingNextSeasonWindowDays = 7
 
 /**
@@ -28,17 +29,40 @@ fun shouldStoreProgress(
     durationMs: Long,
 ): Boolean = !isShortPlaceholderDuration(durationMs) && positionMs >= ProgressStoreThresholdMs
 
+/**
+ * Where a playback counts as finished as a fraction, from the credits marker of the release being
+ * played.
+ *
+ * The marker arrives already read with its tolerance, five seconds early, from the player, so it is
+ * only turned into a fraction here and nothing is taken off twice.
+ *
+ * Null when nothing is known about the credits, and the percentage the app has always used decides.
+ */
+internal fun completionFractionFor(contentEndPercent: Double?): Double? =
+    contentEndPercent
+        // A marker at the very start is not a point the content can be finished at: read with its
+        // tolerance the margin can land on zero, and every playback would then be a finished one.
+        ?.takeIf { percent -> percent.isFinite() && percent > 0.0 }
+        ?.let { percent -> percent / 100.0 }
+        ?.takeIf { fraction -> fraction in 0.0..1.0 }
+
+/**
+ * [completionFraction], when the caller knows it, is where the content really ends. It replaces the
+ * usual percentage, so a playback that stopped before the credits is not a finished one, whatever
+ * percentage it happens to sit at.
+ */
 fun isProgressComplete(
     positionMs: Long,
     durationMs: Long,
     isEnded: Boolean,
+    completionFraction: Double? = null,
 ): Boolean {
     if (isShortPlaceholderDuration(durationMs)) return false
     if (isEnded) return true
     if (durationMs <= 0L) return false
 
     val watchedFraction = positionMs.toDouble() / durationMs.toDouble()
-    return watchedFraction >= CompletionThresholdFraction
+    return watchedFraction >= (completionFraction ?: CompletionThresholdFraction)
 }
 
 /**

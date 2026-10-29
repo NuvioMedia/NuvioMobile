@@ -50,24 +50,36 @@ internal suspend fun recordExternalPlaybackProgress(
             positionMs = result.positionMs,
         ),
     )
-    if (durationMs != null && durationMs > 0L) {
-        val media = buildTrackingMediaReference(
-            contentType = session.parentMetaType,
-            parentMetaId = session.parentMetaId,
-            videoId = session.videoId,
-            title = session.title,
-            seasonNumber = session.seasonNumber,
-            episodeNumber = session.episodeNumber,
-            episodeTitle = session.episodeTitle,
-        )
-        if (media.hasResolvableIdentity) {
+    val media = buildTrackingMediaReference(
+        contentType = session.parentMetaType,
+        parentMetaId = session.parentMetaId,
+        videoId = session.videoId,
+        title = session.title,
+        seasonNumber = session.seasonNumber,
+        episodeNumber = session.episodeNumber,
+        episodeTitle = session.episodeTitle,
+    )
+    if (media.hasResolvableIdentity) {
+        val completed = !result.endedByUser
+        val knownDurationMs = durationMs ?: 0L
+        // A result the user ended without a duration has no percentage to report, and a completion
+        // without one is the end by definition. A start is not sent: this result arrives after the
+        // external player closed, so a watching-now report would be stale by the time it lands.
+        if (knownDurationMs > 0L || completed) {
+            val progressPercent = if (completed || knownDurationMs <= 0L) {
+                100.0
+            } else {
+                (result.positionMs.toDouble() / knownDurationMs.toDouble() * 100).coerceIn(0.0, 100.0)
+            }
             runCatching {
                 TrackingScrobbleCoordinator.scrobble(
                     profileId = session.profileId,
                     action = TrackingScrobbleAction.STOP,
                     event = TrackingScrobbleEvent(
                         media = media,
-                        progressPercent = (result.positionMs.toDouble() / durationMs.toDouble() * 100).coerceIn(0.0, 100.0),
+                        progressPercent = progressPercent,
+                        hasPlaybackSession = true,
+                        playbackId = nextScrobblePlaybackId(),
                     ),
                 )
             }

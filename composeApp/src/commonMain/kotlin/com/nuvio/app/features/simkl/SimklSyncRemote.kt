@@ -28,7 +28,31 @@ internal interface SimklSyncRemote {
     suspend fun fetchActivities(): SimklActivities
     suspend fun fetchAllItems(request: SimklAllItemsRequest): SimklAllItemsResponse
     suspend fun fetchPlayback(): List<SimklPlaybackSession>
+
+    /**
+     * The account's rewatch sessions, for every type a run can come from. This is a separate read
+     * on purpose: a session comes back as a sidecar row with the same show as the canonical row, so
+     * feeding it into [fetchAllItems] would let rewatch progress replace the canonical watch
+     * position.
+     *
+     * [dateFrom] pairs the read with the sync watermark the way the rewatches guide asks: the
+     * server then returns the items changed since it, with their session rows, and the caller
+     * merges that delta into the sessions the snapshot already holds. Null reads the whole
+     * library, which only the initial sync (and a recovery read) may do.
+     */
+    suspend fun fetchRewatchSessions(dateFrom: String?): List<SimklLibraryEntry>
 }
+
+/**
+ * The types a rewatch session can come from: shows and anime. Anime is its own type in the API, so
+ * reading shows alone left a rewatch the account holds for an anime without a run here. A movie
+ * session carries no episodes, so it never becomes a run, and reading the movies library would be a
+ * whole library call for nothing.
+ */
+private val REWATCH_SESSION_TYPES = listOf(
+    SimklMediaType.SHOWS,
+    SimklMediaType.ANIME,
+)
 
 internal class SimklApiSyncRemote(
     private val client: SimklApiClient = SimklApi.client,
@@ -85,6 +109,30 @@ internal class SimklApiSyncRemote(
                 path = "/sync/playback",
             ),
         ).body.decode()
+
+    override suspend fun fetchRewatchSessions(dateFrom: String?): List<SimklLibraryEntry> =
+        REWATCH_SESSION_TYPES.flatMap { type -> fetchRewatchSessions(type, dateFrom) }
+
+    private suspend fun fetchRewatchSessions(
+        type: SimklMediaType,
+        dateFrom: String?,
+    ): List<SimklLibraryEntry> =
+        client.execute(
+            SimklApiRequest(
+                method = SimklHttpMethod.GET,
+                path = "/sync/all-items/${type.apiValue}",
+                query = buildMap {
+                    put("extended", "full")
+                    put("allow_rewatch", "yes")
+                    put("episode_watched_at", "yes")
+                    put("language", "en")
+                    // The guide's rule for this read: always pair it with date_from outside the
+                    // initial sync. The delta carries the session rows of the changed items only,
+                    // so every caller outside the initial sync hands one in and merges the result.
+                    dateFrom?.let { value -> put("date_from", value) }
+                },
+            ),
+        ).body.decodeAllItems().entriesFor(type)
 
     private inline fun <reified T> String.decode(): T = json.decodeFromString(this)
 

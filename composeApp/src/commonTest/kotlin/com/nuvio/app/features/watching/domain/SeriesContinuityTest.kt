@@ -36,7 +36,7 @@ class SeriesContinuityTest {
 
         assertNotNull(action)
         assertEquals("show:1:1", action.videoId)
-        assertEquals("Play S1 E1", action.label)
+        assertEquals("Watch again S1 E1", action.label)
         assertNull(action.resumePositionMs)
     }
 
@@ -226,6 +226,33 @@ class SeriesContinuityTest {
         assertEquals("Next Up • S1 E3", action.label)
         assertEquals("show:1:3", action.videoId)
         assertEquals(3, action.episodeNumber)
+    }
+
+    @Test
+    fun decideSeriesPrimaryAction_resumes_the_run_episode_with_saved_progress() {
+        val action = decideSeriesPrimaryAction(
+            content = show,
+            episodes = episodes,
+            progressRecords = listOf(
+                WatchingProgressRecord(
+                    content = show,
+                    videoId = "show:1:2",
+                    seasonNumber = 1,
+                    episodeNumber = 2,
+                    lastUpdatedEpochMs = 300L,
+                    lastPositionMs = 1_500L,
+                ),
+            ),
+            watchedRecords = emptyList(),
+            todayIsoDate = "2026-03-30",
+            rewatchSeasonNumber = 1,
+            rewatchEpisodeNumber = 1,
+        )
+
+        assertNotNull(action)
+        assertEquals("Resume S1 E2", action.label)
+        assertEquals("show:1:2", action.videoId)
+        assertEquals(1_500L, action.resumePositionMs)
     }
 
     @Test

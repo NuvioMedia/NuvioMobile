@@ -175,9 +175,14 @@ internal class PlayerScreenRuntime(
     var lastProgressPersistEpochMs by mutableStateOf(0L)
     var previousIsPlaying by mutableStateOf(false)
     var hasRequestedScrobbleStartForCurrentItem by mutableStateOf(false)
+    /** A start was sent for this item while the playback was already past the completion bar. */
+    var hasSentStartAboveCompletionBarForCurrentItem by mutableStateOf(false)
     var scrobbleStartRequestGeneration by mutableStateOf(0L)
     var pendingSeekScrobbleRestart by mutableStateOf(false)
     var hasSentCompletionScrobbleForCurrentItem by mutableStateOf(false)
+    /** A playback session was opened for this item, even if a pause has since closed it. */
+    var hasOpenedScrobbleSessionForCurrentItem by mutableStateOf(false)
+    var scrobblePlaybackId by mutableStateOf(0L)
     var currentTrackingMedia by mutableStateOf<TrackingMediaReference?>(null)
 
     var showSourcesPanel by mutableStateOf(false)
@@ -196,6 +201,14 @@ internal class PlayerScreenRuntime(
     var playerMetaVideos by mutableStateOf<List<MetaVideo>>(emptyList())
     var playerMeta by mutableStateOf<MetaDetails?>(null)
     var skipIntervals by mutableStateOf<List<SkipInterval>>(emptyList())
+    /**
+     * The credits marker of the current item, resolved even when the skip buttons are turned off.
+     *
+     * It answers a second question, where a playback really ends, so that the tracker does not have to
+     * rely on a percentage alone. The repository caches what it finds, so with skipping on this is the
+     * same answer the skip button asked for, not another request.
+     */
+    var contentEndIntervals by mutableStateOf<List<SkipInterval>>(emptyList())
     val autoSkippedIntervals = mutableSetOf<SkipInterval>()
     var lastManualSkipSeekPositions by mutableStateOf<Pair<Long, Long>?>(null)
     var activeSkipInterval by mutableStateOf<SkipInterval?>(null)

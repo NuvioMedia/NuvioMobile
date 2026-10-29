@@ -5,6 +5,7 @@ import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.tracking.TrackingProfileStore
 import com.nuvio.app.features.tracking.TrackingProviderId
 import com.nuvio.app.features.tracking.TrackingProviderRegistry
+import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tracking.TrackingRefreshIntent
 import kotlinx.atomicfu.atomic
 import kotlinx.coroutines.CancellationException
@@ -125,7 +126,7 @@ object SimklSyncRepository : TrackingProfileStore {
                 eligible
             },
         ) {
-            refreshSnapshot(requestedGeneration)
+            refreshSnapshot(requestedGeneration, forceRewatchRead = intent == TrackingRefreshIntent.USER_INITIATED)
         }
         SimklWatchDiagnostics.logRefreshCompletion(
             requestId = requestId,
@@ -143,13 +144,16 @@ object SimklSyncRepository : TrackingProfileStore {
             completed.errorMessage == null
     }
 
-    private suspend fun refreshSnapshot(generation: Long) = snapshotMutex.withLock {
+    private suspend fun refreshSnapshot(
+        generation: Long,
+        forceRewatchRead: Boolean = false,
+    ) = snapshotMutex.withLock {
         val profileId = ProfileRepository.activeProfileId
         val previous = _state.value
         _state.value = previous.copy(isLoading = true, errorMessage = null)
 
         val result = try {
-            engine.synchronize(previous.snapshot)
+            engine.synchronize(previous.snapshot, forceRewatchRead = forceRewatchRead)
         } catch (error: CancellationException) {
             throw error
         } catch (error: Throwable) {
@@ -237,7 +241,113 @@ object SimklSyncRepository : TrackingProfileStore {
         }
     }
 
+    /**
+     * Stores the runs the account's rewatch sessions make, so a rewatch the user just confirmed shows
+     * up in Continue Watching at once instead of after the next sync. The sessions come from the
+     * caller, which read them to answer whether the write landed; only the running rewatch sessions
+     * are kept, never the canonical rows read beside them.
+     */
+    internal suspend fun adoptRewatchSessions(sessions: List<SimklLibraryEntry>) {
+        // The preferences are read through the load, never through their defaults: the flow starts
+        // at Off, and a derivation taken before the load would drop the runs it is handed.
+        ensureLoaded()
+        // What the caller read is a delta outside the initial sync (it was paired with the sync
+        // watermark): it carries the changed items only, so merging it keeps the sessions of the
+        // items it did not mention. A full read merges the same way: it mentions every item, which
+        // makes the read the whole set again. The merge runs under the snapshot lock, against the
+        // sessions it is actually replacing, so a sync that lands in between is not overwritten.
+        persistRewatchSessions { stored -> mergeRewatchSessions(sessions, stored) }
+    }
+
+    /**
+     * Drops a session the app itself closed, so the row follows at once instead of at the settle
+     * read. The read-back still replaces this with whatever the account reports.
+     */
+    internal suspend fun dropRewatchSession(sessionId: Long) {
+        ensureLoaded()
+        persistRewatchSessions { stored ->
+            stored.filterNot { session -> session.rewatchId == sessionId }
+        }
+    }
+
+    private suspend fun persistRewatchSessions(
+        transform: (List<SimklLibraryEntry>) -> List<SimklLibraryEntry>,
+    ) {
+        val generation = profileGeneration
+        val profileId = ProfileRepository.activeProfileId
+        snapshotMutex.withLock {
+            if (generation != profileGeneration || profileId != ProfileRepository.activeProfileId) {
+                return@withLock
+            }
+            val current = _state.value
+            val runningSessions = transform(current.snapshot.rewatchSessions)
+            val runs = runCatching {
+                deriveSimklRewatchRuns(
+                    entries = runningSessions,
+                    animeIdPreference = TrackingSettingsRepository.uiState.value.simklAnimeIdPreference,
+                    offerRuns = TrackingSettingsRepository.uiState.value.simklRewatchMode != SimklRewatchMode.OFF,
+                )
+            }.getOrElse { error ->
+                log.w { "Could not read the runs out of the rewatch sessions: ${error.message}" }
+                return@withLock
+            }
+            if (
+                current.snapshot.rewatchRuns == runs &&
+                current.snapshot.rewatchSessions == runningSessions
+            ) {
+                return@withLock
+            }
+            val snapshot = current.snapshot.copy(rewatchRuns = runs, rewatchSessions = runningSessions)
+            SimklSyncStorage.savePayload(json.encodeToString(snapshot))
+            if (generation == profileGeneration && profileId == ProfileRepository.activeProfileId) {
+                _state.value = current.copy(snapshot = snapshot)
+                SimklWatchDiagnostics.logSnapshot(stage = "rewatch-sessions", snapshot = snapshot)
+            }
+        }
+    }
+
+    /**
+     * Re-derives the runs after the user changed how much of a rewatch should be offered.
+     *
+     * The sessions of the last read are kept on the snapshot, so the row follows the setting at once
+     * instead of at the next sync, and it works offline. With nothing read yet there is nothing to
+     * re-derive, and the next sync picks the setting up on its own.
+     */
+    internal suspend fun refreshRewatchRuns() {
+        ensureLoaded()
+        val sessions = _state.value.snapshot.rewatchSessions
+        if (sessions.isEmpty()) return
+        val settings = TrackingSettingsRepository.uiState.value
+        val runs = runCatching {
+            deriveSimklRewatchRuns(
+                entries = sessions,
+                animeIdPreference = settings.simklAnimeIdPreference,
+                offerRuns = settings.simklRewatchMode != SimklRewatchMode.OFF,
+            )
+        }.getOrElse { error ->
+            log.w { "Could not re-derive the runs after a setting change: ${error.message}" }
+            return
+        }
+        val generation = profileGeneration
+        val profileId = ProfileRepository.activeProfileId
+        snapshotMutex.withLock {
+            if (generation != profileGeneration || profileId != ProfileRepository.activeProfileId) {
+                return@withLock
+            }
+            val current = _state.value
+            if (current.snapshot.rewatchRuns == runs) return@withLock
+            val snapshot = current.snapshot.copy(rewatchRuns = runs)
+            SimklSyncStorage.savePayload(json.encodeToString(snapshot))
+            if (generation == profileGeneration && profileId == ProfileRepository.activeProfileId) {
+                _state.value = current.copy(snapshot = snapshot)
+                SimklWatchDiagnostics.logSnapshot(stage = "rewatch-next-up-mode", snapshot = snapshot)
+            }
+        }
+    }
+
     override fun onProfileChanged() {
+        // The answers belong to the profile that gave them: a profile switch starts from nothing.
+        SimklRewatchConsentRepository.clear()
         profileGeneration += 1L
         hasLoaded = false
         _state.value = SimklSyncUiState()

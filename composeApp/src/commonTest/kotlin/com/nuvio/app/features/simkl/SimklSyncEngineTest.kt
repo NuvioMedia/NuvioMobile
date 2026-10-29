@@ -1,6 +1,7 @@
 package com.nuvio.app.features.simkl
 
 import com.nuvio.app.features.addons.RawHttpResponse
+import com.nuvio.app.features.tracking.RewatchRunPosition
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
@@ -67,6 +68,7 @@ class SimklSyncEngineTest {
             watermark = "v1",
             activities = activities(all = "v1"),
             entries = listOf(entry(SimklMediaType.SHOWS, "1")),
+            rewatchSessionsComplete = true,
             lastCheckedAtEpochMs = 10L,
         )
         val remote = ScriptedRemote(Step.Activities(activities(all = "v1")))
@@ -387,6 +389,8 @@ class SimklSyncEngineTest {
         remote.fetchAllItems(SimklAllItemsRequest.Bootstrap(SimklMediaType.SHOWS))
         remote.fetchAllItems(SimklAllItemsRequest.Changes("2026-05-08T14:23:11Z"))
         remote.fetchAllItems(SimklAllItemsRequest.CurrentIds)
+        remote.fetchRewatchSessions("2026-05-08T14:23:11Z")
+        remote.fetchRewatchSessions(null)
 
         assertFalse("date_from=" in urls[0])
         assertTrue("extended=full" in urls[0])
@@ -399,6 +403,15 @@ class SimklSyncEngineTest {
         assertTrue("episode_tvdb_id=yes" in urls[1])
         assertTrue("include_all_episodes=yes" in urls[1])
         assertTrue("extended=simkl_ids_only" in urls[2])
+        assertTrue("/shows" in urls[3])
+        assertTrue("allow_rewatch=yes" in urls[3])
+        assertTrue("date_from=2026-05-08T14%3A23%3A11Z" in urls[3])
+        assertTrue("/anime" in urls[4])
+        assertTrue("date_from=2026-05-08T14%3A23%3A11Z" in urls[4])
+        assertTrue("allow_rewatch=yes" in urls[5])
+        assertFalse("date_from=" in urls[5])
+        assertTrue("allow_rewatch=yes" in urls[6])
+        assertFalse("date_from=" in urls[6])
     }
 
     @Test
@@ -425,10 +438,91 @@ class SimklSyncEngineTest {
         }
     }
 
+    @Test
+    fun `delta merge drops a row the same media is already held by under another key`() {
+        val stale = SimklLibraryEntry(
+            mediaType = SimklMediaType.SHOWS,
+            status = SimklListStatus.WATCHING,
+            show = SimklMedia(title = "Title 10", ids = buildJsonObject { put("tmdb", 555L) }),
+        )
+        val fresh = SimklLibraryEntry(
+            mediaType = SimklMediaType.SHOWS,
+            status = SimklListStatus.WATCHING,
+            show = SimklMedia(
+                title = "Title 20",
+                ids = buildJsonObject {
+                    put("simkl", 20L)
+                    put("tmdb", 555L)
+                },
+            ),
+        )
+
+        val merged = mergeDelta(listOf(stale), responseOf(fresh))
+
+        assertEquals(listOf(fresh), merged)
+    }
+
+    @Test
+    fun `a sync with rewatches off keeps the stored sessions and drops only the runs`() = runBlocking {
+        val session = entry(SimklMediaType.SHOWS, "900").copy(
+            isRewatch = true,
+            rewatchId = 7L,
+            rewatchStatus = "active",
+        )
+        val previousDomain = SimklActivityDomain(
+            all = "d1",
+            ratedAt = "rated1",
+            playback = "playback",
+            plantowatch = "plantowatch1",
+            watching = "watching1",
+            completed = "completed1",
+            hold = "hold1",
+            dropped = "dropped1",
+            removedFromList = "removed",
+        )
+        val current = SimklSyncSnapshot(
+            isInitialized = true,
+            watermark = "v1",
+            activities = SimklActivities(
+                all = "v1",
+                tvShows = previousDomain,
+                movies = previousDomain,
+                anime = previousDomain,
+            ),
+            entries = listOf(entry(SimklMediaType.SHOWS, "10")),
+            rewatchSessions = listOf(session),
+            rewatchRuns = listOf(
+                RewatchRunPosition(
+                    contentId = "10",
+                    seasonNumber = 1,
+                    episodeNumber = 2,
+                    markedAtEpochMs = 1L,
+                ),
+            ),
+        )
+        val remote = ScriptedRemote(
+            Step.Activities(
+                SimklActivities(
+                    all = "v2",
+                    tvShows = previousDomain.copy(all = "d2"),
+                    movies = previousDomain,
+                    anime = previousDomain,
+                ),
+            ),
+            Step.AllItems(null, SimklAllItemsResponse()),
+        )
+
+        val synced = SimklSyncEngine(remote) { 900L }.synchronize(current)
+
+        assertEquals(emptyList<RewatchRunPosition>(), synced.rewatchRuns)
+        assertEquals(listOf(session), synced.rewatchSessions)
+    }
+
     private sealed interface Step {
         data class Activities(val value: SimklActivities) : Step
         data class AllItems(val type: SimklMediaType?, val value: SimklAllItemsResponse) : Step
         data class Playback(val value: List<SimklPlaybackSession>) : Step
+        data class RewatchSessions(val value: List<SimklLibraryEntry>) : Step
         data class Failure(val error: Throwable) : Step
     }
 
@@ -459,6 +553,14 @@ class SimklSyncEngineTest {
             is Step.Playback -> step.value
             is Step.Failure -> throw step.error
             else -> error("Expected playback, got $step")
+        }
+
+        /** The rewatch read stays out of the scripted order: it only consumes a step when one fits. */
+        override suspend fun fetchRewatchSessions(dateFrom: String?): List<SimklLibraryEntry> {
+            val step = remaining.firstOrNull() ?: return emptyList()
+            if (step !is Step.RewatchSessions) return emptyList()
+            remaining.removeAt(0)
+            return step.value
         }
 
         private fun next(): Step = remaining.removeAt(0)

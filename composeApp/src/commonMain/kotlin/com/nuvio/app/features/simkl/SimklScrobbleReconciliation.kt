@@ -227,6 +227,43 @@ private fun List<SimklLibraryEntry>.matchingEntry(
     result: SimklScrobbleResult,
 ): SimklLibraryEntry? = getOrNull(indexOfMatchingEntry(result))
 
+/**
+ * Reads the canonical history for the item a scrobble touched, so the caller can tell whether the
+ * playback was a repeat viewing and how long ago the previous one was.
+ */
+internal fun SimklSyncSnapshot.priorWatchForScrobble(result: SimklScrobbleResult): SimklPriorWatch {
+    val entry = entries.matchingEntry(result) ?: return SimklPriorWatch.None
+    val isMovie = result.mediaType == SimklMediaType.MOVIES ||
+        (result.mediaType == SimklMediaType.ANIME && (entry.animeType == "movie" || result.episode == null))
+    if (isMovie) {
+        if (entry.status == SimklListStatus.PLAN_TO_WATCH) return SimklPriorWatch.None
+        return SimklPriorWatch(
+            wasWatched = true,
+            watchedAtEpochMs = entry.lastWatchedAt?.let(::parseSimklUtcEpochMs),
+        )
+    }
+    val target = result.episode ?: return SimklPriorWatch.None
+    val targetNumber = target.number ?: return SimklPriorWatch.None
+    val targetSeason = target.season ?: 1
+    val targetMapping = if (target.tvdbSeason != null && target.tvdbNumber != null) {
+        SimklEpisodeMapping(target.tvdbSeason, target.tvdbNumber)
+    } else {
+        null
+    }
+    val watchedAt = entry.seasons
+        .flatMap { season -> season.episodes.map { episode -> season.number to episode } }
+        .firstOrNull { (seasonNumber, episode) ->
+            episode.matches(targetSeason, targetNumber, targetMapping, seasonNumber)
+        }
+        ?.second
+        ?.watchedAt
+        ?: return SimklPriorWatch.None
+    return SimklPriorWatch(
+        wasWatched = true,
+        watchedAtEpochMs = parseSimklUtcEpochMs(watchedAt),
+    )
+}
+
 private fun List<SimklLibraryEntry>.indexOfMatchingEntry(
     result: SimklScrobbleResult,
 ): Int {
@@ -250,17 +287,20 @@ internal fun SimklMedia.matchesTarget(target: SimklMedia): Boolean {
 }
 
 private fun TrackingExternalIds.comparableMatch(target: TrackingExternalIds): Boolean? {
+    // The ids a row is judged on, most trustworthy first: the anime-side ids (mal, anidb, anilist,
+    // kitsu) sit behind the tv ids because siblings of one show share them and a row could be
+    // matched on the wrong one. Mirrors the TV's order.
     if (simkl != null && target.simkl != null) return simkl == target.simkl
-    if (mal != null && target.mal != null) return mal == target.mal
-    if (anidb != null && target.anidb != null) return anidb == target.anidb
-    if (anilist != null && target.anilist != null) return anilist == target.anilist
-    if (kitsu != null && target.kitsu != null) return kitsu == target.kitsu
-    if (!tvdb.isNullOrBlank() && !target.tvdb.isNullOrBlank()) {
-        return tvdb.equals(target.tvdb, ignoreCase = true)
-    }
     if (!imdb.isNullOrBlank() && !target.imdb.isNullOrBlank()) {
         return imdb.equals(target.imdb, ignoreCase = true)
     }
     if (tmdb != null && target.tmdb != null) return tmdb == target.tmdb
+    if (!tvdb.isNullOrBlank() && !target.tvdb.isNullOrBlank()) {
+        return tvdb.equals(target.tvdb, ignoreCase = true)
+    }
+    if (mal != null && target.mal != null) return mal == target.mal
+    if (anidb != null && target.anidb != null) return anidb == target.anidb
+    if (anilist != null && target.anilist != null) return anilist == target.anilist
+    if (kitsu != null && target.kitsu != null) return kitsu == target.kitsu
     return null
 }

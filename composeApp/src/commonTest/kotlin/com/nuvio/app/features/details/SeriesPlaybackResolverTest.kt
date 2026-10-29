@@ -42,7 +42,7 @@ class SeriesPlaybackResolverTest {
         assertEquals(1, action.seasonNumber)
         assertEquals(1, action.episodeNumber)
         assertEquals("Pilot", action.episodeTitle)
-        assertEquals("Play S1 E1", action.label)
+        assertEquals("Watch again S1 E1", action.label)
         assertNull(action.resumePositionMs)
     }
 

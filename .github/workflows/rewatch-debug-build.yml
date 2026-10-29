@@ -1,0 +1,163 @@
+name: Rewatch debug build
+
+# Temporary fork-only workflow: builds and tests the Simkl rewatch work so it can be verified
+# without a local JVM. It is not part of the pull request.
+#
+# Three failures are known to predate the port -- a pristine checkout of the base branch fails them
+# on this runner as well: `AndroidDownloadLifecycleTest` cannot build its Robolectric sandbox there,
+# and `RatingsVisibilityTest` and `WatchProgressIdentityTest` fail upstream. They are whitelisted
+# instead of masking real failures.
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - simkl-rewatch-build-2
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rewatch-debug-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-and-build:
+    name: Unit tests and debug APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SIMKL_CLIENT_ID: ${{ secrets.SIMKL_CLIENT_ID }}
+      SIMKL_APP_NAME: ${{ secrets.SIMKL_APP_NAME }}
+      SIMKL_REDIRECT_URI: ${{ secrets.SIMKL_REDIRECT_URI }}
+      NUVIO_SUPABASE_URL: ${{ secrets.NUVIO_SUPABASE_URL }}
+      NUVIO_SUPABASE_ANON_KEY: ${{ secrets.NUVIO_SUPABASE_ANON_KEY }}
+      NUVIO_SUPABASE_FALLBACK_URL: ${{ secrets.NUVIO_SUPABASE_FALLBACK_URL }}
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Decode the keystore so every test APK keeps the same signature
+        run: printf '%s' "${{ secrets.NUVIO_KEYSTORE_B64 }}" | base64 -d > nuvio-test.jks && ls -la nuvio-test.jks
+
+      - name: Write runtime properties
+        run: |
+          printf '%s\n' \
+            "SIMKL_CLIENT_ID=${SIMKL_CLIENT_ID}" \
+            "SIMKL_APP_NAME=${SIMKL_APP_NAME}" \
+            "SIMKL_REDIRECT_URI=${SIMKL_REDIRECT_URI}" \
+            "NUVIO_SUPABASE_URL=${NUVIO_SUPABASE_URL}" \
+            "NUVIO_SUPABASE_ANON_KEY=${NUVIO_SUPABASE_ANON_KEY}" \
+            "NUVIO_SUPABASE_FALLBACK_URL=${NUVIO_SUPABASE_FALLBACK_URL}" \
+            > local.properties
+
+      - name: Compile host tests
+        run: ./gradlew :composeApp:compileAndroidHostTest --stacktrace
+
+      - name: Unit tests
+        id: tests
+        # The port is still being verified; a failing test must not hold back the report or the
+        # APK, so the run keeps going and the reports travel as an artifact below.
+        continue-on-error: true
+        run: |
+          set +e
+          ./gradlew :composeApp:testAndroidHostTest --continue --stacktrace
+          gradle_status=$?
+          set -e
+          python3 - <<'PY'
+          import glob
+          import sys
+          import xml.etree.ElementTree as ET
+
+          known_failures = (
+              # Fail on this runner on a pristine checkout of the base branch as well.
+              "AndroidDownloadLifecycleTest",
+              "RatingsVisibilityTest.allEpisodeLayoutsRespectVisibilityForFetchedAndAddonRatings",
+              "WatchProgressIdentityTest.legacy payload derives episode progress key",
+          )
+          reports = glob.glob("composeApp/build/test-results/testAndroidHostTest/*.xml")
+          if not reports:
+              print("No test reports were produced.")
+              sys.exit(1)
+
+          total = 0
+          failures = []
+          known = 0
+          for path in reports:
+              root = ET.parse(path).getroot()
+              for case in root.iter("testcase"):
+                  total += 1
+                  if case.find("failure") is None and case.find("error") is None:
+                      continue
+                  name = f'{case.get("classname")}.{case.get("name")}'
+                  if any(known in name for known in known_failures):
+                      known += 1
+                  else:
+                      failures.append(name)
+
+          print(f"{total} tests, {known} known failures, {len(failures)} unexpected")
+          if failures:
+              for name in failures:
+                  print(f"  FAILED {name}")
+              sys.exit(1)
+          if total < 500:
+              print("Suspiciously few tests ran.")
+              sys.exit(1)
+          PY
+          echo "gradle exit code was ${gradle_status}"
+
+      - name: Keep the test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: mobile-port-test-results
+          path: composeApp/build/test-results/testAndroidHostTest/*.xml
+          if-no-files-found: warn
+
+      - name: Give the fork build its own package
+        run: |
+          # The fork installs next to the official app, so it cannot use the same package. This is
+          # done here rather than in the sources to keep the change set upstream clean.
+          sed -i 's|applicationId = "com.nuvio.app"|applicationId = "com.judzim.nuvio"|' androidApp/build.gradle.kts
+          sed -i 's|<string name="app_name">Nuvio</string>|<string name="app_name">Nuvio Judzim</string>|' composeApp/src/androidMain/res/values/strings.xml
+          grep -n 'applicationId = ' androidApp/build.gradle.kts
+          grep -n 'app_name' composeApp/src/androidMain/res/values/strings.xml
+
+      - name: Assemble release APK
+        run: |
+          # lintVital is a release-only check that takes minutes and has nothing to do with the APK
+          # this build exists for, and it is where the runner gave up once.
+          ./gradlew :androidApp:assemblePlaystoreRelease --stacktrace \
+            -x lintVitalPlaystoreRelease \
+            -x lintVitalAnalyzePlaystoreRelease \
+            -x lintVitalReportPlaystoreRelease \
+            -Pandroid.injected.signing.store.file="$PWD/nuvio-test.jks" \
+            -Pandroid.injected.signing.store.password="${{ secrets.NUVIO_RELEASE_STORE_PASSWORD }}" \
+            -Pandroid.injected.signing.key.alias="${{ secrets.NUVIO_RELEASE_KEY_ALIAS }}" \
+            -Pandroid.injected.signing.key.password="${{ secrets.NUVIO_RELEASE_KEY_PASSWORD }}"
+
+      - name: Upload release APK
+        uses: actions/upload-artifact@v7
+        with:
+          name: rewatch-playstore-release
+          path: androidApp/build/outputs/apk/playstore/release/*.apk
+          if-no-files-found: error
+
+      - name: Fail the run when the tests failed
+        # The unit tests above are allowed to fail, so that their report and the APK are still
+        # produced; the side effect was that a red suite looked like a green run. This step reads the
+        # step's real outcome back, so the run turns red while everything it built is still uploaded.
+        if: always() && steps.tests.outcome == 'failure'
+        run: |
+          echo "The unit tests failed: read the summary above and the test artifact."
+          exit 1

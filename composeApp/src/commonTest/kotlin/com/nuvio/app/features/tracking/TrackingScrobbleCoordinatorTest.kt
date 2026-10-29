@@ -55,9 +55,45 @@ class TrackingScrobbleCoordinatorTest {
         assertEquals(0, simkl.callCount)
     }
 
+    @Test
+    fun `a sessionless event reaches only the scrobblers that take it`() = runBlocking {
+        val simkl = FakeScrobbler(TrackingProviderId.SIMKL, acceptsSessionlessScrobbles = true)
+        val trakt = FakeScrobbler(TrackingProviderId.TRAKT)
+        val event = TrackingScrobbleEvent(
+            media = TrackingMediaReference(
+                kind = TrackingMediaKind.MOVIE,
+                ids = TrackingExternalIds(imdb = "tt0111161"),
+            ),
+            progressPercent = 90.0,
+            sessionless = true,
+        )
+
+        dispatchTrackingScrobble(
+            scrobblers = listOf(simkl, trakt),
+            profileId = 2,
+            action = TrackingScrobbleAction.PAUSE,
+            event = event,
+        )
+
+        assertEquals(1, simkl.callCount)
+        assertEquals(0, trakt.callCount)
+
+        // An event a session owns reaches every one of them.
+        dispatchTrackingScrobble(
+            scrobblers = listOf(simkl, trakt),
+            profileId = 2,
+            action = TrackingScrobbleAction.PAUSE,
+            event = event.copy(sessionless = false),
+        )
+
+        assertEquals(2, simkl.callCount)
+        assertEquals(1, trakt.callCount)
+    }
+
     private class FakeScrobbler(
         override val providerId: TrackingProviderId,
         override val seekScrobblePolicy: TrackingSeekScrobblePolicy = TrackingSeekScrobblePolicy.NONE,
+        override val acceptsSessionlessScrobbles: Boolean = false,
         private val failure: Throwable? = null,
     ) : TrackingScrobbler {
         var callCount: Int = 0

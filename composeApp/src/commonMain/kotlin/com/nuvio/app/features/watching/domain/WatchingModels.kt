@@ -55,4 +55,10 @@ data class WatchingSeriesPrimaryAction(
     val episodeTitle: String?,
     val episodeThumbnail: String?,
     val resumePositionMs: Long?,
+    /**
+     * True when the action restarts a series that has been watched to its end. Continue Watching
+     * must not treat that as a next episode: the row would fill up with S01E01 cards for every
+     * series the user ever finished.
+     */
+    val isWatchAgain: Boolean = false,
 )

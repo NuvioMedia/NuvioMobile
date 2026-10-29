@@ -346,6 +346,31 @@ class SimklMutationRepositoryTest {
 
     private fun String.asObject() = json.parseToJsonElement(this).jsonObject
 
+    @Test
+    fun `a mark that is a repeat viewing carries the flag and the run it joins`() {
+        val repeat = buildSimklHistoryMutationBody(
+            listOf(
+                TrackingHistoryItem(
+                    show(TrackingEpisode(season = 1, number = 1)),
+                    watchedAtEpochMs = 1_700_000_000_000L,
+                    isRewatch = true,
+                    rewatchId = 4321L,
+                ),
+            ),
+        ).asObject().getValue("shows").jsonArray.single().jsonObject
+
+        assertTrue(repeat.getValue("is_rewatch").jsonPrimitive.content.toBoolean())
+        assertEquals("4321", repeat.getValue("rewatch_id").jsonPrimitive.content)
+
+        // A mark of something the account has never watched stays a plain first watch.
+        val plain = buildSimklHistoryMutationBody(
+            listOf(TrackingHistoryItem(show(TrackingEpisode(season = 1, number = 1)))),
+        ).asObject().getValue("shows").jsonArray.single().jsonObject
+
+        assertNull(plain["is_rewatch"])
+        assertNull(plain["rewatch_id"])
+    }
+
     private fun movie() = TrackingMediaReference(
         kind = TrackingMediaKind.MOVIE,
         title = "Terminator 3: Rise of the Machines",

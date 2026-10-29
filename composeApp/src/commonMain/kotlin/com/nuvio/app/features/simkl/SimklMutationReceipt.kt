@@ -46,6 +46,8 @@ internal data class SimklResolvedHistoryMutation(
     val status: SimklListStatus?,
     val mediaType: SimklMediaType?,
     val animeType: String?,
+    val rewatchId: Long? = null,
+    val rewatchStatus: String? = null,
 )
 
 internal data class SimklDeletedCounts(
@@ -118,6 +120,8 @@ internal fun SimklApiResponse.toHistoryMutationReceipt(
                 status = status?.status,
                 mediaType = status?.mediaType,
                 animeType = status?.animeType,
+                rewatchId = status?.rewatchId,
+                rewatchStatus = status?.rewatchStatus,
             )
         }
     return SimklMutationReceipt(
@@ -125,8 +129,7 @@ internal fun SimklApiResponse.toHistoryMutationReceipt(
         mutation = SimklCommittedMutation.AddToHistory(accepted),
         requiresReconciliation = accepted.any { resolved ->
             resolved.status == null ||
-                resolved.request.media.kind != TrackingMediaKind.MOVIE &&
-                resolved.request.media.episode == null
+                resolved.request.media.kind != TrackingMediaKind.MOVIE
         },
     )
 }
@@ -170,6 +173,13 @@ private data class SimklHistoryStatus(
     val status: SimklListStatus?,
     val mediaType: SimklMediaType?,
     val animeType: String?,
+    val rewatchId: Long? = null,
+    /**
+     * What the account did with a write that asked for a repeat viewing: `active` for a run the write
+     * joined or opened, `completed`, `first_watch` for a write it read as a plain watch, `too_soon` for
+     * one folded into a watch less than two days old, and `pro_required` for a plan without rewatches.
+     */
+    val rewatchStatus: String? = null,
 )
 
 private fun SimklApiResponse.payload(json: Json): JsonObject =
@@ -215,6 +225,8 @@ private fun JsonObject.historyStatuses(): List<SimklHistoryStatus> =
                 status = response.stringValue("status")?.toSimklListStatus(),
                 mediaType = response.stringValue("simkl_type")?.toSimklMediaType(),
                 animeType = response.stringValue("anime_type"),
+                rewatchId = response.intValue("rewatch_id")?.toLong(),
+                rewatchStatus = response.stringValue("rewatch_status"),
             )
         }
 
@@ -245,11 +257,15 @@ private fun JsonObject.toMutationResolution(
         ?: stringValue("type")?.toTrackingMediaKind()
         ?: fallbackKind
     val providerSubtype = stringValue("anime_type")
-    if (status == null && mediaKind == null && providerSubtype == null) return null
+    val rewatchStatus = stringValue("rewatch_status")
+    if (status == null && mediaKind == null && providerSubtype == null && rewatchStatus == null) {
+        return null
+    }
     return TrackingMutationResolution(
         listStatus = status,
         mediaKind = mediaKind,
         providerSubtype = providerSubtype,
+        rewatchStatus = rewatchStatus,
     )
 }
 

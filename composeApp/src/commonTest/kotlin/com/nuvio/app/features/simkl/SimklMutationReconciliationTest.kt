@@ -207,7 +207,9 @@ class SimklMutationReconciliationTest {
         assertEquals(SimklListStatus.WATCHING, entry.status)
         assertEquals("tv", entry.animeType)
         assertEquals("2023-11-14T22:13:20Z", entry.seasons.single().episodes.single().watchedAt)
-        assertFalse(receipt.requiresReconciliation)
+        // An episode write reconciles like any other show write: that refresh is what keeps the
+        // optimistic Continue Watching row current after an anime episode is recorded.
+        assertTrue(receipt.requiresReconciliation)
     }
 
     @Test

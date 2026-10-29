@@ -128,11 +128,13 @@ internal class SimklApiClient(
                 attempt = attempt + 1,
             )
 
+            // Simkl names the per-user write lock RATE_LIMIT (the docs' 400) while the per-second
+            // burst is lowercase, so one case-insensitive compare covers both.
             if (
                 request.retryPolicy == SimklRetryPolicy.SYNC_WRITE &&
                 response.status == 400 &&
                 !syncWriteLockRetried &&
-                response.errorCode(json) == "rate_limit" &&
+                response.errorCode(json).equals("rate_limit", ignoreCase = true) &&
                 attempt < maxAttempts - 1
             ) {
                 syncWriteLockRetried = true
@@ -151,7 +153,11 @@ internal class SimklApiClient(
                 }
                 SimklResponseAction.FAIL -> throw response.toApiException(json)
                 SimklResponseAction.RETRY -> {
-                    if (attempt == maxAttempts - 1) throw response.toApiException(json)
+                    // A 429 that names the daily allowance is not a burst that clears in a second:
+                    // retrying spends the attempts and hides the reset the user should see.
+                    if (attempt == maxAttempts - 1 || response.isDailyQuotaExceeded(json)) {
+                        throw response.toApiException(json)
+                    }
                     sleep(
                         retryDelayMs(
                             attempt = attempt,
@@ -306,6 +312,12 @@ private fun RawHttpResponse.toApiException(json: Json): SimklApiException {
 }
 
 private fun RawHttpResponse.errorCode(json: Json): String? = errorEnvelope(json)?.error
+
+/** The two 429 bodies that mean the daily quota is spent rather than a burst that clears at once. */
+private fun RawHttpResponse.isDailyQuotaExceeded(json: Json): Boolean =
+    status == 429 && errorCode(json) in DailyQuotaExceededErrorCodes
+
+private val DailyQuotaExceededErrorCodes = setOf("user_limit_exceeded", "app_limit_exceeded")
 
 private fun RawHttpResponse.errorEnvelope(json: Json): SimklErrorEnvelope? =
     body.takeIf(String::isNotBlank)?.let { payload ->
