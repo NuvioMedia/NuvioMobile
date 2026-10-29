@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.automirrored.rounded.Toc
 import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Info
@@ -119,6 +120,7 @@ internal fun PlayerControlActions(
     onResizeModeClick: () -> Unit,
     onVideoSettingsClick: (() -> Unit)?,
     onOpenInExternalPlayer: (() -> Unit)?,
+    onCastClick: (() -> Unit)? = null,
     onStreamInfoClick: () -> Unit,
     onSubmitIntroClick: (() -> Unit)?,
     onInteraction: () -> Unit,
@@ -136,6 +138,7 @@ internal fun PlayerControlActions(
         onResizeModeClick = onResizeModeClick,
         onVideoSettingsClick = onVideoSettingsClick,
         onOpenInExternalPlayer = onOpenInExternalPlayer,
+        onCastClick = onCastClick,
         onStreamInfoClick = onStreamInfoClick,
         onSubmitIntroClick = onSubmitIntroClick,
     )
@@ -237,6 +240,7 @@ internal fun playerControlActions(
     onResizeModeClick: () -> Unit,
     onVideoSettingsClick: (() -> Unit)?,
     onOpenInExternalPlayer: (() -> Unit)?,
+    onCastClick: (() -> Unit)? = null,
     onStreamInfoClick: () -> Unit,
     onSubmitIntroClick: (() -> Unit)?,
 ): List<PlayerControlAction> =
@@ -285,6 +289,12 @@ internal fun playerControlActions(
             PlayerControlAction(
                 stringResource(Res.string.streams_open_external_player), it,
                 icon = Icons.AutoMirrored.Rounded.OpenInNew,
+            )
+        },
+        onCastClick?.let {
+            PlayerControlAction(
+                stringResource(Res.string.cast_action), it,
+                icon = Icons.Rounded.Cast,
             )
         },
         PlayerControlAction(

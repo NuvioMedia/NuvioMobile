@@ -130,6 +130,7 @@ internal fun FoldControls(
     onResizeModeClick: () -> Unit,
     onVideoSettingsClick: (() -> Unit)?,
     onOpenInExternalPlayer: (() -> Unit)?,
+    onCastClick: (() -> Unit)? = null,
     onStreamInfoClick: () -> Unit,
     onSubmitIntroClick: (() -> Unit)?,
     onSwitchEngineClick: (() -> Unit)?,
@@ -158,6 +159,7 @@ internal fun FoldControls(
         onResizeModeClick = onResizeModeClick,
         onVideoSettingsClick = onVideoSettingsClick,
         onOpenInExternalPlayer = onOpenInExternalPlayer,
+        onCastClick = onCastClick,
         onStreamInfoClick = onStreamInfoClick,
         onSubmitIntroClick = onSubmitIntroClick,
     ) + listOfNotNull(

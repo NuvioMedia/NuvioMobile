@@ -260,6 +260,8 @@ internal class PlayerScreenRuntime(
     var subtitleDelayMs by mutableStateOf(0)
     var subtitleAutoSyncState by mutableStateOf(SubtitleAutoSyncUiState())
 
+    var showCastSheet by mutableStateOf(false)
+
     var lastSyncedSettingsResizeMode: PlayerResizeMode? = null
     var lastResetPlaybackIdentity: PlaybackKey? = null
     var lastResetVideoIdentity: String? = null

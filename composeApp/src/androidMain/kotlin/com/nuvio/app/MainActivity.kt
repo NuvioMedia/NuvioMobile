@@ -38,6 +38,9 @@ import com.nuvio.app.features.player.ExternalPlayerPlatform
 import com.nuvio.app.features.player.SubtitleFileCache
 import com.nuvio.app.features.player.PlayerPictureInPictureManager
 import com.nuvio.app.features.player.PipRemoteActionReceiver
+import com.nuvio.app.features.cast.CastSettingsStorage
+import com.nuvio.app.features.cast.ChromecastPlatform
+import com.nuvio.app.features.cast.DlnaCastPlatform
 import com.nuvio.app.features.p2p.P2pSettingsStorage
 import com.nuvio.app.features.p2p.P2pStreamingEngine
 import com.nuvio.app.features.plugins.PluginStorage
@@ -106,6 +109,9 @@ open class MainActivity : AppCompatActivity() {
         P2pSettingsStorage.initialize(applicationContext)
         P2pStreamingEngine.initialize(applicationContext)
         ExternalPlayerPlatform.initialize(applicationContext)
+        CastSettingsStorage.initialize(applicationContext)
+        DlnaCastPlatform.initialize(applicationContext)
+        ChromecastPlatform.initialize(applicationContext)
         SubtitleFileCache.initialize(applicationContext)
         ProfileStorage.initialize(applicationContext)
         AvatarStorage.initialize(applicationContext)

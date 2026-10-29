@@ -28,6 +28,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Forward10
@@ -122,6 +123,7 @@ internal fun PlayerControlsShell(
     chapters: List<PlayerChapter> = emptyList(),
     onChaptersClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
+    onCastClick: (() -> Unit)? = null,
     onSubmitIntroClick: (() -> Unit)? = null,
     onSwitchEngineClick: (() -> Unit)? = null,
     onStreamInfoClick: () -> Unit = {},
@@ -169,6 +171,7 @@ internal fun PlayerControlsShell(
             onResizeModeClick = onResizeModeClick,
             onVideoSettingsClick = onVideoSettingsClick,
             onOpenInExternalPlayer = onOpenInExternalPlayer,
+            onCastClick = onCastClick,
             onStreamInfoClick = onStreamInfoClick,
             onSubmitIntroClick = onSubmitIntroClick,
             onSwitchEngineClick = onSwitchEngineClick,
@@ -241,6 +244,7 @@ internal fun PlayerControlsShell(
                     onLockToggle = onLockToggle,
                     onVideoSettingsClick = onVideoSettingsClick,
                     onOpenInExternalPlayer = onOpenInExternalPlayer,
+                    onCastClick = onCastClick,
                     onPartyClick = onPartyClick,
                     partyActive = partyActive,
                     onBack = onBack,
@@ -375,6 +379,7 @@ internal fun PlayerControlsShell(
                         onResizeModeClick = onResizeModeClick,
                         onVideoSettingsClick = onVideoSettingsClick,
                         onOpenInExternalPlayer = onOpenInExternalPlayer,
+                        onCastClick = onCastClick,
                         onStreamInfoClick = onStreamInfoClick,
                         onSubmitIntroClick = onSubmitIntroClick,
                         onInteraction = onInteraction,
@@ -403,8 +408,9 @@ private fun PlayerHeader(
     onLockToggle: () -> Unit,
     onVideoSettingsClick: (() -> Unit)?,
     onOpenInExternalPlayer: (() -> Unit)?,
-    onPartyClick: (() -> Unit)?,
-    partyActive: Boolean,
+    onCastClick: (() -> Unit)? = null,
+    onPartyClick: (() -> Unit)? = null,
+    partyActive: Boolean = false,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -512,6 +518,15 @@ private fun PlayerHeader(
                             buttonSize = metrics.headerIconSize + 16.dp,
                             iconSize = metrics.headerIconSize,
                             onClick = onOpenInExternalPlayer,
+                        )
+                    }
+                    if (onCastClick != null) {
+                        PlayerHeaderIconButton(
+                            icon = Icons.Rounded.Cast,
+                            contentDescription = stringResource(Res.string.cast_action),
+                            buttonSize = metrics.headerIconSize + 16.dp,
+                            iconSize = metrics.headerIconSize,
+                            onClick = onCastClick,
                         )
                     }
                     if (onPartyClick != null) {
