@@ -496,12 +496,16 @@ final class MPVPlayerViewController: UIViewController {
         metalLayer.position = .zero
         metalLayer.bounds = CGRect(origin: .zero, size: bounds.size)
         pictureInPictureController?.displayLayer.frame = bounds
-        if drawableSize != lastAppliedDrawableSize {
+        let drawableSizeChanged = drawableSize != lastAppliedDrawableSize
+        if drawableSizeChanged {
             // mpv's moltenvk context polls drawableSize and resizes its swapchain.
             metalLayer.drawableSize = drawableSize
             lastAppliedDrawableSize = drawableSize
         }
         CATransaction.commit()
+        if drawableSizeChanged {
+            command("osd-overlay", args: ["1", "ass-events", ""], checkForErrors: false)
+        }
     }
 
     // MARK: - MPV Setup
@@ -521,6 +525,9 @@ final class MPVPlayerViewController: UIViewController {
         checkError(mpv_set_option_string(mpv, "gpu-api", "vulkan"))
         checkError(mpv_set_option_string(mpv, "gpu-context", "moltenvk"))
         checkError(mpv_set_option_string(mpv, "hwdec", "videotoolbox"))
+        // iOS can invalidate the VideoToolbox session (e.g. Notification Center during PiP).
+        // FFmpeg recreates it at the next frames; keep hardware decoding meanwhile.
+        checkError(mpv_set_option_string(mpv, "hwdec-software-fallback", "300"))
         checkError(mpv_set_option_string(mpv, "ao", Self.defaultAudioOutput))
         checkError(mpv_set_option_string(mpv, "audio-channels", "auto"))
         checkError(mpv_set_option_string(mpv, "audio-fallback-to-null", "yes"))

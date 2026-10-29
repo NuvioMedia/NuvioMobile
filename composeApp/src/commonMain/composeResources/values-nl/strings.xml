@@ -1097,11 +1097,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Kleiner</string>
     <string name="settings_playback_regex_preset_web_sources">WEB-bronnen</string>
     <string name="settings_playback_render_type">Libass-rendermodus</string>
-    <string name="settings_playback_render_type_cues">Standaard cues</string>
-    <string name="settings_playback_render_type_effects_canvas">Effecten Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effecten OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL (aanbevolen)</string>
     <string name="settings_playback_reuse_last_link">Laatste link hergebruiken</string>
     <string name="settings_playback_reuse_last_link_description">Speel automatisch je laatst werkende stream af voor dezelfde film/aflevering als de cache nog geldig is</string>
     <string name="settings_playback_secondary_audio_language">Secundaire audiotaal</string>

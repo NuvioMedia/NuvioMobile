@@ -827,11 +827,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Lebih Kecil</string>
     <string name="settings_playback_regex_preset_web_sources">Sumber WEB</string>
     <string name="settings_playback_render_type">Mode Render Libass</string>
-    <string name="settings_playback_render_type_cues">Cues Standar</string>
-    <string name="settings_playback_render_type_effects_canvas">Effects Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effects OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL (Direkomendasikan)</string>
     <string name="settings_playback_reuse_last_link">Gunakan Ulang Tautan Terakhir</string>
     <string name="settings_playback_reuse_last_link_description">Putar otomatis stream terakhir yang berfungsi untuk film/episode yang sama ketika cache masih valid</string>
     <string name="settings_playback_secondary_audio_language">Bahasa Audio Sekunder</string>

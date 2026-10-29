@@ -90,9 +90,9 @@ fun <T> NuvioShelfSection(
             )
         }
         LazyRow(
-            modifier = rowModifier,
+            modifier = rowModifier.nuvioHorizontalScrollBleed(LocalVerticalBarPadding.current),
             state = state,
-            contentPadding = rowContentPadding,
+            contentPadding = rowContentPadding.withVerticalBar(),
             horizontalArrangement = Arrangement.spacedBy(itemSpacing),
         ) {
             if (key != null) {

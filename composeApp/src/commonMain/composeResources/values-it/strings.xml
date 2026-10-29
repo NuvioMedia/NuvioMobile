@@ -409,6 +409,8 @@
   <string name="settings_mdb_section_api_key">CHIAVE API</string>
   <string name="settings_mdb_section_rating_providers">FORNITORI VALUTAZIONI</string>
   <string name="settings_mdb_section_title">MDBLIST</string>
+  <string name="settings_mdb_show_on_hero">Mostra valutazioni in evidenza</string>
+  <string name="settings_mdb_show_on_hero_description">Mostra le valutazioni MDBList nel contenuto in evidenza della home</string>
   <string name="settings_meta_actions">Azioni</string>
   <string name="settings_meta_actions_description">Controlli di riproduzione e salvataggio.</string>
   <string name="settings_meta_cast">Cast</string>
@@ -555,11 +557,8 @@
   <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Dimensioni ridotte</string>
   <string name="settings_playback_regex_preset_web_sources">Sorgenti WEB</string>
   <string name="settings_playback_render_type">Tipo di rendering</string>
-  <string name="settings_playback_render_type_cues">Standard (Cues)</string>
-  <string name="settings_playback_render_type_effects_canvas">Effetti Canvas</string>
-  <string name="settings_playback_render_type_effects_opengl">Effetti OpenGL</string>
-  <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-  <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL</string>
+  <string name="settings_playback_render_scale">Risoluzione di rendering dei sottotitoli</string>
+  <string name="settings_playback_render_scale_description">Una risoluzione inferiore migliora le prestazioni con sottotitoli dalla formattazione complessa, a scapito della nitidezza</string>
   <string name="settings_playback_reuse_last_link">Riusa l'ultimo link</string>
   <string name="settings_playback_reuse_last_link_description">Riproduci automaticamente l'ultimo flusso funzionante per lo stesso film/episodio se la cache è ancora valida.</string>
   <string name="settings_playback_secondary_audio_language">Lingua audio secondaria</string>
@@ -1371,6 +1370,11 @@
   <string name="settings_stream_badges_section">STILE FUSION</string>
   <string name="settings_stream_size_badges_title">Badge della dimensione</string>
   <string name="settings_stream_size_badges_description">Mostra il badge della dimensione nei risultati stream e nei pannelli origine del player.</string>
+  <string name="settings_stream_badges_in_player_title">Mostra nel player</string>
+  <string name="settings_stream_badges_in_player_description">Mostra i badge del video e dell'audio in riproduzione sotto il titolo del player. Richiede un pacchetto di badge che riconosca il testo semplice, come 2160p o Atmos.</string>
+  <string name="settings_stream_player_badges_title">Badge del player</string>
+  <string name="settings_stream_player_badges_description">Scegli il pacchetto di badge usato dal player.</string>
+  <string name="settings_stream_player_badges_same">Come i badge degli stream</string>
   <string name="settings_stream_addon_logo_title">Logo Addon</string>
   <string name="settings_stream_addon_logo_description">Mostra il logo e il nome dell'addon accanto alle sorgenti degli stream.</string>
   <string name="settings_stream_display_section">DISPLAY</string>
@@ -1967,6 +1971,8 @@
     <string name="cd_switch_player_engine">Cambia motore player</string>
     <string name="cd_stream_info">Informazioni stream</string>
     <string name="player_engine_switching_manual_message">Passaggio a %1$s...</string>
+    <string name="player_engine_switch_title">Passare a %1$s?</string>
+    <string name="player_engine_switch_message">Il video verrà ricaricato dal punto attuale.</string>
     <string name="stream_info_section_source">SORGENTE</string>
     <string name="stream_info_section_video">VIDEO</string>
     <string name="stream_info_section_audio">AUDIO</string>
@@ -2227,7 +2233,6 @@
     <string name="settings_playback_auto_skip_movie_credits">Titoli di coda</string>
     <string name="player_skip_movie_credits">Salta i titoli di coda</string>
     <string name="player_skip_to_post_credits">Vai alla scena dopo i titoli di coda</string>
-    <string name="compose_player_via">tramite %1$s</string>
     <string name="compose_player_speed">Velocità di riproduzione</string>
     <string name="compose_player_brightness">Luminosità</string>
     <string name="random_episode_title">Riproduzione casuale</string>

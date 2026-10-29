@@ -9,6 +9,9 @@ data class PlayerMediaInfo(
     val audioCodec: String? = null,
     val audioChannels: Int? = null,
     val audioSampleRate: Int? = null,
+    val audioProfile: String? = null,
+    val hdr: List<String> = emptyList(),
+    val bitDepth: Int? = null,
 )
 
 internal fun mpvMediaInfo(property: (String) -> String?): PlayerMediaInfo =
@@ -21,7 +24,22 @@ internal fun mpvMediaInfo(property: (String) -> String?): PlayerMediaInfo =
         audioCodec = property("current-tracks/audio/codec")?.let(::mpvCodecLabel),
         audioChannels = property("audio-params/channel-count")?.toIntOrNull()?.takeIf { it > 0 },
         audioSampleRate = property("audio-params/samplerate")?.toIntOrNull()?.takeIf { it > 0 },
+        audioProfile = property("current-tracks/audio/codec-profile"),
+        hdr = buildList {
+            if (!property("current-tracks/video/dolby-vision-profile").isNullOrBlank()) add("DV")
+            when (property("video-params/gamma")) {
+                "pq" -> add("HDR10")
+                "hlg" -> add("HLG")
+            }
+        },
+        bitDepth = property("video-params/pixelformat")?.let(::mpvBitDepth),
     )
+
+private fun mpvBitDepth(pixelFormat: String): Int? = when {
+    pixelFormat.contains("12") -> 12
+    pixelFormat.contains("10") -> 10
+    else -> null
+}
 
 private fun mpvCodecLabel(codec: String): String? =
     when (codec.trim().lowercase()) {

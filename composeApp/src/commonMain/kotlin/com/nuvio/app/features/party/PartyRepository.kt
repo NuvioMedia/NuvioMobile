@@ -240,6 +240,7 @@ object PartyRepository {
                         return@withLock error
                     }
                     val party = snapshot.toActiveParty() ?: return@withLock PartyError.Network
+                    PartyCompanion.stop()
                     stopSession()
                     clock.reset()
                     snapshot.serverTimeMs?.let { clock.addSample(it, sentAt) }
@@ -283,7 +284,7 @@ object PartyRepository {
         session.launch { heartbeatLoop() }
         session.launch { refineClock() }
         session.launch { coordinatorLoop() }
-        PartyChat.start(party)
+        PartyChat.start(PartyChatRoom(party.id, party.memberId, party.members))
     }
 
     private suspend fun stopSession() {
@@ -646,6 +647,7 @@ object PartyRepository {
             displayName = profile?.name?.trim()?.takeIf { it.isNotEmpty() }?.take(40) ?: DEFAULT_NAME,
             avatarUrl = profile?.let { AvatarRepository.shareableImageUrl(it) }?.takeIf { it.startsWith("https://") && it.length <= 512 },
             avatarColor = profile?.avatarColorHex?.takeIf { COLOR_PATTERN.matches(it) },
+            profileIndex = profile?.profileIndex,
         )
     }
 

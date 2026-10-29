@@ -447,7 +447,7 @@ fun languageMatchesPreference(trackLanguage: String?, targetLanguage: String): B
     return trackPrimary == targetPrimary
 }
 
-private fun languageLabelResForCode(code: String?): StringResource? {
+internal fun languageLabelResForCode(code: String?): StringResource? {
     val normalized = normalizeLanguageCode(code) ?: return null
     return AvailableLanguageOptions.firstOrNull {
         normalizeLanguageCode(it.code) == normalized

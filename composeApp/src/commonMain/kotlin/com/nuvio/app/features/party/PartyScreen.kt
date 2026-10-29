@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -32,6 +33,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -82,6 +84,34 @@ private enum class PartyScreenMode {
 
 @Composable
 fun PartyScreen(
+    initialCode: String,
+    onBack: () -> Unit,
+    onWatch: (PartyMedia) -> Unit,
+) {
+    val state by PartyRepository.state.collectAsStateWithLifecycle()
+    val companion by PartyCompanion.state.collectAsStateWithLifecycle()
+    val linkable = initialCode.isEmpty() && state.party == null
+    if (linkable) {
+        DisposableEffect(Unit) {
+            PartyCompanion.start()
+            onDispose { PartyCompanion.leave() }
+        }
+    }
+    AnimatedContent(
+        targetState = linkable && companion.active,
+        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(150)) },
+        modifier = Modifier.fillMaxSize(),
+    ) { linked ->
+        if (linked) {
+            PartyCompanionScreen(onBack = onBack)
+        } else {
+            PartyHome(initialCode = initialCode, onBack = onBack, onWatch = onWatch)
+        }
+    }
+}
+
+@Composable
+private fun PartyHome(
     initialCode: String,
     onBack: () -> Unit,
     onWatch: (PartyMedia) -> Unit,
@@ -164,6 +194,45 @@ private fun PartyRoom(
     val unread by PartyChat.unread.collectAsStateWithLifecycle()
     val party = state.party ?: return
     var showChat by rememberSaveable { mutableStateOf(unread > 0) }
+    PartyPage(onBack = onBack) {
+        PartyTabs(
+            chatSelected = showChat,
+            unread = unread,
+            onSelect = { showChat = it },
+            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+        )
+        AnimatedContent(
+            targetState = showChat,
+            transitionSpec = { fadeIn(tween(200, delayMillis = 90)) togetherWith fadeOut(tween(90)) },
+            modifier = Modifier.fillMaxSize(),
+        ) { chat ->
+            if (chat) {
+                PartyChatContent(
+                    members = party.members,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom)),
+                ) {
+                    PartyContent(party, onWatch)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun PartyPage(
+    onBack: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
     Column(
         modifier = Modifier
@@ -182,37 +251,8 @@ private fun PartyRoom(
                 .widthIn(max = 520.dp)
                 .fillMaxWidth()
                 .align(Alignment.CenterHorizontally),
-        ) {
-            PartyTabs(
-                chatSelected = showChat,
-                unread = unread,
-                onSelect = { showChat = it },
-                modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
-            )
-            AnimatedContent(
-                targetState = showChat,
-                transitionSpec = { fadeIn(tween(200, delayMillis = 90)) togetherWith fadeOut(tween(90)) },
-                modifier = Modifier.fillMaxSize(),
-            ) { chat ->
-                if (chat) {
-                    PartyChatContent(
-                        party = party,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
-                            .padding(bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom)),
-                    ) {
-                        PartyContent(party, onWatch)
-                    }
-                }
-            }
-        }
+            content = content,
+        )
     }
 }
 

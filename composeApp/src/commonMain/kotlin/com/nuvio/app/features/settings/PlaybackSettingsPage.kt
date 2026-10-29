@@ -111,14 +111,18 @@ internal fun LazyListScope.playbackSettingsContent(
     streamReuseLastLinkEnabled: Boolean,
     streamReuseLastLinkCacheHours: Int,
     androidPlaybackEngine: AndroidPlaybackEngine,
+    autoSwitchPlaybackEngineOnError: Boolean,
     androidLibmpvVideoOutput: AndroidLibmpvVideoOutput,
     androidLibmpvHardwareDecodingEnabled: Boolean,
     androidLibmpvYuv420pEnabled: Boolean,
+    androidExoChaptersEnabled: Boolean,
     decoderPriority: Int,
     mapDV7ToHevc: Boolean,
     tunnelingEnabled: Boolean,
     useLibass: Boolean,
     libassRenderType: String,
+    libassRenderScale: String,
+    libassRenderMode: String,
 ) {
     item {
         PlaybackSettingsSection(
@@ -134,14 +138,18 @@ internal fun LazyListScope.playbackSettingsContent(
             streamReuseLastLinkEnabled = streamReuseLastLinkEnabled,
             streamReuseLastLinkCacheHours = streamReuseLastLinkCacheHours,
             androidPlaybackEngine = androidPlaybackEngine,
+            autoSwitchPlaybackEngineOnError = autoSwitchPlaybackEngineOnError,
             androidLibmpvVideoOutput = androidLibmpvVideoOutput,
             androidLibmpvHardwareDecodingEnabled = androidLibmpvHardwareDecodingEnabled,
             androidLibmpvYuv420pEnabled = androidLibmpvYuv420pEnabled,
+            androidExoChaptersEnabled = androidExoChaptersEnabled,
             decoderPriority = decoderPriority,
             mapDV7ToHevc = mapDV7ToHevc,
             tunnelingEnabled = tunnelingEnabled,
             useLibass = useLibass,
             libassRenderType = libassRenderType,
+            libassRenderScale = libassRenderScale,
+            libassRenderMode = libassRenderMode,
         )
     }
 }
@@ -320,14 +328,18 @@ private fun PlaybackSettingsSection(
     streamReuseLastLinkEnabled: Boolean,
     streamReuseLastLinkCacheHours: Int,
     androidPlaybackEngine: AndroidPlaybackEngine,
+    autoSwitchPlaybackEngineOnError: Boolean,
     androidLibmpvVideoOutput: AndroidLibmpvVideoOutput,
     androidLibmpvHardwareDecodingEnabled: Boolean,
     androidLibmpvYuv420pEnabled: Boolean,
+    androidExoChaptersEnabled: Boolean,
     decoderPriority: Int,
     mapDV7ToHevc: Boolean,
     tunnelingEnabled: Boolean,
     useLibass: Boolean,
     libassRenderType: String,
+    libassRenderScale: String,
+    libassRenderMode: String,
 ) {
     var showPreferredAudioDialog by remember { mutableStateOf(false) }
     var showAutoSkipSegmentDialog by remember { mutableStateOf(false) }
@@ -342,13 +354,14 @@ private fun PlaybackSettingsSection(
     var showReuseCacheDurationDialog by remember { mutableStateOf(false) }
     var showPlaybackEngineDialog by remember { mutableStateOf(false) }
     var showLibmpvVideoOutputDialog by remember { mutableStateOf(false) }
+    var showLibassRenderScaleDialog by remember { mutableStateOf(false) }
+    var showLibassRenderModeDialog by remember { mutableStateOf(false) }
     var showDecoderPriorityDialog by remember { mutableStateOf(false) }
     var showHoldToSpeedValueDialog by remember { mutableStateOf(false) }
     var showIosAudioOutputDialog by remember { mutableStateOf(false) }
     var showIosHardwareDecoderDialog by remember { mutableStateOf(false) }
     var showIosTargetPrimariesDialog by remember { mutableStateOf(false) }
     var showIosTargetTransferDialog by remember { mutableStateOf(false) }
-    var showLibassRenderTypeDialog by remember { mutableStateOf(false) }
     var showAutoPlayModeDialog by remember { mutableStateOf(false) }
     var showAutoPlaySourceDialog by remember { mutableStateOf(false) }
     var showAutoPlayAddonSelectionDialog by remember { mutableStateOf(false) }
@@ -564,7 +577,7 @@ private fun PlaybackSettingsSection(
                     SettingsGroupDivider(isTablet = isTablet)
                     AutoSyncPlaybackSettingsRows( // AutoSync hook
                         isTablet = isTablet,
-                        enabled = otherSubtitleOptionsEnabled && androidPlaybackEngine != AndroidPlaybackEngine.Libmpv,
+                        enabled = otherSubtitleOptionsEnabled,
                         preferredSubtitleLanguage = preferredSubtitleLanguage,
                     )
                 }
@@ -704,11 +717,25 @@ private fun PlaybackSettingsSection(
                     if (useLibass) {
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(
-                            title = stringResource(Res.string.settings_playback_render_type),
-                            description = libassRenderTypeLabel(libassRenderType),
+                            title = stringResource(Res.string.settings_playback_render_mode),
+                            description = if (tunnelingEnabled)
+                                stringResource(Res.string.settings_playback_render_mode_tunneled)
+                            else
+                                when (libassRenderMode) {
+                                    "OVERLAY" -> stringResource(Res.string.settings_playback_render_mode_overlay)
+                                    else -> stringResource(Res.string.settings_playback_render_mode_video_effect)
+                                },
+                            enabled = subtitleRenderingEnabled && !tunnelingEnabled,
+                            isTablet = isTablet,
+                            onClick = { showLibassRenderModeDialog = true },
+                        )
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.settings_playback_render_scale),
+                            description = libassRenderScaleLabel(libassRenderScale),
                             enabled = subtitleRenderingEnabled,
                             isTablet = isTablet,
-                            onClick = { showLibassRenderTypeDialog = true },
+                            onClick = { showLibassRenderScaleDialog = true },
                         )
                     }
                 }
@@ -960,6 +987,17 @@ private fun PlaybackSettingsSection(
                         enabled = decoderEnabled,
                         isTablet = isTablet,
                         onClick = { showPlaybackEngineDialog = true },
+                    )
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_auto_switch_engine_on_error),
+                        description = stringResource(
+                            Res.string.settings_playback_auto_switch_engine_on_error_description,
+                        ),
+                        checked = autoSwitchPlaybackEngineOnError,
+                        enabled = decoderEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setAutoSwitchPlaybackEngineOnError,
                     )
                     if (libmpvOptionsVisible) {
                         SettingsGroupDivider(isTablet = isTablet)
@@ -1232,6 +1270,15 @@ private fun PlaybackSettingsSection(
                             modifier = Modifier.padding(horizontal = if (isTablet) 20.dp else 16.dp, vertical = 8.dp),
                         )
                     }
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_exo_chapters),
+                        description = stringResource(Res.string.settings_playback_exo_chapters_description),
+                        checked = androidExoChaptersEnabled,
+                        enabled = exoOptionsEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setAndroidExoChaptersEnabled,
+                    )
                 }
             }
         }
@@ -1875,14 +1922,25 @@ private fun PlaybackSettingsSection(
         )
     }
 
-    if (showLibassRenderTypeDialog) {
-        LibassRenderTypeDialog(
-            selectedRenderType = libassRenderType,
-            onRenderTypeSelected = { renderType ->
-                PlayerSettingsRepository.setLibassRenderType(renderType)
-                showLibassRenderTypeDialog = false
+    if (showLibassRenderScaleDialog) {
+        LibassRenderScaleDialog(
+            selectedScale = libassRenderScale,
+            onScaleSelected = { scale ->
+                PlayerSettingsRepository.setLibassRenderScale(scale)
+                showLibassRenderScaleDialog = false
             },
-            onDismiss = { showLibassRenderTypeDialog = false },
+            onDismiss = { showLibassRenderScaleDialog = false },
+        )
+    }
+
+    if (showLibassRenderModeDialog) {
+        LibassRenderModeDialog(
+            selectedMode = libassRenderMode,
+            onModeSelected = { mode ->
+                PlayerSettingsRepository.setLibassRenderMode(mode)
+                showLibassRenderModeDialog = false
+            },
+            onDismiss = { showLibassRenderModeDialog = false },
         )
     }
 
@@ -2190,6 +2248,11 @@ private fun PlaybackEngineDialog(
     onEngineSelected: (AndroidPlaybackEngine) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val engineOrder = listOf(
+        AndroidPlaybackEngine.ExoPlayer,
+        AndroidPlaybackEngine.Libmpv,
+        AndroidPlaybackEngine.Auto,
+    )
     val descriptions = mapOf(
         AndroidPlaybackEngine.Auto to Res.string.settings_playback_engine_auto_description,
         AndroidPlaybackEngine.ExoPlayer to Res.string.settings_playback_engine_exoplayer_description,
@@ -2204,7 +2267,7 @@ private fun PlaybackEngineDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            AndroidPlaybackEngine.entries.forEach { engine ->
+            engineOrder.forEach { engine ->
                 val isSelected = engine == selectedEngine
                 DialogOption(
                     text = engine.label,
@@ -2293,35 +2356,44 @@ private fun HoldToSpeedValueDialog(
     }
 }
 
+private fun libassRenderScaleLabel(scale: String): String = when (scale) {
+    "FULL" -> "1:1"
+    "THREE_QUARTER" -> "\u00BE"
+    "HALF" -> "\u00BD"
+    "THIRD" -> "\u2153"
+    "QUARTER" -> "\u00BC"
+    else -> scale
+}
+
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-private fun LibassRenderTypeDialog(
-    selectedRenderType: String,
-    onRenderTypeSelected: (String) -> Unit,
+private fun LibassRenderScaleDialog(
+    selectedScale: String,
+    onScaleSelected: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val options = listOf(
-        "OVERLAY_OPEN_GL" to Res.string.settings_playback_render_type_overlay_opengl,
-        "OVERLAY_CANVAS" to Res.string.settings_playback_render_type_overlay_canvas,
-        "EFFECTS_OPEN_GL" to Res.string.settings_playback_render_type_effects_opengl,
-        "EFFECTS_CANVAS" to Res.string.settings_playback_render_type_effects_canvas,
-        "CUES" to Res.string.settings_playback_render_type_cues,
+        "FULL" to "1:1",
+        "THREE_QUARTER" to "\u00BE",
+        "HALF" to "\u00BD",
+        "THIRD" to "\u2153",
+        "QUARTER" to "\u00BC",
     )
 
     DialogSurface(
         onDismissRequest = onDismiss,
-        title = stringResource(Res.string.settings_playback_render_type),
+        title = stringResource(Res.string.settings_playback_render_scale),
     ) {
         Column(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            options.forEach { (value, labelRes) ->
-                val isSelected = value == selectedRenderType
+            options.forEach { (value, label) ->
+                val isSelected = value == selectedScale
                 DialogOption(
-                    text = stringResource(labelRes),
+                    text = label,
                     selected = isSelected,
-                    onClick = { onRenderTypeSelected(value) },
+                    onClick = { onScaleSelected(value) },
                 )
             }
         }
@@ -2335,6 +2407,51 @@ private fun LibassRenderTypeDialog(
     }
 }
 
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun LibassRenderModeDialog(
+    selectedMode: String,
+    onModeSelected: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val options = listOf(
+        "OVERLAY" to Pair(
+            Res.string.settings_playback_render_mode_overlay,
+            Res.string.settings_playback_render_mode_overlay_description
+        ),
+        "VIDEO_EFFECT" to Pair(
+            Res.string.settings_playback_render_mode_video_effect,
+            Res.string.settings_playback_render_mode_video_effect_description
+        ),
+    )
+
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = stringResource(Res.string.settings_playback_render_mode),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            options.forEach { (value, res) ->
+                val isSelected = value == selectedMode
+                DialogOption(
+                    text = stringResource(res.first),
+                    description = stringResource(res.second),
+                    selected = isSelected,
+                    onClick = { onModeSelected(value) },
+                )
+            }
+        }
+
+        DialogButtons {
+            DialogButton(
+                text = stringResource(Res.string.action_done),
+                onClick = onDismiss,
+            )
+        }
+    }
+}
 
 
 @Composable
@@ -2913,15 +3030,3 @@ private val com.nuvio.app.features.player.skip.NextEpisodeThresholdMode.labelRes
         com.nuvio.app.features.player.skip.NextEpisodeThresholdMode.MINUTES_BEFORE_END ->
             Res.string.settings_playback_threshold_mode_minutes_before_end
     }
-
-private fun libassRenderTypeRes(renderType: String): StringResource = when (renderType) {
-    "OVERLAY_OPEN_GL" -> Res.string.settings_playback_render_type_overlay_opengl
-    "OVERLAY_CANVAS" -> Res.string.settings_playback_render_type_overlay_canvas
-    "EFFECTS_OPEN_GL" -> Res.string.settings_playback_render_type_effects_opengl
-    "EFFECTS_CANVAS" -> Res.string.settings_playback_render_type_effects_canvas
-    "CUES" -> Res.string.settings_playback_render_type_cues
-    else -> Res.string.settings_playback_render_type_cues
-}
-
-@Composable
-private fun libassRenderTypeLabel(renderType: String): String = stringResource(libassRenderTypeRes(renderType))

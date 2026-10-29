@@ -37,6 +37,12 @@ data class PartyChatMessage(
     val status: PartyChatStatus = PartyChatStatus.Sent,
 )
 
+internal data class PartyChatRoom(
+    val partyId: String,
+    val memberId: String,
+    val members: List<PartyMember>,
+)
+
 internal data class PartyChatMerge(
     val messages: List<PartyChatMessage>,
     val added: List<PartyChatMessage>,
@@ -56,7 +62,7 @@ object PartyChat {
 
     val draft = MutableStateFlow("")
 
-    private var partyId: String? = null
+    private var room: PartyChatRoom? = null
     private val ownMemberIds = mutableSetOf<String>()
     private var loaded = false
     private var open = false
@@ -72,13 +78,13 @@ object PartyChat {
         val body = text.trim().take(MAX_LENGTH)
         if (body.isEmpty()) return
         scope.launch {
-            val party = PartyRepository.state.value.party?.takeIf { it.id == partyId } ?: return@launch
-            val self = party.member(party.memberId)
+            val current = room ?: return@launch
+            val self = current.members.firstOrNull { it.id == current.memberId }
             val clientId = newClientId()
             val message = PartyChatMessage(
                 key = clientId,
                 id = null,
-                memberId = party.memberId,
+                memberId = current.memberId,
                 name = self?.displayName.orEmpty(),
                 avatarUrl = self?.avatarUrl,
                 avatarColor = self?.avatarColor,
@@ -89,26 +95,24 @@ object PartyChat {
                 status = PartyChatStatus.Sending,
             )
             _messages.update { it + message }
-            deliver(party.id, message)
+            deliver(current.partyId, message)
         }
     }
 
     fun retry(key: String) {
         scope.launch {
-            val target = partyId ?: return@launch
+            val target = room?.partyId ?: return@launch
             val message = _messages.value.firstOrNull { it.key == key && it.status == PartyChatStatus.Failed } ?: return@launch
             setStatus(key, PartyChatStatus.Sending)
             deliver(target, message)
         }
     }
 
-    internal fun start(party: ActiveParty) {
+    internal fun start(next: PartyChatRoom) {
         scope.launch {
-            if (partyId != party.id) {
-                reset()
-                partyId = party.id
-            }
-            ownMemberIds += party.memberId
+            if (room?.partyId != next.partyId) reset()
+            room = next
+            ownMemberIds += next.memberId
             sync()
         }
     }
@@ -120,7 +124,7 @@ object PartyChat {
     internal fun refresh() {
         scope.launch {
             sync()
-            val target = partyId ?: return@launch
+            val target = room?.partyId ?: return@launch
             _messages.value.filter { it.status == PartyChatStatus.Failed }.forEach { message ->
                 setStatus(message.key, PartyChatStatus.Sending)
                 deliver(target, message)
@@ -130,7 +134,7 @@ object PartyChat {
 
     internal fun receive(payload: JsonObject) {
         scope.launch {
-            if (partyId == null) return@launch
+            if (room == null) return@launch
             val message = runCatching { PartyApi.json.decodeFromJsonElement(PartyChatPayload.serializer(), payload) }
                 .getOrNull() ?: return@launch
             apply(listOf(message), replaceOlder = false, notify = true)
@@ -139,7 +143,7 @@ object PartyChat {
 
     private suspend fun sync() {
         syncLock.withLock {
-            val target = partyId ?: return
+            val target = room?.partyId ?: return
             val after = if (loaded) _messages.value.lastOrNull { it.id != null }?.id else null
             val history = try {
                 PartyApi.listMessages(target, SyncClientIdentity.currentClientId(), after)
@@ -149,7 +153,7 @@ object PartyChat {
                 log.w(error) { "Chat history failed" }
                 return
             }
-            if (target != partyId || history.error != null) return
+            if (target != room?.partyId || history.error != null) return
             val firstLoad = !loaded
             loaded = true
             apply(
@@ -169,7 +173,7 @@ object PartyChat {
             log.w(error) { "Chat message failed" }
             null
         }
-        if (target != partyId) return
+        if (target != room?.partyId) return
         val sent = result?.message
         if (sent == null) {
             setStatus(message.key, PartyChatStatus.Failed)
@@ -197,7 +201,7 @@ object PartyChat {
     }
 
     private fun reset() {
-        partyId = null
+        room = null
         ownMemberIds.clear()
         loaded = false
         draft.value = ""

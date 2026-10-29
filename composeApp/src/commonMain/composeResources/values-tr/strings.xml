@@ -1004,11 +1004,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Daha küçük</string>
     <string name="settings_playback_regex_preset_web_sources">WEB kaynakları</string>
     <string name="settings_playback_render_type">Gösterim tipi</string>
-    <string name="settings_playback_render_type_cues">Standart (Cues)</string>
-    <string name="settings_playback_render_type_effects_canvas">Efekt Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Efekt OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL</string>
     <string name="settings_playback_reuse_last_link">Son bağlantıyı tekrar kullan</string>
     <string name="settings_playback_reuse_last_link_description">Önbellek hâlâ geçerliyse aynı film/bölüm için son çalışan yayını otomatik oynat.</string>
     <string name="settings_playback_secondary_audio_language">İkinci ses dili</string>

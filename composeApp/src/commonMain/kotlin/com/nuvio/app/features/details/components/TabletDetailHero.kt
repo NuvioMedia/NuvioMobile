@@ -1,7 +1,12 @@
 package com.nuvio.app.features.details.components
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -63,6 +68,7 @@ import nuvio.composeapp.generated.resources.details_director
 import nuvio.composeapp.generated.resources.details_writer
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.core.ui.LocalVerticalBarPadding
 
 @Composable
 fun TabletDetailBackdrop(
@@ -266,6 +272,7 @@ fun TabletDetailHero(
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
+                .padding(LocalVerticalBarPadding.current)
                 .widthIn(max = 760.dp)
                 .padding(
                     start = horizontalPadding,
@@ -302,12 +309,18 @@ fun TabletDetailHero(
             if (showOverview) {
                 Spacer(modifier = Modifier.height(space.s20))
                 TabletHeroMetaRow(meta = meta, showImdbRating = showOverallRatings && !isMdbListActive)
-                if (isMdbListActive && meta.externalRatings.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(space.s12))
-                    DetailRatingsRow(
-                        ratings = meta.externalRatings,
-                        modifier = Modifier.widthIn(max = 520.dp),
-                    )
+                AnimatedVisibility(
+                    visible = isMdbListActive && meta.externalRatings.isNotEmpty(),
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    Column {
+                        Spacer(modifier = Modifier.height(space.s12))
+                        DetailRatingsRow(
+                            ratings = meta.externalRatings,
+                            modifier = Modifier.widthIn(max = 520.dp),
+                        )
+                    }
                 }
             }
             if (meta.genres.isNotEmpty()) {
@@ -359,6 +372,7 @@ fun TabletDetailHero(
                 enabled = heroTrailerReady,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .padding(LocalVerticalBarPadding.current)
                     .padding(
                         top = WindowInsets.statusBars.asPaddingValues().calculateTopPadding() + space.s8,
                         end = horizontalPadding,
@@ -418,10 +432,7 @@ private fun TabletHeroMetaRow(meta: MetaDetails, showImdbRating: Boolean) {
         }
         if (validImdbRating != null) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                ImdbRatingSourceLabel(
-                    storeTextStyle = itemStyle,
-                    storeTextColor = ImdbYellow,
-                )
+                ImdbRatingSourceLabel(storeTextStyle = itemStyle)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = validImdbRating,

@@ -123,7 +123,7 @@ private val PartyChatMessage.author: String
 
 @Composable
 internal fun PartyChatContent(
-    party: ActiveParty,
+    members: List<PartyMember>,
     modifier: Modifier = Modifier,
 ) {
     val messages by PartyChat.messages.collectAsStateWithLifecycle()
@@ -154,7 +154,7 @@ internal fun PartyChatContent(
                     )
                 }
             } else {
-                MessageList(rows = rows, party = party)
+                MessageList(rows = rows, members = members)
             }
         }
         Composer()
@@ -164,7 +164,7 @@ internal fun PartyChatContent(
 @Composable
 private fun MessageList(
     rows: List<PartyChatRow>,
-    party: ActiveParty,
+    members: List<PartyMember>,
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
@@ -193,7 +193,7 @@ private fun MessageList(
             items(rows, key = { it.message.key }) { row ->
                 MessageRow(
                     row = row,
-                    party = party,
+                    members = members,
                     bubbleWidth = bubbleWidth,
                     modifier = Modifier.animateItem(),
                 )
@@ -216,13 +216,13 @@ private fun MessageList(
 @Composable
 private fun MessageRow(
     row: PartyChatRow,
-    party: ActiveParty,
+    members: List<PartyMember>,
     bubbleWidth: Dp,
     modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
     val message = row.message
-    val member = party.member(message.memberId)
+    val member = members.firstOrNull { it.id == message.memberId }
         ?: PartyMember(id = message.memberId, displayName = message.name, avatarUrl = message.avatarUrl, avatarColor = message.avatarColor)
     Column(
         modifier = modifier
@@ -371,8 +371,12 @@ private fun Composer() {
         BasicTextField(
             value = text,
             onValueChange = { value ->
-                text = value.take(PartyChat.MAX_LENGTH)
-                PartyChat.draft.value = text
+                if (value.length == text.length + 1 && value.count { it == '\n' } > text.count { it == '\n' }) {
+                    send()
+                } else {
+                    text = value.take(PartyChat.MAX_LENGTH)
+                    PartyChat.draft.value = text
+                }
             },
             modifier = Modifier.weight(1f),
             textStyle = MaterialTheme.typography.bodyMedium.copy(color = tokens.colors.textPrimary),

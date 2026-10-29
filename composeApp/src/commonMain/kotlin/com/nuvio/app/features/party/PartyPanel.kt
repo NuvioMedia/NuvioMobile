@@ -166,7 +166,7 @@ internal fun PartyPanel(
                             onStart = onStart,
                         )
                         target.page == PanelPage.Chat -> PartyChatContent(
-                            party = current,
+                            members = current.members,
                             modifier = Modifier.fillMaxSize(),
                         )
                         else -> PartyContent(

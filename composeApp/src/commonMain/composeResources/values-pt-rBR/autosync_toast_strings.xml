@@ -1,0 +1,6 @@
+<resources>
+    <string name="autosync_toast_failed">Falha na sincronização: A sincronização automática não conseguiu corresponder esta legenda ao vídeo.</string>
+    <string name="autosync_toast_failed_no_reference">Falha na sincronização: Nenhuma legenda incorporada utilizável para comparação.</string>
+    <string name="autosync_toast_failed_unsupported">Falha na sincronização: Este formato de legenda não é compatível.</string>
+    <string name="autosync_label_synced">Sincronizado automaticamente</string>
+</resources>
