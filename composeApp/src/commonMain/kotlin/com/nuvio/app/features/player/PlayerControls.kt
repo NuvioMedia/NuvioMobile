@@ -257,29 +257,6 @@ internal fun PlayerControlsShell(
                             top = metrics.verticalPadding / 4,
                         ),
                 )
-                    metrics = metrics,
-                    isLocked = isLocked,
-                    showActions = showPlaybackControls,
-                    onSubmitIntroClick = onSubmitIntroClick,
-                    parentalWarnings = parentalWarnings,
-                    showParentalGuide = showParentalGuide,
-                    onParentalGuideAnimationComplete = onParentalGuideAnimationComplete,
-                    onLockToggle = onLockToggle,
-                    onVideoSettingsClick = onVideoSettingsClick,
-                    onOpenInExternalPlayer = onOpenInExternalPlayer,
-                    onPartyClick = onPartyClick,
-                    partyActive = partyActive,
-                    onBack = onBack,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.safeContent.only(WindowInsetsSides.Top))
-                        .padding(
-                            start = metrics.horizontalPadding,
-                            end = metrics.horizontalPadding,
-                            top = metrics.verticalPadding / 4,
-                        ),
-                )
             } else {
                 if (showPlaybackControls) {
                     PlayerToolbar(

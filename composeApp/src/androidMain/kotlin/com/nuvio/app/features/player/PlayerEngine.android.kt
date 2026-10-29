@@ -733,7 +733,7 @@ private fun ExoPlayerSurface(
                     videoAspectRatio = videoSize.width.toFloat() / videoSize.height.toFloat()
                 }
                 playerViewRef?.post {
-                    playerViewRef?.updateAssMargins(videoAspectRatio)
+                    playerViewRef?.syncLibassOverlayGeometry()
                 }
             }
 
