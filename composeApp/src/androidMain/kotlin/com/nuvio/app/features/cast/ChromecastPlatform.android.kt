@@ -81,12 +81,6 @@ internal actual object ChromecastPlatform {
 
         router.addCallback(selector, callback, MediaRouter.CALLBACK_FLAG_REQUEST_DISCOVERY)
 
-        // Also try CastContext discovery via SessionManager?
-        try {
-            val sessionMgr = castContext?.sessionManager
-            // Trigger discovery
-        } catch (_: Exception) {}
-
         delay(timeoutMs.toLong())
 
         router.removeCallback(callback)

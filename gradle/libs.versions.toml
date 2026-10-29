@@ -34,8 +34,6 @@ reorderable = "3.0.0"
 desugarJdkLibs = "2.1.5"
 sentry = "8.47.0"
 sentryGradle = "6.14.0"
-nanohttpd = "2.3.1"
-ffmpeg-kit = "6.0"
 playServicesCast = "21.4.0"
 androidx-mediarouter = "1.7.0"
 
@@ -99,8 +97,6 @@ ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }
 desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref = "desugarJdkLibs" }
 sentry-android = { module = "io.sentry:sentry-android", version.ref = "sentry" }
-nanohttpd = { module = "org.nanohttpd:nanohttpd", version.ref = "nanohttpd" }
-ffmpeg-kit-min-gpl = { module = "com.arthenica:ffmpeg-kit-min-gpl", version.ref = "ffmpeg-kit" }
 play-services-cast = { module = "com.google.android.gms:play-services-cast", version.ref = "playServicesCast" }
 play-services-cast-framework = { module = "com.google.android.gms:play-services-cast-framework", version.ref = "playServicesCast" }
 androidx-mediarouter = { module = "androidx.mediarouter:mediarouter", version.ref = "androidx-mediarouter" }

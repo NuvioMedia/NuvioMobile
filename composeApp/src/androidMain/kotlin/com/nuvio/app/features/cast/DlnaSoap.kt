@@ -101,7 +101,8 @@ internal object DlnaSoap {
             // Actually use locationUrl's origin
             val origin = try {
                 val uri = java.net.URI(locationUrl)
-                "${uri.scheme}://${uri.host}:${uri.port}"
+                val portPart = if (uri.port != -1) ":${uri.port}" else ""
+                "${uri.scheme}://${uri.host}$portPart"
             } catch (_: Exception) {
                 baseUrl ?: ""
             }
@@ -152,13 +153,16 @@ internal object DlnaSoap {
         return try {
             // Look for <RelTime> or <AbsTime> like 0:01:23
             val relTimeRegex = Regex("<RelTime[^>]*>([^<]+)</RelTime>", RegexOption.IGNORE_CASE)
-            val match = relTimeRegex.find(xml)?.groupValues?.getOrNull(1)?.trim()
-            if (match == null || match == "NOT_IMPLEMENTED" || match == "00:00:00") {
-                // Some Samsung return 0 initially, treat as 0
-                if (match == "00:00:00") return 0L
-                return null
+            val relMatch = relTimeRegex.find(xml)?.groupValues?.getOrNull(1)?.trim()
+            val timeStr = if (relMatch != null && relMatch != "NOT_IMPLEMENTED") {
+                relMatch
+            } else {
+                val absTimeRegex = Regex("<AbsTime[^>]*>([^<]+)</AbsTime>", RegexOption.IGNORE_CASE)
+                absTimeRegex.find(xml)?.groupValues?.getOrNull(1)?.trim()
             }
-            parseTimeToMs(match)
+            if (timeStr == null || timeStr == "NOT_IMPLEMENTED") return null
+            if (timeStr == "00:00:00" || timeStr == "0:00:00") return 0L
+            parseTimeToMs(timeStr)
         } catch (_: Exception) { null }
     }
 

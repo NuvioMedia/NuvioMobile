@@ -235,37 +235,6 @@ fun CastBottomSheet(
 }
 
 @Composable
-private fun DlnaDeviceRow(device: DlnaDevice, onClick: () -> Unit) {
-    Surface(
-        tonalElevation = 2.dp,
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-    ) {
-        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-            Box(modifier = Modifier.size(42.dp).clip(CircleShape).background(MaterialTheme.colorScheme.secondaryContainer), contentAlignment = Alignment.Center) {
-                Icon(Icons.Rounded.Tv, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
-            }
-            Spacer(modifier = Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(device.friendlyName, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                    if (!device.modelName.isNullOrBlank()) {
-                        Text(device.modelName, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                    }
-                    device.ipAddress?.let {
-                        Text("• $it", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                if (device.locationUrl.contains("7676") || device.locationUrl.contains("smp_")) {
-                    Text(stringResource(Res.string.cast_samsung_badge), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Medium)
-                }
-            }
-            Icon(Icons.Rounded.Cast, contentDescription = stringResource(Res.string.cast_action), tint = MaterialTheme.colorScheme.primary)
-        }
-    }
-}
-
-@Composable
 private fun UnifiedDeviceRow(device: UnifiedCastDevice, onClick: () -> Unit) {
     val isCast = device.protocol == CastProtocol.CHROMECAST
     Surface(

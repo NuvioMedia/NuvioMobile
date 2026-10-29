@@ -24,6 +24,13 @@ internal actual object DlnaCastPlatform {
 
     private var appContext: Context? = null
 
+    private val httpClient: OkHttpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(5, TimeUnit.SECONDS)
+            .readTimeout(5, TimeUnit.SECONDS)
+            .build()
+    }
+
     fun initialize(context: Context) {
         appContext = context.applicationContext
     }
@@ -108,10 +115,7 @@ internal actual object DlnaCastPlatform {
                 return@withContext DlnaScanResult.Success(emptyList())
             }
 
-            val client = OkHttpClient.Builder()
-                .connectTimeout(3, TimeUnit.SECONDS)
-                .readTimeout(3, TimeUnit.SECONDS)
-                .build()
+            val client = httpClient
 
             val devices = mutableListOf<DlnaDevice>()
             for (location in locations) {
@@ -190,10 +194,7 @@ internal actual object DlnaCastPlatform {
         val setUriBody = DlnaSoap.buildSetAvTransportUriBody(uri = directUrl, metadata = didl)
         val playBody = DlnaSoap.buildPlayBody()
 
-        val client = OkHttpClient.Builder()
-            .connectTimeout(5, TimeUnit.SECONDS)
-            .readTimeout(5, TimeUnit.SECONDS)
-            .build()
+        val client = httpClient
 
         val setReq = Request.Builder()
             .url(device.controlUrl)
@@ -229,7 +230,7 @@ internal actual object DlnaCastPlatform {
 
     actual suspend fun stopPlayback(device: DlnaDevice): Boolean = withContext(Dispatchers.IO) {
         return@withContext try {
-            val client = OkHttpClient.Builder().connectTimeout(3, TimeUnit.SECONDS).readTimeout(3, TimeUnit.SECONDS).build()
+            val client = httpClient
             val body = DlnaSoap.buildStopBody()
             val req = Request.Builder()
                 .url(device.controlUrl)
@@ -248,7 +249,7 @@ internal actual object DlnaCastPlatform {
 
     actual suspend fun pausePlayback(device: DlnaDevice): Boolean = withContext(Dispatchers.IO) {
         return@withContext try {
-            val client = OkHttpClient.Builder().connectTimeout(3, TimeUnit.SECONDS).readTimeout(3, TimeUnit.SECONDS).build()
+            val client = httpClient
             val body = DlnaSoap.buildPauseBody()
             val req = Request.Builder()
                 .url(device.controlUrl)
@@ -267,7 +268,7 @@ internal actual object DlnaCastPlatform {
 
     actual suspend fun resumePlayback(device: DlnaDevice): Boolean = withContext(Dispatchers.IO) {
         return@withContext try {
-            val client = OkHttpClient.Builder().connectTimeout(3, TimeUnit.SECONDS).readTimeout(3, TimeUnit.SECONDS).build()
+            val client = httpClient
             val body = DlnaSoap.buildPlayBody()
             val req = Request.Builder()
                 .url(device.controlUrl)
@@ -286,7 +287,7 @@ internal actual object DlnaCastPlatform {
 
     actual suspend fun getPositionInfo(device: DlnaDevice): Long? = withContext(Dispatchers.IO) {
         return@withContext try {
-            val client = OkHttpClient.Builder().connectTimeout(3, TimeUnit.SECONDS).readTimeout(3, TimeUnit.SECONDS).build()
+            val client = httpClient
             val body = DlnaSoap.buildGetPositionInfoBody()
             val req = Request.Builder()
                 .url(device.controlUrl)
@@ -305,7 +306,7 @@ internal actual object DlnaCastPlatform {
 
     actual suspend fun seekPlayback(device: DlnaDevice, positionMs: Long): Boolean = withContext(Dispatchers.IO) {
         return@withContext try {
-            val client = OkHttpClient.Builder().connectTimeout(3, TimeUnit.SECONDS).readTimeout(3, TimeUnit.SECONDS).build()
+            val client = httpClient
             val target = DlnaSoap.formatDurationMs(positionMs)
             val body = DlnaSoap.buildSeekBody(target = target)
             val req = Request.Builder()
@@ -325,7 +326,7 @@ internal actual object DlnaCastPlatform {
 
     actual suspend fun setVolume(device: DlnaDevice, volumePercent: Int): Boolean = withContext(Dispatchers.IO) {
         return@withContext try {
-            val client = OkHttpClient.Builder().connectTimeout(3, TimeUnit.SECONDS).readTimeout(3, TimeUnit.SECONDS).build()
+            val client = httpClient
             val renderingUrl = device.renderingControlUrl ?: device.controlUrl
             val body = DlnaSoap.buildSetVolumeBody(desiredVolume = volumePercent.coerceIn(0, 100))
             val req = Request.Builder()

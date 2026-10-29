@@ -58,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.LocalFold
+import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.features.cast.DlnaCastRequest
 import com.nuvio.app.features.cast.SubtitleTrackInfo
 import com.nuvio.app.features.cast.UnifiedCastRepository
@@ -933,6 +934,14 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
     val unifiedState by UnifiedCastRepository.state.collectAsState()
     val isCasting = unifiedState is UnifiedCastState.Casting
 
+    // Show feedback if an error occurs while connecting/casting
+    LaunchedEffect(unifiedState) {
+        val errorState = unifiedState as? UnifiedCastState.Error
+        if (errorState != null) {
+            showGestureMessage("Cast error: ${errorState.message}")
+        }
+    }
+
     // Pause local playback when casting starts
     LaunchedEffect(isCasting) {
         if (isCasting) {
@@ -989,6 +998,8 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
         playerController?.seekTo(resumePos)
         playerController?.play()
     }
+
+    PlatformBackHandler(enabled = isCasting, onBack = stopCastingAndResume)
 
     val displayPos = scrubRemoteMs ?: remotePosMs
     val duration = remoteDurationMs.coerceAtLeast(1L)
