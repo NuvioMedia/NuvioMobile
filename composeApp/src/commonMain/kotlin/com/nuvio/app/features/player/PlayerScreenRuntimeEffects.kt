@@ -43,9 +43,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
+import com.nuvio.app.core.network.NetworkCondition
+import com.nuvio.app.core.network.NetworkStatusRepository
+import com.nuvio.app.core.ui.LocalFold
+import androidx.compose.runtime.derivedStateOf
+import kotlinx.coroutines.withTimeoutOrNull
 
 @Composable
 internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
+    val networkCondition = rememberNetworkCondition()
     val deadLinkScope = rememberCoroutineScope()
     val deadLinkMonitor = remember(deadLinkScope) {
         DeadLinkStartupMonitor(
