@@ -50,6 +50,7 @@ actual object PlayerSettingsStorage {
     private const val streamReuseLastLinkEnabledKey = "stream_reuse_last_link_enabled"
     private const val streamReuseLastLinkCacheHoursKey = "stream_reuse_last_link_cache_hours"
     private const val androidPlaybackEngineKey = "android_playback_engine"
+    private const val autoSwitchPlaybackEngineOnErrorKey = "auto_switch_playback_engine_on_error"
     private const val androidLibmpvVideoOutputKey = "android_libmpv_video_output"
     private const val androidLibmpvHardwareDecodingEnabledKey = "android_libmpv_hardware_decoding_enabled"
     private const val androidLibmpvYuv420pEnabledKey = "android_libmpv_yuv420p_enabled"
@@ -138,6 +139,7 @@ actual object PlayerSettingsStorage {
         streamReuseLastLinkEnabledKey,
         streamReuseLastLinkCacheHoursKey,
         androidPlaybackEngineKey,
+        autoSwitchPlaybackEngineOnErrorKey,
         androidLibmpvVideoOutputKey,
         androidLibmpvHardwareDecodingEnabledKey,
         androidLibmpvYuv420pEnabledKey,
@@ -577,6 +579,12 @@ actual object PlayerSettingsStorage {
         NSUserDefaults.standardUserDefaults.setObject(engine, forKey = ProfileScopedKey.of(androidPlaybackEngineKey))
     }
 
+    actual fun loadAutoSwitchPlaybackEngineOnError(): Boolean? = loadBoolean(autoSwitchPlaybackEngineOnErrorKey)
+
+    actual fun saveAutoSwitchPlaybackEngineOnError(enabled: Boolean) {
+        saveBoolean(autoSwitchPlaybackEngineOnErrorKey, enabled)
+    }
+
     actual fun loadAndroidLibmpvVideoOutput(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(androidLibmpvVideoOutputKey))
 
@@ -998,6 +1006,10 @@ actual object PlayerSettingsStorage {
 
     actual fun saveLibassRenderScale(scale: String) {}
 
+    actual fun loadLibassRenderMode(): String? = null
+
+    actual fun saveLibassRenderMode(mode: String) {}
+
     actual fun loadIosVideoOutputPreset(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(iosVideoOutputPresetKey))
 
@@ -1129,6 +1141,9 @@ actual object PlayerSettingsStorage {
         loadStreamReuseLastLinkEnabled()?.let { put(streamReuseLastLinkEnabledKey, encodeSyncBoolean(it)) }
         loadStreamReuseLastLinkCacheHours()?.let { put(streamReuseLastLinkCacheHoursKey, encodeSyncInt(it)) }
         loadAndroidPlaybackEngine()?.let { put(androidPlaybackEngineKey, encodeSyncString(it)) }
+        loadAutoSwitchPlaybackEngineOnError()?.let {
+            put(autoSwitchPlaybackEngineOnErrorKey, encodeSyncBoolean(it))
+        }
         loadAndroidLibmpvVideoOutput()?.let { put(androidLibmpvVideoOutputKey, encodeSyncString(it)) }
         loadAndroidLibmpvHardwareDecodingEnabled()?.let {
             put(androidLibmpvHardwareDecodingEnabledKey, encodeSyncBoolean(it))
@@ -1211,6 +1226,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncBoolean(streamReuseLastLinkEnabledKey)?.let(::saveStreamReuseLastLinkEnabled)
         payload.decodeSyncInt(streamReuseLastLinkCacheHoursKey)?.let(::saveStreamReuseLastLinkCacheHours)
         payload.decodeSyncString(androidPlaybackEngineKey)?.let(::saveAndroidPlaybackEngine)
+        payload.decodeSyncBoolean(autoSwitchPlaybackEngineOnErrorKey)?.let(::saveAutoSwitchPlaybackEngineOnError)
         payload.decodeSyncString(androidLibmpvVideoOutputKey)?.let(::saveAndroidLibmpvVideoOutput)
         payload.decodeSyncBoolean(androidLibmpvHardwareDecodingEnabledKey)
             ?.let(::saveAndroidLibmpvHardwareDecodingEnabled)

@@ -66,12 +66,6 @@ internal fun Modifier.playerSurfaceDragGestures(
         awaitEachGesture {
             val down = awaitFirstDown()
             if (playerControlsLockedState.value) {
-                while (true) {
-                    val event = awaitPointerEvent()
-                    val change = event.changes.firstOrNull { it.id == down.id } ?: break
-                    if (!change.pressed) break
-                    change.consume()
-                }
                 return@awaitEachGesture
             }
             if (!touchGesturesEnabledState.value) {

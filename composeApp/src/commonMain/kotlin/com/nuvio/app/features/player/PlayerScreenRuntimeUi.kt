@@ -222,6 +222,34 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 DisposableEffect(Unit) {
                     onDispose { active.value = false }
                 }
+                // Genres/country come from metadata that can load after first composition, so
+                // the resolution re-runs while the source is still loading; once playback has
+                // loaded the engine is frozen, because a late metadata update must never
+                // restart a playing stream.
+                val resolvedAutoEngineState =
+                    remember(playbackKey.copy(playbackEngine = null)) { mutableStateOf<AndroidPlaybackEngine?>(null) }
+                if (!initialLoadCompleted || resolvedAutoEngineState.value == null) {
+                    resolvedAutoEngineState.value = resolveAutoPlaybackEngine(
+                        playbackEngineSetting = playerSettingsUiState.androidPlaybackEngine,
+                        videoId = activeVideoId,
+                        streamFilename = activeTorrentFilename ?: activeStreamFilename,
+                        streamName = activeStreamTitle,
+                        streamDescription = activeStreamSubtitle,
+                        contentTitle = title,
+                        genres = playerMeta?.genres.orEmpty(),
+                        country = playerMeta?.country,
+                    )
+                }
+                val resolvedAutoEngine = resolvedAutoEngineState.value
+                // Failover and manual switches are scoped to one source: a new source re-arms
+                // the failover and clears the previous engine choice. Keyed on the source, not
+                // on the full playbackKey, which includes the engine override — an effect keyed
+                // on it would undo the very switch that changed the key.
+                LaunchedEffect(playbackKey.copy(playbackEngine = null)) {
+                    engineFailoverTriggered = false
+                    engineFailoverDisarmed = false
+                    playbackEngineOverride = null
+                }
                 PlatformPlayerSurface(
                     sourceUrl = playerSurfaceSourceUrl,
                     sourceAudioUrl = activeSourceAudioUrl,
@@ -234,7 +262,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     initialPositionMs = activeInitialPositionMs.takeIf { it > 0L },
                     initialPositionRequestKey = initialPositionRequestKey,
                     resizeMode = resizeMode,
-                    playbackEngine = playbackEngineOverride,
+                    playbackEngine = playbackEngineOverride ?: resolvedAutoEngine,
                     onInitialPositionHandled = { key, handled ->
                         if (active.value && playbackKey == activePlaybackKey && key == currentInitialPositionRequestKey()) {
                             initialSeekApplied = handled
@@ -258,6 +286,11 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     onError = { message ->
                         if (!active.value || playbackKey != activePlaybackKey) return@PlatformPlayerSurface
                         if (message != null && tryRefreshCredentialedSourceAfterError(message)) {
+                            return@PlatformPlayerSurface
+                        }
+                        // Engine failover is decided here, driven by its own player setting;
+                        // the engine's own decoder/MIME retries have already been tried.
+                        if (message != null && maybeFailoverPlaybackEngine(resolvedAutoEngine)) {
                             return@PlatformPlayerSurface
                         }
                         errorMessage = message

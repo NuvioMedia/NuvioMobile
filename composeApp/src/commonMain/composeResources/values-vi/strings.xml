@@ -447,6 +447,10 @@
     <string name="compose_player_outline_color">Màu viền</string>
     <string name="compose_player_panel_episodes">Tập phim</string>
     <string name="compose_player_panel_sources">Nguồn</string>
+    <string name="compose_player_chapters">Chương</string>
+    <string name="compose_player_panel_chapters">Chương (%1$d)</string>
+    <string name="compose_player_chapter_number">Chương %1$d</string>
+    <string name="compose_player_chapter_remaining">Còn lại %1$s</string>
     <string name="compose_player_panel_streams">Luồng</string>
     <string name="compose_player_playback_error">Lỗi phát lại</string>
     <string name="compose_player_playing">Đang phát</string>
@@ -1250,6 +1254,8 @@
     <string name="settings_playback_vod_cache_size">Dung lượng bộ nhớ đệm VOD</string>
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Ghi đĩa vẫn tiếp tục khi phát luồng đã đệm. Dung lượng mới sẽ áp dụng từ lần khởi động ứng dụng tiếp theo.</string>
+    <string name="settings_playback_exo_chapters">Hiển thị chương</string>
+    <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng. Thực hiện thêm một vài yêu cầu nhỏ khi bắt đầu phát lại. libmpv luôn hiển thị các chương.</string>
     <string name="settings_tmdb_api_key_label">Mã khoá API</string>
     <string name="settings_tmdb_api_key_override_description">Dùng mã khóa API TMDB của riêng bạn hoặc bỏ trống để sử dụng mặc định.</string>
     <string name="settings_tmdb_personal_api_key">Mã khóa API cá nhân</string>
