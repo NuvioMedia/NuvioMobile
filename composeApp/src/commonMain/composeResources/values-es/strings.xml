@@ -2366,7 +2366,6 @@ Utilizas esta función bajo tu propia responsabilidad. P2P se puede desactivar e
     <string name="layout_ratings_hide_unwatched">Ocultar no vistos</string>
     <string name="settings_playback_legacy_layout">Diseño clásico</string>
     <string name="settings_playback_legacy_layout_description">Usar los controles de reproductor originales.</string>
-    <string name="compose_player_via">Vía %1$s</string>
     <string name="compose_player_episode_code">T%1$d E%2$d</string>
     <string name="compose_player_more_actions">Más controles</string>
     <string name="compose_player_fewer_actions">Menos controles</string>

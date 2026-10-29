@@ -447,6 +447,10 @@
     <string name="compose_player_outline_color">Cor do contorno</string>
     <string name="compose_player_panel_episodes">Episódios</string>
     <string name="compose_player_panel_sources">Fontes</string>
+    <string name="compose_player_chapters">Capítulos</string>
+    <string name="compose_player_panel_chapters">Capítulos (%1$d)</string>
+    <string name="compose_player_chapter_number">Capítulo %1$d</string>
+    <string name="compose_player_chapter_remaining">faltam %1$s</string>
     <string name="compose_player_panel_streams">Streams</string>
     <string name="compose_player_playback_error">Erro de reprodução</string>
     <string name="compose_player_playing">Reproduzindo</string>
@@ -941,6 +945,8 @@
     <string name="settings_mdb_section_api_key">CHAVE DE API</string>
     <string name="settings_mdb_section_rating_providers">PROVEDORES EXTERNOS DE CLASSIFICAÇÕES</string>
     <string name="settings_mdb_section_title">CLASSIFICAÇÕES DO MDBList</string>
+    <string name="settings_mdb_show_on_hero">Usar avaliações no destaque</string>
+    <string name="settings_mdb_show_on_hero_description">Exibir avaliações do MDBList no destaque da tela inicial</string>
     <string name="settings_meta_actions">Ações</string>
     <string name="settings_meta_actions_description">Controles de reprodução e salvamento.</string>
     <string name="settings_meta_cast">Elenco</string>
@@ -1146,6 +1152,8 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Menor</string>
     <string name="settings_playback_regex_preset_web_sources">Fontes WEB</string>
     <string name="settings_playback_render_type">Modo de Renderização Libass</string>
+    <string name="settings_playback_render_scale">Resolução de renderização das legendas</string>
+    <string name="settings_playback_render_scale_description">Resolução menor melhora o desempenho em legendas com formatação pesada, ao custo de nitidez</string>
     <string name="settings_playback_reuse_last_link">Reutilizar Último Link</string>
     <string name="settings_playback_reuse_last_link_description">Reproduzir automaticamente sua última stream funcional para este mesmo filme/episódio enquanto o cache estiver válido</string>
     <string name="settings_playback_secondary_audio_language">Segundo Idioma de Áudio</string>
@@ -1249,6 +1257,8 @@
     <string name="settings_tmdb_api_key_label">Chave de API</string>
     <string name="settings_tmdb_api_key_override_description">Use sua própria chave de API do TMDB ou deixe em branco para usar a padrão.</string>
     <string name="settings_tmdb_personal_api_key">Chave de API pessoal</string>
+    <string name="settings_playback_exo_chapters">Mostrar Capítulos</string>
+    <string name="settings_playback_exo_chapters_description">Lê os capítulos dos arquivos MKV para marcá-los na barra de progresso e listá-los no player. Faz algumas pequenas requisições extras quando a reprodução começa. O libmpv sempre mostra os capítulos</string>
     <string name="settings_tmdb_enable_enrichment">Ativar Enriquecimento do TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Usar o TMDB como fonte de metadados para aprimorar dados de addons</string>
     <string name="settings_tmdb_language_code_label">Código de idioma</string>
@@ -2395,7 +2405,6 @@
     <string name="layout_ratings_hide_unwatched">Ocultar não assistidos</string>
     <string name="settings_playback_legacy_layout">Layout clássico</string>
     <string name="settings_playback_legacy_layout_description">Usar os controles originais do player.</string>
-    <string name="compose_player_via">Via %1$s</string>
     <string name="compose_player_episode_code">T%1$d E%2$d</string>
     <string name="compose_player_more_actions">Mais controles</string>
     <string name="compose_player_fewer_actions">Menos controles</string>

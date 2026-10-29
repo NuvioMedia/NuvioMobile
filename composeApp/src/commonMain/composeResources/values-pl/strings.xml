@@ -860,6 +860,13 @@
     <string name="settings_playback_render_type">Typ renderowania</string>
     <string name="settings_playback_render_scale">Rozdzielczość renderowania napisów</string>
     <string name="settings_playback_render_scale_description">Niższa rozdzielczość poprawia wydajność przy ciężkim typesettingu kosztem ostrości</string>
+    <string name="settings_playback_render_mode">Tryb renderowania ASS</string>
+    <string name="settings_playback_render_mode_description">Sposób rysowania napisów ASS/SSA na wideo</string>
+    <string name="settings_playback_render_mode_tunneled">Tunelowane odtwarzanie omija pipeline efektów wideo. Nakładka jest używana automatycznie.</string>
+    <string name="settings_playback_render_mode_video_effect">Efekt wideo</string>
+    <string name="settings_playback_render_mode_video_effect_description">Rysuje napisy bezpośrednio na każdej klatce wideo. Idealnie dokładny timing na każdym sprzęcie. Treści HDR są konwertowane do SDR.</string>
+    <string name="settings_playback_render_mode_overlay">Nakładka</string>
+    <string name="settings_playback_render_mode_overlay_description">Renderuje napisy na osobnej warstwie. Zachowuje wyjście HDR. Timing napisów może nie być idealnie dokładny na niektórych urządzeniach.</string>
     <string name="settings_playback_reuse_last_link">Użyj ponownie ostatniego linku</string>
     <string name="settings_playback_reuse_last_link_description">Automatycznie odtwórz ostatni działający strumień dla tego samego filmu/odcinka, gdy pamięć podręczna jest nadal ważna.</string>
     <string name="settings_playback_secondary_audio_language">Drugorzędny język audio</string>

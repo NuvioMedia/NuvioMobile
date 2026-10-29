@@ -2373,7 +2373,6 @@
     <string name="player_skip_to_post_credits">Ugrás a stáblista utáni jelenethez</string>
     <string name="settings_playback_legacy_layout">Klasszikus elrendezés</string>
     <string name="settings_playback_legacy_layout_description">Az eredeti lejátszóvezérlők használata.</string>
-    <string name="compose_player_via">Keresztül: %1$s</string>
     <string name="compose_player_episode_code">S%1$d E%2$d</string>
     <string name="compose_player_more_actions">További vezérlők</string>
     <string name="compose_player_fewer_actions">Kevesebb vezérlő</string>

@@ -601,7 +601,6 @@
     <string name="compose_player_text_opacity">Tekstopasitet</string>
     <string name="compose_player_track_number">Spor %1$d</string>
     <string name="compose_player_unlock_controls">Lås opp avspillerkontroller</string>
-    <string name="compose_player_via">Via %1$s</string>
     <string name="compose_player_volume">Volum</string>
     <string name="compose_player_volume_level">Volum %1$s</string>
     <string name="compose_player_youre_watching">Du ser på</string>

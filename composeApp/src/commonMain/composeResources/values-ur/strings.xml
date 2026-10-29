@@ -2339,7 +2339,6 @@
     <string name="layout_ratings_hide_unwatched">نہ دیکھی گئی اقساط کی ریٹنگز چھپائیں</string>
     <string name="settings_playback_legacy_layout">پرانا Layout</string>
     <string name="settings_playback_legacy_layout_description">اصل Player controls استعمال کریں۔</string>
-    <string name="compose_player_via">%1$s کے ذریعے</string>
     <string name="compose_player_episode_code">S%1$d E%2$d</string>
     <string name="compose_player_more_actions">مزید کنٹرولز</string>
     <string name="compose_player_fewer_actions">کم کنٹرولز</string>

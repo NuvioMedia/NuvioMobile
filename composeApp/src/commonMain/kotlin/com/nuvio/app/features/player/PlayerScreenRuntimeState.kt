@@ -24,6 +24,21 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlin.time.TimeMark
 
+/**
+ * Audio/subtitle selection captured right before the playback engine changes, together with the
+ * engine expected to take over. Re-applied as soon as the new engine exposes its track list.
+ */
+internal data class PendingEngineSwitchTrackPreference(
+    val sourceIdentity: String,
+    val capturedController: PlayerEngineController?,
+    val targetEngine: AndroidPlaybackEngine,
+    val preference: PersistedPlayerTrackPreference,
+    val hasAudioSelection: Boolean,
+    val hasSubtitleSelection: Boolean,
+    val audioApplied: Boolean = false,
+    val subtitleApplied: Boolean = false,
+)
+
 internal class PlayerScreenRuntime(
     args: PlayerScreenArgs,
 ) {
@@ -116,6 +131,8 @@ internal class PlayerScreenRuntime(
     )
     var activeStreamTitle by mutableStateOf(streamTitle)
     var activeStreamSubtitle by mutableStateOf(streamSubtitle)
+    // behaviorHints filename (or URL basename) for the auto engine resolver's HDR/DV detection.
+    var activeStreamFilename by mutableStateOf(sourceFilenameFromUrl(sourceUrl))
     var activeProviderName by mutableStateOf(providerName)
     var activeProviderAddonId by mutableStateOf(providerAddonId)
     var activeStream by mutableStateOf(args.stream)
@@ -165,6 +182,11 @@ internal class PlayerScreenRuntime(
 
     var showSourcesPanel by mutableStateOf(false)
     var showEpisodesPanel by mutableStateOf(false)
+    var showChaptersPanel by mutableStateOf(false)
+    /** The file's chapters, sorted; empty when it has fewer than two. */
+    var chapters by mutableStateOf<List<PlayerChapter>>(emptyList())
+    /** The source whose chapters [chapters] holds, so a rebuffer does not read them again. */
+    var chaptersLoadedForSourceUrl: String? = null
     var showSubmitIntroModal by mutableStateOf(false)
     var showSwitchEngineConfirm by mutableStateOf(false)
     var submitIntroSegmentType by mutableStateOf("intro")
@@ -202,6 +224,9 @@ internal class PlayerScreenRuntime(
     var showStreamInfo by mutableStateOf(false)
     var showPartyPanel by mutableStateOf(false)
     var showPartyChat by mutableStateOf(false)
+    val isPanelOpen: Boolean
+        get() = showAudioModal || showSubtitleModal || showVideoSettingsModal || showStreamInfo ||
+            showPartyPanel || showSourcesPanel || showEpisodesPanel || showSubmitIntroModal
     var partyBehind by mutableStateOf(false)
     var partyBehindMs by mutableStateOf<Long?>(null)
     var partyRateNudge: Float? = null
@@ -211,6 +236,9 @@ internal class PlayerScreenRuntime(
     var pendingSeekTarget: Pair<Long, TimeMark>? = null
     var streamMediaInfo by mutableStateOf(PlayerMediaInfo())
     var playbackEngineOverride by mutableStateOf<AndroidPlaybackEngine?>(null)
+    var engineFailoverTriggered by mutableStateOf(false)
+    var engineFailoverDisarmed by mutableStateOf(false)
+    var pendingEngineSwitchTrackPreference by mutableStateOf<PendingEngineSwitchTrackPreference?>(null)
     var audioTracks by mutableStateOf<List<AudioTrack>>(emptyList())
     var serverAudioTracks by mutableStateOf<List<AudioTrack>>(emptyList())
     var serverSubtitleTracks by mutableStateOf<List<SubtitleTrack>>(emptyList())

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="autosync_toast_failed">Синхронизирането е неуспешно: Автоматичното синхронизиране не можа да съпостави тези субтитри с видеото.</string>
+  <string name="autosync_toast_failed_no_reference">Синхронизирането е неуспешно: Няма използваеми вградени субтитри за сравнение.</string>
+  <string name="autosync_toast_failed_unsupported">Синхронизирането е неуспешно: Този формат на субтитрите не се поддържа.</string>
+  <string name="autosync_label_synced">Автоматично синхронизирано</string>
+</resources>

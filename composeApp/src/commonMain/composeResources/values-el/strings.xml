@@ -2362,7 +2362,6 @@
     <string name="layout_ratings_hide_unwatched">Απόκρυψη μη προβληθέντων</string>
     <string name="settings_playback_legacy_layout">Παλαιότερη διάταξη</string>
     <string name="settings_playback_legacy_layout_description">Χρήση των αρχικών ελέγχων αναπαραγωγής.</string>
-    <string name="compose_player_via">Μέσω %1$s</string>
     <string name="compose_player_episode_code">S%1$d E%2$d</string>
     <string name="compose_player_more_actions">Περισσότεροι έλεγχοι</string>
     <string name="compose_player_fewer_actions">Λιγότεροι έλεγχοι</string>

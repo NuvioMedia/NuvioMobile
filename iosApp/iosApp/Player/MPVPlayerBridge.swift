@@ -496,12 +496,16 @@ final class MPVPlayerViewController: UIViewController {
         metalLayer.position = .zero
         metalLayer.bounds = CGRect(origin: .zero, size: bounds.size)
         pictureInPictureController?.displayLayer.frame = bounds
-        if drawableSize != lastAppliedDrawableSize {
+        let drawableSizeChanged = drawableSize != lastAppliedDrawableSize
+        if drawableSizeChanged {
             // mpv's moltenvk context polls drawableSize and resizes its swapchain.
             metalLayer.drawableSize = drawableSize
             lastAppliedDrawableSize = drawableSize
         }
         CATransaction.commit()
+        if drawableSizeChanged {
+            command("osd-overlay", args: ["1", "ass-events", ""], checkForErrors: false)
+        }
     }
 
     // MARK: - MPV Setup

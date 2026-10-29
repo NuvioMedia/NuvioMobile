@@ -447,6 +447,10 @@
     <string name="compose_player_outline_color">Màu viền</string>
     <string name="compose_player_panel_episodes">Tập phim</string>
     <string name="compose_player_panel_sources">Nguồn</string>
+    <string name="compose_player_chapters">Chương</string>
+    <string name="compose_player_panel_chapters">Chương (%1$d)</string>
+    <string name="compose_player_chapter_number">Chương %1$d</string>
+    <string name="compose_player_chapter_remaining">Còn lại %1$s</string>
     <string name="compose_player_panel_streams">Luồng</string>
     <string name="compose_player_playback_error">Lỗi phát lại</string>
     <string name="compose_player_playing">Đang phát</string>
@@ -941,6 +945,8 @@
     <string name="settings_mdb_section_api_key">MÃ KHÓA API</string>
     <string name="settings_mdb_section_rating_providers">NHÀ CUNG CẤP ĐIỂM ĐÁNH GIÁ BÊN NGOÀI</string>
     <string name="settings_mdb_section_title">ĐIỂM ĐÁNH GIÁ MDBList</string>
+    <string name="settings_mdb_show_on_hero">Sử dụng điểm đánh giá trên Khu vực nổi bật</string>
+    <string name="settings_mdb_show_on_hero_description">Hiển thị điểm đánh giá MDBList trên khu vực nổi bật của Trang chủ</string>
     <string name="settings_meta_actions">Thao tác</string>
     <string name="settings_meta_actions_description">Phát và lưu nội dung</string>
     <string name="settings_meta_cast">Diễn viên</string>
@@ -1146,6 +1152,8 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Dung lượng nhỏ</string>
     <string name="settings_playback_regex_preset_web_sources">Nguồn WEB</string>
     <string name="settings_playback_render_type">Chế độ kết xuất libass</string>
+    <string name="settings_playback_render_scale">Độ phân giải kết xuất phụ đề</string>
+    <string name="settings_playback_render_scale_description">Độ phân giải thấp hơn giúp tăng hiệu năng khi xử lý hiệu ứng phụ đề phức tạp nhưng làm giảm độ sắc nét</string>
     <string name="settings_playback_reuse_last_link">Dùng lại liên kết cuối</string>
     <string name="settings_playback_reuse_last_link_description">Tự động phát luồng hoạt động gần nhất cho cùng một phim điện ảnh/tập phim khi bộ nhớ đệm vẫn còn hiệu lực.</string>
     <string name="settings_playback_secondary_audio_language">Ngôn ngữ âm thanh phụ</string>
@@ -1246,6 +1254,8 @@
     <string name="settings_playback_vod_cache_size">Dung lượng bộ nhớ đệm VOD</string>
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Ghi đĩa vẫn tiếp tục khi phát luồng đã đệm. Dung lượng mới sẽ áp dụng từ lần khởi động ứng dụng tiếp theo.</string>
+    <string name="settings_playback_exo_chapters">Hiển thị chương</string>
+    <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng. Thực hiện thêm một vài yêu cầu nhỏ khi bắt đầu phát lại. libmpv luôn hiển thị các chương.</string>
     <string name="settings_tmdb_api_key_label">Mã khoá API</string>
     <string name="settings_tmdb_api_key_override_description">Dùng mã khóa API TMDB của riêng bạn hoặc bỏ trống để sử dụng mặc định.</string>
     <string name="settings_tmdb_personal_api_key">Mã khóa API cá nhân</string>
@@ -2395,7 +2405,6 @@
     <string name="layout_ratings_hide_unwatched">Ẩn mục Chưa xem</string>
      <string name="settings_playback_legacy_layout">Bố cục kiểu cũ</string>
     <string name="settings_playback_legacy_layout_description">Sử dụng các nút điều khiển gốc của trình phát.</string>
-    <string name="compose_player_via">Qua %1$s</string>
     <string name="compose_player_episode_code">M%1$d T%2$d</string>
     <string name="compose_player_more_actions">Thêm nút điều khiển</string>
     <string name="compose_player_fewer_actions">Ẩn nút điều khiển</string>

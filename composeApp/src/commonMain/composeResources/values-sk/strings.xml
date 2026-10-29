@@ -2355,7 +2355,6 @@
     <string name="player_skip_to_post_credits">Preskočiť na potitulkovú scénu</string>
     <string name="settings_playback_legacy_layout">Pôvodné rozloženie</string>
     <string name="settings_playback_legacy_layout_description">Použiť pôvodné ovládacie prvky prehrávača.</string>
-    <string name="compose_player_via">Cez %1$s</string>
     <string name="compose_player_episode_code">S%1$d E%2$d</string>
     <string name="compose_player_more_actions">Viac ovládacích prvkov</string>
     <string name="compose_player_fewer_actions">Menej ovládacích prvkov</string>

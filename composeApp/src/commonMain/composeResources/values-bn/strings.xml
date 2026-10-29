@@ -2349,7 +2349,6 @@
     <string name="layout_ratings_hide_unwatched">অদেখা হাইড করুন</string>
     <string name="settings_playback_legacy_layout">উত্তরাধিকার লেআউট</string>
     <string name="settings_playback_legacy_layout_description">মূল প্লেয়ার নিয়ন্ত্রণ ব্যবহার করুন।</string>
-    <string name="compose_player_via">%1$s-এর মাধ্যমে</string>
     <string name="compose_player_episode_code">S%1$d E%2$d</string>
     <string name="compose_player_more_actions">আরও কন্ট্রোল</string>
     <string name="compose_player_fewer_actions">কম কন্ট্রোল</string>
