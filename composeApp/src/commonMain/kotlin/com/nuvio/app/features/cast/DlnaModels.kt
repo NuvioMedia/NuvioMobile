@@ -10,6 +10,7 @@ data class DlnaDevice(
     val eventSubUrl: String? = null,
     val avTransportServiceType: String = "urn:schemas-upnp-org:service:AVTransport:1",
     val ipAddress: String? = null,
+    val renderingControlUrl: String? = null,
 )
 
 data class DlnaCastRequest(
@@ -21,8 +22,12 @@ data class DlnaCastRequest(
     val codecHint: String? = null, // hevc, avc, av1 ...
     val durationMs: Long? = null,
     val subtitleUrl: String? = null,
+    val subtitleName: String? = null,
+    val subtitleLanguage: String? = null,
+    val subtitles: List<SubtitleTrackInfo> = emptyList(),
     val subtitleHeaders: Map<String, String> = emptyMap(),
     val startPositionMs: Long = 0L,
+    val posterUrl: String? = null,
 )
 
 sealed interface DlnaCastState {

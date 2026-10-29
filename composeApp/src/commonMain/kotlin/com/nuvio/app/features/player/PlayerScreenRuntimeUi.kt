@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.VolumeDown
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Audiotrack
 import androidx.compose.material.icons.rounded.CastConnected
 import androidx.compose.material.icons.rounded.Close
@@ -56,9 +58,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.LocalFold
-import com.nuvio.app.features.cast.DlnaCastRepository
 import com.nuvio.app.features.cast.DlnaCastRequest
-import com.nuvio.app.features.cast.DlnaCastState
+import com.nuvio.app.features.cast.SubtitleTrackInfo
+import com.nuvio.app.features.cast.UnifiedCastRepository
+import com.nuvio.app.features.cast.UnifiedCastState
+import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.party.PartyRepository
 import com.nuvio.app.features.p2p.formatP2pMegabytes
@@ -371,9 +375,8 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
 ) {
     val isInPip = rememberIsInPictureInPicture()
     // Hide local controls when casting to TV - remote controls shown instead
-    val dlnaState by DlnaCastRepository.state.collectAsState()
-    val unifiedState by com.nuvio.app.features.cast.UnifiedCastRepository.state.collectAsState()
-    val isCastingLocal = dlnaState is DlnaCastState.Casting || unifiedState is com.nuvio.app.features.cast.UnifiedCastState.Casting
+    val unifiedState by UnifiedCastRepository.state.collectAsState()
+    val isCastingLocal = unifiedState is UnifiedCastState.Casting
     if (isCastingLocal) return
 
     val partyState by PartyRepository.state.collectAsStateWithLifecycle()
@@ -649,7 +652,24 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             (externalSubtitles.firstOrNull { it.url == subUrl }?.headers
                 ?: addonSubtitles.firstOrNull { it.url == subUrl }?.let { emptyMap() } // addon subs have no headers
                 ?: emptyMap())
-        } else emptyMap()
+        } else {
+            emptyMap()
+        }
+        val subtitleTrackList = (externalSubtitles.map {
+            SubtitleTrackInfo(
+                url = it.url,
+                name = it.name ?: it.language,
+                lang = it.language,
+            )
+        } + addonSubtitles.map {
+            SubtitleTrackInfo(
+                url = it.url,
+                name = it.display,
+                lang = it.language,
+            )
+        })
+        val selectedSubName = if (useCustomSubtitles) selectedAddonSubtitle?.display else null
+        val selectedSubLang = if (useCustomSubtitles) selectedAddonSubtitle?.language else null
         val castRequest = DlnaCastRequest(
             sourceUrl = effectiveUrl,
             sourceHeaders = activeSourceHeaders,
@@ -664,8 +684,12 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             codecHint = codecHint,
             durationMs = playbackSnapshot.durationMs.takeIf { it > 0 },
             subtitleUrl = subUrl,
+            subtitleName = selectedSubName,
+            subtitleLanguage = selectedSubLang,
+            subtitles = subtitleTrackList,
             subtitleHeaders = subHeaders,
             startPositionMs = playbackSnapshot.positionMs,
+            posterUrl = poster,
         )
         com.nuvio.app.features.cast.CastBottomSheet(
             isVisible = showCastSheet,
@@ -745,6 +769,9 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
                 }
                 if (hasBurnedInServerSubtitle) clearServerSubtitleTrack()
             }
+            if (UnifiedCastRepository.state.value is UnifiedCastState.Casting) {
+                UnifiedCastRepository.setActiveSubtitleTrack(if (index < 0) null else (index + 1).toLong())
+            }
         },
         onAddonSubtitleSelected = { addon ->
             isUserExplicitSubtitleSelection = true
@@ -755,6 +782,11 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             persistAddonSubtitlePreference(addon)
             attachSelectedAddonSubtitleWithAutoSync(addon.url) // AutoSync hook
             if (hasBurnedInServerSubtitle) clearServerSubtitleTrack()
+            if (UnifiedCastRepository.state.value is UnifiedCastState.Casting) {
+                val addonIdx = addonSubtitles.indexOfFirst { it.selectionKey == addon.selectionKey }
+                val trackId = if (addonIdx >= 0) (externalSubtitles.size + addonIdx + 1).toLong() else null
+                UnifiedCastRepository.setActiveSubtitleTrack(trackId)
+            }
         },
         onFetchAddonSubtitles = { fetchAddonSubtitlesForActiveItem() },
         onSubtitleStyleChanged = PlayerSettingsRepository::setSubtitleStyle,
@@ -898,11 +930,9 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
 
 @Composable
 private fun PlayerScreenRuntime.RenderCastingOverlay() {
-    val dlnaState by DlnaCastRepository.state.collectAsState()
-    val unifiedState by com.nuvio.app.features.cast.UnifiedCastRepository.state.collectAsState()
-    val isDlnaCasting = dlnaState is DlnaCastState.Casting
-    val isUnifiedCasting = unifiedState is com.nuvio.app.features.cast.UnifiedCastState.Casting
-    val isCasting = isDlnaCasting || isUnifiedCasting
+    val unifiedState by UnifiedCastRepository.state.collectAsState()
+    val isCasting = unifiedState is UnifiedCastState.Casting
+
     // Pause local playback when casting starts
     LaunchedEffect(isCasting) {
         if (isCasting) {
@@ -912,40 +942,52 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
         }
     }
     if (!isCasting) return
-    // Prefer unified device name, fallback to DLNA
-    val castingName = when {
-        isUnifiedCasting -> (unifiedState as com.nuvio.app.features.cast.UnifiedCastState.Casting).device.name
-        else -> (dlnaState as DlnaCastState.Casting).device.friendlyName
-    }
-    val castingProxy = when {
-        isUnifiedCasting -> (unifiedState as com.nuvio.app.features.cast.UnifiedCastState.Casting).proxyUrl
-        else -> (dlnaState as DlnaCastState.Casting).proxyUrl
-    }
-    val castingProtocol = when {
-        isUnifiedCasting -> (unifiedState as com.nuvio.app.features.cast.UnifiedCastState.Casting).device.protocol.name
-        else -> "DLNA"
-    }
-    var remotePosMs by remember { mutableStateOf(0L) }
-    var remoteDurationMs by remember { mutableStateOf(playbackSnapshot.durationMs) }
+    val castingInfo = unifiedState as? UnifiedCastState.Casting ?: return
+    val castingDevice = castingInfo.device
+    val castingName = castingDevice.name
+    val castingProtocol = castingDevice.protocol.name
+
+    var remotePosMs by remember { mutableStateOf(playbackSnapshot.positionMs) }
+    val remoteDurationMs = playbackSnapshot.durationMs
     var isRemotePaused by remember { mutableStateOf(false) }
     var isScrubbingRemote by remember { mutableStateOf(false) }
     var scrubRemoteMs by remember { mutableStateOf<Long?>(null) }
+    var remoteVolume by remember { mutableStateOf(UnifiedCastRepository.volume) }
 
-    // Poll position from TV every 1s for progress sync (DLNA or Chromecast)
-    val pollingDeviceId = if (isUnifiedCasting) (unifiedState as com.nuvio.app.features.cast.UnifiedCastState.Casting).device.id else (dlnaState as DlnaCastState.Casting).device.id
+    // Poll position from TV every 1s for progress sync
+    val pollingDeviceId = castingDevice.id
     LaunchedEffect(pollingDeviceId) {
+        var tickCount = 0
         while (isCasting) {
             try {
                 val pos = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
-                    if (isUnifiedCasting) com.nuvio.app.features.cast.UnifiedCastRepository.getPosition()
-                    else DlnaCastRepository.getRemotePosition()
+                    UnifiedCastRepository.getPosition()
                 }
-                if (pos != null) {
+                if (pos != null && pos >= 0L) {
                     remotePosMs = pos
+                    playbackSnapshot = playbackSnapshot.copy(positionMs = pos)
+                    tickCount++
+                    if (tickCount % 5 == 0) {
+                        WatchProgressRepository.upsertPlaybackProgress(
+                            session = playbackSession,
+                            snapshot = playbackSnapshot,
+                            syncRemote = false,
+                        )
+                    }
                 }
             } catch (_: Exception) {}
             delay(1000)
         }
+    }
+
+    val stopCastingAndResume: () -> Unit = {
+        val resumePos = remotePosMs
+        UnifiedCastRepository.stop()
+        playbackSnapshot = playbackSnapshot.copy(positionMs = resumePos)
+        flushWatchProgress()
+        shouldPlay = true
+        playerController?.seekTo(resumePos)
+        playerController?.play()
     }
 
     val displayPos = scrubRemoteMs ?: remotePosMs
@@ -977,11 +1019,7 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
                         Text(castingName, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold), color = Color.White)
                     }
                 }
-                IconButton(onClick = {
-                    if (isUnifiedCasting) com.nuvio.app.features.cast.UnifiedCastRepository.stop() else DlnaCastRepository.stopCasting()
-                    shouldPlay = true
-                    playerController?.play()
-                }) {
+                IconButton(onClick = stopCastingAndResume) {
                     Icon(Icons.Rounded.Close, contentDescription = "Stop casting", tint = Color.White)
                 }
             }
@@ -990,7 +1028,7 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
             Column(
                 modifier = Modifier.align(Alignment.Center).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(18.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Text(title, style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold), color = Color.White, maxLines = 2)
                 if (activeEpisodeTitle != null) {
@@ -999,17 +1037,19 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
                 Row(horizontalArrangement = Arrangement.spacedBy(24.dp), verticalAlignment = Alignment.CenterVertically) {
                     IconButton(onClick = {
                         val target = (displayPos - 10_000).coerceAtLeast(0)
-                        if (isUnifiedCasting) com.nuvio.app.features.cast.UnifiedCastRepository.seek(target) else DlnaCastRepository.seekCasting(target)
+                        UnifiedCastRepository.seek(target)
+                        remotePosMs = target
+                        playbackSnapshot = playbackSnapshot.copy(positionMs = target)
                     }) {
                         Icon(Icons.Rounded.Replay10, contentDescription = "Rewind 10s", tint = Color.White, modifier = Modifier.size(32.dp))
                     }
-                    Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(Color.White).padding(10.dp).then(Modifier), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.size(64.dp).clip(CircleShape).background(Color.White).padding(10.dp), contentAlignment = Alignment.Center) {
                         IconButton(onClick = {
                             if (isRemotePaused) {
-                                if (isUnifiedCasting) com.nuvio.app.features.cast.UnifiedCastRepository.resume() else DlnaCastRepository.resumeCasting()
+                                UnifiedCastRepository.resume()
                                 isRemotePaused = false
                             } else {
-                                if (isUnifiedCasting) com.nuvio.app.features.cast.UnifiedCastRepository.pause() else DlnaCastRepository.pauseCasting()
+                                UnifiedCastRepository.pause()
                                 isRemotePaused = true
                             }
                         }) {
@@ -1022,13 +1062,15 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
                         }
                     }
                     IconButton(onClick = {
-                        val target = displayPos + 10_000
-                        if (isUnifiedCasting) com.nuvio.app.features.cast.UnifiedCastRepository.seek(target) else DlnaCastRepository.seekCasting(target)
+                        val target = (displayPos + 10_000).coerceAtMost(duration)
+                        UnifiedCastRepository.seek(target)
+                        remotePosMs = target
+                        playbackSnapshot = playbackSnapshot.copy(positionMs = target)
                     }) {
                         Icon(Icons.Rounded.Forward10, contentDescription = "Forward 10s", tint = Color.White, modifier = Modifier.size(32.dp))
                     }
                 }
-                // Slider
+                // Position Slider
                 Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp)) {
                     Slider(
                         value = displayPos.toFloat(),
@@ -1040,8 +1082,14 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
                             val target = scrubRemoteMs ?: displayPos
                             isScrubbingRemote = false
                             scrubRemoteMs = null
-                            if (isUnifiedCasting) com.nuvio.app.features.cast.UnifiedCastRepository.seek(target) else DlnaCastRepository.seekCasting(target)
+                            UnifiedCastRepository.seek(target)
                             remotePosMs = target
+                            playbackSnapshot = playbackSnapshot.copy(positionMs = target)
+                            WatchProgressRepository.upsertPlaybackProgress(
+                                session = playbackSession,
+                                snapshot = playbackSnapshot,
+                                syncRemote = false,
+                            )
                         },
                         valueRange = 0f..duration.toFloat(),
                         modifier = Modifier.fillMaxWidth()
@@ -1051,16 +1099,51 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
                         Text(formatPlaybackTime(duration), style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.8f))
                     }
                 }
-                // Subtitle / Audio actions - now with icons and working above overlay (modals on top)
+                // Volume controls
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    IconButton(
+                        onClick = {
+                            val newVol = (remoteVolume - 0.05f).coerceIn(0f, 1f)
+                            remoteVolume = newVol
+                            UnifiedCastRepository.setVolume(newVol)
+                        },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.VolumeDown, contentDescription = "Volume Down", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                    Slider(
+                        value = remoteVolume,
+                        onValueChange = { newVol ->
+                            remoteVolume = newVol
+                            UnifiedCastRepository.setVolume(newVol)
+                        },
+                        valueRange = 0f..1f,
+                        modifier = Modifier.weight(1f)
+                    )
+                    IconButton(
+                        onClick = {
+                            val newVol = (remoteVolume + 0.05f).coerceIn(0f, 1f)
+                            remoteVolume = newVol
+                            UnifiedCastRepository.setVolume(newVol)
+                        },
+                        modifier = Modifier.size(36.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.VolumeUp, contentDescription = "Volume Up", tint = Color.White, modifier = Modifier.size(20.dp))
+                    }
+                }
+                // Subtitle / Audio / Stop actions
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Subtitles - with icon
-                    androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(
                             onClick = {
-                                // Ensure tracks are fresh before opening
                                 refreshTracks()
                                 showSubtitleModal = true
                             },
@@ -1076,8 +1159,8 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
                             maxLines = 1
                         )
                     }
-                    // Audio - with icon, opens audio track picker
-                    androidx.compose.foundation.layout.Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    // Audio - with icon
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         IconButton(
                             onClick = {
                                 refreshTracks()
@@ -1095,19 +1178,28 @@ private fun PlayerScreenRuntime.RenderCastingOverlay() {
                             maxLines = 1
                         )
                     }
-                    Spacer(modifier = Modifier.size(8.dp))
-                    // Stop
-                    IconButton(
-                        onClick = {
-                            if (isUnifiedCasting) com.nuvio.app.features.cast.UnifiedCastRepository.stop() else DlnaCastRepository.stopCasting()
-                            shouldPlay = true; playerController?.play()
-                        },
-                        modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.15f))
-                    ) {
-                        Icon(Icons.Rounded.Stop, contentDescription = "Stop", tint = Color.White, modifier = Modifier.size(22.dp))
+                    // Stop button
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        IconButton(
+                            onClick = stopCastingAndResume,
+                            modifier = Modifier.size(48.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.15f))
+                        ) {
+                            Icon(Icons.Rounded.Stop, contentDescription = "Stop", tint = Color.White, modifier = Modifier.size(22.dp))
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(Res.string.cast_stop),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White.copy(alpha = 0.8f),
+                            maxLines = 1
+                        )
                     }
                 }
-                Text("$castingProtocol • Proxy: ${castingProxy.take(55)}...", style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.5f))
+                Text(
+                    text = stringResource(Res.string.cast_playing_on_tv),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.6f)
+                )
             }
         }
     }

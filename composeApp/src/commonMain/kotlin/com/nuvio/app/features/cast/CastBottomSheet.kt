@@ -85,12 +85,13 @@ fun CastBottomSheet(
     if (!isVisible) return
     val unifiedState by UnifiedCastRepository.state.collectAsState()
     val unifiedDevices by UnifiedCastRepository.devices.collectAsState()
-    // Fallback legacy DLNA state for detailed casting screen (kept for overlay compatibility)
-    val dlnaCastState by DlnaCastRepository.state.collectAsState()
     val isUnifiedCasting = unifiedState is UnifiedCastState.Casting
-    val isDlnaCasting = dlnaCastState is DlnaCastState.Casting
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        UnifiedCastRepository.startScan()
+    }
 
     fun dismiss() {
         scope.launch { dismissNuvioBottomSheet(sheetState, onDismiss) }
@@ -114,12 +115,11 @@ fun CastBottomSheet(
             ) {
                 Text(
                     text = when {
-                        unifiedState is UnifiedCastState.Scanning || dlnaCastState is DlnaCastState.Scanning -> stringResource(Res.string.cast_searching)
-                        unifiedState is UnifiedCastState.DevicesFound || dlnaCastState is DlnaCastState.DevicesFound -> stringResource(Res.string.cast_choose_device)
+                        unifiedState is UnifiedCastState.Scanning -> stringResource(Res.string.cast_searching)
+                        unifiedState is UnifiedCastState.DevicesFound -> stringResource(Res.string.cast_choose_device)
                         unifiedState is UnifiedCastState.NoDevices -> stringResource(Res.string.cast_no_devices)
-                        isUnifiedCasting || isDlnaCasting -> stringResource(Res.string.cast_playing_on_tv)
+                        isUnifiedCasting -> stringResource(Res.string.cast_playing_on_tv)
                         unifiedState is UnifiedCastState.Error -> stringResource(Res.string.cast_error)
-                        dlnaCastState is DlnaCastState.Error -> stringResource(Res.string.cast_error)
                         else -> stringResource(Res.string.cast_devices_in_network)
                     },
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
@@ -127,7 +127,6 @@ fun CastBottomSheet(
                 )
                 IconButton(onClick = {
                     UnifiedCastRepository.startScan()
-                    DlnaCastRepository.startScan()
                 }) {
                     Icon(Icons.Rounded.Refresh, contentDescription = stringResource(Res.string.cast_refresh))
                 }
@@ -140,7 +139,7 @@ fun CastBottomSheet(
             )
 
             when {
-                unifiedState is UnifiedCastState.Scanning || dlnaCastState is DlnaCastState.Scanning -> {
+                unifiedState is UnifiedCastState.Scanning -> {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(24.dp),
                         contentAlignment = Alignment.Center,
@@ -152,7 +151,7 @@ fun CastBottomSheet(
                         }
                     }
                 }
-                unifiedState is UnifiedCastState.NoDevices && dlnaCastState is DlnaCastState.NoDevices -> {
+                unifiedState is UnifiedCastState.NoDevices -> {
                     Box(
                         modifier = Modifier.fillMaxWidth().padding(24.dp),
                         contentAlignment = Alignment.Center,
@@ -164,7 +163,7 @@ fun CastBottomSheet(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(stringResource(Res.string.cast_check_chromecast), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Spacer(modifier = Modifier.height(12.dp))
-                            Button(onClick = { UnifiedCastRepository.startScan(); DlnaCastRepository.startScan() }) { Text(stringResource(Res.string.cast_scan_again)) }
+                            Button(onClick = { UnifiedCastRepository.startScan() }) { Text(stringResource(Res.string.cast_scan_again)) }
                         }
                     }
                 }
@@ -174,13 +173,6 @@ fun CastBottomSheet(
                         Text(msg, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodyMedium)
                     }
                     Button(onClick = { UnifiedCastRepository.startScan() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.cast_try_again)) }
-                }
-                dlnaCastState is DlnaCastState.Error -> {
-                    val msg = (dlnaCastState as DlnaCastState.Error).message
-                    Surface(color = MaterialTheme.colorScheme.errorContainer, shape = RoundedCornerShape(12.dp)) {
-                        Text(msg, modifier = Modifier.padding(12.dp), color = MaterialTheme.colorScheme.onErrorContainer, style = MaterialTheme.typography.bodyMedium)
-                    }
-                    Button(onClick = { DlnaCastRepository.startScan() }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(Res.string.cast_try_again)) }
                 }
                 isUnifiedCasting -> {
                     val casting = unifiedState as UnifiedCastState.Casting
@@ -199,80 +191,31 @@ fun CastBottomSheet(
                                     if (casting.device.protocol == CastProtocol.CHROMECAST) stringResource(Res.string.cast_chromecast_playing) else stringResource(Res.string.cast_dlna_playing),
                                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
-                                if (casting.proxyUrl.isNotBlank()) {
-                                    Text(casting.proxyUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
                             }
                         }
                     }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = { UnifiedCastRepository.stop(); DlnaCastRepository.stopCasting() }, modifier = Modifier.weight(1f)) { Text(stringResource(Res.string.cast_stop)) }
-                        Button(onClick = { dismiss() }, modifier = Modifier.weight(1f)) { Text(stringResource(Res.string.cast_close)) }
-                    }
-                }
-                isDlnaCasting -> {
-                    val casting = dlnaCastState as DlnaCastState.Casting
-                    Surface(color = MaterialTheme.colorScheme.primaryContainer, shape = RoundedCornerShape(12.dp)) {
-                        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-                            Box(modifier = Modifier.size(40.dp).clip(CircleShape).background(MaterialTheme.colorScheme.primary), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Rounded.CastConnected, contentDescription = null, tint = Color.White)
-                            }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(casting.device.friendlyName, style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text(stringResource(Res.string.cast_dlna_playing), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                if (casting.proxyUrl.isNotBlank()) {
-                                    Text(casting.proxyUrl, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
-                        }
-                    }
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        TextButton(onClick = { DlnaCastRepository.stopCasting() }, modifier = Modifier.weight(1f)) { Text(stringResource(Res.string.cast_stop)) }
+                        TextButton(onClick = { UnifiedCastRepository.stop() }, modifier = Modifier.weight(1f)) { Text(stringResource(Res.string.cast_stop)) }
                         Button(onClick = { dismiss() }, modifier = Modifier.weight(1f)) { Text(stringResource(Res.string.cast_close)) }
                     }
                 }
                 else -> {
-                    val allDevices = if (unifiedDevices.isNotEmpty()) unifiedDevices else emptyList()
-                    // Fallback to DLNA devices if unified empty but Dlna has
-                    val dlnaAsUnified = if (allDevices.isEmpty()) {
-                        emptyList<UnifiedCastDevice>()
-                    } else allDevices
-
-                    val showList = if (unifiedDevices.isNotEmpty()) unifiedDevices else dlnaAsUnified
-                    if (showList.isEmpty()) {
-                        // No devices yet, offer scan
-                        val legacyDevices by DlnaCastRepository.devices.collectAsState()
-                        if (legacyDevices.isNotEmpty()) {
-                            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                items(legacyDevices) { device ->
-                                    DlnaDeviceRow(device = device, onClick = {
-                                        if (castRequest != null) {
-                                            DlnaCastRepository.castToDevice(device, castRequest) { success, _ ->
-                                                if (success) onDeviceSelected(device)
-                                            }
-                                        } else {
-                                            onDeviceSelected(device)
-                                        }
-                                    })
-                                }
-                            }
-                        } else {
-                            Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                                    TextButton(onClick = { UnifiedCastRepository.startScan(); DlnaCastRepository.startScan() }) { Text(stringResource(Res.string.cast_scan_devices)) }
-                                    Text(stringResource(Res.string.cast_detects), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
+                    if (unifiedDevices.isEmpty()) {
+                        Box(modifier = Modifier.fillMaxWidth().padding(16.dp), contentAlignment = Alignment.Center) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                TextButton(onClick = { UnifiedCastRepository.startScan() }) { Text(stringResource(Res.string.cast_scan_devices)) }
+                                Text(stringResource(Res.string.cast_detects), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     } else {
                         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                            items(showList) { device ->
+                            items(unifiedDevices) { device ->
                                 UnifiedDeviceRow(device = device, onClick = {
                                     if (castRequest != null) {
                                         UnifiedCastRepository.castToDevice(device, castRequest, chromecastPoster = null)
                                         device.dlnaDevice?.let { onDeviceSelected(it) }
                                     }
+                                    dismiss()
                                 })
                             }
                         }
@@ -280,7 +223,7 @@ fun CastBottomSheet(
                 }
             }
 
-            if (unifiedState is UnifiedCastState.DevicesFound || dlnaCastState is DlnaCastState.DevicesFound) {
+            if (unifiedState is UnifiedCastState.DevicesFound) {
                 Text(
                     text = stringResource(Res.string.cast_footer_chromecast_first),
                     style = MaterialTheme.typography.labelSmall,

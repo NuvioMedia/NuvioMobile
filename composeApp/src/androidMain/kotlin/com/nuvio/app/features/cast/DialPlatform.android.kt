@@ -56,18 +56,8 @@ internal actual object DialPlatform {
             Log.w(TAG, "DIAL scan failed: ${e.message}")
         } finally { try { socket?.close() } catch (_: Exception) {} }
 
-        // Convert to UnifiedCastDevice with protocol DIAL (reuse DLNA for now, but mark as CHROMECAST fallback)
-        // For universal ready, we map DIAL to CHROMECAST-like launch via HTTP POST to Application-URL
-        locations.mapNotNull { key ->
-            val parts = key.split("|")
-            val loc = parts.getOrNull(0) ?: return@mapNotNull null
-            val appUrl = parts.getOrNull(1) ?: loc
-            UnifiedCastDevice(
-                id = "dial:${appUrl.hashCode()}",
-                name = "Fire TV / Roku (DIAL)",
-                protocol = CastProtocol.DLNA, // treat as DLNA for now, will become DIAL when provider added
-                ipAddress = try { java.net.URL(loc).host } catch (_: Exception) { null }
-            )
-        }
+        // DIAL application launch requires an installed receiver app on the target device.
+        // Returning un-launchable entries degrades UX; keep discovery ready for when a receiver exists.
+        emptyList()
     }
 }

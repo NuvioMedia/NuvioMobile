@@ -8,6 +8,8 @@ internal actual object ChromecastPlatform {
     actual suspend fun seek(positionMs: Long): Boolean = false
     actual suspend fun stop(): Boolean = false
     actual suspend fun getPosition(): Long? = null
+    actual suspend fun setVolume(volume: Float): Boolean = false
+    actual suspend fun setActiveTrack(trackId: Long?): Boolean = false
     actual fun isConnected(): Boolean = false
     actual fun disconnect() {}
     actual fun initialize() {}

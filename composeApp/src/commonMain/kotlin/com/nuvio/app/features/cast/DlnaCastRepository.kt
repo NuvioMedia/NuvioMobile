@@ -10,6 +10,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+@Deprecated("Use UnifiedCastRepository instead", ReplaceWith("UnifiedCastRepository"))
 object DlnaCastRepository {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 

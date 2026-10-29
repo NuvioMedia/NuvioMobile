@@ -14,6 +14,7 @@ internal actual object DlnaCastPlatform {
     actual suspend fun resumePlayback(device: DlnaDevice): Boolean = false
     actual suspend fun seekPlayback(device: DlnaDevice, positionMs: Long): Boolean = false
     actual suspend fun getPositionInfo(device: DlnaDevice): Long? = null
+    actual suspend fun setVolume(device: DlnaDevice, volumePercent: Int): Boolean = false
 
     actual suspend fun getLocalIpAddress(): String? = null
 

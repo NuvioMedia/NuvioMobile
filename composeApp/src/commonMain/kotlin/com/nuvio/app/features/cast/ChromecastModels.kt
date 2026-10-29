@@ -17,13 +17,22 @@ data class UnifiedCastDevice(
     val ipAddress: String? = null,
 )
 
+data class SubtitleTrackInfo(
+    val url: String,
+    val name: String,
+    val lang: String = "en",
+)
+
 data class ChromecastMediaRequest(
     val proxyUrl: String,
     val title: String,
     val subtitle: String? = null,
     val subtitleUrl: String? = null,
+    val subtitleName: String? = null,
     val subtitleMime: String = "text/vtt",
-    val subtitleLanguage: String = "pl",
+    val subtitleLanguage: String = "en",
+    val subtitles: List<SubtitleTrackInfo> = emptyList(),
+    val selectedSubtitleIndex: Int? = null,
     val mimeType: String = "video/mp4",
     val durationMs: Long? = null,
     val startPositionMs: Long = 0L,

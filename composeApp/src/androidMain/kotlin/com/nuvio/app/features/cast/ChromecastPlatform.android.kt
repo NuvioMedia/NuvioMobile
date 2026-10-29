@@ -136,10 +136,23 @@ internal actual object ChromecastPlatform {
         }
 
         val tracks = mutableListOf<MediaTrack>()
-        if (!request.subtitleUrl.isNullOrBlank()) {
-            val track = MediaTrack.Builder(1, MediaTrack.TYPE_TEXT)
-                .setName("Polski")
-                .setSubtype(MediaTrack.SUBTYPE_CAPTIONS)
+        if (request.subtitles.isNotEmpty()) {
+            request.subtitles.forEachIndexed { idx, sub ->
+                val trackId = (idx + 1).toLong()
+                val track = MediaTrack.Builder(trackId, MediaTrack.TYPE_TEXT)
+                    .setName(sub.name.ifBlank { sub.lang.uppercase() })
+                    .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
+                    .setContentId(sub.url)
+                    .setContentType("text/vtt")
+                    .setLanguage(sub.lang)
+                    .build()
+                tracks.add(track)
+            }
+        } else if (!request.subtitleUrl.isNullOrBlank()) {
+            val name = request.subtitleName ?: request.subtitleLanguage.uppercase()
+            val track = MediaTrack.Builder(1L, MediaTrack.TYPE_TEXT)
+                .setName(name)
+                .setSubtype(MediaTrack.SUBTYPE_SUBTITLES)
                 .setContentId(request.subtitleUrl)
                 .setContentType(request.subtitleMime)
                 .setLanguage(request.subtitleLanguage)
@@ -157,12 +170,19 @@ internal actual object ChromecastPlatform {
             }
             .build()
 
+        val activeTrackIds = if (tracks.isNotEmpty()) {
+            val selectedIdx = request.selectedSubtitleIndex ?: 0
+            if (selectedIdx >= 0 && selectedIdx < tracks.size) {
+                longArrayOf((selectedIdx + 1).toLong())
+            } else longArrayOf()
+        } else longArrayOf()
+
         val loadRequest = MediaLoadRequestData.Builder()
             .setMediaInfo(mediaInfo)
             .setAutoplay(true)
             .setCurrentTime(request.startPositionMs)
             .apply {
-                if (tracks.isNotEmpty()) setActiveTrackIds(longArrayOf(1L))
+                if (activeTrackIds.isNotEmpty()) setActiveTrackIds(activeTrackIds)
             }
             .build()
 
@@ -233,6 +253,27 @@ internal actual object ChromecastPlatform {
             val pos = client.approximateStreamPosition
             if (pos < 0) null else pos
         } catch (_: Exception) { null }
+    }
+
+    actual suspend fun setVolume(volume: Float): Boolean = withContext(Dispatchers.Main) {
+        try {
+            val client = getRemoteClient() ?: return@withContext false
+            suspendCancellableCoroutine { cont ->
+                val p = client.setStreamVolume(volume.toDouble().coerceIn(0.0, 1.0))
+                p.setResultCallback { res -> cont.resume(res.status.isSuccess) }
+            }
+        } catch (_: Exception) { false }
+    }
+
+    actual suspend fun setActiveTrack(trackId: Long?): Boolean = withContext(Dispatchers.Main) {
+        try {
+            val client = getRemoteClient() ?: return@withContext false
+            val trackIds = if (trackId != null && trackId > 0) longArrayOf(trackId) else longArrayOf()
+            suspendCancellableCoroutine { cont ->
+                val p = client.setActiveMediaTracks(trackIds)
+                p.setResultCallback { res -> cont.resume(res.status.isSuccess) }
+            }
+        } catch (_: Exception) { false }
     }
 
     actual fun isConnected(): Boolean {

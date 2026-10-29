@@ -32,8 +32,11 @@ object UnifiedCastRepository {
     private var castJob: Job? = null
 
     private var currentDevice: UnifiedCastDevice? = null
+    val activeDevice: UnifiedCastDevice? get() = currentDevice
     private var currentProxyUrl: String? = null
     var isPaused = false
+        private set
+    var volume: Float = 1.0f
         private set
 
     fun startScan() {
@@ -105,10 +108,13 @@ object UnifiedCastRepository {
                                 title = dlnaRequest.title,
                                 subtitle = dlnaRequest.subtitle,
                                 subtitleUrl = dlnaRequest.subtitleUrl,
+                                subtitleName = dlnaRequest.subtitleName,
+                                subtitleLanguage = dlnaRequest.subtitleLanguage ?: "en",
+                                subtitles = dlnaRequest.subtitles,
                                 mimeType = dlnaRequest.mimeType,
                                 durationMs = dlnaRequest.durationMs,
                                 startPositionMs = dlnaRequest.startPositionMs,
-                                posterUrl = chromecastPoster,
+                                posterUrl = chromecastPoster ?: dlnaRequest.posterUrl,
                             )
                             ChromecastPlatform.castToDevice(device, req)
                         }
@@ -211,6 +217,29 @@ object UnifiedCastRepository {
             CastProtocol.CHROMECAST -> ChromecastPlatform.getPosition()
             CastProtocol.DIAL -> dev.dlnaDevice?.let { DlnaCastPlatform.getPositionInfo(it) }
             CastProtocol.AIRPLAY -> null
+        }
+    }
+
+    fun setVolume(volumeFraction: Float) {
+        val dev = currentDevice ?: return
+        val clamped = volumeFraction.coerceIn(0f, 1f)
+        volume = clamped
+        scope.launch(Dispatchers.IO) {
+            when (dev.protocol) {
+                CastProtocol.CHROMECAST -> ChromecastPlatform.setVolume(clamped)
+                CastProtocol.DLNA -> dev.dlnaDevice?.let { DlnaCastPlatform.setVolume(it, (clamped * 100).toInt()) }
+                else -> {}
+            }
+        }
+    }
+
+    fun setActiveSubtitleTrack(trackId: Long?) {
+        val dev = currentDevice ?: return
+        scope.launch(Dispatchers.IO) {
+            when (dev.protocol) {
+                CastProtocol.CHROMECAST -> ChromecastPlatform.setActiveTrack(trackId)
+                else -> {}
+            }
         }
     }
 

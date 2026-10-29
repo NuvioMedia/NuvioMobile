@@ -9,6 +9,7 @@ internal expect object DlnaCastPlatform {
     suspend fun resumePlayback(device: DlnaDevice): Boolean
     suspend fun seekPlayback(device: DlnaDevice, positionMs: Long): Boolean
     suspend fun getPositionInfo(device: DlnaDevice): Long?
+    suspend fun setVolume(device: DlnaDevice, volumePercent: Int): Boolean
     suspend fun getLocalIpAddress(): String?
     fun stopProxy()
 }

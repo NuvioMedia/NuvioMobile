@@ -138,6 +138,7 @@ internal actual object DlnaCastPlatform {
                         eventSubUrl = parsed.eventSubUrl,
                         avTransportServiceType = parsed.serviceType,
                         ipAddress = ip,
+                        renderingControlUrl = parsed.renderingControlUrl,
                     )
                     devices.add(device)
                     Log.i(TAG, "Parsed device: ${device.friendlyName} control=${device.controlUrl}")
@@ -318,6 +319,26 @@ internal actual object DlnaCastPlatform {
             resp.isSuccessful
         } catch (e: Exception) {
             Log.w(TAG, "seek failed: ${e.message}")
+            false
+        }
+    }
+
+    actual suspend fun setVolume(device: DlnaDevice, volumePercent: Int): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val client = OkHttpClient.Builder().connectTimeout(3, TimeUnit.SECONDS).readTimeout(3, TimeUnit.SECONDS).build()
+            val renderingUrl = device.renderingControlUrl ?: device.controlUrl
+            val body = DlnaSoap.buildSetVolumeBody(desiredVolume = volumePercent.coerceIn(0, 100))
+            val req = Request.Builder()
+                .url(renderingUrl)
+                .post(body.toRequestBody("text/xml; charset=\"utf-8\"".toMediaType()))
+                .header("Content-Type", "text/xml; charset=\"utf-8\"")
+                .header("SOAPACTION", "\"urn:schemas-upnp-org:service:RenderingControl:1#SetVolume\"")
+                .build()
+            val resp = client.newCall(req).execute()
+            Log.i(TAG, "SetVolume $volumePercent response ${resp.code}")
+            resp.isSuccessful
+        } catch (e: Exception) {
+            Log.w(TAG, "setVolume failed: ${e.message}")
             false
         }
     }

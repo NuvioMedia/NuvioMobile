@@ -33,6 +33,9 @@ internal object DlnaSoap {
     fun buildGetPositionInfoBody(instanceId: Int = 0): String =
         """<?xml version="1.0"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:GetPositionInfo xmlns:u="urn:schemas-upnp-org:service:AVTransport:1"><InstanceID>$instanceId</InstanceID></u:GetPositionInfo></s:Body></s:Envelope>"""
 
+    fun buildSetVolumeBody(instanceId: Int = 0, channel: String = "Master", desiredVolume: Int): String =
+        """<?xml version="1.0"?><s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body><u:SetVolume xmlns:u="urn:schemas-upnp-org:service:RenderingControl:1"><InstanceID>$instanceId</InstanceID><Channel>$channel</Channel><DesiredVolume>$desiredVolume</DesiredVolume></u:SetVolume></s:Body></s:Envelope>"""
+
     fun formatDurationMs(ms: Long): String {
         val totalSec = (ms / 1000).coerceAtLeast(0)
         val h = totalSec / 3600
@@ -53,6 +56,7 @@ internal object DlnaSoap {
             var avTransportControlUrl: String? = null
             var avTransportEventSubUrl: String? = null
             var avTransportServiceType: String? = null
+            var renderingControlUrl: String? = null
             var currentServiceType: String? = null
             var currentControlUrl: String? = null
             var currentEventSubUrl: String? = null
@@ -82,6 +86,8 @@ internal object DlnaSoap {
                             avTransportControlUrl = currentControlUrl
                             avTransportEventSubUrl = currentEventSubUrl
                             avTransportServiceType = currentServiceType
+                        } else if (currentServiceType?.contains("RenderingControl") == true) {
+                            renderingControlUrl = currentControlUrl
                         }
                         inService = false
                     }
@@ -111,6 +117,7 @@ internal object DlnaSoap {
 
             val absoluteControl = absolutize(avTransportControlUrl) ?: return null
             val absoluteEvent = absolutize(avTransportEventSubUrl)
+            val absoluteRendering = absolutize(renderingControlUrl)
 
             ParsedDevice(
                 udn = udn ?: locationUrl.hashCode().toString(),
@@ -121,6 +128,7 @@ internal object DlnaSoap {
                 controlUrl = absoluteControl,
                 eventSubUrl = absoluteEvent,
                 serviceType = avTransportServiceType ?: "urn:schemas-upnp-org:service:AVTransport:1",
+                renderingControlUrl = absoluteRendering,
             )
         } catch (e: Exception) {
             android.util.Log.w("DlnaSoap", "parseDeviceDescription failed: ${e.message}")
@@ -137,6 +145,7 @@ internal object DlnaSoap {
         val controlUrl: String,
         val eventSubUrl: String?,
         val serviceType: String,
+        val renderingControlUrl: String? = null,
     )
 
     fun parsePositionInfo(xml: String): Long? {
