@@ -38,6 +38,12 @@ import com.nuvio.app.features.streams.streamAddonInstanceId
 import com.nuvio.app.isIos
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.LaunchedEffect
+import com.nuvio.app.core.ui.NuvioStatusModal
+import com.nuvio.app.core.ui.LocalFold
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
