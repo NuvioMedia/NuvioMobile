@@ -93,7 +93,7 @@ jobs:
             --source store.json \
             --ipa "source-assets/${ipa_name}" \
             --release-notes "${release_notes}" \
-            --release-version "${RELEASE_VERSION}" \
+            --release-version "${RELEASE_VERSION%-beta}" \
             --release-date "${release_date}" \
             --download-url "${download_url}"
 

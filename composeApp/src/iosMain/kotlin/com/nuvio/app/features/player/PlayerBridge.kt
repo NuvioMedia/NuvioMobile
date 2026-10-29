@@ -19,6 +19,8 @@ interface NuvioPlayerBridge {
     fun pause()
     fun seekTo(positionMs: Long)
     fun seekBy(offsetMs: Long)
+    fun setSystemControlHandler(handler: PlayerSystemControlHandler?)
+    fun getKeepsPlaybackInBackground(): Boolean
     fun retry()
     fun updateNowPlayingMetadata(
         title: String,
@@ -59,6 +61,7 @@ interface NuvioPlayerBridge {
     fun getSubtitleTrackLang(at: Int): String
     fun isSubtitleTrackSelected(at: Int): Boolean
     fun selectAudioTrack(trackId: Int)
+    fun applyAudioLanguagePreferences(languages: List<String>)
     fun selectSubtitleTrack(trackId: Int)
     fun setSubtitleUrl(url: String)
     fun clearExternalSubtitle()
@@ -82,6 +85,7 @@ interface NuvioPlayerBridge {
     fun getBufferedMs(): Long
     fun getPlaybackSpeed(): Float
     fun getErrorMessage(): String
+    fun getProperty(name: String): String
     fun destroy()
 }
 

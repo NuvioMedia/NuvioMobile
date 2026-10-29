@@ -1,5 +1,7 @@
 package com.nuvio.app.features.watchprogress
 
+import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
+import com.nuvio.app.core.i18n.localizedEpisodeTitle
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.cloud.cloudLibraryProviderPosterUrl
 import com.nuvio.app.features.details.MetaVideo
@@ -60,6 +62,7 @@ data class WatchProgressEntry(
     override val trackingSourceUrl: String? = null,
     /** Stable server/storage identity. [videoId] remains the playback identity. */
     val progressKey: String? = null,
+    val excludedNextUpSeasons: Set<Int> = emptySet(),
 ) : TrackingAttributedItem {
     override val trackingContentId: String
         get() = parentMetaId
@@ -171,6 +174,7 @@ data class WatchProgressUiState(
         get() = entries.continueWatchingEntries(limit = ContinueWatchingLimit)
 }
 
+@Serializable
 data class WatchProgressPlaybackSession(
     val profileId: Int,
     val contentType: String,
@@ -218,6 +222,10 @@ data class ContinueWatchingItem(
     val progressFraction: Float,
     val isReleaseAlert: Boolean = false,
     val isNewSeasonRelease: Boolean = false,
+    val rawPosterUrl: String? = null,
+    val rawBackgroundUrl: String? = null,
+    val shufflePlayback: Boolean = false,
+    val isWatched: Boolean = false,
 )
 
 internal fun continueWatchingItemKey(item: ContinueWatchingItem): String {
@@ -362,13 +370,9 @@ internal fun buildContinueWatchingEpisodeSubtitle(
     episodeNumber: Int?,
     episodeTitle: String?,
 ): String {
-    val episodeCode = when {
-        seasonNumber != null && episodeNumber != null -> "S${seasonNumber}E${episodeNumber}"
-        episodeNumber != null -> "E${episodeNumber}"
-        else -> null
-    }
-    val title = episodeTitle.orEmpty()
-    return listOfNotNull(episodeCode, title.takeIf { it.isNotBlank() }).joinToString(" • ")
+    val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber)
+    val title = localizedEpisodeTitle(episodeTitle, episodeNumber)
+    return listOfNotNull(episodeCode, title).joinToString(" • ")
 }
 
 fun buildPlaybackVideoId(

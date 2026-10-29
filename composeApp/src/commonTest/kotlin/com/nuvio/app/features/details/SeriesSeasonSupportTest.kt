@@ -51,4 +51,27 @@ class SeriesSeasonSupportTest {
             ),
         )
     }
+
+    @Test
+    fun `grouped episodes preserve a large absolute-numbered catalog`() {
+        val episodeCount = 1_500
+        val meta = MetaDetails(
+            id = "long-running-show",
+            type = "series",
+            name = "Long Running Show",
+            videos = (episodeCount downTo 1).map { episodeNumber ->
+                MetaVideo(
+                    id = "episode-$episodeNumber",
+                    title = "Episode $episodeNumber",
+                    season = 1,
+                    episode = episodeNumber,
+                )
+            },
+        )
+
+        val groupedEpisodes = meta.groupedEpisodesForDisplay()
+
+        assertEquals(listOf(1), groupedEpisodes.keys.toList())
+        assertEquals((1..episodeCount).toList(), groupedEpisodes.getValue(1).map(MetaVideo::episode))
+    }
 }

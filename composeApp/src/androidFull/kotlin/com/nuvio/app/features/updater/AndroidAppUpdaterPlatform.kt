@@ -8,6 +8,8 @@ import android.os.Build
 import android.provider.Settings
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import nuvio.composeapp.generated.resources.Res
@@ -24,6 +26,7 @@ import java.util.concurrent.TimeUnit
 object AndroidAppUpdaterPlatform {
     private const val preferencesName = "nuvio_updater"
     private const val ignoredTagKey = "ignored_release_tag"
+    private const val updateChannelKey = "update_channel"
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -53,6 +56,16 @@ object AndroidAppUpdaterPlatform {
         preferences().edit().apply {
             if (tag == null) remove(ignoredTagKey) else putString(ignoredTagKey, tag)
         }.apply()
+    }
+
+    fun getUpdateChannel(): String? = preferences().getString(updateChannelKey, null)
+
+    fun setUpdateChannel(channel: String) {
+        preferences().edit().putString(updateChannelKey, channel).apply()
+    }
+
+    fun deleteDownloadedApk(path: String) {
+        File(path).delete()
     }
 
     suspend fun downloadApk(
@@ -85,7 +98,9 @@ object AndroidAppUpdaterPlatform {
                         val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
                         var downloadedBytes = 0L
                         while (true) {
+                            currentCoroutineContext().ensureActive()
                             val read = input.read(buffer)
+                            currentCoroutineContext().ensureActive()
                             if (read <= 0) break
                             output.write(buffer, 0, read)
                             downloadedBytes += read

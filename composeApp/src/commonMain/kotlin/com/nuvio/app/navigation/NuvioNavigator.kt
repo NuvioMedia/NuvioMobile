@@ -9,6 +9,8 @@ internal class NuvioNavigator(
     private val onExternalNavigate: ((AppRoute, launchSingleTop: Boolean) -> Unit)? = null,
     private val onExternalBack: (() -> Unit)? = null,
     private val onExternalReplace: ((AppRoute) -> Unit)? = null,
+    private val onLocalNavigate: ((AppRoute?, AppRoute) -> Unit)? = null,
+    private val onLocalPop: (() -> Unit)? = null,
 ) {
     val currentRoute: AppRoute?
         get() = backStack.lastOrNull() as? AppRoute
@@ -42,12 +44,18 @@ internal class NuvioNavigator(
         }
 
         if (resolvedOptions.launchSingleTop && currentRoute == route) return
-        onExternalNavigate?.invoke(route, resolvedOptions.launchSingleTop) ?: backStack.add(route)
+        if (onExternalNavigate != null) {
+            onExternalNavigate.invoke(route, resolvedOptions.launchSingleTop)
+        } else {
+            onLocalNavigate?.invoke(currentRoute, route)
+            backStack.add(route)
+        }
     }
 
     fun popBackStack(expectedRoute: AppRoute? = null): Boolean {
         if (expectedRoute != null && currentRoute != expectedRoute) return false
         if (backStack.size > 1) {
+            onLocalPop?.invoke()
             backStack.removeAt(backStack.lastIndex)
             return true
         }

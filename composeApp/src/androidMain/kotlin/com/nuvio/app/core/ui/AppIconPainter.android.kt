@@ -14,6 +14,8 @@ actual fun appIconPainter(icon: AppIconResource): Painter =
             AppIconResource.PlayerAspectRatio -> R.drawable.ic_player_aspect_ratio
             AppIconResource.PlayerSubtitles -> R.drawable.ic_player_subtitles
             AppIconResource.PlayerAudioFilled -> R.drawable.ic_player_audio_filled
+            AppIconResource.PlayerSource -> R.drawable.ic_player_source
+            AppIconResource.PlayerEpisodes -> R.drawable.ic_player_episodes
             AppIconResource.LibraryAddPlus -> R.drawable.library_add_plus
         }
     )

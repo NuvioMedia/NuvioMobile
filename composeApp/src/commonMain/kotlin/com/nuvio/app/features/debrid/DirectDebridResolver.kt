@@ -342,7 +342,6 @@ private fun StreamItem.toResolveMetadata(season: Int?, episode: Int?, providerId
         fileIdx = fileIdx,
         magnetUri = torrentMagnetUri,
         sources = sources,
-        torrentName = title ?: name,
         filename = behaviorHints.filename,
         season = season,
         episode = episode,

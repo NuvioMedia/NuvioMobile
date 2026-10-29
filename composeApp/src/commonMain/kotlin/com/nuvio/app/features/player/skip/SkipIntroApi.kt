@@ -3,16 +3,29 @@ package com.nuvio.app.features.player.skip
 import com.nuvio.app.features.addons.httpGetText
 import com.nuvio.app.features.addons.httpPostJsonWithHeaders
 import kotlinx.serialization.json.Json
+import kotlinx.coroutines.CancellationException
 
 internal object SkipIntroApi {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true }
 
     private const val ANISKIP_BASE = "https://api.aniskip.com/v2/"
-    private const val ARM_BASE = "https://arm.haglund.dev/api/v2/"
     private const val ANIMESKIP_BASE = "https://api.anime-skip.com/"
 
     // --- IntroDb ---
+
+    suspend fun getIntroDbMovieSegments(imdbId: String): IntroDbSegmentsResponse? {
+        val baseUrl = IntroDbConfig.URL.trimEnd('/')
+        if (baseUrl.isBlank()) return null
+        return try {
+            val text = httpGetText(introDbMovieSegmentsUrl(baseUrl, imdbId))
+            json.decodeFromString<IntroDbSegmentsResponse>(text)
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (_: Exception) {
+            null
+        }
+    }
 
     suspend fun getIntroDbSegments(
         imdbId: String,
@@ -102,68 +115,6 @@ internal object SkipIntroApi {
         }
     }
 
-    // --- ARM API (ID resolution) ---
-
-    suspend fun resolveImdbToAll(imdbId: String): List<ArmEntry> {
-        val url = "${ARM_BASE}imdb?id=$imdbId&include=myanimelist,anilist,kitsu"
-        return try {
-            val text = httpGetText(url)
-            json.decodeFromString<List<ArmEntry>>(text)
-        } catch (_: Exception) {
-            emptyList()
-        }
-    }
-
-    suspend fun resolveMalToImdb(malId: String): ArmEntry? {
-        val url = "${ARM_BASE}ids?source=myanimelist&id=$malId&include=imdb"
-        return try {
-            val text = httpGetText(url)
-            json.decodeFromString<ArmEntry>(text)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    suspend fun resolveMalToAnilist(malId: String): ArmEntry? {
-        val url = "${ARM_BASE}ids?source=myanimelist&id=$malId&include=anilist"
-        return try {
-            val text = httpGetText(url)
-            json.decodeFromString<ArmEntry>(text)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    suspend fun resolveKitsuToMal(kitsuId: String): ArmEntry? {
-        val url = "${ARM_BASE}ids?source=kitsu&id=$kitsuId&include=myanimelist"
-        return try {
-            val text = httpGetText(url)
-            json.decodeFromString<ArmEntry>(text)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    suspend fun resolveKitsuToAnilist(kitsuId: String): ArmEntry? {
-        val url = "${ARM_BASE}ids?source=kitsu&id=$kitsuId&include=anilist"
-        return try {
-            val text = httpGetText(url)
-            json.decodeFromString<ArmEntry>(text)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
-    suspend fun resolveKitsuToImdb(kitsuId: String): ArmEntry? {
-        val url = "${ARM_BASE}ids?source=kitsu&id=$kitsuId&include=imdb"
-        return try {
-            val text = httpGetText(url)
-            json.decodeFromString<ArmEntry>(text)
-        } catch (_: Exception) {
-            null
-        }
-    }
-
     // --- Anime-Skip GraphQL ---
 
     suspend fun queryAnimeSkip(clientId: String, graphqlQuery: String): AnimeSkipGraphqlResponse? {
@@ -185,3 +136,6 @@ internal object SkipIntroApi {
         }
     }
 }
+
+internal fun introDbMovieSegmentsUrl(baseUrl: String, imdbId: String): String =
+    "${baseUrl.trimEnd('/')}/segments?imdb_id=$imdbId&is_movie=true"

@@ -10,6 +10,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -25,6 +26,12 @@ import nuvio.composeapp.generated.resources.jetbrains_sans_semibold
 import org.jetbrains.compose.resources.Font
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.WHITE }
+val LocalThemePalette = staticCompositionLocalOf { ThemeColors.White }
+
+val MaterialTheme.themePalette: ThemeColorPalette
+    @Composable
+    @ReadOnlyComposable
+    get() = LocalThemePalette.current
 
 val MaterialTheme.appTheme: AppTheme
     @Composable
@@ -190,9 +197,12 @@ fun NuvioTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     appTheme: AppTheme = AppTheme.WHITE,
     amoled: Boolean = false,
+    customThemeColors: CustomThemeColors = CustomThemeColors.Default,
     content: @Composable () -> Unit,
 ) {
-    val palette = ThemeColors.getColorPalette(appTheme)
+    val palette = remember(appTheme, customThemeColors) {
+        ThemeColors.getColorPalette(appTheme, customThemeColors)
+    }
     val colorScheme = buildColorScheme(palette, amoled = amoled)
     val tokens = defaultNuvioThemeTokens(palette, amoled = amoled, colorScheme = colorScheme)
 
@@ -206,11 +216,13 @@ fun NuvioTheme(
         LocalNuvioTypeScale provides NuvioTypeTokens,
         LocalRippleConfiguration provides NuvioRippleConfiguration,
         LocalAppTheme provides appTheme,
+        LocalThemePalette provides palette,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = NuvioTypography,
-            content = content,
-        )
+        ) {
+            SkeletonAnimationProvider(content = content)
+        }
     }
 }

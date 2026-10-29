@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,7 +42,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalLayoutDirection
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.platformPhysicalTopInset
+import com.nuvio.app.core.ui.shimmer
+import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.isIos
 import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.hazeEffect
@@ -136,11 +142,14 @@ internal fun TabletStreamsLayout(
             )
         }
 
+        val verticalBar = LocalVerticalBarPadding.current
+        val layoutDirection = LocalLayoutDirection.current
         Row(modifier = Modifier.fillMaxSize()) {
             Box(
                 modifier = Modifier
                     .weight(0.4f)
                     .fillMaxHeight()
+                    .padding(start = verticalBar.calculateStartPadding(layoutDirection))
                     .padding(24.dp),
                 contentAlignment = Alignment.Center,
             ) {
@@ -164,8 +173,9 @@ internal fun TabletStreamsLayout(
                 modifier = Modifier
                     .weight(0.6f)
                     .fillMaxHeight()
+                    .padding(end = verticalBar.calculateEndPadding(layoutDirection))
                     .padding(
-                        top = if (isIos) 20.dp else 60.dp,
+                        top = if (isIos) platformPhysicalTopInset() + 60.dp else 60.dp,
                         end = 12.dp,
                         bottom = 12.dp,
                     ),
@@ -387,6 +397,7 @@ private fun ActiveScrapersStatusBlock(
                 ) {
                     Text(
                         text = addonName,
+                        modifier = Modifier.shimmer(),
                         style = MaterialTheme.typography.labelSmall.copy(
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Normal,

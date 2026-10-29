@@ -6,6 +6,7 @@ import com.nuvio.app.features.addons.AddonManifest
 import com.nuvio.app.features.addons.ManagedAddon
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.catalog.supportsPagination
+import com.nuvio.app.features.servers.ServerCatalog
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.home_catalog_default_title
@@ -21,6 +22,7 @@ data class HomeCatalogDefinition(
     val catalogId: String,
     val supportsPagination: Boolean,
     val descriptorSignature: String,
+    val serverConnectionId: String? = null,
 ) {
     val cacheKey: String
         get() = "$key|$descriptorSignature"
@@ -29,14 +31,15 @@ data class HomeCatalogDefinition(
         if (showCatalogType) defaultTitle else catalogName
 }
 
-fun buildHomeCatalogRefreshSignature(addons: List<ManagedAddon>): List<String> =
-    addons.enabledAddons().mapNotNull { addon ->
-        val manifest = addon.manifest ?: return@mapNotNull null
-        addon to manifest
-    }.flatMap { (addon, manifest) ->
-        manifest.catalogs.map { catalog ->
-            buildHomeCatalogDescriptorSignature(addon, manifest, catalog)
+fun buildAddonCatalogRefreshSignature(addons: List<ManagedAddon>): List<String> =
+    addons.enabledAddons().map { addon ->
+        val signature = CatalogDescriptorSignature()
+        signature.addAddon(addon)
+        addon.manifest?.let { manifest ->
+            signature.addManifest(manifest)
+            manifest.catalogs.forEach(signature::addCatalog)
         }
+        signature.value()
     }.sorted()
 
 fun buildHomeCatalogDefinitions(addons: List<ManagedAddon>): List<HomeCatalogDefinition> =
@@ -65,7 +68,7 @@ fun buildHomeCatalogDefinitions(addons: List<ManagedAddon>): List<HomeCatalogDef
                     descriptorSignature = buildHomeCatalogDescriptorSignature(addon, manifest, catalog),
                 )
             }
-    }.distinctBy(HomeCatalogDefinition::key)
+    }.distinctBy(HomeCatalogDefinition::key) + ServerCatalog.homeDefinitions()
 
 private fun buildHomeCatalogDescriptorSignature(
     addon: ManagedAddon,
@@ -73,38 +76,9 @@ private fun buildHomeCatalogDescriptorSignature(
     catalog: AddonCatalog,
 ): String {
     val signature = CatalogDescriptorSignature()
-    signature.add(addon.displayTitle)
-    signature.add(addon.enabled)
-    signature.add(addon.isRefreshing)
-    signature.add(addon.errorMessage)
-    signature.add(addon.manifestUrl)
-    signature.add(manifest.id)
-    signature.add(manifest.name)
-    signature.add(manifest.version)
-    signature.add(manifest.description)
-    signature.add(manifest.logoUrl)
-    signature.add(manifest.transportUrl)
-    manifest.types.forEach(signature::add)
-    manifest.idPrefixes.forEach(signature::add)
-    manifest.resources.forEach { resource ->
-        signature.add(resource.name)
-        resource.types.forEach(signature::add)
-        resource.idPrefixes.forEach(signature::add)
-    }
-    signature.add(manifest.behaviorHints.configurable)
-    signature.add(manifest.behaviorHints.configurationRequired)
-    signature.add(manifest.behaviorHints.adult)
-    signature.add(manifest.behaviorHints.p2p)
-    signature.add(catalog.type)
-    signature.add(catalog.id)
-    signature.add(catalog.name)
-    signature.add(catalog.supportsPagination())
-    catalog.extra.forEach { extra ->
-        signature.add(extra.name)
-        signature.add(extra.isRequired)
-        extra.options.forEach(signature::add)
-        signature.add(extra.optionsLimit)
-    }
+    signature.addAddon(addon)
+    signature.addManifest(manifest)
+    signature.addCatalog(catalog)
     return signature.value()
 }
 
@@ -123,6 +97,47 @@ private class CatalogDescriptorSignature {
 
     fun add(value: Int?) {
         mix(value ?: Int.MIN_VALUE)
+    }
+
+    fun addAddon(addon: ManagedAddon) {
+        add(addon.userSetName)
+        add(addon.enabled)
+        add(addon.isRefreshing)
+        add(addon.errorMessage)
+        add(addon.manifestUrl)
+    }
+
+    fun addManifest(manifest: AddonManifest) {
+        add(manifest.id)
+        add(manifest.name)
+        add(manifest.version)
+        add(manifest.description)
+        add(manifest.logoUrl)
+        add(manifest.transportUrl)
+        manifest.types.forEach(::add)
+        manifest.idPrefixes.forEach(::add)
+        manifest.resources.forEach { resource ->
+            add(resource.name)
+            resource.types.forEach(::add)
+            resource.idPrefixes.forEach(::add)
+        }
+        add(manifest.behaviorHints.configurable)
+        add(manifest.behaviorHints.configurationRequired)
+        add(manifest.behaviorHints.adult)
+        add(manifest.behaviorHints.p2p)
+    }
+
+    fun addCatalog(catalog: AddonCatalog) {
+        add(catalog.type)
+        add(catalog.id)
+        add(catalog.name)
+        add(catalog.supportsPagination())
+        catalog.extra.forEach { extra ->
+            add(extra.name)
+            add(extra.isRequired)
+            extra.options.forEach(::add)
+            add(extra.optionsLimit)
+        }
     }
 
     fun value(): String = hash.toULong().toString(16)

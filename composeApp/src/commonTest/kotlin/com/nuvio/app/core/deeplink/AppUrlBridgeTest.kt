@@ -7,6 +7,17 @@ import kotlin.test.assertNull
 class AppUrlBridgeTest {
 
     @Test
+    fun `parses party invites from the app and the website`() {
+        assertEquals(AppDeepLink.Party("K7M2QX"), parseAppDeepLink("nuvio://party/k7m-2qx"))
+        assertEquals(AppDeepLink.Party("K7M2QX"), parseAppDeepLink("https://nuvio.tv/party/K7M2QX"))
+        assertEquals(AppDeepLink.Party("K7M2QX"), parseAppDeepLink("https://NUVIO.tv/party/K7M2QX/"))
+        assertNull(parseAppDeepLink("https://nuvio.tv/party/K7M2Q"))
+        assertNull(parseAppDeepLink("https://nuvio.tv/link?code=K7M2QX"))
+        assertNull(parseAppDeepLink("https://evil.example/party/K7M2QX"))
+        assertNull(parseAppDeepLink("http://nuvio.tv/party/K7M2QX"))
+    }
+
+    @Test
     fun `parses existing notification meta deeplink`() {
         assertEquals(
             AppDeepLink.Meta(type = "series", id = "tt0944947"),

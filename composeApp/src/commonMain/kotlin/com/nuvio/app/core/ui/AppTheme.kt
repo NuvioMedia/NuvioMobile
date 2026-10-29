@@ -13,6 +13,7 @@ import nuvio.composeapp.generated.resources.theme_jade
 import nuvio.composeapp.generated.resources.theme_rose_gold
 import nuvio.composeapp.generated.resources.theme_arctic_blue
 import nuvio.composeapp.generated.resources.theme_graphite
+import nuvio.composeapp.generated.resources.theme_custom
 import org.jetbrains.compose.resources.StringResource
 
 enum class AppTheme {
@@ -21,6 +22,7 @@ enum class AppTheme {
     ROSE_GOLD,
     ARCTIC_BLUE,
     GRAPHITE,
+    CUSTOM,
     CRIMSON,
     OCEAN,
     VIOLET,
@@ -37,6 +39,7 @@ val AppTheme.labelRes: StringResource
         AppTheme.ROSE_GOLD -> Res.string.theme_rose_gold
         AppTheme.ARCTIC_BLUE -> Res.string.theme_arctic_blue
         AppTheme.GRAPHITE -> Res.string.theme_graphite
+        AppTheme.CUSTOM -> Res.string.theme_custom
         AppTheme.CRIMSON -> Res.string.theme_crimson
         AppTheme.OCEAN -> Res.string.theme_ocean
         AppTheme.VIOLET -> Res.string.theme_violet

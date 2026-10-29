@@ -70,4 +70,26 @@ class PlayerSubtitleUtilsTest {
         assertEquals(1, cues.size)
         assertEquals("Valid cue", cues[0].text)
     }
+
+    @Test
+    fun testParseMultilineTtmlCue() {
+        val ttmlText = """
+            <tt>
+              <body>
+                <div>
+                  <p begin="00:00:01.000" end="00:00:04.500">
+                    Hello<br/>world
+                  </p>
+                </div>
+              </body>
+            </tt>
+        """.trimIndent()
+
+        val cues = PlayerSubtitleCueParser.parse(ttmlText, "sub.ttml")
+
+        assertEquals(1, cues.size)
+        assertEquals(1000L, cues.single().startTimeMs)
+        assertEquals(4500L, cues.single().endTimeMs)
+        assertEquals("Hello\nworld", cues.single().text)
+    }
 }

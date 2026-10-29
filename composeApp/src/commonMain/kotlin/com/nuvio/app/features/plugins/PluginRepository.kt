@@ -27,6 +27,8 @@ expect object PluginRepository {
 
     fun setGroupStreamsByRepository(enabled: Boolean)
 
+    fun setLocalPluginSearchPaused(paused: Boolean)
+
     fun getEnabledScrapersForType(type: String): List<PluginScraper>
 
     suspend fun testScraper(scraperId: String): Result<List<PluginRuntimeResult>>

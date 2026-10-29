@@ -26,6 +26,22 @@ class ProfileSettingsCredentialPolicyTest {
     @Test
     fun `legacy remote credential fields cannot overwrite local credentials`() {
         val remote = buildJsonObject {
+            put("mdblist_enabled", JsonPrimitive(true))
+            put("mdblist_api_key", JsonPrimitive("remote"))
+        }
+        val local = buildJsonObject {
+            put("mdblist_api_key", JsonPrimitive("local"))
+        }
+
+        val merged = preservingLocalProfileCredentials(PROFILE_MDBLIST_SETTINGS_FEATURE, remote, local)
+
+        assertEquals(JsonPrimitive("local"), merged["mdblist_api_key"])
+        assertEquals(JsonPrimitive(true), merged["mdblist_enabled"])
+    }
+
+    @Test
+    fun `legacy TMDB credentials are discarded from local and remote settings`() {
+        val remote = buildJsonObject {
             put("tmdb_enabled", JsonPrimitive(true))
             put("tmdb_api_key", JsonPrimitive("remote"))
         }
@@ -34,8 +50,10 @@ class ProfileSettingsCredentialPolicyTest {
         }
 
         val merged = preservingLocalProfileCredentials(PROFILE_TMDB_SETTINGS_FEATURE, remote, local)
+        val sanitized = withoutProfileCredentials(PROFILE_TMDB_SETTINGS_FEATURE, local)
 
-        assertEquals(JsonPrimitive("local"), merged["tmdb_api_key"])
+        assertFalse("tmdb_api_key" in merged)
+        assertFalse("tmdb_api_key" in sanitized)
         assertEquals(JsonPrimitive(true), merged["tmdb_enabled"])
     }
 }

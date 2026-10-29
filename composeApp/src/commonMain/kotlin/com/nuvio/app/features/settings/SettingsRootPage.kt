@@ -11,6 +11,7 @@ import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Favorite
+import androidx.compose.material.icons.rounded.Groups
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Cast
@@ -45,8 +46,6 @@ import nuvio.composeapp.generated.resources.compose_settings_root_appearance_des
 import nuvio.composeapp.generated.resources.compose_settings_root_check_updates_description
 import nuvio.composeapp.generated.resources.compose_settings_root_check_updates_title
 import nuvio.composeapp.generated.resources.compose_settings_root_content_discovery_description
-import nuvio.composeapp.generated.resources.compose_settings_root_downloads_description
-import nuvio.composeapp.generated.resources.compose_settings_root_downloads_title
 import nuvio.composeapp.generated.resources.compose_settings_root_general_section
 import nuvio.composeapp.generated.resources.compose_settings_root_integrations_description
 import nuvio.composeapp.generated.resources.compose_settings_root_notifications_description
@@ -65,6 +64,8 @@ import nuvio.composeapp.generated.resources.compose_settings_page_cast
 import nuvio.composeapp.generated.resources.settings_playback_subtitle
 import nuvio.composeapp.generated.resources.updates_debug_test_description
 import nuvio.composeapp.generated.resources.updates_debug_test_title
+import nuvio.composeapp.generated.resources.party_settings_description
+import nuvio.composeapp.generated.resources.party_title
 import nuvio.composeapp.generated.resources.about_supporters_contributors_subtitle
 import nuvio.composeapp.generated.resources.about_licenses_attributions_subtitle
 import org.jetbrains.compose.resources.stringResource
@@ -85,9 +86,9 @@ internal fun LazyListScope.settingsRootContent(
     onLicensesAttributionsClick: () -> Unit,
     onCheckForUpdatesClick: (() -> Unit)? = null,
     onTestUpdateBannerClick: (() -> Unit)? = null,
-    onDownloadsClick: () -> Unit,
     onAccountClick: () -> Unit,
     onSwitchProfileClick: (() -> Unit)? = null,
+    onWatchPartyClick: (() -> Unit)? = null,
     showAccountSection: Boolean = true,
     showGeneralSection: Boolean = true,
     showAboutSection: Boolean = true,
@@ -118,6 +119,16 @@ internal fun LazyListScope.settingsRootContent(
                         isTablet = isTablet,
                         onClick = onAccountClick,
                     )
+                    if (onWatchPartyClick != null) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.party_title),
+                            description = stringResource(Res.string.party_settings_description),
+                            icon = Icons.Rounded.Groups,
+                            isTablet = isTablet,
+                            onClick = onWatchPartyClick,
+                        )
+                    }
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_tracking),
@@ -151,14 +162,6 @@ internal fun LazyListScope.settingsRootContent(
                         icon = Icons.Rounded.Extension,
                         isTablet = isTablet,
                         onClick = onContentDiscoveryClick,
-                    )
-                    SettingsGroupDivider(isTablet = isTablet)
-                    SettingsNavigationRow(
-                        title = stringResource(Res.string.compose_settings_root_downloads_title),
-                        description = stringResource(Res.string.compose_settings_root_downloads_description),
-                        icon = Icons.Rounded.CloudDownload,
-                        isTablet = isTablet,
-                        onClick = onDownloadsClick,
                     )
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
@@ -230,6 +233,8 @@ internal fun LazyListScope.settingsRootContent(
                         onClick = onLicensesAttributionsClick,
                     )
                     if (onCheckForUpdatesClick != null) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        UpdateChannelSettingsRow(isTablet = isTablet)
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsNavigationRow(
                             title = stringResource(Res.string.compose_settings_root_check_updates_title),

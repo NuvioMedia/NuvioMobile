@@ -4,11 +4,13 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -27,16 +29,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.NuvioActionLabel
+import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.NuvioToastController
+import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.home.HomeCatalogSettingsItem
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.components.HomeEmptyStateCard
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.action_retry
 import nuvio.composeapp.generated.resources.action_reset
 import nuvio.composeapp.generated.resources.layout_hide_unreleased
 import nuvio.composeapp.generated.resources.layout_hide_unreleased_sub
@@ -46,6 +52,7 @@ import nuvio.composeapp.generated.resources.settings_homescreen_empty_message
 import nuvio.composeapp.generated.resources.settings_homescreen_empty_title
 import nuvio.composeapp.generated.resources.settings_homescreen_keep_home_focused
 import nuvio.composeapp.generated.resources.settings_homescreen_limit_reached
+import nuvio.composeapp.generated.resources.settings_homescreen_load_failed_title
 import nuvio.composeapp.generated.resources.settings_homescreen_no_sources_selected
 import nuvio.composeapp.generated.resources.settings_homescreen_pin_to_move_toast
 import nuvio.composeapp.generated.resources.settings_homescreen_section_catalogs
@@ -69,6 +76,8 @@ internal fun LazyListScope.homescreenSettingsContent(
     showCatalogType: Boolean,
     hideUnreleasedContent: Boolean,
     items: List<HomeCatalogSettingsItem>,
+    isCatalogLoading: Boolean,
+    catalogErrorMessage: String?,
 ) {
     val selectedHeroSourceCount = items.count { it.heroSourceEnabled }
     val enabledCatalogCount = items.count { it.enabled }
@@ -131,7 +140,24 @@ internal fun LazyListScope.homescreenSettingsContent(
         }
     }
     item {
-        if (items.isEmpty()) {
+        if (isCatalogLoading && items.isEmpty()) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(vertical = 48.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                NuvioLoadingIndicator(
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        } else if (catalogErrorMessage != null && items.isEmpty()) {
+            HomeEmptyStateCard(
+                modifier = Modifier.fillMaxWidth(),
+                title = stringResource(Res.string.settings_homescreen_load_failed_title),
+                message = catalogErrorMessage,
+                actionLabel = stringResource(Res.string.action_retry),
+                onActionClick = AddonRepository::refreshAll,
+            )
+        } else if (items.isEmpty()) {
             HomeEmptyStateCard(
                 modifier = Modifier.fillMaxWidth(),
                 title = stringResource(Res.string.settings_homescreen_empty_title),

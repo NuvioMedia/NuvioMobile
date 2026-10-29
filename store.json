@@ -20,6 +20,316 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.6.5",
+          "buildVersion": "148",
+          "date": "2026-10-27T02:04:03Z",
+          "localizedDescription": "- [feat(i18n): translate subtitle render scale and hero ratings settings (#2402)](https://github.com/NuvioMedia/NuvioMobile/pull/2402) @jhojhocraazy  \r\n- 2c69902b fix(servers): keep title lookups working between episodes @tapframe  \r\n- [Updated Bulgarian translations - fixes, party file, new strings (#2397)](https://github.com/NuvioMedia/NuvioMobile/pull/2397) @viiktr  \r\n- 88c9b4ce feat(player): split video and controls at the duo fold @tapframe  \r\n- [fix(debrid): recognize language words in release names (#2364)](https://github.com/NuvioMedia/NuvioMobile/pull/2364) @kernexshadow  \r\n- [i18n(vi): update latest Vietnamese strings (#2370)](https://github.com/NuvioMedia/NuvioMobile/pull/2370) @blueocean2308  \r\n- c85dc721 feat(player): remove source name from paused player @tapframe  \r\n- [l10n: complete missing Italian translations (#2371)](https://github.com/NuvioMedia/NuvioMobile/pull/2371) @WhiteGiso  \r\n- [Player chapters: progress bar marks, chapter name and a chapters panel (#2174)](https://github.com/NuvioMedia/NuvioMobile/pull/2174) @kernexshadow  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.5-beta/nuvio-0.6.5-full-release.ipa",
+          "size": 67965485,
+          "sha256": "599eff1327f1018e65f0f577f1d3e6070833dc3d291589105dfa173ef7b41d7e",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.6.4",
+          "buildVersion": "147",
+          "date": "2026-10-23T23:20:42Z",
+          "localizedDescription": "- 8683505d fix(details): animate ratings on tablet @tapframe  \r\n- e6a05d1d feat(ios): support duo layout @tapframe  \r\n- b6287380 fix(deps): update haze to 1.7.3 @tapframe  \r\n- [fix(trakt): keep continue watching when a progress request fails (#2366)](https://github.com/NuvioMedia/NuvioMobile/pull/2366) @kernexshadow  \r\n- [perf(streams): compile badge rules once per change (#2365)](https://github.com/NuvioMedia/NuvioMobile/pull/2365) @kernexshadow  \r\n- [perf(debrid): cache stream filter regexes and reuse stream facts (#2362)](https://github.com/NuvioMedia/NuvioMobile/pull/2362) @kernexshadow  \r\n- [i18n(el): sync the Greek locale with 0.6.3 (player badges, Simkl statuses, engine switch, party chat) (#2359)](https://github.com/NuvioMedia/NuvioMobile/pull/2359) @nosvasedis  \r\n- [feat(i18n): complete pt-BR player badges and watch party strings (#2338)](https://github.com/NuvioMedia/NuvioMobile/pull/2338) @jhojhocraazy  \r\n- [Replace libass renderer with atlas pipeline from Plezy (#2346)](https://github.com/NuvioMedia/NuvioMobile/pull/2346) @skoruppa  \r\n- [Update Hungarian translations (#2341)](https://github.com/NuvioMedia/NuvioMobile/pull/2341) @emgeje  \r\n- [i18n(vi): update strings.xml and strings_party.xml (#2339)](https://github.com/NuvioMedia/NuvioMobile/pull/2339) @blueocean2308  \r\n- 90ab7f95 fix(ratings): use real imdb logo and grey label @tapframe  \r\n- d9046775 feat(home): show ratings and age rating on hero @tapframe  \r\n- b9fbc09c fix(player): keep side panels clear of the navigation bar @tapframe  \r\n- 83e528f0 feat(player): choose a badge pack for the player @tapframe  \r\n- [Complete Spanish mobile translations (#2344)](https://github.com/NuvioMedia/NuvioMobile/pull/2344) @IberianSoldierPC  \r\n- [fix(ios): keep hardware decoding when PiP is interrupted by Notification Center (#2306)](https://github.com/NuvioMedia/NuvioMobile/pull/2306) @WhiteGiso  \r\n- [fix(android): scale ExoPlayer subtitles with the PiP window size (#2314)](https://github.com/NuvioMedia/NuvioMobile/pull/2314) @sap6  \r\n- [feat(player): auto-sync add-on subtitles on the libmpv engine (#2275)](https://github.com/NuvioMedia/NuvioMobile/pull/2275) @kernexshadow  \r\n\r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.4-beta/nuvio-0.6.4-full-release.ipa",
+          "size": 67805794,
+          "sha256": "e7670fdba3adb96f6f8292dd19539fff04d1fbd792fa0fc7b1f602b84367d969",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.6.3",
+          "buildVersion": "146",
+          "date": "2026-10-21T04:42:34Z",
+          "localizedDescription": "- d45d4d36 fix(party): show the party's source as plain text @tapframe  \r\n- 37a6656a fix(player): keep center controls in place on pause @tapframe  \r\n- 344117e7 feat(player): show badges for what is playing @tapframe  \r\n- ebb17678 feat(party): chat from your phone with the same profile @tapframe  \r\n- 18268427 fix(player): move engine switch to top row with confirmation @tapframe  \r\n- [feat(i18n): add Brazilian Portuguese (pt-BR) localization for watch party, servers, mdblist and autosync (#2288)](https://github.com/NuvioMedia/NuvioMobile/pull/2288) @jhojhocraazy  \r\n- b8249380 fix(party): send chat messages with the return key @tapframe  \r\n- [Update Hungarian translations (#2333)](https://github.com/NuvioMedia/NuvioMobile/pull/2333) @emgeje  \r\n- [Fix binge group initial state from stream args, apply custom posters in library see-all (#2332)](https://github.com/NuvioMedia/NuvioMobile/pull/2332) @skoruppa  \r\n- [i18n(vi): update strings.xml, translate watch party and auto sync strings into Vietnamese (#2297)](https://github.com/NuvioMedia/NuvioMobile/pull/2297) @blueocean2308  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.3-beta/nuvio-0.6.3-full-release.ipa",
+          "size": 68815810,
+          "sha256": "90cccaa6bfe194c0567e0eb763a2aa65c2fd32ea84660eab18ef336b83558640",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.6.2",
+          "buildVersion": "145",
+          "date": "2026-10-18T23:13:01Z",
+          "localizedDescription": "- b253a7c5 feat(party): add chat to watch parties @tapframe  \r\n- [Fix escaped apostrophes and missing Italian translations (#2312)](https://github.com/NuvioMedia/NuvioMobile/pull/2312) @WhiteGiso  \r\n- [fix(ios): keep Watch Party in sync and apply party rules during PiP (#2308)](https://github.com/NuvioMedia/NuvioMobile/pull/2308) @WhiteGiso  \r\n- [i18n(el): finish the Greek locale (party, media servers, MDBList, Auto Sync, season count) (#2292)](https://github.com/NuvioMedia/NuvioMobile/pull/2292) @nosvasedis  \r\n- [Filename and infoHash matching for binge group, prefetch fixes (#2278)](https://github.com/NuvioMedia/NuvioMobile/pull/2278) @skoruppa  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.2-beta/nuvio-0.6.2-full-release.ipa",
+          "size": 68666779,
+          "sha256": "99d318c5882d53ec644c09cbde852c6b45649cc20e8452f457e6e88b0bae5eb2",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.6.1",
+          "buildVersion": "144",
+          "date": "2026-10-16T14:44:49Z",
+          "localizedDescription": "- f352f2b2 fix(party): let only the host change what's playing @tapframe  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.1-beta/nuvio-0.6.1-full-release.ipa",
+          "size": 68517984,
+          "sha256": "d18faf37f1304d5d2a62c302077285aedf6de973e2b6eecbff3a0bfc1d28ad2d",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.6.0",
+          "buildVersion": "143",
+          "date": "2026-10-16T08:52:28Z",
+          "localizedDescription": "- [feat(party): add experimental watch parties (#2253)](https://github.com/NuvioMedia/NuvioMobile/pull/2253) @tapframe  \r\n- b9d2c39d fix(player): pause other apps audio on android @tapframe  \r\n- [feat(mdblist): show dynamic and liked lists in the library (#2268)](https://github.com/NuvioMedia/NuvioMobile/pull/2268) @kernexshadow  \r\n- [i18n(el): translate new 0.5.10 strings (#2263)](https://github.com/NuvioMedia/NuvioMobile/pull/2263) @nosvasedis  \r\n- [Complete missing Italian translations (#2260)](https://github.com/NuvioMedia/NuvioMobile/pull/2260) @WhiteGiso  \r\n- [fix(ios): improve PiP transitions and recover playback after closing PiP (#2259)](https://github.com/NuvioMedia/NuvioMobile/pull/2259) @WhiteGiso  \r\n- [fix(ios): restore Now Playing by limiting audio mixing to calls (#2246)](https://github.com/NuvioMedia/NuvioMobile/pull/2246) @WhiteGiso  \r\n- [fix(i18n): update, complete and review Brazilian Portuguese (pt-BR) localization (#2234)](https://github.com/NuvioMedia/NuvioMobile/pull/2234) @jhojhocraazy  \r\n- [feat(mdblist): show external lists in the library (#2172)](https://github.com/NuvioMedia/NuvioMobile/pull/2172) @kernexshadow  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.0-beta/nuvio-0.6.0-full-release.ipa",
+          "size": 68513753,
+          "sha256": "4fe66dd483c6b18eab388c3fc419bc0e100336c120f2e8b2ce046842230dfbdd",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.10",
+          "buildVersion": "142",
+          "date": "2026-10-14T00:12:11Z",
+          "localizedDescription": "- [feat(ios): add native PiP with existing MPV VideoToolbox frames (#2248)](https://github.com/NuvioMedia/NuvioMobile/pull/2248) @WhiteGiso  \r\n- [Fix dismissed shows staying hidden after marking episodes watched (#2244)](https://github.com/NuvioMedia/NuvioMobile/pull/2244) @Laskco  \r\n- [Add non-AI Subtitle AutoSync for mobile add-on subtitles (#2143)](https://github.com/NuvioMedia/NuvioMobile/pull/2143) @DavidVamaiotu  \r\n- [fix(i18n): localize generic Episode N titles like TV (#2241)](https://github.com/NuvioMedia/NuvioMobile/pull/2241) @blueocean2308  \r\n- [ fix next episode card timing and prefetch with heuristic post-credits (#2238)](https://github.com/NuvioMedia/NuvioMobile/pull/2238) @skoruppa  \r\n- [Optimize custom poster URL resolving performance (#2239)](https://github.com/NuvioMedia/NuvioMobile/pull/2239) @halibiram  \r\n- [fix: In Poster Card Style settings screen one toggle get bigger then other and pushed out of the screen safe area. (#2219)](https://github.com/NuvioMedia/NuvioMobile/pull/2219) @AdityasahuX07  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.10-beta/nuvio-0.5.10-full-release.ipa",
+          "size": 67643251,
+          "sha256": "49e1d179f5a03ed641f46e6dda0958556bceb6a8776dd436d228c04f0974d3fa",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.9",
+          "buildVersion": "141",
+          "date": "2026-10-10T17:30:30Z",
+          "localizedDescription": "- 1bb2b10e feat(servers): sync libraries that mix movies and shows @tapframe  \r\n- 6f98691d fix(servers): mark playback info requests as playback @tapframe  \r\n- e05178c8 feat(servers): show libraries that mix movies and shows @tapframe  \r\n- de69f9a9 fix(servers): open libraries that need a genre on their first one @tapframe  \r\n- c2ed4c5e fix(servers): skip versions that cannot play @tapframe  \r\n- 5a24beb0 fix(servers): search each server once per type @tapframe  \r\n- [i18n(vi): update strings.xml and add strings_mdblist.xml + strings_servers.xml (#2216)](https://github.com/NuvioMedia/NuvioMobile/pull/2216) @blueocean2308  \r\n- [Fix TorBox Cloud loading for large libraries (#2215)](https://github.com/NuvioMedia/NuvioMobile/pull/2215) @Laskco  \r\n- [Defer custom poster URL resolution to UI layer (#2207)](https://github.com/NuvioMedia/NuvioMobile/pull/2207) @skoruppa  \r\n- [fix(i18n): comprehensive update to Bengali localization (missing strings & UI fit) (#2204)](https://github.com/NuvioMedia/NuvioMobile/pull/2204) @TanvirSdq  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.9-beta/nuvio-0.5.9-full-release.ipa",
+          "size": 67606241,
+          "sha256": "d656c9d689061ac1afacabd44867e4bf65012a253a30e7e755d022d3a3fea675",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.8",
+          "buildVersion": "140",
+          "date": "2026-10-08T10:44:43Z",
+          "localizedDescription": "- [i18n: Add Croatian (hr) translation (#2169)](https://github.com/NuvioMedia/NuvioMobile/pull/2169) @Anarchydr  \r\n- [feat(mdblist): sort library lists by release date (#2196)](https://github.com/NuvioMedia/NuvioMobile/pull/2196) @kernexshadow  \r\n- [Reset next episode preload flag on episode transition (#2193)](https://github.com/NuvioMedia/NuvioMobile/pull/2193) @skoruppa  \r\n- [fix(UI): fix hero content shifting on horizontal and tablet layouts (#2190)](https://github.com/NuvioMedia/NuvioMobile/pull/2190) @ThEgIGN  \r\n- [feat(servers): add experimental Jellyfin and Emby support (#2081)](https://github.com/NuvioMedia/NuvioMobile/pull/2081) @tapframe  \r\n- [fix(streams): play streams that only have a ytId (#2115)](https://github.com/NuvioMedia/NuvioMobile/pull/2115) @deejay189393  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.8-beta/nuvio-0.5.8-full-release.ipa",
+          "size": 67558904,
+          "sha256": "7aa44bc33bfbf9e4edc8551fba5860d125e0ff5df418118d8bc2d668b5c4698f",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.7",
+          "buildVersion": "139",
+          "date": "2026-10-06T15:53:34Z",
+          "localizedDescription": "- c2127769 fix(p2p): correct torrent cache path and usage @tapframe  \r\n- [feat(player): add ExoPlayer native memory, VOD cache, and buffer setting (#2178)](https://github.com/NuvioMedia/NuvioMobile/pull/2178) @halibiram  \r\n- e22baece feat(details): add letterbox zoom to hero trailer @tapframe  \r\n- [feat(mdblist): choose which lists appear in the library (#2171)](https://github.com/NuvioMedia/NuvioMobile/pull/2171) @kernexshadow  \r\n- 53ac5e53 fix(player): follow system brightness when touch gestures are off @tapframe  \r\n- 459add64 feat(streams): match tv refresh spin in streams and player panels @tapframe  \r\n- d3786272 feat(player): add switch player and stream info actions @tapframe  \r\n- 909dd7dc feat(streams): spin refresh button until addons finish loading @tapframe  \r\n- [fix custom poster pattern URL validation and decoding (#2153)](https://github.com/NuvioMedia/NuvioMobile/pull/2153) @skoruppa  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.7-beta/nuvio-0.5.7-full-release.ipa",
+          "size": 66836754,
+          "sha256": "12e380470a1ba1aab42709480aa08fe440f9171d3872a91fa9ff7f9a3de194fe",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.6",
+          "buildVersion": "138",
+          "date": "2026-10-02T12:45:05Z",
+          "localizedDescription": "- 312f7399 feat(details): use desktop hero layout on tablets @tapframe  \n- b3d7c5b6 feat(settings): show restart prompt when layout direction changes @tapframe  \n- a984b390 fix(ios): declare supported localizations @tapframe  \n- f0f980b3 fix(player): auto-play next episode on end after dismissing prompt @tapframe  \n- [i18n(vi): update latest Vietnamese strings (#2146)](https://github.com/NuvioMedia/NuvioMobile/pull/2146) @blueocean2308  \n- [Preload next episode sources (#2140)](https://github.com/NuvioMedia/NuvioMobile/pull/2140) @skoruppa  \n- [Fix mising poster fallback in Catalog Screen (#2139)](https://github.com/NuvioMedia/NuvioMobile/pull/2139) @skoruppa  \n- [fix(player): backport automatic skip notifications from Desktop (#2137)](https://github.com/NuvioMedia/NuvioMobile/pull/2137) @Laskco  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.6-beta/nuvio-0.5.6-full-release.ipa",
+          "size": 66690752,
+          "sha256": "503a38bb00d29c05d4d6b89443faf9c5004fbd0cd6496e177e0cb1b4dcd0ce4c",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.5",
+          "buildVersion": "137",
+          "date": "2026-09-30T19:22:54Z",
+          "localizedDescription": "- [feat(i18n): add Bengali (বাংলা) language support and UI localization (#2113)](https://github.com/NuvioMedia/NuvioMobile/pull/2113) @TanvirSdq  \n- [i18n(el): sync Greek translations and remove remaining English loanwords (#2132)](https://github.com/NuvioMedia/NuvioMobile/pull/2132) @nosvasedis  \n- [Landscape clearlogo toggle, Simkl type hint, TMDB source priority, folder TMDB ID resolution (#2084)](https://github.com/NuvioMedia/NuvioMobile/pull/2084) @skoruppa  \n- [fix(UI): Fix hero section sometimes shifting (#2128)](https://github.com/NuvioMedia/NuvioMobile/pull/2128) @ThEgIGN  \n- [fix(player): show the swipe-to-seek preview in the new player layout (#2122)](https://github.com/NuvioMedia/NuvioMobile/pull/2122) @deejay189393  \n- 6aa42153 fix(debrid): select requested episode files @tapframe  \n- [i18n(vi): update latest Vietnamese strings (#2096)](https://github.com/NuvioMedia/NuvioMobile/pull/2096) @blueocean2308  \n- [Translation improvements and adjustments for Slovak language (#2104)](https://github.com/NuvioMedia/NuvioMobile/pull/2104) @mmsw91  \n- [fix(mdblist): show newest library additions first (#2103)](https://github.com/NuvioMedia/NuvioMobile/pull/2103) @halibiram  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.5-beta/nuvio-0.5.5-full-release.ipa",
+          "size": 66647562,
+          "sha256": "ae4da6ce2738ea36e700b3774e0137dae5b0885d7d88ac46c6720b3be3c82433",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.4",
+          "buildVersion": "136",
+          "date": "2026-09-28T09:23:38Z",
+          "localizedDescription": "- 80860602 fix(player): ignore short clips for tracking @tapframe  \n- cd4572e2 fix(ios): update quickjs to 1.0.15 @tapframe  \n- 9980d643 fix(player): reduce buffer durations @tapframe  \n- 75296263 fix(details): keep custom posters when returning to a title @tapframe  \n- 4bdcfa3a fix(settings): use shared chip on detail page @tapframe  \n- 2b8be69c fix(details): replay watched series from first episode @tapframe  \n- c69b643a fix(player): resume restored player from current position @tapframe  \n- c3920d40 fix(i18n): align episode labels and metadata with tv @tapframe  \n- 24c7c89c fix(streams): prevent rotation during binge group lookup @tapframe  \n- a1a43416 fix(profiles): center pin dialog content @tapframe  \n- [Plugin timeout (#2091)](https://github.com/NuvioMedia/NuvioMobile/pull/2091) @paregi12  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.4-beta/nuvio-0.5.4-full-release.ipa",
+          "size": 66389579,
+          "sha256": "f605463d51f304564833e82a2fc1478a326c2bea7fa15519d99e854eebb50b94",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.3",
+          "buildVersion": "135",
+          "date": "2026-09-27T01:18:47Z",
+          "localizedDescription": "- 0b7ab892 feat(poster): support addon landscape posters @tapframe  \r\n- 60a0f4b3 feat(library): move downloads to library\r\n- 5ebb8ee5 feat(spinner): change indicator @tapframe  \r\n- [i18n(ur): add Urdu localization (#2067)](https://github.com/NuvioMedia/NuvioMobile/pull/2067) @muzii9  \r\n- 23b048c3 feat(player): add episode shuffle @tapframe  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.3-beta/nuvio-0.5.3-full-release.ipa",
+          "size": 66299682,
+          "sha256": "7ee79b969d904893f3656ab99de0f9611fb9b70141c72f8094d4c04d74f4a72a",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.2",
+          "buildVersion": "134",
+          "date": "2026-09-25T18:03:57Z",
+          "localizedDescription": "\r\n- 353b8cd9 fix(exo): update buffer defaults @tapframe  \r\n- f50bd149 update engine libs @tapframe  \r\n- 23e4d3f7 fix(ios): hide home indicator during playback @tapframe  \r\n- [i18n(vi): update latest Vietnamese strings (#2064)](https://github.com/NuvioMedia/NuvioMobile/pull/2064) @blueocean2308  \r\n- [Fix badge cache, library poster scope, and next-episode post-credits timing (#2059)](https://github.com/NuvioMedia/NuvioMobile/pull/2059) @skoruppa  \r\n- [Add landscape banner to Simkl More Like This items (#2058)](https://github.com/NuvioMedia/NuvioMobile/pull/2058) @skoruppa  \r\n- [added the percent value to the swipe up gesture bars (#2057)](https://github.com/NuvioMedia/NuvioMobile/pull/2057) @AdityasahuX07  \r\n- [Simkl more like this (#2052)](https://github.com/NuvioMedia/NuvioMobile/pull/2052) @skoruppa  \r\n- [Add per-screen toggles for custom poster URL overlay (#2050)](https://github.com/NuvioMedia/NuvioMobile/pull/2050) @skoruppa  \r\n- [fix(i18n): render Show \"All\" Tab without backslashes (#2047)](https://github.com/NuvioMedia/NuvioMobile/pull/2047) @blueocean2308  \r\n- d4b69c2d fix(player): key player lifecycle by episode and source @tapframe  \r\n- [Fix binary request and response handling in plugin fetch() (#2041)](https://github.com/NuvioMedia/NuvioMobile/pull/2041) @joojoooo  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.2-beta/nuvio-0.5.2-full-release.ipa",
+          "size": 66138236,
+          "sha256": "8fec187194082829268c41c0ba468aa3fc47accd4e178e65f8cc49188f3e9dae",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.1",
+          "buildVersion": "133",
+          "date": "2026-09-23T06:37:37Z",
+          "localizedDescription": "- 0b427905 fix(mdblist): correct library sorting @tapframe  \n- 647e4c09 fix(mdblist): batch and reuse rating requests @tapframe  \n- [i18n(vi): update latest Vietnamese strings (#2037)](https://github.com/NuvioMedia/NuvioMobile/pull/2037) @blueocean2308  \n- [Fix custom posters missing in tmdb/trakt collections (#2035)](https://github.com/NuvioMedia/NuvioMobile/pull/2035) @skoruppa  \n- [fix(details) adapt to the new aiom season poster method (#2038)](https://github.com/NuvioMedia/NuvioMobile/pull/2038) @chrisk325  \n- [Feature/spanish es translation (#2039)](https://github.com/NuvioMedia/NuvioMobile/pull/2039) @IberianSoldierPC  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.1-beta/nuvio-0.5.1-full-release.ipa",
+          "size": 66042992,
+          "sha256": "801bb9d82efddbc0698ce92a4a8e6a741209b40bf5e7b6053d33a68b81d905fc",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.5.0",
+          "buildVersion": "132",
+          "date": "2026-09-22T10:10:10Z",
+          "localizedDescription": "- 4c82f9ac feat(settings): collapse tracker cards by default @tapframe  \r\n- c9d6f5f6 fix(player): restore subtitles for each episode @tapframe  \r\n- [feat(mdblist): add tracking and library support (#1900)](https://github.com/NuvioMedia/NuvioMobile/pull/1900) @tapframe  \r\n- [remove inaccurate TMDB release date enrichment option (#2032)](https://github.com/NuvioMedia/NuvioMobile/pull/2032) @skoruppa  \r\n- [Fix(player) record mx player completion when no position is returned (#2031)](https://github.com/NuvioMedia/NuvioMobile/pull/2031) @zuko726  \r\n- 4178d5cd fix(tmdb): sort blank collection release dates last @tapframe  \r\n- fb9f859e fix(ios): use clean player framework archive @tapframe  \r\n- 6ff7882a fix(player): preserve iOS audio during calls @tapframe  \r\n- [Custom poster URL pattern support (#2025)](https://github.com/NuvioMedia/NuvioMobile/pull/2025) @skoruppa  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.5.0-beta/nuvio-0.5.0-full-release.ipa",
+          "size": 66006978,
+          "sha256": "14cc46e4098e4568e2e20a86a8b5dc7dba3da7e28ab7567972338fba460421ef",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.26",
+          "buildVersion": "131",
+          "date": "2026-09-21T09:49:45Z",
+          "localizedDescription": "- 458f810b fix(streams): share addon filtering across pickers @tapframe  \n- [i18n(nb): complete missing Norwegian Bokmål strings (#2005)](https://github.com/NuvioMedia/NuvioMobile/pull/2005) @SimSalabimse  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.26-beta/nuvio-0.4.26-full-release.ipa",
+          "size": 65234840,
+          "sha256": "50bb70d89a4201070840b7530ea730e1bf2c603c72a1bdfed48126740d6dde07",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.25",
+          "buildVersion": "130",
+          "date": "2026-09-19T15:15:17Z",
+          "localizedDescription": "- b5163558 fix(home): prevent hero flash when cycling @tapframe  \r\n- 656f368c fix(pr): update workflow @tapframe  \r\n- [i18n(el): sync Greek translations with the current English strings (#1991)](https://github.com/NuvioMedia/NuvioMobile/pull/1991) @nosvasedis  \r\n- 98be8514 revert(ui): restore previous surface and chip styles @tapframe  \r\n- [i18n(vi): update latest Vietnamese strings (#1990)](https://github.com/NuvioMedia/NuvioMobile/pull/1990) @blueocean2308  \r\n- [fix(simkl): three bugs in the shared Simkl read and write paths (#1988)](https://github.com/NuvioMedia/NuvioMobile/pull/1988) @Judzim  \r\n- 99ced26a feat(player): add Infuse playback callbacks @tapframe  \r\n- [fix(ios): bundle CJK font for subtitles (#1833)](https://github.com/NuvioMedia/NuvioMobile/pull/1833) @tinyKyuu  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.25-beta/nuvio-0.4.25-full-release.ipa",
+          "size": 65152407,
+          "sha256": "794c90209bc4ae414bf97576257e045696bb8b3be1e385c981f84de897340626",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.24",
+          "buildVersion": "129",
+          "date": "2026-09-18T16:34:38Z",
+          "localizedDescription": "- 89223c92 fix(player): remove extra bottom padding on ios @tapframe  \n- 042144f8 fix(player): remember brightness across playback sessions @tapframe  \n- 2a3bb965 fix(player): reset auto-hide timer on control interactions @tapframe  \n- 6cbc9441 feat(player): add runtime toggle and adjust control overflow @tapframe  \n- 4bc0ec42 feat(player): update gesture indicators for new layout @tapframe  \n- 4c3bd0d0 feat(player): follow design parity @tapframe  \n- 6fb46976 feat(settings): add rating visibility controls @tapframe  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.24-beta/nuvio-0.4.24-full-release.ipa",
+          "size": 51517735,
+          "sha256": "89c458d16340437f9923a0d8e81c5fa6d4ae77be9db5c0f614e73f4ae792b042",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.23",
+          "buildVersion": "128",
+          "date": "2026-09-17T09:40:44Z",
+          "localizedDescription": "- 542aa570 fix(simkl): retain posters when marking items watched @tapframe  \n- 08bdd629 fix(home): restore wide continue watching sizing @tapframe  \n- [i18n(vi): update latest Vietnamese strings (#1975)](https://github.com/NuvioMedia/NuvioMobile/pull/1975) @blueocean2308  \n- a599340e fix(ui): use filled chips and consistent surface colors @tapframe  \n- [feat(playback): support IntroDB movie segments and external forwarding (#1963)](https://github.com/NuvioMedia/NuvioMobile/pull/1963) @Laskco  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.23-beta/nuvio-0.4.23-full-release.ipa",
+          "size": 51420909,
+          "sha256": "5b47a730e6467ca18baf39ee2ef589714761fdb4d0ff5b2040800a8c994c1e40",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.22",
+          "buildVersion": "127",
+          "date": "2026-09-16T11:00:33Z",
+          "localizedDescription": "- 12111fd8 feat(updater): add stable and beta update channels @tapframe  \n- df589078 feat(tmdb): add personal API key override with credential sync @tapframe  \n- 48bf5ed3 feat(details): parse addon episode runtimes @tapframe  \n- [Use addon imdb_id as fallback for non-IMDB content enrichment (#1966)](https://github.com/NuvioMedia/NuvioMobile/pull/1966) @skoruppa  \n- 3312374e fix(settings): keep page content visible during navigation @tapframe  \n- [i18n(vi): update latest Vietnamese strings (#1959)](https://github.com/NuvioMedia/NuvioMobile/pull/1959) @blueocean2308  \n- [fix: limit anime ID preference to entries with anime-specific IDs (#1955)](https://github.com/NuvioMedia/NuvioMobile/pull/1955) @skoruppa  \n- 177f4b5c feat(ratings): add rotten tomatoes status icons @tapframe  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.22-beta/nuvio-0.4.22-full-release.ipa",
+          "size": 51383038,
+          "sha256": "eab72aed2dc126a01366eae0c9a40998a4b6594d6d3bc608d896830a0420ba98",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.21",
+          "buildVersion": "126",
+          "date": "2026-09-15T10:29:28Z",
+          "localizedDescription": "- 24c08216 fix(home): match continue watching badge colors to tv @tapframe  \n- 73005d99 perf(navigation): reduce root tab switch stalls @tapframe  \n- [Add TVDB anime ID preference to avoid per-season IMDB splits (#1952)](https://github.com/NuvioMedia/NuvioMobile/pull/1952) @skoruppa  \n- f6d172ae Revert \"perf(navigation): reduce tab switch animation stalls\" @tapframe  \n- 33edb559 fix(player): keep android landscape lock during exit @tapframe  \n- 6761ebab fix(profiles): add active profile toast and back button @tapframe  \n- 51951059 fix(profiles): prevent selecting the active profile @tapframe  \n- 998a9bfb fix(player): hide addons with no streams @tapframe  \n- [fix(player): start playback without waiting for addon subtitles (#1949)](https://github.com/NuvioMedia/NuvioMobile/pull/1949) @halibiram  \n- 7a0e80b0 fix(trailer): open ios playback in fullscreen @tapframe  \n- [Fix anime skip mapping, subtitle language detection, watched badges and Polish translations (#1943)](https://github.com/NuvioMedia/NuvioMobile/pull/1943) @skoruppa  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.21/nuvio-0.4.21-full-release.ipa",
+          "size": 51231186,
+          "sha256": "118eb04f4a945cf8da9e4bbc03969ee360c0e47b7a62d1ade7967d86ad75870e",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.20",
+          "buildVersion": "125",
+          "date": "2026-09-14T08:44:41Z",
+          "localizedDescription": "- 50d39823 feat(streams): add mobile background selection @tapframe  \n- 36d36dba fix(player): center loading title and logo @tapframe  \n- 728349b1 feat(player): dismiss next episode prompt with a right swipe @tapframe  \n- c9f12a70 fix(details): match toggle styles and remove duplicate season headings @tapframe  \n- 08d76308 fix(library): sync title logo @tapframe  \n- 96786c18 fix(details): use localized landscape backdrops @tapframe  \n- 902e0917 feat(trailer): add fullscreen playback @tapframe  \n- a3f87b24 perf(navigation): reduce tab switch animation stalls @tapframe  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.20/nuvio-0.4.20-full-release.ipa",
+          "size": 51167786,
+          "sha256": "5c48df020b647bd1d08f384278578a204002d37aa0a3a7a8025bab91ffa002d8",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.19",
+          "buildVersion": "124",
+          "date": "2026-09-13T19:40:06Z",
+          "localizedDescription": "- 579edb31 feat(downloads): add support for bundling addon subs while downloading @tapframe  \n- 00161e1d fix(streams): prevent rotation when opening manual selection @tapframe  \n- 7c1c6578 feat(search): add recent searches toggle @tapframe  \n- 60ee0160 fix(tmdb): use bundled API key @tapframe  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.19/nuvio-0.4.19-full-release.ipa",
+          "size": 51091230,
+          "sha256": "7b1990dad3b5a9d8e91150aeb9de9d0adbcd1b3b5e9eed0269bf6f82fea59706",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.18",
+          "buildVersion": "123",
+          "date": "2026-09-13T02:16:59Z",
+          "localizedDescription": "- b04a1607 fix(profiles): stabilize popup size transitions @tapframe  \r\n- fbf59953 fix(details): apply poster radius to episode list cards @tapframe  \r\n- cf4674a8 fix(home): apply poster settings to continue watching cards @tapframe  \r\n- 33c0fe78 fix(streams): position sources panel below ios toolbar @tapframe  \r\n- 356d0162 fix(navigation): preserve tab animation on tap release @tapframe  \r\n- 1dd6de9b fix(profiles): correct avatar grid spacing and selection border @tapframe  \r\n- e75fa3b3 feat(player): match tv autoplay loading screen @tapframe  \r\n- 90e192ff fix(settings): match custom theme sheet background @tapframe  \r\n- bb2d16cc fix(catalog): update items after library removal @tapframe  \r\n- f815fc25 fix(navigation): correct poster zoom positioning in rtl @tapframe  \r\n- abe18e03 fix(settings): update selection indicators @tapframe  \r\n- 19aad9b2 feat(profiles): redesign compact profile picker @tapframe  \r\n- 4d876b41 feat(navigation): add glow controls and live preview @tapframe  \r\n- c35a82d9 fix(navigation): keep tablet floating bar compact @tapframe  \r\n- cb94f29b fix(navigation): restore floating bar backdrop tint @tapframe  \r\n- 76d51fa9 fix(navigation): restore tab indicator after profile long press @tapframe  \r\n- edc557fe update readme @tapframe  \r\n- ecb69a88 feat(player): add pause overlay toggle @tapframe  \r\n- 60e6a1b5 fix(details): handle null specials poster placeholders @tapframe  \r\n- a80302a7 fix(player): disable playback gestures during initial loading @tapframe  \r\n- [fix(android): correct bottom navigation behavior in RTL (#1926)](https://github.com/NuvioMedia/NuvioMobile/pull/1926) @i7xre  \r\n- [i18n(vi): update latest Vietnamese strings (#1923)](https://github.com/NuvioMedia/NuvioMobile/pull/1923) @blueocean2308  \r\n- [Update Czech translation (#1919)](https://github.com/NuvioMedia/NuvioMobile/pull/1919) @scarzxx  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.18/nuvio-0.4.18-full-release.ipa",
+          "size": 51099484,
+          "sha256": "1f742ce8922c78c0c4d5f20348aa547a4290d80576402af6f3f395a6c6bfc9e0",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.17",
+          "buildVersion": "122",
+          "date": "2026-09-12T01:48:34Z",
+          "localizedDescription": "- 2d03b258 fix(plugins): restore iOS runtime compilation @tapframe  \n- d23b3c04 fix(player): disable binge group reuse by default @tapframe  \n- [perf(plugins): pause search during playback and match TV runtime (#1917)](https://github.com/NuvioMedia/NuvioMobile/pull/1917) @halibiram  \n- 1854dfc3 fix(sync): prevent automatic pulls from restoring deleted data @tapframe  \n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.17/nuvio-0.4.17-full-release.ipa",
+          "size": 51022041,
+          "sha256": "3adcd75775637c447f16bf0d76ba51e35bd581e10fb3e99e069841298b51366c",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.16",
+          "buildVersion": "121",
+          "date": "2026-09-11T10:13:18Z",
+          "localizedDescription": "- 8f0bfc8e fix(home): settle hero carousel when returning @tapframe  \r\n- db3da891 fix(settings): require Trakt progress for continue watching window @tapframe  \r\n- 4b0ebd92 perf(ui): replace compottie spinner with native drawing @tapframe  \r\n- ab32ed3d feat(navigation): refine tablet bar and transition defaults @tapframe  \r\n- 4aa62916 feat(navigation): add reactive bottom bar glow @tapframe  \r\n- b1f22de3 feat(navigation): add shared blur transition @tapframe  \r\n- 24920167 feat(posters): lift original cards in zoom overlay @tapframe  \r\n- 8c71a6c9 feat(navigation): update bottom tab animation @tapframe  \r\n- bb1a5ffa perf(android): add root navigation baseline profile @tapframe  \r\n- 4f814036 fix(settings): defer search indexing until needed @tapframe  \r\n- [Merged English and Dutch strings.xml and translated all remaining English text into Dutch. (#1911)](https://github.com/NuvioMedia/NuvioMobile/pull/1911) @scheperr  \r\n- [i18n(el): complete and tidy up Greek translations (#1910)](https://github.com/NuvioMedia/NuvioMobile/pull/1910) @nosvasedis  \r\n- 83c409c4 fix(ci): increase iOS release timeout @tapframe  \r\n- [i18n(vi): full Vietnamese localization refresh for Mobile (#1883)](https://github.com/NuvioMedia/NuvioMobile/pull/1883) @blueocean2308  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.16/nuvio-0.4.16-full-release.ipa",
+          "size": 51012561,
+          "sha256": "806327fab50b9565b9681bdf34b744155e57d53c5dc41dc6a7cad16108ea774a",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.15",
+          "buildVersion": "120",
+          "date": "2026-09-09T13:41:42Z",
+          "localizedDescription": "- cf6cf2d6 fix(auth): synchronize shared client initialization @tapframe  \r\n- 28df1e7d fix(home): restore hero position when switching profiles @tapframe  \r\n- 972109f9 fix(playback): disable play when no source is available @tapframe  \r\n- 872a5937 fix(home): reduce hero height without continue watching @tapframe  \r\n- [Fix NetworkOnMainThreadException when starting a download (#1893)](https://github.com/NuvioMedia/NuvioMobile/pull/1893) @Axl-Lvy  \r\n- 526a5b97 feat: custom static colours @tapframe  \r\n- 68337ffa feat(members): custom gradient @tapframe  \r\n- [Added Russian translation (#1886)](https://github.com/NuvioMedia/NuvioMobile/pull/1886) @zamalatb  \r\n- 378f120e fix(downloads): exclude foreground service from playstore builds @tapframe  \r\n- 6d4ad8bb fix(player): preserve each foreground service start notification @tapframe  \r\n- 40af63ad fix(player): synchronize native subtitle rendering @tapframe  \r\n- 3554904b fix(player): resolve subtitle formats off the main thread @tapframe  \r\n- 42667b9f feat(ui): unify skeleton loading states @tapframe  \r\n- 5fa890ee perf(home): improve lazy list item reuse @tapframe  \r\n- 8b43fd89 perf(startup): avoid redundant collection and catalog processing @tapframe  \r\n- e306a0a0 perf(ios): release temporary GIF decoding resources @tapframe  \r\n- 59a13cbf perf(loading): cache bundled animation resource reads @tapframe  \r\n- 6fb5d44f perf(ui): defer loading and parallax state reads @tapframe  \r\n- d7159342 fix(streams): refresh resume position Fixes #1866 @tapframe  \r\n- 3c239664 fix(android): background downloads @tapframe  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.15/nuvio-0.4.15-full-release.ipa",
+          "size": 52822264,
+          "sha256": "aebc751424db7b08d800188f311b88b98ff82d081637273c90b3ce339560aa2b",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.14",
+          "buildVersion": "118",
+          "date": "2026-09-05T10:55:58Z",
+          "localizedDescription": "- 4f79bfe0 fix(player): original audio language preference @tapframe  \r\n- 9b09045f fix(player): allow minimum device brightness @tapframe  \r\n- [use Android User-Agent so IPTV DASH streams do not 403 (#1863)](https://github.com/NuvioMedia/NuvioMobile/pull/1863) @halibiram  \r\n- [feat: updated Spanish string resource file for application localization (#1861)](https://github.com/NuvioMedia/NuvioMobile/pull/1861) @IberianSoldierPC  \r\n- 92466c4e fix(player): align mobile control icons with tv @tapframe  \r\n- [i18n(el): translate delayed addon content state strings (#1851)](https://github.com/NuvioMedia/NuvioMobile/pull/1851) @nosvasedis  \r\n- 58864ec1 fix(streams): honor autoplay source loading scope @tapframe  \r\n- [Updated BG translation and fixes with later versiond (#1838)](https://github.com/NuvioMedia/NuvioMobile/pull/1838) @viiktr  \r\n- 4026ec92 fix(player): persist next episode dismissal @tapframe  \r\n- [Use Simkl for anime ID resolution in skip-intro (replaces ARM) (#1836)](https://github.com/NuvioMedia/NuvioMobile/pull/1836) @skoruppa  \r\n- 22096a1e fix(details): map addon specials season posters @tapframe  \r\n- [fix(details): optimize large vertical episode lists (#1835)](https://github.com/NuvioMedia/NuvioMobile/pull/1835) @ThePunpun  \r\n- 802db48d fix(updater): apply theme gradient to download progress @tapframe  \r\n- [fix(player): keep subtitle picker stable for duplicate tracks (#1800)](https://github.com/NuvioMedia/NuvioMobile/pull/1800) @halibiram  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.14/nuvio-0.4.14-full-release.ipa",
+          "size": 51787331,
+          "sha256": "969974f82a0a2ebe84354bccda98b364701d4651c97cbccbb737e86c5280cea9",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.4.13",
+          "buildVersion": "117",
+          "date": "2026-08-30T19:02:51Z",
+          "localizedDescription": "- 0504af98 feat(details): parse addon certifications @tapframe  \r\n- f5726012 fix(details): parse addon season posters @tapframe   \r\n- 085e8dc6 fix(ui): handle delayed addon content states @tapframe  \r\n- e68cbb08 fix(android): adjust launcher icon scale @tapframe  \r\n- b86932b9 feat(player): apply member gradients to player accents @tapframe  \r\n- [fix(player): reset subtitle selection on source change (#1812)](https://github.com/NuvioMedia/NuvioMobile/pull/1812) @guuilp  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.4.13/nuvio-0.4.13-full-release.ipa",
+          "size": 51726937,
+          "sha256": "1e4458b0613c6e827459f02b6922d2c06e0e246624a097dac0a80bfc1dfb7c5a",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.4.12",
           "buildVersion": "116",
           "date": "2026-08-29T13:17:20Z",
@@ -42,7 +352,9 @@
       ],
       "appPermissions": {
         "entitlements": [],
-        "privacy": {}
+        "privacy": {
+          "NSLocalNetworkUsageDescription": "Nuvio connects to media servers on your local network."
+        }
       }
     }
   ],

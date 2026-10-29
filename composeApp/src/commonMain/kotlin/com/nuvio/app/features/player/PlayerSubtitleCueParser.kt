@@ -24,6 +24,14 @@ object PlayerSubtitleCueParser {
         }
     }
 
+    internal fun fileExtension(text: String, sourceUrl: String): String =
+        when (detectSubtitleFormat(sourceUrl, cleanText(text))) {
+            SubtitleFormatHint.Srt -> "srt"
+            SubtitleFormatHint.WebVtt -> "vtt"
+            SubtitleFormatHint.Ass -> "ass"
+            SubtitleFormatHint.Ttml -> "ttml"
+        }
+
     private fun cleanText(rawText: String): String =
         rawText
             .replace("\uFEFF", "")
@@ -213,7 +221,7 @@ object PlayerSubtitleCueParser {
     }
 
     private fun parseTtml(text: String): List<SubtitleSyncCue> =
-        Regex("""<p\b([^>]*)>(.*?)</p>""", setOf(RegexOption.IGNORE_CASE, RegexOption.DOT_MATCHES_ALL))
+        Regex("""(?is)<p\b([^>]*)>(.*?)</p>""")
             .findAll(text)
             .mapNotNull { match ->
                 val attrs = match.groupValues[1]

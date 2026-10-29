@@ -1,8 +1,8 @@
 package com.nuvio.app.features.settings
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -19,17 +19,19 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
+import com.nuvio.app.core.ui.DialogButton
+import com.nuvio.app.core.ui.DialogButtons
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.core.ui.SurfaceEdge
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_close
@@ -132,6 +134,7 @@ private fun <T> TrackingPickerDialog(
                 .widthIn(max = tokens.components.dialogMaxWidth),
             shape = tokens.shapes.dialog,
             color = tokens.colors.surfaceDialog,
+            border = BorderStroke(tokens.borders.thin, SurfaceEdge),
         ) {
             TrackingPickerContent(
                 title = title,
@@ -209,15 +212,17 @@ private fun <T> TrackingPickerContent(
         }
 
         if (isTablet) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = horizontalPadding, vertical = 8.dp),
-                horizontalArrangement = Arrangement.End,
+            DialogButtons(
+                modifier = Modifier.padding(
+                    start = horizontalPadding,
+                    end = horizontalPadding,
+                    bottom = horizontalPadding,
+                ),
             ) {
-                TextButton(onClick = onDismiss) {
-                    Text(stringResource(Res.string.action_close))
-                }
+                DialogButton(
+                    text = stringResource(Res.string.action_close),
+                    onClick = onDismiss,
+                )
             }
         }
     }

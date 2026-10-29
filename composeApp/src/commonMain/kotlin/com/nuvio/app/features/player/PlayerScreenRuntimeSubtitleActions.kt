@@ -3,15 +3,23 @@ package com.nuvio.app.features.player
 import com.nuvio.app.core.i18n.localizedNoSubtitleLinesFound
 import com.nuvio.app.core.i18n.localizedSubtitleLinesLoadError
 import com.nuvio.app.features.addons.httpGetTextWithHeaders
+import com.nuvio.app.features.autosync.AutoSyncPlayerController
 import kotlinx.coroutines.launch
 
 internal fun PlayerScreenRuntime.fetchAddonSubtitlesForActiveItem() {
+    if (activeSourceUrl.startsWith("file:") && externalSubtitles.isNotEmpty()) {
+        SubtitleRepository.clear()
+        return
+    }
+    // Without a network the addon lookup can only hang; keep the local state untouched.
+    if (isNetworkOffline()) return
     val type = activeAddonSubtitleType.takeIf { it.isNotBlank() } ?: return
     val videoId = activeVideoId?.takeIf { it.isNotBlank() } ?: return
     SubtitleRepository.fetchAddonSubtitles(type, videoId)
 }
 
 internal fun PlayerScreenRuntime.setSubtitleDelay(delayMs: Int) {
+    (playerController as? AutoSyncPlayerController)?.cancelForManualSubtitleDelay() // AutoSync hook
     val clamped = delayMs.coerceIn(SUBTITLE_DELAY_MIN_MS, SUBTITLE_DELAY_MAX_MS)
     subtitleDelayMs = clamped
     PlayerTrackPreferenceStorage.saveSubtitleDelayMs(playbackSession.videoId, clamped)
@@ -21,6 +29,8 @@ internal fun PlayerScreenRuntime.setSubtitleDelay(delayMs: Int) {
 internal fun PlayerScreenRuntime.loadSubtitleAutoSyncCues(force: Boolean = false) {
     val subtitle = selectedAddonSubtitle ?: return
     if (!force && subtitleAutoSyncState.cues.isNotEmpty()) return
+    // Offline: the cue download would only hang, so skip it and leave the state as is.
+    if (isNetworkOffline()) return
     subtitleAutoSyncState = subtitleAutoSyncState.copy(isLoading = true, errorMessage = null)
     scope.launch {
         val result = runCatching {

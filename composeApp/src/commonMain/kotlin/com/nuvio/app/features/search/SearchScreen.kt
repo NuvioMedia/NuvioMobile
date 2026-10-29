@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.gestures.stopScroll
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,10 +49,13 @@ import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.nuvioConsumePointerEvents
 import com.nuvio.app.core.ui.withDuplicateSafeLazyKeys
+import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.features.addons.AddonRepository
-import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.addons.firstEnabledManifestError
+import com.nuvio.app.features.addons.hasPendingEnabledManifests
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.MetaPreview
+import com.nuvio.app.features.home.buildAddonCatalogRefreshSignature
 import com.nuvio.app.features.home.components.HomeCatalogRowSection
 import com.nuvio.app.features.home.components.HomeEmptyStateCard
 import com.nuvio.app.features.home.components.homeSectionHorizontalPaddingForWidth
@@ -64,13 +69,14 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.action_retry
 import nuvio.composeapp.generated.resources.compose_nav_search
+import nuvio.composeapp.generated.resources.home_empty_no_sources_title
+import nuvio.composeapp.generated.resources.search_empty_no_sources_message
 import nuvio.composeapp.generated.resources.compose_search_clear
 import nuvio.composeapp.generated.resources.compose_search_discover_title
 import nuvio.composeapp.generated.resources.compose_search_empty_failed_message
 import nuvio.composeapp.generated.resources.compose_search_empty_failed_title
-import nuvio.composeapp.generated.resources.compose_search_empty_no_active_addons_message
-import nuvio.composeapp.generated.resources.compose_search_empty_no_active_addons_title
 import nuvio.composeapp.generated.resources.compose_search_empty_no_results_message
 import nuvio.composeapp.generated.resources.compose_search_empty_no_results_title
 import nuvio.composeapp.generated.resources.compose_search_empty_no_search_catalogs_message
@@ -90,9 +96,17 @@ fun SearchScreen(
     scrollToTopRequests: Flow<Unit> = emptyFlow(),
 ) {
     val focusRequester = remember { FocusRequester() }
+    var isSearchFocused by remember { mutableStateOf(false) }
 
-    LaunchedEffect(searchFocusRequestCount) {
-        if (searchFocusRequestCount > 0) {
+    ScreenActivityEffect(listState) { screenActive ->
+        if (!screenActive) {
+            isSearchFocused = false
+            listState.stopScroll()
+        }
+    }
+
+    ScreenActivityEffect(searchFocusRequestCount) { screenActive ->
+        if (screenActive && searchFocusRequestCount > 0) {
             focusRequester.requestFocus()
         }
     }
@@ -123,39 +137,25 @@ fun SearchScreen(
         }
     }
 
-    LaunchedEffect(scrollToTopRequests) {
+    ScreenActivityEffect(scrollToTopRequests) { screenActive ->
+        if (!screenActive) return@ScreenActivityEffect
         scrollToTopRequests.collect {
             listState.animateScrollToItem(0)
         }
     }
 
     val addonRefreshKey = remember(addonsUiState.addons) {
-        addonsUiState.addons.enabledAddons().mapNotNull { addon ->
-            val manifest = addon.manifest ?: return@mapNotNull null
-            buildString {
-                append(manifest.transportUrl)
-                append(':')
-                append(manifest.catalogs.joinToString(separator = ",") { catalog ->
-                    val extra = catalog.extra.joinToString(separator = "&") { property ->
-                        buildString {
-                            append(property.name)
-                            append(':')
-                            append(property.isRequired)
-                            append(':')
-                            append(property.options.joinToString(separator = "|"))
-                        }
-                    }
-                    "${catalog.type}:${catalog.id}:$extra"
-                })
-            }
-        }
+        buildAddonCatalogRefreshSignature(addonsUiState.addons)
     }
+    val addonManifestsLoading = addonsUiState.addons.hasPendingEnabledManifests()
 
-    LaunchedEffect(addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) {
+    ScreenActivityEffect(addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) { screenActive ->
+        if (!screenActive) return@ScreenActivityEffect
         SearchRepository.refreshDiscover(addonsUiState.addons)
     }
 
-    LaunchedEffect(query, addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) {
+    ScreenActivityEffect(query, addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) { screenActive ->
+        if (!screenActive) return@ScreenActivityEffect
         val normalizedQuery = query.trim()
         if (normalizedQuery.isBlank()) {
             lastRequestedQuery = null
@@ -170,8 +170,8 @@ fun SearchScreen(
         }
     }
 
-    LaunchedEffect(listState, query, discoverUiState.canLoadMore, discoverUiState.isLoading) {
-        if (query.isNotBlank()) return@LaunchedEffect
+    ScreenActivityEffect(listState, query, discoverUiState.canLoadMore, discoverUiState.isLoading) { screenActive ->
+        if (!screenActive || query.isNotBlank()) return@ScreenActivityEffect
 
         snapshotFlow { listState.layoutInfo }
             .map { layoutInfo ->
@@ -185,15 +185,17 @@ fun SearchScreen(
             }
     }
 
-    LaunchedEffect(query, lastRequestedQuery, uiState.isLoading, uiState.sections) {
+    ScreenActivityEffect(query, lastRequestedQuery, uiState.isLoading, uiState.sections) { screenActive ->
+        if (!screenActive) return@ScreenActivityEffect
         val normalizedQuery = query.trim()
-        if (normalizedQuery.isBlank()) return@LaunchedEffect
-        if (lastRequestedQuery != normalizedQuery) return@LaunchedEffect
-        if (uiState.isLoading || uiState.sections.isEmpty()) return@LaunchedEffect
+        if (normalizedQuery.isBlank()) return@ScreenActivityEffect
+        if (lastRequestedQuery != normalizedQuery) return@ScreenActivityEffect
+        if (uiState.isLoading || uiState.sections.isEmpty()) return@ScreenActivityEffect
         SearchHistoryRepository.recordSearch(normalizedQuery)
     }
 
-    LaunchedEffect(networkStatusUiState.condition, query, addonRefreshKey) {
+    ScreenActivityEffect(networkStatusUiState.condition, query, addonRefreshKey) { screenActive ->
+        if (!screenActive) return@ScreenActivityEffect
         when (networkStatusUiState.condition) {
             NetworkCondition.NoInternet,
             NetworkCondition.ServersUnreachable,
@@ -202,7 +204,7 @@ fun SearchScreen(
             }
 
             NetworkCondition.Online -> {
-                if (!observedOfflineState) return@LaunchedEffect
+                if (!observedOfflineState) return@ScreenActivityEffect
                 observedOfflineState = false
 
                 val normalizedQuery = query.trim()
@@ -267,7 +269,9 @@ fun SearchScreen(
                             value = query,
                             onValueChange = { query = it },
                             placeholder = stringResource(Res.string.compose_search_placeholder),
-                            modifier = Modifier.focusRequester(focusRequester),
+                            modifier = Modifier
+                                .focusRequester(focusRequester)
+                                .onFocusChanged { isSearchFocused = it.isFocused },
                             trailingContent = if (query.isNotBlank()) {
                                 {
                                     IconButton(onClick = { query = "" }) {
@@ -289,7 +293,7 @@ fun SearchScreen(
         }
 
         if (query.isBlank()) {
-            if (recentSearches.isNotEmpty()) {
+            if (isSearchFocused && recentSearches.isNotEmpty()) {
                 item(key = "recent_searches") {
                     SearchRecentSection(
                         recentSearches = recentSearches,
@@ -300,6 +304,7 @@ fun SearchScreen(
             }
                 discoverContent(
                     state = discoverUiState,
+                    isSourceLoading = addonManifestsLoading,
                     columns = discoverColumns,
                     networkCondition = networkStatusUiState.condition,
                     onTypeSelected = SearchRepository::selectDiscoverType,
@@ -307,10 +312,14 @@ fun SearchScreen(
                     onGenreSelected = SearchRepository::selectDiscoverGenre,
                     onRetry = {
                         NetworkStatusRepository.requestRefresh(force = true)
-                        SearchRepository.refreshDiscover(
-                            addons = addonsUiState.addons,
-                            forceRefresh = true,
-                        )
+                        if (addonsUiState.addons.firstEnabledManifestError() != null) {
+                            AddonRepository.refreshAll()
+                        } else {
+                            SearchRepository.refreshDiscover(
+                                addons = addonsUiState.addons,
+                                forceRefresh = true,
+                            )
+                        }
                     },
                     watchedKeys = watchedUiState.watchedKeys,
                     fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
@@ -324,15 +333,15 @@ fun SearchScreen(
                     isWaitingForSearch -> {
                         items(2) {
                             HomeSkeletonRow(
-                                modifier = Modifier.padding(horizontal = homeSectionPadding),
+                                horizontalPadding = homeSectionPadding,
                             )
                         }
                     }
 
-                    uiState.isLoading && uiState.sections.isEmpty() -> {
+                    (uiState.isLoading || addonManifestsLoading) && uiState.sections.isEmpty() -> {
                         items(2) {
                             HomeSkeletonRow(
-                                modifier = Modifier.padding(horizontal = homeSectionPadding),
+                                horizontalPadding = homeSectionPadding,
                             )
                         }
                     }
@@ -346,11 +355,15 @@ fun SearchScreen(
                                 onRetry = {
                                     if (normalizedQuery.isNotBlank()) {
                                         NetworkStatusRepository.requestRefresh(force = true)
-                                        SearchRepository.search(
-                                            query = normalizedQuery,
-                                            addons = addonsUiState.addons,
-                                            forceRefresh = true,
-                                        )
+                                        if (addonsUiState.addons.firstEnabledManifestError() != null) {
+                                            AddonRepository.refreshAll()
+                                        } else {
+                                            SearchRepository.search(
+                                                query = normalizedQuery,
+                                                addons = addonsUiState.addons,
+                                                forceRefresh = true,
+                                            )
+                                        }
                                     }
                                 },
                                 modifier = Modifier.padding(horizontal = homeSectionPadding),
@@ -376,7 +389,7 @@ fun SearchScreen(
                         if (uiState.isLoading) {
                             item(key = "search_loading_more") {
                                 HomeSkeletonRow(
-                                    modifier = Modifier.padding(horizontal = homeSectionPadding),
+                                    horizontalPadding = homeSectionPadding,
                                 )
                             }
                         }
@@ -395,7 +408,10 @@ private fun SearchEmptyStateCard(
     onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    if (networkCondition == NetworkCondition.NoInternet || networkCondition == NetworkCondition.ServersUnreachable) {
+    if (
+        reason == SearchEmptyStateReason.RequestFailed &&
+        (networkCondition == NetworkCondition.NoInternet || networkCondition == NetworkCondition.ServersUnreachable)
+    ) {
         NuvioNetworkOfflineCard(
             condition = networkCondition,
             modifier = modifier,
@@ -409,8 +425,8 @@ private fun SearchEmptyStateCard(
 
     when (reason) {
         SearchEmptyStateReason.NoActiveAddons -> {
-            title = stringResource(Res.string.compose_search_empty_no_active_addons_title)
-            message = stringResource(Res.string.compose_search_empty_no_active_addons_message)
+            title = stringResource(Res.string.home_empty_no_sources_title)
+            message = stringResource(Res.string.search_empty_no_sources_message)
         }
 
         SearchEmptyStateReason.NoSearchCatalogs -> {
@@ -433,6 +449,12 @@ private fun SearchEmptyStateCard(
         modifier = modifier,
         title = title,
         message = message,
+        actionLabel = if (reason == SearchEmptyStateReason.RequestFailed) {
+            stringResource(Res.string.action_retry)
+        } else {
+            null
+        },
+        onActionClick = if (reason == SearchEmptyStateReason.RequestFailed) onRetry else null,
     )
 }
 

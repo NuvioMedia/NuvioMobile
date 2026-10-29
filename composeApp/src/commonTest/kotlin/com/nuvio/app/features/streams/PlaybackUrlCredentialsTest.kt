@@ -16,5 +16,6 @@ class PlaybackUrlCredentialsTest {
     fun ignoresStableFormatHints() {
         assertFalse("https://example.com/proxy?ext=m3u8".hasLikelyExpiringPlaybackCredentials())
         assertFalse("https://example.com/video.mp4?quality=1080p&format=mp4".hasLikelyExpiringPlaybackCredentials())
+        assertFalse("https://example.com/video.mkv?api_key=static".hasLikelyExpiringPlaybackCredentials())
     }
 }

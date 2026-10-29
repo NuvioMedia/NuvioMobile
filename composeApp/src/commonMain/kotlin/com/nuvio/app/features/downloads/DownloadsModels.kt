@@ -1,5 +1,7 @@
 package com.nuvio.app.features.downloads
 
+import com.nuvio.app.features.player.SubtitleAddonRequest
+import com.nuvio.app.features.streams.StreamSubtitle
 import kotlinx.serialization.Serializable
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
@@ -39,6 +41,8 @@ data class DownloadItem(
     val sourceUrl: String,
     val sourceHeaders: Map<String, String> = emptyMap(),
     val sourceResponseHeaders: Map<String, String> = emptyMap(),
+    val subtitleRequests: List<SubtitleAddonRequest> = emptyList(),
+    val sourceSubtitles: List<StreamSubtitle> = emptyList(),
     val localFileUri: String? = null,
     val fileName: String,
     val status: DownloadStatus,

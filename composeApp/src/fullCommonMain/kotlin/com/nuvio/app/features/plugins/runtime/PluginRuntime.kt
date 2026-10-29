@@ -8,13 +8,20 @@ import com.nuvio.app.features.plugins.runtime.host.HostApiRegistry
 import com.nuvio.app.features.plugins.runtime.host.HostFunctions
 import com.nuvio.app.features.plugins.runtime.js.JsBindings
 import com.nuvio.app.features.plugins.runtime.js.JsRuntime
-import com.dokar.quickjs.binding.function
 import com.nuvio.app.features.plugins.runtime.network.FetchBridge
 import com.nuvio.app.features.plugins.runtime.network.UrlBridge
 import com.nuvio.app.features.plugins.runtime.wasm.WasmBridge
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import kotlinx.serialization.json.Json
@@ -30,10 +37,17 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.generic_unknown
 import org.jetbrains.compose.resources.getString
 
-private const val PLUGIN_TIMEOUT_MS = 60_000L
+internal const val MAX_CONCURRENT_PLUGINS = 10
+internal const val PLUGIN_TIMEOUT_MS = 60_000L
 
 internal object PluginRuntime {
     private val json = Json { ignoreUnknownKeys = true }
+    private val scraperSemaphore = Semaphore(MAX_CONCURRENT_PLUGINS)
+    private val searchPaused = MutableStateFlow(false)
+
+    fun setSearchPaused(paused: Boolean) {
+        searchPaused.value = paused
+    }
 
     suspend fun executePlugin(
         code: String,
@@ -42,77 +56,67 @@ internal object PluginRuntime {
         season: Int?,
         episode: Int?,
         scraperId: String,
-    ): List<PluginRuntimeResult> = withContext(Dispatchers.Default) {
-        val scraperSettingsJson = PluginStorage.loadScraperSettings(scraperId) ?: "{}"
-        val scraperSettingsMap = runCatching {
-            json.decodeFromString<Map<String, JsonElement>>(scraperSettingsJson)
-        }.getOrElse { emptyMap() }
+        respectSearchPause: Boolean = true,
+    ): List<PluginRuntimeResult> {
+        suspend fun run(): List<PluginRuntimeResult> {
+            val scraperSettingsJson = PluginStorage.loadScraperSettings(scraperId) ?: "{}"
+            val scraperSettingsMap = runCatching {
+                json.decodeFromString<Map<String, JsonElement>>(scraperSettingsJson)
+            }.getOrElse { emptyMap() }
 
-        withTimeout(PLUGIN_TIMEOUT_MS) {
-            executePluginInternal(
-                code = code,
-                tmdbId = tmdbId,
-                mediaType = mediaType,
-                season = season,
-                episode = episode,
-                scraperId = scraperId,
-                scraperSettings = scraperSettingsMap,
-            )
+            return scraperSemaphore.withPermit {
+                withContext(pluginDispatcher) {
+                    withTimeout(PLUGIN_TIMEOUT_MS) {
+                        executePluginInternal(
+                            code = code,
+                            tmdbId = tmdbId,
+                            mediaType = mediaType,
+                            season = season,
+                            episode = episode,
+                            scraperId = scraperId,
+                            scraperSettings = scraperSettingsMap,
+                        )
+                    }
+                }
+            }
+        }
+
+        return if (respectSearchPause) {
+            runWhenSearchActive { run() }
+        } else {
+            run()
         }
     }
 
     suspend fun getPluginSettingsLayout(
         code: String,
         scraperId: String,
-    ): String? = withContext(Dispatchers.Default) {
-        withTimeout(PLUGIN_TIMEOUT_MS) {
-            val jsRuntime = JsRuntime()
-            val deferred = CompletableDeferred<String?>()
+    ): String? = scraperSemaphore.withPermit {
+        withContext(pluginDispatcher) {
+            withTimeout(PLUGIN_TIMEOUT_MS) {
+                val jsRuntime = JsRuntime()
+                val deferred = CompletableDeferred<String?>()
+                try {
+                    jsRuntime.use {
+                        HostFunctions(
+                            scraperId = scraperId,
+                            scraperSettingsJson = "{}",
+                            onResult = { deferred.complete(it) },
+                        ).register(this)
+                        FetchBridge().register(this)
+                        UrlBridge().register(this)
+                        CryptoBridge().register(this)
 
-            try {
-                jsRuntime.use {
-                    val polyfillCode = JsBindings.buildPolyfillCode(
-                        scraperIdJson = JsonPrimitive(scraperId).toString(),
-                        settingsJson = "{}"
-                    )
-                    evaluate<Any?>(polyfillCode)
-
-                    val wrappedCode = """
-                        var module = { exports: {} };
-                        var exports = module.exports;
-                        (function() {
-                            $code
-                        })();
-                    """.trimIndent()
-                    evaluate<Any?>(wrappedCode)
-
-                    val callCode = """
-                        (async function() {
-                            try {
-                                var onSettings = (typeof module !== 'undefined' && module.exports && module.exports.onSettings) || globalThis.onSettings;
-                                if (typeof onSettings === 'function') {
-                                    var layout = await onSettings();
-                                    __capture_settings_result(JSON.stringify(layout || []));
-                                } else {
-                                    __capture_settings_result("[]");
-                                }
-                            } catch (e) {
-                                console.error("onSettings error:", e);
-                                __capture_settings_result("[]");
-                            }
-                        })();
-                    """.trimIndent()
-                    
-                    function("__capture_settings_result") { args: Array<Any?> ->
-                        deferred.complete(args.getOrNull(0)?.toString())
-                        null
+                        evaluateCached({ JsRuntime.polyfillBytecode(this) }, JsBindings.staticPolyfillCode)
+                        evaluate<Any?>(wrapPluginModule(code))
+                        evaluateCached({ JsRuntime.settingsCallBytecode(this) }, JsBindings.staticSettingsCallCode)
+                        deferred.await()
                     }
-                    
-                    evaluate<Any?>(callCode)
-                    deferred.await()
+                } catch (cancelled: kotlinx.coroutines.CancellationException) {
+                    throw cancelled
+                } catch (_: Exception) {
+                    null
                 }
-            } catch (e: Exception) {
-                null
             }
         }
     }
@@ -128,10 +132,26 @@ internal object PluginRuntime {
     ): List<PluginRuntimeResult> {
         val jsRuntime = JsRuntime()
         val deferred = CompletableDeferred<String>()
+        val settingsJson = JsonObject(scraperSettings).toString()
+        val callArgsJson = JsonObject(
+            mapOf(
+                "tmdbId" to JsonPrimitive(tmdbId),
+                "mediaType" to JsonPrimitive(mediaType),
+                "season" to (season?.let(::JsonPrimitive) ?: JsonNull),
+                "episode" to (episode?.let(::JsonPrimitive) ?: JsonNull),
+            ),
+        ).toString()
 
         val domBridge = DomBridge()
         val hostRegistry = HostApiRegistry().apply {
-            addModule(HostFunctions(scraperId) { deferred.complete(it) })
+            addModule(
+                HostFunctions(
+                    scraperId = scraperId,
+                    scraperSettingsJson = settingsJson,
+                    callArgsJson = callArgsJson,
+                    onResult = { deferred.complete(it) },
+                ),
+            )
             addModule(FetchBridge())
             addModule(UrlBridge())
             addModule(CryptoBridge())
@@ -142,53 +162,34 @@ internal object PluginRuntime {
         try {
             jsRuntime.use {
                 hostRegistry.registerAll(this)
-
-                val settingsJson = JsonObject(scraperSettings).toString()
-                val polyfillCode = JsBindings.buildPolyfillCode(
-                    scraperIdJson = JsonPrimitive(scraperId).toString(),
-                    settingsJson = settingsJson,
-                )
-                evaluate<Any?>(polyfillCode)
-
-                val wrappedCode = """
-                    var module = { exports: {} };
-                    var exports = module.exports;
-                    (function() {
-                        $code
-                    })();
-                """.trimIndent()
-                evaluate<Any?>(wrappedCode)
-
-                val tmdbIdArg = JsonPrimitive(tmdbId).toString()
-                val mediaTypeArg = JsonPrimitive(mediaType).toString()
-                val seasonArg = season?.toString() ?: "undefined"
-                val episodeArg = episode?.toString() ?: "undefined"
-                val callCode = """
-                    (async function() {
-                        try {
-                            var getStreams = module.exports.getStreams || globalThis.getStreams;
-                            if (!getStreams) {
-                                console.error("getStreams function not found on module.exports or globalThis");
-                                __capture_result(JSON.stringify([]));
-                                return;
-                            }
-                            var result = await getStreams($tmdbIdArg, $mediaTypeArg, $seasonArg, $episodeArg);
-                            __capture_result(JSON.stringify(result || []));
-                        } catch (e) {
-                            console.error("getStreams error:", e && e.message ? e.message : e, e && e.stack ? e.stack : "");
-                            __capture_result(JSON.stringify([]));
-                        }
-                    })();
-                """.trimIndent()
-                evaluate<Any?>(callCode)
-                
+                evaluateCached({ JsRuntime.polyfillBytecode(this) }, JsBindings.staticPolyfillCode)
+                evaluate<Any?>(wrapPluginModule(code))
+                evaluateCached({ JsRuntime.callBytecode(this) }, JsBindings.staticCallCode)
                 deferred.await()
             }
-            
-            // Result is captured inside use block, but returned outside to satisfy compiler
             return parseJsonResults(deferred.await())
         } finally {
             domBridge.clear()
+        }
+    }
+
+    private fun wrapPluginModule(code: String): String = """
+        var module = { exports: {} };
+        var exports = module.exports;
+        (function() {
+            $code
+        })();
+    """.trimIndent()
+
+    private suspend fun com.dokar.quickjs.QuickJs.evaluateCached(
+        bytecode: com.dokar.quickjs.QuickJs.() -> ByteArray,
+        source: String,
+    ) {
+        val compiled = runCatching { bytecode() }.getOrNull()
+        if (compiled != null) {
+            evaluate<Any?>(compiled)
+        } else {
+            evaluate<Any?>(source)
         }
     }
 
@@ -251,22 +252,30 @@ internal object PluginRuntime {
     private fun JsonObject.stringOrNull(key: String): String? =
         this[key]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() && !it.contains("[object") }
 
-    private fun toJsonElement(value: Any?): JsonElement = when (value) {
-        null -> JsonNull
-        is JsonElement -> value
-        is String -> JsonPrimitive(value)
-        is Boolean -> JsonPrimitive(value)
-        is Int -> JsonPrimitive(value)
-        is Long -> JsonPrimitive(value)
-        is Float -> JsonPrimitive(value)
-        is Double -> JsonPrimitive(value)
-        is Number -> JsonPrimitive(value.toDouble())
-        is Map<*, *> -> JsonObject(
-            value.entries
-                .filter { it.key is String }
-                .associate { (it.key as String) to toJsonElement(it.value) },
-        )
-        is Iterable<*> -> JsonArray(value.map(::toJsonElement))
-        else -> JsonPrimitive(value.toString())
+    private suspend fun <T> runWhenSearchActive(block: suspend () -> T): T {
+        while (true) {
+            searchPaused.first { !it }
+            try {
+                return coroutineScope {
+                    val watcher = launch {
+                        searchPaused.first { it }
+                        throw CancellationException(PAUSED_MESSAGE)
+                    }
+                    try {
+                        block()
+                    } finally {
+                        watcher.cancel()
+                    }
+                }
+            } catch (cancelled: CancellationException) {
+                currentCoroutineContext().ensureActive()
+                if (searchPaused.value || cancelled.message == PAUSED_MESSAGE) {
+                    continue
+                }
+                throw cancelled
+            }
+        }
     }
+
+    private const val PAUSED_MESSAGE = "plugin-search-paused"
 }

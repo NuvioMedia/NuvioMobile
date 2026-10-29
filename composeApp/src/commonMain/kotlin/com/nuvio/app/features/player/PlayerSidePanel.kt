@@ -15,15 +15,24 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +42,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -40,6 +51,14 @@ import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.core.ui.shimmer
+import com.nuvio.app.features.streams.ProviderFilterRow
+import com.nuvio.app.features.streams.StreamsUiState
+import com.nuvio.app.features.streams.rememberRefreshRotation
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.collections_tab_all
+import nuvio.composeapp.generated.resources.streams_refresh
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun PlayerSidePanel(
@@ -90,7 +109,8 @@ internal fun PlayerSidePanel(
                             interactionSource = panelInteraction,
                             indication = null,
                             onClick = {},
-                        ),
+                        )
+                        .windowInsetsPadding(WindowInsets.navigationBars.only(WindowInsetsSides.End)),
                     content = content,
                 )
             }
@@ -160,27 +180,63 @@ internal fun PlayerDialogButton(
 internal fun PlayerModalLoading(
     modifier: Modifier = Modifier,
 ) {
-    val tokens = MaterialTheme.nuvio
-
     Box(
         modifier = modifier.fillMaxWidth(),
         contentAlignment = Alignment.Center,
     ) {
         NuvioLoadingIndicator(
-            color = tokens.colors.accent,
             modifier = Modifier.size(24.dp),
         )
     }
 }
 
 @Composable
-internal fun AddonFilterChip(
+internal fun PlayerProviderFilterRow(
+    streamsUiState: StreamsUiState,
+    onFilterSelected: (String?) -> Unit,
+    onRefresh: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+) {
+    ProviderFilterRow(
+        groups = streamsUiState.groups,
+        selectedFilter = streamsUiState.selectedFilter,
+        onFilterSelected = onFilterSelected,
+        onRefresh = onRefresh,
+        isRefreshing = streamsUiState.isAnyLoading || streamsUiState.groups.any { it.isLoading },
+        modifier = modifier,
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+        spacing = 16.dp,
+        refreshChip = { isLoading, onClick ->
+            val rotation = rememberRefreshRotation(isLoading)
+            AddonFilterChip(
+                label = stringResource(Res.string.streams_refresh),
+                isSelected = false,
+                onClick = onClick,
+                icon = Icons.Rounded.Refresh,
+                iconModifier = Modifier.graphicsLayer { rotationZ = rotation.value },
+            )
+        },
+    ) { group, isSelected, onClick ->
+        AddonFilterChip(
+            label = group?.addonName ?: stringResource(Res.string.collections_tab_all),
+            isSelected = isSelected,
+            isLoading = group?.isLoading == true,
+            hasError = group?.error != null,
+            onClick = onClick,
+        )
+    }
+}
+
+@Composable
+private fun AddonFilterChip(
     label: String,
     isSelected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isLoading: Boolean = false,
     hasError: Boolean = false,
+    icon: ImageVector? = null,
+    iconModifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
     val containerColor = when {
@@ -206,18 +262,17 @@ internal fun AddonFilterChip(
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            if (isLoading) {
-                NuvioLoadingIndicator(
-                    color = contentColor,
-                    modifier = Modifier.size(12.dp),
-                )
-            }
+        if (icon != null) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = contentColor,
+                modifier = Modifier.size(20.dp).then(iconModifier),
+            )
+        } else {
             Text(
                 text = label,
+                modifier = Modifier.shimmer(isLoading),
                 color = contentColor,
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,

@@ -82,7 +82,6 @@ fun EpisodeWatchedActionSheet(
                 },
             )
             if (canMarkPreviousEpisodes) {
-                NuvioBottomSheetDivider()
                 NuvioBottomSheetActionRow(
                     icon = Icons.Default.DoneAll,
                     title = if (arePreviousEpisodesWatched) {
@@ -98,7 +97,6 @@ fun EpisodeWatchedActionSheet(
                     },
                 )
             }
-            NuvioBottomSheetDivider()
             NuvioBottomSheetActionRow(
                 icon = Icons.Default.PlaylistAddCheckCircle,
                 title = if (isSeasonWatched) {
@@ -114,7 +112,6 @@ fun EpisodeWatchedActionSheet(
                 },
             )
             if (showPlayManually && onPlayManually != null) {
-                NuvioBottomSheetDivider()
                 NuvioBottomSheetActionRow(
                     icon = Icons.Default.PlayArrow,
                     title = stringResource(Res.string.play_manually),
@@ -181,7 +178,6 @@ fun SeasonWatchedActionSheet(
                 },
             )
             if (canMarkPreviousSeasons) {
-                NuvioBottomSheetDivider()
                 NuvioBottomSheetActionRow(
                     icon = Icons.Default.DoneAll,
                     title = stringResource(Res.string.episode_mark_previous_seasons_watched),

@@ -212,7 +212,6 @@ internal class LibraryLocalState {
             localItemsByKey = itemsById,
             pendingUpsertKeysByKey = pendingUpsertKeysByKey,
             pendingDeleteKeysByKey = pendingDeleteKeysByKey,
-            preserveLegacyLocalWhenServerEmpty = !pullSnapshot.deltaInitialized,
         )
         if (itemsById != reconciliation.itemsByKey) {
             contentRevision += 1L

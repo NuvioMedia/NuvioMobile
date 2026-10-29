@@ -25,6 +25,13 @@ data class AddonResource(
     val idPrefixes: List<String> = emptyList(),
 )
 
+fun AddonManifest.supportsResource(name: String, type: String, id: String): Boolean =
+    resources.any { resource ->
+        resource.name == name &&
+            resource.types.contains(type) &&
+            (resource.idPrefixes.isEmpty() || resource.idPrefixes.any { id.startsWith(it) })
+    }
+
 data class AddonCatalog(
     val type: String,
     val id: String,
@@ -84,6 +91,22 @@ internal fun List<ManagedAddon>.toOverview(): AddonOverview =
 
 internal fun List<ManagedAddon>.enabledAddons(): List<ManagedAddon> =
     filter { it.enabled }
+
+internal fun List<ManagedAddon>.hasPendingEnabledManifests(): Boolean =
+    any { addon -> addon.enabled && addon.isRefreshing }
+
+internal fun List<ManagedAddon>.isWaitingForFirstEnabledManifest(): Boolean {
+    val enabledAddons = enabledAddons()
+    return enabledAddons.isNotEmpty() &&
+        enabledAddons.none { addon -> addon.manifest != null } &&
+        enabledAddons.any { addon -> addon.isRefreshing }
+}
+
+internal fun List<ManagedAddon>.firstEnabledManifestError(): String? =
+    asSequence()
+        .filter { addon -> addon.enabled && addon.manifest == null }
+        .mapNotNull { addon -> addon.errorMessage?.takeIf(String::isNotBlank) }
+        .firstOrNull()
 
 sealed interface AddAddonResult {
     data class Success(val manifest: AddonManifest) : AddAddonResult

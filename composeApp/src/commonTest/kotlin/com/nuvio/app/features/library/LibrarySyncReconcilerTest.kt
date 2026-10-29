@@ -10,7 +10,7 @@ import kotlin.test.assertTrue
 class LibrarySyncReconcilerTest {
 
     @Test
-    fun `legacy empty snapshot queues local items for incremental migration`() {
+    fun `empty snapshot removes cached items without queuing an upload`() {
         val localItem = libraryItem(id = "local", savedAtEpochMs = 1L)
 
         val result = reconcileLibrarySnapshot(
@@ -18,15 +18,12 @@ class LibrarySyncReconcilerTest {
             localItemsByKey = mapOf(libraryItemKey(localItem.id, localItem.type) to localItem),
             pendingUpsertKeysByKey = emptyMap(),
             pendingDeleteKeysByKey = emptyMap(),
-            preserveLegacyLocalWhenServerEmpty = true,
         )
 
-        assertEquals(listOf(localItem), result.itemsByKey.values.toList())
-        assertEquals(
-            listOf(LibrarySyncKey(contentId = "local", contentType = "movie")),
-            result.pendingUpsertKeysByKey.values.toList(),
-        )
-        assertTrue(result.preservedLocalItems)
+        assertTrue(result.itemsByKey.isEmpty())
+        assertTrue(result.pendingUpsertKeysByKey.isEmpty())
+        assertTrue(result.pendingDeleteKeysByKey.isEmpty())
+        assertFalse(result.preservedLocalItems)
     }
 
     @Test
@@ -47,7 +44,6 @@ class LibrarySyncReconcilerTest {
                 libraryItemKey(remoteDeleted.id, remoteDeleted.type) to
                     LibrarySyncKey(remoteDeleted.id, remoteDeleted.type),
             ),
-            preserveLegacyLocalWhenServerEmpty = false,
         )
 
         assertEquals(

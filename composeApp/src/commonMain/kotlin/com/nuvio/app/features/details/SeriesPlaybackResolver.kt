@@ -147,6 +147,7 @@ internal fun MetaDetails.seriesPrimaryAction(
     preferFurthestEpisode: Boolean = true,
     showUnairedNextUp: Boolean = false,
     watchedKeys: Set<String> = emptySet(),
+    allowRewatch: Boolean = false,
 ): SeriesPrimaryAction? {
     val content = WatchingContentRef(type = type, id = id)
     val effectiveWatchedItems = buildList {
@@ -171,6 +172,7 @@ internal fun MetaDetails.seriesPrimaryAction(
         todayIsoDate = todayIsoDate,
         preferFurthestEpisode = preferFurthestEpisode,
         showUnairedNextUp = showUnairedNextUp,
+        allowRewatch = allowRewatch,
     )
 }
 
@@ -181,16 +183,21 @@ internal fun MetaDetails.seriesPrimaryAction(
     todayIsoDate: String,
     preferFurthestEpisode: Boolean = true,
     showUnairedNextUp: Boolean = false,
+    allowRewatch: Boolean = false,
 ): SeriesPrimaryAction? =
     decideSeriesPrimaryAction(
         content = content,
-        episodes = videos.map(MetaVideo::toDomainReleasedEpisode),
+        episodes = videos.filterNot { video ->
+            entries.any { entry -> entry.parentMetaId == content.id && entry.parentMetaType.equals(content.type, true) &&
+                video.season in entry.excludedNextUpSeasons }
+        }.map(MetaVideo::toDomainReleasedEpisode),
         progressRecords = entries.map(WatchProgressEntry::toDomainProgressRecord),
         watchedRecords = watchedItems.map(WatchedItem::toDomainWatchedRecord),
         todayIsoDate = todayIsoDate,
         preferFurthestEpisode = preferFurthestEpisode,
         showUnairedNextUp = showUnairedNextUp,
         defaultVideoId = defaultVideoId,
+        allowRewatch = allowRewatch,
     )?.toLegacySeriesPrimaryAction()
 
 internal fun MetaVideo.playLabel(): String =

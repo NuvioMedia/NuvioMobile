@@ -1,8 +1,11 @@
 package com.nuvio.app
 
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.uikit.OnFocusBehavior
 import androidx.compose.ui.window.ComposeUIViewController
+import com.nuvio.app.core.ui.LocalFold
+import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.core.ui.NativeProfileSwitcherController
 import com.nuvio.app.navigation.AppRoute
 import platform.UIKit.UIColor
@@ -26,9 +29,10 @@ fun MainViewController(
     onActivate: (String) -> Unit,
     onTabTitles: (String, String, String, String, String, String) -> Unit,
     appGateController: AppGateController,
+    verticalBar: VerticalBar,
 ): UIViewController {
     val initialTab = AppScreenTab.fromName(initialTabName)
-    return nuvioComposeViewController {
+    return nuvioComposeViewController(verticalBar) {
         App(
             initialTab = initialTab,
             useNativeNavigation = true,
@@ -54,7 +58,9 @@ fun ScreenViewController(
     onReplace: (AppRoute) -> Unit,
     onActivate: (String) -> Unit,
     appGateController: AppGateController,
-): UIViewController = nuvioComposeViewController {
+    verticalBar: VerticalBar,
+    hinge: Hinge,
+): UIViewController = nuvioComposeViewController(verticalBar, hinge) {
     App(
         initialRoute = route,
         useNativeNavigation = true,
@@ -77,30 +83,41 @@ fun AppGateViewController(
     onAppReady: (Boolean) -> Unit,
     onMainContentMountChanged: (Boolean) -> Unit,
     onMainContentVisibleChanged: (Boolean) -> Unit,
+    verticalBar: VerticalBar,
 ): UIViewController = ComposeUIViewController(
     configure = {
         onFocusBehavior = OnFocusBehavior.DoNothing
         opaque = false
     },
     content = {
-        AppGateOverlay(
-            onActivate = { tab -> onActivate(tab.name) },
-            onAppReady = onAppReady,
-            onMainContentMountChanged = onMainContentMountChanged,
-            onMainContentVisibleChanged = onMainContentVisibleChanged,
-            nativeProfileSwitcherController = nativeProfileSwitcherController,
-            appGateController = appGateController,
-        )
+        CompositionLocalProvider(LocalVerticalBarPadding provides verticalBar.padding) {
+            AppGateOverlay(
+                onActivate = { tab -> onActivate(tab.name) },
+                onAppReady = onAppReady,
+                onMainContentMountChanged = onMainContentMountChanged,
+                onMainContentVisibleChanged = onMainContentVisibleChanged,
+                nativeProfileSwitcherController = nativeProfileSwitcherController,
+                appGateController = appGateController,
+            )
+        }
     },
 ).apply {
     view.backgroundColor = UIColor.clearColor
 }
 
 private fun nuvioComposeViewController(
+    verticalBar: VerticalBar = VerticalBar(),
+    hinge: Hinge = Hinge(),
     content: @androidx.compose.runtime.Composable () -> Unit,
 ): UIViewController = ComposeUIViewController(
     configure = { onFocusBehavior = OnFocusBehavior.DoNothing },
-    content = content,
+    content = {
+        CompositionLocalProvider(
+            LocalVerticalBarPadding provides verticalBar.padding,
+            LocalFold provides hinge.fold,
+            content = content,
+        )
+    },
 ).apply {
     view.backgroundColor = nuvioBackgroundColor
 }

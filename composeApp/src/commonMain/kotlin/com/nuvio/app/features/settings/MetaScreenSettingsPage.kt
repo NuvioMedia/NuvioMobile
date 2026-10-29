@@ -4,9 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,11 +22,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Menu
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,17 +36,26 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.shuffle.EpisodeShuffleRepository
+import com.nuvio.app.core.ui.NuvioToastController
+import nuvio.composeapp.generated.resources.random_episode_title
+import nuvio.composeapp.generated.resources.layout_random_episode_sub
+import nuvio.composeapp.generated.resources.shuffle_save_failed
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.build.TrailerPlaybackMode
+import com.nuvio.app.core.ui.Chip
 import com.nuvio.app.core.ui.NuvioActionLabel
 import com.nuvio.app.features.details.MetaEpisodeCardStyle
 import com.nuvio.app.features.details.MetaScreenBackgroundMode
@@ -56,6 +63,7 @@ import com.nuvio.app.features.details.MetaScreenSectionItem
 import com.nuvio.app.features.details.MetaScreenSectionKey
 import com.nuvio.app.features.details.MetaScreenSettingsRepository
 import com.nuvio.app.features.details.MetaScreenSettingsUiState
+import com.nuvio.app.supportsPosterNavigationMotion
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_reorder
 import nuvio.composeapp.generated.resources.action_reset
@@ -99,6 +107,8 @@ import nuvio.composeapp.generated.resources.settings_meta_overview
 import nuvio.composeapp.generated.resources.settings_meta_overview_description
 import nuvio.composeapp.generated.resources.settings_meta_production
 import nuvio.composeapp.generated.resources.settings_meta_production_description
+import nuvio.composeapp.generated.resources.settings_meta_poster_transition
+import nuvio.composeapp.generated.resources.settings_meta_poster_transition_description
 import nuvio.composeapp.generated.resources.settings_meta_section_appearance
 import nuvio.composeapp.generated.resources.settings_meta_section_sections
 import nuvio.composeapp.generated.resources.settings_meta_tab_group_format
@@ -124,11 +134,30 @@ internal fun LazyListScope.metaScreenSettingsContent(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
-                MetaBackgroundModeSelector(
+                SettingsChipRow(
+                    title = stringResource(Res.string.settings_meta_background_mode),
+                    description = stringResource(Res.string.settings_meta_background_mode_description),
                     isTablet = isTablet,
-                    selectedMode = uiState.backgroundMode,
-                    onModeSelected = MetaScreenSettingsRepository::setBackgroundMode,
-                )
+                    footer = stringResource(uiState.backgroundMode.descriptionRes),
+                ) {
+                    MetaScreenBackgroundMode.entries.forEach { mode ->
+                        Chip(
+                            label = stringResource(mode.labelRes),
+                            selected = uiState.backgroundMode == mode,
+                            onClick = { MetaScreenSettingsRepository.setBackgroundMode(mode) },
+                        )
+                    }
+                }
+                if (supportsPosterNavigationMotion) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_meta_poster_transition),
+                        description = stringResource(Res.string.settings_meta_poster_transition_description),
+                        checked = uiState.posterTransitionEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = MetaScreenSettingsRepository::setPosterTransitionEnabled,
+                    )
+                }
                 if (showHeroTrailerPlaybackSetting) {
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsSwitchRow(
@@ -146,6 +175,23 @@ internal fun LazyListScope.metaScreenSettingsContent(
                     checked = uiState.tabLayout,
                     isTablet = isTablet,
                     onCheckedChange = { MetaScreenSettingsRepository.setTabLayout(it) },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                RatingsSettings(isTablet = isTablet, uiState = uiState)
+                SettingsGroupDivider(isTablet = isTablet)
+                val shuffleProfile by remember {
+                    EpisodeShuffleRepository.ensureLoaded()
+                    EpisodeShuffleRepository.uiState
+                }.collectAsStateWithLifecycle()
+                val shuffleSaveFailed = stringResource(Res.string.shuffle_save_failed)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.random_episode_title),
+                    description = stringResource(Res.string.layout_random_episode_sub),
+                    checked = shuffleProfile.available,
+                    isTablet = isTablet,
+                    onCheckedChange = {
+                        if (!EpisodeShuffleRepository.setAvailable(it)) NuvioToastController.show(shuffleSaveFailed)
+                    },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 MetaEpisodeCardStyleSelector(
@@ -183,71 +229,6 @@ internal fun LazyListScope.metaScreenSettingsContent(
                 )
             }
         }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun MetaBackgroundModeSelector(
-    isTablet: Boolean,
-    selectedMode: MetaScreenBackgroundMode,
-    onModeSelected: (MetaScreenBackgroundMode) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = if (isTablet) 20.dp else 16.dp,
-                vertical = if (isTablet) 18.dp else 14.dp,
-            ),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(Res.string.settings_meta_background_mode),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium,
-            )
-            Text(
-                text = stringResource(Res.string.settings_meta_background_mode_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            MetaScreenBackgroundMode.entries.forEach { mode ->
-                FilterChip(
-                    selected = selectedMode == mode,
-                    onClick = { onModeSelected(mode) },
-                    label = {
-                        Text(
-                            text = stringResource(mode.labelRes),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    border = FilterChipDefaults.filterChipBorder(
-                        enabled = true,
-                        selected = selectedMode == mode,
-                        borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    ),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                )
-            }
-        }
-        Text(
-            text = stringResource(selectedMode.descriptionRes),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -417,9 +398,9 @@ private fun MetaSectionRow(
             FlowRow(
                 modifier = Modifier.padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                TabGroupChip(
+                Chip(
                     label = stringResource(Res.string.settings_meta_none),
                     selected = item.tabGroup == null,
                     onClick = { onTabGroupChange(null) },
@@ -428,7 +409,7 @@ private fun MetaSectionRow(
                     val currentCount = groupCounts[groupId] ?: 0
                     val isSelected = item.tabGroup == groupId
                     val isFull = currentCount >= 3 && !isSelected
-                    TabGroupChip(
+                    Chip(
                         label = stringResource(Res.string.settings_meta_group_label, groupId),
                         selected = isSelected,
                         enabled = !isFull,
@@ -438,30 +419,6 @@ private fun MetaSectionRow(
             }
         }
     }
-}
-
-@Composable
-private fun TabGroupChip(
-    label: String,
-    selected: Boolean,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        enabled = enabled,
-        label = {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-            )
-        },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
-    )
 }
 
 private val MetaScreenBackgroundMode.labelRes: StringResource
@@ -529,18 +486,13 @@ private fun MetaEpisodeCardStyleOption(
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .selectable(selected = selected, role = Role.RadioButton, onClick = onClick),
         color = if (selected) {
             MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
         } else {
             MaterialTheme.colorScheme.surface
         },
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(
-            1.dp,
-            if (selected) MaterialTheme.colorScheme.primary
-            else MaterialTheme.colorScheme.outlineVariant,
-        ),
     ) {
         Column(
             modifier = Modifier
@@ -555,10 +507,15 @@ private fun MetaEpisodeCardStyleOption(
                     .height(148.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                MetaEpisodeCardStylePreview(
-                    style = style,
-                    isSelected = selected,
-                )
+                MetaEpisodeCardStylePreview(style = style)
+                if (selected) {
+                    Icon(
+                        imageVector = Icons.Rounded.CheckCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.align(Alignment.TopEnd).size(if (isTablet) 24.dp else 18.dp),
+                    )
+                }
             }
             Text(
                 text = stringResource(style.labelRes),
@@ -618,24 +575,11 @@ private val MetaScreenSectionKey.descriptionRes: StringResource
 @Composable
 private fun MetaEpisodeCardStylePreview(
     style: MetaEpisodeCardStyle,
-    isSelected: Boolean,
 ) {
-    val borderColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f)
-    }
-    val backgroundColor = if (isSelected) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-    } else {
-        MaterialTheme.colorScheme.surface
-    }
-
     Column(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
-            .background(backgroundColor)
-            .border(1.dp, borderColor, RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 12.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,

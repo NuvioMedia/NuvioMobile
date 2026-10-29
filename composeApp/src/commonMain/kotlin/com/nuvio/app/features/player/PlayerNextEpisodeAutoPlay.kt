@@ -1,16 +1,22 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.debrid.DebridSettingsRepository
+import com.nuvio.app.features.debrid.DirectDebridPlayableResult
+import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
+import com.nuvio.app.features.debrid.toastMessage
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.downloads.DownloadItem
 import com.nuvio.app.features.downloads.DownloadsRepository
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
+import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
 import com.nuvio.app.features.streams.StreamAutoPlayMode
 import com.nuvio.app.features.streams.StreamAutoPlaySelector
 import com.nuvio.app.features.streams.StreamAutoPlaySource
 import com.nuvio.app.features.streams.StreamItem
+import com.nuvio.app.features.watching.domain.isShortPlaceholderDuration
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -18,6 +24,48 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
+
+internal fun PlayerScreenRuntime.isAtNextEpisodeThreshold(): Boolean {
+    if (playbackSnapshotKey != activePlaybackKey || playbackSnapshot.isLoading ||
+        !initialSeekApplied || isScrubbingTimeline || errorMessage != null ||
+        isShortPlaceholderDuration(playbackSnapshot.durationMs)
+    ) return false
+    // Preload: trigger source fetch before the button appears
+    if (playerSettingsUiState.preloadNextEpisodeSources && !nextEpisodePreloadTriggered && nextEpisodeInfo != null && !isNetworkOffline()) {
+        val preloadLeadMs = maxOf(playerSettingsUiState.streamAutoPlayTimeoutSeconds.toLong() * 1_000L, 10_000L)
+            .coerceAtMost(30_000L)
+        val shouldPreloadByCard = PlayerNextEpisodeRules.shouldShowNextEpisodeCard(
+            positionMs = playbackSnapshot.positionMs + preloadLeadMs,
+            durationMs = playbackSnapshot.durationMs,
+            skipIntervals = skipIntervals,
+            thresholdMode = playerSettingsUiState.nextEpisodeThresholdMode,
+            thresholdPercent = playerSettingsUiState.nextEpisodeThresholdPercent,
+            thresholdMinutesBeforeEnd = playerSettingsUiState.nextEpisodeThresholdMinutesBeforeEnd,
+        )
+        val shouldPreloadByEnd = playbackSnapshot.durationMs > 0L &&
+            (playbackSnapshot.durationMs - playbackSnapshot.positionMs) <= preloadLeadMs
+        if (shouldPreloadByCard || shouldPreloadByEnd) {
+            preloadNextEpisodeSources()
+        }
+    }
+    return playbackSnapshot.isEnded || PlayerNextEpisodeRules.shouldShowNextEpisodeCard(
+        positionMs = playbackSnapshot.positionMs,
+        durationMs = playbackSnapshot.durationMs,
+        skipIntervals = skipIntervals,
+        thresholdMode = playerSettingsUiState.nextEpisodeThresholdMode,
+        thresholdPercent = playerSettingsUiState.nextEpisodeThresholdPercent,
+        thresholdMinutesBeforeEnd = playerSettingsUiState.nextEpisodeThresholdMinutesBeforeEnd,
+    )
+}
+
+internal fun PlayerScreenRuntime.cancelNextEpisodeAutoPlay() {
+    nextEpisodeAutoPlayJob?.cancel()
+    nextEpisodeAutoPlayJob = null
+    nextEpisodeAutoPlayAutomatic = false
+    nextEpisodeAutoPlaySearching = false
+    nextEpisodeAutoPlaySourceName = null
+    nextEpisodeAutoPlayCountdown = null
+}
 
 internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
     previousJob: Job?,
@@ -50,6 +98,9 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
         onDownloadedEpisodeSelected(downloadedNextEpisode, nextVideo)
         return null
     }
+
+    // Offline: the auto-play fan-out is a network search, so skip it entirely.
+    if (isNetworkOffline()) return null
 
     previousJob?.cancel()
     onSearchingChanged(true)
@@ -102,12 +153,25 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
     }
 
     return launch {
+        // Connectivity may have dropped between the request and the actual search.
+        if (isNetworkOffline()) {
+            onSearchingChanged(false)
+            return@launch
+        }
+
         PlayerStreamsRepository.loadEpisodeStreams(
             type = type,
             videoId = nextVideo.id,
             season = nextVideo.season,
             episode = nextVideo.episode,
         )
+
+        if (effectiveMode == StreamAutoPlayMode.MANUAL) {
+            onSearchingChanged(false)
+            onNextEpisodeCardVisibleChanged(false)
+            onManualSelectionRequired(nextVideo)
+            return@launch
+        }
 
         val installedAddonNames = AddonRepository.uiState.value.addons
             .enabledAddons()
@@ -215,32 +279,24 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
         val isBoundedTimeout = timeoutSeconds in 1..30
 
         if (isBoundedTimeout) {
-            delay(timeoutMs)
-            timeoutElapsed = true
-            if (!autoSelectTriggered) {
-                val allStreams = PlayerStreamsRepository.episodeStreamsState.value.groups.flatMap { it.streams }
-                if (allStreams.isNotEmpty()) {
-                    val candidate = trySelectStream(allStreams)
-                    if (candidate != null) {
-                        selectStream(candidate)
+            // If streams are already cached (preload), autoSelectSettled
+            // completes immediately. Don't wait the full timeout in that case.
+            val settled = kotlinx.coroutines.withTimeoutOrNull(timeoutMs) { autoSelectSettled.await() }
+            if (settled == null) {
+                timeoutElapsed = true
+                if (!autoSelectTriggered) {
+                    val allStreams = PlayerStreamsRepository.episodeStreamsState.value.groups.flatMap { it.streams }
+                    if (allStreams.isNotEmpty()) {
+                        val candidate = trySelectStream(allStreams)
+                        if (candidate != null) {
+                            selectStream(candidate)
+                        }
                     }
                 }
             }
-            if (selectedStream != null) {
-                innerJob.cancel()
-            } else if (PlayerStreamsRepository.episodeStreamsState.value.groups.flatMap { it.streams }.isNotEmpty()) {
-                innerJob.cancel()
+            innerJob.cancel()
+            if (selectedStream == null && !autoSelectTriggered) {
                 finishWithoutSelection()
-            } else {
-                val completed = withTimeoutOrNull(timeoutMs) { autoSelectSettled.await() }
-                innerJob.cancel()
-                if (completed == null && !autoSelectTriggered) {
-                    val allStreams = PlayerStreamsRepository.episodeStreamsState.value.groups.flatMap { it.streams }
-                    if (allStreams.isNotEmpty()) {
-                        selectedStream = trySelectStream(allStreams)
-                    }
-                    finishWithoutSelection()
-                }
             }
         } else {
             timeoutElapsed = true
@@ -261,10 +317,25 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
             }
         }
 
+        val selected = selectedStream?.let { stream ->
+            when (val result = DirectDebridPlaybackResolver.resolveToPlayableStream(stream, nextVideo.season, nextVideo.episode)) {
+                is DirectDebridPlayableResult.Success -> result.stream
+                else -> {
+                    result.toastMessage()?.let { NuvioToastController.show(it) }
+                    PlayerStreamsRepository.loadEpisodeStreams(
+                        type = type,
+                        videoId = nextVideo.id,
+                        season = nextVideo.season,
+                        episode = nextVideo.episode,
+                        forceRefresh = true,
+                    )
+                    null
+                }
+            }
+        }
         onSearchingChanged(false)
-        val selected = selectedStream
         if (selected != null) {
-            onSourceNameChanged(selected.addonName)
+            onSourceNameChanged((selected.name?.takeIf { it.isNotBlank() } ?: selected.addonName).trim())
             for (i in 3 downTo 1) {
                 onCountdownChanged(i)
                 delay(1000)
@@ -278,4 +349,30 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
             onNextEpisodeCardVisibleChanged(false)
         }
     }
+}
+
+internal fun PlayerScreenRuntime.preloadNextEpisodeSources() {
+    if (nextEpisodePreloadTriggered) return
+    val nextEp = nextEpisodeInfo ?: return
+    if (nextEp.hasAired != true) return
+    val type = contentType ?: return
+    // Offline: preloading streams is a network search; retry once connectivity returns.
+    if (isNetworkOffline()) return
+
+    nextEpisodePreloadTriggered = true
+    nextEpisodePreloadJob?.cancel()
+    nextEpisodePreloadJob = scope.launch {
+        PlayerStreamsRepository.loadEpisodeStreams(
+            type = type,
+            videoId = nextEp.videoId,
+            season = nextEp.season,
+            episode = nextEp.episode
+        )
+    }
+}
+
+internal fun PlayerScreenRuntime.cancelNextEpisodePreload() {
+    nextEpisodePreloadJob?.cancel()
+    nextEpisodePreloadJob = null
+    nextEpisodePreloadTriggered = false
 }

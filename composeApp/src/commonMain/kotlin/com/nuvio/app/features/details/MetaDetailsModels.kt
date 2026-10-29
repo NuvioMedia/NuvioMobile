@@ -7,6 +7,7 @@ data class MetaDetails(
     val id: String,
     val type: String,
     val name: String,
+    val imdbId: String? = null,
     val poster: String? = null,
     val background: String? = null,
     val logo: String? = null,
@@ -37,17 +38,20 @@ data class MetaDetails(
     val collectionItems: List<MetaPreview> = emptyList(),
     val trailers: List<MetaTrailer> = emptyList(),
     val links: List<MetaLink> = emptyList(),
+    val seasonPosters: Map<Int, String> = emptyMap(),
     val videos: List<MetaVideo> = emptyList(),
 )
 
 enum class MoreLikeThisSource {
     TMDB,
     TRAKT,
+    SIMKL,
 }
 
 data class MetaExternalRating(
     val source: String,
     val value: Double,
+    val isCertified: Boolean = false,
 )
 
 data class MetaTrailer(

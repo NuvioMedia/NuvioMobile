@@ -18,3 +18,7 @@ fun nuvioOverlayGradientBrush(): Brush = Brush.linearGradient(
     start = Offset(0f, 0f),
     end = Offset(1000f, 1600f),
 )
+
+internal val SurfaceEdge = Brush.verticalGradient(
+    listOf(Color.White.copy(alpha = 0.16f), Color.White.copy(alpha = 0.04f)),
+)

@@ -29,6 +29,55 @@ import kotlin.test.assertTrue
 class HomeScreenTest {
 
     @Test
+    fun `home remains loading while initial addon manifests are pending`() {
+        assertTrue(
+            shouldShowInitialHomeLoading(
+                hasRenderableHomeRows = false,
+                addonManifestsLoading = true,
+                homeCatalogLoading = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `home does not show loading over rows or a terminal empty state`() {
+        assertFalse(
+            shouldShowInitialHomeLoading(
+                hasRenderableHomeRows = true,
+                addonManifestsLoading = true,
+                homeCatalogLoading = true,
+            ),
+        )
+        assertFalse(
+            shouldShowInitialHomeLoading(
+                hasRenderableHomeRows = false,
+                addonManifestsLoading = false,
+                homeCatalogLoading = false,
+            ),
+        )
+    }
+
+    @Test
+    fun `home collapses hero space for terminal empty content`() {
+        assertFalse(
+            shouldShowHomeHeroSlot(
+                heroEnabled = true,
+                hasHeroItems = false,
+                isResolvingHeroSources = false,
+                hasRenderableHomeRows = false,
+            ),
+        )
+        assertTrue(
+            shouldShowHomeHeroSlot(
+                heroEnabled = true,
+                hasHeroItems = false,
+                isResolvingHeroSources = true,
+                hasRenderableHomeRows = false,
+            ),
+        )
+    }
+
+    @Test
     fun `home trakt continue watching candidate limits match TV`() {
         assertEquals(300, HomeContinueWatchingMaxRecentProgressItems)
         assertEquals(32, HomeNextUpInitialResolutionLimit)
@@ -73,7 +122,7 @@ class HomeScreenTest {
         )
 
         assertEquals(listOf("tt0944947:1:4", "movie-1"), result.map(ContinueWatchingItem::videoId))
-        assertEquals("S1E4 • Cripples, Bastards, and Broken Things", result.first().subtitle)
+        assertEquals("S1 E4 • Cripples, Bastards, and Broken Things", result.first().subtitle)
     }
 
     @Test
@@ -96,7 +145,7 @@ class HomeScreenTest {
         )
 
         assertEquals(1, result.size)
-        assertEquals("S1E5 • The Wolf and the Lion", result.single().subtitle)
+        assertEquals("S1 E5 • The Wolf and the Lion", result.single().subtitle)
     }
 
     @Test
@@ -146,7 +195,7 @@ class HomeScreenTest {
         )
 
         assertEquals(listOf("show:1:4"), result.map(ContinueWatchingItem::videoId))
-        assertEquals("S1E4 • Current", result.single().subtitle)
+        assertEquals("S1 E4 • Current", result.single().subtitle)
     }
 
     @Test

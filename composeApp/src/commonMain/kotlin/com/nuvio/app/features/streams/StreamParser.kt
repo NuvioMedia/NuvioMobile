@@ -27,10 +27,13 @@ object StreamParser {
             val url = obj.string("url")
             val infoHash = obj.string("infoHash")
             val externalUrl = obj.string("externalUrl")
+            val ytId = obj.string("ytId")?.trim()?.takeIf { it.isNotEmpty() }
             val clientResolve = obj.objectValue("clientResolve")?.toClientResolve()
 
             // Must have at least one source or external target.
-            if (url == null && infoHash == null && externalUrl == null && clientResolve == null) return@mapNotNull null
+            if (url == null && infoHash == null && externalUrl == null && ytId == null && clientResolve == null) {
+                return@mapNotNull null
+            }
 
             val hintsObj = obj["behaviorHints"] as? JsonObject
             val proxyHeaders = hintsObj
@@ -44,6 +47,7 @@ object StreamParser {
                 infoHash = infoHash,
                 fileIdx = obj.int("fileIdx"),
                 externalUrl = externalUrl,
+                ytId = ytId,
                 sources = obj.stringList("sources"),
                 addonName = addonName,
                 addonId = addonId,

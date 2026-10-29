@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">Sinkronizacija nije uspjela: Automatska sinkronizacija nije mogla upariti ovaj titl s videom.</string>
+    <string name="autosync_toast_failed_no_reference">Sinkronizacija nije uspjela: Nema upotrebljivih ugrađenih titlova za usporedbu.</string>
+    <string name="autosync_toast_failed_unsupported">Sinkronizacija nije uspjela: Ovaj format titla nije podržan.</string>
+    <string name="autosync_label_synced">Automatski sinkronizirano</string>
+</resources>

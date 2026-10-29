@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +31,7 @@ import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.discoverContent(
     state: DiscoverUiState,
+    isSourceLoading: Boolean,
     columns: Int,
     networkCondition: NetworkCondition,
     onTypeSelected: (String) -> Unit,
@@ -74,7 +74,7 @@ internal fun LazyListScope.discoverContent(
     }
 
     when {
-        state.isLoading && state.items.isEmpty() -> {
+        (state.isLoading || isSourceLoading) && state.items.isEmpty() -> {
             items(2) {
                 PosterGridSkeletonRow(
                     columns = columns,
@@ -96,9 +96,10 @@ internal fun LazyListScope.discoverContent(
         }
 
         else -> {
-            items(state.items.chunked(columns)) { rowItems ->
+            items(count = (state.items.size + columns - 1) / columns) { rowIndex ->
+                val firstIndex = rowIndex * columns
                 PosterGridRow(
-                    items = rowItems,
+                    items = state.items.subList(firstIndex, minOf(firstIndex + columns, state.items.size)),
                     columns = columns,
                     modifier = Modifier.padding(horizontal = 16.dp),
                     watchedKeys = watchedKeys,
@@ -187,7 +188,6 @@ private fun CatalogLoadingFooter(modifier: Modifier = Modifier) {
     ) {
         NuvioLoadingIndicator(
             modifier = Modifier.size(22.dp),
-            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
@@ -200,7 +200,10 @@ private fun DiscoverEmptyStateCard(
     onRetry: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
-    if (networkCondition == NetworkCondition.NoInternet || networkCondition == NetworkCondition.ServersUnreachable) {
+    if (
+        reason == DiscoverEmptyStateReason.RequestFailed &&
+        (networkCondition == NetworkCondition.NoInternet || networkCondition == NetworkCondition.ServersUnreachable)
+    ) {
         NuvioNetworkOfflineCard(
             condition = networkCondition,
             modifier = modifier,
@@ -214,8 +217,8 @@ private fun DiscoverEmptyStateCard(
 
     when (reason) {
         DiscoverEmptyStateReason.NoActiveAddons -> {
-            title = stringResource(Res.string.compose_search_empty_no_active_addons_title)
-            message = stringResource(Res.string.discover_empty_no_active_addons_message)
+            title = stringResource(Res.string.home_empty_no_sources_title)
+            message = stringResource(Res.string.search_empty_no_sources_message)
         }
 
         DiscoverEmptyStateReason.NoDiscoverCatalogs -> {
@@ -238,6 +241,12 @@ private fun DiscoverEmptyStateCard(
         modifier = modifier,
         title = title,
         message = message,
+        actionLabel = if (reason == DiscoverEmptyStateReason.RequestFailed) {
+            stringResource(Res.string.action_retry)
+        } else {
+            null
+        },
+        onActionClick = if (reason == DiscoverEmptyStateReason.RequestFailed) onRetry else null,
     )
 }
 

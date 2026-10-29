@@ -69,7 +69,6 @@ fun CommentDetailSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         contentColor = MaterialTheme.colorScheme.onSurface,
-        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
     ) {
         Column(
             modifier = Modifier

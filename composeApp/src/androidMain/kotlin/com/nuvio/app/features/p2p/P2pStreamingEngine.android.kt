@@ -58,6 +58,19 @@ internal fun buildNuvioEngineConfig(
     streamInactivityTimeoutMilliseconds = 0,
 )
 
+internal fun migrateNestedPayloadDirectory(cacheDirectory: File) {
+    val payloadDirectory = File(cacheDirectory, "payload")
+    val nestedDirectory = File(payloadDirectory, "payload")
+    val entries = nestedDirectory.listFiles() ?: return
+    entries.forEach { entry ->
+        val target = File(payloadDirectory, entry.name)
+        if (target.exists() || !entry.renameTo(target)) {
+            entry.deleteRecursively()
+        }
+    }
+    nestedDirectory.deleteRecursively()
+}
+
 internal fun unexpectedStreamStopError(
     requestId: Long,
     eventStreamId: String?,
@@ -144,21 +157,13 @@ actual object P2pStreamingEngine {
             _cacheState.value = _cacheState.value.copy(isClearing = true)
             try {
                 val activeEngine = ensureEngine()
-                if (!_cacheState.value.hasMeasurement) {
-                    delay(DIAGNOSTIC_SAMPLE_INTERVAL_MS + 100L)
-                    val initial = activeEngine.stats.value
-                    updateCacheState(
-                        initial.diskCacheUsedBytes,
-                        initial.diskCacheProtectedBytes,
-                    )
-                }
                 val before = activeEngine.stats.value
                 activeEngine.reclaimDiskCache(0L)
                 delay(DIAGNOSTIC_SAMPLE_INTERVAL_MS + 100L)
                 val after = activeEngine.stats.value
                 updateCacheState(after.diskCacheUsedBytes, after.diskCacheProtectedBytes)
                 P2pCacheClearResult(
-                    reclaimedBytes = (before.diskCacheUsedBytes - after.diskCacheUsedBytes)
+                    reclaimedBytes = (after.diskCacheReclaimedBytes - before.diskCacheReclaimedBytes)
                         .coerceAtLeast(0L),
                     remainingBytes = after.diskCacheUsedBytes,
                     protectedBytes = after.diskCacheProtectedBytes,
@@ -467,13 +472,14 @@ actual object P2pStreamingEngine {
         currentCoroutineContext().ensureActive()
         val context = requireContext()
         val stateDirectory = File(context.noBackupFilesDir, "nuvio-engine/state")
-        val cacheDirectory = File(context.cacheDir, "nuvio-engine/payload")
+        val cacheDirectory = File(context.cacheDir, "nuvio-engine")
         check(stateDirectory.mkdirs() || stateDirectory.isDirectory) {
             "Could not create the Nuvio Engine state directory"
         }
         check(cacheDirectory.mkdirs() || cacheDirectory.isDirectory) {
             "Could not create the Nuvio Engine cache directory"
         }
+        migrateNestedPayloadDirectory(cacheDirectory)
         return NuvioEngine.create(
             buildNuvioEngineConfig(
                 stateDirectory = stateDirectory,
@@ -525,6 +531,13 @@ actual object P2pStreamingEngine {
     private fun observeEngineEvents(activeEngine: NuvioEngine) {
         engineEventsJob?.cancel()
         engineEventsJob = scope.launch {
+            launch {
+                activeEngine.stats.collect { stats ->
+                    if (engine === activeEngine) {
+                        updateCacheState(stats.diskCacheUsedBytes, stats.diskCacheProtectedBytes)
+                    }
+                }
+            }
             activeEngine.events.collect { event ->
                 Log.i(
                     DIAGNOSTIC_TAG,
@@ -602,10 +615,6 @@ actual object P2pStreamingEngine {
                         null
                     }
                     val aggregate = activeEngine.stats.value
-                    updateCacheState(
-                        aggregate.diskCacheUsedBytes,
-                        aggregate.diskCacheProtectedBytes,
-                    )
                     val nowMs = SystemClock.elapsedRealtime()
                     if (nowMs >= nextDiagnosticSampleAtMs) {
                         nextDiagnosticSampleAtMs = nowMs + DIAGNOSTIC_SAMPLE_INTERVAL_MS

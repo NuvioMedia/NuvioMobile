@@ -22,7 +22,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import com.nuvio.app.core.ui.NuvioLoadingIndicator
+import com.nuvio.app.core.ui.NuvioBackButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -46,20 +46,22 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
-import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
+import com.nuvio.app.core.ui.NuvioCardDepthSurface
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.format.formatReleaseDateForDisplay
-import com.nuvio.app.core.ui.NuvioBackButton
-import com.nuvio.app.core.ui.NuvioCardDepthSurface
+import com.nuvio.app.core.ui.NuvioLoadingIndicator
+import com.nuvio.app.core.ui.NuvioNetworkOfflineCard
 import com.nuvio.app.core.ui.NuvioPosterWatchedOverlay
+import com.nuvio.app.core.ui.SkeletonPoster
 import com.nuvio.app.core.ui.nuvioCardDepth
-import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
-import com.nuvio.app.core.ui.posterCardClickable
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
+import com.nuvio.app.core.ui.posterCardClickable
+import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
 import com.nuvio.app.core.ui.withDuplicateSafeLazyKeys
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.PosterShape
+import com.nuvio.app.features.home.components.HomeEmptyStateCard
 import com.nuvio.app.features.home.stableKey
 import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.features.watching.application.WatchingState
@@ -181,7 +183,11 @@ fun CatalogScreen(
             ) {
                 if (uiState.items.isEmpty() && uiState.isLoading) {
                     items(columns * 3) {
-                        CatalogSkeletonTile(cornerRadiusDp = posterCardStyle.cornerRadiusDp)
+                        SkeletonPoster(
+                            modifier = Modifier.fillMaxWidth(),
+                            cornerRadius = posterCardStyle.cornerRadiusDp.dp,
+                            showLabels = !posterCardStyle.hideLabelsEnabled,
+                        )
                     }
                 } else if (uiState.items.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
@@ -318,8 +324,22 @@ private fun CatalogPosterTile(
                 ),
         ) {
             if (item.poster != null) {
+                val platformContext = coil3.compose.LocalPlatformContext.current
+                val hasFallback = !item.rawPosterUrl.isNullOrBlank() && item.rawPosterUrl != item.poster
+                val imageModel = remember(item.poster, item.rawPosterUrl, platformContext) {
+                    if (hasFallback) {
+                        coil3.request.ImageRequest.Builder(platformContext)
+                            .data(item.poster)
+                            .memoryCacheKeyExtras(
+                                mapOf(com.nuvio.app.core.poster.CustomPosterFallbackInterceptor.FALLBACK_URL_KEY to item.rawPosterUrl!!)
+                            )
+                            .build()
+                    } else {
+                        item.poster
+                    }
+                }
                 AsyncImage(
-                    model = item.poster,
+                    model = imageModel,
                     contentDescription = item.name,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
@@ -352,23 +372,15 @@ private fun CatalogPosterTile(
 }
 
 @Composable
-private fun CatalogSkeletonTile(cornerRadiusDp: Int) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(0.68f)
-            .clip(RoundedCornerShape(cornerRadiusDp.dp))
-            .background(MaterialTheme.colorScheme.surface),
-    )
-}
-
-@Composable
 private fun CatalogEmptyState(
     errorMessage: String?,
     networkCondition: NetworkCondition,
     onRetry: (() -> Unit)? = null,
 ) {
-    if (networkCondition == NetworkCondition.NoInternet || networkCondition == NetworkCondition.ServersUnreachable) {
+    if (
+        !errorMessage.isNullOrBlank() &&
+        (networkCondition == NetworkCondition.NoInternet || networkCondition == NetworkCondition.ServersUnreachable)
+    ) {
         NuvioNetworkOfflineCard(
             condition = networkCondition,
             onRetry = onRetry,
@@ -376,24 +388,15 @@ private fun CatalogEmptyState(
         return
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 48.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(
-            text = stringResource(Res.string.catalog_empty_title),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
-        Text(
-            text = errorMessage ?: stringResource(Res.string.catalog_empty_message),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
+    val loadFailed = !errorMessage.isNullOrBlank()
+    HomeEmptyStateCard(
+        title = stringResource(
+            if (loadFailed) Res.string.catalog_load_failed_title else Res.string.catalog_empty_title,
+        ),
+        message = errorMessage ?: stringResource(Res.string.catalog_empty_message),
+        actionLabel = if (loadFailed) stringResource(Res.string.action_retry) else null,
+        onActionClick = if (loadFailed) onRetry else null,
+    )
 }
 
 @Composable
@@ -406,7 +409,6 @@ private fun CatalogLoadingFooter() {
     ) {
         NuvioLoadingIndicator(
             modifier = Modifier.size(22.dp),
-            color = MaterialTheme.colorScheme.primary,
         )
     }
 }
