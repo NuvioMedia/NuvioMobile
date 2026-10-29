@@ -104,7 +104,13 @@ object CatalogRepository {
                     target, LibraryRepository.uiState.libraryCatalogOrders(target),
                 ).collect { state ->
                     if (activeRequest != request) return@collect
-                    _uiState.value = state
+                    CustomPosterUrlRepository.ensureLoaded()
+                    val posterPattern = CustomPosterUrlRepository.patternForScreen(
+                        com.nuvio.app.core.poster.CustomPosterScreen.LIBRARY
+                    )
+                    _uiState.value = state.copy(
+                        items = state.items.withCustomPosterUrls(posterPattern)
+                    )
                 }
             } catch (error: CancellationException) {
                 throw error
@@ -173,7 +179,12 @@ object CatalogRepository {
                         consecutiveDuplicatePages = if (reset) 0 else current.consecutiveDuplicatePages,
                     )
                     CustomPosterUrlRepository.ensureLoaded()
-                    val posterPattern = CustomPosterUrlRepository.patternForScreen(com.nuvio.app.core.poster.CustomPosterScreen.HOME)
+                    val posterScreen = when (request.target) {
+                        is CatalogTarget.Library -> com.nuvio.app.core.poster.CustomPosterScreen.LIBRARY
+                        is CatalogTarget.CollectionSource -> com.nuvio.app.core.poster.CustomPosterScreen.COLLECTIONS
+                        else -> com.nuvio.app.core.poster.CustomPosterScreen.HOME
+                    }
+                    val posterPattern = CustomPosterUrlRepository.patternForScreen(posterScreen)
                     _uiState.value = CatalogUiState(
                         items = mergedItems.withCustomPosterUrls(posterPattern),
                         isLoading = false,

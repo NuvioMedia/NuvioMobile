@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="settings_playback_subtitle_auto_sync">Автоматично синхронизиране на субтитри</string>
+  <string name="settings_playback_subtitle_auto_sync_description">Автоматично синхронизиране на предпочитаните допълнителни субтитри при стартиране на възпроизвеждането. Изисква се предпочитан език на субтитрите.</string>
+  <string name="settings_playback_auto_sync_mode_aggressive">Търсене при автоматично синхронизиране: Цялостно</string>
+  <string name="settings_playback_auto_sync_mode_aggressive_description">Продължава да сравнява други субтитри и вградени записи за по-близко съвпадение преди синхронизиране. Прилагат се само уверени съвпадения.</string>
+  <string name="settings_playback_auto_sync_mode_passive">Търсене при автоматично синхронизиране: Бързо</string>
+  <string name="settings_playback_auto_sync_mode_passive_description">Използва първото силно съвпадение по-рано. Прилагат се само уверени съвпадения, както при „Тщателно“.</string>
+  <string name="settings_playback_auto_sync_tolerance">Толеранс на автоматична синхронизация: %1$s</string>
+  <string name="settings_playback_auto_sync_tolerance_description">Запазете оригиналния тайминг на субтитрите, когато синхронизацията би го изместила с не повече от това. Докоснете, за да промените.</string>
+  <string name="settings_playback_auto_sync_tolerance_off">Изключено</string>
+  <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>

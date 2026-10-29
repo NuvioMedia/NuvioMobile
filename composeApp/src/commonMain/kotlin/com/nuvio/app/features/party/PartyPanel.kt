@@ -11,6 +11,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,6 +40,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.DialogButton
 import com.nuvio.app.core.ui.DialogButtonStyle
 import com.nuvio.app.core.ui.nuvio
@@ -66,10 +68,23 @@ import nuvio.composeapp.generated.resources.party_unavailable
 import nuvio.composeapp.generated.resources.party_watch_with_party
 import org.jetbrains.compose.resources.stringResource
 
+private enum class PanelPage {
+    Start,
+    Party,
+    Chat,
+}
+
+private data class PanelTarget(
+    val page: PanelPage,
+    val party: ActiveParty?,
+)
+
 @Composable
 internal fun PartyPanel(
     visible: Boolean,
     state: PartyUiState,
+    showChat: Boolean,
+    onShowChatChange: (Boolean) -> Unit,
     playerMedia: PartyMedia,
     isSupported: Boolean,
     canStart: Boolean,
@@ -87,6 +102,7 @@ internal fun PartyPanel(
     onDismiss: () -> Unit,
 ) {
     val haptic = LocalHapticFeedback.current
+    val unread by PartyChat.unread.collectAsStateWithLifecycle()
     val partyId = state.party?.id
     var lastPartyId by remember { mutableStateOf(partyId) }
     LaunchedEffect(partyId) {
@@ -99,46 +115,75 @@ internal fun PartyPanel(
         onDismiss = onDismiss,
         width = 420.dp,
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(start = 24.dp, end = 24.dp, top = 24.dp),
-        ) {
-            PlayerPanelHeader(title = stringResource(Res.string.party_title)) {
-                PlayerDialogButton(
-                    label = stringResource(Res.string.action_close),
-                    onClick = onDismiss,
-                )
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val party = state.party
+            val page = when {
+                party == null -> PanelPage.Start
+                showChat -> PanelPage.Chat
+                else -> PanelPage.Party
             }
-            Spacer(Modifier.height(20.dp))
-            AnimatedContent(
-                targetState = state.party,
-                contentKey = { it != null },
-                transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(150)) },
-                modifier = Modifier.fillMaxSize(),
-            ) { party ->
-                if (party == null) {
-                    StartContent(
-                        busy = state.busy,
-                        isSupported = isSupported,
-                        canStart = canStart,
-                        onStart = onStart,
-                    )
-                } else {
-                    PartyContent(
-                        party = party,
-                        playerMedia = playerMedia,
-                        behindMs = behindMs,
-                        onCatchUp = onCatchUp,
-                        onSwitchParty = onSwitchParty,
-                        onWatchWithParty = onWatchWithParty,
-                        onLeave = onLeave,
-                        onEnd = onEnd,
-                        onRemove = onRemove,
-                        onHostOnlyChange = onHostOnlyChange,
-                        canShareStream = canShareStream,
-                        onSharingChange = onSharingChange,
-                    )
+            val crowded = page == PanelPage.Chat && keyboardCrowds(maxHeight)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(start = 24.dp, end = 24.dp, top = if (crowded) 12.dp else 24.dp),
+            ) {
+                AnimatedVisibility(
+                    visible = !crowded,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    Column {
+                        PlayerPanelHeader(title = stringResource(Res.string.party_title)) {
+                            PlayerDialogButton(
+                                label = stringResource(Res.string.action_close),
+                                onClick = onDismiss,
+                            )
+                        }
+                        Spacer(Modifier.height(20.dp))
+                        if (party != null) {
+                            PartyTabs(
+                                chatSelected = showChat,
+                                unread = unread,
+                                onSelect = onShowChatChange,
+                            )
+                            Spacer(Modifier.height(16.dp))
+                        }
+                    }
+                }
+                AnimatedContent(
+                    targetState = PanelTarget(page, party),
+                    contentKey = { it.page },
+                    transitionSpec = { fadeIn(tween(200, delayMillis = 90)) togetherWith fadeOut(tween(90)) },
+                    modifier = Modifier.fillMaxSize(),
+                ) { target ->
+                    val current = target.party
+                    when {
+                        target.page == PanelPage.Start || current == null -> StartContent(
+                            busy = state.busy,
+                            isSupported = isSupported,
+                            canStart = canStart,
+                            onStart = onStart,
+                        )
+                        target.page == PanelPage.Chat -> PartyChatContent(
+                            members = current.members,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        else -> PartyContent(
+                            party = current,
+                            playerMedia = playerMedia,
+                            behindMs = behindMs,
+                            onCatchUp = onCatchUp,
+                            onSwitchParty = onSwitchParty,
+                            onWatchWithParty = onWatchWithParty,
+                            onLeave = onLeave,
+                            onEnd = onEnd,
+                            onRemove = onRemove,
+                            onHostOnlyChange = onHostOnlyChange,
+                            canShareStream = canShareStream,
+                            onSharingChange = onSharingChange,
+                        )
+                    }
                 }
             }
         }

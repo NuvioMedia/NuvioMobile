@@ -4,9 +4,9 @@
     <string name="servers_section_connected">SERVER COLLEGATI</string>
     <string name="servers_section_add">AGGIUNGI SERVER</string>
     <string name="servers_empty">Nessun server collegato.</string>
-    <string name="servers_add_description">Accedi inserendo l\\'indirizzo del server e il nome utente %1$s.</string>
+    <string name="servers_add_description">Accedi inserendo l'indirizzo del server e il nome utente %1$s.</string>
     <string name="servers_sign_in_title">Accedi a %1$s</string>
-    <string name="servers_sign_in_subtitle">Inserisci l\\'indirizzo del server e il nome utente %1$s per accedere. La password serve solo per l\\'accesso.</string>
+    <string name="servers_sign_in_subtitle">Inserisci l'indirizzo del server e il nome utente %1$s per accedere. La password serve solo per l'accesso.</string>
     <string name="servers_address">Indirizzo del server</string>
     <string name="servers_username">Nome utente</string>
     <string name="servers_connect">Connetti</string>
@@ -30,7 +30,7 @@
     <string name="servers_error_address">Inserisci un indirizzo server valido.</string>
     <string name="servers_error_unreachable">Impossibile raggiungere il server.</string>
     <string name="servers_error_unsupported">È richiesto %1$s %2$s o una versione successiva.</string>
-    <string name="servers_error_forbidden">Questo utente non dispone dell\\'accesso necessario.</string>
+    <string name="servers_error_forbidden">Questo utente non dispone dell'accesso necessario.</string>
     <string name="servers_error_failed">Impossibile connettersi al server.</string>
     <string name="home_empty_no_sources_title">Nessuna sorgente di contenuti</string>
     <string name="servers_failure_auth">Accedi di nuovo a questo server nelle Impostazioni.</string>
@@ -54,7 +54,7 @@
     <string name="servers_signed_in_as">%1$s · %2$s</string>
     <string name="home_empty_no_sources_message">Aggiungi un addon o collega un server multimediale per vedere i cataloghi nella Home.</string>
     <string name="search_empty_no_sources_message">Aggiungi un addon o collega un server multimediale per cercare.</string>
-    <string name="library_server_title_unsupported">Non è possibile aggiungere a questa libreria i titoli del server multimediale. Attiva l\'opzione Usa metadati degli addon per questo server per salvarli qui.</string>
+    <string name="library_server_title_unsupported">Non è possibile aggiungere a questa libreria i titoli del server multimediale. Attiva l'opzione Usa metadati degli addon per questo server per salvarli qui.</string>
     <string name="library_server_load_failed">Impossibile caricare %1$s</string>
     <string name="servers_audio_switch_failed">Impossibile cambiare traccia audio.</string>
     <string name="servers_subtitle_switch_failed">Impossibile cambiare traccia dei sottotitoli.</string>

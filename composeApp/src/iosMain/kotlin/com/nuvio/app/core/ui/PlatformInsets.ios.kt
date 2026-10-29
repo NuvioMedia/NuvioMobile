@@ -31,3 +31,6 @@ internal actual fun platformPhysicalTopInset(): Dp {
     return physicalTop?.dp
         ?: WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 }
+
+@Composable
+internal actual fun ResizeForKeyboard() = Unit

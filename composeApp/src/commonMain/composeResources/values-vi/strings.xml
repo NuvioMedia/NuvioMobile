@@ -447,6 +447,10 @@
     <string name="compose_player_outline_color">Màu viền</string>
     <string name="compose_player_panel_episodes">Tập phim</string>
     <string name="compose_player_panel_sources">Nguồn</string>
+    <string name="compose_player_chapters">Chương</string>
+    <string name="compose_player_panel_chapters">Chương (%1$d)</string>
+    <string name="compose_player_chapter_number">Chương %1$d</string>
+    <string name="compose_player_chapter_remaining">Còn lại %1$s</string>
     <string name="compose_player_panel_streams">Luồng</string>
     <string name="compose_player_playback_error">Lỗi phát lại</string>
     <string name="compose_player_playing">Đang phát</string>
@@ -894,6 +898,11 @@
     <string name="settings_stream_badges_section">KIỂU FUSION</string>
     <string name="settings_stream_size_badges_title">Nhãn dung lượng</string>
     <string name="settings_stream_size_badges_description">Hiển thị nhãn dung lượng tệp trong kết quả luồng và bảng chọn nguồn phát.</string>
+    <string name="settings_stream_badges_in_player_title">Hiển thị trong trình phát</string>
+    <string name="settings_stream_badges_in_player_description">Hiển thị nhãn cho video và âm thanh đang phát bên dưới tiêu đề trình phát. Cần một bộ nhãn khớp với văn bản thuần túy như 2160p hoặc Atmos.</string>
+    <string name="settings_stream_player_badges_title">Nhãn trình phát</string>
+    <string name="settings_stream_player_badges_description">Chọn bộ nhãn trình phát sử dụng.</string>
+    <string name="settings_stream_player_badges_same">Giống nhãn luồng phát</string>
     <string name="settings_stream_addon_logo_title">Biểu tượng tiện ích</string>
     <string name="settings_stream_addon_logo_description">Hiển thị biểu tượng và tên tiện ích bên cạnh mỗi nguồn phát</string>
     <string name="settings_stream_display_section">HIỂN THỊ</string>
@@ -906,8 +915,8 @@
     <string name="settings_stream_badge_position_top">Phía trên</string>
     <string name="settings_stream_badge_position_bottom">Phía dưới</string>
     <string name="settings_stream_badge_urls_title">URL nhãn Fusion</string>
-    <string name="settings_stream_badge_urls_description">Nhập tối đa %1$d URL JSON nhãn luồng kiểu Fusion. Bạn có thể cập nhật hoặc xóa từng URL riêng lẻ.</string>
-    <string name="settings_stream_badge_urls_search_description">Quản lý các URL JSON nhãn luồng kiểu Fusion đã nhập.</string>
+    <string name="settings_stream_badge_urls_description">Nhập tối đa %1$d URL JSON nhãn luồng phát kiểu Fusion. Bạn có thể cập nhật hoặc xóa từng URL riêng lẻ.</string>
+    <string name="settings_stream_badge_urls_search_description">Quản lý các URL JSON nhãn luồng phát kiểu Fusion đã nhập.</string>
     <string name="settings_stream_badge_import_failed">Nhập thất bại</string>
     <string name="settings_stream_badge_enter_url">Nhập URL chuỗi JSON của nhãn</string>
     <string name="settings_stream_badge_url_scheme_invalid">URL nhãn phải bắt đầu bằng http:// hoặc https://.</string>
@@ -936,6 +945,8 @@
     <string name="settings_mdb_section_api_key">MÃ KHÓA API</string>
     <string name="settings_mdb_section_rating_providers">NHÀ CUNG CẤP ĐIỂM ĐÁNH GIÁ BÊN NGOÀI</string>
     <string name="settings_mdb_section_title">ĐIỂM ĐÁNH GIÁ MDBList</string>
+    <string name="settings_mdb_show_on_hero">Sử dụng điểm đánh giá trên Khu vực nổi bật</string>
+    <string name="settings_mdb_show_on_hero_description">Hiển thị điểm đánh giá MDBList trên khu vực nổi bật của Trang chủ</string>
     <string name="settings_meta_actions">Thao tác</string>
     <string name="settings_meta_actions_description">Phát và lưu nội dung</string>
     <string name="settings_meta_cast">Diễn viên</string>
@@ -1141,11 +1152,8 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Dung lượng nhỏ</string>
     <string name="settings_playback_regex_preset_web_sources">Nguồn WEB</string>
     <string name="settings_playback_render_type">Chế độ kết xuất libass</string>
-    <string name="settings_playback_render_type_cues">Phụ đề tiêu chuẩn</string>
-    <string name="settings_playback_render_type_effects_canvas">Hiệu ứng Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Hiệu ứng OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Lớp phủ Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Lớp phủ OpenGL (Khuyến nghị)</string>
+    <string name="settings_playback_render_scale">Độ phân giải kết xuất phụ đề</string>
+    <string name="settings_playback_render_scale_description">Độ phân giải thấp hơn giúp tăng hiệu năng khi xử lý hiệu ứng phụ đề phức tạp nhưng làm giảm độ sắc nét</string>
     <string name="settings_playback_reuse_last_link">Dùng lại liên kết cuối</string>
     <string name="settings_playback_reuse_last_link_description">Tự động phát luồng hoạt động gần nhất cho cùng một phim điện ảnh/tập phim khi bộ nhớ đệm vẫn còn hiệu lực.</string>
     <string name="settings_playback_secondary_audio_language">Ngôn ngữ âm thanh phụ</string>
@@ -1246,6 +1254,8 @@
     <string name="settings_playback_vod_cache_size">Dung lượng bộ nhớ đệm VOD</string>
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Ghi đĩa vẫn tiếp tục khi phát luồng đã đệm. Dung lượng mới sẽ áp dụng từ lần khởi động ứng dụng tiếp theo.</string>
+    <string name="settings_playback_exo_chapters">Hiển thị chương</string>
+    <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng. Thực hiện thêm một vài yêu cầu nhỏ khi bắt đầu phát lại. libmpv luôn hiển thị các chương.</string>
     <string name="settings_tmdb_api_key_label">Mã khoá API</string>
     <string name="settings_tmdb_api_key_override_description">Dùng mã khóa API TMDB của riêng bạn hoặc bỏ trống để sử dụng mặc định.</string>
     <string name="settings_tmdb_personal_api_key">Mã khóa API cá nhân</string>
@@ -1927,6 +1937,11 @@
     <string name="library_sort_released_asc">Đã phát hành đầu tiên</string>
     <string name="library_sort_released_desc">Đã phát hành gần đây</string>
     <string name="library_sort_title_asc">Tên A–Z</string>
+    <string name="library_status_watching">Đang xem</string>
+    <string name="library_status_plan_to_watch">Xem sau</string>
+    <string name="library_status_on_hold">Tạm dừng</string>
+    <string name="library_status_completed">Đã hoàn tất</string>
+    <string name="library_status_dropped">Đã bỏ</string>
     <string name="library_error_sort_failed">Không thể tải thứ tự sắp xếp. Đang hiển thị theo thứ tự của nhà cung cấp.</string>
     <string name="library_sort_title_desc">Tên Z–A</string>
     <string name="library_sort_provider_order">Thứ tự nguồn theo dõi</string>
@@ -2390,7 +2405,6 @@
     <string name="layout_ratings_hide_unwatched">Ẩn mục Chưa xem</string>
      <string name="settings_playback_legacy_layout">Bố cục kiểu cũ</string>
     <string name="settings_playback_legacy_layout_description">Sử dụng các nút điều khiển gốc của trình phát.</string>
-    <string name="compose_player_via">Qua %1$s</string>
     <string name="compose_player_episode_code">M%1$d T%2$d</string>
     <string name="compose_player_more_actions">Thêm nút điều khiển</string>
     <string name="compose_player_fewer_actions">Ẩn nút điều khiển</string>
@@ -2442,6 +2456,8 @@
     <string name="cd_switch_player_engine">Chuyển lõi trình phát</string>
     <string name="cd_stream_info">Thông tin luồng</string>
     <string name="player_engine_switching_manual_message">Đang chuyển sang %1$s...</string>
+    <string name="player_engine_switch_title">Chuyển sang %1$s?</string>
+    <string name="player_engine_switch_message">Video sẽ tải lại từ vị trí hiện tại của bạn.</string>
     <string name="stream_info_section_source">NGUỒN</string>
     <string name="stream_info_section_video">VIDEO</string>
     <string name="stream_info_section_audio">ÂM THANH</string>

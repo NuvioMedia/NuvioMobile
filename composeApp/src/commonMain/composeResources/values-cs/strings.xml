@@ -914,11 +914,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Menší</string>
     <string name="settings_playback_regex_preset_web_sources">WEB Zdroje</string>
     <string name="settings_playback_render_type">Režim vykreslování Libass</string>
-    <string name="settings_playback_render_type_cues">Standardní ukazatele</string>
-    <string name="settings_playback_render_type_effects_canvas">Efektové plátno (Canvas)</string>
-    <string name="settings_playback_render_type_effects_opengl">Efektové OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Překryvné plátno (Canvas)</string>
-    <string name="settings_playback_render_type_overlay_opengl">Překryvné OpenGL (Doporučeno)</string>
     <string name="settings_playback_reuse_last_link">Použít poslední odkaz znovu</string>
     <string name="settings_playback_reuse_last_link_description">Automaticky přehrát váš poslední funkční stream pro tento stejný film/epizodu, pokud je mezipaměť stále platná.</string>
     <string name="settings_playback_secondary_audio_language">Sekundární jazyk zvuku</string>

@@ -71,6 +71,7 @@ internal fun PlayerScreenRuntime.lockPlayerControls() {
     showStreamInfo = false
     showSourcesPanel = false
     showEpisodesPanel = false
+    showChaptersPanel = false
     episodeStreamsPanelState = EpisodeStreamsPanelState()
     PlayerStreamsRepository.clearEpisodeStreams()
 }
@@ -171,6 +172,25 @@ internal fun PlayerScreenRuntime.togglePlayback() {
     }
     controlsVisible = true
     publishPartyPlayback(positionMs = if (playbackSnapshot.isEnded) 0L else currentPlaybackPositionMs())
+}
+
+/** Sets the requested state; system controls may send pause, skip and play in a row. */
+internal fun PlayerScreenRuntime.setPlaybackPlaying(playing: Boolean) {
+    if (playing == shouldPlay) return
+    if (isPartyControlLocked) {
+        toggleOwnPlayback()
+        return
+    }
+    val restart = playing && playbackSnapshot.isEnded
+    if (restart) playerController?.seekTo(0L)
+    shouldPlay = playing
+    if (playing) playerController?.play() else playerController?.pause()
+    // A seek issued just before may not be reflected in the playback snapshot yet.
+    val positionMs = pendingSeekTarget
+        ?.takeIf { (_, mark) -> mark.elapsedNow() < PendingSeekWindow }
+        ?.first
+        ?: currentPlaybackPositionMs()
+    publishPartyPlayback(positionMs = if (restart) 0L else positionMs)
 }
 
 internal fun PlayerScreenRuntime.seekBy(offsetMs: Long) {

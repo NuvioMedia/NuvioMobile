@@ -42,7 +42,7 @@
     <string name="servers_failure_unreachable">সার্ভারটি আনঅ্যাভেইলেবল।</string>
     <string name="servers_failure_not_found">এই আইটেমটি আর সার্ভারে নেই।</string>
     <string name="servers_playback_failed">সার্ভার থেকে প্লেব্যাক শুরু করা যায়নি।</string>
-    <string name="library_server_title_unsupported">আপনার মিডিয়া সার্ভার থেকে টাইটেলগুলো এই লাইব্রেরিতে যোগ করা যাবে না। সেগুলোকে এখানে সেভ করতে সার্ভারের জন্য \'অ্যাডন মেটাডেটা ব্যবহার করুন\' চালু করুন।</string>
+    <string name="library_server_title_unsupported">আপনার মিডিয়া সার্ভার থেকে টাইটেলগুলো এই লাইব্রেরিতে যোগ করা যাবে না। সেগুলোকে এখানে সেভ করতে সার্ভারের জন্য 'অ্যাডন মেটাডেটা ব্যবহার করুন' চালু করুন।</string>
     <string name="library_servers_empty_title">কোনো লাইব্রেরি নির্বাচন করা হয়নি</string>
     <string name="library_servers_empty_message">সেটিংস-এ কন্টেন্ট ও ডিসকভারি-র অধীনে মিডিয়া সার্ভার থেকে কোন লাইব্রেরিগুলো দেখাবেন তা বাছুন।</string>
     <string name="library_server_load_failed">%1$s লোড করা যায়নি</string>

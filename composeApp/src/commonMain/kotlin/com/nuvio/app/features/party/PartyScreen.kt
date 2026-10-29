@@ -10,23 +10,36 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +59,8 @@ import com.nuvio.app.core.ui.DialogButtonStyle
 import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.core.ui.nuvioPlatformExtraTopPadding
+import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -74,6 +89,34 @@ fun PartyScreen(
     onWatch: (PartyMedia) -> Unit,
 ) {
     val state by PartyRepository.state.collectAsStateWithLifecycle()
+    val companion by PartyCompanion.state.collectAsStateWithLifecycle()
+    val linkable = initialCode.isEmpty() && state.party == null
+    if (linkable) {
+        DisposableEffect(Unit) {
+            PartyCompanion.start()
+            onDispose { PartyCompanion.leave() }
+        }
+    }
+    AnimatedContent(
+        targetState = linkable && companion.active,
+        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(150)) },
+        modifier = Modifier.fillMaxSize(),
+    ) { linked ->
+        if (linked) {
+            PartyCompanionScreen(onBack = onBack)
+        } else {
+            PartyHome(initialCode = initialCode, onBack = onBack, onWatch = onWatch)
+        }
+    }
+}
+
+@Composable
+private fun PartyHome(
+    initialCode: String,
+    onBack: () -> Unit,
+    onWatch: (PartyMedia) -> Unit,
+) {
+    val state by PartyRepository.state.collectAsStateWithLifecycle()
     val party = state.party
     var joined by remember { mutableStateOf<ActiveParty?>(null) }
     var pendingCode by remember {
@@ -92,42 +135,124 @@ fun PartyScreen(
         joined = null
     }
 
-    NuvioScreen(modifier = Modifier.fillMaxSize()) {
-        stickyHeader {
-            NuvioScreenHeader(
-                title = stringResource(Res.string.party_title),
-                onBack = onBack,
-            )
+    AnimatedContent(
+        targetState = mode == PartyScreenMode.Party,
+        transitionSpec = { fadeIn(tween(220)) togetherWith fadeOut(tween(150)) },
+        modifier = Modifier.fillMaxSize(),
+    ) { inParty ->
+        if (inParty) {
+            PartyRoom(onBack = onBack, onWatch = onWatch)
+            return@AnimatedContent
         }
-        item {
-            Box(
-                modifier = Modifier.fillMaxWidth(),
-                contentAlignment = Alignment.TopCenter,
-            ) {
-                AnimatedContent(
-                    targetState = mode,
-                    transitionSpec = {
-                        (fadeIn(tween(260, delayMillis = 60)) + scaleIn(tween(320), initialScale = 0.96f)) togetherWith fadeOut(tween(140))
-                    },
-                    modifier = Modifier
-                        .widthIn(max = 520.dp)
-                        .fillMaxWidth(),
-                ) { target ->
-                    when (target) {
-                        PartyScreenMode.Join -> JoinContent(
-                            initialCode = pendingCode,
-                            onJoined = { newParty ->
-                                pendingCode = ""
-                                joining = false
-                                joined = newParty
-                            },
-                        )
-                        PartyScreenMode.Joined -> (joined ?: party)?.let { JoinedContent(it) }
-                        PartyScreenMode.Party -> party?.let { PartyContent(it, onWatch) }
+        NuvioScreen(modifier = Modifier.fillMaxSize()) {
+            stickyHeader {
+                NuvioScreenHeader(
+                    title = stringResource(Res.string.party_title),
+                    onBack = onBack,
+                )
+            }
+            item {
+                Box(
+                    modifier = Modifier.fillMaxWidth(),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    AnimatedContent(
+                        targetState = mode,
+                        transitionSpec = {
+                            (fadeIn(tween(260, delayMillis = 60)) + scaleIn(tween(320), initialScale = 0.96f)) togetherWith fadeOut(tween(140))
+                        },
+                        modifier = Modifier
+                            .widthIn(max = 520.dp)
+                            .fillMaxWidth(),
+                    ) { target ->
+                        when (target) {
+                            PartyScreenMode.Join -> JoinContent(
+                                initialCode = pendingCode,
+                                onJoined = { newParty ->
+                                    pendingCode = ""
+                                    joining = false
+                                    joined = newParty
+                                },
+                            )
+                            PartyScreenMode.Joined -> (joined ?: party)?.let { JoinedContent(it) }
+                            PartyScreenMode.Party -> Unit
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun PartyRoom(
+    onBack: () -> Unit,
+    onWatch: (PartyMedia) -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
+    val state by PartyRepository.state.collectAsStateWithLifecycle()
+    val unread by PartyChat.unread.collectAsStateWithLifecycle()
+    val party = state.party ?: return
+    var showChat by rememberSaveable { mutableStateOf(unread > 0) }
+    PartyPage(onBack = onBack) {
+        PartyTabs(
+            chatSelected = showChat,
+            unread = unread,
+            onSelect = { showChat = it },
+            modifier = Modifier.padding(top = 8.dp, bottom = 16.dp),
+        )
+        AnimatedContent(
+            targetState = showChat,
+            transitionSpec = { fadeIn(tween(200, delayMillis = 90)) togetherWith fadeOut(tween(90)) },
+            modifier = Modifier.fillMaxSize(),
+        ) { chat ->
+            if (chat) {
+                PartyChatContent(
+                    members = party.members,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom)),
+                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom)),
+                ) {
+                    PartyContent(party, onWatch)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+internal fun PartyPage(
+    onBack: () -> Unit,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
+    val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(tokens.colors.background)
+            .padding(top = tokens.spacing.screenTop + statusBarTop + nuvioPlatformExtraTopPadding)
+            .padding(horizontal = tokens.spacing.screenHorizontal),
+    ) {
+        NuvioScreenHeader(
+            title = stringResource(Res.string.party_title),
+            onBack = onBack,
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .widthIn(max = 520.dp)
+                .fillMaxWidth()
+                .align(Alignment.CenterHorizontally),
+            content = content,
+        )
     }
 }
 

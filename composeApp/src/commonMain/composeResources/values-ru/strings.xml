@@ -1097,11 +1097,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Меньший</string>
     <string name="settings_playback_regex_preset_web_sources">ВЕБ-источники</string>
     <string name="settings_playback_render_type">Режим рендеринга libass</string>
-    <string name="settings_playback_render_type_cues">Стандартные реплики</string>
-    <string name="settings_playback_render_type_effects_canvas">Эффекты Холст</string>
-    <string name="settings_playback_render_type_effects_opengl">Эффекты OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Наложение холста</string>
-    <string name="settings_playback_render_type_overlay_opengl">Наложение OpenGL (рекомендуется)</string>
     <string name="settings_playback_reuse_last_link">Повторное использование последней ссылки</string>
     <string name="settings_playback_reuse_last_link_description">Автоматически воспроизводить последний рабочий поток для этого же фильма/эпизода, когда кеш все еще действителен.</string>
     <string name="settings_playback_secondary_audio_language">Дополнительный аудиоязык</string>

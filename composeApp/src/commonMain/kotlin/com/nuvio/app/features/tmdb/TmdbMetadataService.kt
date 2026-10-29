@@ -11,6 +11,8 @@ import com.nuvio.app.features.details.MoreLikeThisSource
 import com.nuvio.app.features.details.PersonDetail
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.PosterShape
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -31,7 +33,16 @@ object TmdbMetadataService {
     private val log = Logger.withTag("TmdbMetadata")
     private val json = Json { ignoreUnknownKeys = true }
 
+    fun cachedOriginalTitle(tmdbId: String, type: String): String? {
+        val mediaType = TmdbService.normalizeMediaType(type)
+        val prefix = "$tmdbId:$mediaType:"
+        return synchronized(enrichmentCacheLock) {
+            enrichmentCache.entries.firstOrNull { it.key.startsWith(prefix) }?.value?.originalTitle
+        }
+    }
+
     private val enrichmentCache = mutableMapOf<String, TmdbEnrichment>()
+    private val enrichmentCacheLock = SynchronizedObject()
     private val episodeCache = mutableMapOf<String, Map<Pair<Int, Int>, TmdbEpisodeEnrichment>>()
     private val moreLikeThisCache = mutableMapOf<String, List<MetaPreview>>()
     private val collectionCache = mutableMapOf<String, Pair<String?, List<MetaPreview>>>()
@@ -920,7 +931,7 @@ object TmdbMetadataService {
     ): TmdbEnrichment? = withContext(Dispatchers.Default) {
         val normalizedLanguage = normalizeTmdbLanguage(language)
         val cacheKey = "$tmdbId:$mediaType:$normalizedLanguage"
-        enrichmentCache[cacheKey]?.let { return@withContext it }
+        synchronized(enrichmentCacheLock) { enrichmentCache[cacheKey] }?.let { return@withContext it }
 
         val numericId = tmdbId.toIntOrNull() ?: return@withContext null
         val includeImageLanguage = tmdbImageLanguages(normalizedLanguage)
@@ -1035,6 +1046,7 @@ object TmdbMetadataService {
             ?.takeIf { mediaType == "tv" }
         val enrichment = TmdbEnrichment(
             localizedTitle = localizedTitle,
+            originalTitle = details.originalTitle ?: details.originalName,
             description = description,
             genres = genres,
             backdrop = buildImageUrl(details.backdropPath, "w1280"),
@@ -1069,7 +1081,7 @@ object TmdbMetadataService {
         )
 
         if (!enrichment.hasContent()) return@withContext null
-        enrichmentCache[cacheKey] = enrichment
+        synchronized(enrichmentCacheLock) { enrichmentCache[cacheKey] = enrichment }
         enrichment
     }
 
@@ -1401,6 +1413,7 @@ object TmdbMetadataService {
 }
 
 internal data class TmdbEnrichment(
+    val originalTitle: String? = null,
     val localizedTitle: String?,
     val description: String?,
     val genres: List<String>,
@@ -1821,6 +1834,8 @@ private data class Quadruple<A, B, C, D>(
 
 @Serializable
 private data class TmdbDetailsResponse(
+    @SerialName("original_title") val originalTitle: String? = null,
+    @SerialName("original_name") val originalName: String? = null,
     val title: String? = null,
     val name: String? = null,
     val overview: String? = null,

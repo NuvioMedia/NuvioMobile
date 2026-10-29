@@ -151,6 +151,31 @@ internal data class PartySnapshot(
     val ok: Boolean? = null,
 )
 
+@Serializable
+internal data class PartyChatPayload(
+    val id: Long,
+    @SerialName("member_id") val memberId: String,
+    val name: String = "",
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("avatar_color") val avatarColor: String? = null,
+    val body: String,
+    @SerialName("client_id") val clientId: String? = null,
+    @SerialName("sent_at") val sentAt: Long = 0L,
+    val mine: Boolean = false,
+)
+
+@Serializable
+internal data class PartyChatSendResult(
+    val message: PartyChatPayload? = null,
+    val error: String? = null,
+)
+
+@Serializable
+internal data class PartyChatHistory(
+    val messages: List<PartyChatPayload> = emptyList(),
+    val error: String? = null,
+)
+
 enum class PartyError {
     NotFound,
     Full,

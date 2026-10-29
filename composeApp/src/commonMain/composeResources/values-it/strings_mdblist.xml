@@ -1,18 +1,18 @@
 <resources>
-    <string name="settings_mdb_ratings_connected_account">Uso dell\\'account collegato</string>
+    <string name="settings_mdb_ratings_connected_account">Uso dell'account collegato</string>
     <string name="settings_mdblist_connected_description">Sincronizza la cronologia di visione e i progressi di riproduzione tra i dispositivi.</string>
     <string name="settings_mdblist_sign_in_description">Sincronizza la cronologia di visione e i progressi di riproduzione tra i dispositivi.</string>
-    <string name="settings_mdblist_finish_sign_in">Completa l\\'approvazione della connessione</string>
+    <string name="settings_mdblist_finish_sign_in">Completa l'approvazione della connessione</string>
     <string name="settings_mdblist_approval_description">Approva la connessione dal tuo account MDBList.</string>
     <string name="settings_mdblist_missing_credentials">La connessione a MDBList non è disponibile in questa versione.</string>
     <string name="settings_mdblist_sync_now">Sincronizza ora</string>
     <string name="settings_mdblist_unavailable">Impossibile sincronizzare con MDBList. Riprova.</string>
     <string name="settings_mdblist_rate_limited">È stato raggiunto il limite di richieste di MDBList. La sincronizzazione riprenderà al ripristino del limite.</string>
     <string name="settings_mdblist_auth_expired">Il codice è scaduto. Riprova per ottenerne uno nuovo.</string>
-    <string name="settings_mdblist_auth_denied">Connessione rifiutata. Riprova a collegare l\\'account.</string>
-    <string name="settings_mdblist_auth_revoked">La connessione MDBList è scaduta o è stata revocata. Ricollega l\\'account per riprendere la sincronizzazione.</string>
+    <string name="settings_mdblist_auth_denied">Connessione rifiutata. Riprova a collegare l'account.</string>
+    <string name="settings_mdblist_auth_revoked">La connessione MDBList è scaduta o è stata revocata. Ricollega l'account per riprendere la sincronizzazione.</string>
     <string name="settings_mdblist_invalid_response">MDBList ha restituito una risposta incompleta. Riprova.</string>
-    <string name="settings_mdblist_write_required">MDBList non ha concesso l\\'autorizzazione per aggiornare la cronologia di visione. Ricollega l\\'account e consenti l\\'accesso in scrittura.</string>
+    <string name="settings_mdblist_write_required">MDBList non ha concesso l'autorizzazione per aggiornare la cronologia di visione. Ricollega l'account e consenti l'accesso in scrittura.</string>
     <string name="library_manage_lists">Gestisci liste</string>
     <string name="library_create_list">Crea lista</string>
     <string name="library_edit_list">Modifica lista</string>
@@ -24,8 +24,8 @@
     <string name="library_list_delete_action">Elimina</string>
     <string name="library_list_save_failed">Salvataggio lista fallito</string>
     <string name="library_lists_empty">Ancora nessuna lista personale.</string>
-    <string name="settings_mdblist_disconnect_description">Interrompi l\\'invio degli aggiornamenti di visione da questo profilo. La cronologia MDBList verrà conservata.</string>
-    <string name="settings_mdblist_revoke_failed">Disconnesso da questo dispositivo. Rimuovi l\\'app dalle impostazioni del tuo account MDBList per revocare l\\'accesso.</string>
+    <string name="settings_mdblist_disconnect_description">Interrompi l'invio degli aggiornamenti di visione da questo profilo. La cronologia MDBList verrà conservata.</string>
+    <string name="settings_mdblist_revoke_failed">Disconnesso da questo dispositivo. Rimuovi l'app dalle impostazioni del tuo account MDBList per revocare l'accesso.</string>
     <string name="settings_mdblist_account_fallback">Utente MDBList</string>
     <string name="settings_mdblist_syncing">Sincronizzazione della cronologia di visione e dei progressi di riproduzione…</string>
     <string name="settings_mdblist_last_synced">Ultima sincronizzazione: %1$s</string>
@@ -34,7 +34,7 @@
     <string name="library_list_friends">Amici</string>
 
     <string name="settings_mdb_ratings_credentials_required">Collega MDBList in Tracciamento o inserisci una chiave API per recuperare le valutazioni.</string>
-    <string name="settings_mdb_ratings_key_override_description">La chiave API sostituisce l\'account collegato per le valutazioni. Cancella la chiave e salva per usare di nuovo l\'account collegato.</string>
+    <string name="settings_mdb_ratings_key_override_description">La chiave API sostituisce l'account collegato per le valutazioni. Cancella la chiave e salva per usare di nuovo l'account collegato.</string>
     <string name="tracking_source_mdblist">MDBList</string>
     <string name="settings_mdblist_library_description">La watchlist e le tue liste statiche di film e serie.</string>
     <string name="settings_mdblist_progress_description">Cronologia di visione, ripresa della riproduzione e In arrivo da MDBList.</string>

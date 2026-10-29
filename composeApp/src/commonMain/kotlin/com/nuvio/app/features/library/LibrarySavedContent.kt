@@ -57,10 +57,10 @@ internal fun LibrarySavedControls(
                 .firstOrNull { section -> section.type == verticalProjection.selectedSectionKey }
             NuvioDropdownChip(
                 title = stringResource(Res.string.library_filter_list),
-                label = selectedSection?.displayTitle.orEmpty(),
+                label = selectedSection?.let { section -> localizedLibrarySectionTitle(section.type, section.displayTitle) }.orEmpty(),
                 selectedKey = verticalProjection.selectedSectionKey,
                 options = verticalProjection.availableSections.map { section ->
-                    NuvioDropdownOption(key = section.type, label = section.displayTitle)
+                    NuvioDropdownOption(key = section.type, label = localizedLibrarySectionTitle(section.type, section.displayTitle))
                 },
                 enabled = verticalProjection.availableSections.size > 1,
                 onSelected = { option -> onSectionSelected(option.key) },

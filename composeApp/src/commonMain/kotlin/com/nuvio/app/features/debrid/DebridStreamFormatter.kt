@@ -10,17 +10,33 @@ import com.nuvio.app.features.streams.StreamItem
 class DebridStreamFormatter(
     private val engine: DebridStreamTemplateEngine = DebridStreamTemplateEngine(),
 ) {
+    private val whitespaceRegex = Regex("\\s+")
+
     fun format(
         stream: StreamItem,
         settings: DebridSettings,
+    ): StreamItem = format(stream, settings, facts = null)
+
+    /** [facts] are the ones computed while filtering; without them they are computed here. */
+    internal fun format(
+        stream: StreamItem,
+        settings: DebridSettings,
+        facts: DebridStreamFacts?,
     ): StreamItem {
         if (!stream.isManagedDebridStream) return stream
         val matchedBadges = stream.badges
-        val values = buildValues(stream, settings, matchedBadges)
+        val values = buildValues(
+            stream = stream,
+            matchedBadges = matchedBadges,
+            facts = facts ?: DebridStreamMetadata.facts(
+                stream = stream,
+                preferences = DebridStreamMetadata.effectivePreferences(settings),
+            ),
+        )
         val formattedName = engine.render(settings.streamNameTemplate, values)
             .lineSequence()
             .joinToString(" ") { it.trim() }
-            .replace(Regex("\\s+"), " ")
+            .replace(whitespaceRegex, " ")
             .trim()
         val formattedDescription = engine.render(settings.streamDescriptionTemplate, values)
             .lineSequence()
@@ -38,16 +54,12 @@ class DebridStreamFormatter(
 
     private fun buildValues(
         stream: StreamItem,
-        settings: DebridSettings,
         matchedBadges: List<StreamBadge>,
+        facts: DebridStreamFacts,
     ): Map<String, Any?> {
         val resolve = stream.clientResolve
         val raw = resolve?.stream?.raw
         val parsed = raw?.parsed
-        val facts = DebridStreamMetadata.facts(
-            stream = stream,
-            preferences = DebridStreamMetadata.effectivePreferences(settings),
-        )
         val seasons = parsed?.seasons.orEmpty()
         val episodes = parsed?.episodes.orEmpty()
         val season = resolve?.season ?: seasons.singleOrFirstOrNull()

@@ -16,7 +16,7 @@ class ServerWatchedTest {
     @AfterTest
     fun tearDown() {
         removeFakeServer()
-        ServerMatcher.clear()
+        ServerMatcher.shared.clear()
     }
 
     private fun movie(id: String) = WatchedItem(id = id, type = "movie", name = "", markedAtEpochMs = 0L)

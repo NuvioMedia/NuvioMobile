@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Felirat automatikus szinkronizálása</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Az elsődleges kiegészítõ-felirat automatikus szinkronizálása a lejátszás indításakor. Elsődleges feliratnyelv beállítása szükséges hozzá.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Auto szinkron keresés: Alapos</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Szinkronizálás előtt további feliratokat és beágyazott sávokat vet össze, hogy pontosabb egyezést találjon. A rendszer csak akkor alkalmazza az eredményt, ha az egyezés megbízhatónak tekinthető.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Auto szinkron keresés: Gyors</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Mielőbb az első jó egyezést használja. Az Alapos módhoz hasonlóan csak a biztos egyezéseket alkalmazza.</string>
+    <string name="settings_playback_auto_sync_tolerance">Auto szinkron toleranciája: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Megtartja az eredeti feliratelcsúsztatást, ha a szinkronizálás legfeljebb ennyivel módosítaná. Koppints a módosításhoz.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Ki</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>
