@@ -184,10 +184,10 @@ internal fun PlayerControlsShell(
     var timelineHeight by remember { mutableStateOf(0.dp) }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val centerControlHeight = metrics.playIconSize + maxOf(metrics.playButtonPadding, metrics.sideButtonPadding) * 2
-        val centerBottomPadding = if (useLegacyLayout) metrics.centerLift else maxOf(
-            metrics.centerLift,
-            timelineHeight * 2 + centerControlHeight + 16.dp - maxHeight,
-        )
+        val availableHalfHeight = (maxHeight - centerControlHeight) / 2
+        val requiredBottomClearance = timelineHeight + 12.dp
+        val overlapOffset = (requiredBottomClearance - availableHalfHeight).coerceAtLeast(0.dp)
+        val centerBottomPadding = if (useLegacyLayout) metrics.centerLift else overlapOffset
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -217,6 +217,32 @@ internal fun PlayerControlsShell(
                     ),
                 ),
         )
+
+        if (isLocked && !showPlaybackControls) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.safeContent.only(WindowInsetsSides.Top))
+                    .padding(top = 12.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(alpha = 0.72f))
+                    .clickable(onClick = onLockToggle)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.LockOpen,
+                    contentDescription = stringResource(Res.string.compose_player_unlock_controls),
+                    tint = Color.White,
+                )
+                Text(
+                    text = stringResource(Res.string.compose_player_unlock_controls),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
 
         Box(
             modifier = Modifier
