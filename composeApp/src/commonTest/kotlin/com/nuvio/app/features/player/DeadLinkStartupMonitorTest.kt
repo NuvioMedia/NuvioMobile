@@ -1,6 +1,8 @@
 package com.nuvio.app.features.player
 
 import com.nuvio.app.features.streams.StreamItem
+import com.nuvio.app.features.streams.QualityFirstAutoPlayPolicy
+import com.nuvio.app.features.streams.StreamAutoPlayPreferredQuality
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceTimeBy
@@ -757,6 +759,62 @@ class DeadLinkStartupMonitorTest {
         advanceTimeBy(1)
         runCurrent()
         assertEquals(listOf(secondKey), dead.map { it.second })
+        monitor.close()
+    }
+
+
+    @Test
+    fun semiAutomaticFallbackUsesQualityOrderSkipsHigherTiersUnknownLastAndExcludesTorrentWhenP2pOff() = runTest {
+        val first1080 = stream("1080p first", "addon:first", "https://media.example/1080-first.mkv")
+            .copy(name = "1080p BluRay")
+        val second1080 = stream("1080p second", "addon:second", "https://media.example/1080-second.mkv")
+            .copy(name = "1080p WEB-DL")
+        val lower720 = stream("720p", "plugin:720", "https://media.example/720.mkv")
+            .copy(name = "720p")
+        val unknown = stream("Unknown quality", "plugin:unknown", "https://media.example/unknown.mkv")
+        val higher2160 = stream("2160p", "addon:4k", "https://media.example/2160.mkv")
+            .copy(name = "2160p")
+        val torrent = stream("Torrent 1080p", "addon:torrent", "https://media.example/torrent.mkv")
+            .copy(name = "1080p torrent", infoHash = "0123456789abcdef0123456789abcdef01234567")
+
+        val orderedCandidates = QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
+            streams = listOf(higher2160, unknown, lower720, second1080, torrent, first1080),
+            requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+            debridEnabled = true,
+            p2pEnabled = false,
+        )
+
+        assertEquals(
+            listOf(first1080, second1080, lower720, unknown),
+            orderedCandidates,
+        )
+
+        val fallbacks = mutableListOf<StreamItem>()
+        val monitor = newMonitor(
+            scope = backgroundScope,
+            timeoutSeconds = { 5 },
+            candidates = { orderedCandidates },
+            onFallback = fallbacks::add,
+            preserveCandidateOrder = { true },
+        )
+
+        monitor.sourceSelected(first1080)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(second1080), fallbacks)
+
+        monitor.sourceSelected(second1080)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(second1080, lower720), fallbacks)
+
+        monitor.sourceSelected(lower720)
+        runCurrent()
+        advanceTimeBy(5_000)
+        runCurrent()
+        assertEquals(listOf(second1080, lower720, unknown), fallbacks)
         monitor.close()
     }
 
