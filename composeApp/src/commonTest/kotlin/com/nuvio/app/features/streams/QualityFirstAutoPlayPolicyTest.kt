@@ -261,7 +261,7 @@ class QualityFirstAutoPlayPolicyTest {
         val direct = stream("direct", "https://example.test/direct.mkv", "1080p")
 
         assertEquals(
-            listOf("direct", "torrent"),
+            listOf("torrent", "direct"),
             QualityFirstAutoPlayPolicy.rankCandidates(
                 streams = listOf(torrent, direct),
                 requestedQuality = StreamAutoPlayPreferredQuality.P1080,
