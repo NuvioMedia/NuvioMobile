@@ -422,11 +422,8 @@ private fun SubtitleOptionRow(
 
         is SubtitleSelectionOption.Addon -> {
             sourceLabel = option.subtitle.addonName ?: stringResource(Res.string.addon_title)
-            title = languageLabelForCode(option.subtitle.language)
-            val addonDescriptor = option.subtitle.display
-                .takeIf { it.isNotBlank() && !it.equals(title, ignoreCase = true) }
-                ?: option.subtitle.id.takeIf { it.isNotBlank() && !it.equals(title, ignoreCase = true) }
-            metadata = addonDescriptor
+            title = option.subtitle.displayTitle(languageLabelForCode(option.subtitle.language))
+            metadata = null
         }
     }
 
