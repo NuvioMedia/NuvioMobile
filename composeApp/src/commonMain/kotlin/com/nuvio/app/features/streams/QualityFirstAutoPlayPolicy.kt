@@ -230,7 +230,7 @@ object QualityFirstAutoPlayPolicy {
     private fun identityKey(stream: StreamItem): String {
         stream.playableDirectUrl?.let { return "url:$it" }
         stream.p2pInfoHash?.let { return "p2p:${it.lowercase()}:${stream.p2pFileIdx ?: -1}" }
-        stream.serverTarget?.let { return "server:${it.item.encode()}:${stream.serverTarget?.mediaSourceId.orEmpty()}" }
+        stream.serverTarget?.let { return "server:${it.item.encode()}:${it.mediaSourceId.orEmpty()}" }
         return "stream:${stream.addonId}:${stream.streamLabel}:${stream.behaviorHints.filename.orEmpty()}"
     }
 }
