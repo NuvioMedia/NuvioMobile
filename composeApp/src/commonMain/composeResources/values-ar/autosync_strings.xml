@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">مزامنة الترجمة تلقائيًا</string>
+    <string name="settings_playback_subtitle_auto_sync_description">مزامنة الترجمة المفضّلة من الإضافة تلقائيًا عند بدء التشغيل. يتطلب ذلك تحديد لغة ترجمة مفضّلة.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">البحث عن المزامنة التلقائية: شامل</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">يواصل مقارنة الترجمات الأخرى والمسارات المضمّنة بحثًا عن تطابق أدق قبل المزامنة. لا تُطبَّق إلا التطابقات الموثوقة.</string>
+    <string name="settings_playback_auto_sync_mode_passive">البحث عن المزامنة التلقائية: سريع</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">يستخدم أول تطابق قوي في وقت أبكر. لا تُطبَّق إلا التطابقات الموثوقة، كما في الوضع الشامل.</string>
+    <string name="settings_playback_auto_sync_tolerance">هامش المزامنة التلقائية: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">الإبقاء على توقيت الترجمة الأصلي إذا كانت المزامنة ستحرّكه بما لا يتجاوز هذا الهامش. انقر للتغيير.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">إيقاف</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d مللي ثانية</string>
+</resources>
