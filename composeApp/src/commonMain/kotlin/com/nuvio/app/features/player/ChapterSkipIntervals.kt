@@ -119,11 +119,11 @@ internal fun mergeSkipIntervals(
     val chosen = LinkedHashMap<String, SkipInterval>()
     for (interval in chapterIntervals) {
         val category = segmentCategory(interval.type) ?: continue
-        chosen.putIfAbsent(category, interval)
+        chosen.getOrPut(category) { interval }
     }
     for (interval in apiIntervals) {
         val category = segmentCategory(interval.type) ?: continue
-        chosen.putIfAbsent(category, interval)
+        chosen.getOrPut(category) { interval }
     }
     val uncategorized = (chapterIntervals + apiIntervals)
         .filter { segmentCategory(it.type) == null }
