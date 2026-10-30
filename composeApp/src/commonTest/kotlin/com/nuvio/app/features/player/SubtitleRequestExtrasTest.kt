@@ -180,37 +180,38 @@ class SubtitleRequestExtrasTest {
         )
     }
 
-    // --- filenameFromUrl tests ---
+    // --- sourceFilenameFromUrl tests (already covered in AutoPlaybackEngineResolverTest,
+    // but verified here for subtitle extras integration) ---
 
     @Test
-    fun filenameFromUrlExtractsLastPathSegment() {
+    fun sourceFilenameFromUrlExtractsLastPathSegment() {
         assertEquals(
             "Movie.2024.1080p.mkv",
-            filenameFromUrl("https://cdn.example.com/files/Movie.2024.1080p.mkv"),
+            sourceFilenameFromUrl("https://cdn.example.com/files/Movie.2024.1080p.mkv"),
         )
     }
 
     @Test
-    fun filenameFromUrlStripsQueryParameters() {
+    fun sourceFilenameFromUrlStripsQueryParameters() {
         assertEquals(
             "video.mp4",
-            filenameFromUrl("https://cdn.example.com/video.mp4?token=abc&expires=123"),
+            sourceFilenameFromUrl("https://cdn.example.com/video.mp4?token=abc&expires=123"),
         )
     }
 
     @Test
-    fun filenameFromUrlReturnsNullWhenNoExtension() {
-        assertNull(filenameFromUrl("https://cdn.example.com/stream"))
+    fun sourceFilenameFromUrlReturnsNullWhenNoExtension() {
+        assertNull(sourceFilenameFromUrl("https://cdn.example.com/stream"))
     }
 
     @Test
-    fun filenameFromUrlReturnsNullForEmptyPath() {
-        assertNull(filenameFromUrl("https://cdn.example.com/"))
+    fun sourceFilenameFromUrlReturnsNullForEmptyPath() {
+        assertNull(sourceFilenameFromUrl("https://cdn.example.com/"))
     }
 
     @Test
-    fun filenameFromUrlHandlesTorrentSentinelUrl() {
-        assertNull(filenameFromUrl("torrent://abcdef1234567890"))
+    fun sourceFilenameFromUrlReturnsNullForNull() {
+        assertNull(sourceFilenameFromUrl(null))
     }
 
     // --- from(hints, sourceUrl) tests ---

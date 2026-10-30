@@ -64,7 +64,7 @@ data class SubtitleRequestExtras(
          * `streamFilenameFromUrl`).
          */
         fun from(hints: StreamBehaviorHints, sourceUrl: String?): SubtitleRequestExtras? {
-            val filename = hints.filename ?: sourceUrl?.let(::filenameFromUrl)
+            val filename = hints.filename ?: sourceUrl?.let(::sourceFilenameFromUrl)
             return SubtitleRequestExtras(
                 filename = filename,
                 videoSize = hints.videoSize,
@@ -73,14 +73,6 @@ data class SubtitleRequestExtras(
         }
     }
 }
-
-/**
- * Extracts a filename from a playback URL by taking the last path segment
- * before any query parameters, provided it contains an extension dot.
- */
-internal fun filenameFromUrl(url: String): String? =
-    url.substringBefore('?').substringAfterLast('/', "")
-        .takeIf { it.isNotBlank() && it.contains('.') }
 
 internal fun buildSubtitleRequestUrl(
     manifestUrl: String,

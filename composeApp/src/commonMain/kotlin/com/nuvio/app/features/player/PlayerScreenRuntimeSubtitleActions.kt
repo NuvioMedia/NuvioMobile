@@ -38,9 +38,10 @@ internal fun PlayerScreenRuntime.fetchAddonSubtitlesForActiveItem() {
 }
 
 /**
- * After lazy hash computation succeeds, update the cached stream link entry so that
- * subsequent resumes use the hash directly without re-computing. Mirrors NuvioTV's
- * behaviour in `fetchAddonSubtitlesNow`.
+ * After lazy hash computation succeeds, patch the *existing* cached stream link
+ * entry with the newly computed hash. Uses a read-modify-write so that we never
+ * create a new entry (respecting server-stream exclusions and saveForReuse=false)
+ * and never reset cachedAtMs.
  */
 private fun PlayerScreenRuntime.persistComputedVideoHash(enriched: SubtitleRequestExtras) {
     if (!playerSettingsUiState.streamReuseLastLinkEnabled) return
@@ -52,40 +53,7 @@ private fun PlayerScreenRuntime.persistComputedVideoHash(enriched: SubtitleReque
         season = activeSeasonNumber,
         episode = activeEpisodeNumber,
     )
-    val infoHash = activeTorrentInfoHash
-    if (infoHash != null) {
-        StreamLinkCacheRepository.save(
-            contentKey = cacheKey,
-            url = "",
-            streamName = activeStreamTitle,
-            addonName = activeProviderName,
-            addonId = activeProviderAddonId ?: "",
-            filename = enriched.filename,
-            videoHash = enriched.videoHash,
-            videoSize = enriched.videoSize,
-            infoHash = infoHash,
-            fileIdx = activeTorrentFileIdx,
-            sources = activeTorrentTrackers,
-            bingeGroup = currentStreamBingeGroup,
-            contentLanguage = contentLanguage,
-        )
-    } else if (activeSourceUrl.isNotBlank()) {
-        StreamLinkCacheRepository.save(
-            contentKey = cacheKey,
-            url = activeSourceUrl,
-            streamName = activeStreamTitle,
-            addonName = activeProviderName,
-            addonId = activeProviderAddonId ?: "",
-            requestHeaders = activeSourceHeaders,
-            responseHeaders = activeSourceResponseHeaders,
-            filename = enriched.filename,
-            videoHash = enriched.videoHash,
-            videoSize = enriched.videoSize,
-            bingeGroup = currentStreamBingeGroup,
-            streamType = activeStreamType,
-            contentLanguage = contentLanguage,
-        )
-    }
+    StreamLinkCacheRepository.updateVideoHash(cacheKey, enriched.videoHash, enriched.videoSize)
 }
 
 internal fun PlayerScreenRuntime.setSubtitleDelay(delayMs: Int) {

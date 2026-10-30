@@ -17,8 +17,8 @@ internal object OpenSubtitlesHasher {
 
     private const val CHUNK_SIZE = 65536L // 64 KB
     private const val LONG_SIZE = 8
-    private const val CONNECT_TIMEOUT_MS = 15_000
-    private const val READ_TIMEOUT_MS = 15_000
+    private const val CONNECT_TIMEOUT_MS = 5_000
+    private const val READ_TIMEOUT_MS = 5_000
 
     data class Result(val hash: String, val fileSize: Long)
 
@@ -30,12 +30,13 @@ internal object OpenSubtitlesHasher {
             val fileSize = getContentLength(url, headers) ?: return@withContext null
             if (fileSize < CHUNK_SIZE * 2) return@withContext null
 
-            var hash = fileSize
-            hash += readChunkSum(url, headers, offset = 0, length = CHUNK_SIZE)
-            hash += readChunkSum(url, headers, offset = fileSize - CHUNK_SIZE, length = CHUNK_SIZE)
+            val headSum = readChunkSum(url, headers, offset = 0, length = CHUNK_SIZE)
+                ?: return@withContext null
+            val tailSum = readChunkSum(url, headers, offset = fileSize - CHUNK_SIZE, length = CHUNK_SIZE)
+                ?: return@withContext null
 
             Result(
-                hash = "%016x".format(hash),
+                hash = "%016x".format(fileSize + headSum + tailSum),
                 fileSize = fileSize,
             )
         } catch (_: Exception) {
@@ -66,12 +67,17 @@ internal object OpenSubtitlesHasher {
         }
     }
 
+    /**
+     * Reads exactly [length] bytes from a range request and returns the LE-long sum,
+     * or `null` when the server did not honour the range, the read was short, or an
+     * I/O error occurred.
+     */
     private fun readChunkSum(
         url: String,
         headers: Map<String, String>,
         offset: Long,
         length: Long,
-    ): Long {
+    ): Long? {
         val connection = PlayerPlaybackNetworking.openConnection(
             url = url,
             headers = headers,
@@ -82,31 +88,30 @@ internal object OpenSubtitlesHasher {
         )
         return try {
             val code = connection.responseCode
-            if (code !in 200..299 && code != 206) return 0L
-            val stream: InputStream = connection.inputStream ?: return 0L
+            if (code != 206) return null
+            val stream: InputStream = connection.inputStream ?: return null
             val buf = ByteArray(LONG_SIZE)
             var sum = 0L
-            var remaining = length
-            while (remaining >= LONG_SIZE) {
+            var consumed = 0L
+            while (consumed < length) {
                 var read = 0
                 while (read < LONG_SIZE) {
                     val n = stream.read(buf, read, LONG_SIZE - read)
-                    if (n < 0) break
+                    if (n < 0) return null // short read
                     read += n
                 }
-                if (read < LONG_SIZE) break
                 sum += buf.toLongLE()
-                remaining -= LONG_SIZE
+                consumed += LONG_SIZE
             }
             sum
         } catch (_: Exception) {
-            0L
+            null
         } finally {
             connection.disconnect()
         }
     }
 
-    private fun ByteArray.toLongLE(): Long {
+    internal fun ByteArray.toLongLE(): Long {
         var v = 0L
         for (i in 0 until LONG_SIZE) v = v or ((this[i].toLong() and 0xFF) shl (i * 8))
         return v
