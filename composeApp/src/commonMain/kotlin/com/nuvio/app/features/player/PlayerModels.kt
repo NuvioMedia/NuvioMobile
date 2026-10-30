@@ -299,6 +299,8 @@ data class PlayerPlaybackSnapshot(
     val playbackSpeed: Float = 1f,
     val videoWidth: Int = 0,
     val videoHeight: Int = 0,
+    /** A live stream: its position is no point to come back to. */
+    val isLive: Boolean = false,
 )
 
 data class PlayerNowPlayingInfo(
