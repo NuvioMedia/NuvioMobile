@@ -350,6 +350,7 @@ object PlayerSettingsRepository {
                 ?: SubtitleStyleState.DEFAULT.useForcedSubtitles,
             showOnlyPreferredLanguages = PlayerSettingsStorage.loadSubtitleShowOnlyPreferredLanguages()
                 ?: SubtitleStyleState.DEFAULT.showOnlyPreferredLanguages,
+            appearance = decodeSubtitleAppearance(PlayerSettingsStorage.loadSubtitleAppearance()),
         )
         streamReuseLastLinkEnabled = PlayerSettingsStorage.loadStreamReuseLastLinkEnabled() ?: false
         streamReuseLastLinkCacheHours = PlayerSettingsStorage.loadStreamReuseLastLinkCacheHours() ?: 24
@@ -409,9 +410,7 @@ object PlayerSettingsRepository {
         streamAutoPlayRegex = PlayerSettingsStorage.loadStreamAutoPlayRegex() ?: ""
         streamAutoPlayTimeoutSeconds = PlayerSettingsStorage.loadStreamAutoPlayTimeoutSeconds() ?: 3
         deadLinkTimeoutEnabled = PlayerSettingsStorage.loadDeadLinkTimeoutEnabled() ?: true
-        deadLinkTimeoutSeconds = DeadLinkTimeoutPolicy.normalizeSeconds(
-            PlayerSettingsStorage.loadDeadLinkTimeoutSeconds() ?: DeadLinkTimeoutPolicy.DEFAULT_SECONDS,
-        )
+        deadLinkTimeoutSeconds = DeadLinkTimeoutPolicy.normalizeSeconds(PlayerSettingsStorage.loadDeadLinkTimeoutSeconds() ?: DeadLinkTimeoutPolicy.DEFAULT_SECONDS)
         // Legacy migration: 11 was the old sentinel for "unlimited"
         if (streamAutoPlayTimeoutSeconds == 11) {
             streamAutoPlayTimeoutSeconds = Int.MAX_VALUE
@@ -623,12 +622,17 @@ object PlayerSettingsRepository {
 
     fun setSubtitleStyle(style: SubtitleStyleState) {
         ensureLoaded()
-        val normalized = style.copy(fontSizeSp = style.fontSizeSp.coerceIn(subtitleFontSizeRangeSp))
+        val normalized = style.copy(
+            fontSizeSp = style.fontSizeSp.coerceIn(subtitleFontSizeRangeSp),
+            bottomOffset = style.bottomOffset.coerceIn(0, 200),
+            appearance = style.appearance.normalized(),
+        )
         if (subtitleStyle == normalized) return
         subtitleStyle = normalized
         publish()
         PlayerSettingsStorage.saveSubtitleTextColor(normalized.textColor.toStorageHexString())
         PlayerSettingsStorage.saveSubtitleBackgroundColor(normalized.backgroundColor.toStorageHexString())
+        PlayerSettingsStorage.saveSubtitleAppearance(normalized.appearance.encode())
         PlayerSettingsStorage.saveSubtitleOutlineColor(normalized.outlineColor.toStorageHexString())
         PlayerSettingsStorage.saveSubtitleOutlineEnabled(normalized.outlineEnabled)
         PlayerSettingsStorage.saveSubtitleOutlineWidth(normalized.outlineWidth)
@@ -908,7 +912,6 @@ object PlayerSettingsRepository {
         publish()
         PlayerSettingsStorage.saveDeadLinkTimeoutEnabled(enabled)
     }
-
     fun setDeadLinkTimeoutSeconds(seconds: Int) {
         ensureLoaded()
         val normalized = DeadLinkTimeoutPolicy.normalizeSeconds(seconds)
@@ -917,7 +920,6 @@ object PlayerSettingsRepository {
         publish()
         PlayerSettingsStorage.saveDeadLinkTimeoutSeconds(normalized)
     }
-
     fun setSkipIntroEnabled(enabled: Boolean) {
         ensureLoaded()
         if (skipIntroEnabled == enabled) return

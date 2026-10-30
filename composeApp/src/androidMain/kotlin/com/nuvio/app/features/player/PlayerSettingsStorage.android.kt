@@ -39,6 +39,7 @@ actual object PlayerSettingsStorage {
     private const val preferredSubtitleLanguageKey = "preferred_subtitle_language"
     private const val secondaryPreferredSubtitleLanguageKey = "secondary_preferred_subtitle_language"
     private const val subtitleTextColorKey = "subtitle_text_color"
+    private const val subtitleAppearanceKey = "subtitle_appearance"
     private const val subtitleBackgroundColorKey = "subtitle_background_color"
     private const val subtitleOutlineColorKey = "subtitle_outline_color"
     private const val subtitleOutlineEnabledKey = "subtitle_outline_enabled"
@@ -133,6 +134,7 @@ actual object PlayerSettingsStorage {
         secondaryPreferredSubtitleLanguageKey,
         subtitleTextColorKey,
         subtitleBackgroundColorKey,
+        subtitleAppearanceKey,
         subtitleOutlineColorKey,
         subtitleOutlineEnabledKey,
         subtitleOutlineWidthKey,
@@ -490,6 +492,13 @@ actual object PlayerSettingsStorage {
             ?.apply()
     }
 
+    actual fun loadSubtitleAppearance(): String? =
+        preferences?.getString(ProfileScopedKey.of(subtitleAppearanceKey), null)
+
+    actual fun saveSubtitleAppearance(value: String) {
+        preferences?.edit()?.putString(ProfileScopedKey.of(subtitleAppearanceKey), value)?.apply()
+    }
+
     actual fun loadSubtitleBackgroundColor(): String? =
         preferences?.getString(ProfileScopedKey.of(subtitleBackgroundColorKey), null)
 
@@ -785,27 +794,6 @@ actual object PlayerSettingsStorage {
             ?.apply()
     }
 
-    actual fun loadDeadLinkTimeoutEnabled(): Boolean? = preferences?.let { prefs ->
-        val key = ProfileScopedKey.of(deadLinkTimeoutEnabledKey)
-        if (prefs.contains(key)) prefs.getBoolean(key, true) else null
-    }
-
-    actual fun saveDeadLinkTimeoutEnabled(enabled: Boolean) {
-        preferences?.edit()?.putBoolean(ProfileScopedKey.of(deadLinkTimeoutEnabledKey), enabled)?.apply()
-    }
-
-    actual fun loadDeadLinkTimeoutSeconds(): Int? =
-        preferences?.let { prefs ->
-            val key = ProfileScopedKey.of(deadLinkTimeoutSecondsKey)
-            if (prefs.contains(key)) prefs.getInt(key, 10) else null
-        }
-
-    actual fun saveDeadLinkTimeoutSeconds(seconds: Int) {
-        preferences?.edit()
-            ?.putInt(ProfileScopedKey.of(deadLinkTimeoutSecondsKey), DeadLinkTimeoutPolicy.normalizeSeconds(seconds))
-            ?.apply()
-    }
-
     actual fun loadMapDV7ToHevc(): Boolean? =
         preferences?.let { sharedPreferences ->
             val key = ProfileScopedKey.of(mapDV7ToHevcKey)
@@ -1007,6 +995,20 @@ actual object PlayerSettingsStorage {
             ?.apply()
     }
 
+    actual fun loadDeadLinkTimeoutEnabled(): Boolean? = preferences?.let { prefs ->
+        val key = ProfileScopedKey.of(deadLinkTimeoutEnabledKey)
+        if (prefs.contains(key)) prefs.getBoolean(key, true) else null
+    }
+    actual fun saveDeadLinkTimeoutEnabled(enabled: Boolean) {
+        preferences?.edit()?.putBoolean(ProfileScopedKey.of(deadLinkTimeoutEnabledKey), enabled)?.apply()
+    }
+    actual fun loadDeadLinkTimeoutSeconds(): Int? = preferences?.let { prefs ->
+        val key = ProfileScopedKey.of(deadLinkTimeoutSecondsKey)
+        if (prefs.contains(key)) prefs.getInt(key, 10) else null
+    }
+    actual fun saveDeadLinkTimeoutSeconds(seconds: Int) {
+        preferences?.edit()?.putInt(ProfileScopedKey.of(deadLinkTimeoutSecondsKey), DeadLinkTimeoutPolicy.normalizeSeconds(seconds))?.apply()
+    }
     actual fun loadSkipIntroEnabled(): Boolean? =
         preferences?.let { sharedPreferences ->
             val key = ProfileScopedKey.of(skipIntroEnabledKey)
@@ -1422,6 +1424,7 @@ actual object PlayerSettingsStorage {
         loadPreferredSubtitleLanguage()?.let { put(preferredSubtitleLanguageKey, encodeSyncString(it)) }
         loadSecondaryPreferredSubtitleLanguage()?.let { put(secondaryPreferredSubtitleLanguageKey, encodeSyncString(it)) }
         loadSubtitleTextColor()?.let { put(subtitleTextColorKey, encodeSyncString(it)) }
+        loadSubtitleAppearance()?.let { put(subtitleAppearanceKey, encodeSyncString(it)) }
         loadSubtitleBackgroundColor()?.let { put(subtitleBackgroundColorKey, encodeSyncString(it)) }
         loadSubtitleOutlineColor()?.let { put(subtitleOutlineColorKey, encodeSyncString(it)) }
         loadSubtitleOutlineEnabled()?.let { put(subtitleOutlineEnabledKey, encodeSyncBoolean(it)) }
@@ -1509,6 +1512,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncString(preferredSubtitleLanguageKey)?.let(::savePreferredSubtitleLanguage)
         payload.decodeSyncString(secondaryPreferredSubtitleLanguageKey)?.let(::saveSecondaryPreferredSubtitleLanguage)
         payload.decodeSyncString(subtitleTextColorKey)?.let(::saveSubtitleTextColor)
+        payload.decodeSyncString(subtitleAppearanceKey)?.let(::saveSubtitleAppearance)
         payload.decodeSyncString(subtitleBackgroundColorKey)?.let(::saveSubtitleBackgroundColor)
         payload.decodeSyncString(subtitleOutlineColorKey)?.let(::saveSubtitleOutlineColor)
         payload.decodeSyncBoolean(subtitleOutlineEnabledKey)?.let(::saveSubtitleOutlineEnabled)

@@ -8,7 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		0A1B2C3D4E5F60718293A4BD /* DownloadsWidgetExtension.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 0A1B2C3D4E5F60718293A4B5 /* DownloadsWidgetExtension.appex */; };
+		48F16EBC823E83EAAA09C0FE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 85E7C6938899908633B6C313 /* Foundation.framework */; };
+		5204D0325E21B049498DAAAD /* video.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = C03DCA453987565BAD7AB5BA /* video.mp4 */; };
+		5950F0BCA7E4790326ACD8ED /* captions.srt in Resources */ = {isa = PBXBuildFile; fileRef = E27F0F006756F30DE4E82AEC /* captions.srt */; };
 		7397CF462F80FE3A00AC0F84 /* MPVKit in Frameworks */ = {isa = PBXBuildFile; productRef = A1B2C3D4E5F6A7B8C9D0E1F2 /* MPVKit */; };
+		C775C0E7A7F486CE63FEB866 /* SubtitlePlaybackTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C2673A436033CC351728D43 /* SubtitlePlaybackTests.swift */; };
+		E13BB6F776079BECB1C385AE /* styled.ass in Resources */ = {isa = PBXBuildFile; fileRef = 392AF87E6B301A2EF4CDCAC6 /* styled.ass */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -18,6 +23,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 0A1B2C3D4E5F60718293A4B8;
 			remoteInfo = DownloadsWidgetExtension;
+		};
+		35ECDCAF18D160794A03752D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E819B502921EC7C68AC4965A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E1B229BC363ABB711AF255E3;
+			remoteInfo = iosApp;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -38,6 +50,12 @@
 /* Begin PBXFileReference section */
 		07921B4E8F8546BEE682C2FE /* Nuvio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Nuvio.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A1B2C3D4E5F60718293A4B5 /* DownloadsWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DownloadsWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1C2673A436033CC351728D43 /* SubtitlePlaybackTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubtitlePlaybackTests.swift; sourceTree = "<group>"; };
+		392AF87E6B301A2EF4CDCAC6 /* styled.ass */ = {isa = PBXFileReference; includeInIndex = 1; path = styled.ass; sourceTree = "<group>"; };
+		75DECEA6A716ACCF256DD05C /* SubtitleTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SubtitleTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		85E7C6938899908633B6C313 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
+		C03DCA453987565BAD7AB5BA /* video.mp4 */ = {isa = PBXFileReference; includeInIndex = 1; path = video.mp4; sourceTree = "<group>"; };
+		E27F0F006756F30DE4E82AEC /* captions.srt */ = {isa = PBXFileReference; includeInIndex = 1; path = captions.srt; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -97,6 +115,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E59F206D1CE4A5B5577D5D55 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				48F16EBC823E83EAAA09C0FE /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -107,7 +133,29 @@
 				A2F97F59D21EB4D4B662C8D1 /* iosApp */,
 				0A1B2C3D4E5F60718293A4B6 /* DownloadsWidgetExtension */,
 				AD93033A33973C81BB77B73A /* Products */,
+				C8C55E88D240987C1AFEEFF5 /* Frameworks */,
+				F7111404B2441FE544E0EE68 /* iosAppTests */,
+				618CAB016B1801BDAFA303BA /* Subtitle fixtures */,
 			);
+			sourceTree = "<group>";
+		};
+		618CAB016B1801BDAFA303BA /* Subtitle fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				C03DCA453987565BAD7AB5BA /* video.mp4 */,
+				E27F0F006756F30DE4E82AEC /* captions.srt */,
+				392AF87E6B301A2EF4CDCAC6 /* styled.ass */,
+			);
+			name = "Subtitle fixtures";
+			path = ../testFixtures/subtitles;
+			sourceTree = "<group>";
+		};
+		A69B6B59F80CBAA134D4DA98 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				85E7C6938899908633B6C313 /* Foundation.framework */,
+			);
+			name = iOS;
 			sourceTree = "<group>";
 		};
 		AD93033A33973C81BB77B73A /* Products */ = {
@@ -115,8 +163,26 @@
 			children = (
 				07921B4E8F8546BEE682C2FE /* Nuvio.app */,
 				0A1B2C3D4E5F60718293A4B5 /* DownloadsWidgetExtension.appex */,
+				75DECEA6A716ACCF256DD05C /* SubtitleTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		C8C55E88D240987C1AFEEFF5 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A69B6B59F80CBAA134D4DA98 /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		F7111404B2441FE544E0EE68 /* iosAppTests */ = {
+			isa = PBXGroup;
+			children = (
+				1C2673A436033CC351728D43 /* SubtitlePlaybackTests.swift */,
+			);
+			name = iosAppTests;
+			path = iosAppTests;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -143,6 +209,24 @@
 			productName = DownloadsWidgetExtension;
 			productReference = 0A1B2C3D4E5F60718293A4B5 /* DownloadsWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
+		};
+		1454682276136314FD886C05 /* SubtitleTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4FC219042ACE3B482D3F1C7E /* Build configuration list for PBXNativeTarget "SubtitleTests" */;
+			buildPhases = (
+				54D223D087BF573D995677F6 /* Sources */,
+				E59F206D1CE4A5B5577D5D55 /* Frameworks */,
+				C6627ACB0B8709E6FE3071E7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E5D5CD200F043E507B706E94 /* PBXTargetDependency */,
+			);
+			name = SubtitleTests;
+			productName = SubtitleTests;
+			productReference = 75DECEA6A716ACCF256DD05C /* SubtitleTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 		E1B229BC363ABB711AF255E3 /* iosApp */ = {
 			isa = PBXNativeTarget;
@@ -207,6 +291,7 @@
 			targets = (
 				0A1B2C3D4E5F60718293A4B8 /* DownloadsWidgetExtension */,
 				E1B229BC363ABB711AF255E3 /* iosApp */,
+				1454682276136314FD886C05 /* SubtitleTests */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +308,16 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C6627ACB0B8709E6FE3071E7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5204D0325E21B049498DAAAD /* video.mp4 in Resources */,
+				5950F0BCA7E4790326ACD8ED /* captions.srt in Resources */,
+				E13BB6F776079BECB1C385AE /* styled.ass in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -258,6 +353,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		54D223D087BF573D995677F6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C775C0E7A7F486CE63FEB866 /* SubtitlePlaybackTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		79E42700D221AF24510E3E09 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -272,6 +375,12 @@
 			isa = PBXTargetDependency;
 			target = 0A1B2C3D4E5F60718293A4B8 /* DownloadsWidgetExtension */;
 			targetProxy = 0A1B2C3D4E5F60718293A4C1 /* PBXContainerItemProxy */;
+		};
+		E5D5CD200F043E507B706E94 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = iosApp;
+			target = E1B229BC363ABB711AF255E3 /* iosApp */;
+			targetProxy = 35ECDCAF18D160794A03752D /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -379,6 +488,33 @@
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		2350CCF218BAC027835CE8AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(BUILT_PRODUCTS_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.nuvio.SubtitleTests;
+				PRODUCT_MODULE_NAME = SubtitleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nuvio.app/Nuvio";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -531,6 +667,32 @@
 			};
 			name = Debug;
 		};
+		B3B15BECA364B4F1A6C9C67A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(BUILT_PRODUCTS_DIR)",
+				);
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.nuvio.SubtitleTests;
+				PRODUCT_MODULE_NAME = SubtitleTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Nuvio.app/Nuvio";
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -539,6 +701,15 @@
 			buildConfigurations = (
 				0A1B2C3D4E5F60718293A4BF /* Debug */,
 				0A1B2C3D4E5F60718293A4C0 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		4FC219042ACE3B482D3F1C7E /* Build configuration list for PBXNativeTarget "SubtitleTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2350CCF218BAC027835CE8AB /* Release */,
+				B3B15BECA364B4F1A6C9C67A /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
