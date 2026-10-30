@@ -81,6 +81,12 @@ internal expect object PlayerSettingsStorage {
     fun loadAndroidExoChaptersEnabled(): Boolean?
     fun saveAndroidLibmpvYuv420pEnabled(enabled: Boolean)
     fun saveAndroidExoChaptersEnabled(enabled: Boolean)
+    fun loadRememberAudioDelayPerDevice(): Boolean?
+    fun saveRememberAudioDelayPerDevice(enabled: Boolean)
+    fun loadPersistAudioAmplification(): Boolean?
+    fun savePersistAudioAmplification(enabled: Boolean)
+    fun loadAudioAmplificationDb(): Int?
+    fun saveAudioAmplificationDb(db: Int)
     fun loadDecoderPriority(): Int?
     fun saveDecoderPriority(priority: Int)
     fun loadMapDV7ToHevc(): Boolean?

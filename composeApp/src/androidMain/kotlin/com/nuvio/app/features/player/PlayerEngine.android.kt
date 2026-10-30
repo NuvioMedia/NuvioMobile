@@ -62,6 +62,7 @@ import androidx.media3.exoplayer.ForwardingRenderer
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -102,6 +103,8 @@ import java.io.File
 import java.net.URI
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 private const val TAG = "NuvioPlayer"
 private const val PLAYER_DIAGNOSTIC_TAG = "NuvioPlayerDiag"
@@ -270,6 +273,10 @@ private fun ExoPlayerSurface(
     var subtitleDelayMs by remember(playerSourceKey) { mutableStateOf(0) }
     var selectedExternalSubtitleMimeType by remember(playerSourceKey) { mutableStateOf<String?>(null) }
     val latestSubtitleDelayMs = rememberUpdatedState(subtitleDelayMs)
+    // Read by the loading and playback threads; outlives player rebuilds of the same surface.
+    val audioDelayUs = remember { AtomicLong(0L) }
+    // Read by the playback thread's audio sink; every rebuilt player picks up the current gain.
+    val audioAmplificationDb = remember { AtomicInteger(AUDIO_AMPLIFICATION_MIN_DB) }
     val latestExternalSubtitleMimeType = rememberUpdatedState(selectedExternalSubtitleMimeType)
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
     var videoAspectRatio by remember(playerSourceKey) { mutableStateOf(0f) }
@@ -363,7 +370,7 @@ private fun ExoPlayerSurface(
             val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
             val videoSource = mediaSourceFactory.createMediaSource(videoMediaItem)
             val audioSource = mediaSourceFactory.createMediaSource(playbackMediaItemFromUrl(sourceAudioUrl))
-            val mergedSource = MergingMediaSource(videoSource, audioSource)
+            val mergedSource = AudioDelayMediaSource(MergingMediaSource(videoSource, audioSource), audioDelayUs::get)
             if (startPositionMs != null) {
                 setMediaSource(mergedSource, startPositionMs.coerceAtLeast(0L))
             } else {
@@ -399,6 +406,8 @@ private fun ExoPlayerSurface(
         val renderersFactory = SubtitleOffsetRenderersFactory(
             context = context,
             subtitleDelayUsProvider = { latestSubtitleDelayMs.value.toLong() * 1_000L },
+            audioDelayUsProvider = audioDelayUs::get,
+            audioAmplificationDbProvider = audioAmplificationDb::get,
             shouldNormalizeCuePositionProvider = {
                 latestExternalSubtitleMimeType.value == MimeTypes.TEXT_VTT
             },
@@ -479,7 +488,8 @@ private fun ExoPlayerSurface(
                 context = context,
                 dataSourceFactory = dataSourceFactory,
                 extractorsFactory = extractorsFactory,
-                renderersFactory = renderersFactory
+                renderersFactory = renderersFactory,
+                audioDelayUsProvider = audioDelayUs::get,
             ).also { builtPlayer ->
                 // Apply video effects only when ASS track was detected as selected.
                 // On first init videoEffectsNeeded is false. When onTracksChanged
@@ -504,7 +514,7 @@ private fun ExoPlayerSurface(
 
             playerBuilder
                 .setRenderersFactory(renderersFactory)
-                .setMediaSourceFactory(mediaSourceFactory)
+                .setMediaSourceFactory(AudioDelayMediaSourceFactory(mediaSourceFactory, audioDelayUs::get))
                 .build()
         }
 
@@ -585,6 +595,7 @@ private fun ExoPlayerSurface(
             scope = coroutineScope,
             getPlayer = { exoPlayer },
             getSubtitleDelayMs = { latestSubtitleDelayMs.value },
+            getAudioDelayUs = audioDelayUs::get,
             presentCues = { cues -> subtitlePresenter.present(cues, sidecarControllerRef?.subtitleMimeType != MimeTypes.TEXT_SSA) },
         ).also { sidecarControllerRef = it }
     }
@@ -1127,6 +1138,20 @@ private fun ExoPlayerSurface(
                         it.subtitleDelayUs = subtitleDelayMs.toLong() * 1000L
                     }
                 }
+
+                override val supportsAudioDelay = true
+
+                override fun setAudioDelayMs(delayMs: Int) {
+                    val delayUs = delayMs.coerceIn(AUDIO_DELAY_MIN_MS, AUDIO_DELAY_MAX_MS).toLong() * 1000L
+                    audioDelayUs.set(delayUs)
+                    exoPlayer.getAssHandlerCompat()?.audioDelayUs = delayUs
+                }
+
+                override val supportsAudioAmplification = true
+
+                override fun setAudioAmplificationDb(db: Int) {
+                    audioAmplificationDb.set(db.coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB))
+                }
             }),
         )
     }
@@ -1584,6 +1609,8 @@ private class NuvioLibmpvView(
         mpv.setOptionString("tls-ca-file", "${context.filesDir.path}/cacert.pem")
         mpv.setOptionString("demuxer-max-bytes", "${libmpvCacheBytes()}").logIfMpvError("demuxer-max-bytes")
         mpv.setOptionString("demuxer-max-back-bytes", "${libmpvCacheBytes()}").logIfMpvError("demuxer-max-back-bytes")
+        // Room above 100% for the player's amplification (+10 dB is about 316%).
+        mpv.setOptionString("volume-max", "$LIBMPV_MAX_VOLUME_PERCENT").logIfMpvError("volume-max")
         mpv.setOptionString("vd-lavc-film-grain", "cpu")
         mpv.setPropertyBoolean("keep-open", true)
         mpv.setPropertyBoolean("input-default-bindings", true)
@@ -1948,6 +1975,25 @@ private class NuvioLibmpvView(
                     )
                 }
             }
+
+            override val supportsAudioDelay = true
+
+            override fun setAudioDelayMs(delayMs: Int) {
+                executeMpv {
+                    mpv.setPropertyDouble(
+                        "audio-delay",
+                        delayMs.coerceIn(AUDIO_DELAY_MIN_MS, AUDIO_DELAY_MAX_MS) / 1000.0,
+                    )
+                }
+            }
+
+            override val supportsAudioAmplification = true
+
+            override fun setAudioAmplificationDb(db: Int) {
+                executeMpv {
+                    mpv.setPropertyDouble("volume", 100.0 * audioAmplificationGain(db))
+                }
+            }
         }
 
     /**
@@ -2060,6 +2106,8 @@ private data class LibmpvTrack(
     val isSelected: Boolean,
     val isForced: Boolean,
 )
+
+private const val LIBMPV_MAX_VOLUME_PERCENT = 400
 
 private fun libmpvCacheBytes(): Int =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 * 1024 * 1024 else 32 * 1024 * 1024
@@ -2697,11 +2745,25 @@ private fun PlayerView.videoBoundsFraction(aspectRatio: Float): RectF? {
 private class SubtitleOffsetRenderersFactory(
     context: Context,
     private val subtitleDelayUsProvider: () -> Long,
+    private val audioDelayUsProvider: () -> Long,
+    private val audioAmplificationDbProvider: () -> Int,
     private val shouldNormalizeCuePositionProvider: () -> Boolean,
     private val shouldStripSdhProvider: () -> Boolean,
     private val presentCues: (List<Cue>) -> List<Cue>,
     private val videoBoundsFractionProvider: () -> RectF?,
 ) : DefaultRenderersFactory(context) {
+    override fun buildAudioSink(
+        context: Context,
+        enableFloatOutput: Boolean,
+        enableAudioTrackPlaybackParams: Boolean,
+    ): AudioSink {
+        return DefaultAudioSink.Builder(context)
+            .setEnableFloatOutput(enableFloatOutput)
+            .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+            .setAudioProcessors(arrayOf(GainAudioProcessor(audioAmplificationDbProvider)))
+            .build()
+    }
+
     override fun buildAudioRenderers(
         context: Context,
         extensionRendererMode: Int,
@@ -2744,6 +2806,7 @@ private class SubtitleOffsetRenderersFactory(
             out[index] = SubtitleOffsetRenderer(
                 baseRenderer = out[index],
                 subtitleDelayUsProvider = subtitleDelayUsProvider,
+                audioDelayUsProvider = audioDelayUsProvider,
             )
         }
     }
@@ -2888,9 +2951,11 @@ private class CueNormalizingTextOutput(
 private class SubtitleOffsetRenderer(
     baseRenderer: Renderer,
     private val subtitleDelayUsProvider: () -> Long,
+    private val audioDelayUsProvider: () -> Long,
 ) : ForwardingRenderer(baseRenderer) {
     override fun render(positionUs: Long, elapsedRealtimeUs: Long) {
-        val adjustedPositionUs = (positionUs - subtitleDelayUsProvider()).coerceAtLeast(0L)
+        // The audio delay moves video ahead of the audio clock; subtitles follow the video.
+        val adjustedPositionUs = (positionUs + audioDelayUsProvider() - subtitleDelayUsProvider()).coerceAtLeast(0L)
         super.render(adjustedPositionUs, elapsedRealtimeUs)
     }
 }

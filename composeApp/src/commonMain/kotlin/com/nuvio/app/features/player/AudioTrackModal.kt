@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
@@ -27,13 +28,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.nuvio
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.compose_player_audio_amplification
+import nuvio.composeapp.generated.resources.compose_player_audio_amplification_keep
+import nuvio.composeapp.generated.resources.compose_player_audio_delay
 import nuvio.composeapp.generated.resources.compose_player_audio_tracks
 import nuvio.composeapp.generated.resources.compose_player_no_audio_tracks_available
+import nuvio.composeapp.generated.resources.compose_player_reset
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.abs
+
+private const val AUDIO_DELAY_HOLD_STEP_MS = 50
+private const val AUDIO_DELAY_HOLD_FAST_STEP_MS = 100
+private const val AUDIO_DELAY_HOLD_FAST_AFTER_MS = 2_000L
 
 @Composable
 fun AudioTrackModal(
@@ -43,6 +54,14 @@ fun AudioTrackModal(
     onTrackSelected: (Int) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    showAudioDelay: Boolean = false,
+    audioDelayMs: Int = 0,
+    onAudioDelayChanged: (Int) -> Unit = {},
+    showAudioAmplification: Boolean = false,
+    audioAmplificationDb: Int = 0,
+    keepAudioAmplification: Boolean = false,
+    onAudioAmplificationChanged: (Int) -> Unit = {},
+    onKeepAudioAmplificationChanged: (Boolean) -> Unit = {},
 ) {
     PlayerOverlayScaffold(
         visible = visible,
@@ -79,6 +98,7 @@ fun AudioTrackModal(
                     LazyColumn(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .weight(1f, fill = false)
                             .heightIn(max = railMaxHeight),
                         verticalArrangement = Arrangement.spacedBy(6.dp),
                         contentPadding = PaddingValues(vertical = 8.dp),
@@ -92,9 +112,151 @@ fun AudioTrackModal(
                         }
                     }
                 }
+
+                if (showAudioDelay) {
+                    AudioDelaySection(
+                        delayMs = audioDelayMs,
+                        onDelayChanged = onAudioDelayChanged,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                }
+
+                if (showAudioAmplification) {
+                    AudioAmplificationSection(
+                        gainDb = audioAmplificationDb,
+                        keep = keepAudioAmplification,
+                        onGainChanged = onAudioAmplificationChanged,
+                        onKeepChanged = onKeepAudioAmplificationChanged,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun AudioAmplificationSection(
+    gainDb: Int,
+    keep: Boolean,
+    onGainChanged: (Int) -> Unit,
+    onKeepChanged: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val currentDb = gainDb.coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB)
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = stringResource(Res.string.compose_player_audio_amplification),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SubtitleStyleStepper(
+                value = if (currentDb > 0) "+$currentDb dB" else "$currentDb dB",
+                onDecrease = { onGainChanged(currentDb - 1) },
+                onIncrease = { onGainChanged(currentDb + 1) },
+            )
+            AudioToggleChip(
+                label = stringResource(Res.string.compose_player_audio_amplification_keep),
+                checked = keep,
+                onCheckedChange = onKeepChanged,
+            )
+        }
+    }
+}
+
+@Composable
+private fun AudioToggleChip(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
+    val contentColor = if (checked) tokens.colors.onAccent else Color.White
+
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(if (checked) tokens.colors.accent else Color.White.copy(alpha = 0.08f))
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (checked) {
+            Icon(
+                imageVector = Icons.Rounded.Check,
+                contentDescription = null,
+                tint = contentColor,
+                modifier = Modifier.size(16.dp),
+            )
+        }
+        Text(
+            text = label,
+            color = contentColor,
+            style = MaterialTheme.typography.labelLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun AudioDelaySection(
+    delayMs: Int,
+    onDelayChanged: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val currentDelayMs = delayMs.coerceIn(AUDIO_DELAY_MIN_MS, AUDIO_DELAY_MAX_MS)
+    // Holding a button steps faster the longer it is held.
+    fun holdStepMs(heldMs: Long): Int =
+        if (heldMs >= AUDIO_DELAY_HOLD_FAST_AFTER_MS) AUDIO_DELAY_HOLD_FAST_STEP_MS else AUDIO_DELAY_HOLD_STEP_MS
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = stringResource(Res.string.compose_player_audio_delay),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            SubtitleStyleStepper(
+                value = formatAudioDelay(currentDelayMs),
+                onDecrease = { onDelayChanged(currentDelayMs - AUDIO_DELAY_STEP_MS) },
+                onIncrease = { onDelayChanged(currentDelayMs + AUDIO_DELAY_STEP_MS) },
+                onDecreaseHold = { heldMs -> onDelayChanged(currentDelayMs - holdStepMs(heldMs)) },
+                onIncreaseHold = { heldMs -> onDelayChanged(currentDelayMs + holdStepMs(heldMs)) },
+                valueWidth = 96.dp,
+            )
+            SubtitleTextAction(
+                label = stringResource(Res.string.compose_player_reset),
+                enabled = currentDelayMs != 0,
+                onClick = { onDelayChanged(0) },
+            )
+        }
+    }
+}
+
+private fun formatAudioDelay(delayMs: Int): String {
+    val sign = when {
+        delayMs > 0 -> "+"
+        delayMs < 0 -> "-"
+        else -> ""
+    }
+    val absoluteMs = abs(delayMs)
+    return "$sign${absoluteMs / 1000}.${(absoluteMs % 1000).toString().padStart(3, '0')}s"
 }
 
 @Composable

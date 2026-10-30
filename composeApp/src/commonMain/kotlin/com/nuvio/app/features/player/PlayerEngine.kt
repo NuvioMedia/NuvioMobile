@@ -30,6 +30,14 @@ interface PlayerEngineController {
         useCustomSubtitles: Boolean = false,
     ) {}
     fun setSubtitleDelayMs(delayMs: Int) {}
+    /** Whether [setAudioDelayMs] has an effect; the player hides the audio delay control otherwise. */
+    val supportsAudioDelay: Boolean get() = false
+    /** Plays the audio [delayMs] later than the video; negative values play it earlier. */
+    fun setAudioDelayMs(delayMs: Int) {}
+    /** Whether [setAudioAmplificationDb] has an effect; the player hides the amplification control otherwise. */
+    val supportsAudioAmplification: Boolean get() = false
+    /** Boosts the audio by [db] decibels, from 0 (off) to [AUDIO_AMPLIFICATION_MAX_DB]. */
+    fun setAudioAmplificationDb(db: Int) {}
     fun configureIosVideoOutput(settings: PlayerSettingsUiState) {}
     fun updateNowPlayingMetadata(info: PlayerNowPlayingInfo) {}
     fun clearNowPlayingInfo() {}

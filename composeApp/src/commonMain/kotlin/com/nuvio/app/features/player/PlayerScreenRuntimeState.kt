@@ -262,6 +262,10 @@ internal class PlayerScreenRuntime(
     var autoFetchedAddonSubtitlesForKey by mutableStateOf<String?>(null)
     var trackPreferenceRestoreApplied by mutableStateOf(false)
     var subtitleDelayMs by mutableStateOf(0)
+    var audioDelayMs by mutableStateOf(0)
+    /** Output the audio delay is remembered for; null while that setting is off. */
+    var audioOutputKey: String? = null
+    var audioAmplificationDb by mutableStateOf(0)
     var subtitleAutoSyncState by mutableStateOf(SubtitleAutoSyncUiState())
 
     var lastSyncedSettingsResizeMode: PlayerResizeMode? = null

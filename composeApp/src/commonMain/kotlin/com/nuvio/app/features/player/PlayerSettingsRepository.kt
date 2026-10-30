@@ -59,6 +59,9 @@ data class PlayerSettingsUiState(
     val androidLibmpvHardwareDecodingEnabled: Boolean = true,
     val androidLibmpvYuv420pEnabled: Boolean = false,
     val androidExoChaptersEnabled: Boolean = false,
+    val rememberAudioDelayPerDevice: Boolean = true,
+    val persistAudioAmplification: Boolean = false,
+    val audioAmplificationDb: Int = 0,
     val decoderPriority: Int = 1,
     val mapDV7ToHevc: Boolean = false,
     val tunnelingEnabled: Boolean = false,
@@ -145,6 +148,9 @@ object PlayerSettingsRepository {
     private var androidLibmpvHardwareDecodingEnabled = true
     private var androidLibmpvYuv420pEnabled = false
     private var androidExoChaptersEnabled = false
+    private var rememberAudioDelayPerDevice = true
+    private var persistAudioAmplification = false
+    private var audioAmplificationDb = 0
     private var decoderPriority = 1
     private var mapDV7ToHevc = false
     private var tunnelingEnabled = false
@@ -236,6 +242,9 @@ object PlayerSettingsRepository {
         androidLibmpvHardwareDecodingEnabled = true
         androidLibmpvYuv420pEnabled = false
         androidExoChaptersEnabled = false
+        rememberAudioDelayPerDevice = true
+        persistAudioAmplification = false
+        audioAmplificationDb = 0
         decoderPriority = 1
         mapDV7ToHevc = false
         tunnelingEnabled = false
@@ -358,6 +367,10 @@ object PlayerSettingsRepository {
         androidLibmpvHardwareDecodingEnabled = PlayerSettingsStorage.loadAndroidLibmpvHardwareDecodingEnabled() ?: true
         androidLibmpvYuv420pEnabled = PlayerSettingsStorage.loadAndroidLibmpvYuv420pEnabled() ?: false
         androidExoChaptersEnabled = PlayerSettingsStorage.loadAndroidExoChaptersEnabled() ?: false
+        rememberAudioDelayPerDevice = PlayerSettingsStorage.loadRememberAudioDelayPerDevice() ?: true
+        persistAudioAmplification = PlayerSettingsStorage.loadPersistAudioAmplification() ?: false
+        audioAmplificationDb = (PlayerSettingsStorage.loadAudioAmplificationDb() ?: 0)
+            .coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB)
         decoderPriority = PlayerSettingsStorage.loadDecoderPriority() ?: 1
         mapDV7ToHevc = PlayerSettingsStorage.loadMapDV7ToHevc() ?: false
         tunnelingEnabled = PlayerSettingsStorage.loadTunnelingEnabled() ?: false
@@ -698,6 +711,31 @@ object PlayerSettingsRepository {
         androidExoChaptersEnabled = enabled
         publish()
         PlayerSettingsStorage.saveAndroidExoChaptersEnabled(enabled)
+    }
+
+    fun setRememberAudioDelayPerDevice(enabled: Boolean) {
+        ensureLoaded()
+        if (rememberAudioDelayPerDevice == enabled) return
+        rememberAudioDelayPerDevice = enabled
+        publish()
+        PlayerSettingsStorage.saveRememberAudioDelayPerDevice(enabled)
+    }
+
+    fun setPersistAudioAmplification(enabled: Boolean) {
+        ensureLoaded()
+        if (persistAudioAmplification == enabled) return
+        persistAudioAmplification = enabled
+        publish()
+        PlayerSettingsStorage.savePersistAudioAmplification(enabled)
+    }
+
+    fun setAudioAmplificationDb(db: Int) {
+        ensureLoaded()
+        val clamped = db.coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB)
+        if (audioAmplificationDb == clamped) return
+        audioAmplificationDb = clamped
+        publish()
+        PlayerSettingsStorage.saveAudioAmplificationDb(clamped)
     }
 
     fun setDecoderPriority(priority: Int) {
@@ -1235,6 +1273,9 @@ object PlayerSettingsRepository {
             androidLibmpvHardwareDecodingEnabled = androidLibmpvHardwareDecodingEnabled,
             androidLibmpvYuv420pEnabled = androidLibmpvYuv420pEnabled,
             androidExoChaptersEnabled = androidExoChaptersEnabled,
+            rememberAudioDelayPerDevice = rememberAudioDelayPerDevice,
+            persistAudioAmplification = persistAudioAmplification,
+            audioAmplificationDb = audioAmplificationDb,
             decoderPriority = decoderPriority,
             mapDV7ToHevc = mapDV7ToHevc,
             tunnelingEnabled = tunnelingEnabled,

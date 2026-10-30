@@ -52,6 +52,17 @@ internal fun PlaybackAudioSettings(
                     isTablet = isTablet,
                     onClick = { showSecondaryAudioDialog = true },
                 )
+                if (!isIos) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_remember_audio_delay),
+                        description = stringResource(Res.string.settings_playback_remember_audio_delay_description),
+                        checked = settings.rememberAudioDelayPerDevice,
+                        enabled = !settings.externalPlayerEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setRememberAudioDelayPerDevice,
+                    )
+                }
             }
         }
 

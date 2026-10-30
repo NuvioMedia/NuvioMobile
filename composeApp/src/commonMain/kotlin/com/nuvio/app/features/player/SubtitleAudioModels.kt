@@ -6,6 +6,7 @@ import com.nuvio.app.isIos
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_player_track_number
 import org.jetbrains.compose.resources.stringResource
+import kotlin.math.pow
 import kotlin.math.roundToInt
 
 data class AudioTrack(
@@ -38,6 +39,15 @@ const val SUBTITLE_DELAY_MIN_MS = -60_000
 const val SUBTITLE_DELAY_MAX_MS = 60_000
 const val SUBTITLE_DELAY_STEP_MS = 100
 const val SUBTITLE_AUTO_SYNC_REACTION_COMPENSATION_MS = 300L
+const val AUDIO_DELAY_MIN_MS = -60_000
+const val AUDIO_DELAY_MAX_MS = 60_000
+const val AUDIO_DELAY_STEP_MS = 25
+const val AUDIO_AMPLIFICATION_MIN_DB = 0
+const val AUDIO_AMPLIFICATION_MAX_DB = 10
+
+/** Linear gain factor for an amplification of [db] decibels. */
+internal fun audioAmplificationGain(db: Int): Double =
+    10.0.pow(db.coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB) / 20.0)
 
 internal val subtitleFontSizeRangeSp: IntRange
     get() = if (isIos) 6..40 else 12..40
