@@ -516,7 +516,8 @@ internal fun findPersistedAddonSubtitle(
     }.orEmpty()
     val preferredCandidates = providerCandidates.ifEmpty { candidates }
     return preferredCandidates.firstOrNull {
-        it.display.equals(preference.subtitleName, ignoreCase = true)
+        it.label.equals(preference.subtitleName, ignoreCase = true) ||
+            it.display.equals(preference.subtitleName, ignoreCase = true)
     } ?: preferredCandidates.firstOrNull()
 }
 
