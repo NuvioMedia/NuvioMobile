@@ -442,12 +442,14 @@ internal fun StreamDestination(
         qualitySelectionMode = qualityFlowEnabled,
     )
     val allQualityStreams = remember(streamsUiState.groups) { streamsUiState.groups.flatMap { it.streams } }
+    val qualityP2pEnabled = p2pEnabled && P2pSettingsRepository.isVisible
     val qualityEligibleStreams = remember(
         allQualityStreams,
         playerSettings.streamAutoPlaySource,
         playerSettings.streamAutoPlaySelectedAddons,
         playerSettings.streamAutoPlaySelectedPlugins,
         installedAddonNames,
+        qualityP2pEnabled,
     ) {
         val sourceScopedStreams = when (playerSettings.streamAutoPlaySource) {
             StreamAutoPlaySource.ALL_SOURCES -> allQualityStreams
@@ -457,7 +459,9 @@ internal fun StreamDestination(
                 allQualityStreams.filter { it.addonName !in installedAddonNames }
         }
         sourceScopedStreams.filter { stream ->
-            if (stream.serverTarget != null) {
+            if (!qualityP2pEnabled && stream.isTorrentStream) {
+                false
+            } else if (stream.serverTarget != null) {
                 true
             } else if (stream.addonName in installedAddonNames) {
                 playerSettings.streamAutoPlaySelectedAddons.isEmpty() ||
@@ -511,6 +515,7 @@ internal fun StreamDestination(
         qualitySearchFinished,
         streamsUiState.requestToken,
         expectedStreamsRequestToken,
+        qualityP2pEnabled,
     ) {
         val selectedName = pendingQualitySelection ?: return@LaunchedEffect
         if (streamsUiState.requestToken != expectedStreamsRequestToken) return@LaunchedEffect
@@ -521,27 +526,38 @@ internal fun StreamDestination(
             requestedQuality = requestedQuality,
             debridEnabled = debridEnabledForQualitySelection,
             preferredSourceOrder = qualityPreferredSourceOrder,
+            p2pEnabled = qualityP2pEnabled,
         )
-        val targetHeight = requestedQuality.targetHeight
         val rankedTopThreeCandidates = QualityFirstAutoPlayPolicy.rankCandidates(
             streams = qualityEligibleStreams.filter { it.addonName in topThreeQualityAddonNames },
             requestedQuality = requestedQuality,
             debridEnabled = debridEnabledForQualitySelection,
             preferredSourceOrder = qualityPreferredSourceOrder,
+            p2pEnabled = qualityP2pEnabled,
         )
-        val earlyStartCandidates = if (targetHeight == null) rankedTopThreeCandidates else
-            rankedTopThreeCandidates.filter { QualityFirstAutoPlayPolicy.detectQualityHeight(it) == targetHeight }
-        // Respect the intended threshold: more than ten distinct selectable links at this tier.
-        val canStartEarlyFromTopThree = earlyStartCandidates.size > 10
-        // Never start at a lower quality merely because the requested tier has not
-        // arrived yet. Playback must begin from an exact-tier source; lower tiers are
-        // queued behind it and become eligible only after startup/resolution fallback.
-        if (rankedFallbackCandidates.isNotEmpty() &&
-            (canStartEarlyFromTopThree || qualitySearchFinished)
-        ) {
+        val selectedQualityCandidates = if (requestedQuality.targetHeight == null) {
+            emptyList()
+        } else {
+            QualityFirstAutoPlayPolicy.rankCandidates(
+                streams = qualityEligibleStreams,
+                requestedQuality = requestedQuality,
+                debridEnabled = debridEnabledForQualitySelection,
+                preferredSourceOrder = qualityPreferredSourceOrder,
+                p2pEnabled = qualityP2pEnabled,
+            )
+        }
+        val shouldStartPlayback = QualityFirstAutoPlayPolicy.shouldStartPlayback(
+            requestedQuality = requestedQuality,
+            selectedQualityCandidateCount = selectedQualityCandidates.size,
+            topThreeCandidateCount = rankedTopThreeCandidates.size,
+            searchFinished = qualitySearchFinished,
+        )
+        // For a specific tier, the first exact-quality source is enough to open the player.
+        // Lower and unknown-quality candidates stay queued behind it for startup fallback.
+        if (rankedFallbackCandidates.isNotEmpty() && shouldStartPlayback) {
             val started = StreamsRepository.beginQualityFirstAutoPlay(
                 expectedRequestToken = expectedStreamsRequestToken,
-                candidates = (earlyStartCandidates + rankedFallbackCandidates).distinct(),
+                candidates = rankedFallbackCandidates,
             )
             pendingQualitySelection = null
             if (started) {
@@ -1062,6 +1078,7 @@ internal fun StreamDestination(
                     streams = qualityEligibleStreams,
                     requestedQuality = quality,
                     debridEnabled = debridEnabledForQualitySelection,
+                    p2pEnabled = qualityP2pEnabled,
                 ).count { QualityFirstAutoPlayPolicy.detectQualityHeight(it) == quality.targetHeight }
             }
         }
