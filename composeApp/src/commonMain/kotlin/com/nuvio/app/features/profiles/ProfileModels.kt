@@ -89,12 +89,26 @@ fun avatarStorageUrl(storagePath: String): String =
     if (storagePath.startsWith("https://") || storagePath.startsWith("http://")) {
         storagePath
     } else {
-        "${com.nuvio.app.core.network.ServerConfigurationRepository.active.value.backendUrl}/storage/v1/object/public/avatars/$storagePath"
+        val sanitized = storagePath.trim().trimStart('/')
+        "${com.nuvio.app.core.network.ServerConfigurationRepository.active.value.backendUrl}/storage/v1/object/public/avatars/$sanitized"
     }
 
+fun normalizeAvatarUri(url: String?): String? {
+    if (url == null) return null
+    return if (url.startsWith("file:/") && !url.startsWith("file:///")) {
+        url.replaceFirst("file:/", "file:///")
+    } else {
+        url
+    }
+}
+
 fun avatarImageUrl(avatar: AvatarCatalogItem): String? =
-    avatar.localImageUrl
-        ?: avatar.storagePath.takeIf { it.isNotBlank() && !avatar.memberOnly }?.let(::avatarStorageUrl)
+    normalizeAvatarUri(avatar.localImageUrl)
+        ?: if (avatar.storagePath.startsWith("https://") || avatar.storagePath.startsWith("http://")) {
+            avatar.storagePath
+        } else {
+            avatar.storagePath.takeIf { it.isNotBlank() && !avatar.memberOnly }?.let(::avatarStorageUrl)
+        }
 
 fun normalizedAvatarUrl(url: String?): String? =
     url?.trim()?.takeIf { it.isValidAvatarUrl() }

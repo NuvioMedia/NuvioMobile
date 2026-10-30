@@ -37,4 +37,16 @@ class AvatarAccessTest {
         assertEquals("file:///cache/supporter-gold.png", avatarImageUrl(supporter))
         assertNull(avatarImageUrl(supporter.copy(localImageUrl = null)))
     }
+
+    @Test
+    fun supporterAvatarNormalizesLegacySingleSlashFileUri() {
+        val supporter = AvatarCatalogItem(
+            id = "supporter-gold",
+            storagePath = "private/gold.png",
+            localImageUrl = "file:/C:/cache/supporter-gold.png",
+            memberOnly = true,
+        )
+
+        assertEquals("file:///C:/cache/supporter-gold.png", avatarImageUrl(supporter))
+    }
 }
