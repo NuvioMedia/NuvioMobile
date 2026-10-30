@@ -177,6 +177,7 @@ internal fun StreamDestination(
                 requestHeaders = emptyMap(),
                 responseHeaders = emptyMap(),
                 filename = stream.behaviorHints.filename,
+                videoHash = stream.behaviorHints.videoHash,
                 videoSize = stream.behaviorHints.videoSize,
                 infoHash = infoHash,
                 fileIdx = stream.p2pFileIdx,
@@ -336,7 +337,7 @@ internal fun StreamDestination(
                 initialPositionMs = launch.resumePositionMs ?: 0L,
                 initialProgressFraction = launch.resumeProgressFraction,
                 subtitleExtras = SubtitleRequestExtras.from(
-                    StreamBehaviorHints(filename = cached.filename, videoSize = cached.videoSize),
+                    StreamBehaviorHints(filename = cached.filename, videoHash = cached.videoHash, videoSize = cached.videoSize),
                 ),
                 contentLanguage = resolveLaunchContentLanguage(cached.contentLanguage),
             )
@@ -457,6 +458,7 @@ internal fun StreamDestination(
                 requestHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
                 responseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
                 filename = stream.behaviorHints.filename,
+                videoHash = stream.behaviorHints.videoHash,
                 videoSize = stream.behaviorHints.videoSize,
                 bingeGroup = stream.behaviorHints.bingeGroup,
                 streamType = stream.streamType,
@@ -490,7 +492,7 @@ internal fun StreamDestination(
             parentMetaType = launch.parentMetaType ?: launch.type,
             initialPositionMs = launch.resumePositionMs ?: 0L,
             initialProgressFraction = launch.resumeProgressFraction,
-            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints),
+            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints, sourceUrl),
             contentLanguage = resolveLaunchContentLanguage(),
         )
         if (playerSettings.externalPlayerEnabled) {
@@ -606,6 +608,7 @@ internal fun StreamDestination(
                 requestHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
                 responseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
                 filename = stream.behaviorHints.filename,
+                videoHash = stream.behaviorHints.videoHash,
                 videoSize = stream.behaviorHints.videoSize,
                 bingeGroup = stream.behaviorHints.bingeGroup,
                 streamType = stream.streamType,
@@ -639,7 +642,7 @@ internal fun StreamDestination(
             parentMetaType = launch.parentMetaType ?: launch.type,
             initialPositionMs = resolvedResumePositionMs ?: 0L,
             initialProgressFraction = resolvedResumeProgressFraction,
-            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints),
+            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints, sourceUrl),
             contentLanguage = resolveLaunchContentLanguage(),
         )
 

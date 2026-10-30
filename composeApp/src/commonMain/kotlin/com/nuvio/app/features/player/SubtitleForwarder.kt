@@ -9,6 +9,11 @@ object SubtitleForwarder {
      * Fetches addon subtitles for the given content and filters them by the user's
      * preferred and secondary language. Returns null on failure or timeout for
      * graceful degradation (external player launches without subtitles).
+     *
+     * Note: this path does **not** trigger lazy hash computation. The caller passes
+     * whatever extras are already available (from [StreamBehaviorHints]). Computing
+     * the hash would add latency that is unacceptable for the external-player launch
+     * flow, which is already bounded by [timeoutMs].
      */
     suspend fun fetchForExternalPlayer(
         type: String,

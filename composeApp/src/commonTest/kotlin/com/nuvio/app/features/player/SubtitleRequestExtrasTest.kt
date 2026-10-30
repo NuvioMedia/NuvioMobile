@@ -90,4 +90,163 @@ class SubtitleRequestExtrasTest {
             ),
         )
     }
+
+    @Test
+    fun enrichingExtrasWithComputedHashPreservesExistingFields() {
+        val original = SubtitleRequestExtras(
+            filename = "Movie.2024.mkv",
+            videoSize = 1_500_000L,
+        )
+        val enriched = original.copy(
+            videoHash = "cafebabe01234567",
+        )
+        assertEquals("cafebabe01234567", enriched.videoHash)
+        assertEquals("Movie.2024.mkv", enriched.filename)
+        assertEquals(1_500_000L, enriched.videoSize)
+        assertEquals(
+            "videoHash=cafebabe01234567&videoSize=1500000&filename=Movie.2024.mkv",
+            enriched.toPathSegment(),
+        )
+    }
+
+    @Test
+    fun enrichingExtrasPreservesAddonVideoSizeOverComputedFileSize() {
+        val addonExtras = SubtitleRequestExtras(
+            filename = "Movie.mkv",
+            videoSize = 999L,
+        )
+        // Simulate hash computation returning a different fileSize — addon-provided
+        // videoSize takes priority (same logic as fetchAddonSubtitlesWithHashComputation).
+        val enriched = addonExtras.copy(
+            videoHash = "0011223344556677",
+            videoSize = addonExtras.videoSize ?: 123_456L,
+        )
+        assertEquals(999L, enriched.videoSize)
+    }
+
+    @Test
+    fun enrichingNullExtrasCreatesNewExtrasFromHashResult() {
+        val original: SubtitleRequestExtras? = null
+        val enriched = (original ?: SubtitleRequestExtras()).copy(
+            videoHash = "aabbccdd",
+            videoSize = (original?.videoSize ?: 42L),
+        )
+        assertEquals("aabbccdd", enriched.videoHash)
+        assertEquals(42L, enriched.videoSize)
+        assertNull(enriched.filename)
+        assertEquals(
+            "videoHash=aabbccdd&videoSize=42",
+            enriched.toPathSegment(),
+        )
+    }
+
+    @Test
+    fun fromReturnsNullWhenHintsHaveOnlyBlankValues() {
+        assertNull(SubtitleRequestExtras.from(StreamBehaviorHints(filename = "  ", videoSize = 0L, videoHash = "")))
+    }
+
+    @Test
+    fun fromRetainsVideoHashFromHints() {
+        val extras = SubtitleRequestExtras.from(
+            StreamBehaviorHints(videoHash = "prehashed", videoSize = 100L),
+        )
+        assertEquals("prehashed", extras?.videoHash)
+        assertEquals(100L, extras?.videoSize)
+    }
+
+    @Test
+    fun subtitleRequestUrlPassesNullExtrasCleanly() {
+        assertEquals(
+            "https://addon.example.com/subtitles/movie/tt1234567.json",
+            buildSubtitleRequestUrl(
+                manifestUrl = "https://addon.example.com/manifest.json",
+                type = "movie",
+                videoId = "tt1234567",
+                extras = null,
+            ),
+        )
+    }
+
+    @Test
+    fun subtitleRequestUrlPreservesAddonQueryParameters() {
+        assertEquals(
+            "https://addon.example.com/subtitles/movie/tt1234567/videoHash=abc.json?key=val",
+            buildSubtitleRequestUrl(
+                manifestUrl = "https://addon.example.com/manifest.json?key=val",
+                type = "movie",
+                videoId = "tt1234567",
+                extras = SubtitleRequestExtras(videoHash = "abc"),
+            ),
+        )
+    }
+
+    // --- filenameFromUrl tests ---
+
+    @Test
+    fun filenameFromUrlExtractsLastPathSegment() {
+        assertEquals(
+            "Movie.2024.1080p.mkv",
+            filenameFromUrl("https://cdn.example.com/files/Movie.2024.1080p.mkv"),
+        )
+    }
+
+    @Test
+    fun filenameFromUrlStripsQueryParameters() {
+        assertEquals(
+            "video.mp4",
+            filenameFromUrl("https://cdn.example.com/video.mp4?token=abc&expires=123"),
+        )
+    }
+
+    @Test
+    fun filenameFromUrlReturnsNullWhenNoExtension() {
+        assertNull(filenameFromUrl("https://cdn.example.com/stream"))
+    }
+
+    @Test
+    fun filenameFromUrlReturnsNullForEmptyPath() {
+        assertNull(filenameFromUrl("https://cdn.example.com/"))
+    }
+
+    @Test
+    fun filenameFromUrlHandlesTorrentSentinelUrl() {
+        assertNull(filenameFromUrl("torrent://abcdef1234567890"))
+    }
+
+    // --- from(hints, sourceUrl) tests ---
+
+    @Test
+    fun fromWithUrlFallsBackToUrlFilenameWhenHintsHaveNone() {
+        val extras = SubtitleRequestExtras.from(
+            StreamBehaviorHints(videoSize = 42L),
+            "https://cdn.example.com/files/Movie.2024.mkv",
+        )
+        assertEquals("Movie.2024.mkv", extras?.filename)
+        assertEquals(42L, extras?.videoSize)
+    }
+
+    @Test
+    fun fromWithUrlPrefersHintFilenameOverUrl() {
+        val extras = SubtitleRequestExtras.from(
+            StreamBehaviorHints(filename = "RealName.mkv", videoSize = 10L),
+            "https://cdn.example.com/files/hash123.mp4",
+        )
+        assertEquals("RealName.mkv", extras?.filename)
+    }
+
+    @Test
+    fun fromWithUrlReturnsNullWhenNothingUsable() {
+        assertNull(SubtitleRequestExtras.from(StreamBehaviorHints(), "https://cdn.example.com/"))
+    }
+
+    @Test
+    fun fromWithUrlCreatesExtrasFromUrlFilenameAlone() {
+        val extras = SubtitleRequestExtras.from(
+            StreamBehaviorHints(),
+            "https://cdn.example.com/Episode.S01E05.720p.mkv",
+        )
+        assertEquals("Episode.S01E05.720p.mkv", extras?.filename)
+        assertNull(extras?.videoHash)
+        assertNull(extras?.videoSize)
+    }
 }

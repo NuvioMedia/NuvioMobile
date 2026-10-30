@@ -189,7 +189,7 @@ object DownloadsRepository {
             subtitleRequests = addonSubtitleRequests(
                 type = contentType,
                 videoId = videoId,
-                extras = SubtitleRequestExtras.from(stream.behaviorHints),
+                extras = SubtitleRequestExtras.from(stream.behaviorHints, sourceUrl),
             ),
             sourceSubtitles = stream.externalSubtitles,
             localFileUri = null,

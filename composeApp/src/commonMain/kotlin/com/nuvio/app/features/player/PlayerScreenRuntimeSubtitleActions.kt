@@ -3,6 +3,7 @@ package com.nuvio.app.features.player
 import com.nuvio.app.core.i18n.localizedNoSubtitleLinesFound
 import com.nuvio.app.core.i18n.localizedSubtitleLinesLoadError
 import com.nuvio.app.features.addons.httpGetTextWithHeaders
+import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import kotlinx.coroutines.launch
 
 internal fun PlayerScreenRuntime.fetchAddonSubtitlesForActiveItem() {
@@ -12,7 +13,76 @@ internal fun PlayerScreenRuntime.fetchAddonSubtitlesForActiveItem() {
     }
     val type = activeAddonSubtitleType.takeIf { it.isNotBlank() } ?: return
     val videoId = activeVideoId?.takeIf { it.isNotBlank() } ?: return
-    SubtitleRepository.fetchAddonSubtitles(type, videoId, activeSubtitleExtras)
+    val extras = activeSubtitleExtras
+    if (extras?.videoHash == null && activeSourceUrl.isNotBlank() &&
+        (activeSourceUrl.startsWith("http://", true) || activeSourceUrl.startsWith("https://", true))
+    ) {
+        // Compute hash lazily — same pattern as NuvioTV.
+        SubtitleRepository.fetchAddonSubtitlesWithHashComputation(
+            type = type,
+            videoId = videoId,
+            extras = extras,
+            sourceUrl = activeSourceUrl,
+            sourceHeaders = activeSourceHeaders,
+            onExtrasUpdated = { enriched ->
+                activeSubtitleExtras = enriched
+                persistComputedVideoHash(enriched)
+            },
+        )
+    } else {
+        SubtitleRepository.fetchAddonSubtitles(type, videoId, extras)
+    }
+}
+
+/**
+ * After lazy hash computation succeeds, update the cached stream link entry so that
+ * subsequent resumes use the hash directly without re-computing. Mirrors NuvioTV's
+ * behaviour in `fetchAddonSubtitlesNow`.
+ */
+private fun PlayerScreenRuntime.persistComputedVideoHash(enriched: SubtitleRequestExtras) {
+    if (!playerSettingsUiState.streamReuseLastLinkEnabled) return
+    val vid = activeVideoId ?: return
+    val cacheKey = StreamLinkCacheRepository.contentKey(
+        type = contentType ?: parentMetaType,
+        videoId = vid,
+        parentMetaId = parentMetaId,
+        season = activeSeasonNumber,
+        episode = activeEpisodeNumber,
+    )
+    val infoHash = activeTorrentInfoHash
+    if (infoHash != null) {
+        StreamLinkCacheRepository.save(
+            contentKey = cacheKey,
+            url = "",
+            streamName = activeStreamTitle,
+            addonName = activeProviderName,
+            addonId = activeProviderAddonId ?: "",
+            filename = enriched.filename,
+            videoHash = enriched.videoHash,
+            videoSize = enriched.videoSize,
+            infoHash = infoHash,
+            fileIdx = activeTorrentFileIdx,
+            sources = activeTorrentTrackers,
+            bingeGroup = currentStreamBingeGroup,
+            contentLanguage = contentLanguage,
+        )
+    } else if (activeSourceUrl.isNotBlank()) {
+        StreamLinkCacheRepository.save(
+            contentKey = cacheKey,
+            url = activeSourceUrl,
+            streamName = activeStreamTitle,
+            addonName = activeProviderName,
+            addonId = activeProviderAddonId ?: "",
+            requestHeaders = activeSourceHeaders,
+            responseHeaders = activeSourceResponseHeaders,
+            filename = enriched.filename,
+            videoHash = enriched.videoHash,
+            videoSize = enriched.videoSize,
+            bingeGroup = currentStreamBingeGroup,
+            streamType = activeStreamType,
+            contentLanguage = contentLanguage,
+        )
+    }
 }
 
 internal fun PlayerScreenRuntime.setSubtitleDelay(delayMs: Int) {

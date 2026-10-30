@@ -56,8 +56,30 @@ data class SubtitleRequestExtras(
                 videoSize = hints.videoSize,
                 videoHash = hints.videoHash,
             ).takeIf { it.toPathSegment() != null }
+
+        /**
+         * Creates extras from stream behavior hints with a filename fallback
+         * derived from the playback URL (same pattern as NuvioTV's
+         * `streamFilenameFromUrl`).
+         */
+        fun from(hints: StreamBehaviorHints, sourceUrl: String?): SubtitleRequestExtras? {
+            val filename = hints.filename ?: sourceUrl?.let(::filenameFromUrl)
+            return SubtitleRequestExtras(
+                filename = filename,
+                videoSize = hints.videoSize,
+                videoHash = hints.videoHash,
+            ).takeIf { it.toPathSegment() != null }
+        }
     }
 }
+
+/**
+ * Extracts a filename from a playback URL by taking the last path segment
+ * before any query parameters, provided it contains an extension dot.
+ */
+internal fun filenameFromUrl(url: String): String? =
+    url.substringBefore('?').substringAfterLast('/', "")
+        .takeIf { it.isNotBlank() && it.contains('.') }
 
 internal fun buildSubtitleRequestUrl(
     manifestUrl: String,

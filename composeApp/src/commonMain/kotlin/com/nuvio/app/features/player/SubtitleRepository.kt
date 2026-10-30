@@ -63,6 +63,61 @@ object SubtitleRepository {
         }
     }
 
+    /**
+     * Like [fetchAddonSubtitles], but first computes the OpenSubtitles video hash
+     * when the stream extras do not already contain one.
+     */
+    fun fetchAddonSubtitlesWithHashComputation(
+        type: String,
+        videoId: String,
+        extras: SubtitleRequestExtras?,
+        sourceUrl: String,
+        sourceHeaders: Map<String, String>,
+        onExtrasUpdated: (SubtitleRequestExtras) -> Unit,
+    ) {
+        activeFetchJob?.cancel()
+        _loadingProgress.value = null
+        activeFetchJob = scope.launch {
+            _isLoading.value = true
+            _error.value = null
+            _addonSubtitles.value = emptyList()
+
+            val enrichedExtras = try {
+                val hashResult = computeVideoHash(sourceUrl, sourceHeaders)
+                if (hashResult != null) {
+                    val (hash, fileSize) = hashResult
+                    val updated = (extras ?: SubtitleRequestExtras()).copy(
+                        videoHash = hash,
+                        videoSize = extras?.videoSize ?: fileSize,
+                    )
+                    onExtrasUpdated(updated)
+                    updated
+                } else extras
+            } catch (_: Exception) {
+                extras
+            }
+
+            val requests = addonSubtitleRequests(type, videoId, enrichedExtras)
+            if (requests.isEmpty()) {
+                _isLoading.value = false
+                return@launch
+            }
+
+            _loadingProgress.value = SubtitleLoadingProgress(total = requests.size)
+            loadAddonSubtitles(requests) { request, subtitles ->
+                _addonSubtitles.update { it + subtitles }
+                _loadingProgress.update { progress ->
+                    progress?.copy(completed = progress.completed + 1, addonName = request.addonName)
+                }
+            }
+
+            if (_addonSubtitles.value.isEmpty()) {
+                _error.value = getString(Res.string.compose_player_no_subtitles_found)
+            }
+            _isLoading.value = false
+        }
+    }
+
     fun clear() {
         activeFetchJob?.cancel()
         _loadingProgress.value = null

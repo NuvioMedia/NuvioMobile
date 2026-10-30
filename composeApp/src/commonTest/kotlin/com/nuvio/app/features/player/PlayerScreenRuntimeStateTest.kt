@@ -268,6 +268,50 @@ class PlayerScreenRuntimeStateTest {
         assertNull(PlayerScreenRuntime(testPlayerScreenArgs()).activeSubtitleExtras)
     }
 
+    @Test
+    fun activeSubtitleExtrasIsMutableForHashEnrichment() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs(
+            subtitleExtras = SubtitleRequestExtras(filename = "Movie.mkv", videoSize = 500L),
+        ))
+        assertEquals("Movie.mkv", runtime.activeSubtitleExtras?.filename)
+        assertNull(runtime.activeSubtitleExtras?.videoHash)
+
+        // Simulate hash computation enrichment (as done by onExtrasUpdated callback).
+        val enriched = runtime.activeSubtitleExtras!!.copy(videoHash = "0011223344556677")
+        runtime.activeSubtitleExtras = enriched
+
+        assertEquals("0011223344556677", runtime.activeSubtitleExtras?.videoHash)
+        assertEquals("Movie.mkv", runtime.activeSubtitleExtras?.filename)
+        assertEquals(500L, runtime.activeSubtitleExtras?.videoSize)
+    }
+
+    @Test
+    fun activeSubtitleExtrasCanBeResetToNull() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs(
+            subtitleExtras = SubtitleRequestExtras(filename = "Movie.mkv", videoHash = "abc"),
+        ))
+        assertEquals("abc", runtime.activeSubtitleExtras?.videoHash)
+
+        // Simulate switching to a downloaded episode (no stream extras).
+        runtime.activeSubtitleExtras = null
+        assertNull(runtime.activeSubtitleExtras)
+    }
+
+    @Test
+    fun activeSubtitleExtrasCanBeReplacedWithNewStreamExtras() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs(
+            subtitleExtras = SubtitleRequestExtras(filename = "OldFile.mkv", videoHash = "oldhash", videoSize = 100L),
+        ))
+
+        // Simulate switching to a new source with different behavior hints.
+        val newExtras = SubtitleRequestExtras(filename = "NewFile.mkv", videoSize = 999L)
+        runtime.activeSubtitleExtras = newExtras
+
+        assertEquals("NewFile.mkv", runtime.activeSubtitleExtras?.filename)
+        assertEquals(999L, runtime.activeSubtitleExtras?.videoSize)
+        assertNull(runtime.activeSubtitleExtras?.videoHash, "Old hash must not carry over")
+    }
+
     private fun testPlayerScreenArgs(subtitleExtras: SubtitleRequestExtras? = null) = PlayerScreenArgs(
         profileId = 1,
         title = "Title",
