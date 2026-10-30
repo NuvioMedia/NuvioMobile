@@ -156,6 +156,130 @@ class QualityFirstAutoPlayPolicyTest {
         )
     }
 
+
+    @Test
+    fun \`filename resolution wins over incidental 4K in stream name\`() {
+        val candidate = stream("provider", "https://example.test/movie", "Movie 4K collection")
+            .copy(behaviorHints = StreamBehaviorHints(filename = "Movie.1920x1080.WEB-DL.mkv"))
+
+        assertEquals(1080, QualityFirstAutoPlayPolicy.detectQualityHeight(candidate))
+    }
+
+    @Test
+    fun \`unknown quality is appended after selected and lower known quality fallbacks\`() {
+        val streams = listOf(
+            stream("4K", "https://example.test/4k", "2160p"),
+            stream("unknown", "https://example.test/unknown", "Episode"),
+            stream("720", "https://example.test/720", "720p"),
+            stream("1080", "https://example.test/1080", "1080p"),
+        )
+
+        assertEquals(
+            listOf("1080", "720", "unknown"),
+            QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
+                streams = streams,
+                requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+                debridEnabled = true,
+            ).map { it.addonName },
+        )
+    }
+
+    @Test
+    fun \`unknown quality never allows a fallback above selected resolution\`() {
+        val streams = listOf(
+            stream("2160", "https://example.test/2160", "2160p"),
+            stream("unknown", "https://example.test/unknown", "Episode"),
+            stream("1080", "https://example.test/1080", "1080p"),
+        )
+
+        assertEquals(
+            listOf("1080", "unknown"),
+            QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
+                streams = streams,
+                requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+                debridEnabled = true,
+            ).map { it.addonName },
+        )
+    }
+
+    @Test
+    fun \`explicit quality starts as soon as one exact quality source is ready\`() {
+        assertTrue(
+            QualityFirstAutoPlayPolicy.shouldStartPlayback(
+                requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+                selectedQualityCandidateCount = 1,
+                topThreeCandidateCount = 1,
+                searchFinished = false,
+            ),
+        )
+    }
+
+    @Test
+    fun \`explicit quality waits for selected tier instead of starting lower sources\`() {
+        assertTrue(
+            !QualityFirstAutoPlayPolicy.shouldStartPlayback(
+                requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+                selectedQualityCandidateCount = 0,
+                topThreeCandidateCount = 12,
+                searchFinished = false,
+            ),
+        )
+    }
+
+    @Test
+    fun \`best available keeps top three early start threshold until search completes\`() {
+        assertTrue(
+            !QualityFirstAutoPlayPolicy.shouldStartPlayback(
+                requestedQuality = StreamAutoPlayPreferredQuality.ANY,
+                selectedQualityCandidateCount = 0,
+                topThreeCandidateCount = 10,
+                searchFinished = false,
+            ),
+        )
+        assertTrue(
+            QualityFirstAutoPlayPolicy.shouldStartPlayback(
+                requestedQuality = StreamAutoPlayPreferredQuality.ANY,
+                selectedQualityCandidateCount = 0,
+                topThreeCandidateCount = 11,
+                searchFinished = false,
+            ),
+        )
+        assertTrue(
+            QualityFirstAutoPlayPolicy.shouldStartPlayback(
+                requestedQuality = StreamAutoPlayPreferredQuality.ANY,
+                selectedQualityCandidateCount = 0,
+                topThreeCandidateCount = 0,
+                searchFinished = true,
+            ),
+        )
+    }
+
+    @Test
+    fun \`torrent sources are excluded when P2P is disabled\`() {
+        val torrent = stream("torrent", "https://example.test/torrent.mkv", "1080p")
+            .copy(infoHash = "0123456789abcdef0123456789abcdef01234567")
+        val direct = stream("direct", "https://example.test/direct.mkv", "1080p")
+
+        assertEquals(
+            listOf("direct", "torrent"),
+            QualityFirstAutoPlayPolicy.rankCandidates(
+                streams = listOf(torrent, direct),
+                requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+                debridEnabled = true,
+                p2pEnabled = true,
+            ).map { it.addonName },
+        )
+        assertEquals(
+            listOf("direct"),
+            QualityFirstAutoPlayPolicy.rankCandidates(
+                streams = listOf(torrent, direct),
+                requestedQuality = StreamAutoPlayPreferredQuality.P1080,
+                debridEnabled = true,
+                p2pEnabled = false,
+            ).map { it.addonName },
+        )
+    }
+
     private fun stream(addon: String, url: String?, name: String) = StreamItem(
         name = name,
         url = url,
