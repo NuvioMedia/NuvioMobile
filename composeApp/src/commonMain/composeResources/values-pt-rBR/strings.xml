@@ -283,7 +283,7 @@
     <string name="collections_editor_tmdb_country_uk">Reino Unido</string>
     <string name="collections_editor_tmdb_keyword_superhero">Super-herói</string>
     <string name="collections_editor_tmdb_keyword_based_on_novel">Baseado em Romance</string>
-    <string name="collections_editor_tmdb_keyword_time_travel">Viagem no Tempo</string>
+    <string name="collections_editor_tmdb_keyword_time_travel">Viagem no tempo</string>
     <string name="collections_editor_tmdb_keyword_space">Espaço</string>
     <string name="collections_editor_tmdb_studio_marvel">Marvel</string>
     <string name="collections_editor_tmdb_studio_disney">Disney</string>
@@ -1383,7 +1383,7 @@
     <string name="trakt_library_source_title">Fonte da Biblioteca</string>
     <string name="trakt_library_source_subtitle">Escolha qual biblioteca usar para salvar e visualizar sua coleção</string>
     <string name="trakt_library_source_dialog_title">Fonte da Biblioteca</string>
-    <string name="trakt_library_source_dialog_subtitle">Escolha onde salvar e gerenciar seus itens da biblioteca</string>
+    <string name="trakt_library_source_dialog_subtitle">Escolha de qual serviço o Nuvio lê sua biblioteca. A reprodução faz scrobble em todos os serviços conectados.</string>
     <string name="trakt_library_source_trakt">Trakt</string>
     <string name="trakt_library_source_nuvio">Biblioteca do Nuvio</string>
     <string name="trakt_library_source_trakt_selected">Biblioteca do Trakt selecionada</string>
