@@ -413,7 +413,7 @@
     <string name="server_error_restart">O servidor foi salvo, mas o app não pôde ser reiniciado automaticamente. Reinicie-o manualmente.</string>
     <string name="compose_catalog_subtitle_library">Biblioteca</string>
     <string name="compose_catalog_subtitle_trakt_library">Biblioteca do Trakt</string>
-    <string name="compose_catalog_subtitle_simkl_library">Lista de interesses do Simkl</string>
+    <string name="compose_catalog_subtitle_simkl_library">Minha lista do Simkl</string>
     <string name="compose_nav_home">Início</string>
     <string name="compose_nav_library">Biblioteca</string>
     <string name="compose_nav_profile">Perfil</string>
@@ -591,7 +591,7 @@
     <string name="settings_licenses_attributions_trakt_title">Trakt</string>
     <string name="settings_licenses_attributions_trakt_body">O Nuvio conecta-se ao Trakt para autenticação de conta, histórico de assistidos, sincronização de progresso, dados da biblioteca, classificações, listas e comentários. O Nuvio não é afiliado ou endossado pelo Trakt.</string>
     <string name="settings_licenses_attributions_simkl_title">Simkl</string>
-    <string name="settings_licenses_attributions_simkl_body">O Nuvio se conecta ao Simkl para autenticação de conta, listas de interesses, histórico de reprodução, progresso e scrobbling. Dados de rastreamento de filmes, séries e animes são fornecidos pelo Simkl. O Nuvio não é afiliado nem endossado pelo Simkl.</string>
+    <string name="settings_licenses_attributions_simkl_body">O Nuvio se conecta ao Simkl para autenticação de conta, listas, histórico de reprodução, progresso e scrobbling. Dados de rastreamento de filmes, séries e animes são fornecidos pelo Simkl. O Nuvio não é afiliado nem endossado pelo Simkl.</string>
     <string name="settings_licenses_attributions_premiumize_title">Premiumize</string>
     <string name="settings_licenses_attributions_premiumize_body">O Nuvio conecta-se ao Premiumize para autenticação de conta, acesso à biblioteca na nuvem, verificações de cache e recursos de reprodução na nuvem. O Nuvio não é afiliado nem endossado pelo Premiumize.</string>
     <string name="settings_licenses_attributions_torbox_title">TorBox</string>
@@ -1308,11 +1308,11 @@
     <string name="settings_trakt_failed_open_browser">Falha ao abrir navegador</string>
     <string name="settings_trakt_features">RECURSOS</string>
     <string name="settings_trakt_finish_sign_in">Concluir aprovação da conexão</string>
-    <string name="settings_trakt_intro_description">Sincronize sua lista de interesses, progresso de reprodução, continuar assistindo, scrobbles e listas pessoais com o Trakt.</string>
+    <string name="settings_trakt_intro_description">Sincronize sua lista, progresso de reprodução, continuar assistindo, scrobbles e listas pessoais com o Trakt.</string>
     <string name="settings_trakt_missing_credentials">Credenciais do Trakt ausentes em local.properties (TRAKT_CLIENT_ID / TRAKT_CLIENT_SECRET).</string>
     <string name="settings_trakt_open_login">Abrir Login do Trakt</string>
-    <string name="settings_trakt_save_actions_description">Sincronize sua lista de interesses, progresso de reprodução, continuar assistindo, scrobbles e listas pessoais com o Trakt.</string>
-    <string name="settings_trakt_sign_in_description">Sincronize sua lista de interesses, progresso de reprodução, continuar assistindo, scrobbles e listas pessoais com o Trakt.</string>
+    <string name="settings_trakt_save_actions_description">Sincronize sua lista, progresso de reprodução, continuar assistindo, scrobbles e listas pessoais com o Trakt.</string>
+    <string name="settings_trakt_sign_in_description">Sincronize sua lista, progresso de reprodução, continuar assistindo, scrobbles e listas pessoais com o Trakt.</string>
     <string name="settings_tracking_data_sources">Fontes</string>
     <string name="settings_tracking_features">PREFERÊNCIAS DE FONTE</string>
     <string name="settings_tracking_viewing_discovery">Recursos do Trakt</string>
@@ -1326,7 +1326,7 @@
     <string name="settings_tracking_source_fallback">%1$s está indisponível. Usando %2$s até que reconecte.</string>
     <string name="settings_tracking_progress_refresh_failed">A fonte mudou, mas não foi possível atualizar o progresso de reprodução mais recente.</string>
     <string name="settings_tracking_nuvio_library_description">Mantenha títulos salvos na sua biblioteca do Nuvio.</string>
-    <string name="settings_tracking_trakt_library_description">Use sua lista de interesses e listas pessoais do Trakt.</string>
+    <string name="settings_tracking_trakt_library_description">Use sua lista e suas listas pessoais do Trakt.</string>
     <string name="settings_tracking_simkl_library_description">Use suas listas de pretendo assistir e de status do Simkl.</string>
     <string name="settings_tracking_nuvio_progress_description">Retome com o progresso salvo pelo Nuvio Sync.</string>
     <string name="settings_tracking_trakt_progress_description">Retome com o progresso de reprodução do Trakt.</string>
@@ -1350,7 +1350,7 @@
     <string name="settings_tracking_anime_section">Recursos do Simkl</string>
     <string name="settings_tracking_mdblist_section">Recursos do MDBList</string>
     <string name="settings_mdblist_library_lists">Listas da Biblioteca</string>
-    <string name="settings_mdblist_library_lists_description">Escolha quais listas do MDBList aparecem na Biblioteca e em Gerenciar listas. A lista de interesses sempre aparece.</string>
+    <string name="settings_mdblist_library_lists_description">Escolha quais listas do MDBList aparecem na Biblioteca e em Gerenciar listas. Sua lista sempre aparece.</string>
     <string name="settings_mdblist_library_lists_summary">%1$d de %2$d visíveis</string>
     <string name="settings_mdblist_library_lists_empty">Nenhuma lista encontrada na sua conta MDBList ainda. Sincronize para carregá-las.</string>
     <string name="settings_simkl_connect">Conectar Simkl</string>
@@ -1377,7 +1377,7 @@
     <string name="settings_simkl_authorization_revoked">A autorização do Simkl foi revogada. Conecte novamente.</string>
     <string name="settings_tracking_not_connected">Não conectado</string>
     <string name="tracking_source_simkl">Simkl</string>
-    <string name="tracking_library_source_simkl_selected">Lista de interesses do Simkl selecionada</string>
+    <string name="tracking_library_source_simkl_selected">Minha lista do Simkl selecionada</string>
     <string name="tracking_watch_progress_simkl_selected">Fonte de progresso de reprodução definida para Simkl</string>
     <string name="tracking_watch_progress_dialog_subtitle">Escolha o serviço que o Nuvio lê para retomar e para o Continuar assistindo. O scrobbling permanece ativo para todos os serviços conectados.</string>
     <string name="trakt_library_source_title">Fonte da Biblioteca</string>
@@ -1825,14 +1825,14 @@
     <string name="trakt_public_list_request_failed">Falha na requisição ao Trakt</string>
     <string name="trakt_sign_in_complete_failed">Falha ao concluir login do Trakt</string>
     <string name="trakt_user_fallback">Usuário Trakt</string>
-    <string name="trakt_watchlist">Lista de interesses</string>
+    <string name="trakt_watchlist">Minha lista</string>
     <!-- Trakt library sync errors -->
     <string name="trakt_error_authorization_expired">Autorização do Trakt expirada</string>
     <string name="trakt_error_list_not_found">Lista do Trakt não encontrada</string>
     <string name="trakt_error_list_limit_reached">Limite de listas do Trakt atingido</string>
     <string name="trakt_error_rate_limit_reached">Limite de requisições do Trakt atingido</string>
     <string name="trakt_error_request_failed">Falha na requisição ao Trakt</string>
-    <string name="trakt_error_add_watchlist_failed">Falha ao adicionar à lista de interesses do Trakt</string>
+    <string name="trakt_error_add_watchlist_failed">Falha ao adicionar à sua lista do Trakt</string>
     <string name="trakt_error_add_list_failed">Falha ao adicionar à lista do Trakt</string>
     <string name="trakt_error_missing_ids">IDs compatíveis do Trakt ausentes</string>
     <string name="trakt_error_empty_response">Corpo de resposta vazio</string>
@@ -1956,14 +1956,14 @@
     <string name="library_source_cloud">Nuvem</string>
     <string name="library_source_saved">Salvo</string>
     <string name="library_title">Biblioteca</string>
-    <string name="library_trakt_empty_message">Conecte o Trakt e salve títulos na sua lista de interesses ou listas pessoais.</string>
+    <string name="library_trakt_empty_message">Conecte o Trakt e salve títulos na sua lista ou nas suas listas pessoais.</string>
     <string name="library_trakt_empty_title">Sua biblioteca do Trakt está vazia</string>
     <string name="library_trakt_load_failed">Não foi possível carregar biblioteca do Trakt</string>
     <string name="library_trakt_title">Biblioteca do Trakt</string>
     <string name="library_simkl_empty_message">Adicione títulos à sua lista para assistir do Simkl para vê-los aqui.</string>
-    <string name="library_simkl_empty_title">Sua lista de interesses do Simkl está vazia</string>
-    <string name="library_simkl_load_failed">Não foi possível carregar a lista de interesses do Simkl</string>
-    <string name="library_simkl_title">Lista de interesses do Simkl</string>
+    <string name="library_simkl_empty_title">Sua lista do Simkl está vazia</string>
+    <string name="library_simkl_load_failed">Não foi possível carregar a lista do Simkl</string>
+    <string name="library_simkl_title">Minha lista do Simkl</string>
     <string name="cloud_library_connect_action">Conectar conta</string>
     <string name="cloud_library_connect_message">Conecte uma conta nas configurações de Serviços Conectados para navegar pelos arquivos reproduzíveis da sua biblioteca na nuvem.</string>
     <string name="cloud_library_connect_title">Nenhuma conta na nuvem conectada</string>
