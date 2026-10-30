@@ -76,6 +76,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                             .enabledAddons()
                             .mapNotNull { it.manifest?.name }
                             .toSet()
+                        val p2pEnabled = p2pSettingsUiState.p2pEnabled && P2pSettingsRepository.isVisible
                         val sourceScoped = when (settings.streamAutoPlaySource) {
                             StreamAutoPlaySource.ALL_SOURCES -> discovered
                             StreamAutoPlaySource.INSTALLED_ADDONS_ONLY ->
@@ -94,15 +95,21 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                                         stream.addonName in settings.streamAutoPlaySelectedPlugins
                             }
                         }
-                        val availableSourceNames = selectedSources.map { it.addonName }.distinct()
+                        val p2pEligibleSources = if (p2pEnabled) {
+                            selectedSources
+                        } else {
+                            selectedSources.filterNot { it.isTorrentStream }
+                        }
+                        val availableSourceNames = p2pEligibleSources.map { it.addonName }.distinct()
                         val preferredSourceOrder = settings.streamAutoPlayAddonPriority
                             .filter { it in availableSourceNames } +
                             availableSourceNames.filterNot { it in settings.streamAutoPlayAddonPriority }
                         QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
-                            streams = selectedSources,
+                            streams = p2pEligibleSources,
                             requestedQuality = requestedQuality,
                             debridEnabled = DebridSettingsRepository.snapshot().canResolvePlayableLinks,
                             preferredSourceOrder = preferredSourceOrder,
+                            p2pEnabled = p2pEnabled,
                         )
                     }
                 }
