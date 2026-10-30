@@ -56,6 +56,7 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.TransferListener
+import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.ForwardingRenderer
@@ -105,6 +106,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 private const val TAG = "NuvioPlayer"
 private const val PLAYER_DIAGNOSTIC_TAG = "NuvioPlayerDiag"
@@ -277,6 +279,9 @@ private fun ExoPlayerSurface(
     val audioDelayUs = remember { AtomicLong(0L) }
     // Read by the playback thread's audio sink; every rebuilt player picks up the current gain.
     val audioAmplificationDb = remember { AtomicInteger(AUDIO_AMPLIFICATION_MIN_DB) }
+    val centerMixLevelDb = remember { AtomicInteger(0) }
+    // The current player's FFmpeg audio renderer, for center mix changes during playback.
+    val ffmpegAudioRenderer = remember { AtomicReference<FfmpegAudioRenderer?>(null) }
     val latestExternalSubtitleMimeType = rememberUpdatedState(selectedExternalSubtitleMimeType)
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
     var videoAspectRatio by remember(playerSourceKey) { mutableStateOf(0f) }
@@ -403,11 +408,30 @@ private fun ExoPlayerSurface(
         videoEffectsNeeded,
     ) {
         applyExoPlayerNativeMemory(playerSettings.exoNativeMemoryEnabled)
+        // Bluetooth headphones and speakers are stereo: decode audio with FFmpeg and mix surround
+        // down to a clean 2.0, so dialogue keeps its level against music and effects.
+        val bluetoothOutput = context.isMediaOutputBluetooth()
+        val audioDownmix = when {
+            bluetoothOutput -> FfmpegAudioDownmix(
+                channels = AudioOutputChannels.CHANNELS_2_0,
+                normalize = !playerSettings.maintainOriginalAudioOnDownmix,
+            )
+            playerSettings.effectiveDownmixEnabled -> FfmpegAudioDownmix(
+                channels = playerSettings.audioOutputChannels,
+                normalize = !playerSettings.maintainOriginalAudioOnDownmix,
+            )
+            else -> null
+        }
+        Log.i(TAG, "Audio downmix: ${audioDownmix?.channels?.settingValue ?: "off"} (bluetooth=$bluetoothOutput)")
         val renderersFactory = SubtitleOffsetRenderersFactory(
             context = context,
             subtitleDelayUsProvider = { latestSubtitleDelayMs.value.toLong() * 1_000L },
             audioDelayUsProvider = audioDelayUs::get,
             audioAmplificationDbProvider = audioAmplificationDb::get,
+            audioDownmix = audioDownmix,
+            preferAppAudioDecoder = bluetoothOutput,
+            centerMixLevelDbProvider = centerMixLevelDb::get,
+            onFfmpegAudioRenderer = ffmpegAudioRenderer::set,
             shouldNormalizeCuePositionProvider = {
                 latestExternalSubtitleMimeType.value == MimeTypes.TEXT_VTT
             },
@@ -1151,6 +1175,15 @@ private fun ExoPlayerSurface(
 
                 override fun setAudioAmplificationDb(db: Int) {
                     audioAmplificationDb.set(db.coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB))
+                }
+
+                override fun isCenterMixActive(): Boolean =
+                    ffmpegAudioRenderer.get()?.isCenterMixActive() == true
+
+                override fun setCenterMixLevelDb(db: Int) {
+                    val clamped = db.coerceIn(CENTER_MIX_LEVEL_MIN_DB, CENTER_MIX_LEVEL_MAX_DB)
+                    centerMixLevelDb.set(clamped)
+                    ffmpegAudioRenderer.get()?.setCenterMixLevelDb(clamped)
                 }
             }),
         )
@@ -2741,12 +2774,25 @@ private fun PlayerView.videoBoundsFraction(aspectRatio: Float): RectF? {
     )
 }
 
+/**
+ * Layout the app's FFmpeg audio decoder mixes surround audio down to. [normalize] lowers the mix
+ * so it cannot clip, at the cost of overall volume.
+ */
+private data class FfmpegAudioDownmix(
+    val channels: AudioOutputChannels,
+    val normalize: Boolean,
+)
+
 @androidx.annotation.OptIn(UnstableApi::class)
 private class SubtitleOffsetRenderersFactory(
     context: Context,
     private val subtitleDelayUsProvider: () -> Long,
     private val audioDelayUsProvider: () -> Long,
     private val audioAmplificationDbProvider: () -> Int,
+    private val audioDownmix: FfmpegAudioDownmix?,
+    private val preferAppAudioDecoder: Boolean,
+    private val centerMixLevelDbProvider: () -> Int,
+    private val onFfmpegAudioRenderer: (FfmpegAudioRenderer?) -> Unit,
     private val shouldNormalizeCuePositionProvider: () -> Boolean,
     private val shouldStripSdhProvider: () -> Boolean,
     private val presentCues: (List<Cue>) -> List<Cue>,
@@ -2774,9 +2820,10 @@ private class SubtitleOffsetRenderersFactory(
         eventListener: AudioRendererEventListener,
         out: ArrayList<Renderer>,
     ) {
+        val startIndex = out.size
         super.buildAudioRenderers(
             context,
-            extensionRendererMode,
+            if (preferAppAudioDecoder) DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER else extensionRendererMode,
             DolbyFreeMediaCodecSelector(mediaCodecSelector),
             enableDecoderFallback,
             audioSink,
@@ -2784,6 +2831,18 @@ private class SubtitleOffsetRenderersFactory(
             eventListener,
             out,
         )
+        val ffmpegRenderer = out.subList(startIndex, out.size).filterIsInstance<FfmpegAudioRenderer>().firstOrNull()
+        ffmpegRenderer?.run {
+            if (audioDownmix != null) {
+                setAudioOutputChannels(audioDownmix.channels.ffmpegLayoutName, audioDownmix.channels.channelCount)
+                setDownmixNormalizationEnabled(audioDownmix.normalize)
+            } else {
+                setAudioOutputChannels(null, 0)
+                setDownmixNormalizationEnabled(false)
+            }
+            setCenterMixLevelDb(centerMixLevelDbProvider())
+        }
+        onFfmpegAudioRenderer(ffmpegRenderer)
     }
 
     override fun buildTextRenderers(

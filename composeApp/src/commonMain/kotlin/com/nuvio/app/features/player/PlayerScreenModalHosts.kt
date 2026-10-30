@@ -32,6 +32,9 @@ internal fun PlayerScreenModalHosts(
     keepAudioAmplification: Boolean,
     onAudioAmplificationChanged: (Int) -> Unit,
     onKeepAudioAmplificationChanged: (Boolean) -> Unit,
+    showCenterMix: Boolean,
+    centerMixLevelDb: Int,
+    onCenterMixLevelChanged: (Int) -> Unit,
     showSubtitleModal: Boolean,
     subtitleTracks: List<SubtitleTrack>,
     selectedSubtitleIndex: Int,
@@ -136,6 +139,9 @@ internal fun PlayerScreenModalHosts(
         keepAudioAmplification = keepAudioAmplification,
         onAudioAmplificationChanged = onAudioAmplificationChanged,
         onKeepAudioAmplificationChanged = onKeepAudioAmplificationChanged,
+        showCenterMix = showCenterMix,
+        centerMixLevelDb = centerMixLevelDb,
+        onCenterMixLevelChanged = onCenterMixLevelChanged,
     )
 
     SubtitleModal(

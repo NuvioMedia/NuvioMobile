@@ -422,6 +422,7 @@
     <string name="compose_player_audio_delay">Audio Delay</string>
     <string name="compose_player_audio_amplification">Amplification</string>
     <string name="compose_player_audio_amplification_keep">Keep for next videos</string>
+    <string name="compose_player_center_mix">Center Mix Level</string>
     <string name="compose_player_audio">Audio</string>
     <string name="compose_player_auto_sync">Auto Sync</string>
     <string name="compose_player_bold">Bold</string>
@@ -1271,6 +1272,12 @@
     <string name="settings_playback_exo_chapters_description">Read the chapters of MKV files to mark them on the progress bar and list them in the player. Makes a few small extra requests once playback starts. libmpv always shows chapters</string>
     <string name="settings_playback_remember_audio_delay">Remember Audio Delay per Device</string>
     <string name="settings_playback_remember_audio_delay_description">Restore the audio delay set in the player whenever the same output plays again, such as the phone speaker, wired headphones or each Bluetooth device</string>
+    <string name="settings_playback_downmix_section">Downmix</string>
+    <string name="settings_playback_downmix">Enable Downmix</string>
+    <string name="settings_playback_downmix_description">Mixes surround audio down to the number of channels below with the app’s FFmpeg decoder. Needs the Video decoder priority “Prefer app decoders (FFmpeg)”. Bluetooth output always gets a 2.0 downmix.</string>
+    <string name="settings_playback_downmix_channels">Number of Channels</string>
+    <string name="settings_playback_downmix_maintain_volume">Maintain Original Audio on Downmix</string>
+    <string name="settings_playback_downmix_maintain_volume_description">When off, downmix normalization can lower the overall volume.</string>
     <string name="settings_tmdb_api_key_label">API key</string>
     <string name="settings_tmdb_api_key_override_description">Use your own TMDB API key, or leave blank to use the default.</string>
     <string name="settings_tmdb_personal_api_key">Personal API key</string>

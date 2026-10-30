@@ -637,6 +637,9 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         keepAudioAmplification = playerSettingsUiState.persistAudioAmplification,
         onAudioAmplificationChanged = { db -> setAudioAmplification(db) },
         onKeepAudioAmplificationChanged = { keep -> setKeepAudioAmplification(keep) },
+        showCenterMix = centerMixAvailable,
+        centerMixLevelDb = centerMixLevelDb,
+        onCenterMixLevelChanged = { db -> setCenterMixLevel(db) },
         showSubtitleModal = showSubtitleModal,
         subtitleTracks = serverSubtitleTracks.ifEmpty { subtitleTracks },
         selectedSubtitleIndex = if (serverSubtitleTracks.isEmpty()) {

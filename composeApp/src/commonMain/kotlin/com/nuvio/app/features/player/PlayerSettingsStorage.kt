@@ -87,6 +87,14 @@ internal expect object PlayerSettingsStorage {
     fun savePersistAudioAmplification(enabled: Boolean)
     fun loadAudioAmplificationDb(): Int?
     fun saveAudioAmplificationDb(db: Int)
+    fun loadDownmixEnabled(): Boolean?
+    fun saveDownmixEnabled(enabled: Boolean)
+    fun loadAudioOutputChannels(): String?
+    fun saveAudioOutputChannels(value: String)
+    fun loadMaintainOriginalAudioOnDownmix(): Boolean?
+    fun saveMaintainOriginalAudioOnDownmix(enabled: Boolean)
+    fun loadCenterMixLevelDb(): Int?
+    fun saveCenterMixLevelDb(db: Int)
     fun loadDecoderPriority(): Int?
     fun saveDecoderPriority(priority: Int)
     fun loadMapDV7ToHevc(): Boolean?

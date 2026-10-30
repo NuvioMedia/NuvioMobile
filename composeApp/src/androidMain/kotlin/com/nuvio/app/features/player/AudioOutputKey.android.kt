@@ -66,17 +66,31 @@ internal actual fun rememberAudioOutputKey(enabled: Boolean): String? {
     return outputKey
 }
 
+/** Whether media audio plays on a Bluetooth device right now. */
+@SuppressLint("InlinedApi")
+internal fun Context.isMediaOutputBluetooth(): Boolean {
+    val audioManager = getSystemService(Context.AUDIO_SERVICE) as? AudioManager ?: return false
+    return when (audioManager.mediaOutputDevice()?.type) {
+        AudioDeviceInfo.TYPE_BLUETOOTH_A2DP,
+        AudioDeviceInfo.TYPE_BLUETOOTH_SCO,
+        AudioDeviceInfo.TYPE_BLE_HEADSET,
+        AudioDeviceInfo.TYPE_BLE_SPEAKER,
+        AudioDeviceInfo.TYPE_BLE_BROADCAST -> true
+        else -> false
+    }
+}
+
 /**
  * Key of the device media audio plays on, such as `type:bluetooth_a2dp|name:buds_pro`. API 33+
  * asks where media is routed; older versions pick the likeliest connected output.
  */
-private fun AudioManager.mediaOutputKey(): String? {
-    val device = mediaRoutedDevice()
+private fun AudioManager.mediaOutputKey(): String? = mediaOutputDevice()?.outputKey()
+
+private fun AudioManager.mediaOutputDevice(): AudioDeviceInfo? =
+    mediaRoutedDevice()
         ?: getDevices(AudioManager.GET_DEVICES_OUTPUTS)
             .minByOrNull { outputRank(it.type) }
             ?.takeIf { outputRank(it.type) < OUTPUT_RANK_UNSUPPORTED }
-    return device?.outputKey()
-}
 
 private fun AudioManager.mediaRoutedDevice(): AudioDeviceInfo? {
     if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return null

@@ -266,6 +266,8 @@ internal class PlayerScreenRuntime(
     /** Output the audio delay is remembered for; null while that setting is off. */
     var audioOutputKey: String? = null
     var audioAmplificationDb by mutableStateOf(0)
+    var centerMixLevelDb by mutableStateOf(0)
+    var centerMixAvailable by mutableStateOf(false)
     var subtitleAutoSyncState by mutableStateOf(SubtitleAutoSyncUiState())
 
     var lastSyncedSettingsResizeMode: PlayerResizeMode? = null

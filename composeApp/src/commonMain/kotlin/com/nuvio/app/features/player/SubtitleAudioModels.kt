@@ -44,6 +44,39 @@ const val AUDIO_DELAY_MAX_MS = 60_000
 const val AUDIO_DELAY_STEP_MS = 25
 const val AUDIO_AMPLIFICATION_MIN_DB = 0
 const val AUDIO_AMPLIFICATION_MAX_DB = 10
+/** Center channel level in the FFmpeg downmix, relative to the stream's own (or -3 dB). */
+const val CENTER_MIX_LEVEL_MIN_DB = -10
+const val CENTER_MIX_LEVEL_MAX_DB = 30
+
+/** Speaker layouts the FFmpeg downmix can produce. */
+enum class AudioOutputChannels(
+    val settingValue: String,
+    val channelCount: Int,
+    val ffmpegLayoutName: String,
+) {
+    CHANNELS_2_0("2.0", 2, "stereo"),
+    CHANNELS_2_1("2.1", 3, "2.1"),
+    CHANNELS_3_0("3.0", 3, "3.0"),
+    CHANNELS_3_1("3.1", 4, "3.1"),
+    CHANNELS_4_0("4.0", 4, "4.0"),
+    CHANNELS_4_1("4.1", 5, "4.1"),
+    CHANNELS_5_0("5.0", 5, "5.0"),
+    CHANNELS_5_1("5.1", 6, "5.1"),
+    CHANNELS_7_0("7.0", 7, "7.0"),
+    CHANNELS_7_1("7.1", 8, "7.1");
+
+    companion object {
+        /** Phones and tablets play stereo. */
+        val default = CHANNELS_2_0
+
+        fun fromSettingValue(value: String?): AudioOutputChannels =
+            entries.firstOrNull { it.settingValue == value } ?: default
+    }
+}
+
+/** The downmix setting only works through the app's FFmpeg audio decoder ("Prefer app decoders"). */
+val PlayerSettingsUiState.effectiveDownmixEnabled: Boolean
+    get() = downmixEnabled && decoderPriority == 2
 
 /** Linear gain factor for an amplification of [db] decibels. */
 internal fun audioAmplificationGain(db: Int): Double =

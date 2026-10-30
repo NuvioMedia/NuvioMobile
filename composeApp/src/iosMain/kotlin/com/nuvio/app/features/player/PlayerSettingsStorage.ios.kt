@@ -59,6 +59,10 @@ actual object PlayerSettingsStorage {
     private const val rememberAudioDelayPerDeviceKey = "remember_audio_delay_per_device"
     private const val persistAudioAmplificationKey = "persist_audio_amplification"
     private const val audioAmplificationDbKey = "audio_amplification_db"
+    private const val downmixEnabledKey = "downmix_enabled"
+    private const val audioOutputChannelsKey = "audio_output_channels"
+    private const val maintainOriginalAudioOnDownmixKey = "maintain_original_audio_on_downmix"
+    private const val centerMixLevelDbKey = "center_mix_level_db"
     private const val decoderPriorityKey = "decoder_priority"
     private const val mapDV7ToHevcKey = "map_dv7_to_hevc"
     private const val tunnelingEnabledKey = "tunneling_enabled"
@@ -152,6 +156,10 @@ actual object PlayerSettingsStorage {
         rememberAudioDelayPerDeviceKey,
         persistAudioAmplificationKey,
         audioAmplificationDbKey,
+        downmixEnabledKey,
+        audioOutputChannelsKey,
+        maintainOriginalAudioOnDownmixKey,
+        centerMixLevelDbKey,
         decoderPriorityKey,
         mapDV7ToHevcKey,
         tunnelingEnabledKey,
@@ -691,6 +699,55 @@ actual object PlayerSettingsStorage {
         NSUserDefaults.standardUserDefaults.setInteger(db.toLong(), forKey = ProfileScopedKey.of(audioAmplificationDbKey))
     }
 
+    actual fun loadDownmixEnabled(): Boolean? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(downmixEnabledKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.boolForKey(key)
+        } else {
+            null
+        }
+    }
+
+    actual fun saveDownmixEnabled(enabled: Boolean) {
+        NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(downmixEnabledKey))
+    }
+
+    actual fun loadAudioOutputChannels(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(audioOutputChannelsKey))
+
+    actual fun saveAudioOutputChannels(value: String) {
+        NSUserDefaults.standardUserDefaults.setObject(value, forKey = ProfileScopedKey.of(audioOutputChannelsKey))
+    }
+
+    actual fun loadMaintainOriginalAudioOnDownmix(): Boolean? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(maintainOriginalAudioOnDownmixKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.boolForKey(key)
+        } else {
+            null
+        }
+    }
+
+    actual fun saveMaintainOriginalAudioOnDownmix(enabled: Boolean) {
+        NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(maintainOriginalAudioOnDownmixKey))
+    }
+
+    actual fun loadCenterMixLevelDb(): Int? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(centerMixLevelDbKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.integerForKey(key).toInt()
+        } else {
+            null
+        }
+    }
+
+    actual fun saveCenterMixLevelDb(db: Int) {
+        NSUserDefaults.standardUserDefaults.setInteger(db.toLong(), forKey = ProfileScopedKey.of(centerMixLevelDbKey))
+    }
+
     actual fun loadDecoderPriority(): Int? {
         val defaults = NSUserDefaults.standardUserDefaults
         val key = ProfileScopedKey.of(decoderPriorityKey)
@@ -1211,6 +1268,10 @@ actual object PlayerSettingsStorage {
         loadRememberAudioDelayPerDevice()?.let { put(rememberAudioDelayPerDeviceKey, encodeSyncBoolean(it)) }
         loadPersistAudioAmplification()?.let { put(persistAudioAmplificationKey, encodeSyncBoolean(it)) }
         loadAudioAmplificationDb()?.let { put(audioAmplificationDbKey, encodeSyncInt(it)) }
+        loadDownmixEnabled()?.let { put(downmixEnabledKey, encodeSyncBoolean(it)) }
+        loadAudioOutputChannels()?.let { put(audioOutputChannelsKey, encodeSyncString(it)) }
+        loadMaintainOriginalAudioOnDownmix()?.let { put(maintainOriginalAudioOnDownmixKey, encodeSyncBoolean(it)) }
+        loadCenterMixLevelDb()?.let { put(centerMixLevelDbKey, encodeSyncInt(it)) }
         loadDecoderPriority()?.let { put(decoderPriorityKey, encodeSyncInt(it)) }
         loadMapDV7ToHevc()?.let { put(mapDV7ToHevcKey, encodeSyncBoolean(it)) }
         loadTunnelingEnabled()?.let { put(tunnelingEnabledKey, encodeSyncBoolean(it)) }
@@ -1297,6 +1358,10 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncBoolean(rememberAudioDelayPerDeviceKey)?.let(::saveRememberAudioDelayPerDevice)
         payload.decodeSyncBoolean(persistAudioAmplificationKey)?.let(::savePersistAudioAmplification)
         payload.decodeSyncInt(audioAmplificationDbKey)?.let(::saveAudioAmplificationDb)
+        payload.decodeSyncBoolean(downmixEnabledKey)?.let(::saveDownmixEnabled)
+        payload.decodeSyncString(audioOutputChannelsKey)?.let(::saveAudioOutputChannels)
+        payload.decodeSyncBoolean(maintainOriginalAudioOnDownmixKey)?.let(::saveMaintainOriginalAudioOnDownmix)
+        payload.decodeSyncInt(centerMixLevelDbKey)?.let(::saveCenterMixLevelDb)
         payload.decodeSyncInt(decoderPriorityKey)?.let(::saveDecoderPriority)
         payload.decodeSyncBoolean(mapDV7ToHevcKey)?.let(::saveMapDV7ToHevc)
         payload.decodeSyncBoolean(tunnelingEnabledKey)?.let(::saveTunnelingEnabled)

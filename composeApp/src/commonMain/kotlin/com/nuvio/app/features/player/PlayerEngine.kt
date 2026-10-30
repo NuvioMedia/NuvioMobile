@@ -38,6 +38,10 @@ interface PlayerEngineController {
     val supportsAudioAmplification: Boolean get() = false
     /** Boosts the audio by [db] decibels, from 0 (off) to [AUDIO_AMPLIFICATION_MAX_DB]. */
     fun setAudioAmplificationDb(db: Int) {}
+    /** Whether the audio playing now goes through a downmix whose center level [setCenterMixLevelDb] changes. */
+    fun isCenterMixActive(): Boolean = false
+    /** Center channel level in the downmix, from [CENTER_MIX_LEVEL_MIN_DB] to [CENTER_MIX_LEVEL_MAX_DB]. */
+    fun setCenterMixLevelDb(db: Int) {}
     fun configureIosVideoOutput(settings: PlayerSettingsUiState) {}
     fun updateNowPlayingMetadata(info: PlayerNowPlayingInfo) {}
     fun clearNowPlayingInfo() {}
