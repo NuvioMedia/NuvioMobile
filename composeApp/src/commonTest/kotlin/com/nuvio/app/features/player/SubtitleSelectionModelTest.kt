@@ -87,6 +87,14 @@ class SubtitleSelectionModelTest {
     }
 
     @Test
+    fun addonSubtitleLabelOverridesLanguageNameWithoutChangingLanguageGrouping() {
+        val subtitle = addonSubtitle(id = "en", language = "en").copy(label = "SDH · Blu-ray · 1080p")
+
+        assertEquals("SDH · Blu-ray · 1080p", subtitle.displayTitle("English"))
+        assertEquals("English", addonSubtitle(id = "en", language = "en").displayTitle("English"))
+    }
+
+    @Test
     fun keepsAddonOptionsWithTheSameNameAndTitleWhenUrlsDiffer() {
         val first = addonSubtitle(
             id = "en",
