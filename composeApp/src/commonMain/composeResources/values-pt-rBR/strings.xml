@@ -297,7 +297,7 @@
     <string name="collections_editor_tmdb_network_hulu">Hulu</string>
     <string name="collections_editor_tmdb_sort_original">Original</string>
     <string name="collections_editor_tmdb_sort_popular">Popular</string>
-    <string name="collections_editor_tmdb_sort_top_rated">Mais Bem Avaliados</string>
+    <string name="collections_editor_tmdb_sort_top_rated">Mais bem avaliados</string>
     <string name="collections_editor_tmdb_sort_recent">Recentes</string>
     <string name="collections_editor_tmdb_sort_vote_count">Mais Votados</string>
     <string name="collections_editor_tmdb_watch_region">Região de disponibilidade</string>
@@ -586,8 +586,8 @@
     <string name="settings_licenses_attributions_nuvio_license">Licenciado sob a GNU General Public License v3.0.</string>
     <string name="settings_licenses_attributions_tmdb_title">The Movie Database (TMDB)</string>
     <string name="settings_licenses_attributions_tmdb_body">O Nuvio usa a API do TMDB para metadados de filmes e séries, artes, trailers, elenco, detalhes de produção, coleções e recomendações. Este produto usa a API do TMDB, mas não é endossado ou certificado pelo TMDB.</string>
-    <string name="settings_licenses_attributions_imdb_title">Conjuntos de Dados Não Comerciais do IMDb</string>
-    <string name="settings_licenses_attributions_imdb_body">O Nuvio usa os Conjuntos de Dados Não Comerciais do IMDb, incluindo title.ratings.tsv.gz, para classificações e contagem de votos do IMDb. Informações cortesia do IMDb (https://www.imdb.com). Usado com permissão. Dados do IMDb são para uso pessoal e não comercial sob os termos do IMDb.</string>
+    <string name="settings_licenses_attributions_imdb_title">Conjuntos de dados não comerciais do IMDb</string>
+    <string name="settings_licenses_attributions_imdb_body">O Nuvio usa os Conjuntos de dados não comerciais do IMDb, incluindo title.ratings.tsv.gz, para classificações e contagem de votos do IMDb. Informações cortesia do IMDb (https://www.imdb.com). Usado com permissão. Dados do IMDb são para uso pessoal e não comercial sob os termos do IMDb.</string>
     <string name="settings_licenses_attributions_trakt_title">Trakt</string>
     <string name="settings_licenses_attributions_trakt_body">O Nuvio conecta-se ao Trakt para autenticação de conta, histórico de assistidos, sincronização de progresso, dados da biblioteca, classificações, listas e comentários. O Nuvio não é afiliado ou endossado pelo Trakt.</string>
     <string name="settings_licenses_attributions_simkl_title">Simkl</string>
@@ -710,7 +710,7 @@
     <string name="settings_homescreen_load_failed_title">Não foi possível carregar os catálogos da tela de Início</string>
     <string name="settings_homescreen_hero_source">Fonte do destaque</string>
     <string name="settings_homescreen_hidden">Oculto</string>
-    <string name="settings_homescreen_keep_home_focused">Manter Página Inicial focada</string>
+    <string name="settings_homescreen_keep_home_focused">Manter página inicial focada</string>
     <string name="settings_homescreen_limit_reached">%1$s • Limite atingido (máx %2$d)</string>
     <string name="settings_homescreen_no_sources_selected">Nenhuma fonte de destaque selecionada</string>
     <string name="settings_homescreen_not_in_hero">Fora do destaque</string>
@@ -1071,7 +1071,7 @@
     <string name="settings_playback_introdb_api_key">Chave de API do IntroDB</string>
     <string name="settings_playback_introdb_api_key_description">Insira sua chave de API do IntroDB para enviar timestamps. Obrigatório para o envio.</string>
     <string name="settings_playback_anime_skip_description">Também buscar no AnimeSkip os timestamps de pulo (requer client ID).</string>
-    <string name="settings_playback_auto_play_next_episode">Reproduzir Próximo Episódio Automaticamente</string>
+    <string name="settings_playback_auto_play_next_episode">Reproduzir próximo episódio automaticamente</string>
     <string name="settings_playback_auto_play_next_episode_description">Iniciar próximo episódio automaticamente quando o prompt aparecer.</string>
     <string name="settings_playback_auto_play_next_episode_fallback">Alternativa quando o grupo de maratona falhar</string>
     <string name="settings_playback_auto_play_next_episode_fallback_description">Seleciona automaticamente a primeira stream disponível se o grupo de maratona não for encontrado. Quando desativado, exibe o seletor de streams.</string>
@@ -1121,12 +1121,12 @@
     <string name="settings_playback_option_forced">Forçada</string>
     <string name="settings_playback_option_none">Nenhuma</string>
     <string name="settings_playback_addon_subtitle_startup_all">Todas as legendas</string>
-    <string name="settings_playback_addon_subtitle_startup_all_description">Busca todas antes de iniciar, mais lento</string>
+    <string name="settings_playback_addon_subtitle_startup_all_description">Busca e anexa todas as legendas de addons antes da reprodução. Inicialização mais lenta.</string>
     <string name="settings_playback_addon_subtitle_startup_fast">Início rápido</string>
-    <string name="settings_playback_addon_subtitle_startup_fast_description">Início imediato, mas pode causar um breve reinício do player.</string>
+    <string name="settings_playback_addon_subtitle_startup_fast_description">Inicia a reprodução imediatamente. Selecionar legendas de addons pode recarregar o player uma vez.</string>
     <string name="settings_playback_addon_subtitle_startup_mode">Carregamento de legendas</string>
     <string name="settings_playback_addon_subtitle_startup_preferred">Idiomas preferidos</string>
-    <string name="settings_playback_addon_subtitle_startup_preferred_description">Busca idiomas preferidos antes de iniciar</string>
+    <string name="settings_playback_addon_subtitle_startup_preferred_description">Busca as legendas de addons antes da reprodução e anexa as faixas de idioma preferido e secundário.</string>
     <string name="settings_playback_prefer_binge_group">Preferir Grupo de Maratona (Próximo Episódio)</string>
     <string name="settings_playback_prefer_binge_group_description">Tentar o mesmo perfil de fonte primeiro (mesmo addon/grupo de qualidade) antes das regras normais de reprodução automática.</string>
     <string name="settings_playback_reuse_binge_group">Reutilizar Grupo de Maratona</string>
@@ -1904,7 +1904,7 @@
     <string name="details_browse_rail_popular">Populares</string>
     <string name="details_browse_rail_recent">Recentes</string>
     <string name="details_browse_rail_title">%1$s • %2$s</string>
-    <string name="details_browse_rail_top_rated">Mais Bem Avaliados</string>
+    <string name="details_browse_rail_top_rated">Mais bem avaliados</string>
     <string name="details_certification">Classificação</string>
     <string name="details_movie_details">Detalhes do Filme</string>
     <string name="details_original_language">Idioma Original</string>
