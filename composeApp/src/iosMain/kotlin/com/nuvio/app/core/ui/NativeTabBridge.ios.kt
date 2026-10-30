@@ -3,7 +3,6 @@ package com.nuvio.app.core.ui
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSUserDefaults
 import platform.UIKit.UIDevice
-import platform.UIKit.UIUserInterfaceIdiomPhone
 
 private const val liquidGlassNativeTabBarEnabledKey = "NuvioLiquidGlassNativeTabBarEnabled"
 private const val nativeTabBarVisibleKey = "NuvioNativeTabBarVisible"
@@ -20,8 +19,7 @@ private const val nativeProfileAvatarBackgroundColorKey = "NuvioNativeProfileAva
 private const val nativeTabChromeDidChangeNotification = "NuvioNativeTabChromeDidChange"
 
 internal actual fun isLiquidGlassNativeTabBarSupported(): Boolean {
-    return UIDevice.currentDevice.userInterfaceIdiom == UIUserInterfaceIdiomPhone &&
-        (UIDevice.currentDevice.systemVersion.substringBefore(".").toIntOrNull() ?: 0) >= 26
+    return (UIDevice.currentDevice.systemVersion.substringBefore(".").toIntOrNull() ?: 0) >= 26
 }
 
 internal actual fun publishLiquidGlassNativeTabBarEnabled(enabled: Boolean) {
