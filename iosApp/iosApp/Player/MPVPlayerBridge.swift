@@ -1029,13 +1029,14 @@ final class MPVPlayerViewController: UIViewController {
         }
     }
 
-    private func syncNowPlayingPlaybackState(isPlaying: Bool) {
+    private func syncNowPlayingPlaybackState(isPlaying: Bool, force: Bool = false) {
         pictureInPictureController?.updatePlaybackState()
         nowPlayingController.syncPlayback(
             positionMs: positionMs,
             durationMs: durationMs,
             isPlaying: isPlaying,
-            playbackSpeed: currentSpeed
+            playbackSpeed: currentSpeed,
+            force: force
         )
     }
 
@@ -1288,6 +1289,7 @@ final class MPVPlayerViewController: UIViewController {
                     DispatchQueue.main.async {
                         self.updateState()
                         self.publishNowPlayingForPlaybackSession()
+                        self.syncNowPlayingPlaybackState(isPlaying: self.isPlayerPlaying, force: true)
                     }
                 case MPV_EVENT_END_FILE:
                     if let data = eventPtr.pointee.data {
