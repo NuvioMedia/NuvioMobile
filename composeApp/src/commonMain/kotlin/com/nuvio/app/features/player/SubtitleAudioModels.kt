@@ -38,6 +38,9 @@ const val SUBTITLE_DELAY_MIN_MS = -60_000
 const val SUBTITLE_DELAY_MAX_MS = 60_000
 const val SUBTITLE_DELAY_STEP_MS = 100
 const val SUBTITLE_AUTO_SYNC_REACTION_COMPENSATION_MS = 300L
+const val AUDIO_DELAY_MIN_MS = -60_000
+const val AUDIO_DELAY_MAX_MS = 60_000
+const val AUDIO_DELAY_STEP_MS = 25
 
 internal val subtitleFontSizeRangeSp: IntRange
     get() = if (isIos) 6..40 else 12..40

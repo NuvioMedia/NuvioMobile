@@ -419,6 +419,7 @@
     <string name="compose_nav_profile">Profile</string>
     <string name="compose_nav_search">Search</string>
     <string name="compose_player_audio_tracks">Audio Tracks</string>
+    <string name="compose_player_audio_delay">Audio Delay</string>
     <string name="compose_player_audio">Audio</string>
     <string name="compose_player_auto_sync">Auto Sync</string>
     <string name="compose_player_bold">Bold</string>
@@ -1266,6 +1267,8 @@
     <string name="settings_playback_vod_cache_warning">Disk writes continue while a cached stream plays. A new size applies the next time the app starts.</string>
     <string name="settings_playback_exo_chapters">Show Chapters</string>
     <string name="settings_playback_exo_chapters_description">Read the chapters of MKV files to mark them on the progress bar and list them in the player. Makes a few small extra requests once playback starts. libmpv always shows chapters</string>
+    <string name="settings_playback_remember_audio_delay">Remember Audio Delay per Device</string>
+    <string name="settings_playback_remember_audio_delay_description">Restore the audio delay set in the player whenever the same output plays again, such as the phone speaker, wired headphones or each Bluetooth device</string>
     <string name="settings_tmdb_api_key_label">API key</string>
     <string name="settings_tmdb_api_key_override_description">Use your own TMDB API key, or leave blank to use the default.</string>
     <string name="settings_tmdb_personal_api_key">Personal API key</string>
