@@ -23,6 +23,7 @@ enum class MetaScreenSectionKey {
     EPISODES,
     DETAILS,
     COLLECTION,
+    UNIVERSE,
     MORE_LIKE_THIS,
     ;
 
@@ -51,6 +52,8 @@ data class MetaScreenSettingsUiState(
     val posterTransitionEnabled: Boolean = false,
     val showOverallRatings: Boolean = true,
     val episodeRatingsVisibility: EpisodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL,
+    val universeSortOrder: UniverseSortOrder = UniverseSortOrder.AiredOldest,
+    val universePosterStyle: UniversePosterStyle = UniversePosterStyle.Landscape,
 )
 
 enum class MetaScreenBackgroundMode {
@@ -137,12 +140,15 @@ private data class StoredMetaScreenSettingsPayload(
     val showOverallRatings: Boolean = true,
     @SerialName("episode_ratings_visibility")
     val episodeRatingsVisibility: String = EpisodeRatingsVisibility.SHOW_ALL.name,
+    val universeSortOrder: String = UniverseSortOrder.AiredOldest.name,
+    val universePosterStyle: String = UniversePosterStyle.Landscape.name,
 )
 
 private data class MetaScreenSectionDefinition(
     val key: MetaScreenSectionKey,
     val titleRes: StringResource,
     val descriptionRes: StringResource,
+    val enabledByDefault: Boolean = true,
 )
 
 object MetaScreenSettingsRepository {
@@ -198,6 +204,12 @@ object MetaScreenSettingsRepository {
             descriptionRes = Res.string.meta_section_collection_description,
         ),
         MetaScreenSectionDefinition(
+            key = MetaScreenSectionKey.UNIVERSE,
+            titleRes = Res.string.universe_title,
+            descriptionRes = Res.string.universe_description,
+            enabledByDefault = false,
+        ),
+        MetaScreenSectionDefinition(
             key = MetaScreenSectionKey.MORE_LIKE_THIS,
             titleRes = Res.string.meta_section_more_like_this_title,
             descriptionRes = Res.string.meta_section_more_like_this_description,
@@ -217,6 +229,8 @@ object MetaScreenSettingsRepository {
     private var showOverallRatings: Boolean = true
     private var episodeRatingsVisibility: EpisodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL
     private var posterTransitionEnabled: Boolean = false
+    private var universeSortOrder = UniverseSortOrder.AiredOldest
+    private var universePosterStyle = UniversePosterStyle.Landscape
     private fun localizedString(resource: StringResource): String = runBlocking { getString(resource) }
 
     fun ensureLoaded() {
@@ -239,6 +253,8 @@ object MetaScreenSettingsRepository {
                 posterTransitionEnabled = parsed.posterTransitionEnabled
                 showOverallRatings = parsed.showOverallRatings
                 episodeRatingsVisibility = EpisodeRatingsVisibility.parse(parsed.episodeRatingsVisibility)
+                universeSortOrder = runCatching { UniverseSortOrder.valueOf(parsed.universeSortOrder) }.getOrDefault(UniverseSortOrder.AiredOldest)
+                universePosterStyle = runCatching { UniversePosterStyle.valueOf(parsed.universePosterStyle) }.getOrDefault(UniversePosterStyle.Landscape)
                 preferences = parsed.items.mapNotNull { item ->
                     val key = runCatching { MetaScreenSectionKey.valueOf(item.key) }.getOrNull() ?: return@mapNotNull null
                     key to item
@@ -262,6 +278,8 @@ object MetaScreenSettingsRepository {
         posterTransitionEnabled = false
         showOverallRatings = true
         episodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL
+        universeSortOrder = UniverseSortOrder.AiredOldest
+        universePosterStyle = UniversePosterStyle.Landscape
         _uiState.value = MetaScreenSettingsUiState()
         ensureLoaded()
     }
@@ -294,6 +312,20 @@ object MetaScreenSettingsRepository {
     fun setEpisodeCardStyle(style: MetaEpisodeCardStyle) {
         ensureLoaded()
         episodeCardStyle = style
+        publish()
+        persist()
+    }
+
+    fun setUniverseSortOrder(order: UniverseSortOrder) {
+        ensureLoaded()
+        universeSortOrder = order
+        publish()
+        persist()
+    }
+
+    fun setUniversePosterStyle(style: UniversePosterStyle) {
+        ensureLoaded()
+        universePosterStyle = style
         publish()
         persist()
     }
@@ -350,6 +382,8 @@ object MetaScreenSettingsRepository {
         posterTransitionEnabled = false
         showOverallRatings = true
         episodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL
+        universeSortOrder = UniverseSortOrder.AiredOldest
+        universePosterStyle = UniversePosterStyle.Landscape
         _uiState.value = MetaScreenSettingsUiState()
     }
 
@@ -404,6 +438,8 @@ object MetaScreenSettingsRepository {
         posterTransitionEnabled = false
         showOverallRatings = true
         episodeRatingsVisibility = EpisodeRatingsVisibility.SHOW_ALL
+        universeSortOrder = UniverseSortOrder.AiredOldest
+        universePosterStyle = UniversePosterStyle.Landscape
         normalizePreferences()
         publish()
         persist()
@@ -439,12 +475,21 @@ object MetaScreenSettingsRepository {
 
     private fun normalizePreferences() {
         val normalized = mutableMapOf<MetaScreenSectionKey, StoredMetaScreenSectionPreference>()
-        definitions.sortedBy { definition -> preferences[definition.key]?.order ?: Int.MAX_VALUE }
+        val orderedDefinitions = definitions.sortedBy { definition -> preferences[definition.key]?.order ?: Int.MAX_VALUE }.toMutableList()
+        // Insert the new section beside Collections when importing an older layout.
+        // Once present, preserve the user's independently saved order and visibility.
+        if (MetaScreenSectionKey.UNIVERSE !in preferences) {
+            val universe = orderedDefinitions.first { it.key == MetaScreenSectionKey.UNIVERSE }
+            orderedDefinitions.remove(universe)
+            val collectionIndex = orderedDefinitions.indexOfFirst { it.key == MetaScreenSectionKey.COLLECTION }
+            orderedDefinitions.add(collectionIndex + 1, universe)
+        }
+        orderedDefinitions
             .forEachIndexed { index, definition ->
                 val stored = preferences[definition.key]
                 normalized[definition.key] = StoredMetaScreenSectionPreference(
                     key = definition.key.name,
-                    enabled = stored?.enabled ?: true,
+                    enabled = stored?.enabled ?: definition.enabledByDefault,
                     order = index,
                     tabGroup = stored?.tabGroup,
                 )
@@ -462,7 +507,7 @@ object MetaScreenSettingsRepository {
                         key = definition.key,
                         title = localizedString(definition.titleRes),
                         description = localizedString(definition.descriptionRes),
-                        enabled = preference?.enabled ?: true,
+                        enabled = preference?.enabled ?: definition.enabledByDefault,
                         order = preference?.order ?: 0,
                         tabGroup = preference?.tabGroup,
                     )
@@ -476,6 +521,8 @@ object MetaScreenSettingsRepository {
             posterTransitionEnabled = posterTransitionEnabled,
             showOverallRatings = showOverallRatings,
             episodeRatingsVisibility = episodeRatingsVisibility,
+            universeSortOrder = universeSortOrder,
+            universePosterStyle = universePosterStyle,
         )
     }
 
@@ -493,6 +540,8 @@ object MetaScreenSettingsRepository {
                     posterTransitionEnabled = posterTransitionEnabled,
                     showOverallRatings = showOverallRatings,
                     episodeRatingsVisibility = episodeRatingsVisibility.name,
+                    universeSortOrder = universeSortOrder.name,
+                    universePosterStyle = universePosterStyle.name,
                 ),
             ),
         )

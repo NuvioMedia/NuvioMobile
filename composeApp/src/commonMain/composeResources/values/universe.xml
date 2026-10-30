@@ -1,0 +1,17 @@
+<resources>
+    <string name="universe_title">Universe</string>
+    <string name="universe_description">Connected full movies and series, including prequels, sequels, spin-offs, remakes and reboots.</string>
+    <string name="universe_source">Connections from IMDb</string>
+    <string name="universe_unavailable">Universe is temporarily unavailable.</string>
+    <string name="universe_retry">Try again</string>
+    <string name="universe_empty">No franchise connections found.</string>
+    <string name="universe_sort_title">Sort order</string>
+    <string name="universe_sort_description">Choose the order of connected movies and shows.</string>
+    <string name="universe_sort_oldest">Aired oldest to newest</string>
+    <string name="universe_sort_newest">Aired newest to oldest</string>
+    <string name="universe_sort_popular">Most popular (IMDb votes)</string>
+    <string name="universe_style_title">Poster layout</string>
+    <string name="universe_style_description">Choose a layout just for Universe.</string>
+    <string name="universe_style_landscape">Landscape</string>
+    <string name="universe_style_posters">Posters</string>
+</resources>

@@ -63,6 +63,9 @@ import com.nuvio.app.features.details.MetaScreenSectionItem
 import com.nuvio.app.features.details.MetaScreenSectionKey
 import com.nuvio.app.features.details.MetaScreenSettingsRepository
 import com.nuvio.app.features.details.MetaScreenSettingsUiState
+import com.nuvio.app.features.details.UniverseSortOrder
+import com.nuvio.app.features.details.UniversePosterStyle
+import nuvio.composeapp.generated.resources.*
 import com.nuvio.app.supportsPosterNavigationMotion
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_reorder
@@ -278,6 +281,9 @@ private fun MetaSectionReorderableList(
                             onTabGroupChange = { MetaScreenSettingsRepository.setTabGroup(item.key, it) },
                             dragHandleScope = this@ReorderableItem,
                         )
+                        if (item.key == MetaScreenSectionKey.UNIVERSE && item.enabled) {
+                            UniverseLayoutControls(isTablet)
+                        }
                     }
                 }
             }
@@ -555,6 +561,7 @@ private val MetaScreenSectionKey.titleRes: StringResource
         MetaScreenSectionKey.EPISODES -> Res.string.settings_meta_episodes
         MetaScreenSectionKey.DETAILS -> Res.string.settings_meta_details
         MetaScreenSectionKey.COLLECTION -> Res.string.settings_meta_collection
+        MetaScreenSectionKey.UNIVERSE -> Res.string.universe_title
         MetaScreenSectionKey.MORE_LIKE_THIS -> Res.string.settings_meta_more_like_this
     }
 
@@ -569,6 +576,7 @@ private val MetaScreenSectionKey.descriptionRes: StringResource
         MetaScreenSectionKey.EPISODES -> Res.string.settings_meta_episodes_description
         MetaScreenSectionKey.DETAILS -> Res.string.settings_meta_details_description
         MetaScreenSectionKey.COLLECTION -> Res.string.settings_meta_collection_description
+        MetaScreenSectionKey.UNIVERSE -> Res.string.universe_description
         MetaScreenSectionKey.MORE_LIKE_THIS -> Res.string.settings_meta_more_like_this_description
     }
 
