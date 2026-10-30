@@ -80,7 +80,7 @@ private suspend fun parseAddonSubtitles(response: String, request: SubtitleAddon
             id = obj.stringValue("id") ?: "${request.addonId}_$index",
             url = url,
             language = normalizeLanguageCode(language) ?: language,
-            display = getString(
+            display = obj.stringValue("label") ?: getString(
                 Res.string.player_addon_subtitle_display_format,
                 getLanguageLabelForCode(language),
                 request.addonName,
