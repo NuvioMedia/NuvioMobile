@@ -34,6 +34,7 @@ import com.nuvio.app.features.servers.ServerStreams
 import com.nuvio.app.features.streams.BingeGroupCacheRepository
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.streams.StreamItem
+import com.nuvio.app.features.streams.StreamsRepository
 import com.nuvio.app.features.streams.StreamAutoPlaySource
 import com.nuvio.app.features.streams.QualityFirstAutoPlayPolicy
 import com.nuvio.app.features.addons.enabledAddons
@@ -61,12 +62,23 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                 if (videoId == null) {
                     emptyList()
                 } else {
-                    val discovered = PlayerStreamsRepository.discoverSourceCandidates(
+                    val playerDiscovered = PlayerStreamsRepository.discoverSourceCandidates(
                         type = contentType ?: parentMetaType,
                         videoId = videoId,
                         season = activeSeasonNumber,
                         episode = activeEpisodeNumber,
                     )
+                    // The stream-selection repository deliberately remains alive after
+                    // semi-auto navigation. Reuse its partial and late-arriving results
+                    // alongside the player's source discovery instead of throwing away
+                    // the provider work already in progress.
+                    val initialSelectionStreams = if (args.semiAutoSelectedQuality != null) {
+                        StreamsRepository.uiState.value.groups.flatMap { it.streams }
+                    } else {
+                        emptyList()
+                    }
+                    val discovered = (playerDiscovered + initialSelectionStreams)
+                        .distinctBy { it.playerSourceIdentityKey() }
                     val requestedQuality = args.semiAutoSelectedQuality
                     if (requestedQuality == null) {
                         discovered
@@ -126,7 +138,12 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
                 errorMessage = errorMessage ?: "This source did not start and no alternate sources remain."
                 controlsVisible = !playerControlsLocked
             },
-            sourceDiscoveryLoading = { PlayerStreamsRepository.isSourceDiscoveryLoading() },
+            sourceDiscoveryLoading = {
+                PlayerStreamsRepository.isSourceDiscoveryLoading() ||
+                    (args.semiAutoSelectedQuality != null &&
+                        (StreamsRepository.uiState.value.isAnyLoading ||
+                            StreamsRepository.uiState.value.groups.any { it.isLoading }))
+            },
             preserveCandidateOrder = { args.semiAutoSelectedQuality != null },
             onDeadLink = { failed, stableIdentityKey ->
                 PlayerStreamsRepository.pruneDeadSource(failed, stableIdentityKey)
