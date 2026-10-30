@@ -8,9 +8,11 @@ import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.features.search.SearchHistoryRepository
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_addons
+import nuvio.composeapp.generated.resources.compose_settings_page_media_servers
 import nuvio.composeapp.generated.resources.compose_settings_page_plugins
 import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description_appstore
+import nuvio.composeapp.generated.resources.settings_content_discovery_media_servers_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_plugins_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_sources
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_search
@@ -23,6 +25,7 @@ internal fun LazyListScope.contentDiscoveryContent(
     showPluginsEntry: Boolean,
     onAddonsClick: () -> Unit,
     onPluginsClick: () -> Unit,
+    onMediaServersClick: () -> Unit,
 ) {
     item {
         val recentSearchesEnabled by remember {
@@ -63,6 +66,12 @@ internal fun LazyListScope.contentDiscoveryContent(
                     ),
                     isTablet = isTablet,
                     onClick = onAddonsClick,
+                )
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.compose_settings_page_media_servers),
+                    description = stringResource(Res.string.settings_content_discovery_media_servers_description),
+                    isTablet = isTablet,
+                    onClick = onMediaServersClick,
                 )
                 if (showPluginsEntry) {
                     SettingsNavigationRow(

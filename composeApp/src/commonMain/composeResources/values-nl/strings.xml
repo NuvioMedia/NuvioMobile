@@ -1097,11 +1097,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Kleiner</string>
     <string name="settings_playback_regex_preset_web_sources">WEB-bronnen</string>
     <string name="settings_playback_render_type">Libass-rendermodus</string>
-    <string name="settings_playback_render_type_cues">Standaard cues</string>
-    <string name="settings_playback_render_type_effects_canvas">Effecten Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effecten OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL (aanbevolen)</string>
     <string name="settings_playback_reuse_last_link">Laatste link hergebruiken</string>
     <string name="settings_playback_reuse_last_link_description">Speel automatisch je laatst werkende stream af voor dezelfde film/aflevering als de cache nog geldig is</string>
     <string name="settings_playback_secondary_audio_language">Secundaire audiotaal</string>
@@ -2254,7 +2249,7 @@
     </plurals>
     <string name="layout_overall_ratings">Algemene beoordelingen</string>
     <string name="layout_overall_ratings_sub_on">Standaard- en TMDB-beoordelingen worden getoond.</string>
-    <string name="layout_overall_ratings_sub_off">Standaard- en TMDB-beoordelingen zijn verborgen. Instellingen van MDBList-providers hebben voorrang op detailpagina\'s.</string>
+    <string name="layout_overall_ratings_sub_off">Standaard- en TMDB-beoordelingen zijn verborgen. Instellingen van MDBList-providers hebben voorrang op detailpagina's.</string>
     <string name="layout_episode_ratings">Beoordelingen van afleveringen</string>
     <string name="layout_episode_ratings_sub">Kies welke beoordelingen van afleveringen zichtbaar zijn.</string>
     <string name="layout_ratings_show">Tonen</string>
@@ -2278,4 +2273,23 @@
     <string name="movie_status_rumored">Gerucht</string>
     <string name="movie_status_in_production">In productie</string>
     <string name="movie_status_post_production">Postproductie</string>
+    <string name="cd_switch_player_engine">Spelerengine wisselen</string>
+    <string name="cd_stream_info">Streaminfo</string>
+    <string name="player_engine_switching_manual_message">Overschakelen naar %1$s...</string>
+    <string name="stream_info_section_source">BRON</string>
+    <string name="stream_info_section_video">VIDEO</string>
+    <string name="stream_info_section_audio">AUDIO</string>
+    <string name="stream_info_section_subtitle">ONDERTITELING</string>
+    <string name="stream_info_codec">Codec</string>
+    <string name="stream_info_resolution">Resolutie</string>
+    <string name="stream_info_frame_rate">Framerate</string>
+    <string name="stream_info_bitrate">Bitrate</string>
+    <string name="stream_info_channels">Kanalen</string>
+    <string name="stream_info_sample_rate">Samplefrequentie</string>
+    <string name="stream_info_language">Taal</string>
+    <string name="stream_info_name">Naam</string>
+    <string name="stream_info_source">Bron</string>
+    <string name="stream_info_subtitle_source_addon">Add-on</string>
+    <string name="stream_info_subtitle_source_embedded">Ingesloten</string>
+    <string name="stream_info_player_engine">Spelerengine</string>
 </resources>

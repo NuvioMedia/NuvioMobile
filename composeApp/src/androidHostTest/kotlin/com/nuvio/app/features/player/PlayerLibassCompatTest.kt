@@ -6,7 +6,6 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -14,22 +13,17 @@ import kotlin.test.assertNull
 @Config(sdk = [34])
 class PlayerLibassCompatTest {
     @Test
-    fun everySubtitleModeCanOpenAndCloseWithoutRetainingThePlayerHandler() {
+    fun canOpenAndCloseWithoutRetainingThePlayerHandler() {
         val context = RuntimeEnvironment.getApplication()
-        LibassRenderType.entries.forEach { mode ->
-            val player = ExoPlayer.Builder(context).buildWithAssSupportCompat(
-                context = context,
-                renderType = mode.toAssRenderType(),
-            )
-            try {
-                val handler = assertNotNull(player.getAssHandlerCompat())
-                assertEquals(mode.toAssRenderType(), handler.renderType)
-                assertEquals(0, handler.config.maxRenderPixels)
-            } finally {
-                player.releaseWithAssSupportCompat()
-            }
-            assertNull(player.getAssHandlerCompat())
+        val player = ExoPlayer.Builder(context).buildWithAssSupportCompat(
+            context = context,
+        )
+        try {
+            assertNotNull(player.getAssHandlerCompat())
+        } finally {
+            player.releaseWithAssSupportCompat()
         }
+        assertNull(player.getAssHandlerCompat())
     }
 
     @Test

@@ -65,7 +65,8 @@ object SimklRelatedRepository {
             ?: parseSimklRedirectParam(fallbackItemId)
             ?: return emptyList()
 
-        val resolved = SimklIdResolver.resolveIds(source, id) ?: return emptyList()
+        val contentTypeHint = meta.type?.takeIf { it.isNotBlank() } ?: fallbackItemType
+        val resolved = SimklIdResolver.resolveIds(source, id, contentTypeHint) ?: return emptyList()
         val cacheKey = "${resolved.type}|${resolved.simklId}"
 
         if (!forceRefresh) {

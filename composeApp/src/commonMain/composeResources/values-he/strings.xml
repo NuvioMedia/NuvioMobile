@@ -754,4 +754,23 @@
     <string name="movie_status_rumored">בשמועות</string>
     <string name="movie_status_in_production">בהפקה</string>
     <string name="movie_status_post_production">בשלבי גימור</string>
+    <string name="cd_switch_player_engine">החלפת מנוע נגן</string>
+    <string name="cd_stream_info">מידע על ה-Stream</string>
+    <string name="player_engine_switching_manual_message">מחליף ל-%1$s…</string>
+    <string name="stream_info_section_source">מקור</string>
+    <string name="stream_info_section_video">וידאו</string>
+    <string name="stream_info_section_audio">שמע</string>
+    <string name="stream_info_section_subtitle">כתוביות</string>
+    <string name="stream_info_codec">קודק</string>
+    <string name="stream_info_resolution">רזולוציה</string>
+    <string name="stream_info_frame_rate">קצב פריימים</string>
+    <string name="stream_info_bitrate">קצב סיביות</string>
+    <string name="stream_info_channels">ערוצים</string>
+    <string name="stream_info_sample_rate">קצב דגימה</string>
+    <string name="stream_info_language">שפה</string>
+    <string name="stream_info_name">שם</string>
+    <string name="stream_info_source">מקור</string>
+    <string name="stream_info_subtitle_source_addon">תוסף</string>
+    <string name="stream_info_subtitle_source_embedded">מוטמע</string>
+    <string name="stream_info_player_engine">מנוע נגן</string>
 </resources>

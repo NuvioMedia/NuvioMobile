@@ -1,5 +1,7 @@
 package com.nuvio.app.features.mdblist
 
+import com.nuvio.app.core.network.createApiHttpClient
+import com.nuvio.app.core.network.readBoundedResponseBody
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareRequest
@@ -12,13 +14,10 @@ import io.ktor.http.Url
 import io.ktor.http.contentLength
 import io.ktor.http.encodedPath
 import io.ktor.http.formUrlEncode
-import io.ktor.utils.io.ByteReadChannel
-import io.ktor.utils.io.errors.IOException
-import io.ktor.utils.io.readAvailable
 
 internal class MdbListNetworkEngine(
     private val configuration: MdbListConfiguration,
-    private val client: HttpClient = createMdbListHttpClient(),
+    private val client: HttpClient = createApiHttpClient(),
 ) : MdbListHttpEngine {
     override suspend fun execute(request: MdbListHttpRequest): MdbListHttpResponse =
         client.prepareRequest(mdbListRequestUrl(configuration, request)) {
@@ -33,7 +32,7 @@ internal class MdbListNetworkEngine(
         }.execute { response ->
             MdbListHttpResponse(
                 response.status.value,
-                readMdbListResponseBody(response.bodyAsChannel(), response.contentLength()),
+                readBoundedResponseBody(response.bodyAsChannel(), response.contentLength()),
                 response.headers.entries().associate { (key, values) -> key to values.joinToString(",") },
             )
         }
@@ -51,30 +50,4 @@ internal fun mdbListRequestUrl(configuration: MdbListConfiguration, request: Mdb
         fragment = ""
         request.query.forEach { (key, value) -> parameters.append(key, value) }
     }.buildString()
-}
-
-internal suspend fun readMdbListResponseBody(
-    channel: ByteReadChannel,
-    contentLength: Long?,
-    maxBytes: Int = 16 * 1024 * 1024,
-): String {
-    if (contentLength != null && contentLength > maxBytes) throw IOException("MDBList response exceeds size limit")
-    val chunks = mutableListOf<ByteArray>()
-    var total = 0
-    while (true) {
-        val buffer = ByteArray(minOf(8_192, maxBytes - total + 1))
-        val count = channel.readAvailable(buffer, 0, buffer.size)
-        if (count == -1) break
-        if (count == 0) continue
-        total += count
-        if (total > maxBytes) throw IOException("MDBList response exceeds size limit")
-        chunks += buffer.copyOf(count)
-    }
-    val bytes = ByteArray(total)
-    var offset = 0
-    chunks.forEach { chunk ->
-        chunk.copyInto(bytes, offset)
-        offset += chunk.size
-    }
-    return bytes.decodeToString()
 }

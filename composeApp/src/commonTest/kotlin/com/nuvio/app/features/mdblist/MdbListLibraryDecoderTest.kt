@@ -1,6 +1,7 @@
 package com.nuvio.app.features.mdblist
 
 import com.nuvio.app.features.tracking.LibraryListPrivacy
+import com.nuvio.app.features.tracking.TrackingLibraryTabKind
 import com.nuvio.app.features.tracking.supportsContentType
 import kotlinx.coroutines.test.runTest
 import kotlin.test.assertEquals
@@ -21,7 +22,8 @@ class MdbListLibraryDecoderTest {
             """{"id":7,"type":"official","name":"Official"}""",
             """{"id":8,"dynamic":false,"name":"Unknown"}""",
             """{"id":9,"type":"static","mediatype":"episode","name":"Episodes"}""",
-            """{"id":10,"type":"static","dynamic":true,"name":"Inconsistent"}"""
+            """{"id":10,"type":"static","dynamic":true,"name":"Inconsistent"}""",
+            """{"id":11,"user_id":43,"type":"dynamic","dynamic":true,"name":"Another user's rules"}"""
         )
         val lists = decodeMdbListLibraryLists(rows.joinToString(",", "[", "]"), 42)
         assertEquals(listOf(1L, 2L), lists.map { it.id })
@@ -31,6 +33,53 @@ class MdbListLibraryDecoderTest {
         assertFalse(lists[1].tab().supportsContentType("episode"))
         assertEquals(LibraryListPrivacy.PUBLIC, lists[0].tab().privacy)
         assertEquals(LibraryListPrivacy.PRIVATE, lists[1].tab().privacy)
+        assertEquals(listOf(4L, 10L), decodeMdbListDynamicLists(rows.joinToString(",", "[", "]"), 42).map { it.id })
+    }
+
+    @Test
+    fun `owned dynamic lists become read-only tabs`() = runTest {
+        val lists = decodeMdbListDynamicLists("""[
+          {"id":12,"user_id":42,"type":"dynamic","dynamic":true,"private":false,"name":"Top Horror","mediatype":"movie",
+           "description":"Rated above 7","last_updated_at":"2026-10-01T10:00:00Z"},
+          {"ids":[13],"user_id":42,"dynamic":true,"name":"Mixed rules"},
+          {"id":14,"user_id":42,"dynamic":true,"mediatype":"episode","name":"Episodes"}
+        ]""", 42)
+        assertEquals(listOf(
+            MdbListDynamicList(12, "Top Horror", "Rated above 7", MdbListItemType.MOVIE, "2026-10-01T10:00:00Z"),
+            MdbListDynamicList(13, "Mixed rules")
+        ), lists)
+        val tab = lists[0].tab()
+        assertEquals("mdblist:dynamic:12", tab.key)
+        assertEquals(TrackingLibraryTabKind.EXTERNAL, tab.kind)
+        assertEquals(setOf("movie"), tab.supportedContentTypes)
+        assertFalse(tab.isMembershipDestination)
+        assertEquals("/lists/12/items", mdbListLibraryItemsPath(tab.key))
+        expectMdbListFailure<MdbListDecodingException> {
+            decodeMdbListDynamicLists("""[{"type":"dynamic","dynamic":true,"name":"Missing ID"}]""", 42)
+        }
+    }
+
+    @Test
+    fun `liked lists skip the account's own lists and page by offset`() = runTest {
+        val page = decodeMdbListLikedLists("""{"lists":[
+          {"id":79776,"user_id":41631,"user_name":"dinkysniff","name":"Best New Shows","description":"Rated over 60",
+           "mediatype":"show","type":"static","dynamic":false,"last_updated_at":"2026-10-14T00:00:00Z","liked_at":"2026-10-14T10:00:00Z"},
+          {"id":5,"user_id":42,"name":"Mine"},
+          {"id":6,"user_id":43,"name":"Episodes","mediatype":"episode"}
+        ],"pagination":{"page":1,"limit":3,"offset":0,"total":5,"has_more":true}}""", 42)
+        assertEquals(listOf(MdbListLikedList(79776, "Best New Shows", "Rated over 60", MdbListItemType.SHOW, "2026-10-14T00:00:00Z")),
+            page.items)
+        assertEquals(3, page.nextOffset)
+        val tab = page.items.single().tab()
+        assertEquals("mdblist:liked:79776", tab.key)
+        assertEquals(TrackingLibraryTabKind.EXTERNAL, tab.kind)
+        assertTrue(tab.supportsContentType("series"))
+        assertFalse(tab.supportsContentType("movie"))
+        assertFalse(tab.isMembershipDestination)
+        assertEquals("/lists/79776/items", mdbListLibraryItemsPath(tab.key))
+        for (body in listOf("[]", """{"pagination":{}}""", """{"lists":[{"user_id":43,"name":"Missing ID"}]}""")) {
+            expectMdbListFailure<MdbListDecodingException> { decodeMdbListLikedLists(body, 42) }
+        }
     }
 
     @Test
@@ -60,6 +109,29 @@ class MdbListLibraryDecoderTest {
         assertEquals("Plot", movie.description)
         assertEquals(MdbListItemType.SHOW, page.items.last().type)
         assertEquals("cursor-one", page.nextCursor)
+    }
+
+    @Test
+    fun `watchlist timestamps use the provider local datetime`() {
+        val page = decodeMdbListLibraryPage("""[{"id":1,"mediatype":"movie","watchlist_at":"2025-02-02 17:28:22.000000"}]""")
+        assertEquals(mdbListTimestamp("2025-02-02 17:28:22.000000"), page.items.single().listedAt)
+        assertEquals(mdbListTimestamp("2025-02-02T17:28:22Z"), page.items.single().listedAt)
+    }
+
+    @Test
+    fun `unusual item dates do not discard the list`() {
+        val page = decodeMdbListLibraryPage("""[
+          {"id":1,"mediatype":"movie","listed_at":"2025-02-02"},
+          {"id":2,"mediatype":"movie","listed_at":"not a date"}
+        ]""")
+        assertEquals(listOf(mdbListTimestamp("2025-02-02T00:00:00Z"), 0L), page.items.map { it.listedAt })
+    }
+
+    @Test
+    fun `external lists decode their source and update time`() {
+        val lists = decodeMdbListExternalLists("""[{"id":168202,"user_id":261168,"name":"IMDb Watchlist",
+          "updated":"2026-09-29T12:32:29.000Z","items":1115,"source":"imdbwatchlist","private":false}]""")
+        assertEquals(listOf(MdbListExternalList(168202, "IMDb Watchlist", "imdbwatchlist", updatedAt = "2026-09-29T12:32:29.000Z")), lists)
     }
 
     @Test
@@ -102,7 +174,7 @@ class MdbListLibraryDecoderTest {
         val entry = projection.entries.first { it.type == "movie" }
         assertEquals("tt1", entry.id)
         assertEquals("a1", entry.trackingProviderItemId)
-        assertEquals(mapOf(MDBLIST_WATCHLIST_KEY to 4, MDBLIST_TEST_LIST_KEY to 8), entry.listRanks)
+        assertEquals(mapOf(MDBLIST_WATCHLIST_KEY to 0, MDBLIST_TEST_LIST_KEY to 0), entry.listRanks)
         for (alias in listOf("tt1", "imdb:tt1", "tmdb:1", "tvdb:3", "trakt:4", "mdblist:a1")) {
             assertEquals(setOf(MDBLIST_WATCHLIST_KEY, MDBLIST_TEST_LIST_KEY), projection.membership(alias, "movie"))
             assertEquals(entry, projection.find(alias, "movie"))

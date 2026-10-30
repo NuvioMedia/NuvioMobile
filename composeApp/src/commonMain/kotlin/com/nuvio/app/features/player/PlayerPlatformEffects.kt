@@ -42,12 +42,14 @@ expect fun ManagePlayerPictureInPicture(
 expect fun rememberIsInPictureInPicture(): Boolean
 
 @Composable
-fun rememberPlayerGestureController(): PlayerGestureController? {
+fun rememberPlayerGestureController(restoreBrightness: Boolean): PlayerGestureController? {
     val controller = rememberPlatformPlayerGestureController() ?: return null
-    DisposableEffect(controller) {
-        PlayerSettingsStorage.loadPlaybackBrightness()
-            ?.takeIf { it in 0f..1f }
-            ?.let(controller::setBrightness)
+    DisposableEffect(controller, restoreBrightness) {
+        if (restoreBrightness) {
+            PlayerSettingsStorage.loadPlaybackBrightness()
+                ?.takeIf { it in 0f..1f }
+                ?.let(controller::setBrightness)
+        }
         onDispose {}
     }
     return remember(controller) {

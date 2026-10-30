@@ -7,6 +7,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import platform.AVFAudio.AVAudioSession
+import platform.AVFAudio.outputVolume
 import platform.Foundation.NSNotificationCenter
 import platform.MediaPlayer.MPVolumeView
 import platform.UIKit.UIApplication
@@ -110,8 +112,7 @@ private class IOSPlayerGestureController : PlayerGestureController {
     }
 
     override fun currentVolume(): PlayerAudioLevel {
-        val current = (volumeView.subviews.filterIsInstance<UISlider>().firstOrNull()?.value ?: 0f)
-            .coerceIn(0f, 1f)
+        val current = AVAudioSession.sharedInstance().outputVolume.coerceIn(0f, 1f)
         return PlayerAudioLevel(
             fraction = current,
             isMuted = current <= 0.001f,

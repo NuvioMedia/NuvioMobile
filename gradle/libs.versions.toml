@@ -1,11 +1,11 @@
 [versions]
 agp = "9.2.0"
 android-compileSdk = "37"
-android-compileSdkMinor = "0"
+android-compileSdkMinor = "1"
 android-minSdk = "24"
 android-targetSdk = "36"
 androidx-activity = "1.12.2"
-androidx-navigation3 = "1.2.0-alpha02"
+androidx-navigation3 = "1.2.0"
 androidx-appcompat = "1.7.1"
 androidx-core = "1.17.0"
 androidx-core-splashscreen = "1.0.1"
@@ -14,7 +14,7 @@ androidx-lifecycle = "2.11.0"
 androidx-savedstate = "1.4.0"
 androidx-work = "2.10.3"
 androidx-testExt = "1.3.0"
-composeMultiplatform = "1.12.0"
+composeMultiplatform = "1.13.0-beta01"
 coil = "3.6.3"
 kermit = "2.0.5"
 junit = "4.13.2"
@@ -24,11 +24,11 @@ kotlinx-serialization = "1.10.0"
 atomicfu = "0.32.1"
 kmpalette = "4.0.0-beta02"
 ktor = "3.4.1"
-material3 = "1.12.0-alpha03"
+material3 = "1.13.0-beta01"
 androidx-media3 = "1.8.0"
 mpv-android-lib = "0.1.12"
 supabase = "3.4.1"
-quickjsKt = "1.0.5"
+quickjsKt = "1.0.15"
 ksoup = "0.2.6"
 reorderable = "3.0.0"
 desugarJdkLibs = "2.1.5"
@@ -89,6 +89,7 @@ supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", v
 supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
 supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt", version.ref = "supabase" }
 supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt", version.ref = "supabase" }
+supabase-realtime = { module = "io.github.jan-tennert.supabase:realtime-kt", version.ref = "supabase" }
 quickjs-kt = { module = "io.github.dokar3:quickjs-kt", version.ref = "quickjsKt" }
 ksoup = { module = "com.fleeksoft.ksoup:ksoup", version.ref = "ksoup" }
 reorderable = { module = "sh.calvin.reorderable:reorderable", version.ref = "reorderable" }

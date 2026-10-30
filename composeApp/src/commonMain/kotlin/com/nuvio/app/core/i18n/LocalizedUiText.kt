@@ -1,6 +1,7 @@
 package com.nuvio.app.core.i18n
 
 import kotlinx.coroutines.runBlocking
+import nuvio.composeapp.generated.resources.player_picture_in_picture
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.action_play_episode
@@ -8,6 +9,7 @@ import nuvio.composeapp.generated.resources.action_resume
 import nuvio.composeapp.generated.resources.action_resume_episode
 import nuvio.composeapp.generated.resources.compose_player_episode_code_episode_only
 import nuvio.composeapp.generated.resources.compose_player_episode_code_full
+import nuvio.composeapp.generated.resources.streams_episode_fallback_title
 import nuvio.composeapp.generated.resources.compose_player_no_subtitle_lines_found
 import nuvio.composeapp.generated.resources.compose_player_subtitle_lines_load_error
 import nuvio.composeapp.generated.resources.continue_watching_up_next
@@ -66,6 +68,19 @@ fun localizedMediaTypeLabel(type: String): String {
 }
 
 fun localizedMovieTypeLabel(): String = resourceString("Movie") { getString(Res.string.media_movie) }
+
+
+private val genericEpisodeTitleRegex = Regex("""(?i)^Episode\s+(\d+)$""")
+
+/** Same idea as NuvioTV localizeEpisodeTitle: "Episode 12" -> localized word + number. */
+fun localizedEpisodeTitle(episodeTitle: String?, episodeNumber: Int? = null): String? {
+    val title = episodeTitle?.trim()?.takeIf { it.isNotBlank() } ?: return null
+    val match = genericEpisodeTitleRegex.matchEntire(title) ?: return title
+    val n = match.groupValues[1].toIntOrNull() ?: episodeNumber ?: return title
+    return resourceString("Episode $n") {
+        "${getString(Res.string.streams_episode_fallback_title)} $n"
+    }
+}
 
 fun localizedSeasonEpisodeCode(seasonNumber: Int?, episodeNumber: Int?): String? =
     when {
@@ -169,6 +184,9 @@ fun localizedByteUnit(unit: String): String =
         "KB" -> resourceString("KB") { getString(Res.string.unit_bytes_kb) }
         else -> resourceString("B") { getString(Res.string.unit_bytes_b) }
     }
+
+fun localizedPlayerPictureInPicture(): String =
+    resourceString("Nuvio is playing in Picture in Picture mode") { getString(Res.string.player_picture_in_picture) }
 
 private fun resourceString(
     fallback: String,

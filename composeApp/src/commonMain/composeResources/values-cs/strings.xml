@@ -914,11 +914,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Menší</string>
     <string name="settings_playback_regex_preset_web_sources">WEB Zdroje</string>
     <string name="settings_playback_render_type">Režim vykreslování Libass</string>
-    <string name="settings_playback_render_type_cues">Standardní ukazatele</string>
-    <string name="settings_playback_render_type_effects_canvas">Efektové plátno (Canvas)</string>
-    <string name="settings_playback_render_type_effects_opengl">Efektové OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Překryvné plátno (Canvas)</string>
-    <string name="settings_playback_render_type_overlay_opengl">Překryvné OpenGL (Doporučeno)</string>
     <string name="settings_playback_reuse_last_link">Použít poslední odkaz znovu</string>
     <string name="settings_playback_reuse_last_link_description">Automaticky přehrát váš poslední funkční stream pro tento stejný film/epizodu, pokud je mezipaměť stále platná.</string>
     <string name="settings_playback_secondary_audio_language">Sekundární jazyk zvuku</string>
@@ -2273,4 +2268,23 @@
     <string name="movie_status_rumored">Fáma</string>
     <string name="movie_status_in_production">Ve výrobě</string>
     <string name="movie_status_post_production">Postprodukce</string>
+    <string name="cd_switch_player_engine">Přepnout engine přehrávače</string>
+    <string name="cd_stream_info">Informace o streamu</string>
+    <string name="player_engine_switching_manual_message">Přepínání na %1$s...</string>
+    <string name="stream_info_section_source">ZDROJ</string>
+    <string name="stream_info_section_video">VIDEO</string>
+    <string name="stream_info_section_audio">ZVUK</string>
+    <string name="stream_info_section_subtitle">TITULKY</string>
+    <string name="stream_info_codec">Kodek</string>
+    <string name="stream_info_resolution">Rozlišení</string>
+    <string name="stream_info_frame_rate">Snímková frekvence</string>
+    <string name="stream_info_bitrate">Datový tok</string>
+    <string name="stream_info_channels">Kanály</string>
+    <string name="stream_info_sample_rate">Vzorkovací frekvence</string>
+    <string name="stream_info_language">Jazyk</string>
+    <string name="stream_info_name">Název</string>
+    <string name="stream_info_source">Zdroj</string>
+    <string name="stream_info_subtitle_source_addon">Doplněk</string>
+    <string name="stream_info_subtitle_source_embedded">Vložené</string>
+    <string name="stream_info_player_engine">Engine přehrávače</string>
 </resources>

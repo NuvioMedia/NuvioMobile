@@ -38,6 +38,27 @@ class LibraryProviderOrdersTest {
     }
 
     @Test
+    fun `release sorts use the provider release order in both directions`() = runTest {
+        val requested = mutableListOf<Boolean>()
+        val sorter = object : TrackingLibrarySorter {
+            override fun observeAddedOrder(listKey: String, descending: Boolean) = error("Unexpected request")
+            override fun observeReleaseOrder(listKey: String, descending: Boolean) = flowOf(
+                if (descending) keys.reversed() else keys
+            ).also { requested += descending }
+        }
+        val sections = listOf(LibrarySection(firstKey, "First", items))
+        for ((option, names) in mapOf(
+            LibrarySortOption.RELEASED_DESC to listOf("Bravo", "Alpha", "Zulu"),
+            LibrarySortOption.RELEASED_ASC to listOf("Zulu", "Alpha", "Bravo"),
+        )) {
+            val orders = observeLibraryProviderOrders(sorter, listOf(firstKey), option).first { it.ranks.isNotEmpty() }
+            val sorted = sortLibrarySections(sections, option, LibrarySourceMode.MDBLIST, orders.ranks)
+            assertEquals(names, sorted[0].items.map { it.name })
+        }
+        assertEquals(listOf(true, false), requested)
+    }
+
+    @Test
     fun `horizontal lists each use their own server order without added timestamps`() = runTest {
         val requested = mutableListOf<Pair<String, Boolean>>()
         val sorter = object : TrackingLibrarySorter {

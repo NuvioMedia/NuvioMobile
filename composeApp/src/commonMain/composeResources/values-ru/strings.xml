@@ -1097,11 +1097,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Меньший</string>
     <string name="settings_playback_regex_preset_web_sources">ВЕБ-источники</string>
     <string name="settings_playback_render_type">Режим рендеринга libass</string>
-    <string name="settings_playback_render_type_cues">Стандартные реплики</string>
-    <string name="settings_playback_render_type_effects_canvas">Эффекты Холст</string>
-    <string name="settings_playback_render_type_effects_opengl">Эффекты OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Наложение холста</string>
-    <string name="settings_playback_render_type_overlay_opengl">Наложение OpenGL (рекомендуется)</string>
     <string name="settings_playback_reuse_last_link">Повторное использование последней ссылки</string>
     <string name="settings_playback_reuse_last_link_description">Автоматически воспроизводить последний рабочий поток для этого же фильма/эпизода, когда кеш все еще действителен.</string>
     <string name="settings_playback_secondary_audio_language">Дополнительный аудиоязык</string>
@@ -2265,4 +2260,23 @@
     <string name="movie_status_rumored">Слухи</string>
     <string name="movie_status_in_production">В производстве</string>
     <string name="movie_status_post_production">Пост-продакшн</string>
+    <string name="cd_switch_player_engine">Переключить движок плеера</string>
+    <string name="cd_stream_info">Информация о потоке</string>
+    <string name="player_engine_switching_manual_message">Переключение на %1$s...</string>
+    <string name="stream_info_section_source">ИСТОЧНИК</string>
+    <string name="stream_info_section_video">ВИДЕО</string>
+    <string name="stream_info_section_audio">АУДИО</string>
+    <string name="stream_info_section_subtitle">СУБТИТРЫ</string>
+    <string name="stream_info_codec">Кодек</string>
+    <string name="stream_info_resolution">Разрешение</string>
+    <string name="stream_info_frame_rate">Частота кадров</string>
+    <string name="stream_info_bitrate">Битрейт</string>
+    <string name="stream_info_channels">Каналы</string>
+    <string name="stream_info_sample_rate">Частота дискретизации</string>
+    <string name="stream_info_language">Язык</string>
+    <string name="stream_info_name">Название</string>
+    <string name="stream_info_source">Источник</string>
+    <string name="stream_info_subtitle_source_addon">Аддон</string>
+    <string name="stream_info_subtitle_source_embedded">Вшитые</string>
+    <string name="stream_info_player_engine">Движок плеера</string>
 </resources>

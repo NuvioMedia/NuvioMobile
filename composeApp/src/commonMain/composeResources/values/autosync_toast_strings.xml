@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">Sync failed: Auto Sync couldn’t match this subtitle to the video.</string>
+    <string name="autosync_toast_failed_no_reference">Sync failed: No usable embedded subtitles to compare with.</string>
+    <string name="autosync_toast_failed_unsupported">Sync failed: This subtitle format is not supported.</string>
+    <string name="autosync_label_synced">Auto synced</string>
+</resources>

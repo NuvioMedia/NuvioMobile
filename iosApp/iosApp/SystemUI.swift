@@ -1,5 +1,6 @@
 import Combine
 import UIKit
+import ComposeApp
 
 @MainActor
 final class SystemUI: ObservableObject {
@@ -9,10 +10,14 @@ final class SystemUI: ObservableObject {
 
     private(set) weak var activePlayer: UIViewController?
     @Published private(set) var isPlayerImmersive = false
+    @Published private(set) var pictureInPictureMessage: String?
+    private var localizedPictureInPictureMessage: String?
 
     func playerDidBecomeVisible(_ player: UIViewController) {
         guard activePlayer !== player else { return }
         activePlayer = player
+        localizedPictureInPictureMessage = LocalizedUiTextKt.localizedPlayerPictureInPicture()
+        pictureInPictureMessage = nil
         isPlayerImmersive = true
         refresh()
     }
@@ -20,8 +25,15 @@ final class SystemUI: ObservableObject {
     func playerDidBecomeHidden(_ player: UIViewController) {
         guard activePlayer === player || activePlayer == nil else { return }
         activePlayer = nil
+        localizedPictureInPictureMessage = nil
         isPlayerImmersive = false
+        pictureInPictureMessage = nil
         refresh()
+    }
+
+    func setPictureInPicturePlaceholder(_ player: UIViewController, visible: Bool) {
+        guard activePlayer === player else { return }
+        pictureInPictureMessage = visible ? localizedPictureInPictureMessage : nil
     }
 
     private func refresh() {

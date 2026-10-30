@@ -16,7 +16,6 @@ import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamsUiState
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_close
-import nuvio.composeapp.generated.resources.compose_action_reload
 import nuvio.composeapp.generated.resources.compose_player_episode_code_full
 import nuvio.composeapp.generated.resources.compose_player_panel_sources
 import nuvio.composeapp.generated.resources.compose_player_playing
@@ -65,10 +64,6 @@ fun PlayerSourcesPanel(
                 title = stringResource(Res.string.compose_player_panel_sources),
             ) {
                 PlayerDialogButton(
-                    label = stringResource(Res.string.compose_action_reload),
-                    onClick = onReload,
-                )
-                PlayerDialogButton(
                     label = stringResource(Res.string.action_close),
                     onClick = onDismiss,
                 )
@@ -89,6 +84,7 @@ fun PlayerSourcesPanel(
             PlayerProviderFilterRow(
                 streamsUiState = streamsUiState,
                 onFilterSelected = onFilterSelected,
+                onRefresh = onReload,
             )
 
             Spacer(Modifier.height(16.dp))

@@ -696,11 +696,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Kleiner</string>
     <string name="settings_playback_regex_preset_web_sources">WEB-Quellen</string>
     <string name="settings_playback_render_type">Render-Typ</string>
-    <string name="settings_playback_render_type_cues">Standard (Cues)</string>
-    <string name="settings_playback_render_type_effects_canvas">Effekte Canvas</string>
-    <string name="settings_playback_render_type_effects_opengl">Effekte OpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">Overlay Canvas</string>
-    <string name="settings_playback_render_type_overlay_opengl">Overlay OpenGL</string>
     <string name="settings_playback_reuse_last_link">Letzten Link wiederverwenden</string>
     <string name="settings_playback_reuse_last_link_description">Den letzten funktionierenden Stream für denselben Film/dieselbe Episode automatisch abspielen, solange der Cache gültig ist.</string>
     <string name="settings_playback_secondary_audio_language">Zweite Audiosprache</string>
@@ -1243,4 +1238,23 @@
     <string name="movie_status_rumored">Gerüchte</string>
     <string name="movie_status_in_production">In Produktion</string>
     <string name="movie_status_post_production">Postproduktion</string>
+    <string name="cd_switch_player_engine">Player-Engine wechseln</string>
+    <string name="cd_stream_info">Stream Informationen</string>
+    <string name="player_engine_switching_manual_message">Wechsle zu %1$s...</string>
+    <string name="stream_info_section_source">QUELLE</string>
+    <string name="stream_info_section_video">VIDEO</string>
+    <string name="stream_info_section_audio">AUDIO</string>
+    <string name="stream_info_section_subtitle">UNTERTITEL</string>
+    <string name="stream_info_codec">Codec</string>
+    <string name="stream_info_resolution">Auflösung</string>
+    <string name="stream_info_frame_rate">Bildrate</string>
+    <string name="stream_info_bitrate">Bitrate</string>
+    <string name="stream_info_channels">Kanäle</string>
+    <string name="stream_info_sample_rate">Abtastrate</string>
+    <string name="stream_info_language">Sprache</string>
+    <string name="stream_info_name">Name</string>
+    <string name="stream_info_source">Quelle</string>
+    <string name="stream_info_subtitle_source_addon">Addon</string>
+    <string name="stream_info_subtitle_source_embedded">Eingebettet</string>
+    <string name="stream_info_player_engine">Player Engine</string>
 </resources>

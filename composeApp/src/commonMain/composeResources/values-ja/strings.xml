@@ -912,11 +912,6 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p 以下</string>
     <string name="settings_playback_regex_preset_web_sources">WEBソース</string>
     <string name="settings_playback_render_type">libassレンダリングモード</string>
-    <string name="settings_playback_render_type_cues">標準キュー</string>
-    <string name="settings_playback_render_type_effects_canvas">エフェクトキャンバス</string>
-    <string name="settings_playback_render_type_effects_opengl">エフェクトOpenGL</string>
-    <string name="settings_playback_render_type_overlay_canvas">オーバーレイキャンバス</string>
-    <string name="settings_playback_render_type_overlay_opengl">オーバーレイOpenGL（推奨）</string>
     <string name="settings_playback_reuse_last_link">最後のリンクを再利用</string>
     <string name="settings_playback_reuse_last_link_description">キャッシュが有効な場合、同じ映画/エピソードの最後に機能したストリームを自動再生します</string>
     <string name="settings_playback_secondary_audio_language">第2音声言語</string>
@@ -1931,4 +1926,23 @@
     <string name="movie_status_rumored">噂</string>
     <string name="movie_status_in_production">製作中</string>
     <string name="movie_status_post_production">ポストプロダクション</string>
+    <string name="cd_switch_player_engine">プレーヤーエンジンを切り替え</string>
+    <string name="cd_stream_info">ストリーム情報</string>
+    <string name="player_engine_switching_manual_message">%1$sに切り替え…</string>
+    <string name="stream_info_section_source">SOURCE</string>
+    <string name="stream_info_section_video">VIDEO</string>
+    <string name="stream_info_section_audio">AUDIO</string>
+    <string name="stream_info_section_subtitle">SUBTITLE</string>
+    <string name="stream_info_codec">Codec</string>
+    <string name="stream_info_resolution">Resolution</string>
+    <string name="stream_info_frame_rate">Frame Rate</string>
+    <string name="stream_info_bitrate">Bitrate</string>
+    <string name="stream_info_channels">Channels</string>
+    <string name="stream_info_sample_rate">Sample Rate</string>
+    <string name="stream_info_language">Language</string>
+    <string name="stream_info_name">Name</string>
+    <string name="stream_info_source">Source</string>
+    <string name="stream_info_subtitle_source_addon">Addon</string>
+    <string name="stream_info_subtitle_source_embedded">Embedded</string>
+    <string name="stream_info_player_engine">Player Engine</string>
 </resources>

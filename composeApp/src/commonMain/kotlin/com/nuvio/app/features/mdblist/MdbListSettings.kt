@@ -11,6 +11,7 @@ data class MdbListSettings(
     val useLetterboxd: Boolean = true,
     val useAudience: Boolean = true,
     val useMal: Boolean = true,
+    val showOnHero: Boolean = false,
     val accountScope: MdbListAuthScope? = null,
 ) {
     val hasApiKey: Boolean

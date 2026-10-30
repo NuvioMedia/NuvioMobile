@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player.skip
 
 import com.nuvio.app.features.details.MetaVideo
+import com.nuvio.app.features.watching.domain.isShortPlaceholderDuration
 
 object PlayerNextEpisodeRules {
 
@@ -32,6 +33,7 @@ object PlayerNextEpisodeRules {
         thresholdPercent: Float,
         thresholdMinutesBeforeEnd: Float,
     ): Boolean {
+        if (isShortPlaceholderDuration(durationMs)) return false
         val outroSegments = skipIntervals.filter { it.type in OUTRO_SEGMENT_TYPES }
 
         if (outroSegments.isNotEmpty()) {
@@ -48,7 +50,16 @@ object PlayerNextEpisodeRules {
                 val userTriggerMs = userThresholdPositionMs(
                     durationMs, thresholdMode, thresholdPercent, thresholdMinutesBeforeEnd
                 )
-                return positionMs >= maxOf(sceneEndMs, userTriggerMs)
+                val isHeuristic = postCreditsScene.provider == "heuristic"
+                val sceneDurationMs = sceneEndMs - (postCreditsScene.startTime * 1_000.0).toLong()
+                val userThresholdFromEndMs = durationMs - userTriggerMs
+                return if (isHeuristic && sceneDurationMs < userThresholdFromEndMs) {
+                    false
+                } else if (isHeuristic) {
+                    positionMs >= userTriggerMs
+                } else {
+                    positionMs >= maxOf(sceneEndMs, userTriggerMs)
+                }
             }
 
             val latestOutroEndMs = (outroSegments.maxOf { it.endTime } * 1_000.0).toLong()

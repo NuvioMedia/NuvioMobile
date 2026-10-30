@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.nuvio.app.features.autosync.AutoSyncedChip
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -440,7 +441,15 @@ private fun SubtitleOptionRow(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            SubtitleSourceChip(label = sourceLabel, selected = selected)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                SubtitleSourceChip(label = sourceLabel, selected = selected)
+                (option as? SubtitleSelectionOption.Addon)?.let {
+                    AutoSyncedChip(it.subtitle.url, selected) // AutoSync hook
+                }
+            }
             Text(
                 text = title,
                 color = if (selected) tokens.colors.onAccent else Color.White,

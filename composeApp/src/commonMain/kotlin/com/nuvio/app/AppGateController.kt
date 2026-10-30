@@ -9,10 +9,12 @@ import kotlinx.coroutines.flow.update
 class AppGateController {
     private val profileSelectionChannel = Channel<Unit>(Channel.BUFFERED)
     private val _mainContentReady = MutableStateFlow(false)
+    private val _appReady = MutableStateFlow(false)
     private val _contentGeneration = MutableStateFlow(0)
 
     internal val profileSelectionRequests = profileSelectionChannel.receiveAsFlow()
     internal val mainContentReady = _mainContentReady.asStateFlow()
+    internal val appReady = _appReady.asStateFlow()
     internal val contentGeneration = _contentGeneration.asStateFlow()
 
     fun requestProfileSelection() {
@@ -26,5 +28,9 @@ class AppGateController {
 
     internal fun reportMainContentReady(ready: Boolean) {
         _mainContentReady.value = ready
+    }
+
+    internal fun reportAppReady(ready: Boolean) {
+        _appReady.value = ready
     }
 }

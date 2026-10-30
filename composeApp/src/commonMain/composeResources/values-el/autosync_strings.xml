@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Αυτόματος συγχρονισμός υποτίτλων</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Αυτόματος συγχρονισμός του προτιμώμενου υπότιτλου πρόσθετου κατά την έναρξη της αναπαραγωγής. Απαιτείται προτιμώμενη γλώσσα υποτίτλων.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Αναζήτηση αυτόματου συγχρονισμού: Εξονυχιστική</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Συνεχίζει τη σύγκριση άλλων υποτίτλων και ενσωματωμένων κομματιών για ακριβέστερη αντιστοίχιση πριν από τον συγχρονισμό. Εφαρμόζονται μόνο βέβαιες αντιστοιχίσεις.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Αναζήτηση αυτόματου συγχρονισμού: Γρήγορη</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Χρησιμοποιεί νωρίτερα την πρώτη ισχυρή αντιστοίχιση. Εφαρμόζονται μόνο βέβαιες αντιστοιχίσεις, όπως στην Εξονυχιστική.</string>
+    <string name="settings_playback_auto_sync_tolerance">Ανοχή αυτόματου συγχρονισμού: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Διατήρηση του αρχικού χρονισμού των υποτίτλων όταν ο συγχρονισμός θα τον μετατοπίσει το πολύ κατά αυτή την τιμή. Πατήστε για αλλαγή.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Ανενεργή</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>

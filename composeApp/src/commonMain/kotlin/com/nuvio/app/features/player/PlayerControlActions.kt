@@ -17,12 +17,16 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.Toc
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Flag
+import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.Speed
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -58,9 +62,27 @@ internal fun PlayerToolbar(
     onLockToggle: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    onPartyClick: (() -> Unit)? = null,
+    partyActive: Boolean = false,
+    onSwitchEngineClick: (() -> Unit)? = null,
 ) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Spacer(Modifier.weight(1f))
+        if (onSwitchEngineClick != null) {
+            PlayerAction(
+                description = stringResource(Res.string.cd_switch_player_engine),
+                icon = Icons.Rounded.SwapHoriz,
+                onClick = onSwitchEngineClick,
+            )
+        }
+        if (onPartyClick != null) {
+            PlayerAction(
+                description = stringResource(Res.string.party_title),
+                icon = Icons.Rounded.Groups,
+                onClick = onPartyClick,
+                tint = if (partyActive) MaterialTheme.colorScheme.primary else Color.White,
+            )
+        }
         PlayerAction(
             description = stringResource(
                 if (isLocked) Res.string.compose_player_unlock_controls else Res.string.compose_player_lock_controls,
@@ -91,67 +113,31 @@ internal fun PlayerControlActions(
     onAudioClick: () -> Unit,
     onSourcesClick: (() -> Unit)?,
     onEpisodesClick: (() -> Unit)?,
+    onChaptersClick: (() -> Unit)?,
     onNextEpisodeClick: (() -> Unit)?,
     onSpeedClick: () -> Unit,
     onResizeModeClick: () -> Unit,
     onVideoSettingsClick: (() -> Unit)?,
     onOpenInExternalPlayer: (() -> Unit)?,
+    onStreamInfoClick: () -> Unit,
     onSubmitIntroClick: (() -> Unit)?,
     onInteraction: () -> Unit,
 ) {
-    val actions = listOfNotNull(
-        onNextEpisodeClick?.let {
-            PlayerControlAction(
-                stringResource(Res.string.player_next_episode), it,
-                icon = Icons.Rounded.SkipNext, iconSize = 40.dp,
-            )
-        },
-        PlayerControlAction(
-            stringResource(Res.string.compose_player_subtitles), onSubtitleClick,
-            painter = appIconPainter(AppIconResource.PlayerSubtitles),
-        ),
-        PlayerControlAction(
-            stringResource(Res.string.compose_player_audio), onAudioClick,
-            painter = appIconPainter(AppIconResource.PlayerAudioFilled),
-        ),
-        onSourcesClick?.let {
-            PlayerControlAction(
-                stringResource(Res.string.compose_player_sources), it,
-                painter = appIconPainter(AppIconResource.PlayerSource),
-            )
-        },
-        onEpisodesClick?.let {
-            PlayerControlAction(
-                stringResource(Res.string.compose_player_episodes), it,
-                painter = appIconPainter(AppIconResource.PlayerEpisodes),
-            )
-        },
-        PlayerControlAction(
-            "${stringResource(Res.string.compose_player_speed)} ${formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed)}",
-            onSpeedClick, icon = Icons.Rounded.Speed,
-        ),
-        PlayerControlAction(
-            stringResource(resizeMode.labelRes), onResizeModeClick,
-            painter = appIconPainter(AppIconResource.PlayerAspectRatio),
-        ),
-        onOpenInExternalPlayer?.let {
-            PlayerControlAction(
-                stringResource(Res.string.streams_open_external_player), it,
-                icon = Icons.AutoMirrored.Rounded.OpenInNew,
-            )
-        },
-        onVideoSettingsClick?.let {
-            PlayerControlAction(
-                stringResource(Res.string.player_action_video_settings), it,
-                icon = Icons.Rounded.Build,
-            )
-        },
-        onSubmitIntroClick?.let {
-            PlayerControlAction(
-                stringResource(Res.string.submit_intro_action), it,
-                icon = Icons.Rounded.Flag,
-            )
-        },
+    val actions = playerControlActions(
+        playbackSnapshot = playbackSnapshot,
+        resizeMode = resizeMode,
+        onSubtitleClick = onSubtitleClick,
+        onAudioClick = onAudioClick,
+        onSourcesClick = onSourcesClick,
+        onEpisodesClick = onEpisodesClick,
+        onChaptersClick = onChaptersClick,
+        onNextEpisodeClick = onNextEpisodeClick,
+        onSpeedClick = onSpeedClick,
+        onResizeModeClick = onResizeModeClick,
+        onVideoSettingsClick = onVideoSettingsClick,
+        onOpenInExternalPlayer = onOpenInExternalPlayer,
+        onStreamInfoClick = onStreamInfoClick,
+        onSubmitIntroClick = onSubmitIntroClick,
     )
     val hasOverflow = actions.size > 5
     var expanded by remember(hasOverflow) { mutableStateOf(false) }
@@ -226,17 +212,100 @@ private fun PlayerAction(
     icon: ImageVector? = null,
     painter: Painter? = null,
     iconSize: Dp = 24.dp,
+    tint: Color = Color.White,
 ) {
     IconButton(onClick = onClick, modifier = Modifier.size(48.dp)) {
         if (painter != null) {
-            Icon(painter, description, tint = Color.White, modifier = Modifier.size(iconSize))
+            Icon(painter, description, tint = tint, modifier = Modifier.size(iconSize))
         } else if (icon != null) {
-            Icon(icon, description, tint = Color.White, modifier = Modifier.size(iconSize))
+            Icon(icon, description, tint = tint, modifier = Modifier.size(iconSize))
         }
     }
 }
 
-private data class PlayerControlAction(
+@Composable
+internal fun playerControlActions(
+    playbackSnapshot: PlayerPlaybackSnapshot,
+    resizeMode: PlayerResizeMode,
+    onSubtitleClick: () -> Unit,
+    onAudioClick: () -> Unit,
+    onSourcesClick: (() -> Unit)?,
+    onEpisodesClick: (() -> Unit)?,
+    onChaptersClick: (() -> Unit)?,
+    onNextEpisodeClick: (() -> Unit)?,
+    onSpeedClick: () -> Unit,
+    onResizeModeClick: () -> Unit,
+    onVideoSettingsClick: (() -> Unit)?,
+    onOpenInExternalPlayer: (() -> Unit)?,
+    onStreamInfoClick: () -> Unit,
+    onSubmitIntroClick: (() -> Unit)?,
+): List<PlayerControlAction> =
+    listOfNotNull(
+        onNextEpisodeClick?.let {
+            PlayerControlAction(
+                stringResource(Res.string.player_next_episode), it,
+                icon = Icons.Rounded.SkipNext, iconSize = 40.dp,
+            )
+        },
+        PlayerControlAction(
+            stringResource(Res.string.compose_player_subtitles), onSubtitleClick,
+            painter = appIconPainter(AppIconResource.PlayerSubtitles),
+        ),
+        PlayerControlAction(
+            stringResource(Res.string.compose_player_audio), onAudioClick,
+            painter = appIconPainter(AppIconResource.PlayerAudioFilled),
+        ),
+        onChaptersClick?.let {
+            PlayerControlAction(
+                stringResource(Res.string.compose_player_chapters), it,
+                icon = Icons.AutoMirrored.Rounded.Toc,
+            )
+        },
+        onSourcesClick?.let {
+            PlayerControlAction(
+                stringResource(Res.string.compose_player_sources), it,
+                painter = appIconPainter(AppIconResource.PlayerSource),
+            )
+        },
+        onEpisodesClick?.let {
+            PlayerControlAction(
+                stringResource(Res.string.compose_player_episodes), it,
+                painter = appIconPainter(AppIconResource.PlayerEpisodes),
+            )
+        },
+        PlayerControlAction(
+            "${stringResource(Res.string.compose_player_speed)} ${formatPlaybackSpeedLabel(playbackSnapshot.playbackSpeed)}",
+            onSpeedClick, icon = Icons.Rounded.Speed,
+        ),
+        PlayerControlAction(
+            stringResource(resizeMode.labelRes), onResizeModeClick,
+            painter = appIconPainter(AppIconResource.PlayerAspectRatio),
+        ),
+        onOpenInExternalPlayer?.let {
+            PlayerControlAction(
+                stringResource(Res.string.streams_open_external_player), it,
+                icon = Icons.AutoMirrored.Rounded.OpenInNew,
+            )
+        },
+        PlayerControlAction(
+            stringResource(Res.string.cd_stream_info), onStreamInfoClick,
+            icon = Icons.Rounded.Info,
+        ),
+        onVideoSettingsClick?.let {
+            PlayerControlAction(
+                stringResource(Res.string.player_action_video_settings), it,
+                icon = Icons.Rounded.Build,
+            )
+        },
+        onSubmitIntroClick?.let {
+            PlayerControlAction(
+                stringResource(Res.string.submit_intro_action), it,
+                icon = Icons.Rounded.Flag,
+            )
+        },
+    )
+
+internal data class PlayerControlAction(
     val description: String,
     val onClick: () -> Unit,
     val icon: ImageVector? = null,

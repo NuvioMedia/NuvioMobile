@@ -34,8 +34,20 @@ internal fun JsonObject.integer(vararg names: String): Int? = number(*names)
     ?.takeIf { it in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong() }?.toInt()
 internal fun JsonObject.flag(name: String): Boolean? = (get(name) as? JsonPrimitive)?.booleanOrNull
 
+private val MdbListLocalTimestamp = Regex(
+    """^(\d{4}-\d{2}-\d{2}) (\d{2}:\d{2}:\d{2})(?:\.(\d{1,9}))?$""",
+)
+
 internal fun mdbListTimestamp(value: String): Long = runCatching { Instant.parse(value).toEpochMilliseconds() }
+    .recoverCatching { Instant.parse(mdbListUtcInstant(value)).toEpochMilliseconds() }
     .getOrElse { throw MdbListDecodingException() }
+
+private fun mdbListUtcInstant(value: String): String {
+    val match = MdbListLocalTimestamp.matchEntire(value.trim()) ?: throw MdbListDecodingException()
+    val fraction = match.groupValues[3]
+    val fractionPart = if (fraction.isEmpty()) "" else ".${fraction.padEnd(9, '0')}"
+    return "${match.groupValues[1]}T${match.groupValues[2]}${fractionPart}Z"
+}
 
 internal fun JsonObject.timestamp(vararg names: String): String? = text(*names)?.also(::mdbListTimestamp)
 

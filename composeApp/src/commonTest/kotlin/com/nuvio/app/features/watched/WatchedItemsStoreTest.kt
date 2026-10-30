@@ -42,7 +42,7 @@ class WatchedItemsStoreTest {
                             val nuvioKeys = nuvioItems.keys.toSet()
                             assertEquals(nuvioKeys, providerItems[TrackingProviderId.TRAKT].orEmpty().keys)
                             assertEquals(nuvioKeys, dirtyNuvioKeys)
-                            assertEquals(nuvioKeys, dirtyProviderKeys[TrackingProviderId.TRAKT])
+                            assertEquals(nuvioKeys, dirtyProviderKeys[TrackingProviderId.TRAKT].orEmpty())
                         }
                     }
                 }

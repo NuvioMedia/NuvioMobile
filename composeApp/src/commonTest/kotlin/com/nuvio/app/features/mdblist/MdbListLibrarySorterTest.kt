@@ -53,7 +53,7 @@ class MdbListLibrarySorterTest {
             assertEquals(expected, sorter.observeAddedOrder(MDBLIST_TEST_LIST_KEY, false).first())
             assertEquals(expected.reversed(), sorter.observeAddedOrder(MDBLIST_TEST_LIST_KEY, true).first())
         }
-        assertEquals(listOf("asc", "desc"), h.http.engine.requests.map { it.query["order"] })
+        assertEquals(listOf("desc", "asc"), h.http.engine.requests.map { it.query["order"] })
         assertTrue(h.http.engine.requests.all { it.query["sort"] == "added" && it.query["unified"] == "true" })
         val restored = MdbListSyncTestHarness(backgroundScope)
         restored.seed(Json.decodeFromString<MdbListSyncSnapshot>(h.storage.profiles.getValue(1)))
@@ -61,6 +61,29 @@ class MdbListLibrarySorterTest {
         assertEquals(expected.reversed(), restored.libraryService(backgroundScope).listSorter
             .observeAddedOrder(MDBLIST_TEST_LIST_KEY, true).first())
         assertTrue(restored.http.engine.requests.isEmpty())
+    }
+
+    @Test
+    fun `release order is fetched once and oriented oldest first by date and serves both directions`() = runTest {
+        for (newestFirst in listOf(false, true)) {
+            val h = MdbListSyncTestHarness(backgroundScope)
+            h.seedLibrary(mdbListLibrarySnapshot(h.http.now).copy(itemsByList = mapOf(MDBLIST_TEST_LIST_KEY to items)))
+            h.repository.ensureLoaded()
+            val sorter = h.libraryService(backgroundScope).listSorter
+            val rows = listOf("""{"id":1,"mediatype":"show","release_year":2026,"release_date":"2026-05-13"}""",
+                """{"id":2,"mediatype":"movie"}""",
+                """{"id":1,"mediatype":"movie","release_year":2026,"release_date":"2026-09-25"}""")
+            h.http.reply(body = (if (newestFirst) rows.reversed() else rows).joinToString(",", "[", "]"))
+            val oldest = listOf("series:tmdb:1", "movie:tmdb:2", "movie:tmdb:1")
+            repeat(2) {
+                assertEquals(oldest, sorter.observeReleaseOrder(MDBLIST_TEST_LIST_KEY, false).first())
+                assertEquals(oldest.reversed(), sorter.observeReleaseOrder(MDBLIST_TEST_LIST_KEY, true).first())
+            }
+            assertEquals(1, h.http.engine.requests.size)
+            assertEquals("released", h.http.engine.requests.single().query["sort"])
+            assertEquals("desc", h.http.engine.requests.single().query["order"])
+            assertEquals(setOf(RELEASED_ORDER_KEY), h.repository.currentSnapshot()!!.library!!.addedOrders.getValue(MDBLIST_TEST_LIST_KEY).keys)
+        }
     }
 
     @Test
@@ -74,7 +97,7 @@ class MdbListLibrarySorterTest {
         val keys = h.libraryService(backgroundScope).listSorter.observeAddedOrder(MDBLIST_TEST_LIST_KEY, true).first()
         assertEquals(listOf("series:tmdb:1", "movie:tmdb:1"), keys)
         assertEquals("next", h.http.engine.requests.last().query["cursor"])
-        assertTrue(h.http.engine.requests.all { it.query["sort"] == "added" && it.query["order"] == "desc" })
+        assertTrue(h.http.engine.requests.all { it.query["sort"] == "added" && it.query["order"] == "asc" })
     }
 
     @Test
@@ -101,7 +124,7 @@ class MdbListLibrarySorterTest {
     @Test
     fun `failed later page never caches a partial order`() = runTest {
         val h = MdbListSyncTestHarness(backgroundScope)
-        val snapshot = mdbListLibrarySnapshot(h.http.now).copy(addedOrders = mapOf(MDBLIST_TEST_LIST_KEY to mapOf("asc" to order)))
+        val snapshot = mdbListLibrarySnapshot(h.http.now).copy(addedOrders = mapOf(MDBLIST_TEST_LIST_KEY to mapOf("desc" to order)))
         h.seedLibrary(snapshot)
         h.repository.ensureLoaded()
         h.http.reply(body = page, headers = mapOf("X-Next-Cursor" to "next"))
@@ -140,12 +163,17 @@ class MdbListLibrarySorterTest {
         )))
         h.http.reply(body = mdbListLibraryListsBody())
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
+        h.http.reply(body = page)
+        h.http.reply(body = "[]")
+        h.http.reply(body = MDBLIST_EMPTY_LIKED_LISTS)
         val service = h.libraryService(backgroundScope)
         service.refresh(TrackingRefreshIntent.USER_INITIATED)
         assertEquals(mapOf(MDBLIST_TEST_LIST_KEY to orders), h.repository.currentSnapshot()!!.library!!.addedOrders)
         h.http.reply(body = mdbListLibraryListsBody("v2"))
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
         h.http.reply(body = page)
+        h.http.reply(body = "[]")
+        h.http.reply(body = MDBLIST_EMPTY_LIKED_LISTS)
         service.refresh(TrackingRefreshIntent.USER_INITIATED)
         assertTrue(h.repository.currentSnapshot()!!.library!!.addedOrders.isEmpty())
     }
@@ -168,7 +196,7 @@ class MdbListLibrarySorterTest {
         val h = MdbListSyncTestHarness(backgroundScope)
         h.seedLibrary(mdbListLibrarySnapshot(h.http.now).copy(
             itemsByList = mapOf(MDBLIST_TEST_LIST_KEY to items),
-            addedOrders = mapOf(MDBLIST_TEST_LIST_KEY to mapOf("desc" to order))
+            addedOrders = mapOf(MDBLIST_TEST_LIST_KEY to mapOf("asc" to order))
         ))
         h.repository.ensureLoaded()
         val service = h.libraryService(backgroundScope)
@@ -179,11 +207,13 @@ class MdbListLibrarySorterTest {
         h.http.reply(body = mdbListLibraryListsBody("v2"))
         h.http.reply(body = MDBLIST_EMPTY_LIBRARY_PAGE)
         h.http.reply(body = page)
+        h.http.reply(body = "[]")
+        h.http.reply(body = MDBLIST_EMPTY_LIKED_LISTS)
         h.http.reply(body = """[{"id":2,"mediatype":"movie"},{"id":1,"mediatype":"show"},{"id":1,"mediatype":"movie"}]""")
         service.refresh(TrackingRefreshIntent.USER_INITIATED)
         runCurrent()
         assertEquals(listOf("movie:tmdb:2", "series:tmdb:1", "movie:tmdb:1"), observed.last())
-        assertEquals(4, h.http.engine.requests.size)
+        assertEquals(6, h.http.engine.requests.size)
         assertEquals("added", h.http.engine.requests.last().query["sort"])
     }
 

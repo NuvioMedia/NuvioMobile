@@ -5,6 +5,7 @@ import android.net.Uri
 import android.util.Log
 import androidx.core.content.FileProvider
 import com.nuvio.app.core.diagnostics.SentryNetworkBreadcrumbInterceptor
+import com.nuvio.app.features.streams.redactedForLogs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -84,7 +85,7 @@ object SubtitleFileCache {
                 val request = Request.Builder().url(input.url).build()
                 okHttpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        Log.w(TAG, "HTTP ${response.code} downloading subtitle: ${input.url}")
+                        Log.w(TAG, "HTTP ${response.code} downloading subtitle: ${input.url.redactedForLogs()}")
                         return@withContext null
                     }
 
@@ -101,7 +102,7 @@ object SubtitleFileCache {
                     file
                 )
             } catch (e: Exception) {
-                Log.w(TAG, "Failed to download subtitle file: ${input.url}", e)
+                Log.w(TAG, "Failed to download subtitle file: ${input.url.redactedForLogs()}", e)
                 file.delete()
                 null
             }

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">Ο συγχρονισμός απέτυχε: ο αυτόματος συγχρονισμός δεν μπόρεσε να αντιστοιχίσει αυτόν τον υπότιτλο με το βίντεο.</string>
+    <string name="autosync_toast_failed_no_reference">Ο συγχρονισμός απέτυχε: δεν υπάρχουν κατάλληλοι ενσωματωμένοι υπότιτλοι για σύγκριση.</string>
+    <string name="autosync_toast_failed_unsupported">Ο συγχρονισμός απέτυχε: ο αυτόματος συγχρονισμός δεν υποστηρίζει αυτή τη μορφή υποτίτλων.</string>
+    <string name="autosync_label_synced">Αυτόματα συγχρονισμένος</string>
+</resources>

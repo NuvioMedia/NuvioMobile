@@ -107,6 +107,17 @@ class PlayerBrightnessTest {
     }
 
     @Test
+    fun savedBrightnessIsIgnoredWhenTouchGesturesAreDisabled() {
+        compose.runOnUiThread { PlayerSettingsStorage.savePlaybackBrightness(0f) }
+        showPlayer(restoreBrightness = false)
+        compose.runOnIdle {
+            assertEquals(-1f, compose.activity.window.attributes.screenBrightness)
+            assertEquals(77f / 255f, assertNotNull(controller).currentBrightness())
+            assertEquals(0f, PlayerSettingsStorage.loadPlaybackBrightness())
+        }
+    }
+
+    @Test
     fun settingsSyncPreservesDeviceBrightnessWithoutExportingIt() {
         PlayerSettingsStorage.savePlaybackBrightness(0.6f)
         assertFalse(PlayerSettingsStorage.exportToSyncPayload().containsKey("playback_brightness"))
@@ -114,10 +125,10 @@ class PlayerBrightnessTest {
         assertEquals(0.6f, PlayerSettingsStorage.loadPlaybackBrightness())
     }
 
-    private fun showPlayer() {
+    private fun showPlayer(restoreBrightness: Boolean = true) {
         compose.setContent {
             if (playerVisible.value) {
-                val activeController = rememberPlayerGestureController()
+                val activeController = rememberPlayerGestureController(restoreBrightness)
                 SideEffect { controller = activeController }
             }
         }

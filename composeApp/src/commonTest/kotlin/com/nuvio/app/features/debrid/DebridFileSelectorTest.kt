@@ -1,12 +1,15 @@
 package com.nuvio.app.features.debrid
 
 import com.nuvio.app.features.streams.StreamClientResolve
+import com.nuvio.app.features.streams.StreamClientResolveRaw
+import com.nuvio.app.features.streams.StreamClientResolveStream
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 
 class DebridFileSelectorTest {
     @Test
-    fun `Torbox selector prefers exact file id`() {
+    fun `Torbox selector does not treat torrent index as provider file id`() {
         val files = listOf(
             TorboxTorrentFileDto(id = 1, name = "small.mkv", size = 1),
             TorboxTorrentFileDto(id = 8, name = "target.mkv", size = 2),
@@ -19,7 +22,7 @@ class DebridFileSelectorTest {
             episode = null,
         )
 
-        assertEquals(8, selected?.id)
+        assertNull(selected)
     }
 
     @Test
@@ -108,6 +111,94 @@ class DebridFileSelectorTest {
         )
 
         assertEquals(3, selected?.id)
+    }
+
+    @Test
+    fun `Torbox selector does not shift an out of range index`() {
+        val files = listOf(
+            TorboxTorrentFileDto(id = 5, name = "first.mkv", size = 100),
+            TorboxTorrentFileDto(id = 9, name = "second.mkv", size = 200),
+        )
+
+        assertNull(TorboxFileSelector().selectFile(files, resolve(fileIdx = 2), null, null))
+        assertNull(TorboxFileSelector().selectFile(files, resolve(fileIdx = -1), null, null))
+        assertEquals(5, TorboxFileSelector().selectFile(files, resolve(fileIdx = 0), null, null)?.id)
+    }
+
+    @Test
+    fun `explicit filename takes priority over raw filename and episode`() {
+        val files = listOf(
+            TorboxTorrentFileDto(id = 4, name = "Show.S01E01.mkv", size = 200),
+            TorboxTorrentFileDto(id = 8, name = "Show.S01E02.mkv", size = 100),
+        )
+        val metadata = resolve(filename = "Show.S01E02.mkv").copy(
+            stream = StreamClientResolveStream(raw = StreamClientResolveRaw(filename = "Show.S01E01.mkv")),
+        )
+
+        assertEquals(8, TorboxFileSelector().selectFile(files, metadata, 1, 1)?.id)
+        assertEquals(4, TorboxFileSelector().selectFile(files, metadata.copy(filename = null), null, null)?.id)
+    }
+
+    @Test
+    fun `filename matching preserves unicode punctuation and extension`() {
+        val files = listOf(
+            TorboxTorrentFileDto(id = 1, name = "作品一.mkv", size = 300),
+            TorboxTorrentFileDto(id = 2, name = "作品二.mp4", size = 200),
+            TorboxTorrentFileDto(id = 3, name = "作品二.mkv", size = 100),
+            TorboxTorrentFileDto(id = 4, name = "Show.S01E02.mkv", size = 400),
+            TorboxTorrentFileDto(id = 5, name = "Show-S01E02.mkv", size = 100),
+        )
+
+        assertEquals(3, TorboxFileSelector().selectFile(files, resolve(filename = "作品二.mkv"), null, null)?.id)
+        assertEquals(5, TorboxFileSelector().selectFile(files, resolve(filename = "Show-S01E02.mkv"), null, null)?.id)
+    }
+
+    @Test
+    fun `exact path distinguishes repeated basenames and handles windows separators`() {
+        val files = listOf(
+            TorboxTorrentFileDto(id = 1, name = "Show/Season 1/Episode 02.mkv", size = 200),
+            TorboxTorrentFileDto(id = 2, name = "Show/Season 2/Episode 02.mkv", size = 100),
+        )
+
+        assertEquals(2, TorboxFileSelector().selectFile(files, resolve(filename = "Season 2\\Episode 02.mkv"), null, null)?.id)
+        assertNull(TorboxFileSelector().selectFile(files, resolve(filename = "Episode 02.mkv", fileIdx = 0), null, null))
+    }
+
+    @Test
+    fun `exact filename case wins before case insensitive fallback`() {
+        val files = listOf(
+            TorboxTorrentFileDto(id = 1, name = "Season 4/Attack on Titan - 02.mkv", size = 200),
+            TorboxTorrentFileDto(id = 2, name = "Season 1/Attack On Titan - 02.mkv", size = 100),
+        )
+
+        assertEquals(2, TorboxFileSelector().selectFile(files, resolve(filename = "Attack On Titan - 02.mkv"), null, null)?.id)
+        assertNull(TorboxFileSelector().selectFile(files, resolve(filename = "ATTACK ON TITAN - 02.MKV"), null, null))
+        assertEquals(2, TorboxFileSelector().selectFile(files.takeLast(1), resolve(filename = "ATTACK ON TITAN - 02.MKV"), null, null)?.id)
+    }
+
+    @Test
+    fun `episode fallback respects number boundaries and ignores parent folder`() {
+        val files = listOf(
+            TorboxTorrentFileDto(id = 1, name = "Show.S01E02/Show.S01E20.mkv", size = 900),
+            TorboxTorrentFileDto(id = 2, name = "Show.1x20.mkv", size = 800),
+            TorboxTorrentFileDto(id = 3, name = "Show.1x02.mkv", size = 100),
+        )
+
+        assertEquals(3, TorboxFileSelector().selectFile(files, resolve(), 1, 2)?.id)
+        assertNull(TorboxFileSelector().selectFile(files.take(2), resolve(fileIdx = 0), 1, 2))
+    }
+
+    @Test
+    fun `missing or ambiguous episodes do not fall back to another file`() {
+        val files = listOf(
+            TorboxTorrentFileDto(id = 1, name = "Show.S01E01.mkv", size = 900),
+            TorboxTorrentFileDto(id = 2, name = "Show.S01E02.720p.mkv", size = 200),
+            TorboxTorrentFileDto(id = 3, name = "Show.S01E02.1080p.mkv", size = 400),
+        )
+
+        assertNull(TorboxFileSelector().selectFile(files, resolve(), 1, 3))
+        assertNull(TorboxFileSelector().selectFile(files, resolve(), 1, 2))
+        assertNull(TorboxFileSelector().selectFile(files, resolve(filename = "missing.mkv", fileIdx = 0), null, null))
     }
 
     @Test

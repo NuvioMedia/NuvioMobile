@@ -8,6 +8,7 @@ internal actual object ServerConfigurationStorage {
     private const val publishableKey = "server_publishable_key"
     private const val emailPasswordAuthKey = "server_email_password_auth"
     private const val tvLoginKey = "server_tv_login"
+    private const val watchPartyKey = "server_watch_party"
     private const val discoveryUrlKey = "server_discovery_url"
 
     actual fun loadCustom(): ServerConfiguration? {
@@ -24,6 +25,7 @@ internal actual object ServerConfigurationStorage {
             capabilities = ServerCapabilities(
                 emailPasswordAuth = emailPasswordAuth,
                 tvLogin = tvLogin,
+                watchParty = values.boolForKey(watchPartyKey),
             ),
             isCustom = true,
             discoveryUrl = values.stringForKey(discoveryUrlKey),
@@ -37,6 +39,7 @@ internal actual object ServerConfigurationStorage {
         values.setObject(configuration.publishableKey, forKey = publishableKey)
         values.setBool(configuration.capabilities.emailPasswordAuth, forKey = emailPasswordAuthKey)
         values.setBool(configuration.capabilities.tvLogin, forKey = tvLoginKey)
+        values.setBool(configuration.capabilities.watchParty, forKey = watchPartyKey)
         values.setObject(configuration.discoveryUrl, forKey = discoveryUrlKey)
         return values.synchronize()
     }
@@ -48,6 +51,7 @@ internal actual object ServerConfigurationStorage {
         values.removeObjectForKey(publishableKey)
         values.removeObjectForKey(emailPasswordAuthKey)
         values.removeObjectForKey(tvLoginKey)
+        values.removeObjectForKey(watchPartyKey)
         values.removeObjectForKey(discoveryUrlKey)
         return values.synchronize()
     }
