@@ -27,6 +27,11 @@ internal fun PlayerScreenModalHosts(
     showAudioDelay: Boolean,
     audioDelayMs: Int,
     onAudioDelayChanged: (Int) -> Unit,
+    showAudioAmplification: Boolean,
+    audioAmplificationDb: Int,
+    keepAudioAmplification: Boolean,
+    onAudioAmplificationChanged: (Int) -> Unit,
+    onKeepAudioAmplificationChanged: (Boolean) -> Unit,
     showSubtitleModal: Boolean,
     subtitleTracks: List<SubtitleTrack>,
     selectedSubtitleIndex: Int,
@@ -126,6 +131,11 @@ internal fun PlayerScreenModalHosts(
         showAudioDelay = showAudioDelay,
         audioDelayMs = audioDelayMs,
         onAudioDelayChanged = onAudioDelayChanged,
+        showAudioAmplification = showAudioAmplification,
+        audioAmplificationDb = audioAmplificationDb,
+        keepAudioAmplification = keepAudioAmplification,
+        onAudioAmplificationChanged = onAudioAmplificationChanged,
+        onKeepAudioAmplificationChanged = onKeepAudioAmplificationChanged,
     )
 
     SubtitleModal(

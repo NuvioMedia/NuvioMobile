@@ -62,6 +62,7 @@ import androidx.media3.exoplayer.ForwardingRenderer
 import androidx.media3.exoplayer.Renderer
 import androidx.media3.exoplayer.audio.AudioRendererEventListener
 import androidx.media3.exoplayer.audio.AudioSink
+import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.mediacodec.MediaCodecInfo
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -102,6 +103,7 @@ import java.io.File
 import java.net.URI
 import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
 private const val TAG = "NuvioPlayer"
@@ -273,6 +275,8 @@ private fun ExoPlayerSurface(
     val latestSubtitleDelayMs = rememberUpdatedState(subtitleDelayMs)
     // Read by the loading and playback threads; outlives player rebuilds of the same surface.
     val audioDelayUs = remember { AtomicLong(0L) }
+    // Read by the playback thread's audio sink; every rebuilt player picks up the current gain.
+    val audioAmplificationDb = remember { AtomicInteger(AUDIO_AMPLIFICATION_MIN_DB) }
     val latestExternalSubtitleMimeType = rememberUpdatedState(selectedExternalSubtitleMimeType)
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
     var videoAspectRatio by remember(playerSourceKey) { mutableStateOf(0f) }
@@ -403,6 +407,7 @@ private fun ExoPlayerSurface(
             context = context,
             subtitleDelayUsProvider = { latestSubtitleDelayMs.value.toLong() * 1_000L },
             audioDelayUsProvider = audioDelayUs::get,
+            audioAmplificationDbProvider = audioAmplificationDb::get,
             shouldNormalizeCuePositionProvider = {
                 latestExternalSubtitleMimeType.value == MimeTypes.TEXT_VTT
             },
@@ -1141,6 +1146,12 @@ private fun ExoPlayerSurface(
                     audioDelayUs.set(delayUs)
                     exoPlayer.getAssHandlerCompat()?.audioDelayUs = delayUs
                 }
+
+                override val supportsAudioAmplification = true
+
+                override fun setAudioAmplificationDb(db: Int) {
+                    audioAmplificationDb.set(db.coerceIn(AUDIO_AMPLIFICATION_MIN_DB, AUDIO_AMPLIFICATION_MAX_DB))
+                }
             }),
         )
     }
@@ -1598,6 +1609,8 @@ private class NuvioLibmpvView(
         mpv.setOptionString("tls-ca-file", "${context.filesDir.path}/cacert.pem")
         mpv.setOptionString("demuxer-max-bytes", "${libmpvCacheBytes()}").logIfMpvError("demuxer-max-bytes")
         mpv.setOptionString("demuxer-max-back-bytes", "${libmpvCacheBytes()}").logIfMpvError("demuxer-max-back-bytes")
+        // Room above 100% for the player's amplification (+10 dB is about 316%).
+        mpv.setOptionString("volume-max", "$LIBMPV_MAX_VOLUME_PERCENT").logIfMpvError("volume-max")
         mpv.setOptionString("vd-lavc-film-grain", "cpu")
         mpv.setPropertyBoolean("keep-open", true)
         mpv.setPropertyBoolean("input-default-bindings", true)
@@ -1973,6 +1986,14 @@ private class NuvioLibmpvView(
                     )
                 }
             }
+
+            override val supportsAudioAmplification = true
+
+            override fun setAudioAmplificationDb(db: Int) {
+                executeMpv {
+                    mpv.setPropertyDouble("volume", 100.0 * audioAmplificationGain(db))
+                }
+            }
         }
 
     /**
@@ -2085,6 +2106,8 @@ private data class LibmpvTrack(
     val isSelected: Boolean,
     val isForced: Boolean,
 )
+
+private const val LIBMPV_MAX_VOLUME_PERCENT = 400
 
 private fun libmpvCacheBytes(): Int =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) 64 * 1024 * 1024 else 32 * 1024 * 1024
@@ -2723,11 +2746,24 @@ private class SubtitleOffsetRenderersFactory(
     context: Context,
     private val subtitleDelayUsProvider: () -> Long,
     private val audioDelayUsProvider: () -> Long,
+    private val audioAmplificationDbProvider: () -> Int,
     private val shouldNormalizeCuePositionProvider: () -> Boolean,
     private val shouldStripSdhProvider: () -> Boolean,
     private val presentCues: (List<Cue>) -> List<Cue>,
     private val videoBoundsFractionProvider: () -> RectF?,
 ) : DefaultRenderersFactory(context) {
+    override fun buildAudioSink(
+        context: Context,
+        enableFloatOutput: Boolean,
+        enableAudioTrackPlaybackParams: Boolean,
+    ): AudioSink {
+        return DefaultAudioSink.Builder(context)
+            .setEnableFloatOutput(enableFloatOutput)
+            .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+            .setAudioProcessors(arrayOf(GainAudioProcessor(audioAmplificationDbProvider)))
+            .build()
+    }
+
     override fun buildAudioRenderers(
         context: Context,
         extensionRendererMode: Int,

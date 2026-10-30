@@ -420,6 +420,8 @@
     <string name="compose_nav_search">Search</string>
     <string name="compose_player_audio_tracks">Audio Tracks</string>
     <string name="compose_player_audio_delay">Audio Delay</string>
+    <string name="compose_player_audio_amplification">Amplification</string>
+    <string name="compose_player_audio_amplification_keep">Keep for next videos</string>
     <string name="compose_player_audio">Audio</string>
     <string name="compose_player_auto_sync">Auto Sync</string>
     <string name="compose_player_bold">Bold</string>

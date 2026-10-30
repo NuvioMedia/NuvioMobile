@@ -335,6 +335,8 @@
     <string name="compose_nav_search">Pesquisar</string>
     <string name="compose_player_audio_tracks">Faixas de áudio</string>
     <string name="compose_player_audio_delay">Atraso do áudio</string>
+    <string name="compose_player_audio_amplification">Amplificação</string>
+    <string name="compose_player_audio_amplification_keep">Manter nos próximos vídeos</string>
     <string name="compose_player_audio">Áudio</string>
     <string name="compose_player_auto_sync">Sincronização automática</string>
     <string name="compose_player_bold">Negrito</string>
