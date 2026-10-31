@@ -728,6 +728,8 @@
     <string name="settings_homescreen_show_hero_description">Display hero carousel at top of home.</string>
     <string name="layout_hide_unreleased">Hide Unreleased Content</string>
     <string name="layout_hide_unreleased_sub">Hide movies and shows that haven't been released yet.</string>
+    <string name="layout_show_watchlist_row">Show Watchlist Row</string>
+    <string name="layout_show_watchlist_row_sub">Show your Library watchlist below Continue Watching.</string>
     <string name="layout_catalog_type">Show Catalog Type</string>
     <string name="layout_catalog_type_sub">Show type suffix next to catalog name (Movie/Series).</string>
     <string name="settings_homescreen_summary">%1$d of %2$d catalogs visible • %3$d hero sources selected</string>

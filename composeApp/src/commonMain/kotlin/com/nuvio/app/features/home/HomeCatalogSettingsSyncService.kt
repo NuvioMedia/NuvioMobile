@@ -41,6 +41,7 @@ data class SyncCatalogItem(
 data class SyncHomeCatalogPayload(
     @SerialName("show_catalog_type") val showCatalogType: Boolean = true,
     @SerialName("hide_unreleased_content") val hideUnreleasedContent: Boolean = false,
+    @SerialName("show_watchlist_row") val showWatchlistRow: Boolean = false,
     val items: List<SyncCatalogItem> = emptyList(),
 )
 
@@ -78,6 +79,7 @@ object HomeCatalogSettingsSyncService {
 
     private const val HIDE_UNRELEASED_CONTENT_KEY = "hide_unreleased_content"
     private const val SHOW_CATALOG_TYPE_KEY = "show_catalog_type"
+    private const val SHOW_WATCHLIST_ROW_KEY = "show_watchlist_row"
 
     @Volatile
     var isSyncingFromRemote: Boolean = false
@@ -218,6 +220,11 @@ object HomeCatalogSettingsSyncService {
                 decoded.hideUnreleasedContent
             } else {
                 localPayload.hideUnreleasedContent
+            },
+            showWatchlistRow = if (settingsJson.containsKey(SHOW_WATCHLIST_ROW_KEY)) {
+                decoded.showWatchlistRow
+            } else {
+                localPayload.showWatchlistRow
             },
         )
     }.getOrNull()
