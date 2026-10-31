@@ -131,6 +131,13 @@ class AutoPlaybackEngineResolverTest {
     }
 
     @Test
+    fun animeParentMetaIdSelectsLibmpvWhenVideoIdIsGenericOrMissing() {
+        assertEquals(AndroidPlaybackEngine.Libmpv, resolve(parentMetaId = "kitsu:7442", videoId = "1"))
+        assertEquals(AndroidPlaybackEngine.Libmpv, resolve(parentMetaId = "mal:12345", videoId = null))
+        assertEquals(AndroidPlaybackEngine.Libmpv, resolve(parentMetaId = "anilist:21", videoId = "tt0137523"))
+    }
+
+    @Test
     fun nonAnimeIdsDoNotSelectLibmpv() {
         assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(videoId = "tt0137523"))
         assertEquals(AndroidPlaybackEngine.ExoPlayer, resolve(videoId = "tmdb:1396"))
@@ -232,6 +239,7 @@ class AutoPlaybackEngineResolverTest {
     private fun resolve(
         setting: AndroidPlaybackEngine = AndroidPlaybackEngine.Auto,
         videoId: String? = null,
+        parentMetaId: String? = null,
         filename: String? = null,
         streamName: String? = null,
         description: String? = null,
@@ -241,6 +249,7 @@ class AutoPlaybackEngineResolverTest {
     ): AndroidPlaybackEngine? = resolveAutoPlaybackEngine(
         playbackEngineSetting = setting,
         videoId = videoId,
+        parentMetaId = parentMetaId,
         streamFilename = filename,
         streamName = streamName,
         streamDescription = description,
