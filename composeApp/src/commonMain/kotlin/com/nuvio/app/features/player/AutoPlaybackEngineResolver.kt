@@ -7,6 +7,7 @@ package com.nuvio.app.features.player
 internal fun resolveAutoPlaybackEngine(
     playbackEngineSetting: AndroidPlaybackEngine,
     videoId: String?,
+    parentMetaId: String? = null,
     streamFilename: String?,
     streamName: String?,
     streamDescription: String?,
@@ -30,7 +31,10 @@ internal fun resolveAutoPlaybackEngine(
 
     val hasAnimeId = videoId?.startsWith("kitsu:") == true ||
         videoId?.startsWith("mal:") == true ||
-        videoId?.startsWith("anilist:") == true
+        videoId?.startsWith("anilist:") == true ||
+        parentMetaId?.startsWith("kitsu:") == true ||
+        parentMetaId?.startsWith("mal:") == true ||
+        parentMetaId?.startsWith("anilist:") == true
     if (hasAnimeId) return AndroidPlaybackEngine.Libmpv
 
     if (genres.any { it.equals("anime", ignoreCase = true) }) {

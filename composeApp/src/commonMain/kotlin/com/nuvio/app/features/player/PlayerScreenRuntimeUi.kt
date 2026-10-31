@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioStatusModal
+import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.core.ui.LocalFold
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.party.PartyRepository
@@ -165,40 +166,49 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     ) {
         val playerSurfaceSourceUrl = if (isP2pPlaybackActive) p2pResolvedSourceUrl else activeSourceUrl
         val playbackKey = activePlaybackKey
+        val sourcePlaybackKey = playbackKey.copy(playbackEngine = null)
         val initialPositionRequestKey = currentInitialPositionRequestKey()
+
+        // Failover and manual switches are scoped to one source: a new source re-arms
+        // the failover and clears the previous engine choice. Keyed on the source, not
+        // on the full playbackKey, which includes the engine override — an effect keyed
+        // on it would undo the very switch that changed the key.
+        LaunchedEffect(sourcePlaybackKey) {
+            engineFailoverTriggered = false
+            engineFailoverDisarmed = false
+            playbackEngineOverride = null
+        }
+
+        // Genres/country come from metadata that can load after first composition, so
+        // the resolution re-runs while the source is still loading; once playback has
+        // loaded the engine is frozen, because a late metadata update must never
+        // restart a playing stream.
+        val effectiveMeta = playerMeta
+            ?: metaUiState.meta?.takeIf { it.id == parentMetaId }
+            ?: MetaDetailsRepository.peek(parentMetaType, parentMetaId)
+        val resolvedAutoEngineState =
+            remember(sourcePlaybackKey) { mutableStateOf<AndroidPlaybackEngine?>(null) }
+        val hasMetadata = effectiveMeta != null && (effectiveMeta.genres.isNotEmpty() || effectiveMeta.country != null)
+        if (!initialLoadCompleted || resolvedAutoEngineState.value == null || (!hasMetadata && playerMeta != null)) {
+            resolvedAutoEngineState.value = resolveAutoPlaybackEngine(
+                playbackEngineSetting = playerSettingsUiState.androidPlaybackEngine,
+                videoId = activeVideoId,
+                parentMetaId = parentMetaId,
+                streamFilename = activeTorrentFilename ?: activeStreamFilename,
+                streamName = activeStreamTitle,
+                streamDescription = activeStreamSubtitle,
+                contentTitle = title,
+                genres = effectiveMeta?.genres.orEmpty(),
+                country = effectiveMeta?.country,
+            )
+        }
+        val resolvedAutoEngine = resolvedAutoEngineState.value
+
         if (playerSurfaceSourceUrl != null) {
             key(playbackKey) {
                 val active = remember { mutableStateOf(true) }
                 DisposableEffect(Unit) {
                     onDispose { active.value = false }
-                }
-                // Genres/country come from metadata that can load after first composition, so
-                // the resolution re-runs while the source is still loading; once playback has
-                // loaded the engine is frozen, because a late metadata update must never
-                // restart a playing stream.
-                val resolvedAutoEngineState =
-                    remember(playbackKey.copy(playbackEngine = null)) { mutableStateOf<AndroidPlaybackEngine?>(null) }
-                if (!initialLoadCompleted || resolvedAutoEngineState.value == null) {
-                    resolvedAutoEngineState.value = resolveAutoPlaybackEngine(
-                        playbackEngineSetting = playerSettingsUiState.androidPlaybackEngine,
-                        videoId = activeVideoId,
-                        streamFilename = activeTorrentFilename ?: activeStreamFilename,
-                        streamName = activeStreamTitle,
-                        streamDescription = activeStreamSubtitle,
-                        contentTitle = title,
-                        genres = playerMeta?.genres.orEmpty(),
-                        country = playerMeta?.country,
-                    )
-                }
-                val resolvedAutoEngine = resolvedAutoEngineState.value
-                // Failover and manual switches are scoped to one source: a new source re-arms
-                // the failover and clears the previous engine choice. Keyed on the source, not
-                // on the full playbackKey, which includes the engine override — an effect keyed
-                // on it would undo the very switch that changed the key.
-                LaunchedEffect(playbackKey.copy(playbackEngine = null)) {
-                    engineFailoverTriggered = false
-                    engineFailoverDisarmed = false
-                    playbackEngineOverride = null
                 }
                 PlatformPlayerSurface(
                     sourceUrl = playerSurfaceSourceUrl,
