@@ -380,7 +380,7 @@ actual object PluginRepository {
             PluginRuntime.executePlugin(
                 code = scraper.code,
                 tmdbId = resolvedTmdbId,
-                mediaType = normalizePluginType(mediaType),
+                mediaType = jsPluginMediaType(normalizePluginType(mediaType), scraper.supportedTypes, season, episode),
                 season = season,
                 episode = episode,
                 scraperId = scraper.id,
