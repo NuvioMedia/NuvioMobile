@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">Échec de la synchronisation&#160;: la synchronisation automatique n’a pas pu faire correspondre ce sous-titre à la vidéo.</string>
+    <string name="autosync_toast_failed_no_reference">Échec de la synchronisation&#160;: aucun sous-titre intégré exploitable à comparer.</string>
+    <string name="autosync_toast_failed_unsupported">Échec de la synchronisation&#160;: ce format de sous-titres n’est pas pris en charge.</string>
+    <string name="autosync_label_synced">Synchronisé automatiquement</string>
+</resources>
