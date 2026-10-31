@@ -25,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.features.player.MAX_STILL_WATCHING_EPISODE_THRESHOLD
+import com.nuvio.app.features.player.MIN_STILL_WATCHING_EPISODE_THRESHOLD
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.streams.StreamAutoPlayMode
 import nuvio.composeapp.generated.resources.*
@@ -61,6 +63,28 @@ internal fun PlaybackUpNextSettings(
                         isTablet = isTablet,
                         onCheckedChange = PlayerSettingsRepository::setStreamAutoPlayNextEpisodeFallbackEnabled,
                     )
+                }
+                if (settings.streamAutoPlayNextEpisodeEnabled) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_still_watching),
+                        description = stringResource(Res.string.settings_playback_still_watching_description),
+                        checked = settings.stillWatchingEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setStillWatchingEnabled,
+                    )
+                    if (settings.stillWatchingEnabled) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsSliderRow(
+                            title = stringResource(Res.string.settings_playback_still_watching_threshold),
+                            value = settings.stillWatchingEpisodeThreshold,
+                            valueText = { it.toString() },
+                            valueRange = MIN_STILL_WATCHING_EPISODE_THRESHOLD..MAX_STILL_WATCHING_EPISODE_THRESHOLD,
+                            step = 1,
+                            isTablet = isTablet,
+                            onValueChange = PlayerSettingsRepository::setStillWatchingEpisodeThreshold,
+                        )
+                    }
                 }
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(

@@ -93,6 +93,8 @@ data class PlayerSettingsUiState(
     val nextEpisodeThresholdPercent: Float = 99f,
     val nextEpisodeThresholdMinutesBeforeEnd: Float = 2f,
     val preloadNextEpisodeSources: Boolean = false,
+    val stillWatchingEnabled: Boolean = false,
+    val stillWatchingEpisodeThreshold: Int = DEFAULT_STILL_WATCHING_EPISODE_THRESHOLD,
     val useLibass: Boolean = true,
     val libassRenderType: String = "CUES",
     val libassRenderScale: String = "FULL",
@@ -179,6 +181,8 @@ object PlayerSettingsRepository {
     private var nextEpisodeThresholdPercent = 99f
     private var nextEpisodeThresholdMinutesBeforeEnd = 2f
     private var preloadNextEpisodeSources = false
+    private var stillWatchingEnabled = false
+    private var stillWatchingEpisodeThreshold = DEFAULT_STILL_WATCHING_EPISODE_THRESHOLD
     private var useLibass = true
     private var libassRenderType = "OVERLAY_OPEN_GL"
     private var libassRenderScale = "FULL"
@@ -271,6 +275,8 @@ object PlayerSettingsRepository {
         nextEpisodeThresholdPercent = 99f
         nextEpisodeThresholdMinutesBeforeEnd = 2f
         preloadNextEpisodeSources = false
+        stillWatchingEnabled = false
+        stillWatchingEpisodeThreshold = DEFAULT_STILL_WATCHING_EPISODE_THRESHOLD
         useLibass = true
         libassRenderType = "OVERLAY_OPEN_GL"
         libassRenderScale = "FULL"
@@ -430,6 +436,10 @@ object PlayerSettingsRepository {
         nextEpisodeThresholdPercent = PlayerSettingsStorage.loadNextEpisodeThresholdPercent() ?: 99f
         nextEpisodeThresholdMinutesBeforeEnd = PlayerSettingsStorage.loadNextEpisodeThresholdMinutesBeforeEnd() ?: 2f
         preloadNextEpisodeSources = PlayerSettingsStorage.loadPreloadNextEpisodeSources() ?: false
+        stillWatchingEnabled = PlayerSettingsStorage.loadStillWatchingEnabled() ?: false
+        stillWatchingEpisodeThreshold = (
+            PlayerSettingsStorage.loadStillWatchingEpisodeThreshold() ?: DEFAULT_STILL_WATCHING_EPISODE_THRESHOLD
+        ).coerceIn(MIN_STILL_WATCHING_EPISODE_THRESHOLD, MAX_STILL_WATCHING_EPISODE_THRESHOLD)
         useLibass = PlayerSettingsStorage.loadUseLibass() ?: true
         libassRenderType = PlayerSettingsStorage.loadLibassRenderType() ?: "CUES"
         libassRenderScale = PlayerSettingsStorage.loadLibassRenderScale() ?: "FULL"
@@ -1010,6 +1020,23 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.savePreloadNextEpisodeSources(enabled)
     }
 
+    fun setStillWatchingEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (stillWatchingEnabled == enabled) return
+        stillWatchingEnabled = enabled
+        publish()
+        PlayerSettingsStorage.saveStillWatchingEnabled(enabled)
+    }
+
+    fun setStillWatchingEpisodeThreshold(threshold: Int) {
+        ensureLoaded()
+        val clamped = threshold.coerceIn(MIN_STILL_WATCHING_EPISODE_THRESHOLD, MAX_STILL_WATCHING_EPISODE_THRESHOLD)
+        if (stillWatchingEpisodeThreshold == clamped) return
+        stillWatchingEpisodeThreshold = clamped
+        publish()
+        PlayerSettingsStorage.saveStillWatchingEpisodeThreshold(clamped)
+    }
+
     fun setUseLibass(enabled: Boolean) {
         ensureLoaded()
         if (useLibass == enabled) return
@@ -1269,6 +1296,8 @@ object PlayerSettingsRepository {
             nextEpisodeThresholdPercent = nextEpisodeThresholdPercent,
             nextEpisodeThresholdMinutesBeforeEnd = nextEpisodeThresholdMinutesBeforeEnd,
             preloadNextEpisodeSources = preloadNextEpisodeSources,
+            stillWatchingEnabled = stillWatchingEnabled,
+            stillWatchingEpisodeThreshold = stillWatchingEpisodeThreshold,
             useLibass = useLibass,
             libassRenderType = libassRenderType,
             libassRenderScale = libassRenderScale,

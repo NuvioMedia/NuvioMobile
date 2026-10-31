@@ -508,9 +508,12 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
         snapshotSignals.isLoading,
         snapshotSignals.durationMs,
         errorMessage,
+        stillWatchingCountdown != null,
     ) {
         pausedOverlayVisible = false
-        if (!playerSettingsUiState.pauseOverlayEnabled || playbackSnapshot.isPlaying || playbackSnapshot.isLoading || playbackSnapshot.durationMs <= 0L || errorMessage != null) {
+        if (!playerSettingsUiState.pauseOverlayEnabled || playbackSnapshot.isPlaying || playbackSnapshot.isLoading || playbackSnapshot.durationMs <= 0L || errorMessage != null ||
+            stillWatchingCountdown != null
+        ) {
             return@LaunchedEffect
         }
         delay(5000)
@@ -833,12 +836,28 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         }
         if (shouldShow && !showNextEpisodeCard) {
             showNextEpisodeCard = true
-            if (playerSettingsUiState.streamAutoPlayNextEpisodeEnabled && nextEpisodeInfo?.hasAired == true && !isPartyControlLocked) {
-                playNextEpisode(automatic = true)
+            val autoPlayNextEpisode = playerSettingsUiState.streamAutoPlayNextEpisodeEnabled
+            val nextEpisodeHasAired = nextEpisodeInfo?.hasAired == true
+            when {
+                // Only the party host advances episodes, so guests get neither autoplay nor the prompt.
+                isPartyControlLocked -> Unit
+                shouldEnterStillWatchingPrompt(
+                    stillWatchingEnabled = playerSettingsUiState.stillWatchingEnabled,
+                    autoPlayNextEpisodeEnabled = autoPlayNextEpisode,
+                    nextEpisodeHasAired = nextEpisodeHasAired,
+                    consecutiveAutoPlayCount = consecutiveAutoPlayCount,
+                    threshold = playerSettingsUiState.stillWatchingEpisodeThreshold,
+                ) -> enterStillWatchingPrompt()
+                autoPlayNextEpisode && nextEpisodeHasAired -> playNextEpisode(automatic = true)
             }
-        } else if (!shouldShow) {
+        } else if (!shouldShow && (stillWatchingCountdown == null || nextEpisodeInfo == null)) {
             showNextEpisodeCard = false
+            cancelStillWatchingPrompt()
         }
+    }
+
+    LaunchedEffect(stillWatchingCountdown != null, playbackSnapshot.isPlaying) {
+        onStillWatchingPlaybackChanged(playbackSnapshot.isPlaying)
     }
 }
 

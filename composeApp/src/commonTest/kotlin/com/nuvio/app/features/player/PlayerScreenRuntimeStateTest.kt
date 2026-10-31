@@ -2,9 +2,14 @@ package com.nuvio.app.features.player
 
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
+import com.nuvio.app.features.details.MetaVideo
+import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamsUiState
+import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -13,6 +18,11 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class PlayerScreenRuntimeStateTest {
+
+    @AfterTest
+    fun tearDown() {
+        WatchProgressRepository.clearLocalState()
+    }
 
     @Test
     fun controlsStartHidden() {
@@ -305,6 +315,72 @@ class PlayerScreenRuntimeStateTest {
                 progressPercent = 100f,
             ),
         )
+    }
+
+    @Test
+    fun stillWatchingPromptPausesLikeAManualPause() = runTest {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs()).apply { scope = backgroundScope }
+        runtime.enterStillWatchingPrompt()
+        assertFalse(runtime.shouldPlay)
+        assertEquals(STILL_WATCHING_COUNTDOWN_SECONDS, runtime.stillWatchingCountdown)
+    }
+
+    @Test
+    fun stillWatchingPromptIgnoresThePlayingSnapshotFromBeforeItsPause() = runTest {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs()).apply { scope = backgroundScope }
+        runtime.enterStillWatchingPrompt()
+        runtime.onStillWatchingPlaybackChanged(isPlaying = true)
+        assertEquals(STILL_WATCHING_COUNTDOWN_SECONDS, runtime.stillWatchingCountdown)
+    }
+
+    @Test
+    fun resumingPlaybackAnswersTheStillWatchingPrompt() = runTest {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs()).apply {
+            scope = backgroundScope
+            consecutiveAutoPlayCount = 3
+            showNextEpisodeCard = true
+        }
+        runtime.enterStillWatchingPrompt()
+        runtime.onStillWatchingPlaybackChanged(isPlaying = false)
+        runtime.onStillWatchingPlaybackChanged(isPlaying = true)
+
+        assertNull(runtime.stillWatchingCountdown)
+        assertEquals(0, runtime.consecutiveAutoPlayCount)
+        assertTrue(runtime.shouldPlay)
+        assertTrue(runtime.nextEpisodeCardDismissed)
+        assertFalse(runtime.showNextEpisodeCard)
+    }
+
+    @Test
+    fun stillWatchingCountdownClosesThePlayer() = runTest {
+        var closed = false
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs().copy(onBack = { closed = true })).apply {
+            scope = backgroundScope
+            consecutiveAutoPlayCount = 3
+        }
+        runtime.enterStillWatchingPrompt()
+        advanceTimeBy(STILL_WATCHING_COUNTDOWN_SECONDS * 1_000L - 1L)
+        assertFalse(closed)
+        assertEquals(1, runtime.stillWatchingCountdown)
+
+        advanceTimeBy(2L)
+        assertTrue(closed)
+        assertNull(runtime.stillWatchingCountdown)
+        assertEquals(0, runtime.consecutiveAutoPlayCount)
+    }
+
+    @Test
+    fun onlyAutoPlayedEpisodeSwitchesCountTowardsStillWatching() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val episode = MetaVideo(id = "tt1234567:1:2", title = "Episode 2", season = 1, episode = 2)
+        val stream = StreamItem(url = "https://example.com/episode.mp4", addonName = "Addon", addonId = "addon")
+
+        runtime.switchToEpisodeStream(stream, episode, isAutoPlay = true)
+        runtime.switchToEpisodeStream(stream, episode, isAutoPlay = true)
+        assertEquals(2, runtime.consecutiveAutoPlayCount)
+
+        runtime.switchToEpisodeStream(stream, episode)
+        assertEquals(0, runtime.consecutiveAutoPlayCount)
     }
 
     private fun testPlayerScreenArgs() = PlayerScreenArgs(
