@@ -467,7 +467,9 @@ kotlin {
                 implementation("androidx.media3:media3-database:1.8.0")
                 implementation("androidx.media3:media3-effect:1.8.0")
                 implementation("androidx.annotation:annotation-experimental:1.3.1")
-                implementation(libs.mpv.android.lib)
+                // Same 0.1.12 JNI/codecs; libmpv rebuilt with libplacebo c93aa13.
+                // Source pins and regeneration: LIBMPV_SYNC_BACKPORT.md.
+                implementation(files("libs/mpv-android-lib-0.1.12-sync-fix.aar"))
                 implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("lib-*.aar"))))
                 if (androidDistribution == "full") {
                     implementation(files("libs/quickjs-kt-android-1.0.5-nuvio.aar"))
