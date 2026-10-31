@@ -69,7 +69,7 @@ fun SkipIntroButton(
     var manuallyDismissed by remember { mutableStateOf(false) }
     val progress = remember { Animatable(0f) }
 
-    LaunchedEffect(interval?.startTime, interval?.type) {
+    LaunchedEffect(interval?.type) {
         autoHidden = false
         manuallyDismissed = false
         progress.snapTo(0f)

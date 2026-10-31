@@ -31,6 +31,7 @@ class PlayerSurfaceGesturesTest {
     val compose = createComposeRule()
 
     private val playbackReady = mutableStateOf(false)
+    private val controlsLocked = mutableStateOf(false)
     private var taps = 0
     private var doubleTaps = 0
     private var speedBoosts = 0
@@ -52,7 +53,7 @@ class PlayerSurfaceGesturesTest {
 
     private fun setContent() {
         compose.setContent {
-            val unlocked = rememberUpdatedState(false)
+            val locked = rememberUpdatedState(controlsLocked.value)
             val noop = rememberUpdatedState<() -> Unit>({})
             Box(
                 Modifier.size(320.dp, 180.dp)
@@ -60,7 +61,7 @@ class PlayerSurfaceGesturesTest {
                     .playerSurfaceTapGestures(
                         layoutSize = IntSize(320, 180),
                         playbackGesturesEnabled = playbackReady.value,
-                        playerControlsLockedState = unlocked,
+                        playerControlsLockedState = locked,
                         onSurfaceTap = rememberUpdatedState { _: Offset -> taps++ },
                         onSurfaceDoubleTap = rememberUpdatedState { _: Offset -> doubleTaps++ },
                         activateHoldToSpeedState = rememberUpdatedState { speedBoosts++ },
@@ -72,9 +73,9 @@ class PlayerSurfaceGesturesTest {
                         layoutSize = IntSize(320, 180),
                         playbackGesturesEnabled = playbackReady.value,
                         sideGestureSystemEdgeExclusionPx = 0f,
-                        playerControlsLockedState = unlocked,
+                        playerControlsLockedState = locked,
                         touchGesturesEnabledState = rememberUpdatedState(true),
-                        isHoldToSpeedGestureActiveState = unlocked,
+                        isHoldToSpeedGestureActiveState = rememberUpdatedState(false),
                         currentPositionMsState = rememberUpdatedState(30_000L),
                         currentDurationMsState = rememberUpdatedState(120_000L),
                         deactivateHoldToSpeedState = noop,
@@ -124,6 +125,36 @@ class PlayerSurfaceGesturesTest {
             assertTrue(seekPreviews > 0)
             assertEquals(1, seekCommits)
             assertTrue(sideAdjustments > 0)
+        }
+    }
+
+    @Test
+    fun lockingControlsPreservesTapsWithSmallFingerMovement() {
+        playbackReady.value = true
+        setContent()
+        compose.runOnIdle { controlsLocked.value = true }
+        compose.onNodeWithTag("surface").performTouchInput {
+            down(center)
+            moveTo(center + Offset(1f, 1f))
+            up()
+        }
+        compose.mainClock.advanceTimeBy(400)
+        compose.runOnIdle { assertEquals(1, taps) }
+    }
+
+    @Test
+    fun lockedControlsIgnoreSeekAndSideGestures() {
+        playbackReady.value = true
+        controlsLocked.value = true
+        setContent()
+        val surface = compose.onNodeWithTag("surface")
+        surface.performTouchInput { swipe(center, Offset(width * 0.85f, centerY)) }
+        surface.performTouchInput { swipe(Offset(width * 0.1f, centerY), Offset(width * 0.1f, height * 0.1f)) }
+        surface.performTouchInput { swipe(Offset(width * 0.9f, centerY), Offset(width * 0.9f, height * 0.1f)) }
+        compose.runOnIdle {
+            assertEquals(0, seekPreviews)
+            assertEquals(0, seekCommits)
+            assertEquals(0, sideAdjustments)
         }
     }
 

@@ -73,4 +73,14 @@
     <string name="party_share_description">Gli amici possono riprodurre il tuo link invece di sceglierne uno proprio. Può includere la tua chiave debrid.</string>
     <string name="party_share_unavailable">Questo flusso non può essere condiviso.</string>
     <string name="party_shared_by">Condiviso da %1$s</string>
+    <string name="party_tab_party">Party</string>
+    <string name="party_tab_chat">Chat</string>
+    <string name="party_chat_empty_title">Ancora nessun messaggio</string>
+    <string name="party_chat_empty_message">Solo i partecipanti a questa party possono vedere la chat.</string>
+    <string name="party_chat_placeholder">Messaggio</string>
+    <string name="party_chat_send">Invia</string>
+    <string name="party_chat_not_sent">Non inviato. Tocca per riprovare</string>
+    <string name="party_chat_new_messages">Nuovi messaggi</string>
+    <string name="party_companion_chatting_as">Stai scrivendo come %1$s</string>
+    <string name="party_companion_seat_left">Il tuo altro dispositivo ha lasciato la watch party.</string>
 </resources>

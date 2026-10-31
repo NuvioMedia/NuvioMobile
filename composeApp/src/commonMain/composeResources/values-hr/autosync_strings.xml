@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Automatska sinkronizacija titla</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Automatski sinkroniziraj preferirani titl dodatka kada reprodukcija počne. Zahtijeva preferirani jezik titlova.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Pretraživanje automatske sinkronizacije: Temeljito</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Nastavlja uspoređivati ostale titlove i ugrađene zapise za dulje podudaranje prije sinkronizacije. Primjenjuju se samo sigurna podudaranja.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Pretraživanje automatske sinkronizacije: Brzo</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Prije upotrebljava prvo snažno podudaranje. Primjenjuju se samo sigurna podudaranja, kao i kod Temeljitog.</string>
+    <string name="settings_playback_auto_sync_tolerance">Tolerancija automatske sinkronizacije: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Zadrži izvorni ritam titla ako bi je sinkronizacija pomaknula do ovoliko. Dodirnite za promjenu.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Isključeno</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>

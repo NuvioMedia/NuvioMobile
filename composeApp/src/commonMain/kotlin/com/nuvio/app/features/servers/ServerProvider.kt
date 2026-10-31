@@ -65,6 +65,12 @@ interface ServerProvider {
         limit: Int,
     ): ServerPage<ServerIndexEntry> = unsupported()
 
+    suspend fun lookupTitle(
+        session: ServerSession,
+        library: ServerLibrary,
+        query: ServerTitleQuery,
+    ): List<ServerIndexEntry>? = null
+
     suspend fun findEpisode(
         session: ServerSession,
         seriesItemId: String,
@@ -76,6 +82,14 @@ interface ServerProvider {
 data class ServerIndexEntry(
     val itemId: String,
     val ids: TrackingExternalIds,
+    val year: Int? = null,
+)
+
+data class ServerTitleQuery(
+    val ids: TrackingExternalIds,
+    val name: String?,
+    val year: Int?,
+    val originalName: String? = null,
 )
 
 data class ServerEpisode(
@@ -91,4 +105,13 @@ internal object ServerProviders {
     internal val registered: MutableList<ServerProvider> = mutableListOf(JellyfinProvider(), EmbyProvider())
 
     fun forId(id: String?): ServerProvider? = registered.firstOrNull { it.id == id }
+}
+
+internal fun verifiedTitleMatches(entries: List<ServerIndexEntry>, query: ServerTitleQuery): List<String> {
+    val byItem = entries.associateBy { it.itemId }
+    return LibraryIndex(entries).lookup(query.ids).filter { itemId ->
+        val entry = byItem.getValue(itemId)
+        (entry.ids.imdb != null && query.ids.imdb != null) ||
+            query.year == null || entry.year == null || kotlin.math.abs(query.year - entry.year) <= 1
+    }
 }

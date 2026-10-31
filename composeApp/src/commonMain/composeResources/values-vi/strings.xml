@@ -447,6 +447,10 @@
     <string name="compose_player_outline_color">Màu viền</string>
     <string name="compose_player_panel_episodes">Tập phim</string>
     <string name="compose_player_panel_sources">Nguồn</string>
+    <string name="compose_player_chapters">Chương</string>
+    <string name="compose_player_panel_chapters">Chương (%1$d)</string>
+    <string name="compose_player_chapter_number">Chương %1$d</string>
+    <string name="compose_player_chapter_remaining">Còn lại %1$s</string>
     <string name="compose_player_panel_streams">Luồng</string>
     <string name="compose_player_playback_error">Lỗi phát lại</string>
     <string name="compose_player_playing">Đang phát</string>
@@ -941,6 +945,8 @@
     <string name="settings_mdb_section_api_key">MÃ KHÓA API</string>
     <string name="settings_mdb_section_rating_providers">NHÀ CUNG CẤP ĐIỂM ĐÁNH GIÁ BÊN NGOÀI</string>
     <string name="settings_mdb_section_title">ĐIỂM ĐÁNH GIÁ MDBList</string>
+    <string name="settings_mdb_show_on_hero">Sử dụng điểm đánh giá trên Khu vực nổi bật</string>
+    <string name="settings_mdb_show_on_hero_description">Hiển thị điểm đánh giá MDBList trên khu vực nổi bật của Trang chủ</string>
     <string name="settings_meta_actions">Thao tác</string>
     <string name="settings_meta_actions_description">Phát và lưu nội dung</string>
     <string name="settings_meta_cast">Diễn viên</string>
@@ -1146,6 +1152,15 @@
     <string name="settings_playback_regex_preset_quality_720p_smaller">720p / Dung lượng nhỏ</string>
     <string name="settings_playback_regex_preset_web_sources">Nguồn WEB</string>
     <string name="settings_playback_render_type">Chế độ kết xuất libass</string>
+    <string name="settings_playback_render_scale">Độ phân giải kết xuất phụ đề</string>
+    <string name="settings_playback_render_scale_description">Độ phân giải thấp hơn giúp tăng hiệu năng khi xử lý hiệu ứng phụ đề phức tạp nhưng làm giảm độ sắc nét</string>
+    <string name="settings_playback_render_mode">Chế độ kết xuất ASS</string>
+    <string name="settings_playback_render_mode_description">Cách phụ đề ASS/SSA được kết xuất lên video</string>
+    <string name="settings_playback_render_mode_tunneled">Phát lại qua đường hầm sẽ bỏ qua quy trình hiệu ứng video. Lớp phủ sẽ được tự động sử dụng.</string>
+    <string name="settings_playback_render_mode_video_effect">Hiệu ứng video</string>
+    <string name="settings_playback_render_mode_video_effect_description">Kết xuất phụ đề trực tiếp lên từng khung hình video. Định thời gian chính xác theo từng khung hình trên mọi phần cứng. Nội dung HDR được ánh xạ tông sáng sang SDR</string>
+    <string name="settings_playback_render_mode_overlay">Lớp phủ</string>
+    <string name="settings_playback_render_mode_overlay_description">Kết xuất phụ đề trên một lớp riêng biệt. Giữ nguyên đầu ra HDR. Thời gian hiển thị phụ đề có thể không chính xác hoàn toàn trên một số thiết bị.</string>
     <string name="settings_playback_reuse_last_link">Dùng lại liên kết cuối</string>
     <string name="settings_playback_reuse_last_link_description">Tự động phát luồng hoạt động gần nhất cho cùng một phim điện ảnh/tập phim khi bộ nhớ đệm vẫn còn hiệu lực.</string>
     <string name="settings_playback_secondary_audio_language">Ngôn ngữ âm thanh phụ</string>
@@ -1155,6 +1170,8 @@
     <string name="settings_playback_engine_auto_description">Dùng ExoPlayer trước và chuyển sang libmpv nếu phát lại thất bại</string>
     <string name="settings_playback_engine_exoplayer_description">Dùng ExoPlayer với bộ giải mã Android Media3</string>
     <string name="settings_playback_engine_libmpv_description">Dùng libmpv để phát lại trên Android</string>
+    <string name="settings_playback_auto_switch_engine_on_error">Tự động chuyển lõi trình phát khi phát lại lỗi</string>
+    <string name="settings_playback_auto_switch_engine_on_error_description">Chuyển sang lõi trình phát khác khi phát lại thất bại, bất kể lõi trình phát nào đang được chọn.</string>
     <string name="settings_playback_libmpv_video_output">Trình kết xuất libmpv</string>
     <string name="settings_playback_libmpv_video_output_dialog">Trình kết xuất libmpv</string>
     <string name="settings_playback_libmpv_hardware_decoding">Giải mã phần cứng libmpv</string>
@@ -1246,6 +1263,8 @@
     <string name="settings_playback_vod_cache_size">Dung lượng bộ nhớ đệm VOD</string>
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Ghi đĩa vẫn tiếp tục khi phát luồng đã đệm. Dung lượng mới sẽ áp dụng từ lần khởi động ứng dụng tiếp theo.</string>
+    <string name="settings_playback_exo_chapters">Hiển thị chương</string>
+    <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng. Thực hiện thêm một vài yêu cầu nhỏ khi bắt đầu phát lại. libmpv luôn hiển thị các chương.</string>
     <string name="settings_tmdb_api_key_label">Mã khoá API</string>
     <string name="settings_tmdb_api_key_override_description">Dùng mã khóa API TMDB của riêng bạn hoặc bỏ trống để sử dụng mặc định.</string>
     <string name="settings_tmdb_personal_api_key">Mã khóa API cá nhân</string>
@@ -2446,6 +2465,7 @@
     <string name="cd_switch_player_engine">Chuyển lõi trình phát</string>
     <string name="cd_stream_info">Thông tin luồng</string>
     <string name="player_engine_switching_manual_message">Đang chuyển sang %1$s...</string>
+    <string name="player_engine_switching_automatic_message">Phát lại thất bại – đang chuyển sang %1$s...</string>
     <string name="player_engine_switch_title">Chuyển sang %1$s?</string>
     <string name="player_engine_switch_message">Video sẽ tải lại từ vị trí hiện tại của bạn.</string>
     <string name="stream_info_section_source">NGUỒN</string>

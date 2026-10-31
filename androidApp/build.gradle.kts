@@ -89,6 +89,8 @@ android {
         jniLibs.directories.add("../composeApp/src/full/jniLibs")
     }
 
+    sourceSets.getByName("androidTest").assets.srcDir("../testFixtures")
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -181,6 +183,7 @@ dependencies {
     androidTestImplementation("androidx.test:core:1.7.0")
     androidTestImplementation(libs.androidx.testExt.junit)
     androidTestImplementation(libs.androidx.activity.compose)
+    androidTestImplementation(libs.compose.foundation)
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:${libs.versions.composeMultiplatform.get()}")
     debugImplementation("androidx.compose.ui:ui-test-manifest:${libs.versions.composeMultiplatform.get()}")
 }

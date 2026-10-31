@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">Synchronizácia zlyhala: Automatickej synchronizácii sa nepodarilo priradiť tieto titulky k videu.</string>
+    <string name="autosync_toast_failed_no_reference">Synchronizácia zlyhala: K dispozícii nie sú žiadne použiteľné vložené titulky na porovnanie.</string>
+    <string name="autosync_toast_failed_unsupported">Synchronizácia zlyhala: Tento formát titulkov nie je podporovaný.</string>
+    <string name="autosync_label_synced">Automaticky synchronizované</string>
+</resources>
