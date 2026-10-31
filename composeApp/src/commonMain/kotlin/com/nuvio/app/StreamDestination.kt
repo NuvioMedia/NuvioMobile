@@ -28,6 +28,7 @@ import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.player.SubtitleRequestExtras
 import com.nuvio.app.features.player.resolveContentLanguage
 import com.nuvio.app.features.player.sanitizePlaybackHeaders
 import com.nuvio.app.features.player.sanitizePlaybackResponseHeaders
@@ -201,6 +202,7 @@ internal fun StreamDestination(
                 requestHeaders = emptyMap(),
                 responseHeaders = emptyMap(),
                 filename = stream.behaviorHints.filename,
+                videoHash = stream.behaviorHints.videoHash,
                 videoSize = stream.behaviorHints.videoSize,
                 infoHash = infoHash,
                 fileIdx = stream.p2pFileIdx,
@@ -237,6 +239,7 @@ internal fun StreamDestination(
             torrentFileIdx = stream.p2pFileIdx,
             torrentFilename = stream.behaviorHints.filename,
             torrentTrackers = stream.p2pTrackers,
+            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints),
             initialPositionMs = resolvedResumePositionMs ?: 0L,
             initialProgressFraction = resolvedResumeProgressFraction,
             contentLanguage = resolveLaunchContentLanguage(),
@@ -360,6 +363,9 @@ internal fun StreamDestination(
                 parentMetaType = launch.parentMetaType ?: launch.type,
                 initialPositionMs = launch.resumePositionMs ?: 0L,
                 initialProgressFraction = launch.resumeProgressFraction,
+                subtitleExtras = SubtitleRequestExtras.from(
+                    StreamBehaviorHints(filename = cached.filename, videoHash = cached.videoHash, videoSize = cached.videoSize),
+                ),
                 contentLanguage = resolveLaunchContentLanguage(cached.contentLanguage),
                 sourceFilename = cached.filename,
                 stream = StreamItem(
@@ -503,6 +509,7 @@ internal fun StreamDestination(
                 requestHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
                 responseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
                 filename = stream.behaviorHints.filename,
+                videoHash = stream.behaviorHints.videoHash,
                 videoSize = stream.behaviorHints.videoSize,
                 bingeGroup = stream.behaviorHints.bingeGroup,
                 streamType = stream.streamType,
@@ -536,6 +543,7 @@ internal fun StreamDestination(
             parentMetaType = launch.parentMetaType ?: launch.type,
             initialPositionMs = serverResumeMs ?: launch.resumePositionMs ?: 0L,
             initialProgressFraction = launch.resumeProgressFraction.takeIf { serverResumeMs == null },
+            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints, sourceUrl),
             contentLanguage = resolveLaunchContentLanguage(),
             sourceFilename = stream.behaviorHints.filename,
             stream = stream,
@@ -699,6 +707,7 @@ internal fun StreamDestination(
                 requestHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request),
                 responseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
                 filename = stream.behaviorHints.filename,
+                videoHash = stream.behaviorHints.videoHash,
                 videoSize = stream.behaviorHints.videoSize,
                 bingeGroup = stream.behaviorHints.bingeGroup,
                 streamType = stream.streamType,
@@ -732,6 +741,7 @@ internal fun StreamDestination(
             parentMetaType = launch.parentMetaType ?: launch.type,
             initialPositionMs = resolvedResumePositionMs ?: 0L,
             initialProgressFraction = resolvedResumeProgressFraction,
+            subtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints, sourceUrl),
             contentLanguage = resolveLaunchContentLanguage(),
             sourceFilename = stream.behaviorHints.filename,
             stream = stream,
