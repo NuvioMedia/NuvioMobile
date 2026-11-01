@@ -51,8 +51,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
@@ -180,14 +178,10 @@ internal fun PlayerControlsShell(
         )
         return
     }
-    val density = LocalDensity.current
-    var timelineHeight by remember { mutableStateOf(0.dp) }
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val centerControlHeight = metrics.playIconSize + maxOf(metrics.playButtonPadding, metrics.sideButtonPadding) * 2
-        val centerBottomPadding = if (useLegacyLayout) metrics.centerLift else maxOf(
-            metrics.centerLift,
-            timelineHeight * 2 + centerControlHeight + 16.dp - maxHeight,
-        )
+        // Keep the modern center controls anchored to the true vertical center.
+        // Timeline details (including optional badges) must not move the primary controls.
+        val centerBottomPadding = if (useLegacyLayout) metrics.centerLift else 0.dp
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -217,6 +211,32 @@ internal fun PlayerControlsShell(
                     ),
                 ),
         )
+
+        if (isLocked && !showPlaybackControls) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .windowInsetsPadding(WindowInsets.safeContent.only(WindowInsetsSides.Top))
+                    .padding(top = 12.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color.Black.copy(alpha = 0.72f))
+                    .clickable(onClick = onLockToggle)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.LockOpen,
+                    contentDescription = stringResource(Res.string.compose_player_unlock_controls),
+                    tint = Color.White,
+                )
+                Text(
+                    text = stringResource(Res.string.compose_player_unlock_controls),
+                    color = Color.White,
+                    style = MaterialTheme.typography.labelLarge,
+                )
+            }
+        }
 
         Box(
             modifier = Modifier
@@ -330,7 +350,6 @@ internal fun PlayerControlsShell(
             if (showPlaybackControls && !useLegacyLayout) {
                 Column(
                     modifier = Modifier
-                        .onSizeChanged { size -> timelineHeight = with(density) { size.height.toDp() } }
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .windowInsetsPadding(playerTimelineBottomInsets(metrics))

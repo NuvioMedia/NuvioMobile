@@ -422,8 +422,8 @@ private fun SubtitleOptionRow(
 
         is SubtitleSelectionOption.Addon -> {
             sourceLabel = option.subtitle.addonName ?: stringResource(Res.string.addon_title)
-            title = languageLabelForCode(option.subtitle.language)
-            metadata = option.subtitle.display.takeIf { it.isNotBlank() && it != title }
+            title = option.subtitle.displayTitle(languageLabelForCode(option.subtitle.language))
+            metadata = null
         }
     }
 

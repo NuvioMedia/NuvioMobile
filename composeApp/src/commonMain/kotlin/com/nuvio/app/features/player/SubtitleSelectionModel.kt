@@ -52,7 +52,7 @@ internal fun subtitleTracksStructureKey(tracks: List<SubtitleTrack>): String =
 
 internal fun addonSubtitlesStructureKey(subtitles: List<AddonSubtitle>): String =
     subtitles.joinToString("\u0001") { subtitle ->
-        "${subtitle.id}\u0000${subtitle.selectionKey}\u0000${subtitle.language}\u0000${subtitle.addonName}\u0000${subtitle.display}"
+        "${subtitle.id}\u0000${subtitle.selectionKey}\u0000${subtitle.language}\u0000${subtitle.addonName}\u0000${subtitle.display}\u0000${subtitle.label}"
     }
 
 internal fun buildSubtitleLanguageItems(

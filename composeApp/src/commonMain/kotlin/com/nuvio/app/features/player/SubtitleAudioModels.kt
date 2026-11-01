@@ -32,7 +32,11 @@ data class AddonSubtitle(
     val display: String,
     val addonName: String? = null,
     val isSelected: Boolean = false,
+    val label: String? = null,
 )
+
+internal fun AddonSubtitle.displayTitle(languageDisplayName: String): String =
+    label?.takeIf { it.isNotBlank() } ?: languageDisplayName
 
 const val SUBTITLE_DELAY_MIN_MS = -60_000
 const val SUBTITLE_DELAY_MAX_MS = 60_000
