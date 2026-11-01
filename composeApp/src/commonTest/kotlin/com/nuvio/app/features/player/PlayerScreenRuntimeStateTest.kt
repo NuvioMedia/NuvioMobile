@@ -20,6 +20,16 @@ class PlayerScreenRuntimeStateTest {
     }
 
     @Test
+    fun subtitleAppearanceUpdatesWithoutAPlaybackSnapshot() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val visibleStyle = derivedStateOf { runtime.subtitleStyle }
+        assertEquals(SubtitleAppearance(), visibleStyle.value.appearance)
+        val style = runtime.subtitleStyle.copy(appearance = SubtitleAppearance(fontId = "serif", shadowEnabled = true))
+        runtime.playerSettingsUiState = runtime.playerSettingsUiState.copy(subtitleStyle = style)
+        assertEquals(style, visibleStyle.value)
+    }
+
+    @Test
     fun endedSnapshotRetainsDurationOnlyForTheSamePlayback() {
         val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
         runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(durationMs = 30_000L))

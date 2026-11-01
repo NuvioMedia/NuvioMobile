@@ -69,6 +69,9 @@ actual fun PlatformPlayerSurface(
     PlayerSettingsRepository.ensureLoaded()
     val playerSettings by PlayerSettingsRepository.uiState.collectAsStateWithLifecycle()
     val latestPlayerSettings = rememberUpdatedState(playerSettings)
+    var subtitleText by remember(sourceUrl) { mutableStateOf("") }
+    var subtitleStyle by remember { mutableStateOf(SubtitleStyleState.DEFAULT) }
+    var subtitleLiftFraction by remember { mutableStateOf(0f) }
 
     val bridge = remember {
         NuvioPlayerBridgeFactory.create()
@@ -276,7 +279,6 @@ actual fun PlatformPlayerSurface(
             }
 
             private var lastSubtitleStyle: SubtitleStyleState? = null
-            private var subtitleLiftFraction = 0f
 
             override fun setSubtitleBottomLift(fraction: Float) {
                 subtitleLiftFraction = fraction
@@ -285,6 +287,7 @@ actual fun PlatformPlayerSurface(
 
             override fun applySubtitleStyle(style: SubtitleStyleState) {
                 lastSubtitleStyle = style
+                subtitleStyle = style
                 bridge.applySubtitleStyle(
                     textColor = style.textColor.toMpvColorString(),
                     backgroundColor = style.backgroundColor.toMpvColorString(),
@@ -294,6 +297,7 @@ actual fun PlatformPlayerSurface(
                     fontSize = style.toMpvSubtitleFontSize(),
                     subPos = mpvSubtitlePositionWithLift(style.toMpvSubtitlePosition(), subtitleLiftFraction),
                     stripSdh = style.stripSdh,
+                    styledOverlay = style.usesStyledOverlay,
                 )
             }
         }
@@ -373,7 +377,9 @@ actual fun PlatformPlayerSurface(
 
     // Cleanup
     DisposableEffect(bridge) {
+        bridge.setSubtitleTextHandler { subtitleText = it }
         onDispose {
+            bridge.setSubtitleTextHandler(null)
             bridge.destroy()
         }
     }
@@ -403,6 +409,7 @@ actual fun PlatformPlayerSurface(
             },
             interactive = false,
         )
+        StyledSubtitleOverlay(subtitleText, subtitleStyle, liftFraction = subtitleLiftFraction)
         
         if (useNativeController) {
             var isPlayingLocal by remember { mutableStateOf(playWhenReady) }

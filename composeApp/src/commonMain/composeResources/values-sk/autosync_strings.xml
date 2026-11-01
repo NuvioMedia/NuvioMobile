@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Automaticky synchronizovať titulky</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Pri spustení prehrávania automaticky synchronizovať preferované titulky z doplnku. Vyžaduje nastavený preferovaný jazyk titulkov.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Hľadanie pre auto. synchronizáciu: Dôkladné</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Pred synchronizáciou pokračovať v porovnávaní ostatných titulkov a vložených stôp pre presnejšiu zhodu. Použijú sa iba dostatočne spoľahlivé zhody.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Hľadanie pre auto. synchronizáciu: Rýchle</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Použiť prvú silnú zhodu skôr. Rovnako ako pri dôkladnom režime sa používajú iba dostatočne spoľahlivé zhody.</string>
+    <string name="settings_playback_auto_sync_tolerance">Tolerancia automatickej synchronizácie: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Ponechať pôvodné časovanie titulkov, ak by ich posun nepresiahol túto hodnotu. Klepnutím zmeníte.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Vypnuté</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>

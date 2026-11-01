@@ -1154,6 +1154,13 @@
     <string name="settings_playback_render_type">Chế độ kết xuất libass</string>
     <string name="settings_playback_render_scale">Độ phân giải kết xuất phụ đề</string>
     <string name="settings_playback_render_scale_description">Độ phân giải thấp hơn giúp tăng hiệu năng khi xử lý hiệu ứng phụ đề phức tạp nhưng làm giảm độ sắc nét</string>
+    <string name="settings_playback_render_mode">Chế độ kết xuất ASS</string>
+    <string name="settings_playback_render_mode_description">Cách phụ đề ASS/SSA được kết xuất lên video</string>
+    <string name="settings_playback_render_mode_tunneled">Phát lại qua đường hầm sẽ bỏ qua quy trình hiệu ứng video. Lớp phủ sẽ được tự động sử dụng.</string>
+    <string name="settings_playback_render_mode_video_effect">Hiệu ứng video</string>
+    <string name="settings_playback_render_mode_video_effect_description">Kết xuất phụ đề trực tiếp lên từng khung hình video. Định thời gian chính xác theo từng khung hình trên mọi phần cứng. Nội dung HDR được ánh xạ tông sáng sang SDR</string>
+    <string name="settings_playback_render_mode_overlay">Lớp phủ</string>
+    <string name="settings_playback_render_mode_overlay_description">Kết xuất phụ đề trên một lớp riêng biệt. Giữ nguyên đầu ra HDR. Thời gian hiển thị phụ đề có thể không chính xác hoàn toàn trên một số thiết bị.</string>
     <string name="settings_playback_reuse_last_link">Dùng lại liên kết cuối</string>
     <string name="settings_playback_reuse_last_link_description">Tự động phát luồng hoạt động gần nhất cho cùng một phim điện ảnh/tập phim khi bộ nhớ đệm vẫn còn hiệu lực.</string>
     <string name="settings_playback_secondary_audio_language">Ngôn ngữ âm thanh phụ</string>
@@ -1163,6 +1170,8 @@
     <string name="settings_playback_engine_auto_description">Dùng ExoPlayer trước và chuyển sang libmpv nếu phát lại thất bại</string>
     <string name="settings_playback_engine_exoplayer_description">Dùng ExoPlayer với bộ giải mã Android Media3</string>
     <string name="settings_playback_engine_libmpv_description">Dùng libmpv để phát lại trên Android</string>
+    <string name="settings_playback_auto_switch_engine_on_error">Tự động chuyển lõi trình phát khi phát lại lỗi</string>
+    <string name="settings_playback_auto_switch_engine_on_error_description">Chuyển sang lõi trình phát khác khi phát lại thất bại, bất kể lõi trình phát nào đang được chọn.</string>
     <string name="settings_playback_libmpv_video_output">Trình kết xuất libmpv</string>
     <string name="settings_playback_libmpv_video_output_dialog">Trình kết xuất libmpv</string>
     <string name="settings_playback_libmpv_hardware_decoding">Giải mã phần cứng libmpv</string>
@@ -2456,6 +2465,7 @@
     <string name="cd_switch_player_engine">Chuyển lõi trình phát</string>
     <string name="cd_stream_info">Thông tin luồng</string>
     <string name="player_engine_switching_manual_message">Đang chuyển sang %1$s...</string>
+    <string name="player_engine_switching_automatic_message">Phát lại thất bại – đang chuyển sang %1$s...</string>
     <string name="player_engine_switch_title">Chuyển sang %1$s?</string>
     <string name="player_engine_switch_message">Video sẽ tải lại từ vị trí hiện tại của bạn.</string>
     <string name="stream_info_section_source">NGUỒN</string>

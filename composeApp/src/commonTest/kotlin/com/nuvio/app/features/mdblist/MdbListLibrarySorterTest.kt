@@ -64,7 +64,7 @@ class MdbListLibrarySorterTest {
     }
 
     @Test
-    fun `release order is fetched once, oriented oldest first by date and serves both directions`() = runTest {
+    fun `release order is fetched once and oriented oldest first by date and serves both directions`() = runTest {
         for (newestFirst in listOf(false, true)) {
             val h = MdbListSyncTestHarness(backgroundScope)
             h.seedLibrary(mdbListLibrarySnapshot(h.http.now).copy(itemsByList = mapOf(MDBLIST_TEST_LIST_KEY to items)))

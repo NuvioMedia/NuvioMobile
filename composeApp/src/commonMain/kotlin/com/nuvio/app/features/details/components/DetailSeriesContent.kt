@@ -858,6 +858,13 @@ private fun EpisodeHorizontalCard(
                 .padding(metrics.contentPadding),
         )
 
+        EpisodeAvailabilityBadge(
+            video = video,
+            modifier = Modifier
+                .align(if (isWatched) Alignment.TopStart else Alignment.TopEnd)
+                .padding(metrics.contentPadding),
+        )
+
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -1246,6 +1253,21 @@ private fun EpisodeListCard(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(8.dp),
+                )
+
+                EpisodeAvailabilityBadge(
+                    video = video,
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(
+                            start = 8.dp,
+                            end = 8.dp,
+                            bottom = if (progressEntry != null && progressEntry.durationMs > 0L && !progressEntry.isCompleted) {
+                                24.dp
+                            } else {
+                                8.dp
+                            },
+                        ),
                 )
             }
 

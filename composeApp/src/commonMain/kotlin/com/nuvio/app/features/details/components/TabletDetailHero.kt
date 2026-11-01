@@ -408,7 +408,9 @@ private fun TabletHeroMetaRow(meta: MetaDetails, showImdbRating: Boolean) {
     }
     val validImdbRating = meta.imdbRating
         ?.takeIf { showImdbRating }
-        ?.takeIf { raw -> raw.toDoubleOrNull()?.let { it > 0.0 } == true }
+        ?.toDoubleOrNull()
+        ?.takeIf { it > 0.0 }
+        ?.let(::formatOneDecimal)
     val itemStyle = MaterialTheme.typography.titleSmall.copy(
         fontSize = NuvioTokens.Type.bodyLg,
         fontWeight = FontWeight.Bold,

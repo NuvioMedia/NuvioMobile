@@ -9,13 +9,22 @@ import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.staticCFunction
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Foundation.NSUserDefaults
 import kotlin.coroutines.resume
 
 @OptIn(ExperimentalForeignApi::class)
 internal actual object AppIconPlatform {
     actual val requiresCloseConfirmation: Boolean = false
 
+    private const val selectedIconKey = "selected_app_icon"
     private var pendingChange: CancellableContinuation<Boolean>? = null
+
+    actual fun loadSelectedIconKey(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(selectedIconKey)
+
+    actual fun saveSelectedIconKey(key: String) {
+        NSUserDefaults.standardUserDefaults.setObject(key, forKey = selectedIconKey)
+    }
 
     actual fun currentIconName(): String? = AppIconOption.entries
         .mapNotNull(AppIconOption::platformName)
