@@ -51,6 +51,7 @@ data class PlayerLaunch(
     val contentLanguage: String? = null,
     val sourceFilename: String? = null,
     val stream: com.nuvio.app.features.streams.StreamItem? = null,
+    val autoLaunchExternal: Boolean = false,
 )
 
 object PlayerLaunchStore {

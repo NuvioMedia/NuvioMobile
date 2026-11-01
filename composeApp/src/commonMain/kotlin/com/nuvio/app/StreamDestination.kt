@@ -181,9 +181,12 @@ internal fun StreamDestination(
         resolvedResumePositionMs: Long?,
         resolvedResumeProgressFraction: Float?,
         replaceStreamRoute: Boolean,
+        forceExternal: Boolean = false,
+        forceInternal: Boolean = false,
     ) {
         val infoHash = stream.p2pInfoHash ?: return
         val sentinelUrl = p2pSentinelUrl(infoHash, stream.p2pFileIdx)
+        val autoLaunchExternal = !forceInternal && (forceExternal || playerSettings.externalPlayerEnabled)
         if (playerSettings.streamReuseLastLinkEnabled) {
             val cacheKey = StreamLinkCacheRepository.contentKey(
                 type = launch.type,
@@ -242,6 +245,7 @@ internal fun StreamDestination(
             contentLanguage = resolveLaunchContentLanguage(),
             sourceFilename = stream.behaviorHints.filename,
             stream = stream,
+            autoLaunchExternal = autoLaunchExternal,
         )
 
         autoPlayNavigationStarted = replaceStreamRoute
@@ -286,6 +290,8 @@ internal fun StreamDestination(
             resolvedResumePositionMs = resolvedResumePositionMs,
             resolvedResumeProgressFraction = resolvedResumeProgressFraction,
             replaceStreamRoute = isAutoPlay,
+            forceExternal = forceExternal,
+            forceInternal = forceInternal,
         )
     }
 
@@ -327,7 +333,7 @@ internal fun StreamDestination(
                     resolvedResumePositionMs = launch.resumePositionMs,
                     resolvedResumeProgressFraction = launch.resumeProgressFraction,
                     forceExternal = false,
-                    forceInternal = true,
+                    forceInternal = false,
                     isAutoPlay = true,
                 )
                 reuseNavigated = true
@@ -474,7 +480,7 @@ internal fun StreamDestination(
                 resolvedResumePositionMs = launch.resumePositionMs,
                 resolvedResumeProgressFraction = launch.resumeProgressFraction,
                 forceExternal = false,
-                forceInternal = true,
+                forceInternal = false,
                 isAutoPlay = true,
             )
             StreamsRepository.consumeAutoPlay()
@@ -836,6 +842,8 @@ internal fun StreamDestination(
                         resolvedResumePositionMs = pending.resumePositionMs,
                         resolvedResumeProgressFraction = pending.resumeProgressFraction,
                         replaceStreamRoute = pending.isAutoPlay,
+                        forceExternal = pending.forceExternal,
+                        forceInternal = pending.forceInternal,
                     )
                 },
                 onDismiss = {
