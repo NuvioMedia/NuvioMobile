@@ -42,6 +42,13 @@ jobs:
           TAG="${BASE%-beta}-beta-iptv.${{ inputs.suffix }}"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "Release tag: $TAG"
+          # Android version code = Nuvio build number x 100 + release number, so it always goes up.
+          NUM=$(sed -nE 's/^[[:space:]]*CURRENT_PROJECT_VERSION[[:space:]]*=[[:space:]]*([0-9]+).*$/\1/p' iosApp/Configuration/Version.xcconfig | head -1)
+          SUF="${{ inputs.suffix }}"
+          case "$SUF" in ''|*[!0-9]*) echo "::error::Release number must be a whole number"; exit 1;; esac
+          if [ "$SUF" -lt 1 ] || [ "$SUF" -gt 99 ]; then echo "::error::Release number must be 1 to 99"; exit 1; fi
+          echo "code=$((NUM * 100 + SUF))" >> "$GITHUB_OUTPUT"
+          echo "Version code: $((NUM * 100 + SUF))"
 
       - uses: actions/setup-java@v4
         with:
@@ -64,13 +71,14 @@ jobs:
       - name: Build APK
         env:
           TAG: ${{ steps.ver.outputs.tag }}
+          CODE: ${{ steps.ver.outputs.code }}
         run: |
           chmod +x gradlew
           # Upstream's gradle.properties asks for 12 GB + 8 GB on a 16 GB runner; the VM gets
           # killed at the packaging peak. Fit the build into the runner.
           sed -i -E 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx6144M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=1024m/; s/^kotlin\.daemon\.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx3072M/' gradle.properties
           echo 'org.gradle.workers.max=3' >> gradle.properties
-          ./gradlew :androidApp:assembleFullRelease -Pnuvio.app.versionName="$TAG" --stacktrace
+          ./gradlew :androidApp:assembleFullRelease -Pnuvio.app.versionName="$TAG" -Pnuvio.app.versionCode="$CODE" --stacktrace
 
       - name: Collect APKs
         env:

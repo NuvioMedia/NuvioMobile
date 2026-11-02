@@ -21,8 +21,7 @@ name: Sync Nuvio Mobile releases
 #                                   Use your own key, not upstream's, so installs don't
 #                                   clash with the Play Store build.
 on:
-  schedule:
-    - cron: "23 * * * *"
+  # The hourly schedule is off on purpose: new Nuvio releases are merged and tested by hand first.
   workflow_dispatch:
     inputs:
       tag:
