@@ -223,7 +223,10 @@ internal object LiveTvRecorder {
                     try {
                         val append = RecordingPlatform.fileSize(path) > 0
                         var lastSave = 0L
-                        RecordingPlatform.download(url, hdrs, path, append, shouldStop = { stopping(rec.id) || LiveTvClock.nowMs() >= currentStop(rec.id) }) { _ ->
+                        val before = if (append) RecordingPlatform.fileSize(path) else 0L
+                        var got = 0L
+                        RecordingPlatform.download(url, hdrs, path, append, shouldStop = { stopping(rec.id) || LiveTvClock.nowMs() >= currentStop(rec.id) }) { total ->
+                            got = total - before
                             val now = LiveTvClock.nowMs()
                             if (now - lastSave > 5_000) {
                                 lastSave = now
@@ -235,8 +238,14 @@ internal object LiveTvRecorder {
                                 }
                             }
                         }
-                        recordedMs += LiveTvClock.nowMs() - segmentStart
-                        problem = null
+                        if (got > 0L) {
+                            recordedMs += LiveTvClock.nowMs() - segmentStart
+                            problem = null
+                        } else if (!stopping(rec.id)) {
+                            // Connected without an error but no video came: say so instead of staying silent.
+                            problem = NO_VIDEO
+                            rec = noteProblem(rec, problem)
+                        }
                         if (finite) break // the whole show has come in
                     } catch (e: CancellationException) {
                         throw e
@@ -266,7 +275,7 @@ internal object LiveTvRecorder {
                 endedAtMs = LiveTvClock.nowMs(),
                 sizeBytes = RecordingPlatform.dirSize(latest.dir),
                 problem = if (hasVideo) problem?.takeIf { latest.durationSec < expectedSec * 0.9 }
-                else (problem ?: "Nothing could be recorded from this channel")
+                else (problem ?: latest.problem ?: "Nothing could be recorded from this channel ($NO_VIDEO_SHORT)")
             )
             if (_recordings.value.any { it.id == done.id }) { save(done); update(done) }
             synchronized(lock) { jobs.remove(rec.id); stopRequested.remove(rec.id) }
@@ -352,12 +361,22 @@ internal object LiveTvRecorder {
                     l.startsWith("#EXTINF:") -> dur = l.removePrefix("#EXTINF:").substringBefore(',').toDoubleOrNull() ?: target.toDouble()
                     l.isNotBlank() && !l.startsWith("#") -> {
                         if (seq > lastSeq) {
-                            val ok = runCatching {
+                            val failure = try {
                                 RecordingPlatform.download(resolve(mediaUrl, l), headers, path, append = RecordingPlatform.fileSize(path) > 0, shouldStop = { stopping(rec.id) }) {}
-                            }.isSuccess
-                            if (ok) {
+                                null
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: RecordingHttpError) {
+                                "The provider answered HTTP ${e.code} for the video pieces"
+                            } catch (e: Exception) {
+                                e.message ?: "unknown error"
+                            }
+                            if (failure == null) {
                                 total += dur
                                 lastSeq = seq
+                            } else if (total <= 0.0) {
+                                problem = failure
+                                noteProblem(rec, failure) // kept even if a stop cancels this loop
                             }
                         }
                         seq++
@@ -454,6 +473,9 @@ internal object LiveTvRecorder {
         val idle = synchronized(lock) { jobs.isEmpty() } || _recordings.value.none { it.isRecording }
         if (idle) RecordingPlatform.keepAlive(false)
     }
+
+    private const val NO_VIDEO = "The provider answered but sent no video. If you're watching this channel, your provider may only allow one connection at a time"
+    private const val NO_VIDEO_SHORT = "no video came back"
 
     /** Below this much free space, recording stops (or the oldest recordings make room). */
     private const val MIN_FREE = 500L * 1024 * 1024
