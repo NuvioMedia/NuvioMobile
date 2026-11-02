@@ -73,7 +73,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.nuvio.app.iptv"
+        applicationId = "com.nuvio.livetv.mobile"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = releaseAppVersionCode
@@ -160,11 +160,11 @@ android {
 androidComponents {
     if (isTestBuild) {
         onVariants(selector().withBuildType("release")) { variant ->
-            variant.applicationId.set("com.nuvio.app.iptv.test")
+            variant.applicationId.set("com.nuvio.livetv.mobile.test")
         }
     }
     onVariants(selector().withBuildType("debug")) { variant ->
-        variant.applicationId.set("com.nuvio.app.iptv.debug")
+        variant.applicationId.set("com.nuvio.livetv.mobile.debug")
     }
 }
 
