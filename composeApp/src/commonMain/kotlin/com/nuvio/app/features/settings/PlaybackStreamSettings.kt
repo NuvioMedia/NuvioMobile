@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.player.DeadLinkTimeoutPolicy
 import com.nuvio.app.features.player.STREAM_AUTO_PLAY_TIMEOUT_VALUES
 import com.nuvio.app.features.plugins.PluginsUiState
 import com.nuvio.app.features.plugins.PluginRepository
@@ -83,6 +84,35 @@ internal fun PlaybackStreamSettings(
                         isTablet = isTablet,
                         onClick = { showReuseCacheDurationDialog = true },
                     )
+                }
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_playback_dead_link_auto_fallback),
+                    description = stringResource(Res.string.settings_playback_dead_link_auto_fallback_description),
+                    checked = settings.deadLinkTimeoutEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = PlayerSettingsRepository::setDeadLinkTimeoutEnabled,
+                )
+                if (settings.deadLinkTimeoutEnabled) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = if (isTablet) 18.dp else 16.dp, vertical = 10.dp)) {
+                        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+                                Text(text = stringResource(Res.string.settings_playback_dead_link_timeout), style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurface)
+                                Text(text = stringResource(Res.string.settings_playback_dead_link_timeout_description), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            ValueBox(text = stringResource(Res.string.settings_playback_seconds, settings.deadLinkTimeoutSeconds), modifier = Modifier.wrapContentWidth())
+                        }
+                        var deadLinkTimeoutSlider by remember(settings.deadLinkTimeoutSeconds) { mutableFloatStateOf(settings.deadLinkTimeoutSeconds.toFloat()) }
+                        Slider(
+                            value = deadLinkTimeoutSlider,
+                            onValueChange = { deadLinkTimeoutSlider = it },
+                            onValueChangeFinished = { PlayerSettingsRepository.setDeadLinkTimeoutSeconds(deadLinkTimeoutSlider.toInt().coerceIn(DeadLinkTimeoutPolicy.MIN_SECONDS, DeadLinkTimeoutPolicy.MAX_SECONDS)) },
+                            valueRange = DeadLinkTimeoutPolicy.MIN_SECONDS.toFloat()..DeadLinkTimeoutPolicy.MAX_SECONDS.toFloat(),
+                            steps = DeadLinkTimeoutPolicy.MAX_SECONDS - DeadLinkTimeoutPolicy.MIN_SECONDS - 1,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         }
