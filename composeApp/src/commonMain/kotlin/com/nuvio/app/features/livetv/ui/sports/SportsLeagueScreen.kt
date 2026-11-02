@@ -157,15 +157,15 @@ private fun TableView(table: Standings, view: StandingsView, conference: String?
                 style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, modifier = Modifier.padding(vertical = NuvioTokens.Space.s4),
             )
         }
-        groups.forEach { g ->
-            item(key = "g:" + g.name) {
+        groups.forEachIndexed { gi, g ->
+            item(key = "g:$gi") {
                 Row(modifier = Modifier.fillMaxWidth().padding(top = NuvioTokens.Space.s10, bottom = NuvioTokens.Space.s4), verticalAlignment = Alignment.CenterVertically) {
                     Text(g.name, style = MaterialTheme.typography.titleSmall, color = tokens.colors.textPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     table.columns.forEach { c -> Text(c.label, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, modifier = Modifier.width(cellWidth(c.key)), textAlign = TextAlign.End) }
                 }
             }
             g.rows.forEachIndexed { i, r ->
-                item(key = "r:" + g.name + ":" + r.id) {
+                item(key = "r:$gi:" + r.id) {
                     StandingsLine(table, r, r.id in mine, onClick = { onTeam(r) })
                     lines.firstOrNull { it.first == r.pos }?.let { (_, label) ->
                         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(vertical = NuvioTokens.Space.s2)) {
