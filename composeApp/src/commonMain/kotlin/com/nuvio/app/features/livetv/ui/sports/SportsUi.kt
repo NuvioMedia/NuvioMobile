@@ -79,6 +79,17 @@ internal fun teamColor(t: TeamInfo?): Color {
 internal fun bandColor(c: Color): Color =
     lerp(c, Color(0xFF0B0E14), if (c.luminance() > 0.5f) 0.5f else if (c.luminance() > 0.25f) 0.25f else 0.08f)
 
+/**
+ * The colour a team's band is made from: [teamColor], except a team whose main colour is nearly
+ * black (Bruins, Golden Knights) takes its second colour when that one is clearly lighter, so the
+ * band shows against the dark card.
+ */
+internal fun bandBase(t: TeamInfo?): Color {
+    val main = teamColor(t)
+    val alt = t?.altColor?.let { Color(it) }
+    return if (main.luminance() < 0.04f && alt != null && alt.luminance() > main.luminance() + 0.05f) alt else main
+}
+
 internal fun leagueColor(l: League?): Color = Color(l?.color ?: 0xFF2A2F3A)
 
 internal val SportsLiveRed = Color(0xFFE53935)
@@ -232,7 +243,7 @@ internal fun StateBadge(ev: SportsEvent, use24h: Boolean) {
 /** One team on its own band in its colour: logo, name, record, and the score (or nothing before the game). */
 @Composable
 private fun TeamLine(side: Side, showScore: Boolean, followed: Boolean, dim: Boolean) {
-    val c = bandColor(teamColor(side.team))
+    val c = bandColor(bandBase(side.team))
     val text = if (dim) Color.White.copy(alpha = 0.75f) else Color.White
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -404,11 +415,13 @@ internal fun RowCard(
             .width(220.dp)
             .clip(tokens.shapes.card)
             .background(if (ev.state == GameState.LIVE) tokens.colors.surfaceElevated else tokens.colors.surface)
-            .clickable(onClick = onClick)
-            .padding(NuvioTokens.Space.s10),
-        verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s4),
+            .clickable(onClick = onClick),
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
+            modifier = Modifier.padding(start = NuvioTokens.Space.s10, end = NuvioTokens.Space.s10, top = NuvioTokens.Space.s10, bottom = NuvioTokens.Space.s4),
+        ) {
             LeagueMark(league, 14.dp)
             Text(league?.short ?: "", style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, maxLines = 1, modifier = Modifier.weight(1f))
             Text(
@@ -421,21 +434,36 @@ internal fun RowCard(
         }
         if (sides.size == 2) {
             sides.forEach { s ->
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
+                val c = bandColor(bandBase(s.team))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Brush.horizontalGradient(
+                                0f to c.copy(alpha = 0.92f),
+                                0.7f to c.copy(alpha = 0.28f),
+                                1f to c.copy(alpha = 0.05f),
+                            ),
+                        )
+                        .padding(horizontal = NuvioTokens.Space.s10, vertical = NuvioTokens.Space.s4),
+                ) {
                     TeamLogo(s.team, 20.dp)
                     Text(
                         text = s.team.name,
                         style = MaterialTheme.typography.bodySmall,
-                        color = tokens.colors.textPrimary,
-                        fontWeight = if (s.winner) FontWeight.Bold else FontWeight.Normal,
+                        color = Color.White,
+                        fontWeight = if (s.winner) FontWeight.Black else FontWeight.Bold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f),
                     )
-                    if (showScore) Text(s.score ?: "–", style = MaterialTheme.typography.bodyMedium, color = tokens.colors.textPrimary, fontWeight = FontWeight.Black)
+                    if (showScore) Text(s.score ?: "–", style = MaterialTheme.typography.bodyMedium, color = Color.White, fontWeight = FontWeight.Black)
                 }
             }
-        } else {
+            Spacer(Modifier.height(NuvioTokens.Space.s6))
+        } else Column(modifier = Modifier.padding(start = NuvioTokens.Space.s10, end = NuvioTokens.Space.s10, bottom = NuvioTokens.Space.s10)) {
             Text(eventHeadline(ev, league), style = MaterialTheme.typography.bodySmall, color = tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Spacer(Modifier.height(NuvioTokens.Space.s2))
             Text(ev.subtitle ?: ev.note ?: "", style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)

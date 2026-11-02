@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -316,19 +317,30 @@ private fun GameBody(ev: SportsEvent, actions: SportsActions) {
 @Composable
 private fun TeamBand(side: Side, showScore: Boolean, winner: Boolean, followed: Boolean, pre: String?, onClick: () -> Unit) {
     val tokens = MaterialTheme.nuvio
+    val c = bandColor(bandBase(side.team))
     Row(
-        modifier = Modifier.fillMaxWidth().clip(tokens.shapes.compactCard).clickable(onClick = onClick).padding(vertical = NuvioTokens.Space.s4),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(tokens.shapes.compactCard)
+            .clickable(onClick = onClick)
+            .background(
+                Brush.horizontalGradient(
+                    0f to c.copy(alpha = 0.92f),
+                    0.7f to c.copy(alpha = 0.28f),
+                    1f to c.copy(alpha = 0.05f),
+                ),
+            )
+            .padding(horizontal = NuvioTokens.Space.s10, vertical = NuvioTokens.Space.s8),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s10),
     ) {
-        Box(Modifier.width(5.dp).height(36.dp).clip(RoundedCornerShape(3.dp)).background(teamColor(side.team)))
         TeamLogo(side.team, 36.dp)
         Column(modifier = Modifier.weight(1f)) {
-            Text(side.team.name + (if (followed) " ★" else ""), style = MaterialTheme.typography.titleMedium, color = tokens.colors.textPrimary, fontWeight = if (winner) FontWeight.Black else FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(side.team.name + (if (followed) " ★" else ""), style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = if (winner) FontWeight.Black else FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             val sub = listOfNotNull(side.record, pre).joinToString(" · ")
-            if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.bodySmall, color = tokens.colors.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (sub.isNotBlank()) Text(sub, style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f), maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        if (showScore) Text(side.score ?: "–", style = MaterialTheme.typography.headlineMedium, color = tokens.colors.textPrimary, fontWeight = FontWeight.Black)
+        if (showScore) Text(side.score ?: "–", style = MaterialTheme.typography.headlineMedium, color = Color.White, fontWeight = FontWeight.Black)
     }
 }
 
