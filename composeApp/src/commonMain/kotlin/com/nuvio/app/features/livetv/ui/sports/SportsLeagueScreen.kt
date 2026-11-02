@@ -202,27 +202,32 @@ private fun cellWidth(key: String) = when (key) {
 @Composable
 private fun StandingsLine(table: Standings, r: StandingsRow, mine: Boolean, onClick: () -> Unit) {
     val tokens = MaterialTheme.nuvio
+    val teamInfo = if (r.athlete) null else TeamInfo(table.leagueId, r.id, r.shortName, r.name, r.abbr, null, r.color, r.altColor, r.logo)
+    val primary = if (teamInfo != null) Color.White else tokens.colors.textPrimary
+    val secondary = if (teamInfo != null) Color.White.copy(alpha = 0.75f) else tokens.colors.textSecondary
     Row(
-        modifier = Modifier.fillMaxWidth().clip(tokens.shapes.compactCard).background(if (mine) tokens.colors.overlaySelected else tokens.colors.surface).clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth().clip(tokens.shapes.compactCard).background(if (mine) tokens.colors.overlaySelected else tokens.colors.surface)
+            .let { if (teamInfo != null) it.background(teamBandBrush(teamInfo, strength = 0.7f)) else it }
+            .clickable(onClick = onClick)
             .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s6),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
     ) {
         Box(Modifier.width(3.dp).height(24.dp).clip(RoundedCornerShape(2.dp)).background(r.zone?.let { Color(it.color) } ?: Color.Transparent))
-        Text(r.pos.toString(), style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted, modifier = Modifier.width(22.dp), textAlign = TextAlign.End)
+        Text(r.pos.toString(), style = MaterialTheme.typography.labelMedium, color = if (teamInfo != null) Color.White.copy(alpha = 0.7f) else tokens.colors.textMuted, modifier = Modifier.width(22.dp), textAlign = TextAlign.End)
         r.change?.let { Text(if (it > 0) "▲" else "▼", style = MaterialTheme.typography.labelSmall, color = if (it > 0) Color(0xFF2E9E5B) else Color(0xFFC0392B)) }
         if (!r.athlete) TeamLogo(TeamInfo(table.leagueId, r.id, r.shortName, r.name, r.abbr, null, r.color, r.altColor, r.logo), 22.dp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 (r.clincher?.let { "$it - " } ?: "") + r.shortName,
-                style = MaterialTheme.typography.bodyMedium, color = tokens.colors.textPrimary, fontWeight = if (mine) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                style = MaterialTheme.typography.bodyMedium, color = primary, fontWeight = if (mine) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             r.form?.takeIf { table.kind != StandingsKind.RACING }?.let { f ->
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { f.forEach { FormSquare(it, 10.dp) } }
             }
         }
         table.columns.forEach { c ->
-            Text(r.values[c.key] ?: "", style = MaterialTheme.typography.bodySmall, color = if (c.key == "points" || c.key == "winPercent") tokens.colors.textPrimary else tokens.colors.textSecondary, fontWeight = if (c.key == "points") FontWeight.Bold else FontWeight.Normal, modifier = Modifier.width(cellWidth(c.key)), textAlign = TextAlign.End, maxLines = 1)
+            Text(r.values[c.key] ?: "", style = MaterialTheme.typography.bodySmall, color = if (c.key == "points" || c.key == "winPercent") primary else secondary, fontWeight = if (c.key == "points") FontWeight.Bold else FontWeight.Normal, modifier = Modifier.width(cellWidth(c.key)), textAlign = TextAlign.End, maxLines = 1)
         }
     }
 }

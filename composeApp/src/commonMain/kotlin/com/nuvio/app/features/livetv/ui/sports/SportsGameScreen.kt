@@ -615,11 +615,20 @@ internal fun TeamSheet(team: TeamInfo, actions: SportsActions, onDismiss: () -> 
     LaunchedEffect(team.key) { games = runCatching { repo.teamGames(team) }.getOrDefault(emptyList()) }
     val followed = follows.followedTeam(team) != null
     NuvioModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, fullHeight = true) {
-        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s8), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s8)
+                .clip(tokens.shapes.compactCard)
+                .background(teamBandBrush(team))
+                .padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s10),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12),
+        ) {
             TeamLogo(team, 44.dp)
             Column(modifier = Modifier.weight(1f)) {
-                Text(team.fullName, style = MaterialTheme.typography.titleMedium, color = tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold)
-                Text(listOfNotNull(SportsCatalog.league(team.leagueId)?.name, team.record).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = tokens.colors.textMuted)
+                Text(team.fullName, style = MaterialTheme.typography.titleMedium, color = Color.White, fontWeight = FontWeight.SemiBold)
+                Text(listOfNotNull(SportsCatalog.league(team.leagueId)?.name, team.record).joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = Color.White.copy(alpha = 0.7f))
             }
             Chip(label = if (followed) "Following" else "Follow", selected = followed, onClick = { repo.toggleTeam(team) })
         }

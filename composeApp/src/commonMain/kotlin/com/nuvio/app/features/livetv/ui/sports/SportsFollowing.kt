@@ -37,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -172,6 +173,7 @@ internal fun SportsSearchTab(known: List<SportsEvent>, follows: SportsFollows, a
                     followed = follows.followedTeam(t) != null,
                     onToggle = { repo.toggleTeam(t) },
                     onClick = { repo.toggleTeam(t) },
+                    band = t,
                 )
             }
             if (q.length < 2) {
@@ -224,25 +226,31 @@ internal fun FollowRow(
     onToggle: () -> Unit,
     onClick: () -> Unit,
     trailing: (@Composable () -> Unit)? = null,
+    /** A team's row takes its colours, like the TV app. */
+    band: TeamInfo? = null,
 ) {
     val tokens = MaterialTheme.nuvio
+    val titleColor = if (band != null) Color.White else tokens.colors.textPrimary
+    val subColor = if (band != null) Color.White.copy(alpha = 0.7f) else tokens.colors.textMuted
     Row(
-        modifier = Modifier.fillMaxWidth().clip(tokens.shapes.card).background(tokens.colors.surface).clickable(onClick = onClick)
+        modifier = Modifier.fillMaxWidth().clip(tokens.shapes.card).background(tokens.colors.surface)
+            .let { if (band != null) it.background(teamBandBrush(band)) else it }
+            .clickable(onClick = onClick)
             .padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s8),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12),
     ) {
         leading()
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge, color = tokens.colors.textPrimary, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = tokens.colors.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(title, style = MaterialTheme.typography.bodyLarge, color = titleColor, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = subColor, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
         trailing?.invoke()
         IconButton(onClick = onToggle) {
             Icon(
                 if (followed) Icons.Filled.Star else Icons.Filled.StarBorder,
                 contentDescription = stringResource(if (followed) Res.string.livetv_sports_unfollow else Res.string.livetv_sports_follow),
-                tint = if (followed) tokens.colors.accent else tokens.colors.textMuted,
+                tint = if (followed) tokens.colors.accent else if (band != null) Color.White.copy(alpha = 0.7f) else tokens.colors.textMuted,
             )
         }
     }
@@ -294,6 +302,7 @@ internal fun TeamPickerSheet(league: League, follows: SportsFollows, onOpenLeagu
                         followed = followed,
                         onToggle = { repo.toggleTeam(t) },
                         onClick = { repo.toggleTeam(t) },
+                        band = t,
                     )
                 }
             }
@@ -341,7 +350,9 @@ internal fun SportsFollowingTab(follows: SportsFollows, settings: SportsSettings
                 val team = follows.teams.firstOrNull { "t:${it.key}" == key }
                 val league = key.takeIf { it.startsWith("l:") }?.let { SportsCatalog.league(it.removePrefix("l:")) }
                 val word = key.takeIf { it.startsWith("w:") }?.removePrefix("w:")
+                val teamInfo = team?.let { TeamInfo(it.leagueId, it.teamId, it.name, it.name, it.abbr, null, it.color, null, it.logo) }
                 FollowRow(
+                    band = teamInfo,
                     title = team?.name ?: league?.name ?: word?.let { "“$it”" } ?: key,
                     subtitle = when {
                         team != null -> SportsCatalog.league(team.leagueId)?.name ?: team.leagueId

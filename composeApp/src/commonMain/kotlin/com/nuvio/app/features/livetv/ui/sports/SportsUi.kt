@@ -90,6 +90,16 @@ internal fun bandBase(t: TeamInfo?): Color {
     return if (main.luminance() < 0.04f && alt != null && alt.luminance() > main.luminance() + 0.05f) alt else main
 }
 
+/** The TV app's team-colour fade: the team's colour, darkened, strong on the left and gone by the right. */
+internal fun teamBandBrush(team: TeamInfo?, strength: Float = 1f): Brush {
+    val c = bandColor(bandBase(team))
+    return Brush.horizontalGradient(
+        0f to c.copy(alpha = 0.92f * strength),
+        0.7f to c.copy(alpha = 0.28f * strength),
+        1f to c.copy(alpha = 0.05f * strength),
+    )
+}
+
 internal fun leagueColor(l: League?): Color = Color(l?.color ?: 0xFF2A2F3A)
 
 internal val SportsLiveRed = Color(0xFFE53935)

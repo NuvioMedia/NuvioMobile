@@ -2,6 +2,9 @@ package com.nuvio.app.features.livetv.ui.sports
 
 import com.nuvio.app.features.livetv.ui.liveTvSideInsets
 import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -200,16 +203,23 @@ private fun MySportsTab(
         items(page.rows, key = { it.key }) { row ->
             val place = row.team?.let { t -> tables[t.leagueId]?.placeText(t.teamId) }
             Column(verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
+                val headerTeam = row.team?.toTeamInfo()
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = NuvioTokens.Space.s16),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = NuvioTokens.Space.s16)
+                        .let { m ->
+                            if (headerTeam != null) m.clip(RoundedCornerShape(NuvioTokens.Radius.lg)).background(teamBandBrush(headerTeam)).padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s6)
+                            else m
+                        },
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
                 ) {
                     row.team?.let { t -> TeamLogo(t.toTeamInfo(), 22.dp) }
                     row.league?.let { l -> LeagueMark(l, 22.dp) }
                     Column(modifier = Modifier.weight(1f)) {
-                        Text(row.title, style = MaterialTheme.typography.titleSmall, color = tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        place?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted) }
+                        Text(row.title, style = MaterialTheme.typography.titleSmall, color = if (headerTeam != null) Color.White else tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        place?.let { Text(it, style = MaterialTheme.typography.labelSmall, color = if (headerTeam != null) Color.White.copy(alpha = 0.7f) else tokens.colors.textMuted) }
                     }
                     row.league?.takeIf { repo.mayHaveTable(it) }?.let { l ->
                         Chip(label = "Table", selected = false, onClick = { actions.onOpenLeague(l) })
