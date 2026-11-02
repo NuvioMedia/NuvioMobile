@@ -140,6 +140,7 @@ import com.nuvio.app.features.player.ExternalPlayerPlatform
 import com.nuvio.app.features.livetv.model.EpgProgram
 import com.nuvio.app.features.livetv.model.LiveChannel
 import com.nuvio.app.features.livetv.player.LiveTvPlayback
+import com.nuvio.app.features.livetv.ui.LiveTvCloudSyncPrompts
 import com.nuvio.app.features.livetv.ui.LiveTvGuideScreen
 import com.nuvio.app.features.livetv.ui.OnDemandActions
 import com.nuvio.app.features.livetv.ui.OnDemandScreen
@@ -1394,6 +1395,8 @@ internal fun MainAppContent(
             selectedContinueWatchingZoomAnchor = zoomAnchor
             selectedContinueWatchingForActions = item
         }
+
+        LiveTvCloudSyncPrompts()
 
         AppUpdaterHost(
             controller = appUpdaterController,

@@ -835,6 +835,7 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
                     Text(it, style = MaterialTheme.typography.bodySmall, color = tokens.colors.textSecondary, modifier = Modifier.padding(NuvioTokens.Space.s16))
                 }
             }
+            LiveTvCloudSyncSection(isTablet = isTablet)
         }
     }
 

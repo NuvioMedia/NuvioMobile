@@ -368,7 +368,7 @@ internal object LiveTvDriveSync {
 
     // ------------------------------------------------------------------ merging
 
-    private suspend fun applyLocally(data: JsonObject) {
+    internal suspend fun applyLocally(data: JsonObject) {
         applying = true
         appliedAtMs = LiveTvClock.nowMs()
         try {
