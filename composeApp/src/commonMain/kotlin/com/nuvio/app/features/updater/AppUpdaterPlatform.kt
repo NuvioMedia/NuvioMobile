@@ -19,6 +19,7 @@ expect object AppUpdaterPlatform {
     suspend fun downloadApk(
         assetUrl: String,
         assetName: String,
+        expectedSha256: String?,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
     ): Result<String>
 

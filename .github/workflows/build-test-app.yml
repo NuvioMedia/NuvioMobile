@@ -4,7 +4,7 @@ name: Build Test App
 # private test repo (homelessbrian/Nuvio_Testing) as a release named mobile-test-<number>.
 # Nothing is kept here and nothing is public. Run it by hand from the Actions tab.
 #
-# Secrets needed: TEST_BUILDS_PUBLISH_TOKEN (a token that can write to Nuvio_Testing: Contents read and write),
+# Secrets needed: LIVETV_TESTER_KEY (the tester key, built into the test app so it can update itself), TEST_BUILDS_PUBLISH_TOKEN (a token that can write to Nuvio_Testing: Contents read and write),
 # the signing key secrets (made by "Create Signing Key") and the app keys (same names as the TV repo).
 # Test builds older than a week are deleted (the newest one is always kept).
 on:
@@ -101,7 +101,9 @@ jobs:
         env:
           NAME: ${{ steps.ver.outputs.name }}
           CODE: ${{ steps.ver.outputs.code }}
+          LIVETV_TESTER_KEY: ${{ secrets.LIVETV_TESTER_KEY }}
         run: |
+          [ -n "$LIVETV_TESTER_KEY" ] || { echo "::error::Add the LIVETV_TESTER_KEY secret first (the same key the TV repo uses)."; exit 1; }
           chmod +x gradlew
           # Fit the build into the runner's memory (the project's own settings ask for 12 GB + 8 GB).
           sed -i -E 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx6144M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=1024m/; s/^kotlin\.daemon\.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx3072M/' gradle.properties

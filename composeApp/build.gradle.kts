@@ -46,6 +46,12 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
     @get:Input
     abstract val tmdbApiKey: Property<String>
 
+    @get:Input
+    abstract val testBuild: Property<Boolean>
+
+    @get:Input
+    abstract val testerKey: Property<String>
+
     @TaskAction
     fun generate() {
         val props = Properties()
@@ -205,6 +211,21 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
             )
         }
 
+        outDir.resolve("com/nuvio/app/features/updater").apply {
+            mkdirs()
+            resolve("UpdateConfig.kt").writeText(
+                """
+                |package com.nuvio.app.features.updater
+                |
+                |object UpdateConfig {
+                |    const val IS_TEST_BUILD = ${testBuild.get()}
+                |    const val TEST_UPDATES_URL = "https://livetv-cloud.nuvioplusiptv.workers.dev"
+                |    const val TESTER_KEY = "${testerKey.get()}"
+                |}
+                """.trimMargin()
+            )
+        }
+
         outDir.resolve("com/nuvio/app/features/settings").apply {
             mkdirs()
             resolve("CommunityConfig.kt").writeText(
@@ -344,6 +365,11 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     supabaseFallbackUrl.set(runtimeConfigValue("NUVIO_SUPABASE_FALLBACK_URL"))
     sentryDsn.set(runtimeConfigValue("SENTRY_DSN"))
     tmdbApiKey.set(runtimeConfigValue("TMDB_API_KEY"))
+    // Test builds (-Pnuvio.app.testBuild=true) update themselves from the private test service; the key is
+    // only ever put into a test build.
+    val isTestBuild = providers.gradleProperty("nuvio.app.testBuild").orNull == "true"
+    testBuild.set(isTestBuild)
+    testerKey.set(if (isTestBuild) runtimeConfigValue("LIVETV_TESTER_KEY") else "")
     sentryEnvironment.set(
         when {
             requestedGradleTasks.any { "benchmark" in it } -> "benchmark"

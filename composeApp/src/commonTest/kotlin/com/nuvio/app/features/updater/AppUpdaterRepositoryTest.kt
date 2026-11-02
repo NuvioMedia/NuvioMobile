@@ -74,3 +74,65 @@ class AppUpdaterRepositoryTest {
     private fun select(response: String, channel: UpdateChannel): AppUpdate? =
         AppUpdaterRepository.selectUpdate(response, channel, listOf("arm64-v8a"))
 }
+
+class UpdateChecksumTest {
+    private val hash = "a".repeat(64)
+
+    @Test
+    fun githubDigestIsReadAndAnythingElseMeansNoCheck() {
+        assertEquals(hash, UpdateChecksum.fromDigest("sha256:$hash"))
+        assertEquals(hash, UpdateChecksum.fromDigest("SHA256:${hash.uppercase()}"))
+        assertNull(UpdateChecksum.fromDigest(null))
+        assertNull(UpdateChecksum.fromDigest("sha1:abc"))
+        assertNull(UpdateChecksum.fromDigest("sha256:123"))
+    }
+
+    @Test
+    fun aMissingChecksumPassesAndAWrongOneFails() {
+        assertEquals(true, UpdateChecksum.matches(null, hash))
+        assertEquals(true, UpdateChecksum.matches(hash, hash.uppercase()))
+        assertEquals(false, UpdateChecksum.matches("b".repeat(64), hash))
+    }
+
+    @Test
+    fun githubAssetDigestReachesTheUpdate() {
+        val response = """{
+            "tag_name": "1.1.0",
+            "assets": [{"name": "app.apk", "browser_download_url": "https://example.com/app.apk",
+                "digest": "sha256:$hash"}]
+        }"""
+        val update = AppUpdaterRepository.selectUpdate(response, UpdateChannel.STABLE, emptyList())
+        assertEquals(hash, update?.sha256)
+    }
+
+    @Test
+    fun testServiceManifestBecomesAnUpdateWithTheKeyOnlyOnTheDownloadAddress() {
+        val service = "https://sync.example"
+        val response = """{
+            "channel": "test", "versionName": "0.6.6-test.123", "versionCode": 123, "notes": "Fixes",
+            "apk": {"name": "Test-123.apk", "size": 99, "sha256": "$hash",
+                "url": "$service/v1/updates/mobile-test/apk/123"}
+        }"""
+        val update = AppUpdaterRepository.selectTestUpdate(response, service, "key123")!!
+        assertEquals("0.6.6-test.123", update.tag)
+        assertEquals("Fixes", update.notes)
+        assertEquals("$service/v1/updates/mobile-test/apk/123?key=key123", update.assetUrl)
+        assertEquals(hash, update.sha256)
+        assertEquals(99L, update.assetSizeBytes)
+    }
+
+    @Test
+    fun testServiceAddressesOnOtherHostsAreNotFollowed() {
+        val response = """{
+            "versionName": "0.6.6-test.123",
+            "apk": {"name": "x.apk", "url": "https://evil.example/x.apk"}
+        }"""
+        assertNull(AppUpdaterRepository.selectTestUpdate(response, "https://sync.example", "key123"))
+    }
+
+    @Test
+    fun newerTestBuildsCompareAsNewer() {
+        assertEquals(true, VersionUtils.isRemoteNewer("0.6.6-test.200", "0.6.6-test.99"))
+        assertEquals(false, VersionUtils.isRemoteNewer("0.6.6-test.99", "0.6.6-test.200"))
+    }
+}

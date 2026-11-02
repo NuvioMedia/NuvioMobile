@@ -26,8 +26,9 @@ actual object AppUpdaterPlatform {
     actual suspend fun downloadApk(
         assetUrl: String,
         assetName: String,
+        expectedSha256: String?,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
-    ): Result<String> = AndroidAppUpdaterPlatform.downloadApk(assetUrl, assetName, onProgress)
+    ): Result<String> = AndroidAppUpdaterPlatform.downloadApk(assetUrl, assetName, expectedSha256, onProgress)
 
     actual fun canRequestPackageInstalls(): Boolean = AndroidAppUpdaterPlatform.canRequestPackageInstalls()
 

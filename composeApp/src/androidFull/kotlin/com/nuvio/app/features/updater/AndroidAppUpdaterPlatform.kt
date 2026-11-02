@@ -13,6 +13,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.updates_checksum_mismatch
 import nuvio.composeapp.generated.resources.updates_download_failed_http
 import nuvio.composeapp.generated.resources.updates_downloaded_file_missing
 import nuvio.composeapp.generated.resources.updates_empty_download_body
@@ -21,6 +22,7 @@ import okhttp3.Request
 import org.jetbrains.compose.resources.getString
 import java.io.File
 import java.io.FileOutputStream
+import java.security.MessageDigest
 import java.util.concurrent.TimeUnit
 
 object AndroidAppUpdaterPlatform {
@@ -71,6 +73,7 @@ object AndroidAppUpdaterPlatform {
     suspend fun downloadApk(
         assetUrl: String,
         assetName: String,
+        expectedSha256: String?,
         onProgress: (downloadedBytes: Long, totalBytes: Long?) -> Unit,
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
@@ -86,6 +89,8 @@ object AndroidAppUpdaterPlatform {
                 .url(assetUrl)
                 .build()
 
+            val digest = MessageDigest.getInstance("SHA-256")
+            try {
             httpClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     error(runBlocking { getString(Res.string.updates_download_failed_http, response.code) })
@@ -103,12 +108,22 @@ object AndroidAppUpdaterPlatform {
                             currentCoroutineContext().ensureActive()
                             if (read <= 0) break
                             output.write(buffer, 0, read)
+                            digest.update(buffer, 0, read)
                             downloadedBytes += read
                             onProgress(downloadedBytes, totalBytes)
                         }
                         output.flush()
                     }
                 }
+            }
+            val actual = digest.digest().joinToString("") { "%02x".format(it) }
+            if (!UpdateChecksum.matches(expectedSha256, actual)) {
+                error(runBlocking { getString(Res.string.updates_checksum_mismatch) })
+            }
+            } catch (t: Throwable) {
+                // Never leave a half-written or unchecked file behind to be installed.
+                destination.delete()
+                throw t
             }
 
             destination.absolutePath

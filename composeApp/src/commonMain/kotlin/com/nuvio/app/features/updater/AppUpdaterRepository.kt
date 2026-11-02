@@ -27,6 +27,23 @@ internal data class GitHubAssetDto(
     @SerialName("browser_download_url") val browserDownloadUrl: String,
     val size: Long? = null,
     @SerialName("content_type") val contentType: String? = null,
+    val digest: String? = null,
+)
+
+@Serializable
+internal data class TestBuildManifestDto(
+    val versionName: String? = null,
+    val versionCode: Long? = null,
+    val notes: String? = null,
+    val apk: TestBuildApkDto? = null,
+)
+
+@Serializable
+internal data class TestBuildApkDto(
+    val name: String? = null,
+    val size: Long? = null,
+    val sha256: String? = null,
+    val url: String? = null,
 )
 
 internal class NoChannelReleaseException : IllegalStateException()
@@ -37,7 +54,50 @@ internal object AppUpdaterRepository {
         isLenient = true
     }
 
-    suspend fun getLatestChannelUpdate(channel: UpdateChannel): Result<AppUpdate> = runCatching {
+    suspend fun getLatestChannelUpdate(channel: UpdateChannel): Result<AppUpdate> =
+        if (UpdateConfig.IS_TEST_BUILD) getLatestTestUpdate() else getLatestGitHubUpdate(channel)
+
+    /** The test app asks the private test service (tester key) instead of GitHub. */
+    private suspend fun getLatestTestUpdate(): Result<AppUpdate> = runCatching {
+        val response = httpRequestRaw(
+            method = "GET",
+            url = "${UpdateConfig.TEST_UPDATES_URL}/v1/updates/mobile-test/latest",
+            headers = mapOf(
+                "Accept" to "application/json",
+                "User-Agent" to "NuvioMobile",
+                "X-Tester-Key" to UpdateConfig.TESTER_KEY,
+            ),
+            body = "",
+        )
+        currentCoroutineContext().ensureActive()
+        if (response.status == 404) throw NoChannelReleaseException()
+        if (response.status !in 200..299) {
+            error(getString(Res.string.updates_github_api_error, response.status))
+        }
+        selectTestUpdate(response.body, UpdateConfig.TEST_UPDATES_URL, UpdateConfig.TESTER_KEY)
+            ?: throw NoChannelReleaseException()
+    }
+
+    internal fun selectTestUpdate(responseBody: String, serviceUrl: String, testerKey: String): AppUpdate? {
+        val manifest = json.decodeFromString<TestBuildManifestDto>(responseBody)
+        val apk = manifest.apk ?: return null
+        val version = manifest.versionName?.takeIf { it.isNotBlank() } ?: return null
+        val path = apk.url?.takeIf { it.isNotBlank() } ?: return null
+        // Only addresses on the test service itself are followed.
+        if (!path.startsWith("${serviceUrl.trimEnd('/')}/")) return null
+        return AppUpdate(
+            tag = version,
+            title = version,
+            notes = manifest.notes.orEmpty(),
+            releaseUrl = null,
+            assetName = apk.name?.takeIf { it.isNotBlank() } ?: "Nuvio-IPTV-Mobile-Test.apk",
+            assetUrl = "$path?key=$testerKey",
+            assetSizeBytes = apk.size,
+            sha256 = UpdateChecksum.fromDigest(apk.sha256),
+        )
+    }
+
+    private suspend fun getLatestGitHubUpdate(channel: UpdateChannel): Result<AppUpdate> = runCatching {
         val response = httpRequestRaw(
             method = "GET",
             url = "https://api.github.com/repos/homelessbrian/NuvioPlusIPTV-Mobile/${releasePath(channel)}",
@@ -82,6 +142,7 @@ internal object AppUpdaterRepository {
                 assetName = asset.name,
                 assetUrl = asset.browserDownloadUrl,
                 assetSizeBytes = asset.size,
+                sha256 = UpdateChecksum.fromDigest(asset.digest),
             )
         }
     }
