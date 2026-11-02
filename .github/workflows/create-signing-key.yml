@@ -32,7 +32,8 @@ jobs:
           STORE_PASS=$(openssl rand -hex 24); KEY_PASS="$STORE_PASS"; ALIAS=nuvioiptv
           echo "::add-mask::$STORE_PASS"
           keytool -genkeypair -v -keystore release.jks -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass "$STORE_PASS" -keypass "$KEY_PASS" -dname "CN=Nuvio IPTV Mobile, O=NuvioPlusIPTV" 2>&1 | grep -v -i "password"
+            -storepass "$STORE_PASS" -keypass "$KEY_PASS" -dname "CN=Nuvio IPTV Mobile, O=NuvioPlusIPTV" 2>&1 | grep -v -i "password" || true
+          [ -s release.jks ] || { echo "::error::keytool did not create the key file (see the lines above)."; exit 1; }
           gh secret set NUVIO_RELEASE_KEYSTORE_BASE64 -R "$GITHUB_REPOSITORY" --body "$(base64 -w0 release.jks)"
           gh secret set NUVIO_RELEASE_STORE_PASSWORD -R "$GITHUB_REPOSITORY" --body "$STORE_PASS"
           gh secret set NUVIO_RELEASE_KEY_PASSWORD -R "$GITHUB_REPOSITORY" --body "$KEY_PASS"
