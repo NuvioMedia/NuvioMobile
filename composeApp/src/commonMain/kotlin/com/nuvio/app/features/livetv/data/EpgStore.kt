@@ -46,6 +46,12 @@ internal expect object EpgStore {
      */
     fun findByWords(fromMs: Long, toMs: Long, minStopMs: Long, words: Collection<String>, inDescription: Boolean = true, limit: Int = 4_000): List<Pair<String, EpgProgram>>
 
+    /**
+     * Sports: every listing starting in [fromMs, toMs) and still on after [minStopMs], one at a time,
+     * read in a single pass (the caller picks out what it wants as the rows go by).
+     */
+    fun scanListings(fromMs: Long, toMs: Long, minStopMs: Long, onRow: (ch: String, start: Long, stop: Long, title: String, descr: String?, cat: String?) -> Unit)
+
     /** What's on now and next for each of [channels] at [nowMs]. */
     fun nowNext(channels: Collection<String>, nowMs: Long): Map<String, NowNext>
 

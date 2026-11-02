@@ -28,7 +28,9 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
         /** Your guide time shift (Live TV settings), in ms: the database keeps the guide's own times. */
         val shiftMs: Long,
         val settings: SportsSettings,
-        val now: Long
+        val now: Long,
+        /** Nobody is on the Sports page: take short breaks while reading the guide so the phone stays smooth. */
+        val gentle: Boolean = false
     )
 
     class Result(val matches: Map<String, List<ChannelMatch>>, val summary: String)
@@ -167,20 +169,26 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
         }
 
         // ---- 1. The guide, a half-hour slot at a time.
-        teamEvents.groupBy { it.startMs / (30 * MINUTE) }.forEach { (_, slot) ->
+        // The guide is read once for all the slots (it used to be searched again for every slot,
+        // which on a slower phone took minutes); each show is checked against every slot's words as it goes by.
+        val guideSlots = teamEvents.groupBy { it.startMs / (30 * MINUTE) }.values.mapNotNull { slot ->
             val slotStart = slot.minOf { it.startMs }
             val slotEnd = slot.maxOf { it.startMs }
-            val words = slot.flatMap { ev -> terms[ev.id]?.sqlWords.orEmpty() }.distinct()
-            if (words.isEmpty()) return@forEach
-            val hits = runCatching {
-                db.findByWords(
-                    fromMs = slotStart - 100 * MINUTE - input.shiftMs,
-                    toMs = slotEnd + 70 * MINUTE - input.shiftMs,
-                    minStopMs = slotStart + 10 * MINUTE - input.shiftMs,
-                    words = words
-                )
-            }.getOrDefault(emptyList())
-            if (hits.isEmpty()) return@forEach
+            val words = slot.flatMap { ev -> terms[ev.id]?.sqlWords.orEmpty() }.map { it.trim() }.filter { it.length >= 3 }.toSet()
+            if (words.isEmpty()) null
+            else GuideSlot(
+                slot = slot,
+                fromMs = slotStart - 100 * MINUTE - input.shiftMs,
+                toMs = slotEnd + 70 * MINUTE - input.shiftMs,
+                minStopMs = slotStart + 10 * MINUTE - input.shiftMs,
+                words = words
+            )
+        }
+        val slotHits = runCatching { guideHitsBySlot(guideSlots, input.gentle) }.getOrDefault(guideSlots.map { emptyList() })
+        guideSlots.forEachIndexed { slotIndex, gs ->
+            val slot = gs.slot
+            val hits = slotHits[slotIndex]
+            if (hits.isEmpty()) return@forEachIndexed
             val prepared = hits.mapNotNull { (key, p0) ->
                 val ch = byKey[key] ?: return@mapNotNull null
                 val p = if (input.shiftMs == 0L) p0 else p0.copy(startMs = p0.startMs + input.shiftMs, stopMs = p0.stopMs + input.shiftMs)
@@ -441,6 +449,63 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
                 word = word
             )
         }
+    }
+
+    // ------------------------------------------------------------------ the guide, read once
+
+    /** One half-hour of games: its guide window and every word its games are looked for by. */
+    private class GuideSlot(
+        val slot: List<SportsEvent>,
+        val fromMs: Long,
+        val toMs: Long,
+        val minStopMs: Long,
+        val words: Set<String>
+    )
+
+    /**
+     * The guide shows for each slot, in the same order as [slots]: shows starting in the slot's window
+     * (and still on at its minimum stop time) whose title or description has one of its words.
+     * One pass over the guide for all slots; a show is split into words once and looked up, rather
+     * than every show being compared with every word for every slot. With [gentle], a short pause
+     * every so often so the screen and video keep priority on slower phones.
+     */
+    private fun guideHitsBySlot(slots: List<GuideSlot>, gentle: Boolean): List<List<Pair<String, EpgProgram>>> {
+        val out = List(slots.size) { ArrayList<Pair<String, EpgProgram>>() }
+        if (slots.isEmpty()) return out
+        // Every word looked for, by its first word, so a show only needs checking against the few that start like one of its own words.
+        val byFirst = HashMap<String, MutableList<String>>()
+        slots.flatMapTo(HashSet<String>()) { it.words }.forEach { w ->
+            byFirst.getOrPut(w.substringBefore(' ')) { ArrayList() } += w
+        }
+        val seen = List(slots.size) { HashSet<String>() }
+        var rows = 0
+        db.scanListings(slots.minOf { it.fromMs }, slots.maxOf { it.toMs }, slots.minOf { it.minStopMs }) { ch, start, stop, title, descr, cat ->
+            if (gentle && ++rows % 1000 == 0) SportsPlatform.pause(3)
+            val nt = norm(title)
+            val nd = if (descr.isNullOrEmpty()) "" else norm(descr)
+            var matched: HashSet<String>? = null
+            fun look(text: String) {
+                if (text.isEmpty()) return
+                for (tok in text.split(' ')) {
+                    if (tok.isEmpty()) continue
+                    val cands = byFirst[tok] ?: continue
+                    for (w in cands) {
+                        if (hasWord(nt, w) || hasWord(nd, w)) (matched ?: HashSet<String>().also { matched = it }).add(w)
+                    }
+                }
+            }
+            look(nt)
+            look(nd)
+            val m = matched ?: return@scanListings
+            for (i in slots.indices) {
+                val s = slots[i]
+                if (start < s.fromMs || start >= s.toMs || stop <= s.minStopMs) continue
+                if (s.words.none { it in m }) continue
+                if (!seen[i].add("$ch|$start")) continue
+                out[i] += ch to EpgProgram(startMs = start, stopMs = stop, title = title, description = descr, category = cat)
+            }
+        }
+        return out
     }
 
     // ------------------------------------------------------------------ how a game is named
@@ -915,12 +980,17 @@ internal interface GuideSearch {
     fun findByWords(fromMs: Long, toMs: Long, minStopMs: Long, words: Collection<String>, inDescription: Boolean = true): List<Pair<String, EpgProgram>>
     fun range(fromMs: Long, toMs: Long, light: Boolean, channels: Collection<String>): Map<String, List<EpgProgram>>
 
+    /** Every listing starting in [fromMs, toMs) and still on after [minStopMs], one at a time, in a single pass. */
+    fun scanListings(fromMs: Long, toMs: Long, minStopMs: Long, onRow: (ch: String, start: Long, stop: Long, title: String, descr: String?, cat: String?) -> Unit)
+
     /** The stored guide. */
     object Store : GuideSearch {
         override fun findByWords(fromMs: Long, toMs: Long, minStopMs: Long, words: Collection<String>, inDescription: Boolean) =
             EpgStore.findByWords(fromMs, toMs, minStopMs, words, inDescription)
         override fun range(fromMs: Long, toMs: Long, light: Boolean, channels: Collection<String>) =
             EpgStore.range(fromMs, toMs, light, channels)
+        override fun scanListings(fromMs: Long, toMs: Long, minStopMs: Long, onRow: (String, Long, Long, String, String?, String?) -> Unit) =
+            EpgStore.scanListings(fromMs, toMs, minStopMs, onRow)
     }
 
     /** A guide held in memory (tests). */
@@ -937,6 +1007,14 @@ internal interface GuideSearch {
                 }
             }
             return out
+        }
+        override fun scanListings(fromMs: Long, toMs: Long, minStopMs: Long, onRow: (String, Long, Long, String, String?, String?) -> Unit) {
+            programs.forEach { (ch, list) ->
+                list.forEach { p ->
+                    if (p.startMs < fromMs || p.startMs >= toMs || p.stopMs <= minStopMs) return@forEach
+                    onRow(ch, p.startMs, p.stopMs, p.title, p.description, p.category)
+                }
+            }
         }
         override fun range(fromMs: Long, toMs: Long, light: Boolean, channels: Collection<String>): Map<String, List<EpgProgram>> =
             channels.distinct().associateWith { ch -> programs[ch].orEmpty().filter { it.startMs < toMs && it.stopMs > fromMs } }.filterValues { it.isNotEmpty() }

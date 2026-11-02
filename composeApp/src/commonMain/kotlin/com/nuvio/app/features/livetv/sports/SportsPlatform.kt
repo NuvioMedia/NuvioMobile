@@ -11,6 +11,9 @@ internal expect object SportsPlatform {
     /** The device's language ("en", "es"), lower case. */
     fun languageCode(): String
 
+    /** Sleeps the calling (background) thread for [ms]: a short break while reading the guide so the screen stays smooth. */
+    fun pause(ms: Long)
+
     /** Strips accents the way java.text.Normalizer NFD + mark removal does, where the platform can. */
     fun foldAccents(text: String): String
 }

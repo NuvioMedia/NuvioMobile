@@ -843,7 +843,9 @@ internal object SportsRepository {
                     quality = user.channelQuality,
                     shiftMs = shift,
                     settings = s,
-                    now = now
+                    now = now,
+                    // Nobody is looking at the Sports page: take short breaks so the phone stays smooth.
+                    gentle = viewers.value == 0
                 )
             )
             _matches.value = result.matches

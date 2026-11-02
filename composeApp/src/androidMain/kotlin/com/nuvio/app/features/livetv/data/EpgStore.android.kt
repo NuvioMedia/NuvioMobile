@@ -217,6 +217,22 @@ internal actual object EpgStore {
         return out
     }
 
+    actual fun scanListings(fromMs: Long, toMs: Long, minStopMs: Long, onRow: (ch: String, start: Long, stop: Long, title: String, descr: String?, cat: String?) -> Unit) {
+        val db = readable ?: return
+        db.rawQuery(
+            "SELECT ch, start, stop, title, descr, cat FROM programs WHERE start >= ? AND start < ? AND stop > ?",
+            arrayOf(fromMs.toString(), toMs.toString(), minStopMs.toString())
+        ).use { c ->
+            while (c.moveToNext()) {
+                onRow(
+                    c.getString(0), c.getLong(1), c.getLong(2), c.getString(3),
+                    if (c.isNull(4)) null else c.getString(4),
+                    if (c.isNull(5)) null else c.getString(5)
+                )
+            }
+        }
+    }
+
     actual fun nowNext(channels: Collection<String>, nowMs: Long): Map<String, NowNext> {
         if (channels.isEmpty()) return emptyMap()
         // Shows on now, plus the next few hours, read light.

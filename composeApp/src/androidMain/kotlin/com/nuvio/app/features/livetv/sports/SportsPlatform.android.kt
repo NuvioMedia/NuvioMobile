@@ -51,5 +51,9 @@ internal actual object SportsPlatform {
     actual fun languageCode(): String = Locale.getDefault().language.lowercase(Locale.ROOT)
 
     private val MARKS = Regex("\\p{M}+")
+    actual fun pause(ms: Long) {
+        try { Thread.sleep(ms) } catch (_: InterruptedException) { Thread.currentThread().interrupt() }
+    }
+
     actual fun foldAccents(text: String): String = Normalizer.normalize(text, Normalizer.Form.NFD).replace(MARKS, "")
 }

@@ -48,6 +48,15 @@ internal actual object EpgStore {
         return out
     }
 
+    actual fun scanListings(fromMs: Long, toMs: Long, minStopMs: Long, onRow: (ch: String, start: Long, stop: Long, title: String, descr: String?, cat: String?) -> Unit) {
+        programs.forEach { (ch, list) ->
+            list.forEach { p ->
+                if (p.startMs < fromMs || p.startMs >= toMs || p.stopMs <= minStopMs) return@forEach
+                onRow(ch, p.startMs, p.stopMs, p.title, p.description, p.category)
+            }
+        }
+    }
+
     actual fun nowNext(channels: Collection<String>, nowMs: Long): Map<String, NowNext> {
         val out = HashMap<String, NowNext>()
         channels.forEach { ch ->
