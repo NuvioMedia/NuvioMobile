@@ -81,6 +81,21 @@ internal fun partyMediaKey(metaType: String, metaId: String, season: Int?, episo
     listOf(metaType.lowercase(), metaId, season?.toString().orEmpty(), episode?.toString().orEmpty())
         .joinToString("|")
 
+/**
+ * A `media` broadcast may only move the party when it names the host as its sender (broadcasts that
+ * name nobody come from the server) and the server already holds that media. Only the host changes
+ * media, so anything else on the channel is a member trying to hijack everyone's player.
+ */
+internal fun acceptsMediaBroadcast(
+    senderId: String?,
+    hostMemberId: String?,
+    broadcastMediaKey: String?,
+    serverMediaKey: String?,
+): Boolean {
+    if (senderId != null && senderId != hostMemberId) return false
+    return broadcastMediaKey != null && broadcastMediaKey == serverMediaKey
+}
+
 @Serializable
 data class PartyPlayback(
     val seq: Long,
