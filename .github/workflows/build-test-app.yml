@@ -1,0 +1,139 @@
+name: Build Test App
+
+# Builds "Nuvio + IPTV Test" (its own app, installs next to the real one) and sends the APK to the
+# private test repo (homelessbrian/Nuvio_Testing) as a release named mobile-test-<number>.
+# Nothing is kept here and nothing is public. Run it by hand from the Actions tab.
+#
+# Secrets needed: TEST_BUILDS_PUBLISH_TOKEN (a token that can write to Nuvio_Testing: Contents read and write),
+# the signing key secrets (made by "Create Signing Key") and the app keys (same names as the TV repo).
+# Test builds older than a week are deleted (the newest one is always kept).
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to build"
+        required: false
+        default: dev
+        type: string
+      notes:
+        description: "What changed (blank = the last commit's title)"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-test-build
+  cancel-in-progress: true
+
+env:
+  TEST_REPO: homelessbrian/Nuvio_Testing
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the test repo is private
+        env:
+          GH_TOKEN: ${{ secrets.TEST_BUILDS_PUBLISH_TOKEN }}
+          KEYSTORE: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          [ -n "$GH_TOKEN" ] || { echo "::error::Add the TEST_BUILDS_PUBLISH_TOKEN secret first."; exit 1; }
+          [ -n "$KEYSTORE" ] || { echo "::error::Run 'Create Signing Key' first."; exit 1; }
+          private=$(gh api "repos/$TEST_REPO" --jq '.private' 2>/dev/null || echo "unknown")
+          if [ "$private" != "true" ]; then
+            echo "::error::$TEST_REPO must be private (it is: $private). Nothing was built or sent."; exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.branch }}
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Write app keys
+        uses: ./.github/actions/app-keys
+        with:
+          backend_url: ${{ secrets.NUVIO_BACKEND_URL }}
+          backend_key: ${{ secrets.NUVIO_BACKEND_KEY }}
+          tmdb_api_key: ${{ secrets.TMDB_API_KEY }}
+          trakt_client_id: ${{ secrets.TRAKT_CLIENT_ID }}
+          trakt_client_secret: ${{ secrets.TRAKT_CLIENT_SECRET }}
+          simkl_client_id: ${{ secrets.SIMKL_CLIENT_ID }}
+          simkl_app_name: ${{ secrets.SIMKL_APP_NAME }}
+          mdblist_client_id: ${{ secrets.MDBLIST_CLIENT_ID }}
+          google_drive_client_id: ${{ secrets.GOOGLE_DRIVE_CLIENT_ID }}
+          google_drive_client_secret: ${{ secrets.GOOGLE_DRIVE_CLIENT_SECRET }}
+          premiumize_client_id: ${{ secrets.PREMIUMIZE_CLIENT_ID }}
+          imdb_ratings_api_base_url: ${{ secrets.IMDB_RATINGS_API_BASE_URL }}
+          imdb_tapframe_api_base_url: ${{ secrets.IMDB_TAPFRAME_API_BASE_URL }}
+          introdb_api_url: ${{ secrets.INTRODB_API_URL }}
+
+      - name: Signing
+        env:
+          KEYSTORE_BASE64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.NUVIO_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NUVIO_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.NUVIO_RELEASE_KEY_PASSWORD }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          {
+            echo "NUVIO_RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks"
+            echo "NUVIO_RELEASE_STORE_PASSWORD=$STORE_PASSWORD"
+            echo "NUVIO_RELEASE_KEY_ALIAS=$KEY_ALIAS"
+            echo "NUVIO_RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> local.properties
+
+      - name: Work out the version
+        id: ver
+        run: |
+          BASE=$(sed -nE 's/^[[:space:]]*MARKETING_VERSION[[:space:]]*=[[:space:]]*([^[:space:]#]+).*$/\1/p' iosApp/Configuration/Version.xcconfig | head -1)
+          MINUTES=$(( ($(date -u +%s) - 1767225600) / 60 ))
+          echo "name=${BASE%-beta}-test.$MINUTES" >> "$GITHUB_OUTPUT"
+          echo "code=$MINUTES" >> "$GITHUB_OUTPUT"
+
+      - name: Build APK
+        env:
+          NAME: ${{ steps.ver.outputs.name }}
+          CODE: ${{ steps.ver.outputs.code }}
+        run: |
+          chmod +x gradlew
+          # Fit the build into the runner's memory (the project's own settings ask for 12 GB + 8 GB).
+          sed -i -E 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx6144M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=1024m/; s/^kotlin\.daemon\.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx3072M/' gradle.properties
+          echo 'org.gradle.workers.max=3' >> gradle.properties
+          ./gradlew :androidApp:assembleFullRelease -Pnuvio.app.testBuild=true \
+            -Pnuvio.app.versionName="$NAME" -Pnuvio.app.versionCode="$CODE" --stacktrace
+
+      - name: Send to the test repo
+        env:
+          GH_TOKEN: ${{ secrets.TEST_BUILDS_PUBLISH_TOKEN }}
+          NOTES: ${{ inputs.notes }}
+          NAME: ${{ steps.ver.outputs.name }}
+          CODE: ${{ steps.ver.outputs.code }}
+        run: |
+          set -euo pipefail
+          dir=androidApp/build/outputs/apk/full/release
+          ls -la "$dir"
+          apk=$(ls "$dir"/*arm64-v8a*.apk 2>/dev/null | head -n 1 || true)
+          [ -n "$apk" ] || apk=$(ls "$dir"/*.apk | head -n 1)
+          mkdir -p out && cp "$apk" "out/Nuvio-IPTV-Mobile-Test-$CODE.apk"
+          [ -n "$NOTES" ] || NOTES=$(git log -1 --format=%s)
+          gh release create "mobile-test-$CODE" "out/Nuvio-IPTV-Mobile-Test-$CODE.apk" -R "$TEST_REPO" \
+            --title "Mobile $NAME" --notes "$NOTES" --prerelease
+          echo "::notice title=Test build ready::$NAME was sent to the test repo."
+
+      - name: Delete test builds older than a week
+        env:
+          GH_TOKEN: ${{ secrets.TEST_BUILDS_PUBLISH_TOKEN }}
+        run: |
+          cutoff=$(date -u -d '7 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          gh api "repos/$TEST_REPO/releases?per_page=100" \
+            --jq '[.[] | select(.tag_name | test("^mobile-test-[0-9]+$"))] | sort_by(.created_at) | reverse | .[1:][] | select(.created_at < "'"$cutoff"'") | .tag_name' \
+            | while read -r old; do
+                gh release delete "$old" -R "$TEST_REPO" --yes --cleanup-tag || true
+              done

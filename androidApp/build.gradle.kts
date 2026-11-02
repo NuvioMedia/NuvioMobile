@@ -49,6 +49,8 @@ val releaseAppVersionCode = providers.gradleProperty("nuvio.app.versionCode").or
         ?.toIntOrNull()
         ?.let { it * 100 }
     ?: error("CURRENT_PROJECT_VERSION is missing or invalid in ${appVersionConfigFile.path}")
+// Test builds (-Pnuvio.app.testBuild=true) install as their own app next to the real one.
+val isTestBuild = providers.gradleProperty("nuvio.app.testBuild").orNull == "true"
 val requestedTaskNames = gradle.startParameter.taskNames.map { it.substringAfterLast(':') }
 val buildsReleaseApks = requestedTaskNames.any {
     it.startsWith("assemble", ignoreCase = true) && it.endsWith("Release", ignoreCase = true)
@@ -95,6 +97,11 @@ android {
     }
 
     sourceSets.getByName("androidTest").assets.srcDir("../testFixtures")
+
+    // The test app's own name ("Nuvio + IPTV Test"); only added for test builds.
+    if (isTestBuild) {
+        sourceSets.getByName("release").res.directories.add("src/iptvTest/res")
+    }
 
     packaging {
         resources {
@@ -151,6 +158,11 @@ android {
 }
 
 androidComponents {
+    if (isTestBuild) {
+        onVariants(selector().withBuildType("release")) { variant ->
+            variant.applicationId.set("com.nuvio.app.iptv.test")
+        }
+    }
     onVariants(selector().withBuildType("debug")) { variant ->
         variant.applicationId.set("com.nuvio.app.iptv.debug")
     }

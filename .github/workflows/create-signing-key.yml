@@ -1,0 +1,50 @@
+name: Create Signing Key
+
+# Run this ONCE. It makes the app's private signing key, saves it as repository secrets, and leaves an
+# encrypted backup you must download and keep. Every update of the app has to be signed with this same
+# key, so losing it means everyone has to uninstall and reinstall.
+#
+# Secrets needed first:
+#   KEY_ADMIN_TOKEN        fine-grained GitHub token for this repo only, permission "Secrets: Read and write"
+#   KEY_BACKUP_PASSPHRASE  a long passphrase (20+ characters) that locks the backup file
+# It refuses to run if a signing key already exists. Delete KEY_ADMIN_TOKEN afterwards.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  create:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Make the key and save the secrets
+        env:
+          GH_TOKEN: ${{ secrets.KEY_ADMIN_TOKEN }}
+          BACKUP_PASSPHRASE: ${{ secrets.KEY_BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          [ -n "$GH_TOKEN" ] || { echo "::error::Add the KEY_ADMIN_TOKEN secret first."; exit 1; }
+          [ "${#BACKUP_PASSPHRASE}" -ge 20 ] || { echo "::error::KEY_BACKUP_PASSPHRASE must be at least 20 characters."; exit 1; }
+          if gh secret list -R "$GITHUB_REPOSITORY" | grep -q '^NUVIO_RELEASE_KEYSTORE_BASE64'; then
+            echo "::error::A signing key already exists. Nothing was changed."; exit 1
+          fi
+          STORE_PASS=$(openssl rand -hex 24); KEY_PASS="$STORE_PASS"; ALIAS=nuvioiptv
+          echo "::add-mask::$STORE_PASS"
+          keytool -genkeypair -v -keystore release.jks -alias "$ALIAS" -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass "$STORE_PASS" -keypass "$KEY_PASS" -dname "CN=Nuvio + IPTV, O=NuvioPlusIPTV" >/dev/null 2>&1
+          gh secret set NUVIO_RELEASE_KEYSTORE_BASE64 -R "$GITHUB_REPOSITORY" --body "$(base64 -w0 release.jks)"
+          gh secret set NUVIO_RELEASE_STORE_PASSWORD -R "$GITHUB_REPOSITORY" --body "$STORE_PASS"
+          gh secret set NUVIO_RELEASE_KEY_PASSWORD -R "$GITHUB_REPOSITORY" --body "$KEY_PASS"
+          gh secret set NUVIO_RELEASE_KEY_ALIAS -R "$GITHUB_REPOSITORY" --body "$ALIAS"
+          mkdir backup && cp release.jks backup/release.jks
+          printf 'alias=%s\nstorePassword=%s\nkeyPassword=%s\n' "$ALIAS" "$STORE_PASS" "$KEY_PASS" > backup/passwords.txt
+          tar -cf - -C backup . | openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass env:BACKUP_PASSPHRASE -out signing-key-backup.enc
+          echo "Key created, 4 secrets saved, encrypted backup written."
+
+      - name: Keep the encrypted backup
+        uses: actions/upload-artifact@v4
+        with:
+          name: signing-key-backup-encrypted
+          path: signing-key-backup.enc
+          retention-days: 3
