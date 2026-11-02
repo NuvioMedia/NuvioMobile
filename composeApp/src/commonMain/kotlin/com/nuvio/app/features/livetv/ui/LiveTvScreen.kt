@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -212,44 +213,46 @@ fun LiveTvScreen(
         NuvioScreen(modifier = Modifier.fillMaxSize(), listState = listState) {
             stickyHeader {
                 Column(modifier = Modifier.background(tokens.colors.background)) {
-                    NuvioScreenHeader(
-                        title = stringResource(Res.string.livetv_title),
-                        actions = {
-                            IconButton(onClick = { searching = !searching; if (!searching) query = "" }) {
-                                Icon(if (searching) Icons.Rounded.Close else Icons.Filled.Search, contentDescription = null, tint = tokens.colors.textPrimary)
-                            }
-                            IconButton(onClick = onOpenGuide) {
-                                Icon(Icons.Filled.CalendarViewDay, contentDescription = stringResource(Res.string.livetv_guide), tint = tokens.colors.textPrimary)
-                            }
-                            if (showOnDemand) {
-                                IconButton(onClick = onOpenOnDemand) {
-                                    Icon(Icons.Filled.Movie, contentDescription = stringResource(Res.string.livetv_on_demand), tint = tokens.colors.textPrimary)
+                    // Upright, a phone is too narrow for every button next to the big title, so the buttons
+                    // that don't fit go into the three-dots menu (sideways, they all fit).
+                    val headerActions = buildList {
+                        add(HeaderAction(Icons.Filled.Search, stringResource(Res.string.livetv_search_hint), tokens.colors.textPrimary, showClose = searching) { searching = !searching; if (!searching) query = "" })
+                        add(HeaderAction(Icons.Filled.CalendarViewDay, stringResource(Res.string.livetv_guide), tokens.colors.textPrimary) { onOpenGuide() })
+                        add(HeaderAction(Icons.Filled.Settings, stringResource(Res.string.livetv_settings), tokens.colors.textPrimary) { onOpenSettings() })
+                        if (showOnDemand) add(HeaderAction(Icons.Filled.Movie, stringResource(Res.string.livetv_on_demand), tokens.colors.textPrimary) { onOpenOnDemand() })
+                        if (sportsOn) add(HeaderAction(Icons.Filled.SportsSoccer, stringResource(Res.string.livetv_sports), tokens.colors.textPrimary) { onOpenSports() })
+                        if (showRecordings) add(HeaderAction(Icons.Filled.FiberManualRecord, stringResource(Res.string.livetv_recordings), if (recordings.any { it.isRecording }) tokens.colors.danger else tokens.colors.textPrimary) { onOpenRecordings() })
+                    }
+                    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                        // Room for buttons beside the title (about 150dp), 48dp each, one of them the menu.
+                        val slots = ((maxWidth - 150.dp) / 48.dp).toInt()
+                        val menuNeeded = state.hasSources || headerActions.size > slots
+                        val inline = if (menuNeeded) (slots - 1).coerceAtLeast(0) else slots
+                        val shown = headerActions.take(inline)
+                        val hidden = headerActions.drop(inline)
+                        NuvioScreenHeader(
+                            title = stringResource(Res.string.livetv_title),
+                            actions = {
+                                shown.forEach { a ->
+                                    IconButton(onClick = a.onClick) {
+                                        Icon(if (a.showClose) Icons.Rounded.Close else a.icon, contentDescription = a.label, tint = a.tint)
+                                    }
                                 }
-                            }
-                            if (sportsOn) {
-                                IconButton(onClick = onOpenSports) {
-                                    Icon(Icons.Filled.SportsSoccer, contentDescription = stringResource(Res.string.livetv_sports), tint = tokens.colors.textPrimary)
+                                if (menuNeeded) {
+                                    IconButton(onClick = { overflow = true }) {
+                                        Icon(Icons.Filled.MoreVert, contentDescription = null, tint = tokens.colors.textPrimary)
+                                    }
+                                    Menu(expanded = overflow, onDismissRequest = { overflow = false }) {
+                                        hidden.forEach { a -> MenuItem(text = a.label, onClick = { overflow = false; a.onClick() }) }
+                                        if (state.hasSources) {
+                                            MenuItem(text = stringResource(Res.string.livetv_manage_menu), onClick = { overflow = false; onOpenManage() })
+                                            MenuItem(text = stringResource(Res.string.livetv_update_now), onClick = { overflow = false; LiveTvRepository.refreshAll(force = true) })
+                                        }
+                                    }
                                 }
-                            }
-                            if (showRecordings) {
-                                IconButton(onClick = onOpenRecordings) {
-                                    Icon(Icons.Filled.FiberManualRecord, contentDescription = stringResource(Res.string.livetv_recordings), tint = if (recordings.any { it.isRecording }) tokens.colors.danger else tokens.colors.textPrimary)
-                                }
-                            }
-                            IconButton(onClick = onOpenSettings) {
-                                Icon(Icons.Filled.Settings, contentDescription = stringResource(Res.string.livetv_settings), tint = tokens.colors.textPrimary)
-                            }
-                            if (state.hasSources) {
-                                IconButton(onClick = { overflow = true }) {
-                                    Icon(Icons.Filled.MoreVert, contentDescription = null, tint = tokens.colors.textPrimary)
-                                }
-                                Menu(expanded = overflow, onDismissRequest = { overflow = false }) {
-                                    MenuItem(text = stringResource(Res.string.livetv_manage_menu), onClick = { overflow = false; onOpenManage() })
-                                    MenuItem(text = stringResource(Res.string.livetv_update_now), onClick = { overflow = false; LiveTvRepository.refreshAll(force = true) })
-                                }
-                            }
-                        },
-                    )
+                            },
+                        )
+                    }
                     PlaylistDropdown(
                         choices = playlistChoices,
                         selectedId = playlistId,
@@ -577,3 +580,12 @@ internal object LiveTvListMemory {
         scrollOffset = offset
     }
 }
+
+/** A button in the Live TV header; those that don't fit across the top go in the three-dots menu. */
+private class HeaderAction(
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val label: String,
+    val tint: Color,
+    val showClose: Boolean = false,
+    val onClick: () -> Unit,
+)
