@@ -165,14 +165,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     ) {
         val playerSurfaceSourceUrl = if (isP2pPlaybackActive) p2pResolvedSourceUrl else activeSourceUrl
         val playbackKey = activePlaybackKey
-        val sourcePlaybackKey = playbackKey.copy(playbackEngine = null)
         val initialPositionRequestKey = currentInitialPositionRequestKey()
-
-        LaunchedEffect(sourcePlaybackKey) {
-            engineFailoverTriggered = false
-            engineFailoverDisarmed = false
-            playbackEngineOverride = null
-        }
 
         val resolvedAutoEngineState = remember(sourcePlaybackKey) {
             mutableStateOf<AndroidPlaybackEngine?>(null)
