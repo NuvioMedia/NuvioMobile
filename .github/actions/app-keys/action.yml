@@ -1,0 +1,87 @@
+name: Write app keys
+description: >
+  Writes local.properties from the repository secrets (the same secret names the TV app uses).
+  Every value is optional; the file is always created so the build can start without any secrets.
+inputs:
+  backend_url:
+    description: "Nuvio backend address (secret NUVIO_BACKEND_URL)"
+    required: false
+    default: ""
+  backend_key:
+    description: "Nuvio backend key (secret NUVIO_BACKEND_KEY)"
+    required: false
+    default: ""
+  tmdb_api_key:
+    required: false
+    default: ""
+  trakt_client_id:
+    required: false
+    default: ""
+  trakt_client_secret:
+    required: false
+    default: ""
+  simkl_client_id:
+    required: false
+    default: ""
+  simkl_app_name:
+    required: false
+    default: ""
+  mdblist_client_id:
+    required: false
+    default: ""
+  google_drive_client_id:
+    required: false
+    default: ""
+  google_drive_client_secret:
+    required: false
+    default: ""
+  premiumize_client_id:
+    required: false
+    default: ""
+  imdb_ratings_api_base_url:
+    required: false
+    default: ""
+  imdb_tapframe_api_base_url:
+    required: false
+    default: ""
+  introdb_api_url:
+    required: false
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Write local.properties
+      shell: bash
+      env:
+        BACKEND_URL: ${{ inputs.backend_url }}
+        BACKEND_KEY: ${{ inputs.backend_key }}
+        TMDB_API_KEY: ${{ inputs.tmdb_api_key }}
+        TRAKT_CLIENT_ID: ${{ inputs.trakt_client_id }}
+        TRAKT_CLIENT_SECRET: ${{ inputs.trakt_client_secret }}
+        SIMKL_CLIENT_ID: ${{ inputs.simkl_client_id }}
+        SIMKL_APP_NAME: ${{ inputs.simkl_app_name }}
+        MDBLIST_CLIENT_ID: ${{ inputs.mdblist_client_id }}
+        GOOGLE_DRIVE_CLIENT_ID: ${{ inputs.google_drive_client_id }}
+        GOOGLE_DRIVE_CLIENT_SECRET: ${{ inputs.google_drive_client_secret }}
+        PREMIUMIZE_CLIENT_ID: ${{ inputs.premiumize_client_id }}
+        IMDB_RATINGS_API_BASE_URL: ${{ inputs.imdb_ratings_api_base_url }}
+        IMDB_TAPFRAME_API_BASE_URL: ${{ inputs.imdb_tapframe_api_base_url }}
+        INTRODB_API_URL: ${{ inputs.introdb_api_url }}
+      run: |
+        : > local.properties
+        add() { if [ -n "$2" ]; then echo "$1=$2" >> local.properties; fi; }
+        add NUVIO_SUPABASE_URL "${BACKEND_URL%/}"
+        add NUVIO_SUPABASE_ANON_KEY "$BACKEND_KEY"
+        add TMDB_API_KEY "$TMDB_API_KEY"
+        add TRAKT_CLIENT_ID "$TRAKT_CLIENT_ID"
+        add TRAKT_CLIENT_SECRET "$TRAKT_CLIENT_SECRET"
+        add SIMKL_CLIENT_ID "$SIMKL_CLIENT_ID"
+        add SIMKL_APP_NAME "$SIMKL_APP_NAME"
+        add MDBLIST_CLIENT_ID "$MDBLIST_CLIENT_ID"
+        add GOOGLE_DRIVE_CLIENT_ID "$GOOGLE_DRIVE_CLIENT_ID"
+        add GOOGLE_DRIVE_CLIENT_SECRET "$GOOGLE_DRIVE_CLIENT_SECRET"
+        add PREMIUMIZE_CLIENT_ID "$PREMIUMIZE_CLIENT_ID"
+        add IMDB_RATINGS_API_BASE_URL "$IMDB_RATINGS_API_BASE_URL"
+        add IMDB_TAPFRAME_API_BASE_URL "$IMDB_TAPFRAME_API_BASE_URL"
+        add INTRODB_API_URL "${INTRODB_API_URL:-https://api.introdb.app/}"
+        echo "Keys set:"; cut -d= -f1 local.properties
