@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Synchronisation automatique des sous-titres</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Synchroniser automatiquement le sous-titre d’addon préféré au démarrage de la lecture. Nécessite une langue de sous-titres préférée.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Recherche de synchronisation automatique&#160;: approfondie</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Continuer à comparer d’autres sous-titres et pistes intégrées pour trouver une correspondance plus précise avant de synchroniser. Seules les correspondances fiables sont appliquées.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Recherche de synchronisation automatique&#160;: rapide</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Utiliser plus tôt la première correspondance fiable. Seules les correspondances fiables sont appliquées, comme avec la recherche approfondie.</string>
+    <string name="settings_playback_auto_sync_tolerance">Tolérance de la synchronisation automatique&#160;: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Conserver le minutage d’origine des sous-titres lorsque la synchronisation les déplacerait de cette valeur au maximum. Appuyez pour modifier.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Désactivée</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>

@@ -1,5 +1,7 @@
 package com.nuvio.app.features.watchprogress
 
+import com.nuvio.app.features.livetv.data.LiveTvPreferences
+
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
@@ -1315,6 +1317,10 @@ object WatchProgressRepository {
         persist: Boolean,
         syncRemote: Boolean,
     ) {
+        // Live TV is only recorded as watch progress when the Live TV setting puts it in Continue Watching.
+        if ((session.contentType == LiveTvWatchProgressType || session.parentMetaType == LiveTvWatchProgressType) &&
+            !LiveTvPreferences.showInContinueWatching.value
+        ) return
         val targetProfileId = session.profileId
         val positionMs = snapshot.positionMs.coerceAtLeast(0L)
         val durationMs = snapshot.durationMs.coerceAtLeast(0L)

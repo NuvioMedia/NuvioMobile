@@ -11,11 +11,17 @@ data class TraktAuthState(
     val expiresIn: Int? = null,
     val username: String? = null,
     val userSlug: String? = null,
-    val pendingAuthorizationState: String? = null,
-    val pendingAuthorizationStartedAtMillis: Long? = null,
+    val deviceCode: String? = null,
+    val deviceUserCode: String? = null,
+    val deviceVerificationUrl: String? = null,
+    val deviceCodeExpiresAtMillis: Long? = null,
+    val devicePollIntervalSeconds: Int? = null,
 ) {
     val isAuthenticated: Boolean
         get() = !accessToken.isNullOrBlank() && !refreshToken.isNullOrBlank()
+
+    val hasPendingDeviceCode: Boolean
+        get() = !deviceCode.isNullOrBlank()
 }
 
 enum class TraktConnectionMode {
@@ -30,10 +36,18 @@ data class TraktAuthUiState(
     val isLoading: Boolean = false,
     val username: String? = null,
     val tokenExpiresAtMillis: Long? = null,
-    val pendingAuthorizationStartedAtMillis: Long? = null,
+    val deviceUserCode: String? = null,
+    val deviceVerificationUrl: String? = null,
+    val deviceCodeExpiresAtMillis: Long? = null,
+    val pollIntervalSeconds: Int = TRAKT_DEFAULT_POLL_INTERVAL_SECONDS,
+    val isPolling: Boolean = false,
+    val authFlow: TraktAuthFlow = TraktAuthFlow.DEVICE_CODE,
     val statusMessage: String? = null,
     val errorMessage: String? = null,
 )
+
+internal const val TRAKT_DEFAULT_POLL_INTERVAL_SECONDS = 5
+const val TRAKT_ACTIVATION_URL = "https://trakt.tv/activate"
 
 enum class TraktBrandAsset {
     Glyph,

@@ -3,6 +3,8 @@ package com.nuvio.app
 import android.content.Intent
 import android.content.res.Configuration
 import com.nuvio.app.features.autosync.AutoSyncPreferencesAndroid
+import com.nuvio.app.features.livetv.LiveTvPreferencesAndroid
+import com.nuvio.app.features.livetv.LiveTvStartup
 import android.os.Bundle
 import androidx.activity.compose.setContent
 
@@ -89,6 +91,8 @@ open class MainActivity : AppCompatActivity() {
         SentryInitializer.start(application)
         super.onCreate(savedInstanceState)
         AutoSyncPreferencesAndroid.initialize(applicationContext) // AutoSync hook
+        LiveTvPreferencesAndroid.initialize(applicationContext) // Live TV hook
+        LiveTvStartup.start() // Live TV hook: background updates and Drive sync
         window.setBackgroundDrawableResource(R.color.nuvio_background)
         pipRemoteActionReceiver = PipRemoteActionReceiver.register(this)
         SyncClientIdentityStorage.initialize(applicationContext)

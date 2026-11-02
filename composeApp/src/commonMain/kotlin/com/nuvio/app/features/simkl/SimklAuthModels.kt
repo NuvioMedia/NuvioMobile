@@ -16,6 +16,7 @@ enum class SimklAuthError {
     TOKEN_EXCHANGE_FAILED,
     INVALID_TOKEN_RESPONSE,
     AUTHORIZATION_REVOKED,
+    RECONNECT_REQUIRED,
 }
 
 data class SimklAuthUiState(
@@ -36,6 +37,7 @@ internal data class SimklStoredAuthState(
     val hasFetchedUserSettings: Boolean = false,
     val settingsActivityWatermark: String? = null,
     val tokenExpiresAtEpochMs: Long? = null,
+    val grantedScope: String? = null,
     val pendingAuthorizationState: String? = null,
     val pendingAuthorizationStartedAtEpochMs: Long? = null,
 ) {

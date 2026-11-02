@@ -1,0 +1,25 @@
+name: Promote release
+
+# Turn a pre-release into a full release and mark it Latest, so the in-app updater's
+# Stable channel and the plain /releases/latest link pick it up.
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to promote, e.g. 0.6.6-beta-iptv.9"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Promote
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release edit "$TAG" -R "$GITHUB_REPOSITORY" --prerelease=false --latest
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json tagName,isPrerelease

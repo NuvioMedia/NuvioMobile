@@ -137,6 +137,24 @@ import com.nuvio.app.features.player.externalPlaybackSession
 import com.nuvio.app.features.player.infusePlaybackCallbacks
 import com.nuvio.app.features.player.recordExternalPlaybackProgress
 import com.nuvio.app.features.player.ExternalPlayerPlatform
+import com.nuvio.app.features.livetv.model.EpgProgram
+import com.nuvio.app.features.livetv.model.LiveChannel
+import com.nuvio.app.features.livetv.player.LiveTvPlayback
+import com.nuvio.app.features.livetv.ui.LiveTvGuideScreen
+import com.nuvio.app.features.livetv.ui.OnDemandActions
+import com.nuvio.app.features.livetv.ui.OnDemandScreen
+import com.nuvio.app.features.livetv.ui.OnDemandSeeAllScreen
+import com.nuvio.app.features.livetv.ui.RecordingsScreen
+import com.nuvio.app.features.livetv.ui.LiveTvManageScreen
+import com.nuvio.app.features.livetv.ui.sports.SportsActions
+import com.nuvio.app.features.livetv.ui.sports.SportsGameScreen
+import com.nuvio.app.features.livetv.ui.sports.SportsLeagueScreen
+import com.nuvio.app.features.livetv.ui.sports.SportsScreen
+import com.nuvio.app.features.livetv.LiveTvDeepLinks
+import com.nuvio.app.features.livetv.LiveTvLink
+import com.nuvio.app.features.livetv.data.LiveTvRepository
+import com.nuvio.app.features.livetv.record.LiveTvRecorder
+import com.nuvio.app.features.livetv.record.LiveTvRecording
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
 import com.nuvio.app.features.player.PlayerSettingsRepository
@@ -188,6 +206,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -256,6 +275,7 @@ internal fun MainAppContent(
         val searchScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val searchListState = rememberLazyListState()
         val libraryScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
+        val liveTvScrollToTopRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val settingsRootActionRequests = remember { MutableSharedFlow<Unit>(extraBufferCapacity = 1) }
         val currentRoute = navBackStack.lastOrNull() as? AppRoute
         LaunchedEffect(currentRoute, posterNavigationEnabled) {
@@ -368,6 +388,14 @@ internal fun MainAppContent(
     val newCollectionTitle = stringResource(Res.string.collections_new)
     val detailsFallbackTitle = stringResource(Res.string.meta_section_details_title)
     val watchPartyTitle = stringResource(Res.string.party_title)
+    val liveTvGuideTitle = stringResource(Res.string.livetv_guide)
+    val liveTvSettingsTitle = stringResource(Res.string.compose_settings_page_livetv)
+    val liveTvCatchupUnavailable = stringResource(Res.string.livetv_catchup_unavailable)
+    val liveTvOnDemandTitle = stringResource(Res.string.livetv_on_demand)
+    val liveTvRecordingsTitle = stringResource(Res.string.livetv_recordings)
+    val liveTvSportsTitle = stringResource(Res.string.livetv_sports)
+    val liveTvChannelGone = stringResource(Res.string.livetv_channel_gone)
+    val liveTvManageTitle = stringResource(Res.string.livetv_manage)
     val isRemoteLibrarySource = libraryUiState.sourceMode != LibrarySourceMode.LOCAL
     val appContentGeneration = if (ownsAppRuntime && appGateController != null) {
         val generation by appGateController.contentGeneration.collectAsStateWithLifecycle()
@@ -420,6 +448,7 @@ internal fun MainAppContent(
                 searchScrollToTopRequests.tryEmit(Unit)
             }
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
+            AppScreenTab.LiveTv -> liveTvScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
         }
     }
@@ -870,6 +899,95 @@ internal fun MainAppContent(
             }
             val launchId = PlayerLaunchStore.put(playerLaunch)
             navController.navigate(PlayerRoute(launchId = launchId, title = playerLaunch.title))
+        }
+
+        fun openLiveChannel(channel: LiveChannel, nowTitle: String?) {
+            val launchId = LiveTvPlayback.prepare(channel, activePlaybackProfileId, nowTitle)
+            navController.navigate(PlayerRoute(launchId = launchId, title = channel.name))
+        }
+
+        fun openOnDemandLaunch(playerLaunch: PlayerLaunch) {
+            if (playerSettingsUiState.externalPlayerEnabled) {
+                coroutineScope.launch { openExternalPlayback(playerLaunch) }
+                return
+            }
+            val launchId = PlayerLaunchStore.put(playerLaunch)
+            navController.navigate(PlayerRoute(launchId = launchId, title = playerLaunch.title))
+        }
+
+        val onDemandActions = OnDemandActions(
+            onPlay = ::openOnDemandLaunch,
+            onOpenDetails = { type, tmdbId, title -> navController.navigate(DetailRoute(type = type, id = "tmdb:$tmdbId", title = title)) },
+            onSeeAll = { kind, categoryUid, title -> navController.navigate(LiveTvOnDemandSeeAllRoute(kind = kind.key, categoryUid = categoryUid, title = title)) },
+        )
+
+        fun openRecording(rec: LiveTvRecording) {
+            val playerLaunch = PlayerLaunch(
+                profileId = activePlaybackProfileId,
+                title = rec.title,
+                sourceUrl = LiveTvRecorder.playUrl(rec),
+                streamType = null,
+                logo = rec.channelLogo,
+                poster = rec.channelLogo,
+                streamTitle = rec.title,
+                streamSubtitle = rec.channelName,
+                pauseDescription = rec.description,
+                providerName = rec.channelName,
+                providerAddonId = LiveTvPlayback.PROVIDER_ID + "-recording",
+                contentType = LiveTvPlayback.CONTENT_TYPE,
+                videoId = "recording:" + rec.id,
+                parentMetaId = "recording:" + rec.id,
+                parentMetaType = LiveTvPlayback.CONTENT_TYPE,
+                sourceFilename = rec.fileName,
+            )
+            val launchId = PlayerLaunchStore.put(playerLaunch)
+            navController.navigate(PlayerRoute(launchId = launchId, title = rec.title))
+        }
+
+        fun openLiveCatchup(channel: LiveChannel, program: EpgProgram) {
+            coroutineScope.launch {
+                val launchId = LiveTvPlayback.prepareCatchup(channel, program, activePlaybackProfileId)
+                if (launchId == null) {
+                    NuvioToastController.show(liveTvCatchupUnavailable)
+                    return@launch
+                }
+                navController.navigate(PlayerRoute(launchId = launchId, title = program.title))
+            }
+        }
+
+        val sportsActions = SportsActions(
+            onPlay = ::openLiveChannel,
+            onPlayCatchup = ::openLiveCatchup,
+            onOpenGame = { ev -> navController.navigate(LiveTvSportsGameRoute(eventId = ev.id, title = ev.title)) },
+            onOpenLeague = { l -> navController.navigate(LiveTvSportsLeagueRoute(leagueId = l.id, title = l.name)) },
+        )
+
+        // Live TV hook: a reminder or game notification was tapped.
+        LaunchedEffect(navController) {
+            if (!ownsAppRuntime) return@LaunchedEffect
+            LiveTvDeepLinks.pending.collectLatest { link ->
+                when (link) {
+                    is LiveTvLink.Channel -> {
+                        LiveTvRepository.ensureLoaded(updateCheckDelayMs = 0L)
+                        val channel = withTimeoutOrNull(15_000L) {
+                            LiveTvRepository.displayChannels.first { list -> list.any { it.key == link.key } }
+                        }?.firstOrNull { it.key == link.key }
+                        if (channel != null) openLiveChannel(channel, null) else NuvioToastController.show(liveTvChannelGone)
+                        LiveTvDeepLinks.consume(link)
+                    }
+                    is LiveTvLink.SportsGame -> {
+                        activateTab(AppScreenTab.LiveTv)
+                        navController.navigate(LiveTvSportsGameRoute(eventId = link.eventId, title = liveTvSportsTitle)) { launchSingleTop = true }
+                        LiveTvDeepLinks.consume(link)
+                    }
+                    LiveTvLink.Sports -> {
+                        activateTab(AppScreenTab.LiveTv)
+                        navController.navigate(LiveTvSportsRoute(liveTvSportsTitle)) { launchSingleTop = true }
+                        LiveTvDeepLinks.consume(link)
+                    }
+                    null -> Unit
+                }
+            }
         }
 
         fun openExternalStreamUrl(url: String): Boolean {
@@ -1334,12 +1452,14 @@ internal fun MainAppContent(
                             searchScrollToTopRequests,
                             libraryScrollToTopRequests,
                             settingsRootActionRequests,
+                            liveTvScrollToTopRequests,
                         ) {
                             AppTabRequests(
                                 homeScrollToTopRequests = homeScrollToTopRequests,
                                 searchScrollToTopRequests = searchScrollToTopRequests,
                                 libraryScrollToTopRequests = libraryScrollToTopRequests,
                                 settingsRootActionRequests = settingsRootActionRequests,
+                                liveTvScrollToTopRequests = liveTvScrollToTopRequests,
                             )
                         },
                         state = remember(
@@ -1469,6 +1589,22 @@ internal fun MainAppContent(
                                 },
                                 onCollectionsSettingsClick = { navController.navigate(CollectionsRoute(collectionsTitle)) },
                                 onWatchPartySettingsClick = { navController.navigate(PartyRoute(title = watchPartyTitle)) },
+                                onLiveTvPlay = ::openLiveChannel,
+                                onLiveTvReplay = ::openLiveCatchup,
+                                onLiveTvOnDemandClick = { navController.navigate(LiveTvOnDemandRoute(liveTvOnDemandTitle)) },
+                                onLiveTvRecordingsClick = { navController.navigate(LiveTvRecordingsRoute(liveTvRecordingsTitle)) },
+                                onLiveTvGuideClick = { navController.navigate(LiveTvGuideRoute(liveTvGuideTitle)) },
+                                onLiveTvSportsClick = { navController.navigate(LiveTvSportsRoute(liveTvSportsTitle)) },
+                                onLiveTvManageClick = { navController.navigate(LiveTvManageRoute(liveTvManageTitle)) },
+                                onLiveTvSettingsClick = {
+                                    if (useNativeNavigation && !isTabletLayout) {
+                                        activateTab(AppScreenTab.Settings)
+                                        navController.navigate(SettingsPageRoute(pageName = "LiveTv", title = liveTvSettingsTitle))
+                                    } else {
+                                        requestedSettingsPageName = "LiveTv"
+                                        activateTab(AppScreenTab.Settings)
+                                    }
+                                },
                                 onFolderClick = { collectionId, folderId ->
                                     val folderTitle = CollectionRepository.collections.value
                                         .firstOrNull { it.id == collectionId }
@@ -1608,6 +1744,50 @@ internal fun MainAppContent(
                         onTestUpdateBanner = if (
                             AppFeaturePolicy.inAppUpdaterEnabled && AppUpdaterPlatform.isDebugBuild
                         ) appUpdaterController::showDebugTestUpdate else null,
+                    )
+                }
+                entry<LiveTvGuideRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    LiveTvGuideScreen(
+                        onBack = onBack,
+                        onPlayChannel = ::openLiveChannel,
+                        modifier = Modifier.fillMaxSize(),
+                        onPlayCatchup = ::openLiveCatchup,
+                    )
+                }
+                entry<LiveTvRecordingsRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    RecordingsScreen(onBack = onBack, onPlay = ::openRecording, modifier = Modifier.fillMaxSize())
+                }
+                entry<LiveTvOnDemandRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    OnDemandScreen(onBack = onBack, actions = onDemandActions, modifier = Modifier.fillMaxSize())
+                }
+                entry<LiveTvManageRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    LiveTvManageScreen(onBack = onBack, modifier = Modifier.fillMaxSize())
+                }
+                entry<LiveTvSportsRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    SportsScreen(onBack = onBack, actions = sportsActions, modifier = Modifier.fillMaxSize())
+                }
+                entry<LiveTvSportsGameRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    SportsGameScreen(eventId = route.eventId, onBack = onBack, actions = sportsActions, modifier = Modifier.fillMaxSize())
+                }
+                entry<LiveTvSportsLeagueRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    SportsLeagueScreen(leagueId = route.leagueId, onBack = onBack, actions = sportsActions, modifier = Modifier.fillMaxSize())
+                }
+                entry<LiveTvOnDemandSeeAllRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    OnDemandSeeAllScreen(
+                        kindKey = route.kind,
+                        categoryUid = route.categoryUid,
+                        title = route.title,
+                        onBack = onBack,
+                        actions = onDemandActions,
+                        modifier = Modifier.fillMaxSize(),
                     )
                 }
                 entry<DownloadsRoute> { route ->

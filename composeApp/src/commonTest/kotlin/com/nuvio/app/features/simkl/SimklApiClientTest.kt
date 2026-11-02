@@ -77,7 +77,7 @@ class SimklApiClientTest {
         harness.client.execute(
             SimklApiRequest(
                 method = SimklHttpMethod.POST,
-                path = "/users/settings",
+                path = "/sync/history",
             ),
         )
 
@@ -187,7 +187,7 @@ class SimklApiClientTest {
                 retryPolicy = SimklRetryPolicy.NEVER,
             ),
         )
-        harness.client.execute(SimklApiRequest(SimklHttpMethod.POST, "/users/settings"))
+        harness.client.execute(SimklApiRequest(SimklHttpMethod.POST, "/sync/history"))
 
         assertEquals(listOf(1_000L), harness.sleeps)
         assertEquals(listOf(0L, 1_400L), engine.requests.map { it.atEpochMs })
@@ -310,9 +310,63 @@ class SimklApiClientTest {
         assertFalse(harness.wasUnauthorized)
     }
 
+    @Test
+    fun `401 forces one refresh and replays the request with the new token`() = runBlocking {
+        val engine = RecordingEngine(response(401), response(200))
+        val rejected = mutableListOf<String>()
+        val harness = TestHarness(engine) { token ->
+            rejected += token
+            SimklUnauthorizedRecovery.Retry("simkl_at_new")
+        }
+
+        val result = harness.client.execute(SimklApiRequest(SimklHttpMethod.GET, "/users/settings"))
+
+        assertEquals(200, result.status)
+        assertEquals(listOf("token"), rejected)
+        assertEquals(
+            listOf("Bearer token", "Bearer simkl_at_new"),
+            engine.requests.map { it.headers["Authorization"] },
+        )
+        assertTrue(engine.requests.all { "client_id=" in it.url && "app-name=" in it.url && "app-version=" in it.url })
+        assertTrue(engine.requests.all { it.headers.getValue("User-Agent").contains('/') })
+        assertFalse(harness.wasUnauthorized)
+    }
+
+    @Test
+    fun `401 after a refreshed replay signs out instead of looping`() = runBlocking {
+        val engine = RecordingEngine(response(401), response(401))
+        var recoveries = 0
+        val harness = TestHarness(engine) {
+            recoveries++
+            SimklUnauthorizedRecovery.Retry("simkl_at_new")
+        }
+
+        assertFailsWith<SimklApiException> {
+            harness.client.execute(SimklApiRequest(SimklHttpMethod.GET, "/sync/activities"))
+        }
+
+        assertEquals(1, recoveries)
+        assertEquals(2, engine.requests.size)
+        assertTrue(harness.wasUnauthorized)
+    }
+
+    @Test
+    fun `aborted recovery fails the request without signing out`() = runBlocking {
+        val engine = RecordingEngine(response(401))
+        val harness = TestHarness(engine) { SimklUnauthorizedRecovery.Abort }
+
+        assertFailsWith<SimklApiException> {
+            harness.client.execute(SimklApiRequest(SimklHttpMethod.GET, "/sync/activities"))
+        }
+
+        assertEquals(1, engine.requests.size)
+        assertFalse(harness.wasUnauthorized)
+    }
+
     private class TestHarness(
         engine: RecordingEngine,
         responseDurationMs: Long = 0L,
+        recover: suspend (String) -> SimklUnauthorizedRecovery = { SimklUnauthorizedRecovery.SignOut },
     ) {
         var now = 0L
         val sleeps = mutableListOf<Long>()
@@ -324,6 +378,7 @@ class SimklApiClientTest {
             },
             accessToken = { "token" },
             onUnauthorized = { wasUnauthorized = true },
+            recoverUnauthorized = recover,
             nowEpochMs = { now },
             sleep = { delayMs ->
                 sleeps += delayMs

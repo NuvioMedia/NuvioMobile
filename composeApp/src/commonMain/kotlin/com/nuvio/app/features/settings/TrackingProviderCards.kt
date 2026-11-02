@@ -38,6 +38,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -76,6 +77,7 @@ import com.nuvio.app.features.simkl.SimklSyncRepository
 import com.nuvio.app.features.simkl.simklBrandPainter
 import com.nuvio.app.features.tracking.TrackingProviderId
 import com.nuvio.app.features.tracking.TrackingRefreshIntent
+import com.nuvio.app.features.trakt.TraktAuthFlow
 import com.nuvio.app.features.trakt.TraktAuthRepository
 import com.nuvio.app.features.trakt.TraktAuthUiState
 import com.nuvio.app.features.trakt.TraktBrandAsset
@@ -90,6 +92,7 @@ import nuvio.composeapp.generated.resources.action_collapse
 import nuvio.composeapp.generated.resources.action_expand
 import nuvio.composeapp.generated.resources.settings_simkl_authorization_expired
 import nuvio.composeapp.generated.resources.settings_simkl_authorization_revoked
+import nuvio.composeapp.generated.resources.settings_simkl_reconnect_required
 import nuvio.composeapp.generated.resources.settings_simkl_connect
 import nuvio.composeapp.generated.resources.settings_simkl_connected_as
 import nuvio.composeapp.generated.resources.settings_simkl_connected_description
@@ -109,7 +112,8 @@ import nuvio.composeapp.generated.resources.settings_tracking_approval_redirect
 import nuvio.composeapp.generated.resources.settings_tracking_disconnect_description
 import nuvio.composeapp.generated.resources.settings_tracking_disconnect_title
 import nuvio.composeapp.generated.resources.settings_tracking_not_connected
-import nuvio.composeapp.generated.resources.settings_trakt_approval_redirect
+import nuvio.composeapp.generated.resources.settings_trakt_approval_device
+import nuvio.composeapp.generated.resources.settings_trakt_approval_loopback
 import nuvio.composeapp.generated.resources.settings_trakt_connect
 import nuvio.composeapp.generated.resources.settings_trakt_connected_as
 import nuvio.composeapp.generated.resources.settings_trakt_default_user
@@ -121,6 +125,7 @@ import nuvio.composeapp.generated.resources.settings_trakt_missing_credentials
 import nuvio.composeapp.generated.resources.settings_trakt_open_login
 import nuvio.composeapp.generated.resources.settings_trakt_save_actions_description
 import nuvio.composeapp.generated.resources.settings_trakt_sign_in_description
+import nuvio.composeapp.generated.resources.trakt_device_open_activate
 import org.jetbrains.compose.resources.stringResource
 
 internal enum class TrackingBrand(val displayName: String) {
@@ -216,6 +221,15 @@ private fun TraktProviderCard(
     uiState: TraktAuthUiState,
     modifier: Modifier,
 ) {
+    val isDeviceFlow = uiState.authFlow == TraktAuthFlow.DEVICE_CODE
+    val deviceUserCode = uiState.deviceUserCode?.takeIf {
+        isDeviceFlow && uiState.mode == TraktConnectionMode.AWAITING_APPROVAL && it.isNotBlank()
+    }
+    var showDeviceCodeDialog by rememberSaveable(deviceUserCode) { mutableStateOf(true) }
+    LaunchedEffect(deviceUserCode) {
+        if (deviceUserCode != null) TraktAuthRepository.resumeDeviceFlowPolling()
+    }
+
     TrackingProviderCard(
         brand = TrackingBrand.TRAKT,
         mode = uiState.mode.toTrackingConnectionCardMode(),
@@ -228,24 +242,40 @@ private fun TraktProviderCard(
         connectedDescription = stringResource(Res.string.settings_trakt_save_actions_description),
         signInDescription = stringResource(Res.string.settings_trakt_sign_in_description),
         finishSignInLabel = stringResource(Res.string.settings_trakt_finish_sign_in),
-        approvalDescription = stringResource(Res.string.settings_trakt_approval_redirect),
+        approvalDescription = stringResource(
+            if (isDeviceFlow) Res.string.settings_trakt_approval_device else Res.string.settings_trakt_approval_loopback,
+        ),
+        authorizationCode = deviceUserCode,
         connectLabel = stringResource(Res.string.settings_trakt_connect),
-        openLoginLabel = stringResource(Res.string.settings_trakt_open_login),
+        openLoginLabel = stringResource(
+            if (isDeviceFlow) Res.string.trakt_device_open_activate else Res.string.settings_trakt_open_login,
+        ),
         disconnectLabel = stringResource(Res.string.settings_trakt_disconnect),
         missingCredentialsMessage = stringResource(Res.string.settings_trakt_missing_credentials),
         statusMessage = uiState.statusMessage.takeUnless {
             uiState.mode == TraktConnectionMode.CONNECTED
         },
         errorMessage = uiState.errorMessage,
-        onConnectRequested = TraktAuthRepository::onConnectRequested,
+        onConnectRequested = {
+            showDeviceCodeDialog = true
+            TraktAuthRepository.onConnectRequested()
+        },
         onResumeAuthorization = {
             TraktAuthRepository.pendingAuthorizationUrl()
                 ?: TraktAuthRepository.onConnectRequested()
         },
-        onCancelAuthorization = TraktAuthRepository::onCancelAuthorization,
-        onDisconnect = TraktAuthRepository::onDisconnectRequested,
+        onCancelAuthorization = { TraktAuthRepository.onCancelAuthorization() },
+        onDisconnect = { TraktAuthRepository.onDisconnectRequested() },
         modifier = modifier,
     )
+
+    if (deviceUserCode != null && showDeviceCodeDialog) {
+        TraktDeviceCodeDialog(
+            uiState = uiState,
+            onCancel = { TraktAuthRepository.onCancelDeviceFlow() },
+            onDismiss = { showDeviceCodeDialog = false },
+        )
+    }
 }
 
 @Composable
@@ -809,6 +839,8 @@ private fun simklErrorMessage(error: SimklAuthError?): String? = when (error) {
     -> stringResource(Res.string.settings_simkl_sign_in_failed)
     SimklAuthError.AUTHORIZATION_REVOKED ->
         stringResource(Res.string.settings_simkl_authorization_revoked)
+    SimklAuthError.RECONNECT_REQUIRED ->
+        stringResource(Res.string.settings_simkl_reconnect_required)
 }
 
 private val TrackingErrorColor = Color(0xFFFFDAD6)

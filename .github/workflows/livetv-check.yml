@@ -1,0 +1,56 @@
+name: Live TV check
+
+# Compile and unit-test the shared code on every push to a livetv/* branch, and on
+# demand. Faster than a full APK build, and needs no PR.
+on:
+  push:
+    branches: ["livetv/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: livetv-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Prepare runtime properties
+        env:
+          LOCAL_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
+        run: |
+          if [ -n "$LOCAL_PROPERTIES_BASE64" ]; then
+            printf '%s' "$LOCAL_PROPERTIES_BASE64" | base64 --decode > local.properties
+            sed -i -E '/^[[:space:]]*(sdk\.dir|NUVIO_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
+          fi
+
+      - name: Compile Android and run shared unit tests
+        run: |
+          chmod +x gradlew
+          ./gradlew :composeApp:compileAndroidMain :composeApp:testAndroidHostTest \
+            --tests 'com.nuvio.app.features.livetv.*' --tests '*RootTabHostTest*' --tests '*TraktAuthFlow*' --tests '*Simkl*' \
+            -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore --stacktrace
+
+      - name: List compile tasks (on failure)
+        if: failure()
+        run: ./gradlew :composeApp:tasks --all -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore | grep -iE "compile|test" || true
+
+      - name: Test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: livetv-test-report
+          path: composeApp/build/reports/tests/
+          if-no-files-found: ignore

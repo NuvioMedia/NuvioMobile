@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Hub
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.NetworkCheck
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
@@ -226,6 +227,11 @@ internal enum class SettingsPage(
         category = SettingsCategory.Services,
         parentPage = Root,
     ),
+    LiveTv(
+        titleRes = Res.string.compose_settings_page_livetv,
+        category = SettingsCategory.Watch,
+        parentPage = Root,
+    ),
 }
 
 internal val SettingsPage.opensInlineOnTablet: Boolean
@@ -277,4 +283,5 @@ internal val SettingsPage.icon: ImageVector
         SettingsPage.PlaybackVideo -> Icons.Default.VideoSettings
         SettingsPage.PlaybackBuffer -> Icons.Default.NetworkCheck
         SettingsPage.PlaybackP2p -> Icons.Default.Hub
+        SettingsPage.LiveTv -> Icons.Default.LiveTv
     }

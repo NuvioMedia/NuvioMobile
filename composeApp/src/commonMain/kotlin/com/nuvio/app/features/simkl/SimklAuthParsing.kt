@@ -42,9 +42,8 @@ internal fun constantTimeEquals(left: String, right: String): Boolean {
 internal fun buildSimklAuthorizationUrl(
     clientId: String,
     redirectUri: String,
-    appName: String,
-    appVersion: String,
     material: SimklPkceMaterial,
+    scope: String = SIMKL_OAUTH_SCOPE,
 ): String = buildString {
     append(SIMKL_AUTHORIZE_URL)
     append("?response_type=code")
@@ -52,13 +51,11 @@ internal fun buildSimklAuthorizationUrl(
     append(clientId.encodeURLParameter())
     append("&redirect_uri=")
     append(redirectUri.encodeURLParameter())
+    append("&scope=")
+    append(scope.encodeURLParameter())
+    append("&state=")
+    append(material.state.encodeURLParameter())
     append("&code_challenge=")
     append(material.challenge.encodeURLParameter())
     append("&code_challenge_method=S256")
-    append("&state=")
-    append(material.state.encodeURLParameter())
-    append("&app-name=")
-    append(appName.encodeURLParameter())
-    append("&app-version=")
-    append(appVersion.encodeURLParameter())
 }

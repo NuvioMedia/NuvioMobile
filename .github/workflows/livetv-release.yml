@@ -1,0 +1,106 @@
+name: Release Live TV build
+
+# Builds and publishes a release from this fork's own branch, for Live TV changes that
+# land between upstream releases. Tags are "<upstream version>-iptv.<n>", for example
+# 0.6.6-beta-iptv.1, so the in-app updater and the hourly upstream sync don't collide.
+#
+# Uses the same secrets as "Sync Nuvio Mobile releases".
+on:
+  workflow_dispatch:
+    inputs:
+      suffix:
+        description: "Live TV release number for this upstream version (1, 2, 3 …)"
+        required: true
+        default: "1"
+      notes:
+        description: "What's new (Markdown)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
+
+env:
+  APP_NAME: NuvioMobilePlusIPTV
+
+concurrency:
+  group: livetv-release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Work out the version
+        id: ver
+        run: |
+          BASE=$(sed -nE 's/^[[:space:]]*MARKETING_VERSION[[:space:]]*=[[:space:]]*([^[:space:]#]+).*$/\1/p' iosApp/Configuration/Version.xcconfig | head -1)
+          TAG="${BASE%-beta}-beta-iptv.${{ inputs.suffix }}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Release tag: $TAG"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Write app keys and signing
+        env:
+          RELEASE_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
+          RELEASE_KEYSTORE_BASE64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          keystore="$RUNNER_TEMP/release.jks"
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$keystore"
+          printf '%s' "$RELEASE_PROPERTIES_BASE64" | base64 --decode > local.properties
+          sed -i -E '/^[[:space:]]*(sdk\.dir|NUVIO_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
+          printf '\nNUVIO_RELEASE_STORE_FILE=%s\n' "$keystore" >> local.properties
+          echo 'Keys with a value:'; awk -F= '/^[A-Z_]+=.+/ {print "  " $1}' local.properties
+
+      - name: Build APK
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          chmod +x gradlew
+          # Upstream's gradle.properties asks for 12 GB + 8 GB on a 16 GB runner; the VM gets
+          # killed at the packaging peak. Fit the build into the runner.
+          sed -i -E 's/^org\.gradle\.jvmargs=.*/org.gradle.jvmargs=-Xmx6144M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=1024m/; s/^kotlin\.daemon\.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx3072M/' gradle.properties
+          echo 'org.gradle.workers.max=3' >> gradle.properties
+          ./gradlew :androidApp:assembleFullRelease -Pnuvio.app.versionName="$TAG" --stacktrace
+
+      - name: Collect APKs
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
+        run: |
+          mkdir -p out
+          for f in $(find androidApp/build/outputs/apk/full/release -name "*.apk"); do
+            name=$(basename "$f" .apk)
+            cp "$f" "out/$APP_NAME-$TAG-${name#androidApp-full-}.apk"
+          done
+          ls -la out
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          target_commitish: ${{ github.sha }}
+          name: Nuvio Mobile + IPTV ${{ steps.ver.outputs.tag }}
+          prerelease: true
+          files: out/*.apk
+          body: ${{ inputs.notes }}
+
+      - name: Update the Downloader link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK=$(ls out/*arm64-v8a*.apk 2>/dev/null | head -1)
+          [ -z "$APK" ] && APK=$(ls out/*.apk | head -1)
+          mkdir -p dl && cp "$APK" "dl/$APP_NAME.apk"
+          gh release view downloader -R "$GITHUB_REPOSITORY" >/dev/null 2>&1 || \
+            gh release create downloader -R "$GITHUB_REPOSITORY" --title "$APP_NAME (always the newest version)" \
+              --notes "Replaced with the newest build every release." --latest=false --prerelease
+          gh release upload downloader "dl/$APP_NAME.apk" -R "$GITHUB_REPOSITORY" --clobber

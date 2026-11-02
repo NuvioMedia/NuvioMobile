@@ -77,6 +77,13 @@ internal fun LazyListScope.settingsRootContent(
                             isTablet = isTablet,
                             onPageClick = onPageClick,
                         )
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsPageRow(
+                            page = SettingsPage.LiveTv,
+                            description = Res.string.compose_settings_root_livetv_description,
+                            isTablet = isTablet,
+                            onPageClick = onPageClick,
+                        )
                     }
                     SettingsCategory.Services -> {
                         SettingsPageRow(

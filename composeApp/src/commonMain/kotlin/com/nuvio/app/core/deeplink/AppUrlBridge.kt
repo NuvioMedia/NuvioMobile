@@ -49,6 +49,7 @@ fun handleAppUrl(url: String) {
     val normalizedUrl = url.trim()
     if (normalizedUrl.isBlank()) return
     if (infusePlaybackCallbacks.handleUrl(normalizedUrl)) return
+    if (com.nuvio.app.features.livetv.LiveTvDeepLinks.handle(normalizedUrl)) return // Live TV hook: reminder notifications
 
     ensureTrackingProvidersRegistered()
     TrackingProviderRegistry.handleAuthCallback(normalizedUrl)

@@ -30,6 +30,9 @@ import com.nuvio.app.features.home.HomeScreen
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.library.LibraryScreen
+import com.nuvio.app.features.livetv.model.EpgProgram
+import com.nuvio.app.features.livetv.model.LiveChannel
+import com.nuvio.app.features.livetv.ui.LiveTvScreen
 import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.library.LibrarySortOption
 import com.nuvio.app.features.profiles.NuvioProfile
@@ -41,6 +44,7 @@ import com.nuvio.app.features.watchprogress.ContinueWatchingItem
 import com.nuvio.app.navigation.AppRoute
 import com.nuvio.app.navigation.NuvioNavigator
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.app_brand_name
 import org.jetbrains.compose.resources.stringResource
@@ -81,6 +85,7 @@ internal data class AppTabRequests(
     val searchScrollToTopRequests: Flow<Unit>,
     val libraryScrollToTopRequests: Flow<Unit>,
     val settingsRootActionRequests: Flow<Unit>,
+    val liveTvScrollToTopRequests: Flow<Unit> = emptyFlow(),
 )
 
 internal data class AppTabActions(
@@ -112,6 +117,14 @@ internal data class AppTabActions(
     val onFolderClick: ((collectionId: String, folderId: String) -> Unit)? = null,
     val onRequestedSettingsPageConsumed: () -> Unit = {},
     val onInitialHomeContentRendered: () -> Unit = {},
+    val onLiveTvPlay: (LiveChannel, String?) -> Unit = { _, _ -> },
+    val onLiveTvGuideClick: () -> Unit = {},
+    val onLiveTvSettingsClick: () -> Unit = {},
+    val onLiveTvReplay: (LiveChannel, EpgProgram) -> Unit = { _, _ -> },
+    val onLiveTvOnDemandClick: () -> Unit = {},
+    val onLiveTvRecordingsClick: () -> Unit = {},
+    val onLiveTvSportsClick: () -> Unit = {},
+    val onLiveTvManageClick: () -> Unit = {},
 )
 
 @Composable
@@ -172,6 +185,21 @@ internal fun AppTabHost(
                     onPreviewLongClick = actions.onPosterLongClick,
                     onDownloadsClick = actions.onDownloadsClick,
                     disintegrationRequest = state.libraryDisintegrationRequest,
+                )
+            }
+
+            AppScreenTab.LiveTv -> {
+                LiveTvScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    scrollToTopRequests = requests.liveTvScrollToTopRequests,
+                    onPlayChannel = actions.onLiveTvPlay,
+                    onOpenGuide = actions.onLiveTvGuideClick,
+                    onOpenSettings = actions.onLiveTvSettingsClick,
+                    onPlayCatchup = actions.onLiveTvReplay,
+                    onOpenOnDemand = actions.onLiveTvOnDemandClick,
+                    onOpenRecordings = actions.onLiveTvRecordingsClick,
+                    onOpenSports = actions.onLiveTvSportsClick,
+                    onOpenManage = actions.onLiveTvManageClick,
                 )
             }
 

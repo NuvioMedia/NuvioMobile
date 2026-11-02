@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">Senkronizasyon başarısız: Otomatik Senkronizasyon bu altyazıyı videoyla eşleştiremedi.</string>
+    <string name="autosync_toast_failed_no_reference">Senkronizasyon başarısız: Karşılaştırılabilecek kullanılabilir gömülü altyazı yok.</string>
+    <string name="autosync_toast_failed_unsupported">Senkronizasyon başarısız: Bu altyazı formatı desteklenmiyor.</string>
+    <string name="autosync_label_synced">Otomatik senkronize edildi</string>
+</resources>

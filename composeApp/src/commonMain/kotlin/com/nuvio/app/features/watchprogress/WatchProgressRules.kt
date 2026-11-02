@@ -1,5 +1,7 @@
 package com.nuvio.app.features.watchprogress
 
+import com.nuvio.app.features.livetv.data.LiveTvPreferences
+
 import com.nuvio.app.features.watching.domain.DefaultContinueWatchingLimit
 import com.nuvio.app.features.watching.domain.WatchingContentRef
 import com.nuvio.app.features.watching.domain.WatchingProgressRecord
@@ -120,7 +122,8 @@ internal fun List<WatchProgressEntry>.continueWatchingEntries(
     limit: Int = ContinueWatchingLimit,
 ): List<WatchProgressEntry> {
     val selectionEntries = filter { entry ->
-        entry.isEffectivelyCompleted || entry.shouldTreatAsInProgressForContinueWatching()
+        (!entry.isLiveTvEntry() || LiveTvPreferences.showInContinueWatching.value) &&
+            (entry.isEffectivelyCompleted || entry.shouldTreatAsInProgressForContinueWatching())
     }.newestByProgressKey().values.toList()
     val domainEntries = continueWatchingProgressEntries(
         progressRecords = selectionEntries.map(WatchProgressEntry::toDomainProgressRecord),
@@ -204,3 +207,9 @@ private fun WatchProgressEntry.toDomainProgressRecord(): WatchingProgressRecord 
             identityKey = entry.resolvedProgressKey(),
         )
     }
+
+/** Live TV channels and catch-up replays stay out of Continue Watching unless the Live TV setting turns them on. */
+internal const val LiveTvWatchProgressType = "livetv"
+
+internal fun WatchProgressEntry.isLiveTvEntry(): Boolean =
+    contentType == LiveTvWatchProgressType || parentMetaType == LiveTvWatchProgressType

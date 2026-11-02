@@ -149,6 +149,58 @@ data class CatalogRoute(
 ) : AppRoute
 
 @Serializable
+data class LiveTvGuideRoute(override val title: String = "") : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
+data class LiveTvOnDemandRoute(override val title: String = "") : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
+data class LiveTvRecordingsRoute(override val title: String = "") : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
+data class LiveTvManageRoute(override val title: String = "") : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
+data class LiveTvSportsRoute(override val title: String = "") : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
+data class LiveTvSportsGameRoute(val eventId: String, override val title: String = "") : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
+data class LiveTvSportsLeagueRoute(val leagueId: String, override val title: String = "") : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
+data class LiveTvOnDemandSeeAllRoute(
+    val kind: String,
+    val categoryUid: String? = null,
+    override val title: String = "",
+) : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
 data class PlayerRoute(
     val launchId: Long,
     override val title: String = "",

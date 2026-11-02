@@ -27,9 +27,11 @@ import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
 import com.nuvio.app.features.player.skip.SkipIntroRepository
+import com.nuvio.app.features.player.skip.segmentCategory
 import com.nuvio.app.features.player.skip.shouldAutoSkip
 import com.nuvio.app.features.player.skip.internalSkipAction
 import com.nuvio.app.features.player.skip.intervalsAtSeekPositions
+import com.nuvio.app.features.livetv.player.LiveTvPlayback
 import com.nuvio.app.features.servers.ServerPlayback
 import com.nuvio.app.features.servers.ServerStreams
 import com.nuvio.app.features.streams.BingeGroupCacheRepository
@@ -534,6 +536,7 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
             isLoading = playbackSnapshot.isLoading,
             isEnded = playbackSnapshot.isEnded,
         )
+        if (playbackSnapshot.isPlaying) LiveTvPlayback.onPlaying(activeSourceUrl)
         if (playbackSnapshot.isEnded) {
             flushWatchProgress(TrackingScrobbleAction.STOP)
             previousIsPlaying = false
@@ -692,7 +695,8 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         if (current != activeSkipInterval) {
             if (current != null) {
                 // Keep dismissed state when replacing same segment type (e.g. API recap -> chapter recap)
-                val keepDismissed = activeSkipInterval != null && activeSkipInterval?.type == current.type
+                val keepDismissed = activeSkipInterval != null &&
+                    segmentCategory(activeSkipInterval?.type ?: "") == segmentCategory(current.type)
                 activeSkipInterval = current
                 if (!keepDismissed) skipIntervalDismissed = false
             } else if (activeSkipInterval != null) {
@@ -700,7 +704,7 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
                 // starts within 2s (chapter replacing API with a slightly later start).
                 val posSec = playbackSnapshot.positionMs / 1000.0
                 val nearby = skipIntervals.firstOrNull {
-                    it.type == activeSkipInterval?.type &&
+                    segmentCategory(it.type) == segmentCategory(activeSkipInterval?.type ?: "") &&
                         posSec < it.startTime &&
                         it.startTime - posSec <= 2.0
                 }
@@ -893,6 +897,7 @@ internal fun PlayerScreenRuntime.removeFailedStreamFromCache() {
 
 internal fun PlayerScreenRuntime.tryRefreshCredentialedSourceAfterError(message: String?): Boolean {
     if (ServerStreams.isServerSourceId(activeProviderAddonId)) return retryServerSourceAfterError(message)
+    if (LiveTvPlayback.owns(activeProviderAddonId)) return retryLiveTvSourceAfterError(message)
     val failedUrl = activeSourceUrl
     if (!failedUrl.hasLikelyExpiringPlaybackCredentials()) return false
     if (credentialRefreshJob?.isActive == true) return true
@@ -984,6 +989,42 @@ internal fun PlayerScreenRuntime.tryRefreshCredentialedSourceAfterError(message:
         } finally {
             PlayerStreamsRepository.stopSourcesLoading()
         }
+    }
+    return true
+}
+
+/**
+ * A live channel that won't play: its TS link, then a backup channel with the same name (see
+ * [LiveTvPlayback.fallbackFor]). Each link is tried once; when nothing is left the error shows,
+ * in plain words.
+ */
+private fun PlayerScreenRuntime.retryLiveTvSourceAfterError(message: String?): Boolean {
+    if (credentialRefreshJob?.isActive == true) return true
+    val failedUrl = activeSourceUrl
+    val fallback = LiveTvPlayback.fallbackFor(failedUrl)
+    if (fallback == null) {
+        errorMessage = LiveTvPlayback.describeError(message, failedUrl)
+        controlsVisible = !playerControlsLocked
+        return true
+    }
+    errorMessage = null
+    credentialRefreshJob = scope.launch {
+        fallback.switchedFrom?.let { from ->
+            NuvioToastController.show(getString(Res.string.livetv_switched_to_backup, from.name, fallback.channel.name))
+        }
+        activeSourceUrl = fallback.request.url
+        activeSourceAudioUrl = null
+        activeSourceHeaders = sanitizePlaybackHeaders(fallback.request.headers)
+        activeStreamType = fallback.request.streamType
+        activeStreamFilename = sourceFilenameFromUrl(fallback.request.url)
+        if (fallback.switchedFrom != null) {
+            activeStreamTitle = fallback.channel.name
+            activeProviderName = fallback.channel.sourceName
+            activeVideoId = fallback.channel.key
+        }
+        activeInitialPositionMs = 0L
+        activeInitialProgressFraction = null
+        controlsVisible = true
     }
     return true
 }

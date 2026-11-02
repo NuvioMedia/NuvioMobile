@@ -68,6 +68,7 @@ import com.nuvio.app.features.debrid.DebridSettings
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogSettingsItem
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
+import com.nuvio.app.features.livetv.ui.liveTvSettingsContent
 import com.nuvio.app.features.home.buildAddonCatalogRefreshSignature
 import com.nuvio.app.features.mdblist.MdbListSettings
 import com.nuvio.app.features.mdblist.MdbListSettingsRepository
@@ -780,6 +781,7 @@ private fun MobileSettingsScreen(
                     mdbListConnected = mdbListConnected,
                     onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                 )
+                SettingsPage.LiveTv -> liveTvSettingsContent(isTablet = false)
             }
         }
     }
@@ -1181,6 +1183,7 @@ private fun TabletSettingsScreen(
                         mdbListConnected = mdbListConnected,
                         onCommentsEnabledChange = TraktCommentsSettings::setEnabled,
                     )
+                    SettingsPage.LiveTv -> liveTvSettingsContent(isTablet = true)
                 }
             }
         }

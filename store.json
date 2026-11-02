@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.6.6",
+          "buildVersion": "149",
+          "date": "2026-10-31T02:59:46Z",
+          "localizedDescription": "- [Translation improvements and adjustments for Slovak language + added translated new strings files (#2448)](https://github.com/NuvioMedia/NuvioMobile/pull/2448) @mmsw91\r\n- [improve player badge codec detection and add filename matching (#2414)](https://github.com/NuvioMedia/NuvioMobile/pull/2414) @skoruppa\r\n- [Add intro, outro and recap skipping from MKV chapter titles (#2446)](https://github.com/NuvioMedia/NuvioMobile/pull/2446) @skoruppa \r\n- [feat(i18n): translate settings groups, subtitle appearance and ASS render modes (#2435)](https://github.com/NuvioMedia/NuvioMobile/pull/2435) @jhojhocraazy\r\n- Update Vietnamese translations ([#2441](https://github.com/NuvioMedia/NuvioMobile/pull/2441), [#2411](https://github.com/NuvioMedia/NuvioMobile/pull/2411)) @blueocean2308\r\n- Add subtitle customization with saved styles, custom font imports, appearance controls and a live preview, including fixes for font rendering, subtitle loading, track changes and style updates while paused. @tapframe\r\n- [Updated Bulgarian translations (#2424)](https://github.com/NuvioMedia/NuvioMobile/pull/2424) @viiktr\r\n- [fix(ios): resume PiP right after Notification Center (#2418)](https://github.com/NuvioMedia/NuvioMobile/pull/2418) @WhiteGiso\r\n- c7ff35f0 feat(settings): group settings and split playback pages @tapframe\r\n- 96061025 fix(ratings): show IMDb ratings with one decimal @tapframe\r\n- 2f0185ce feat(details): label unreleased episodes as unavailable @tapframe\r\n- 87795e97 fix(settings): save and restore the selected app icon @tapframe\r\n- [Draw ASS subtitles onto video frames via setVideoEffects + ASS Render Mode setting (#2394)](https://github.com/NuvioMedia/NuvioMobile/pull/2394) @skoruppa\r\n- 45af99c4 fix(player): skip drag handling while controls are locked @tapframe\r\n- [fix(player): offline playback performance and reliability (#2383)](https://github.com/NuvioMedia/NuvioMobile/pull/2383) @guuilp\r\n- [feat(player): Auto engine selection and engine failover (#2192)](https://github.com/NuvioMedia/NuvioMobile/pull/2192) @guuilp\r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.6-beta/nuvio-0.6.6-full-release.ipa",
+          "size": 68521101,
+          "sha256": "6250d33e6231608a409b5173f2e92496aec5198919967ca60c9af3f488b24453",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.6.5",
           "buildVersion": "148",
           "date": "2026-10-27T02:04:03Z",

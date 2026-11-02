@@ -103,7 +103,7 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |object TraktConfig {
                 |    const val CLIENT_ID = "${props.getProperty("TRAKT_CLIENT_ID", "")}" 
                 |    const val CLIENT_SECRET = "${props.getProperty("TRAKT_CLIENT_SECRET", "")}" 
-                |    const val REDIRECT_URI = "${props.getProperty("TRAKT_REDIRECT_URI", "nuvio://auth/trakt")}" 
+                |    const val REDIRECT_URI = "${props.getProperty("TRAKT_REDIRECT_URI", "http://localhost:8765/trakt")}" 
                 |}
                 """.trimMargin()
             )
@@ -172,6 +172,20 @@ abstract class GenerateRuntimeConfigsTask : DefaultTask() {
                 |
                 |object PremiumizeConfig {
                 |    const val CLIENT_ID = "${props.getProperty("PREMIUMIZE_CLIENT_ID", "")}"
+                |}
+                """.trimMargin()
+            )
+        }
+
+        outDir.resolve("com/nuvio/app/features/livetv/sync").apply {
+            mkdirs()
+            resolve("LiveTvDriveConfig.kt").writeText(
+                """
+                |package com.nuvio.app.features.livetv.sync
+                |
+                |object LiveTvDriveConfig {
+                |    const val CLIENT_ID = "${props.getProperty("GOOGLE_DRIVE_CLIENT_ID", "")}"
+                |    const val CLIENT_SECRET = "${props.getProperty("GOOGLE_DRIVE_CLIENT_SECRET", "")}"
                 |}
                 """.trimMargin()
             )

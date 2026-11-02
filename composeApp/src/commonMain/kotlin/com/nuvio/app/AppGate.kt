@@ -146,6 +146,10 @@ internal fun AppGate(
     }
 
     var gateScreen by rememberSaveable { mutableStateOf(AppGateScreen.Loading.name) }
+    // True when Android restored the app after closing it in the background while the user was
+    // inside it: the saved screen comes back as Main. The profile they were using is then picked
+    // again without showing the profile picker, so they land where they left off.
+    var resumeIntoActiveProfile by remember { mutableStateOf(gateScreen == AppGateScreen.Main.name) }
     var editingProfile by remember { mutableStateOf<NuvioProfile?>(null) }
     var autoSkipProfileSelection by rememberSaveable { mutableStateOf(false) }
     var profileSelectionLoading by rememberSaveable { mutableStateOf(false) }
@@ -246,8 +250,10 @@ internal fun AppGate(
 
     fun rememberedStartupProfile(profiles: List<NuvioProfile>): NuvioProfile? {
         val currentProfileState = ProfileRepository.state.value
+        val resuming = resumeIntoActiveProfile
+        resumeIntoActiveProfile = false
         if (
-            !currentProfileState.rememberLastProfileEnabled ||
+            !(currentProfileState.rememberLastProfileEnabled || resuming) ||
             !currentProfileState.hasEverSelectedProfile
         ) {
             return null
@@ -310,6 +316,15 @@ internal fun AppGate(
                     networkStatusUiState.condition != NetworkCondition.Online ||
                         gateScreen != AppGateScreen.Auth.name
                 )
+
+        // Already in the app with a profile: a passing Loading/Unauthenticated moment (the session
+        // refreshing when the app comes back to the foreground) must not send the user back to
+        // the profile picker. Only a confirmed sign-out leaves the main screen.
+        val alreadyInApp =
+            gateScreen == AppGateScreen.Main.name &&
+                ProfileRepository.state.value.activeProfile != null
+        if (alreadyInApp && authState is AuthState.Loading) return@LaunchedEffect
+        if (alreadyInApp && authState is AuthState.Unauthenticated && allowCachedProfileAccess) return@LaunchedEffect
 
         when (authState) {
             is AuthState.Loading -> {
