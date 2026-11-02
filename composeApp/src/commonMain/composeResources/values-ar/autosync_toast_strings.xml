@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">فشلت المزامنة: تعذّر على المزامنة التلقائية مطابقة هذه الترجمة مع الفيديو.</string>
+    <string name="autosync_toast_failed_no_reference">فشلت المزامنة: لا توجد ترجمات مضمّنة صالحة للاستخدام للمقارنة معها.</string>
+    <string name="autosync_toast_failed_unsupported">فشلت المزامنة: تنسيق هذه الترجمة غير مدعوم.</string>
+    <string name="autosync_label_synced">تمت المزامنة تلقائيًا</string>
+</resources>

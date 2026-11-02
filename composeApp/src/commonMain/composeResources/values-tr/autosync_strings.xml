@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Altyazıyı Otomatik Senkronize Et</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Oynatma başladığında tercih edilen eklenti altyazısını otomatik olarak senkronize eder. Tercih edilen bir altyazı dili gerektirir.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Otomatik Senkronizasyon Araması: Kapsamlı</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Senkronize etmeden önce daha yakın bir eşleşme bulmak için diğer altyazıları ve gömülü parçaları karşılaştırmaya devam eder. Yalnızca güvenilir eşleşmeler uygulanır.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Otomatik Senkronizasyon Araması: Hızlı</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">İlk güçlü eşleşmeyi daha çabuk kullanır. Kapsamlı arama gibi yalnızca güvenilir eşleşmeler uygulanır.</string>
+    <string name="settings_playback_auto_sync_tolerance">Otomatik Senkronizasyon Toleransı: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Senkronizasyon altyazıyı bundan daha fazla kaydırmayacaksa orijinal altyazı zamanlamasını korur. Değiştirmek için dokunun.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Kapalı</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>

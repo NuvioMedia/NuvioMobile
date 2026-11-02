@@ -27,6 +27,7 @@ import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.player.skip.NextEpisodeInfo
 import com.nuvio.app.features.player.skip.PlayerNextEpisodeRules
 import com.nuvio.app.features.player.skip.SkipIntroRepository
+import com.nuvio.app.features.player.skip.segmentCategory
 import com.nuvio.app.features.player.skip.shouldAutoSkip
 import com.nuvio.app.features.player.skip.internalSkipAction
 import com.nuvio.app.features.player.skip.intervalsAtSeekPositions
@@ -692,7 +693,8 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
         if (current != activeSkipInterval) {
             if (current != null) {
                 // Keep dismissed state when replacing same segment type (e.g. API recap -> chapter recap)
-                val keepDismissed = activeSkipInterval != null && activeSkipInterval?.type == current.type
+                val keepDismissed = activeSkipInterval != null &&
+                    segmentCategory(activeSkipInterval?.type ?: "") == segmentCategory(current.type)
                 activeSkipInterval = current
                 if (!keepDismissed) skipIntervalDismissed = false
             } else if (activeSkipInterval != null) {
@@ -700,7 +702,7 @@ private fun PlayerScreenRuntime.BindPlayerMetadataAndSkipEffects() {
                 // starts within 2s (chapter replacing API with a slightly later start).
                 val posSec = playbackSnapshot.positionMs / 1000.0
                 val nearby = skipIntervals.firstOrNull {
-                    it.type == activeSkipInterval?.type &&
+                    segmentCategory(it.type) == segmentCategory(activeSkipInterval?.type ?: "") &&
                         posSec < it.startTime &&
                         it.startTime - posSec <= 2.0
                 }
