@@ -141,7 +141,13 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
         }
 
         val teamEvents = wanted.filter { it.source != EventSource.GUIDE }
-        val terms = teamEvents.associate { ev -> ev.id to termsFor(ev) }
+        // Fights found in the guide ("Boxing : Canelo Alvarez vs. Christian Mbilli") are also looked
+        // for by channel name: their event channels ("Canelo v Mbilli") usually have no listings.
+        val guideFights = wanted.filter { ev ->
+            ev.source == EventSource.GUIDE && SportsCatalog.league(ev.leagueId)?.sport == Sport.FIGHTING &&
+                SportsCatalog.fightSides(ev.title) != null
+        }
+        val terms = (teamEvents + guideFights).associate { ev -> ev.id to termsFor(ev) }
 
         // Tournaments and race weekends running at the same time (several tennis events, two golf
         // tours): a channel or show that just says "Tennis" or "Golf" can't tell them apart.
@@ -236,7 +242,7 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
         val tGuide = LiveTvClock.nowMs()
 
         // ---- 2. The channel's own name.
-        for (ev in teamEvents) {
+        for (ev in teamEvents + guideFights) {
             if (ev.state == GameState.POST && ev.startMs < input.now - 5 * HOUR) continue
             val t = terms[ev.id] ?: continue
             val discEvent = ev.id in discIds
@@ -516,11 +522,26 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
         val abbrA: String?, val abbrB: String?,
         val leagueWords: List<String>,
         val eventWords: List<String>,
-        val sqlWords: List<String>
+        val sqlWords: List<String>,
+        /** A fight's two sides ("canelo", "alvarez" / "mbilli"): a show or channel naming both is it. */
+        val fightA: List<String> = emptyList(),
+        val fightB: List<String> = emptyList()
     ) {
         private fun any(text: String, list: List<String>) = list.any { hasWord(text, it) }
 
         fun scoreText(nt: String, nd: String): Int {
+            val base = baseScore(nt, nd)
+            if (fightA.isEmpty() || fightB.isEmpty()) return base
+            val aT = any(nt, fightA); val bT = any(nt, fightB)
+            val fight = when {
+                aT && bT -> 100
+                (aT || any(nd, fightA)) && (bT || any(nd, fightB)) -> 85
+                else -> 0
+            }
+            return maxOf(base, fight)
+        }
+
+        private fun baseScore(nt: String, nd: String): Int {
             if (a.isNotEmpty() && b.isNotEmpty()) {
                 val aT = any(nt, a); val bT = any(nt, b)
                 val aW = any(nt, aWeak); val bW = any(nt, bWeak)
@@ -563,6 +584,8 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
             }
             abbrA?.let { out.add(it) }
             abbrB?.let { out.add(it) }
+            out.addAll(fightA)
+            out.addAll(fightB)
             return out
         }
 
@@ -570,6 +593,8 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
         fun leagueInName(nn: String): Boolean = leagueWords.any { it.length >= 2 && it != "grand prix" && hasWord(nn, it) }
 
         fun inName(nn: String): Boolean {
+            // An event channel named for the fight ("03 - (HD) Canelo v Mbilli"): both fighters.
+            if (fightA.isNotEmpty() && fightB.isNotEmpty() && any(nn, fightA) && any(nn, fightB)) return true
             if (a.isNotEmpty() && b.isNotEmpty()) {
                 if (any(nn, a) && any(nn, b)) return true
                 val x = abbrA ?: return false
@@ -639,7 +664,15 @@ internal class SportsMatcher(private val db: GuideSearch = GuideSearch.Store) {
             .filter { it.length >= 4 && it !in GENERIC_EVENT_WORDS && leagueWords.none { lw -> lw == it } }
             .distinct()
             .take(8)
-        return Terms(emptyList(), emptyList(), emptyList(), emptyList(), null, null, leagueWords, core, (core + leagueWords).filter { it.length >= 3 }.distinct())
+        // A fight ("Canelo Álvarez vs Christian Mbilli"): event channels are named after the two
+        // fighters and rarely say "Boxing", so naming both is enough.
+        val fight = if (league?.sport == Sport.FIGHTING) SportsCatalog.fightSides(ev.title) else null
+        return Terms(
+            emptyList(), emptyList(), emptyList(), emptyList(), null, null, leagueWords, core,
+            (core + leagueWords + fight?.first.orEmpty() + fight?.second.orEmpty()).filter { it.length >= 3 }.distinct(),
+            fightA = fight?.first.orEmpty(),
+            fightB = fight?.second.orEmpty()
+        )
     }
 
     companion object {

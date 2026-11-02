@@ -571,6 +571,29 @@ object SportsCatalog {
         return " " + plain.lowercase().replace("&", " and ").replace(NOT_WORD, " ").trim().replace(SPACES, " ") + " "
     }
 
+    /**
+     * A fight's two sides, from a title like "Canelo Álvarez vs Christian Mbilli", "UFC 310: Pantoja
+     * vs. Asakura" or "Boxing : Canelo v Mbilli": each side's name words (4 letters or more, without
+     * card or promoter words), or null when the title isn't "someone vs someone".
+     */
+    fun fightSides(title: String): Pair<List<String>, List<String>>? {
+        val parts = norm(title).trim().split(" vs ", " v ", " versus ")
+        if (parts.size != 2) return null
+        fun words(part: String) = part.trim().split(' ')
+            .filter { w -> w.length >= 4 && w.any { it.isLetter() } && w !in FIGHT_NOISE }
+            .distinct()
+        val a = words(parts[0])
+        val b = words(parts[1])
+        return if (a.isEmpty() || b.isEmpty()) null else a to b
+    }
+
+    private val FIGHT_NOISE = setOf(
+        "boxing", "fight", "fights", "night", "card", "main", "event", "live", "title", "world", "championship",
+        "undercard", "prelims", "preliminary", "presents", "from", "replay", "full", "saturday", "friday", "sunday",
+        "season", "riyadh", "zuffa", "showdown", "heavyweight", "middleweight", "welterweight", "lightweight",
+        "featherweight", "bantamweight", "flyweight", "cruiserweight", "rematch", "undisputed", "unified", "bout"
+    )
+
     /** [term] (already normalized, no padding) as whole words in [normText] (from [norm]). */
     fun hasWord(normText: String, term: String): Boolean = term.isNotBlank() && normText.contains(" $term ")
 

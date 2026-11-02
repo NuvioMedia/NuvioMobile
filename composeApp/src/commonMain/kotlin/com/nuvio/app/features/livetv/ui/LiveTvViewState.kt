@@ -129,9 +129,18 @@ internal object LiveTvViewState {
                     { g -> g.group.title.lowercase() }
                 )
             )
-            else -> regular.withIndex()
-                .sortedWith(compareBy<IndexedValue<LiveGroupSection>>({ orderIndex[it.value.group.id] ?: Int.MAX_VALUE }, { it.index }))
-                .map { it.value }
+            // Your order (Reorder groups). A group you haven't placed yet (e.g. one just added in
+            // the playlist) goes right after the group above it in the playlist.
+            else -> if (orderIndex.isEmpty()) regular else {
+                val result = regular.filter { it.group.id in orderIndex }.sortedBy { orderIndex[it.group.id] }.toMutableList()
+                regular.forEachIndexed { i, g ->
+                    if (g.group.id !in orderIndex) {
+                        val above = if (i > 0) result.indexOfFirst { it.group.id == regular[i - 1].group.id } else -1
+                        result.add(above + 1, g)
+                    }
+                }
+                result
+            }
         }
         sections += orderedRegular
         val numbered = if (s.sequentialNumbers) {
