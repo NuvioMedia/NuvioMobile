@@ -160,9 +160,13 @@ private fun TableView(table: Standings, view: StandingsView, conference: String?
         }
         groups.forEachIndexed { gi, g ->
             item(key = "g:$gi") {
-                Row(modifier = Modifier.fillMaxWidth().padding(top = NuvioTokens.Space.s10, bottom = NuvioTokens.Space.s4), verticalAlignment = Alignment.CenterVertically) {
+                // Same side padding as a row and the columns in one gap-free block, so every label
+                // sits exactly over its numbers.
+                Row(modifier = Modifier.fillMaxWidth().padding(start = NuvioTokens.Space.s8, end = NuvioTokens.Space.s8, top = NuvioTokens.Space.s10, bottom = NuvioTokens.Space.s4), verticalAlignment = Alignment.CenterVertically) {
                     Text(g.name, style = MaterialTheme.typography.titleSmall, color = tokens.colors.textPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    table.columns.forEach { c -> Text(c.label, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, modifier = Modifier.width(cellWidth(c.key)), textAlign = TextAlign.End) }
+                    Row {
+                        table.columns.forEach { c -> Text(c.label, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, modifier = Modifier.width(cellWidth(c.key)), textAlign = TextAlign.End, maxLines = 1) }
+                    }
                 }
             }
             g.rows.forEachIndexed { i, r ->
@@ -195,8 +199,8 @@ private fun TableView(table: Standings, view: StandingsView, conference: String?
 
 private fun cellWidth(key: String) = when (key) {
     "streak", "gamesBehind", "winPercent", "behind" -> 46.dp
-    "pointDifferential" -> 40.dp
-    else -> 32.dp
+    "pointDifferential" -> 36.dp
+    else -> 28.dp
 }
 
 @Composable
@@ -211,11 +215,14 @@ private fun StandingsLine(table: Standings, r: StandingsRow, mine: Boolean, onCl
             .clickable(onClick = onClick)
             .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s6),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
+        horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s4),
     ) {
         Box(Modifier.width(3.dp).height(24.dp).clip(RoundedCornerShape(2.dp)).background(r.zone?.let { Color(it.color) } ?: Color.Transparent))
         Text(r.pos.toString(), style = MaterialTheme.typography.labelMedium, color = if (teamInfo != null) Color.White.copy(alpha = 0.7f) else tokens.colors.textMuted, modifier = Modifier.width(22.dp), textAlign = TextAlign.End)
-        r.change?.let { Text(if (it > 0) "▲" else "▼", style = MaterialTheme.typography.labelSmall, color = if (it > 0) Color(0xFF2E9E5B) else Color(0xFFC0392B)) }
+        // A fixed slot, so the logo and names start in the same place whether or not a team moved.
+        Box(Modifier.width(10.dp), contentAlignment = Alignment.Center) {
+            r.change?.let { Text(if (it > 0) "▲" else "▼", style = MaterialTheme.typography.labelSmall, color = if (it > 0) Color(0xFF2E9E5B) else Color(0xFFC0392B), maxLines = 1, softWrap = false) }
+        }
         if (!r.athlete) TeamLogo(TeamInfo(table.leagueId, r.id, r.shortName, r.name, r.abbr, null, r.color, r.altColor, r.logo), 22.dp)
         Column(modifier = Modifier.weight(1f)) {
             Text(
@@ -226,8 +233,10 @@ private fun StandingsLine(table: Standings, r: StandingsRow, mine: Boolean, onCl
                 Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { f.forEach { FormSquare(it, 10.dp) } }
             }
         }
-        table.columns.forEach { c ->
-            Text(r.values[c.key] ?: "", style = MaterialTheme.typography.bodySmall, color = if (c.key == "points" || c.key == "winPercent") primary else secondary, fontWeight = if (c.key == "points") FontWeight.Bold else FontWeight.Normal, modifier = Modifier.width(cellWidth(c.key)), textAlign = TextAlign.End, maxLines = 1)
+        Row {
+            table.columns.forEach { c ->
+                Text(r.values[c.key] ?: "", style = MaterialTheme.typography.bodySmall, color = if (c.key == "points" || c.key == "winPercent") primary else secondary, fontWeight = if (c.key == "points") FontWeight.Bold else FontWeight.Normal, modifier = Modifier.width(cellWidth(c.key)), textAlign = TextAlign.End, maxLines = 1)
+            }
         }
     }
 }

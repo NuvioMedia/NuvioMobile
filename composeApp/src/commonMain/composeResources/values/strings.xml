@@ -2564,6 +2564,9 @@
     <!-- Live TV -->
     <string name="livetv_title">Live TV</string>
     <string name="livetv_guide">TV Guide</string>
+    <string name="livetv_header_search">Search</string>
+    <string name="livetv_header_guide">Guide</string>
+    <string name="livetv_header_settings">Settings</string>
     <string name="livetv_settings">Live TV settings</string>
     <string name="livetv_search_hint">Search channels</string>
     <string name="livetv_no_results">No channels found</string>
