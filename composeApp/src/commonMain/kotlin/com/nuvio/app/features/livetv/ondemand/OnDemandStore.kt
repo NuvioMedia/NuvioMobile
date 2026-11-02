@@ -35,6 +35,9 @@ internal expect object OnDemandStore {
     /** Titles matching [text]: those starting with it first, then those with every word anywhere in the name. */
     fun search(kind: VodKind, text: String, excludeCategories: Set<String>, limit: Int, sort: VodSort, merge: Boolean): List<VodItem>
 
+    /** Every title of [kind] the provider matched to this TMDB id. */
+    fun byTmdb(kind: VodKind, tmdbId: String): List<VodItem>
+
     /** Every copy of a title: same TMDB id, or same name and year (other quality, other provider). */
     fun versions(item: VodItem): List<VodItem>
 

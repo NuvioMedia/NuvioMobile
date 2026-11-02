@@ -270,6 +270,78 @@ internal object OnDemandRepository {
         else -> 0
     }
 
+    /** One playable copy of a title from a provider, for Nuvio's stream list. */
+    data class OnDemandSource(
+        val label: String,
+        val url: String,
+        val headers: Map<String, String>,
+        val title: String,
+        val year: Int?,
+        val providerName: String,
+        val ext: String,
+        val episodeTag: String? = null,
+    )
+
+    /**
+     * Finds a title in your providers' catalogs: by TMDB id when there is one, otherwise by name
+     * (and year when known). For series, [season]/[episode] pick the episode. Titles in hidden or
+     * locked groups are left out.
+     */
+    suspend fun sourcesFor(type: String, tmdbId: String?, title: String, year: Int?, season: Int?, episode: Int?): List<OnDemandSource> =
+        withContext(Dispatchers.Default) {
+            val kind = when (type.lowercase()) {
+                "movie" -> VodKind.MOVIE
+                "series", "tv" -> VodKind.SERIES
+                else -> return@withContext emptyList()
+            }
+            if (!_hasContent.value) return@withContext emptyList()
+            val candidates = LinkedHashMap<String, VodItem>()
+            tmdbId?.takeIf { it.isNotBlank() }?.let { id ->
+                runCatching { OnDemandStore.byTmdb(kind, id) }.getOrDefault(emptyList()).forEach { candidates[it.uid] = it }
+            }
+            val core = VodTitles.coreKey(title)
+            if (candidates.isEmpty() && title.isNotBlank() && core.length >= 3) {
+                val found = runCatching { OnDemandStore.search(kind, VodTitles.displayTitle(title), emptySet(), 80, VodSort.DEFAULT, false) }
+                    .getOrDefault(emptyList())
+                    .filter { VodTitles.coreKey(it.name) == core }
+                val withYears = found.map { it to (it.year ?: VodTitles.yearInTitle(it.name)) }
+                val picked = when {
+                    year == null -> withYears.map { it.first }
+                    withYears.any { it.second != null && kotlin.math.abs(it.second!! - year) <= 1 } ->
+                        withYears.filter { it.second != null && kotlin.math.abs(it.second!! - year) <= 1 }.map { it.first }
+                    else -> withYears.filter { it.second == null }.map { it.first }
+                }
+                picked.forEach { candidates.putIfAbsent(it.uid, it) }
+            }
+            val user = prefs.currentUserState()
+            val settings = prefs.currentSettings()
+            val allowed = candidates.values.filter { item ->
+                val uid = "${item.kind.key}:${item.playlistId}:${item.categoryId}"
+                if (uid in user.vodHiddenCategories) return@filter false
+                val name = runCatching { OnDemandStore.categoryNames(item.playlistId, item.kind)[item.categoryId] }.getOrNull().orEmpty()
+                !com.nuvio.app.features.livetv.parental.ParentalControls.isLocked("vod:$uid", name, settings, user.lockedGroups)
+            }
+            val out = ArrayList<OnDemandSource>()
+            for (item in allowed.take(6)) {
+                val pl = playlist(item.playlistId) ?: continue
+                val headers = headersFor(item)
+                if (kind == VodKind.MOVIE) {
+                    val url = movieUrl(item) ?: continue
+                    out += OnDemandSource("${pl.name} · ${(item.ext ?: "mp4").uppercase()}", url, headers, item.displayTitle, item.year, pl.name, item.ext ?: "mp4")
+                } else if (season != null && episode != null) {
+                    val episodes = info(item)?.episodes.orEmpty()
+                    val ep = episodes.firstOrNull { it.season == season && it.episode == episode }
+                        ?: episodes.takeIf { list -> list.map { it.season }.distinct().size == 1 }?.firstOrNull { it.episode == episode }
+                        ?: continue
+                    out += OnDemandSource(
+                        "${pl.name} · S${season}E${episode} · ${ep.ext.uppercase()}", ep.url, headers, item.displayTitle, item.year, pl.name, ep.ext,
+                        episodeTag = "S" + season.toString().padStart(2, '0') + "E" + episode.toString().padStart(2, '0'),
+                    )
+                }
+            }
+            out
+        }
+
     /** A title by its uid ("movie:<playlist>:<id>"). */
     suspend fun itemByUid(uid: String): VodItem? = withContext(Dispatchers.Default) {
         val parts = uid.split(':', limit = 3)

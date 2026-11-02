@@ -45,6 +45,9 @@ internal actual object OnDemandStore {
             .take(limit)
     }
 
+    actual fun byTmdb(kind: VodKind, tmdbId: String): List<VodItem> =
+        items.values.filter { it.kind == kind && it.tmdbId == tmdbId }
+
     actual fun versions(item: VodItem): List<VodItem> = listOf(item)
 
     actual fun categoryNames(playlistId: String, kind: VodKind): Map<String, String> =

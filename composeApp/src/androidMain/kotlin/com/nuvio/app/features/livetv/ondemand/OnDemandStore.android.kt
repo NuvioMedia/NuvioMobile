@@ -236,6 +236,9 @@ internal actual object OnDemandStore {
         return result.filter { "${it.kind.key}:${it.playlistId}:${it.categoryId}" !in excludeCategories }
     }
 
+    actual fun byTmdb(kind: VodKind, tmdbId: String): List<VodItem> =
+        query("SELECT * FROM items WHERE kind = ? AND tmdb = ?", arrayListOf(kind.key, tmdbId))
+
     actual fun versions(item: VodItem): List<VodItem> =
         if (!item.tmdbId.isNullOrBlank()) query("SELECT * FROM items WHERE kind = ? AND tmdb = ?", arrayListOf(item.kind.key, item.tmdbId))
         else query(
