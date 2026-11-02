@@ -112,11 +112,21 @@ fun LiveTvGuideScreen(
     val now by produceState(LiveTvClock.nowMs()) {
         while (true) { value = LiveTvClock.nowMs(); delay(30_000) }
     }
-    val sections = state.sections.filter { it.channels.isNotEmpty() }
+    val playlists by LiveTvPreferences.playlists.collectAsStateWithLifecycle()
+    val savedPlaylist by PlaylistFilter.selected.collectAsStateWithLifecycle()
+    val allSections = state.sections.filter { it.channels.isNotEmpty() }
+    val playlistChoices = remember(allSections, playlists) {
+        playlists.mapNotNull { p ->
+            val n = allSections.count { it.group.sourceId == p.id }
+            if (n > 0) PlaylistChoice(p.id, p.name, if (n == 1) "1 group" else "$n groups") else null
+        }
+    }
+    val playlistId = PlaylistFilter.effective(savedPlaylist, playlistChoices.map { it.id })
+    val sections = if (playlistId == null) allSections else allSections.filter { it.group.sourceId == null || it.group.sourceId == playlistId }
     // Saved, so backing out of a channel returns to the same group and spot in the guide.
     var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = sections.firstOrNull { it.group.id == selectedGroupId } ?: sections.firstOrNull()
-    val channels = if (selectedGroupId == ChannelGroup.ALL) state.visible else selected?.channels.orEmpty()
+    val channels = if (selectedGroupId == ChannelGroup.ALL) state.visible.filter { playlistId == null || it.sourceId == playlistId } else selected?.channels.orEmpty()
 
     // The grid goes back as far as the "Guide hours back" setting (so catch-up shows can be
     // picked from it) and 24 hours ahead of now.
@@ -151,7 +161,7 @@ fun LiveTvGuideScreen(
     var jumpedToNow by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(Unit) { if (!jumpedToNow) { jumpedToNow = true; jumpToNow() } }
 
-    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding()) {
+    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
         NuvioScreenHeader(
             title = stringResource(Res.string.livetv_guide),
             includeStatusBarPadding = false,
@@ -162,6 +172,13 @@ fun LiveTvGuideScreen(
                     Icon(Icons.Filled.Schedule, contentDescription = stringResource(Res.string.livetv_guide_now), tint = tokens.colors.accent)
                 }
             },
+        )
+        PlaylistDropdown(
+            choices = playlistChoices,
+            selectedId = playlistId,
+            allDetail = allSections.count { it.group.sourceId != null }.let { if (it == 1) "1 group" else "$it groups" },
+            onSelect = PlaylistFilter::select,
+            modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s4),
         )
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s6),

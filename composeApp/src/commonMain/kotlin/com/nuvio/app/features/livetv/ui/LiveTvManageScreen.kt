@@ -98,7 +98,7 @@ fun LiveTvManageScreen(
             playlists.any { it.liveEnabled },
         )
     }
-    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding()) {
+    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
         NuvioScreenHeader(
             title = stringResource(Res.string.livetv_manage),
             includeStatusBarPadding = false,

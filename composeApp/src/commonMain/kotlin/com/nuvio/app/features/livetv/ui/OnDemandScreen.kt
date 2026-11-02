@@ -142,15 +142,28 @@ internal fun OnDemandScreen(
     val lockedUids = remember(categories, settings, user.lockedGroups, unlocked) {
         categories.filter { c -> ParentalControls.isLocked("vod:${c.uid}", c.name, settings, user.lockedGroups) }.mapTo(HashSet()) { it.uid }
     }
-    val hiddenOrLocked = remember(user.vodHiddenCategories, lockedUids) { user.vodHiddenCategories + lockedUids }
+    // Playlist dropdown: the providers that have On Demand titles; one pick limits every row to it.
+    val allPlaylists by LiveTvPreferences.playlists.collectAsStateWithLifecycle()
+    val savedPlaylist by PlaylistFilter.selected.collectAsStateWithLifecycle()
+    val playlistChoices = remember(categories, allPlaylists) {
+        allPlaylists.mapNotNull { p ->
+            val n = categories.count { it.playlistId == p.id }
+            if (n > 0) PlaylistChoice(p.id, p.name, if (n == 1) "1 group" else "$n groups") else null
+        }
+    }
+    val playlistId = PlaylistFilter.effective(savedPlaylist, playlistChoices.map { it.id })
+    val otherPlaylists = remember(categories, playlistId) {
+        if (playlistId == null) emptySet() else categories.filter { it.playlistId != playlistId }.mapTo(HashSet()) { it.uid }
+    }
+    val hiddenOrLocked = remember(user.vodHiddenCategories, lockedUids, otherPlaylists) { user.vodHiddenCategories + lockedUids + otherPlaylists }
     var unlockCategory by remember { mutableStateOf<VodCategory?>(null) }
-    val visible = remember(categories, user, lockedUids) { OnDemandGroups.visible(categories, user).filter { it.uid !in lockedUids } }
-    val lockedShown = remember(categories, user, lockedUids) { OnDemandGroups.visible(categories, user).filter { it.uid in lockedUids } }
+    val visible = remember(categories, user, lockedUids, otherPlaylists) { OnDemandGroups.visible(categories, user).filter { it.uid !in lockedUids && it.uid !in otherPlaylists } }
+    val lockedShown = remember(categories, user, lockedUids, otherPlaylists) { OnDemandGroups.visible(categories, user).filter { it.uid in lockedUids && it.uid !in otherPlaylists } }
     val results by produceState(emptyList<VodItem>(), vodKind, query, version, hiddenOrLocked) {
         value = if (query.isBlank()) emptyList() else OnDemandRepository.search(vodKind, query, hiddenOrLocked, merge = settings.vodMergeDuplicates)
     }
 
-    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding()) {
+    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
         NuvioScreenHeader(
             title = stringResource(Res.string.livetv_on_demand),
             includeStatusBarPadding = false,
@@ -176,6 +189,13 @@ internal fun OnDemandScreen(
             Chip(label = stringResource(Res.string.livetv_vod_movies), selected = vodKind == VodKind.MOVIE, onClick = { kind = VodKind.MOVIE.key })
             Chip(label = stringResource(Res.string.livetv_vod_series), selected = vodKind == VodKind.SERIES, onClick = { kind = VodKind.SERIES.key })
         }
+        PlaylistDropdown(
+            choices = playlistChoices,
+            selectedId = playlistId,
+            allDetail = categories.size.let { if (it == 1) "1 group" else "$it groups" },
+            onSelect = PlaylistFilter::select,
+            modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s4),
+        )
         AnimatedVisibility(visible = searching) {
             NuvioInputField(
                 value = query,
@@ -330,8 +350,12 @@ internal fun OnDemandSeeAllScreen(
     val sort = OnDemandGroups.sortFor(categoryUid, user, settings)
     // "All" (Recently added) leaves locked categories out too.
     val unlockedNow by ParentalControls.unlocked.collectAsStateWithLifecycle()
-    val hiddenOrLocked = remember(categories, user, settings, unlockedNow) {
-        user.vodHiddenCategories + categories.filter { c -> ParentalControls.isLocked("vod:${c.uid}", c.name, settings, user.lockedGroups) }.map { it.uid }
+    val savedPlaylist by PlaylistFilter.selected.collectAsStateWithLifecycle()
+    val playlistId = PlaylistFilter.effective(savedPlaylist, categories.map { it.playlistId })
+    val hiddenOrLocked = remember(categories, user, settings, unlockedNow, playlistId) {
+        user.vodHiddenCategories +
+            categories.filter { c -> ParentalControls.isLocked("vod:${c.uid}", c.name, settings, user.lockedGroups) }.map { it.uid } +
+            categories.filter { c -> playlistId != null && c.playlistId != playlistId }.map { it.uid }
     }
     var sortDialog by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf<VodItem?>(null) }
@@ -358,7 +382,7 @@ internal fun OnDemandSeeAllScreen(
     val nearEnd by remember { derivedStateOf { val last = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0; last >= items.size - 12 } }
     LaunchedEffect(nearEnd, items.size) { if (nearEnd && !exhausted && items.isNotEmpty()) wanted = items.size + PAGE }
 
-    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding()) {
+    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
         NuvioScreenHeader(
             title = title.ifBlank { stringResource(Res.string.livetv_on_demand) },
             includeStatusBarPadding = false,

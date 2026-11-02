@@ -123,7 +123,7 @@ internal fun RecordingsScreen(
     val recordingNow = recordings.filter { it.isRecording }
     val recorded = recordings.filter { !it.isRecording }
 
-    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding()) {
+    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
         NuvioScreenHeader(
             title = stringResource(Res.string.livetv_recordings),
             includeStatusBarPadding = false,

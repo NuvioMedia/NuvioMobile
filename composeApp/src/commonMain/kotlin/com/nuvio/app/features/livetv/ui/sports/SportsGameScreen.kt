@@ -1,5 +1,6 @@
 package com.nuvio.app.features.livetv.ui.sports
 
+import com.nuvio.app.features.livetv.ui.liveTvSideInsets
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -129,7 +130,7 @@ fun SportsGameScreen(
     val known by repo.known.collectAsStateWithLifecycle()
     val events by repo.events.collectAsStateWithLifecycle()
     val ev = remember(events, known, eventId) { events.firstOrNull { it.id == eventId } ?: known.firstOrNull { it.id == eventId } }
-    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding()) {
+    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
         NuvioScreenHeader(
             title = ev?.let { SportsCatalog.league(it.leagueId)?.name } ?: "Sports",
             includeStatusBarPadding = false,

@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -143,6 +144,7 @@ fun LiveTvScreen(
         onDispose { LiveTvListMemory.saveScroll(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset) }
     }
     val playlists by LiveTvPreferences.playlists.collectAsStateWithLifecycle()
+    val savedPlaylist by PlaylistFilter.selected.collectAsStateWithLifecycle()
     val hasOnDemand by OnDemandRepository.hasContent.collectAsStateWithLifecycle()
     val showOnDemand = hasOnDemand || playlists.any { it.enabled && it.importVod }
     val recordings by remember { LiveTvRecordingScheduler.start(); LiveTvRecorder.recordings }.collectAsStateWithLifecycle()
@@ -186,14 +188,27 @@ fun LiveTvScreen(
         }
     }
 
-    val searchResults by remember(state.visible, query) {
-        derivedStateOf { LiveTvViewState.search(state.visible, query) }
+    // Playlist dropdown: only playlists that have groups here; hidden with fewer than two.
+    val playlistChoices = remember(state.sections, playlists) {
+        playlists.mapNotNull { p ->
+            val n = state.sections.count { it.group.sourceId == p.id }
+            if (n > 0) PlaylistChoice(p.id, p.name, if (n == 1) "1 group" else "$n groups") else null
+        }
+    }
+    val playlistId = PlaylistFilter.effective(savedPlaylist, playlistChoices.map { it.id })
+    val playlistNames = remember(playlists) { playlists.associate { it.id to it.name } }
+    val sections = remember(state.sections, playlistId) {
+        if (playlistId == null) state.sections
+        else state.sections.filter { it.group.sourceId == null || it.group.sourceId == playlistId }
+    }
+    val searchResults by remember(state.visible, query, playlistId) {
+        derivedStateOf { LiveTvViewState.search(state.visible.filter { playlistId == null || it.sourceId == playlistId }, query) }
     }
     val nowNext: Map<String, NowNext> = remember(programs, now) {
         LiveTvRepository.nowNext(programs.keys, now)
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize().liveTvSideInsets()) {
         NuvioScreen(modifier = Modifier.fillMaxSize(), listState = listState) {
             stickyHeader {
                 Column(modifier = Modifier.background(tokens.colors.background)) {
@@ -234,6 +249,13 @@ fun LiveTvScreen(
                                 }
                             }
                         },
+                    )
+                    PlaylistDropdown(
+                        choices = playlistChoices,
+                        selectedId = playlistId,
+                        allDetail = (state.sections.count { it.group.sourceId != null }).let { if (it == 1) "1 group" else "$it groups" },
+                        onSelect = PlaylistFilter::select,
+                        modifier = Modifier.padding(bottom = NuvioTokens.Space.s8),
                     )
                     AnimatedVisibility(visible = searching) {
                         NuvioInputField(
@@ -280,7 +302,7 @@ fun LiveTvScreen(
                     }
                 }
             } else {
-                if (state.sections.isEmpty() && !status.loading) {
+                if (sections.isEmpty() && !status.loading) {
                     item {
                         Column(modifier = Modifier.fillMaxWidth().padding(NuvioTokens.Space.s16), verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12)) {
                             Text(stringResource(Res.string.livetv_no_results), style = MaterialTheme.typography.bodyMedium, color = tokens.colors.textMuted)
@@ -288,11 +310,11 @@ fun LiveTvScreen(
                         }
                     }
                 }
-                state.sections.forEach { section ->
+                sections.forEach { section ->
                     val id = section.group.id
                     val isCollapsed = id !in expanded.value
                     item(key = "g:$id") {
-                        GroupHeader(section.group, isCollapsed) {
+                        GroupHeader(section.group, isCollapsed, playlistTag = if (playlistId == null && playlistChoices.size > 1) playlistNames[section.group.sourceId] else null) {
                             if (section.group.locked) unlockGroup = section.group
                             else {
                                 expanded.value = if (isCollapsed) expanded.value + id else expanded.value - id
@@ -362,7 +384,7 @@ private fun EmptyLiveTv(onOpenSettings: () -> Unit) {
 }
 
 @Composable
-private fun GroupHeader(group: ChannelGroup, collapsed: Boolean, onToggle: () -> Unit) {
+private fun GroupHeader(group: ChannelGroup, collapsed: Boolean, playlistTag: String? = null, onToggle: () -> Unit) {
     val tokens = MaterialTheme.nuvio
     Row(
         modifier = Modifier
@@ -388,6 +410,20 @@ private fun GroupHeader(group: ChannelGroup, collapsed: Boolean, onToggle: () ->
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        if (playlistTag != null) {
+            Text(
+                text = playlistTag,
+                style = MaterialTheme.typography.labelSmall,
+                color = tokens.colors.textMuted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .widthIn(max = 110.dp)
+                    .clip(RoundedCornerShape(NuvioTokens.Radius.xs))
+                    .background(tokens.colors.surfaceElevated)
+                    .padding(horizontal = NuvioTokens.Space.s6, vertical = NuvioTokens.Space.s2),
+            )
+        }
         if (!group.locked) {
             Text(text = group.count.toString(), style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted)
             Icon(

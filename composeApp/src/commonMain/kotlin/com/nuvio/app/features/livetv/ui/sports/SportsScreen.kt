@@ -1,5 +1,6 @@
 package com.nuvio.app.features.livetv.ui.sports
 
+import com.nuvio.app.features.livetv.ui.liveTvSideInsets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -127,7 +128,7 @@ fun SportsScreen(
     val tab = SportsTab.entries[tabIndex]
     var showSettings by remember { mutableStateOf(false) }
 
-    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding()) {
+    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
         NuvioScreenHeader(
             title = stringResource(Res.string.livetv_sports),
             includeStatusBarPadding = false,

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.livetv.ui.sports
 
+import com.nuvio.app.features.livetv.ui.liveTvSideInsets
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -96,7 +97,7 @@ fun SportsLeagueScreen(
     }
     val followed = leagueId in follows.pins || leagueId in follows.leagues
 
-    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding()) {
+    Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
         NuvioScreenHeader(
             title = league?.name ?: leagueId,
             includeStatusBarPadding = false,
