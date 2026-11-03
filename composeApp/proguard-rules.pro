@@ -57,6 +57,11 @@
 -keep class is.xyz.mpv.** { *; }
 -keep interface is.xyz.mpv.** { *; }
 
+# Rhino's JavaBeans converter is an optional customization; Context defaults to STRING.
+# Android does not ship java.beans, and this app does not opt into the BEAN converter.
+# Keep this suppression narrow so unrelated missing Android classes remain build errors.
+-dontwarn java.beans.**
+
 # Common optional security providers used by okhttp on some devices.
 -dontwarn okhttp3.internal.platform.**
 -dontwarn org.conscrypt.**
