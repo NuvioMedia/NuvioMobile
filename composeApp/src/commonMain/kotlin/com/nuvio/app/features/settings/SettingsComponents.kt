@@ -507,8 +507,7 @@ internal fun HomescreenCatalogRow(
                             append(
                                 when (item.rowPlacement) {
                                     HomeCatalogRowPlacement.NORMAL -> ""
-                                    HomeCatalogRowPlacement.PINNED_POSITION ->
-                                        stringResource(Res.string.settings_homescreen_pinned_at_position)
+                                    HomeCatalogRowPlacement.PINNED_POSITION -> ""
                                     HomeCatalogRowPlacement.PINNED_TOP ->
                                         stringResource(Res.string.settings_homescreen_pinned_to_top)
                                     HomeCatalogRowPlacement.PINNED_BOTTOM ->
