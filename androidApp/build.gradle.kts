@@ -130,6 +130,7 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "../composeApp/proguard-rules.pro",
+                "../composeApp/proguard-cloudstream-full.pro",
             )
             signingConfig = signingConfigs.getByName("release")
             ndk {

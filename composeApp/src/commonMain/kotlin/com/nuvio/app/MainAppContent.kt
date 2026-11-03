@@ -87,6 +87,7 @@ import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.platformExitApp
 import com.nuvio.app.features.addons.AddAddonResult
 import com.nuvio.app.features.addons.AddonRepository
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.isWaitingForFirstEnabledManifest
 import com.nuvio.app.features.plugins.PluginRepository
@@ -140,6 +141,10 @@ import com.nuvio.app.features.player.recordExternalPlaybackProgress
 import com.nuvio.app.features.player.ExternalPlayerPlatform
 import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.player.PlayerLaunchStore
+import com.nuvio.app.features.livetv.LiveTvChannel
+import com.nuvio.app.features.livetv.LiveTvIncomingSource
+import com.nuvio.app.features.livetv.LiveTvIncomingSourceRepository
+import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.player.SubtitleLanguageOption
 import com.nuvio.app.features.player.prepareExternalPlayerLaunch
@@ -186,10 +191,13 @@ import com.nuvio.app.navigation.*
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import com.nuvio.app.features.servers.ServerRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -215,10 +223,7 @@ internal fun MainAppContent(
 ) {
         val navBackStack = rememberNavBackStack(navigationSavedStateConfiguration, initialRoute)
         val posterNavigation = remember { PosterNavigationState() }
-        val metaScreenSettings by remember {
-            MetaScreenSettingsRepository.ensureLoaded()
-            MetaScreenSettingsRepository.uiState
-        }.collectAsStateWithLifecycle()
+        val metaScreenSettings by MetaScreenSettingsRepository.uiState.collectAsStateWithLifecycle()
         val posterNavigationEnabled = supportsPosterNavigationMotion &&
             metaScreenSettings.posterTransitionEnabled && onNavigate == null
         val routeDisposalDecorator = remember {
@@ -237,22 +242,43 @@ internal fun MainAppContent(
             )
         }
         val appUpdaterController = rememberAppUpdaterController()
-        if (ownsAppRuntime) {
-            remember {
-                EpisodeReleaseNotificationsRepository.ensureLoaded()
+        // Load local snapshots away from the UI thread. These repositories perform
+        // synchronous preference/file reads and some decode sizable JSON payloads.
+        // State collection below remains pure and reacts when each snapshot is ready.
+        var localRepositoriesLoaded by remember { mutableStateOf(false) }
+        var runtimeRepositoriesInitialized by remember(ownsAppRuntime) {
+            mutableStateOf(!ownsAppRuntime)
+        }
+        LaunchedEffect(Unit) {
+            withContext(Dispatchers.IO) {
+                MetaScreenSettingsRepository.ensureLoaded()
+                HomeCatalogSettingsRepository.ensureLoaded()
+                LibraryRepository.ensureLoaded()
+                PlayerSettingsRepository.ensureLoaded()
+                P2pSettingsRepository.ensureLoaded()
+                WatchedRepository.ensureLoaded()
+                DownloadsRepository.ensureLoaded()
+                ServerRepository.ensureLoaded()
+                ContinueWatchingPreferencesRepository.ensureLoaded()
             }
-            remember {
-                CollectionSyncService.startObserving()
-            }
-            remember {
-                ProfileSettingsSync.startObserving()
-            }
+            localRepositoriesLoaded = true
         }
         LaunchedEffect(ownsAppRuntime) {
-            if (!ownsAppRuntime) return@LaunchedEffect
-            AddonRepository.initialize()
-            AddonRepository.refreshAll()
-            PluginRepository.refreshAll()
+            if (!ownsAppRuntime) {
+                runtimeRepositoriesInitialized = true
+                return@LaunchedEffect
+            }
+            withContext(Dispatchers.IO) {
+                EpisodeReleaseNotificationsRepository.ensureLoaded()
+                AddonRepository.initialize()
+                PluginRepository.initialize()
+                CloudStreamRepository.initialize()
+                ProfileSettingsSync.startObserving()
+                CollectionSyncService.startObserving()
+            }
+            // CloudStream repository refreshes schedule their network jobs internally.
+            CloudStreamRepository.refreshAll(force = false)
+            runtimeRepositoriesInitialized = true
         }
         val hapticFeedback = LocalHapticFeedback.current
         val focusManager = LocalFocusManager.current
@@ -300,14 +326,8 @@ internal fun MainAppContent(
         var pickerError by remember { mutableStateOf<String?>(null) }
         var pendingTrackingRemoval by remember { mutableStateOf<PendingTrackingMembershipRemoval?>(null) }
         val trackingListsUpdateFailedMessage = stringResource(Res.string.tracking_lists_update_failed)
-        val addonsUiState by remember {
-            AddonRepository.initialize()
-            AddonRepository.uiState
-        }.collectAsStateWithLifecycle()
-        val libraryUiState by remember {
-            LibraryRepository.ensureLoaded()
-            LibraryRepository.uiState
-        }.collectAsStateWithLifecycle()
+        val addonsUiState by AddonRepository.uiState.collectAsStateWithLifecycle()
+        val libraryUiState by LibraryRepository.uiState.collectAsStateWithLifecycle()
         val authState by AuthRepository.state.collectAsStateWithLifecycle()
         val openPosterActions: (PosterActionTarget) -> Unit = { target ->
             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -320,29 +340,17 @@ internal fun MainAppContent(
         }
         val profileState by ProfileRepository.state.collectAsStateWithLifecycle()
         val launchOverlayProfile = profileState.activeProfile ?: profileState.profiles.firstOrNull()
-    val playerSettingsUiState by remember {
-        PlayerSettingsRepository.ensureLoaded()
-        PlayerSettingsRepository.uiState
-    }.collectAsStateWithLifecycle()
+    val playerSettingsUiState by PlayerSettingsRepository.uiState.collectAsStateWithLifecycle()
     var visiblePlayerEntries by remember { mutableIntStateOf(0) }
     var streamLandscapeLoadingVisible by remember(currentRoute) { mutableStateOf(false) }
     if (currentRoute is PlayerRoute || visiblePlayerEntries > 0 || streamLandscapeLoadingVisible) {
         LockPlayerToLandscape()
         HidePlayerSystemBars()
     }
-    val p2pSettingsUiState by remember {
-        P2pSettingsRepository.ensureLoaded()
-        P2pSettingsRepository.uiState
-    }.collectAsStateWithLifecycle()
-    val watchedUiState by remember {
-        WatchedRepository.ensureLoaded()
-        WatchedRepository.uiState
-    }.collectAsStateWithLifecycle()
+    val p2pSettingsUiState by P2pSettingsRepository.uiState.collectAsStateWithLifecycle()
+    val watchedUiState by WatchedRepository.uiState.collectAsStateWithLifecycle()
     val fullyWatchedSeriesKeys by WatchedRepository.fullyWatchedSeriesKeys.collectAsStateWithLifecycle()
-    val downloadsUiState by remember {
-        DownloadsRepository.ensureLoaded()
-        DownloadsRepository.uiState
-    }.collectAsStateWithLifecycle()
+    val downloadsUiState by DownloadsRepository.uiState.collectAsStateWithLifecycle()
     val networkStatusUiState by remember {
         NetworkStatusRepository.uiState
     }.collectAsStateWithLifecycle()
@@ -370,6 +378,7 @@ internal fun MainAppContent(
     val downloadsTitle = stringResource(Res.string.compose_settings_root_downloads_title)
     val addonsSettingsTitle = stringResource(Res.string.compose_settings_page_addons)
     val pluginsSettingsTitle = stringResource(Res.string.compose_settings_page_plugins)
+    val cloudStreamSettingsTitle = stringResource(Res.string.compose_settings_page_cloudstream)
     val accountSettingsTitle = stringResource(Res.string.compose_settings_page_account)
     val supportersSettingsTitle = stringResource(Res.string.compose_settings_page_supporters_contributors)
     val licensesSettingsTitle = stringResource(Res.string.compose_settings_page_licenses_attributions)
@@ -394,16 +403,28 @@ internal fun MainAppContent(
     val homeCatalogRefreshKey = remember(addonsUiState.addons) {
         buildAddonCatalogRefreshSignature(addonsUiState.addons)
     }
+    val addonsWaitingForFirstManifest = addonsUiState.addons.isWaitingForFirstEnabledManifest()
 
-    val serversUiState by remember {
-        ServerRepository.ensureLoaded()
-        ServerRepository.uiState
-    }.collectAsStateWithLifecycle()
+    val serversUiState by ServerRepository.uiState.collectAsStateWithLifecycle()
 
-    LaunchedEffect(appContentGeneration, homeCatalogRefreshKey, serversUiState.revision) {
-        if (!ownsAppRuntime) return@LaunchedEffect
-        val enabledAddons = addonsUiState.addons.enabledAddons()
-        if (enabledAddons.isWaitingForFirstEnabledManifest()) return@LaunchedEffect
+    LaunchedEffect(
+        appContentGeneration,
+        homeCatalogRefreshKey,
+        serversUiState.revision,
+        addonsWaitingForFirstManifest,
+        localRepositoriesLoaded,
+        runtimeRepositoriesInitialized,
+    ) {
+        if (!ownsAppRuntime || !localRepositoriesLoaded || !runtimeRepositoriesInitialized) {
+            return@LaunchedEffect
+        }
+        // Add-on manifests can finish in a short burst during startup. Coalesce
+        // those state updates so the home catalog pipeline is not cancelled and
+        // restarted once per manifest.
+        delay(350)
+        val latestAddons = AddonRepository.uiState.value.addons
+        if (latestAddons.isWaitingForFirstEnabledManifest()) return@LaunchedEffect
+        val enabledAddons = latestAddons.enabledAddons()
         HomeCatalogSettingsRepository.syncCatalogs(enabledAddons)
         HomeRepository.refresh(enabledAddons)
     }
@@ -424,6 +445,7 @@ internal fun MainAppContent(
 
         when (tab) {
             AppScreenTab.Home -> homeScrollToTopRequests.tryEmit(Unit)
+            AppScreenTab.LiveTv -> Unit
             AppScreenTab.Search -> {
                 searchFocusRequestCount++
                 searchScrollToTopRequests.tryEmit(Unit)
@@ -656,6 +678,11 @@ internal fun MainAppContent(
         }
     }
 
+    LaunchedEffect(profileState.activeProfile?.profileIndex) {
+        if (!ownsAppRuntime) return@LaunchedEffect
+        LiveTvRepository.onProfileChanged()
+    }
+
     LaunchedEffect(authState, profileState.activeProfile?.profileIndex) {
         if (!ownsAppRuntime) return@LaunchedEffect
         val authenticatedState = authState as? AuthState.Authenticated
@@ -697,10 +724,7 @@ internal fun MainAppContent(
             }
         }
     }
-    val continueWatchingPreferencesUiState by remember {
-        ContinueWatchingPreferencesRepository.ensureLoaded()
-        ContinueWatchingPreferencesRepository.uiState
-    }.collectAsStateWithLifecycle()
+    val continueWatchingPreferencesUiState by ContinueWatchingPreferencesRepository.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(
         initialHomeReady,
@@ -751,7 +775,7 @@ internal fun MainAppContent(
                             launchSingleTop = true
                         }
                         NuvioToastController.show(getString(Res.string.addons_modal_checking_title))
-                        AddonRepository.initialize()
+                        withContext(Dispatchers.IO) { AddonRepository.initialize() }
                         when (val result = AddonRepository.addAddon(deepLink.manifestUrl)) {
                             is AddAddonResult.Success -> {
                                 NuvioToastController.show(
@@ -836,6 +860,122 @@ internal fun MainAppContent(
                 ExternalPlayerIntentResult.Failed -> {
                     NuvioToastController.show(externalPlayerFailedText)
                     false
+                }
+            }
+        }
+
+        suspend fun launchPlayer(launch: PlayerLaunch) {
+            if (playerSettingsUiState.externalPlayerEnabled) {
+                openExternalPlayback(launch)
+            } else {
+                val launchId = PlayerLaunchStore.put(launch)
+                navController.navigate(PlayerRoute(launchId = launchId, title = launch.title))
+            }
+        }
+
+        suspend fun openLiveTvChannel(
+            channel: LiveTvChannel,
+            providerName: String = "Live TV",
+            recordRecent: Boolean = true,
+        ) {
+            if (recordRecent) {
+                LiveTvRepository.recordRecentChannel(channel)
+            }
+            val stableChannelId = channel.id.ifBlank { channel.streamUrl }
+            launchPlayer(
+                PlayerLaunch(
+                    profileId = activePlaybackProfileId,
+                    title = channel.name,
+                    sourceUrl = channel.streamUrl,
+                    sourceHeaders = channel.headers,
+                    streamType = channel.streamType,
+                    logo = channel.logoUrl,
+                    streamTitle = channel.name,
+                    streamSubtitle = channel.group.takeIf { it.isNotBlank() },
+                    providerName = providerName,
+                    providerAddonId = "live-tv",
+                    contentType = "live-tv",
+                    videoId = channel.id.ifBlank { stableChannelId },
+                    parentMetaId = stableChannelId,
+                    parentMetaType = "live-tv",
+                ),
+            )
+        }
+
+        LaunchedEffect(
+            activePlaybackProfileId,
+            p2pSettingsUiState.p2pEnabled,
+            playerSettingsUiState.externalPlayerEnabled,
+        ) {
+            if (!ownsAppRuntime) return@LaunchedEffect
+            LiveTvIncomingSourceRepository.requests.collectLatest { request ->
+                when (request) {
+                    is LiveTvIncomingSource.DirectStream -> {
+                        openLiveTvChannel(
+                            channel = LiveTvChannel(
+                                id = "shared:${request.url}",
+                                name = request.title.ifBlank { "Shared stream" },
+                                streamUrl = request.url,
+                                group = "Shared",
+                                headers = request.headers,
+                            ),
+                            providerName = "Shared",
+                            recordRecent = false,
+                        )
+                    }
+
+                    is LiveTvIncomingSource.SourceUrl -> {
+                        LiveTvRepository.load(request.url)
+                            .onSuccess { channels ->
+                                if (channels.size == 1) {
+                                    openLiveTvChannel(channels.first(), providerName = "Shared")
+                                } else {
+                                    activateTab(AppScreenTab.LiveTv)
+                                }
+                            }
+                            .onFailure { error ->
+                                NuvioToastController.show(error.message ?: "Unable to open shared playlist.")
+                            }
+                    }
+
+                    is LiveTvIncomingSource.PlaylistData -> {
+                        LiveTvRepository.loadLocalPlaylist(request.fileName, request.data)
+                            .onSuccess { channels ->
+                                if (channels.size == 1) {
+                                    openLiveTvChannel(channels.first(), providerName = "Shared")
+                                } else {
+                                    activateTab(AppScreenTab.LiveTv)
+                                }
+                            }
+                            .onFailure { error ->
+                                NuvioToastController.show(error.message ?: "Unable to open shared playlist.")
+                            }
+                    }
+
+                    is LiveTvIncomingSource.Magnet -> {
+                        if (!p2pSettingsUiState.p2pEnabled) {
+                            NuvioToastController.show("Enable P2P playback to open magnet links.")
+                            return@collectLatest
+                        }
+                        val title = "Magnet stream"
+                        launchPlayer(
+                            PlayerLaunch(
+                                profileId = activePlaybackProfileId,
+                                title = title,
+                                sourceUrl = "torrent://${request.infoHash}",
+                                streamTitle = title,
+                                streamSubtitle = request.infoHash,
+                                providerName = "Magnet",
+                                providerAddonId = "shared-magnet",
+                                contentType = "shared-stream",
+                                videoId = request.infoHash,
+                                parentMetaId = request.infoHash,
+                                parentMetaType = "shared-stream",
+                                torrentInfoHash = request.infoHash,
+                                torrentTrackers = request.trackers,
+                            ),
+                        )
+                    }
                 }
             }
         }
@@ -1398,6 +1538,9 @@ internal fun MainAppContent(
                                     )
                                 },
                                 onLibrarySectionViewAllClick = onLibrarySectionViewAllClick,
+                                onLiveTvChannelClick = { channel ->
+                                    coroutineScope.launch { openLiveTvChannel(channel) }
+                                },
                                 onCloudFilePlay = { item, file ->
                                     coroutineScope.launch {
                                         val resumeItem = WatchProgressRepository
@@ -1451,6 +1594,16 @@ internal fun MainAppContent(
                                 onPluginsSettingsClick = {
                                     if (AppFeaturePolicy.pluginsEnabled) {
                                         navController.navigate(PluginsSettingsRoute(pluginsSettingsTitle))
+                                    }
+                                },
+                                onCloudStreamSettingsClick = {
+                                    if (AppFeaturePolicy.pluginsEnabled) {
+                                        navController.navigate(
+                                            SettingsPageRoute(
+                                                pageName = SettingsPage.CloudStream.name,
+                                                title = cloudStreamSettingsTitle,
+                                            ),
+                                        )
                                     }
                                 },
                                 onAccountSettingsClick = { navController.navigate(AccountSettingsRoute(accountSettingsTitle)) },

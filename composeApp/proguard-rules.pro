@@ -62,3 +62,8 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# The Full Android Telegram runtime is installed through reflection from NuvioApplication.
+-keep class com.nuvio.app.features.telegram.TelegramAndroidBootstrap {
+    public static void install(android.app.Application);
+}
