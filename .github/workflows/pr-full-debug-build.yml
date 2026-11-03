@@ -2,7 +2,7 @@ name: PR Full Debug Build
 
 on:
   push:
-    branches: [performance-auth-audit-6.6]
+    branches: [performance-auth-audit-6.6, cmp-rewrite]
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches: [cmp-rewrite]
@@ -46,6 +46,17 @@ jobs:
 
       - name: Run Android host tests
         run: ./gradlew :composeApp:testAndroidHostTest --stacktrace
+
+      - name: Upload Android host test reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-host-test-reports
+          path: |
+            composeApp/build/reports/tests/testAndroidHostTest/**
+            composeApp/build/test-results/testAndroidHostTest/**
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Build fullDebug APK
         run: ./gradlew :androidApp:assembleFullDebug -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore --stacktrace
