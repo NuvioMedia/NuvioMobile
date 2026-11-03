@@ -108,6 +108,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 private const val TAG = "NuvioPlayer"
 private const val PLAYER_DIAGNOSTIC_TAG = "NuvioPlayerDiag"
+private const val MAX_LIVE_RECONNECT_ATTEMPTS = 3
+private const val LIVE_RECONNECT_BASE_DELAY_MS = 900L
 private fun logPlayerDiagnosticInfo(message: String) {
     Log.i(PLAYER_DIAGNOSTIC_TAG, message)
     InAppLogger.info(PLAYER_DIAGNOSTIC_TAG, message.replace(Regex("https?://[^\\s]+"), "[redacted-url]"))
@@ -171,6 +173,7 @@ actual fun PlatformPlayerSurface(
     sourceResponseHeaders: Map<String, String>,
     externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     streamType: String?,
+    isLive: Boolean,
     useYoutubeChunkedPlayback: Boolean,
     modifier: Modifier,
     playWhenReady: Boolean,
@@ -194,6 +197,7 @@ actual fun PlatformPlayerSurface(
         sanitizePlaybackHeaders(sourceHeaders),
         sanitizePlaybackResponseHeaders(sourceResponseHeaders),
         normalizeStreamType(streamType).orEmpty(),
+        isLive,
         useYoutubeChunkedPlayback,
         initialPositionRequestKey.orEmpty(),
     )
@@ -210,6 +214,7 @@ actual fun PlatformPlayerSurface(
             sourceResponseHeaders = sourceResponseHeaders,
             externalSubtitles = externalSubtitles,
             streamType = streamType,
+            isLive = isLive,
             useYoutubeChunkedPlayback = useYoutubeChunkedPlayback,
             modifier = modifier,
             playWhenReady = playWhenReady,
@@ -264,6 +269,7 @@ private fun AndroidPlaybackEngine.initialAndroidEngine(): ResolvedAndroidPlaybac
 @Composable
 private fun ExoPlayerSurface(
     sourceUrl: String,
+    isLive: Boolean,
     sourceAudioUrl: String?,
     sourceHeaders: Map<String, String>,
     sourceResponseHeaders: Map<String, String>,
@@ -287,6 +293,7 @@ private fun ExoPlayerSurface(
     val latestOnError = rememberUpdatedState(onError)
     val latestOnInitialPositionHandled = rememberUpdatedState(onInitialPositionHandled)
     val latestPlayWhenReady = rememberUpdatedState(playWhenReady)
+    val latestResizeMode = rememberUpdatedState(resizeMode)
     val coroutineScope = rememberCoroutineScope()
 
     val playerSettings = remember {
@@ -311,6 +318,7 @@ private fun ExoPlayerSurface(
         sanitizedSourceHeaders,
         sanitizedSourceResponseHeaders,
         normalizedStreamType.orEmpty(),
+        isLive,
         useYoutubeChunkedPlayback,
         initialPositionRequestKey.orEmpty(),
     )
@@ -348,6 +356,7 @@ private fun ExoPlayerSurface(
                 url = sourceUrl,
                 responseHeaders = sanitizedSourceResponseHeaders,
                 streamType = normalizedStreamType,
+                isLive = isLive,
             ).buildUpon()
                 .setMediaId(sourceUrl)
                 .apply {
@@ -360,6 +369,11 @@ private fun ExoPlayerSurface(
         )
     }
     var probeAttempted by remember(playerSourceKey) { mutableStateOf(false) }
+    var liveReconnectAttempts by remember(playerSourceKey) { mutableStateOf(0) }
+    val liveReconnectJob = remember(playerSourceKey) { mutableStateOf<Job?>(null) }
+    DisposableEffect(playerSourceKey) {
+        onDispose { liveReconnectJob.value?.cancel() }
+    }
 
     val isLocalFileSource = remember(resolvedMediaItem) {
         resolvedMediaItem.isLocalFileSource()
@@ -473,7 +487,10 @@ private fun ExoPlayerSurface(
                 else subtitlePresenter.present(cues, format?.sampleMimeType != MimeTypes.TEXT_SSA && format?.codecs != MimeTypes.TEXT_SSA)
             },
             videoBoundsFractionProvider = {
-                playerViewRef?.videoBoundsFraction(latestVideoAspectRatio.value)
+                playerViewRef?.videoBoundsFraction(
+                    mode = latestResizeMode.value,
+                    aspectRatio = latestVideoAspectRatio.value,
+                )
             },
         )
             .setExtensionRendererMode(effectiveDecoderPriority)
@@ -511,13 +528,13 @@ private fun ExoPlayerSurface(
         val loadControl = NuvioExoPlayerPerformanceHelper.buildLoadControl(
             context,
             PlaybackBufferSettings(
-                enabled = playerSettings.bufferEngineEnabled,
-                minBufferMs = playerSettings.minBufferMs,
-                maxBufferMs = playerSettings.maxBufferMs,
-                bufferForPlaybackMs = playerSettings.bufferForPlaybackMs,
-                bufferForPlaybackAfterRebufferMs = playerSettings.bufferForPlaybackAfterRebufferMs,
-                backBufferDurationMs = playerSettings.backBufferDurationMs,
-                targetBufferSizeMb = playerSettings.targetBufferSizeMb,
+                enabled = isLive || playerSettings.bufferEngineEnabled,
+                minBufferMs = if (isLive) 5_000 else playerSettings.minBufferMs,
+                maxBufferMs = if (isLive) 15_000 else playerSettings.maxBufferMs,
+                bufferForPlaybackMs = if (isLive) 1_000 else playerSettings.bufferForPlaybackMs,
+                bufferForPlaybackAfterRebufferMs = if (isLive) 2_000 else playerSettings.bufferForPlaybackAfterRebufferMs,
+                backBufferDurationMs = if (isLive) 0 else playerSettings.backBufferDurationMs,
+                targetBufferSizeMb = if (isLive) 50 else playerSettings.targetBufferSizeMb,
             ),
             localFileSource = isLocalFileSource,
         )
@@ -706,6 +723,28 @@ private fun ExoPlayerSurface(
             }
         }
 
+        fun scheduleLiveReconnect(error: PlaybackException): Boolean {
+            val recoverable = error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW ||
+                error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED ||
+                error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED ||
+                error.errorCode == PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT
+            if (!isLive || !recoverable || liveReconnectAttempts >= MAX_LIVE_RECONNECT_ATTEMPTS) return false
+            if (liveReconnectJob.value?.isActive == true) return true
+
+            liveReconnectAttempts += 1
+            val attempt = liveReconnectAttempts
+            liveReconnectJob.value = coroutineScope.launch {
+                delay(LIVE_RECONNECT_BASE_DELAY_MS * attempt)
+                if (exoPlayer.currentMediaItem?.mediaId != sourceUrl) return@launch
+                if (error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW) {
+                    exoPlayer.seekToDefaultPosition()
+                }
+                exoPlayer.prepare()
+                if (latestPlayWhenReady.value) exoPlayer.play() else exoPlayer.pause()
+            }
+            return true
+        }
+
         fun reportPlayerError(error: PlaybackException) {
             if (
                 playerSettings.decoderPriority == DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON &&
@@ -757,12 +796,12 @@ private fun ExoPlayerSurface(
                             latestOnError.value(null)
                             return@launch
                         }
-                        reportPlayerError(error)
+                        if (!scheduleLiveReconnect(error)) reportPlayerError(error)
                     }
                     return
                 }
 
-                reportPlayerError(error)
+                if (!scheduleLiveReconnect(error)) reportPlayerError(error)
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -839,11 +878,12 @@ private fun ExoPlayerSurface(
             override fun onVideoSizeChanged(videoSize: VideoSize) {
                 if (!isCurrentExoPlayerSource()) return
                 latestOnSnapshot.value(exoPlayer.snapshot())
-                if (videoSize.width > 0 && videoSize.height > 0) {
-                    videoAspectRatio = videoSize.width.toFloat() / videoSize.height.toFloat()
-                }
+                videoAspectRatio = videoSize.subtitleBoundsAspectRatio(resizeMode)
                 playerViewRef?.post {
-                    playerViewRef?.syncLibassOverlayGeometry()
+                    playerViewRef?.let { view ->
+                        view.applyNuvioAspectRatio(resizeMode, videoSize)
+                        view.syncLibassOverlayGeometry()
+                    }
                 }
             }
 
@@ -1369,8 +1409,15 @@ private fun ExoPlayerSurface(
                     player = exoPlayer
                     keepScreenOn = exoPlayer.shouldKeepPlayerScreenOn()
                     this.resizeMode = resizeMode.toExoResizeMode()
+                    applyNuvioAspectRatio(resizeMode, exoPlayer.videoSize)
                     setShutterBackgroundColor(android.graphics.Color.BLACK)
                     playerViewRef = this
+                    addOnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
+                        post {
+                            applyNuvioAspectRatio(latestResizeMode.value, exoPlayer.videoSize)
+                            syncLibassOverlayGeometry()
+                        }
+                    }
                     sidecarController.bindSubtitleView(this.subtitleView)
                     subtitleView?.addOnLayoutChangeListener { view, _, _, _, _, _, _, _, _ ->
                         val inPip = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N &&
@@ -1396,6 +1443,7 @@ private fun ExoPlayerSurface(
                 playerView.player = exoPlayer
                 playerView.useController = useNativeController
                 playerView.resizeMode = resizeMode.toExoResizeMode()
+                playerView.applyNuvioAspectRatio(resizeMode, exoPlayer.videoSize)
                 playerViewRef = playerView
                 sidecarController.bindSubtitleView(playerView.subtitleView)
                 syncPlayerViewKeepScreenOn()
@@ -1410,6 +1458,12 @@ private fun ExoPlayerSurface(
                 }
             },
         )
+        LaunchedEffect(playerViewRef, resizeMode) {
+            val currentVideoSize = exoPlayer.videoSize
+            videoAspectRatio = currentVideoSize.subtitleBoundsAspectRatio(resizeMode)
+            playerViewRef?.applyNuvioAspectRatio(resizeMode, currentVideoSize)
+            playerViewRef?.post { playerViewRef?.syncLibassOverlayGeometry() }
+        }
         StyledSubtitleOverlay(subtitlePresenter.text, currentSubtitleStyle)
     }
 }
@@ -2010,6 +2064,15 @@ private class NuvioLibmpvView(
     fun applyResizeMode(resizeMode: PlayerResizeMode) {
         executeMpv {
             when (resizeMode) {
+                PlayerResizeMode.BestFit -> {
+                    mpv.setPropertyString("keepaspect", "yes")
+                    mpv.setPropertyString("video-aspect-method", "container")
+                    mpv.setPropertyString("video-aspect-override", "no")
+                    mpv.setPropertyString("video-unscaled", "no")
+                    mpv.setPropertyDouble("video-zoom", 0.0)
+                    mpv.setPropertyDouble("panscan", 0.0)
+                }
+                // Fit, Fill, and Zoom retain the original official Nuvio mpv behaviour.
                 PlayerResizeMode.Fit -> {
                     mpv.setPropertyDouble("panscan", 0.0)
                     mpv.setPropertyString("video-aspect-override", "no")
@@ -2021,6 +2084,13 @@ private class NuvioLibmpvView(
                 PlayerResizeMode.Zoom -> {
                     mpv.setPropertyDouble("panscan", 0.5)
                     mpv.setPropertyString("video-aspect-override", "no")
+                }
+                PlayerResizeMode.Ratio16x9 -> {
+                    mpv.setPropertyString("keepaspect", "yes")
+                    mpv.setPropertyString("video-unscaled", "no")
+                    mpv.setPropertyString("video-aspect-override", "16:9")
+                    mpv.setPropertyDouble("video-zoom", 0.0)
+                    mpv.setPropertyDouble("panscan", 0.0)
                 }
             }
         }
@@ -2504,9 +2574,43 @@ private fun PlaybackException.isDecoderFailure(): Boolean =
         PlaybackException.ERROR_CODE_DECODING_RESOURCES_RECLAIMED,
     )
 
+private fun VideoSize.subtitleBoundsAspectRatio(mode: PlayerResizeMode): Float = when (mode) {
+    PlayerResizeMode.Fit, PlayerResizeMode.Fill -> 0f
+    PlayerResizeMode.Ratio16x9 -> 16f / 9f
+    PlayerResizeMode.BestFit, PlayerResizeMode.Zoom -> {
+        if (width <= 0 || height <= 0) {
+            0f
+        } else {
+            val sampleAspectRatio = pixelWidthHeightRatio.takeIf { it.isFinite() && it > 0f } ?: 1f
+            width.toFloat() * sampleAspectRatio / height.toFloat()
+        }
+    }
+}
+
+private fun PlayerView.applyNuvioAspectRatio(mode: PlayerResizeMode, videoSize: VideoSize) {
+    val contentFrame = findViewById<AspectRatioFrameLayout>(androidx.media3.ui.R.id.exo_content_frame)
+        ?: return
+    val codedRatio = if (videoSize.width > 0 && videoSize.height > 0) {
+        videoSize.width.toFloat() / videoSize.height
+    } else 0f
+    val sampleAspectRatio = videoSize.pixelWidthHeightRatio
+        .takeIf { it.isFinite() && it > 0f } ?: 1f
+    val correctedRatio = if (codedRatio > 0f) codedRatio * sampleAspectRatio else 0f
+
+    when (mode) {
+        PlayerResizeMode.BestFit, PlayerResizeMode.Fit, PlayerResizeMode.Zoom ->
+            contentFrame.setAspectRatio(correctedRatio)
+        PlayerResizeMode.Fill ->
+            contentFrame.setAspectRatio(0f)
+        PlayerResizeMode.Ratio16x9 ->
+            contentFrame.setAspectRatio(16f / 9f)
+    }
+}
+
 private fun PlayerResizeMode.toExoResizeMode(): Int =
     when (this) {
-        PlayerResizeMode.Fit -> AspectRatioFrameLayout.RESIZE_MODE_FIT
+        PlayerResizeMode.BestFit, PlayerResizeMode.Fit, PlayerResizeMode.Ratio16x9 ->
+            AspectRatioFrameLayout.RESIZE_MODE_FIT
         PlayerResizeMode.Fill -> AspectRatioFrameLayout.RESIZE_MODE_FILL
         PlayerResizeMode.Zoom -> AspectRatioFrameLayout.RESIZE_MODE_ZOOM
     }
@@ -2924,13 +3028,19 @@ private fun ExoPlayer.logCurrentTracks(context: String) {
 }
 
 @androidx.annotation.OptIn(UnstableApi::class)
-private fun PlayerView.videoBoundsFraction(aspectRatio: Float): RectF? {
+private fun PlayerView.videoBoundsFraction(
+    mode: PlayerResizeMode,
+    aspectRatio: Float,
+): RectF? {
     val subtitleView = this.subtitleView ?: return null
     val viewWidth = subtitleView.width.toFloat()
     val viewHeight = subtitleView.height.toFloat()
     if (viewWidth <= 0f || viewHeight <= 0f) return null
 
-    if (aspectRatio > 0f) {
+    // Zoom deliberately crops the source beyond the viewport. Its actual transformed
+    // bounds (including negative offsets and dimensions larger than the viewport) are
+    // required to remap bitmap subtitle coordinates correctly.
+    if (aspectRatio > 0f && mode != PlayerResizeMode.Zoom) {
         val parentRatio = viewWidth / viewHeight
         return if (parentRatio > aspectRatio) {
             val fitW = viewHeight * aspectRatio
@@ -2947,17 +3057,18 @@ private fun PlayerView.videoBoundsFraction(aspectRatio: Float): RectF? {
         ?: findViewById<AspectRatioFrameLayout>(androidx.media3.ui.R.id.exo_content_frame)
             ?.also { setTag(androidx.media3.ui.R.id.exo_content_frame, it) }
         ?: return null
-    val frameWidth = contentFrame.width.toFloat()
-    val frameHeight = contentFrame.height.toFloat()
-    if (frameWidth <= 0f || frameHeight <= 0f) return null
-    if (frameWidth > viewWidth || frameHeight > viewHeight) return null
-    val left = contentFrame.x / viewWidth
-    val top = contentFrame.y / viewHeight
+    val transformedBounds = transformedChildBoundsInParent(contentFrame) ?: return null
+    if (
+        mode != PlayerResizeMode.Zoom && (
+            transformedBounds.left < 0f || transformedBounds.top < 0f ||
+            transformedBounds.right > viewWidth || transformedBounds.bottom > viewHeight
+        )
+    ) return null
     return RectF(
-        left,
-        top,
-        left + frameWidth / viewWidth,
-        top + frameHeight / viewHeight,
+        transformedBounds.left / viewWidth,
+        transformedBounds.top / viewHeight,
+        transformedBounds.right / viewWidth,
+        transformedBounds.bottom / viewHeight,
     )
 }
 

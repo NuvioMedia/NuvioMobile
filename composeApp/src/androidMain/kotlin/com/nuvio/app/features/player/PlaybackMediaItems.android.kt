@@ -18,8 +18,18 @@ internal fun playbackMediaItemFromUrl(
     url: String,
     responseHeaders: Map<String, String> = emptyMap(),
     streamType: String? = null,
+    isLive: Boolean = false,
 ): MediaItem {
     val builder = MediaItem.Builder().setUri(url)
+    if (isLive) {
+        builder.setLiveConfiguration(
+            MediaItem.LiveConfiguration.Builder()
+                .setTargetOffsetMs(5_000L)
+                .setMinOffsetMs(2_500L)
+                .setMaxOffsetMs(15_000L)
+                .build(),
+        )
+    }
     inferPlaybackMimeType(
         url = url,
         responseHeaders = responseHeaders,

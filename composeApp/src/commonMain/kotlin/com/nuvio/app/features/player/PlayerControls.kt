@@ -25,11 +25,13 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Groups
+import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.LockOpen
@@ -235,6 +237,7 @@ internal fun PlayerControlsShell(
                     isLocked = isLocked,
                     showActions = showPlaybackControls,
                     onSubmitIntroClick = onSubmitIntroClick,
+                    onStreamInfoClick = onStreamInfoClick,
                     parentalWarnings = parentalWarnings,
                     showParentalGuide = showParentalGuide,
                     onParentalGuideAnimationComplete = onParentalGuideAnimationComplete,
@@ -397,6 +400,7 @@ private fun PlayerHeader(
     isLocked: Boolean,
     showActions: Boolean,
     onSubmitIntroClick: (() -> Unit)?,
+    onStreamInfoClick: () -> Unit,
     parentalWarnings: List<ParentalWarning>,
     showParentalGuide: Boolean,
     onParentalGuideAnimationComplete: () -> Unit,
@@ -496,6 +500,15 @@ private fun PlayerHeader(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    if (onStreamInfoClick != null) {
+                        PlayerHeaderIconButton(
+                            icon = Icons.Rounded.Info,
+                            contentDescription = stringResource(Res.string.cd_stream_info),
+                            buttonSize = metrics.headerIconSize + 16.dp,
+                            iconSize = metrics.headerIconSize,
+                            onClick = onStreamInfoClick,
+                        )
+                    }
                     if (onSubmitIntroClick != null) {
                         PlayerHeaderIconButton(
                             icon = Icons.Rounded.Flag,

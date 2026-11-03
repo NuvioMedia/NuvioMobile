@@ -113,7 +113,6 @@ object P2pSettingsRepository {
     }
 
     private fun loadFromDisk() {
-        hasLoaded = true
         p2pEnabled = P2pSettingsStorage.loadP2pEnabled() ?: false
         enableUpload = P2pSettingsStorage.loadEnableUpload() ?: true
         hideTorrentStats = P2pSettingsStorage.loadHideTorrentStats() ?: false
@@ -123,6 +122,7 @@ object P2pSettingsRepository {
         cacheSize = P2pSettingsStorage.loadCacheSize()
             ?.let { stored -> P2pCacheSize.entries.firstOrNull { it.name == stored } }
             ?: P2pCacheSize.GB_2
+        hasLoaded = true
         publish()
     }
 

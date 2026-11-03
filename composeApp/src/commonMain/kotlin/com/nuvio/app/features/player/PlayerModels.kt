@@ -144,10 +144,21 @@ object PlayerLaunchStore {
     }
 }
 
-enum class PlayerResizeMode {
-    Fit,
-    Fill,
-    Zoom,
+enum class PlayerResizeMode(val label: String) {
+    BestFit("Best Fit"),
+    Fit("Fit"),
+    Fill("Fill"),
+    Zoom("Zoom"),
+    Ratio16x9("16:9");
+
+    companion object {
+        fun fromStoredName(value: String?): PlayerResizeMode = when (value) {
+            // "Full" was used by the temporary custom implementation; restore it as
+            // the official Nuvio Fill mode while preserving the two added modes.
+            "Full" -> Fill
+            else -> entries.firstOrNull { it.name == value } ?: BestFit
+        }
+    }
 }
 
 enum class AndroidPlaybackEngine(

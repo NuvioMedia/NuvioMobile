@@ -17,6 +17,8 @@ import com.nuvio.app.isIos
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_player_resize_fill
 import nuvio.composeapp.generated.resources.compose_player_resize_fit
+import nuvio.composeapp.generated.resources.compose_player_resize_best_fit
+import nuvio.composeapp.generated.resources.compose_player_resize_16_9
 import nuvio.composeapp.generated.resources.compose_player_resize_zoom
 import org.jetbrains.compose.resources.StringResource
 import kotlin.math.max
@@ -134,18 +136,15 @@ internal fun playerTimelineBottomInsets(metrics: PlayerLayoutMetrics): WindowIns
     return if (isIos) safeInsets.union(contentInsets) else safeInsets.add(contentInsets)
 }
 
-internal fun PlayerResizeMode.next(): PlayerResizeMode =
-    when (this) {
-        PlayerResizeMode.Fit -> PlayerResizeMode.Fill
-        PlayerResizeMode.Fill -> PlayerResizeMode.Zoom
-        PlayerResizeMode.Zoom -> PlayerResizeMode.Fit
-    }
+internal fun PlayerResizeMode.next(): PlayerResizeMode = PlayerResizeMode.entries[(ordinal + 1) % PlayerResizeMode.entries.size]
 
 internal val PlayerResizeMode.labelRes: StringResource
     get() = when (this) {
+        PlayerResizeMode.BestFit -> Res.string.compose_player_resize_best_fit
         PlayerResizeMode.Fit -> Res.string.compose_player_resize_fit
         PlayerResizeMode.Fill -> Res.string.compose_player_resize_fill
         PlayerResizeMode.Zoom -> Res.string.compose_player_resize_zoom
+        PlayerResizeMode.Ratio16x9 -> Res.string.compose_player_resize_16_9
     }
 
 internal fun formatPlaybackTime(positionMs: Long): String {
