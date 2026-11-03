@@ -15,6 +15,7 @@ class TrackingReadsTest {
             tab("simkl:plantowatch", TrackingProviderId.SIMKL, TrackingLibraryTabKind.STATUS, "simkl"),
             tab("simkl:hold", TrackingProviderId.SIMKL, TrackingLibraryTabKind.STATUS, "simkl"),
             tab("simkl:dropped", TrackingProviderId.SIMKL, TrackingLibraryTabKind.STATUS, "simkl"),
+            tab("simkl:completed", TrackingProviderId.SIMKL, TrackingLibraryTabKind.STATUS, "simkl", isMembershipDestination = false),
             tab("anilist:current", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
             tab("anilist:planning", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
             tab("anilist:paused", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
@@ -27,6 +28,7 @@ class TrackingReadsTest {
         )
         val initial = tabs.associate { it.key to false }.toMutableMap().apply {
             this["local"] = true
+            this["simkl:completed"] = true
             this["trakt:personal:1"] = true
         }
 
@@ -38,6 +40,7 @@ class TrackingReadsTest {
 
         assertTrue(updated["simkl:dropped"] == true)
         assertFalse(updated["simkl:watching"] == true)
+        assertFalse(updated["simkl:completed"] == true)
         assertTrue(updated["anilist:dropped"] == true)
         assertFalse(updated["anilist:completed"] == true)
         assertTrue(updated["mdblist:watchlist"] == true)
@@ -76,11 +79,13 @@ class TrackingReadsTest {
         provider: TrackingProviderId?,
         kind: TrackingLibraryTabKind,
         group: String? = null,
+        isMembershipDestination: Boolean = true,
     ) = TrackingLibraryTab(
         key = key,
         title = key,
         providerId = provider,
         kind = kind,
         selectionGroup = group,
+        isMembershipDestination = isMembershipDestination,
     )
 }

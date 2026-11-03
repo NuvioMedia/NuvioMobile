@@ -616,7 +616,6 @@ object LibraryRepository {
             // Keep provider-supported destinations visible even when a list is empty. The
             // vertical selector should describe provider capabilities, not only populated lists.
             val providerSections = providerSnapshot.tabs
-                .filter { tab -> tab.isMembershipDestination || tab.kind == TrackingLibraryTabKind.STATUS }
                 .map { tab ->
                     sectionsByKey[tab.key] ?: LibrarySection(
                         type = tab.key,

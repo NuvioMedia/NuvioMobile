@@ -110,14 +110,11 @@ fun selectUnifiedTrackingStatus(
 ): Map<String, Boolean> {
     val updated = membership.toMutableMap()
     tabs
-        .filter { it.providerId != null && it.isMembershipDestination }
+        .filter { it.providerId != null && (it.kind == TrackingLibraryTabKind.STATUS || it.kind == TrackingLibraryTabKind.WATCHLIST) }
         .groupBy(TrackingLibraryTab::providerId)
         .values
-        .forEach { providerTabs ->
-            val nativeTabs = providerTabs.filter {
-                it.kind == TrackingLibraryTabKind.STATUS || it.kind == TrackingLibraryTabKind.WATCHLIST
-            }
-            if (nativeTabs.size == 1) {
+        .forEach { nativeTabs ->
+            if (nativeTabs.size == 1 && nativeTabs.single().kind == TrackingLibraryTabKind.WATCHLIST) {
                 // Providers with one native list keep using that list for every unified status.
                 updated[nativeTabs.single().key] = true
                 return@forEach
@@ -125,6 +122,7 @@ fun selectUnifiedTrackingStatus(
             val statusTabs = nativeTabs.filter { it.kind == TrackingLibraryTabKind.STATUS }
             val matchingTabs = statusTabs.filter { it.unifiedTrackingStatus() == status }
             if (matchingTabs.isNotEmpty()) {
+                // Clear the previous status too, including non-selectable Completed destinations.
                 statusTabs.forEach { tab ->
                     updated[tab.key] = tab.unifiedTrackingStatus() == status
                 }

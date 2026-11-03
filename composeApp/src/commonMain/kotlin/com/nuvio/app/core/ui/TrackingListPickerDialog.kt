@@ -19,7 +19,6 @@ import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.UnifiedTrackingStatus
 import com.nuvio.app.features.tracking.selectedUnifiedTrackingStatus
 import com.nuvio.app.features.tracking.unifiedTrackingStatuses
-import com.nuvio.app.features.tracking.unifiedTrackingStatus
 import com.nuvio.app.features.tracking.membershipTitle
 import com.nuvio.app.features.tracking.trackingMembershipDestinations
 import nuvio.composeapp.generated.resources.Res
@@ -50,9 +49,7 @@ fun TrackingListPickerDialog(
     val statusOptions = unifiedTrackingStatuses(destinations)
     val selectedStatus = selectedUnifiedTrackingStatus(destinations, membership)
     val otherLists = destinations.filter { tab ->
-        tab.providerId != null &&
-            tab.kind != com.nuvio.app.features.tracking.TrackingLibraryTabKind.STATUS &&
-            tab.unifiedTrackingStatus() == null
+        tab.providerId != null && tab.unifiedTrackingStatus() == null
     }
 
     DialogSurface(
