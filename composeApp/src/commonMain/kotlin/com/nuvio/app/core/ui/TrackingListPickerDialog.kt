@@ -49,7 +49,9 @@ fun TrackingListPickerDialog(
     val statusOptions = unifiedTrackingStatuses(destinations)
     val selectedStatus = selectedUnifiedTrackingStatus(destinations, membership)
     val otherLists = destinations.filter { tab ->
-        tab.providerId != null && tab.unifiedTrackingStatus() == null
+        tab.providerId != null &&
+            tab.kind != com.nuvio.app.features.tracking.TrackingLibraryTabKind.STATUS &&
+            tab.unifiedTrackingStatus() == null
     }
 
     DialogSurface(

@@ -3,84 +3,84 @@ package com.nuvio.app.features.tracking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
-import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class TrackingReadsTest {
+
     @Test
-    fun `selection group keeps one provider status selected`() {
+    fun `unified status selection maps to each provider native destination`() {
         val tabs = listOf(
-            tab("local", providerId = null),
-            tab("simkl:watching", selectionGroup = "simkl:status"),
-            tab("simkl:completed", selectionGroup = "simkl:status"),
+            tab("local", null, TrackingLibraryTabKind.WATCHLIST),
+            tab("simkl:watching", TrackingProviderId.SIMKL, TrackingLibraryTabKind.STATUS, "simkl"),
+            tab("simkl:plantowatch", TrackingProviderId.SIMKL, TrackingLibraryTabKind.STATUS, "simkl"),
+            tab("simkl:hold", TrackingProviderId.SIMKL, TrackingLibraryTabKind.STATUS, "simkl"),
+            tab("simkl:dropped", TrackingProviderId.SIMKL, TrackingLibraryTabKind.STATUS, "simkl"),
+            tab("anilist:current", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
+            tab("anilist:planning", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
+            tab("anilist:paused", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
+            tab("anilist:dropped", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
+            tab("anilist:repeating", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
+            tab("anilist:completed", TrackingProviderId.ANILIST, TrackingLibraryTabKind.STATUS, "anilist"),
+            tab("mdblist:watchlist", TrackingProviderId.MDBLIST, TrackingLibraryTabKind.WATCHLIST),
+            tab("trakt:watchlist", TrackingProviderId.TRAKT, TrackingLibraryTabKind.WATCHLIST),
+            tab("trakt:personal:1", TrackingProviderId.TRAKT, TrackingLibraryTabKind.PERSONAL),
         )
-        val current = mapOf(
-            "local" to true,
-            "simkl:watching" to true,
-            "simkl:completed" to false,
-        )
+        val initial = tabs.associate { it.key to false }.toMutableMap().apply {
+            this["local"] = true
+            this["trakt:personal:1"] = true
+        }
 
-        val updated = toggleTrackingLibraryMembership(
+        val updated = selectUnifiedTrackingStatus(
             tabs = tabs,
-            membership = current,
-            key = "simkl:completed",
+            membership = initial,
+            status = UnifiedTrackingStatus.DROPPED,
         )
 
-        assertEquals(true, updated["local"])
-        assertEquals(false, updated["simkl:watching"])
-        assertEquals(true, updated["simkl:completed"])
-    }
-
-    @Test
-    fun `unknown selection key leaves membership unchanged`() {
-        val current = mapOf("local" to true)
-
-        val updated = toggleTrackingLibraryMembership(
-            tabs = listOf(tab("local", providerId = null)),
-            membership = current,
-            key = "missing",
+        assertTrue(updated["simkl:dropped"] == true)
+        assertFalse(updated["simkl:watching"] == true)
+        assertTrue(updated["anilist:dropped"] == true)
+        assertFalse(updated["anilist:completed"] == true)
+        assertTrue(updated["mdblist:watchlist"] == true)
+        assertTrue(updated["trakt:watchlist"] == true)
+        assertTrue(updated["trakt:personal:1"] == true)
+        assertTrue(updated["local"] == true)
+        assertEquals(
+            UnifiedTrackingStatus.DROPPED,
+            selectedUnifiedTrackingStatus(tabs, updated),
         )
-
-        assertSame(current, updated)
     }
 
     @Test
-    fun `content type support filters provider specific statuses`() {
-        val seriesOnly = tab("simkl:watching").copy(supportedContentTypes = setOf("series"))
-
-        assertTrue(seriesOnly.supportsContentType("SERIES"))
-        assertFalse(seriesOnly.supportsContentType("movie"))
-        assertTrue(tab("trakt:watchlist").supportsContentType("movie"))
-    }
-
-    @Test
-    fun `non destination status stays in selection group without appearing in picker`() {
-        val watching = tab("simkl:watching", selectionGroup = "simkl:status")
-        val completed = tab("simkl:completed", selectionGroup = "simkl:status")
-            .copy(isMembershipDestination = false)
-        val tabs = listOf(watching, completed)
-
-        assertEquals(listOf(watching), trackingMembershipDestinations(tabs))
-
-        val updated = toggleTrackingLibraryMembership(
+    fun `single list providers expose a plan to watch fallback`() {
+        val tabs = listOf(
+            tab("mdblist:watchlist", TrackingProviderId.MDBLIST, TrackingLibraryTabKind.WATCHLIST),
+            tab("trakt:watchlist", TrackingProviderId.TRAKT, TrackingLibraryTabKind.WATCHLIST),
+            tab("trakt:personal:1", TrackingProviderId.TRAKT, TrackingLibraryTabKind.PERSONAL),
+        )
+        assertEquals(
+            listOf(UnifiedTrackingStatus.PLAN_TO_WATCH),
+            unifiedTrackingStatuses(tabs),
+        )
+        val updated = selectUnifiedTrackingStatus(
             tabs = tabs,
-            membership = mapOf(watching.key to false, completed.key to true),
-            key = watching.key,
+            membership = emptyMap(),
+            status = UnifiedTrackingStatus.PLAN_TO_WATCH,
         )
-
-        assertEquals(true, updated[watching.key])
-        assertEquals(false, updated[completed.key])
+        assertTrue(updated["mdblist:watchlist"] == true)
+        assertTrue(updated["trakt:watchlist"] == true)
+        assertEquals(UnifiedTrackingStatus.PLAN_TO_WATCH, selectedUnifiedTrackingStatus(tabs, updated))
     }
 
     private fun tab(
         key: String,
-        providerId: TrackingProviderId? = TrackingProviderId.SIMKL,
-        selectionGroup: String? = null,
+        provider: TrackingProviderId?,
+        kind: TrackingLibraryTabKind,
+        group: String? = null,
     ) = TrackingLibraryTab(
         key = key,
-        title = key,
-        providerId = providerId,
-        kind = TrackingLibraryTabKind.STATUS,
-        selectionGroup = selectionGroup,
+        title = key.substringAfterLast(':').replaceFirstChar(Char::uppercase),
+        providerId = provider,
+        kind = kind,
+        selectionGroup = group,
     )
 }
