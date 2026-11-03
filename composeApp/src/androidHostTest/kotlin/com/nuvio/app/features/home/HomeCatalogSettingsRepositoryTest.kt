@@ -88,7 +88,7 @@ class HomeCatalogSettingsRepositoryTest {
         HomeCatalogSettingsRepository.setRowPlacement(positionKey, HomeCatalogRowPlacement.PINNED_POSITION)
         HomeCatalogSettingsRepository.setRowPlacement(bottomKey, HomeCatalogRowPlacement.PINNED_BOTTOM)
         assertEquals(
-            HomeCatalogRowPlacement.PINNED_POSITION,
+            HomeCatalogRowPlacement.NORMAL,
             HomeCatalogSettingsRepository.uiState.value.items.single { it.key == positionKey }.rowPlacement,
         )
         assertEquals(
@@ -99,7 +99,7 @@ class HomeCatalogSettingsRepositoryTest {
         val refreshed = listOf(addon(listOf("popular", "latest", "new")))
         HomeCatalogSettingsRepository.syncCatalogs(refreshed)
         assertEquals(
-            HomeCatalogRowPlacement.PINNED_POSITION,
+            HomeCatalogRowPlacement.NORMAL,
             HomeCatalogSettingsRepository.uiState.value.items.single { it.key == positionKey }.rowPlacement,
         )
         assertEquals(
@@ -110,7 +110,7 @@ class HomeCatalogSettingsRepositoryTest {
         HomeCatalogSettingsRepository.clearLocalState()
         HomeCatalogSettingsRepository.syncCatalogs(refreshed)
         assertEquals(
-            HomeCatalogRowPlacement.PINNED_POSITION,
+            HomeCatalogRowPlacement.NORMAL,
             HomeCatalogSettingsRepository.uiState.value.items.single { it.key == positionKey }.rowPlacement,
         )
         assertEquals(
@@ -120,7 +120,7 @@ class HomeCatalogSettingsRepositoryTest {
     }
 
     @Test
-    fun movingAnotherRowAcrossPositionPinnedRowDoesNotDisplaceTheAnchor() {
+    fun legacyPinHereRowsNoLongerBlockManualReordering() {
         HomeCatalogSettingsRepository.syncCatalogs(listOf(addon(listOf("popular", "middle", "latest"))))
         val pinnedKey = "test:movie:middle"
         HomeCatalogSettingsRepository.setRowPlacement(
@@ -136,7 +136,7 @@ class HomeCatalogSettingsRepositoryTest {
 
         assertEquals(before, HomeCatalogSettingsRepository.uiState.value.items.map { it.key })
         assertEquals(
-            HomeCatalogRowPlacement.PINNED_POSITION,
+            HomeCatalogRowPlacement.NORMAL,
             HomeCatalogSettingsRepository.uiState.value.items.single { it.key == pinnedKey }.rowPlacement,
         )
     }
