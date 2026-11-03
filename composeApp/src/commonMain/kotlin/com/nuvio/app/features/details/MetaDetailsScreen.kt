@@ -142,6 +142,7 @@ import com.nuvio.app.features.trakt.TraktConnectionMode
 import com.nuvio.app.features.tracking.TrackingLibraryTab
 import com.nuvio.app.features.tracking.TrackingMembershipApplyResult
 import com.nuvio.app.features.tracking.toggleTrackingLibraryMembership
+import com.nuvio.app.features.tracking.selectUnifiedTrackingStatus
 import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tracking.TrackingProviderId
 import com.nuvio.app.features.trailer.TrailerPlaybackResolver
@@ -1515,6 +1516,13 @@ fun MetaDetailsScreen(
                                     tabs = pickerTabs,
                                     membership = pickerMembership,
                                     key = listKey,
+                                )
+                            },
+                            onSelectStatus = { status ->
+                                pickerMembership = selectUnifiedTrackingStatus(
+                                    tabs = pickerTabs,
+                                    membership = pickerMembership,
+                                    status = status,
                                 )
                             },
                             onDismiss = {
