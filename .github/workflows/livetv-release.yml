@@ -56,17 +56,38 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Write app keys and signing
+      - name: Write app keys
+        uses: ./.github/actions/app-keys
+        with:
+          backend_url: ${{ secrets.NUVIO_BACKEND_URL }}
+          backend_key: ${{ secrets.NUVIO_BACKEND_KEY }}
+          tmdb_api_key: ${{ secrets.TMDB_API_KEY }}
+          trakt_client_id: ${{ secrets.TRAKT_CLIENT_ID }}
+          trakt_client_secret: ${{ secrets.TRAKT_CLIENT_SECRET }}
+          simkl_client_id: ${{ secrets.SIMKL_CLIENT_ID }}
+          simkl_app_name: ${{ secrets.SIMKL_APP_NAME }}
+          mdblist_client_id: ${{ secrets.MDBLIST_CLIENT_ID }}
+          google_drive_client_id: ${{ secrets.GOOGLE_DRIVE_CLIENT_ID }}
+          google_drive_client_secret: ${{ secrets.GOOGLE_DRIVE_CLIENT_SECRET }}
+          premiumize_client_id: ${{ secrets.PREMIUMIZE_CLIENT_ID }}
+          imdb_ratings_api_base_url: ${{ secrets.IMDB_RATINGS_API_BASE_URL }}
+          imdb_tapframe_api_base_url: ${{ secrets.IMDB_TAPFRAME_API_BASE_URL }}
+          introdb_api_url: ${{ secrets.INTRODB_API_URL }}
+
+      - name: Signing
         env:
-          RELEASE_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
-          RELEASE_KEYSTORE_BASE64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
+          KEYSTORE_BASE64: ${{ secrets.NUVIO_RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.NUVIO_RELEASE_STORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.NUVIO_RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.NUVIO_RELEASE_KEY_PASSWORD }}
         run: |
-          keystore="$RUNNER_TEMP/release.jks"
-          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 --decode > "$keystore"
-          printf '%s' "$RELEASE_PROPERTIES_BASE64" | base64 --decode > local.properties
-          sed -i -E '/^[[:space:]]*(sdk\.dir|NUVIO_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
-          printf '\nNUVIO_RELEASE_STORE_FILE=%s\n' "$keystore" >> local.properties
-          echo 'Keys with a value:'; awk -F= '/^[A-Z_]+=.+/ {print "  " $1}' local.properties
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/release.jks"
+          {
+            echo "NUVIO_RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks"
+            echo "NUVIO_RELEASE_STORE_PASSWORD=$STORE_PASSWORD"
+            echo "NUVIO_RELEASE_KEY_ALIAS=$KEY_ALIAS"
+            echo "NUVIO_RELEASE_KEY_PASSWORD=$KEY_PASSWORD"
+          } >> local.properties
 
       - name: Build APK
         env:
