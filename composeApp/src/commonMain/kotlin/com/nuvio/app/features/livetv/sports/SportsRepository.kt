@@ -4,6 +4,7 @@ import com.nuvio.app.features.livetv.data.LiveTvDirs
 import com.nuvio.app.features.livetv.data.LiveTvFiles
 import com.nuvio.app.features.livetv.data.LiveTvPreferences
 import com.nuvio.app.features.livetv.data.LiveTvRepository
+import com.nuvio.app.features.livetv.data.VideoPlaying
 import com.nuvio.app.features.livetv.model.LiveChannel
 import com.nuvio.app.features.livetv.model.LiveTvClock
 import com.nuvio.app.features.livetv.parental.ParentalControls
@@ -276,13 +277,18 @@ internal object SportsRepository {
         if (on) {
             liveRepo.ensureLoaded(updateCheckDelayMs = 20_000)
             kick.value++
-            if (_matches.value.isEmpty() || LiveTvClock.nowMs() - lastMatchAt > 3 * MINUTE) matchKick.value++
+            // Nothing matched yet, one was put off (app away, video playing), or the last is hours old.
+            if (_matches.value.isEmpty() || matchMissed || LiveTvClock.nowMs() - lastMatchAt > SAFETY_ROUND) matchKick.value++
         }
     }
 
     fun setForeground(on: Boolean) {
         foreground.value = on
-        if (on) kick.value++
+        if (on) {
+            kick.value++
+            // Something changed while the app was away: find channels for it now.
+            if (matchMissed) matchKick.value++
+        }
     }
 
     /** Update now (the page's refresh, a day picked). */
@@ -761,20 +767,55 @@ internal object SportsRepository {
 
     // ------------------------------------------------------------------ matching channels
 
+    /**
+     * Finding channels for the games is heavy (it reads the whole guide), so it only runs when
+     * something it depends on has really changed: the games (a new game, a start time moved, a
+     * network added), your channels, the guide being replaced, Sports settings or follows, a new
+     * day, or a Fix channel pick. Plus one round every few hours as a safety net (it used to run
+     * every 15 minutes). Never while the player is open, unless you're on the Sports page.
+     */
     private suspend fun matchLoop() {
         val trigger = combine(
-            events.map { list -> list.filter { it.source != EventSource.GUIDE }.map { "${it.id}@${it.startMs}:${it.broadcasts.size}" } }.distinctUntilChanged(),
-            liveRepo.displayChannels.map { it.size to it.firstOrNull()?.key }.distinctUntilChanged(),
+            // The games: only what changes the search (not scores or clocks), as one number.
+            events.map { list ->
+                var h = 17L
+                var n = 0
+                for (e in list) {
+                    if (e.source == EventSource.GUIDE) continue
+                    h = h * 31 + e.id.hashCode(); h = h * 31 + e.startMs; h = h * 31 + e.broadcasts.size
+                    n++
+                }
+                n to h
+            }.distinctUntilChanged(),
+            // Your channels (any added, removed or renamed in a playlist update).
+            liveRepo.displayChannels.map { list ->
+                var h = 17L
+                for (c in list) h = h * 31 + c.key.hashCode()
+                list.size to h
+            }.distinctUntilChanged(),
             settings.map { listOf(it.networkChannels, it.eventChannels, it.teamChannels, it.leagueChannels, it.blocked, it.bestChannelFirst, it.hiddenLeagues, it.region, it.preferredGroups) }.distinctUntilChanged(),
             follows.map { it.words to it.leagues }.distinctUntilChanged(),
             liveRepo.guideGeneration
         ) { a, b, c, d, e -> listOf(a, b, c, d, e) }
         var lastRun = 0L
         scope.launch {
-            // Every 15 minutes (shows move on; new guide listings).
+            // Safety net: a round every few hours, in case something changed that we didn't hear about.
             while (true) {
                 delay(15 * MINUTE)
-                if (foreground.value && LiveTvClock.nowMs() - lastRun > 10 * MINUTE) matchKick.value++
+                if (LiveTvClock.nowMs() - lastRun > SAFETY_ROUND) matchKick.value++
+            }
+        }
+        scope.launch {
+            // A new day: "yesterday to tomorrow" moves on, so other games come into range.
+            while (true) {
+                delay((dayStart(1) + MINUTE - LiveTvClock.nowMs()).coerceAtLeast(MINUTE))
+                matchKick.value++
+            }
+        }
+        scope.launch {
+            // A round put off because Live TV was busy updating: run it once the update is done.
+            liveRepo.status.map { it.loading }.distinctUntilChanged().collect { loading ->
+                if (!loading && matchMissed) matchKick.value++
             }
         }
         // Last time's matches straight away, so the page isn't empty while the new round runs.
@@ -786,18 +827,22 @@ internal object SportsRepository {
             }
         }
         combine(trigger, matchKick) { t, k -> t to k }.debounce { if (_matches.value.isEmpty()) 0L else 1_500L }.collect {
-            if (!foreground.value && viewers.value == 0) return@collect
-            if (!settings.value.showInSidebar && viewers.value == 0) return@collect
+            // Put off (not lost): it runs when the app is back in front / the update is done.
+            if (!foreground.value && viewers.value == 0) { matchMissed = true; return@collect }
+            if (!settings.value.showInSidebar && viewers.value == 0) { matchMissed = true; return@collect }
             val status = liveRepo.status.value
             // Never the very first match against a guide that's still being built.
-            if (!status.loadedOnce) return@collect
-            if (status.loading && _matches.value.isNotEmpty() && !pickPending) return@collect
+            if (!status.loadedOnce) { matchMissed = true; return@collect }
+            if (status.loading && _matches.value.isNotEmpty() && !pickPending) { matchMissed = true; return@collect }
             pickPending = false
             if (_matches.value.isEmpty() && status.loading) {
                 _matching.value = true
                 withTimeoutOrNull(10 * MINUTE) { liveRepo.status.first { !it.loading } }
                 _matching.value = false
             }
+            // Not while the player is open (unless you're on the Sports page).
+            awaitNotWatching()
+            matchMissed = false
             lastRun = LiveTvClock.nowMs()
             runCatching { runMatch() }
             lastMatchAt = LiveTvClock.nowMs()
@@ -807,6 +852,16 @@ internal object SportsRepository {
 
     private val matchKick = MutableStateFlow(0)
     @Volatile private var lastMatchAt = 0L
+    /** A round was put off (app in the background, Live TV updating): run it at the next chance. */
+    @Volatile private var matchMissed = false
+
+    /** Waits while a player screen is open; the Sports page being open ends the wait. */
+    private suspend fun awaitNotWatching() {
+        if (viewers.value > 0 || VideoPlaying.open.value == 0) return
+        combine(VideoPlaying.open, viewers) { playing, v -> v > 0 || playing == 0 }.first { it }
+        // Back from the video: a moment for the screen to settle first.
+        if (viewers.value == 0) delay(5_000)
+    }
 
     private fun saveMatches() {
         val arr = JSONArray()
@@ -1280,6 +1335,8 @@ internal object SportsRepository {
     private val EUROPEAN_TABLES = setOf("soccer/uefa.champions", "soccer/uefa.europa", "soccer/uefa.europa.conf")
     private const val MINUTE = 60_000L
     private const val HOUR = 60 * MINUTE
+    /** The safety-net round: this long after the last one. */
+    private const val SAFETY_ROUND = 4 * HOUR
     private const val DAY = 24 * HOUR
     /** The page's days run from this many days back to [DAYS_AHEAD] ahead. */
     const val DAYS_AHEAD = 7

@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import com.nuvio.app.features.party.PartyMedia
 
@@ -47,6 +48,10 @@ fun PlayerScreen(
     sourceFilename: String? = null,
     stream: com.nuvio.app.features.streams.StreamItem? = null,
 ) {
+    DisposableEffect(Unit) {
+        com.nuvio.app.features.livetv.data.VideoPlaying.opened()
+        onDispose { com.nuvio.app.features.livetv.data.VideoPlaying.closed() }
+    }
     PlayerScreenContent(
         PlayerScreenArgs(
             profileId = profileId,
