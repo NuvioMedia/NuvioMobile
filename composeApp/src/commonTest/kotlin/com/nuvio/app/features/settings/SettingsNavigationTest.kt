@@ -25,6 +25,12 @@ class SettingsNavigationTest {
     }
 
     @Test
+    fun cloudStreamSettingsBelongToContentDiscovery() {
+        assertEquals(SettingsPage.ContentDiscovery, SettingsPage.CloudStream.previousPage())
+        assertEquals(SettingsCategory.Watch, SettingsPage.CloudStream.category)
+    }
+
+    @Test
     fun playbackChildrenReturnToPlaybackInTheWatchGroup() {
         PlaybackSection.entries.forEach { section ->
             assertEquals(SettingsPage.Playback, section.page.previousPage())

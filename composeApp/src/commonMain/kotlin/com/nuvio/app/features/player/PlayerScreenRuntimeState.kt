@@ -192,6 +192,7 @@ internal class PlayerScreenRuntime(
     var showSourcesPanel by mutableStateOf(false)
     var showEpisodesPanel by mutableStateOf(false)
     var showChaptersPanel by mutableStateOf(false)
+    var showLiveTvChannelsPanel by mutableStateOf(false)
     /** The file's chapters, sorted; empty when it has fewer than two. */
     var chapters by mutableStateOf<List<PlayerChapter>>(emptyList())
     /** The source whose chapters [chapters] holds, so a rebuffer does not read them again. */
@@ -240,7 +241,7 @@ internal class PlayerScreenRuntime(
     var showPartyChat by mutableStateOf(false)
     val isPanelOpen: Boolean
         get() = showAudioModal || showSubtitleModal || showVideoSettingsModal || showStreamInfo ||
-            showPartyPanel || showSourcesPanel || showEpisodesPanel || showChaptersPanel || showSubmitIntroModal
+            showPartyPanel || showSourcesPanel || showEpisodesPanel || showChaptersPanel || showLiveTvChannelsPanel || showSubmitIntroModal
     var pendingPartyMediaChange by mutableStateOf<PartyMedia?>(null)
     var showPartyMediaChangePrompt by mutableStateOf(false)
     var dismissedPartyMediaKey by mutableStateOf<String?>(null)

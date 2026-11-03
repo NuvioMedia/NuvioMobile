@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -60,6 +61,7 @@ import com.nuvio.app.core.ui.Slider
 import com.nuvio.app.core.ui.CardDepthStyleRepository
 import com.nuvio.app.core.ui.CardDepthStyleUiState
 import com.nuvio.app.core.poster.CustomPosterUrlRepository
+import com.nuvio.app.core.poster.CustomPosterSourceMode
 import com.nuvio.app.core.ui.DefaultCardDepthEdgeCoverage
 import com.nuvio.app.core.ui.DefaultCardDepthEdgeStrength
 import com.nuvio.app.core.ui.DefaultCardDepthSheenStrength
@@ -68,6 +70,7 @@ import com.nuvio.app.core.ui.NuvioCardDepthSurface
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.PosterCardStyleRepository
 import com.nuvio.app.core.ui.PosterCardStyleUiState
+import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.core.ui.cardDepthVisual
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_reset
@@ -128,6 +131,13 @@ import nuvio.composeapp.generated.resources.settings_poster_width_large
 import nuvio.composeapp.generated.resources.settings_poster_width_standard
 import nuvio.composeapp.generated.resources.settings_custom_poster_title
 import nuvio.composeapp.generated.resources.settings_custom_poster_description
+import nuvio.composeapp.generated.resources.settings_custom_poster_mode
+import nuvio.composeapp.generated.resources.settings_custom_poster_mode_off
+import nuvio.composeapp.generated.resources.settings_custom_poster_mode_tags_only
+import nuvio.composeapp.generated.resources.settings_custom_poster_mode_posters_tags
+import nuvio.composeapp.generated.resources.settings_custom_poster_mode_off_description
+import nuvio.composeapp.generated.resources.settings_custom_poster_mode_tags_description
+import nuvio.composeapp.generated.resources.settings_custom_poster_mode_posters_description
 import nuvio.composeapp.generated.resources.settings_custom_poster_placeholder
 import nuvio.composeapp.generated.resources.settings_custom_poster_active
 import nuvio.composeapp.generated.resources.settings_custom_poster_save
@@ -146,6 +156,8 @@ internal fun LazyListScope.posterCustomizationSettingsContent(
     uiState: PosterCardStyleUiState,
 ) {
     item {
+        HomeCatalogSettingsRepository.ensureLoaded()
+        val catalogSettings by HomeCatalogSettingsRepository.uiState.collectAsState()
         SettingsSection(
             title = stringResource(Res.string.settings_poster_card_style),
             isTablet = isTablet,
@@ -170,6 +182,14 @@ internal fun LazyListScope.posterCustomizationSettingsContent(
                     onHideLabelsChange = PosterCardStyleRepository::setHideLabelsEnabled,
                     onAlwaysShowLandscapeClearlogoChange = PosterCardStyleRepository::setAlwaysShowLandscapeClearlogo,
                 )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = "Hide titles without posters",
+                    description = "Hide posterless titles across Nuvio, including addon and CloudStream catalog listings.",
+                    checked = catalogSettings.hideMergedTitlesWithoutPosters,
+                    isTablet = isTablet,
+                    onCheckedChange = HomeCatalogSettingsRepository::setHideMergedTitlesWithoutPosters,
+                )
             }
         }
     }
@@ -178,6 +198,7 @@ internal fun LazyListScope.posterCustomizationSettingsContent(
         val currentPattern by CustomPosterUrlRepository.pattern.collectAsState()
         var editingPattern by rememberSaveable(currentPattern) { mutableStateOf(currentPattern) }
         val isActive = currentPattern.isNotBlank()
+        val currentMode by CustomPosterUrlRepository.mode.collectAsState()
 
         SettingsSection(
             title = stringResource(Res.string.settings_custom_poster_title),
@@ -232,7 +253,45 @@ internal fun LazyListScope.posterCustomizationSettingsContent(
                             Text(text = stringResource(Res.string.settings_custom_poster_save))
                         }
                     }
-                    if (isActive) {
+                    Text(
+                        text = stringResource(Res.string.settings_custom_poster_mode),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    listOf(
+                        Triple(
+                            CustomPosterSourceMode.OFF,
+                            Res.string.settings_custom_poster_mode_off,
+                            Res.string.settings_custom_poster_mode_off_description,
+                        ),
+                        Triple(
+                            CustomPosterSourceMode.TAGS_ONLY,
+                            Res.string.settings_custom_poster_mode_tags_only,
+                            Res.string.settings_custom_poster_mode_tags_description,
+                        ),
+                        Triple(
+                            CustomPosterSourceMode.POSTERS_AND_TAGS,
+                            Res.string.settings_custom_poster_mode_posters_tags,
+                            Res.string.settings_custom_poster_mode_posters_description,
+                        ),
+                    ).forEach { (mode, title, description) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(
+                                selected = currentMode == mode,
+                                enabled = mode != CustomPosterSourceMode.POSTERS_AND_TAGS || isActive,
+                                onClick = { CustomPosterUrlRepository.setMode(mode) },
+                            )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(stringResource(title), style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    stringResource(description),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                    if (isActive && currentMode == CustomPosterSourceMode.POSTERS_AND_TAGS) {
                         Text(
                             text = "✓ ${stringResource(Res.string.settings_custom_poster_active)}",
                             style = MaterialTheme.typography.labelSmall,

@@ -114,12 +114,13 @@ fun CatalogScreen(
     var observedOfflineState by remember { mutableStateOf(false) }
     var selectedMergedSourceKey by rememberSaveable(target) { mutableStateOf("all") }
     val showMergedSourceTabs = target is CatalogTarget.MergedRow &&
-        uiState.mergedDisplayMode == MergedHomeRowDisplayMode.SOURCE_TABS.storageValue
+        uiState.mergedDisplayMode != MergedHomeRowDisplayMode.UNIFIED_CAROUSEL.storageValue
+    val usesPerSourceMergedTabs = uiState.mergedDisplayMode == MergedHomeRowDisplayMode.SOURCE_TABS.storageValue
     val selectedMergedTab = uiState.mergedSourceTabs.firstOrNull { it.key == selectedMergedSourceKey }
         ?: uiState.mergedSourceTabs.firstOrNull()
     val visibleItems = if (showMergedSourceTabs) selectedMergedTab?.items.orEmpty() else uiState.items
     val loadMoreSourceKey = selectedMergedTab?.key
-        ?.takeIf { showMergedSourceTabs && it != "all" }
+        ?.takeIf { showMergedSourceTabs && usesPerSourceMergedTabs && it != "all" }
     val selectedCanLoadMore = if (target is CatalogTarget.MergedRow) {
         if (showMergedSourceTabs) selectedMergedTab?.hasMore == true else uiState.mergedHasMore
     } else {
@@ -127,7 +128,7 @@ fun CatalogScreen(
     }
     val failedVisibleSourceKeys = when {
         !uiState.isMergedCatalog -> emptySet()
-        showMergedSourceTabs && selectedMergedTab?.key != "all" -> {
+        showMergedSourceTabs && usesPerSourceMergedTabs && selectedMergedTab?.key != "all" -> {
             selectedMergedTab?.key?.let { key ->
                 uiState.failedMergedSourceKeys.filterTo(linkedSetOf()) { it == key }
             } ?: emptySet()
@@ -136,7 +137,7 @@ fun CatalogScreen(
     }
     val showUnavailableSourceNotice = uiState.isMergedCatalog &&
         uiState.unavailableMergedSourceCount > 0 &&
-        (!showMergedSourceTabs || selectedMergedTab?.key == "all")
+        (!showMergedSourceTabs || !usesPerSourceMergedTabs || selectedMergedTab?.key == "all")
 
     LaunchedEffect(uiState.mergedSourceTabs.map { it.key }) {
         if (uiState.mergedSourceTabs.none { it.key == selectedMergedSourceKey }) {

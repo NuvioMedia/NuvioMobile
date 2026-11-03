@@ -13,9 +13,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,8 +48,10 @@ import com.nuvio.app.features.p2p.formatP2pMegabytes
 import com.nuvio.app.features.p2p.formatP2pSpeed
 import com.nuvio.app.features.player.skip.internalSkipAction
 import com.nuvio.app.features.servers.ServerStreams
+import com.nuvio.app.features.livetv.LiveTvRepository
 import com.nuvio.app.features.streams.streamAddonInstanceId
 import com.nuvio.app.isIos
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -256,6 +267,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     sourceResponseHeaders = activeSourceResponseHeaders,
                     externalSubtitles = externalSubtitles,
                     streamType = activeStreamType,
+                    isLive = activeProviderAddonId == "live-tv",
                     modifier = videoModifier,
                     playWhenReady = shouldPlay,
                     initialPositionMs = activeInitialPositionMs.takeIf { it > 0L },
@@ -345,6 +357,24 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
         Box(modifier = panelModifier) {
             RenderPlayerModals(displayedPositionMs = displayedPositionMs)
             RenderParty(runtime = runtime)
+            if (activeProviderAddonId == "live-tv" && !playerControlsLocked && !isInPip) {
+                IconButton(
+                    onClick = {
+                        showLiveTvChannelsPanel = true
+                        controlsVisible = true
+                    },
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .windowInsetsPadding(WindowInsets.safeContent.only(WindowInsetsSides.Top))
+                        .padding(horizontal = metrics.horizontalPadding, vertical = metrics.verticalPadding / 4),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Tv,
+                        contentDescription = stringResource(Res.string.live_tv_player_channels),
+                        tint = Color.White,
+                    )
+                }
+            }
         }
 
         val completedMedia = completionRatingMedia
@@ -663,6 +693,28 @@ private fun BoxScope.RenderPlaybackOverlays(
 
 @Composable
 private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
+    LiveTvChannelsPanel(
+        visible = showLiveTvChannelsPanel,
+        currentStreamUrl = activeSourceUrl,
+        onChannelSelected = { channel ->
+            scope.launch {
+                try {
+                    switchToLiveTvChannel(LiveTvRepository.prepareForPlayback(channel))
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    showLiveTvChannelsPanel = false
+                    errorMessage = error.message?.takeIf(String::isNotBlank)
+                        ?: "Could not prepare this channel for playback."
+                    controlsVisible = !playerControlsLocked
+                }
+            }
+        },
+        onDismiss = {
+            showLiveTvChannelsPanel = false
+            controlsVisible = true
+        },
+    )
     PlayerChaptersPanel(
         visible = showChaptersPanel && chapters.isNotEmpty(),
         chapters = chapters,

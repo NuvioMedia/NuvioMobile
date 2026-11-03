@@ -110,6 +110,15 @@ private data class CatalogFetchKey(
     val forceRefresh: Boolean,
 )
 
+/**
+ * CloudStream main-page APIs use one-based page numbers, while CatalogRepository
+ * stores a zero-based cursor in nextSkip.
+ */
+fun cloudStreamPageNumber(requestedSkip: Int): Int = requestedSkip.coerceAtLeast(0) + 1
+
+fun cloudStreamNextPageSkip(requestedSkip: Int, rawItemCount: Int): Int? =
+    (requestedSkip + 1).takeIf { rawItemCount > 0 }
+
 fun AddonCatalog.supportsPagination(): Boolean =
     extra.any { property -> property.name.equals("skip", ignoreCase = true) }
 

@@ -175,7 +175,7 @@ class SimklMutationRepositoryTest {
             client = SimklApiClient(
                 engine = engine,
                 accessToken = { "token" },
-                onUnauthorized = {},
+                onUnauthorized = { null },
                 nowEpochMs = { now },
                 sleep = { duration -> now += duration },
                 retryJitterMs = { 0L },
@@ -233,7 +233,7 @@ class SimklMutationRepositoryTest {
             client = SimklApiClient(
                 engine = engine,
                 accessToken = { "token" },
-                onUnauthorized = {},
+                onUnauthorized = { null },
                 nowEpochMs = { 0L },
                 sleep = {},
                 retryJitterMs = { 0L },
@@ -261,7 +261,7 @@ class SimklMutationRepositoryTest {
             client = SimklApiClient(
                 engine = engine,
                 accessToken = { "token" },
-                onUnauthorized = {},
+                onUnauthorized = { null },
                 nowEpochMs = { 0L },
                 sleep = {},
                 retryJitterMs = { 0L },
@@ -291,7 +291,7 @@ class SimklMutationRepositoryTest {
             client = SimklApiClient(
                 engine = engine,
                 accessToken = { "token" },
-                onUnauthorized = {},
+                onUnauthorized = { null },
                 nowEpochMs = { 0L },
                 sleep = {},
                 retryJitterMs = { 0L },
@@ -324,7 +324,7 @@ class SimklMutationRepositoryTest {
             client = SimklApiClient(
                 engine = engine,
                 accessToken = { "token" },
-                onUnauthorized = {},
+                onUnauthorized = { null },
                 nowEpochMs = { 0L },
                 sleep = {},
                 retryJitterMs = { 0L },

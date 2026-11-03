@@ -77,9 +77,8 @@ object ContinueWatchingPreferencesRepository {
     }
 
     private fun loadFromDisk() {
-        hasLoaded = true
-
         val payload = ContinueWatchingPreferencesStorage.loadPayload().orEmpty().trim()
+        hasLoaded = true
         if (payload.isEmpty()) {
             _uiState.value = ContinueWatchingPreferencesUiState()
             return

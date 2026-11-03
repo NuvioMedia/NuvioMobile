@@ -48,6 +48,7 @@ actual fun PlatformPlayerSurface(
     sourceResponseHeaders: Map<String, String>,
     externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     streamType: String?,
+    isLive: Boolean,
     useYoutubeChunkedPlayback: Boolean,
     modifier: Modifier,
     playWhenReady: Boolean,
@@ -324,9 +325,11 @@ actual fun PlatformPlayerSurface(
     LaunchedEffect(bridge, resizeMode) {
         bridge.setResizeMode(
             when (resizeMode) {
-                PlayerResizeMode.Fit -> 0
-                PlayerResizeMode.Fill -> 1
-                PlayerResizeMode.Zoom -> 2
+                PlayerResizeMode.BestFit -> 0
+                PlayerResizeMode.Fit -> 1
+                PlayerResizeMode.Fill -> 2
+                PlayerResizeMode.Zoom -> 3
+                PlayerResizeMode.Ratio16x9 -> 4
             }
         )
     }

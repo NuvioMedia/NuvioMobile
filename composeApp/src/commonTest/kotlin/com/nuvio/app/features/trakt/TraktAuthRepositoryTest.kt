@@ -8,8 +8,23 @@ import kotlin.test.assertTrue
 class TraktAuthRepositoryTest {
 
     @Test
-    fun `HTTP 400 permanently invalidates a rejected refresh token`() {
-        assertEquals(TraktTokenRefreshResponseAction.INVALIDATE, traktTokenRefreshResponseAction(400))
+    fun `invalid grant permanently invalidates a rejected refresh token`() {
+        assertEquals(
+            TraktTokenRefreshResponseAction.INVALIDATE,
+            traktTokenRefreshResponseAction(400, "invalid_grant"),
+        )
+    }
+
+    @Test
+    fun `other HTTP 400 responses preserve credentials`() {
+        assertEquals(
+            TraktTokenRefreshResponseAction.TRANSIENT_FAILURE,
+            traktTokenRefreshResponseAction(400, "invalid_request"),
+        )
+        assertEquals(
+            TraktTokenRefreshResponseAction.TRANSIENT_FAILURE,
+            traktTokenRefreshResponseAction(400, null),
+        )
     }
 
     @Test

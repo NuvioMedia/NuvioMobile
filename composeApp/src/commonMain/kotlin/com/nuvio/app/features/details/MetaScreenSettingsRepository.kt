@@ -221,9 +221,8 @@ object MetaScreenSettingsRepository {
 
     fun ensureLoaded() {
         if (hasLoaded) return
-        hasLoaded = true
-
         val payload = MetaScreenSettingsStorage.loadPayload().orEmpty().trim()
+        hasLoaded = true
         if (payload.isNotEmpty()) {
             val parsed = runCatching {
                 json.decodeFromString<StoredMetaScreenSettingsPayload>(payload)

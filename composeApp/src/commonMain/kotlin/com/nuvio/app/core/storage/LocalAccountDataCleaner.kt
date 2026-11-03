@@ -1,6 +1,7 @@
 package com.nuvio.app.core.storage
 
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.core.poster.CustomPosterUrlRepository
 import com.nuvio.app.core.sync.SyncManager
 import com.nuvio.app.core.sync.ProfileSettingsSync
 import com.nuvio.app.core.tracking.ensureTrackingProvidersRegistered
@@ -20,6 +21,7 @@ import com.nuvio.app.features.player.PlayerLaunchStore
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.plugins.PluginRepository
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.player.SubtitleRepository
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.profiles.MAX_PROFILES
@@ -60,6 +62,7 @@ internal object LocalAccountDataCleaner {
         ServerRepository.clearLocalState()
         if (AppFeaturePolicy.pluginsEnabled) {
             PluginRepository.clearLocalState()
+            CloudStreamRepository.clearLocalState()
         }
         HomeRepository.clear()
         HomeCatalogSettingsRepository.clearLocalState()
@@ -72,6 +75,7 @@ internal object LocalAccountDataCleaner {
         CollectionMobileSettingsRepository.clearLocalState()
         CollectionRepository.clearLocalState()
         ThemeSettingsRepository.clearLocalState()
+        CustomPosterUrlRepository.clearLocalState()
         PosterCardStyleRepository.clearLocalState()
         CardDepthStyleRepository.clearLocalState()
         TrackingProviderRegistry.clearLocalState()

@@ -21,9 +21,12 @@ actual object StreamBadgeSettingsStorage {
     private const val playerBadgeSourceKey = "player_badge_source"
     private const val streamBackgroundModeKey = "stream_background_mode"
     private const val streamBadgePlacementKey = "stream_badge_placement"
+    private const val streamFormattingEnabledKey = "stream_formatting_enabled"
+    private const val streamFormatPresetKey = "stream_format_preset"
+    private const val streamFormattingScopeKey = "stream_formatting_scope"
     private const val legacyDebridStreamBadgeRulesKey = "debrid_stream_badge_rules"
 
-    private val syncKeys = listOf(streamBadgeRulesKey, showFileSizeBadgesKey, showInPlayerKey, playerBadgeSourceKey, streamBadgePlacementKey, streamBackgroundModeKey)
+    private val syncKeys = listOf(streamBadgeRulesKey, showFileSizeBadgesKey, showInPlayerKey, playerBadgeSourceKey, streamBadgePlacementKey, streamBackgroundModeKey, streamFormattingEnabledKey, streamFormatPresetKey, streamFormattingScopeKey)
 
     private var preferences: SharedPreferences? = null
     private var legacyDebridPreferences: SharedPreferences? = null
@@ -75,6 +78,24 @@ actual object StreamBadgeSettingsStorage {
         saveString(streamBadgePlacementKey, placement)
     }
 
+    actual fun loadStreamFormattingEnabled(): Boolean? = loadBoolean(streamFormattingEnabledKey)
+
+    actual fun saveStreamFormattingEnabled(enabled: Boolean) {
+        saveBoolean(streamFormattingEnabledKey, enabled)
+    }
+
+    actual fun loadStreamFormatPreset(): String? = loadString(streamFormatPresetKey)
+
+    actual fun saveStreamFormatPreset(preset: String) {
+        saveString(streamFormatPresetKey, preset)
+    }
+
+    actual fun loadStreamFormattingScope(): String? = loadString(streamFormattingScopeKey)
+
+    actual fun saveStreamFormattingScope(scope: String) {
+        saveString(streamFormattingScopeKey, scope)
+    }
+
     actual fun loadLegacyDebridStreamBadgeRules(): String? =
         legacyDebridPreferences?.getString(ProfileScopedKey.of(legacyDebridStreamBadgeRulesKey), null)
 
@@ -119,6 +140,9 @@ actual object StreamBadgeSettingsStorage {
         loadPlayerBadgeSource()?.let { put(playerBadgeSourceKey, encodeSyncString(it)) }
         loadStreamBadgePlacement()?.let { put(streamBadgePlacementKey, encodeSyncString(it)) }
         loadStreamBackgroundMode()?.let { put(streamBackgroundModeKey, encodeSyncString(it)) }
+        loadStreamFormattingEnabled()?.let { put(streamFormattingEnabledKey, encodeSyncBoolean(it)) }
+        loadStreamFormatPreset()?.let { put(streamFormatPresetKey, encodeSyncString(it)) }
+        loadStreamFormattingScope()?.let { put(streamFormattingScopeKey, encodeSyncString(it)) }
     }
 
     actual fun replaceFromSyncPayload(payload: JsonObject) {
@@ -132,5 +156,8 @@ actual object StreamBadgeSettingsStorage {
         payload.decodeSyncString(playerBadgeSourceKey)?.let(::savePlayerBadgeSource)
         payload.decodeSyncString(streamBadgePlacementKey)?.let(::saveStreamBadgePlacement)
         payload.decodeSyncString(streamBackgroundModeKey)?.let(::saveStreamBackgroundMode)
+        payload.decodeSyncBoolean(streamFormattingEnabledKey)?.let(::saveStreamFormattingEnabled)
+        payload.decodeSyncString(streamFormatPresetKey)?.let(::saveStreamFormatPreset)
+        payload.decodeSyncString(streamFormattingScopeKey)?.let(::saveStreamFormattingScope)
     }
 }

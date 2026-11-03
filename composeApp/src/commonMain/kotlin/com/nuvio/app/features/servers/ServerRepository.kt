@@ -268,13 +268,16 @@ object ServerRepository {
     }
 
     private fun load(profileId: Int) {
+        // Publish the profile as loaded only after both storage snapshots have been read.
+        val nextSyncState = readSyncState(profileId)
+        val nextConnections = readConnections(profileId)
         generation++
         synchronized(lock) { tokens.clear() }
+        syncState = nextSyncState
         loadedProfileId = profileId
-        syncState = readSyncState(profileId)
         ServerMatcher.shared.clear()
         _uiState.value = ServersUiState(
-            connections = readConnections(profileId),
+            connections = nextConnections,
             revision = _uiState.value.revision + 1,
         )
     }

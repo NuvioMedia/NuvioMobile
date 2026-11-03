@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -168,8 +169,9 @@ object TraktAuthRepository : TrackingAuthProvider {
             return
         }
 
+        val expectedProfileGeneration = profileGeneration
         scope.launch {
-            completeAuthorizationFromCallback(callbackUrl, profileId)
+            completeAuthorizationFromCallback(callbackUrl, profileId, expectedProfileGeneration)
         }
     }
 
@@ -183,6 +185,7 @@ object TraktAuthRepository : TrackingAuthProvider {
         url == TraktConfig.REDIRECT_URI || url.startsWith("${TraktConfig.REDIRECT_URI}?")
 
     suspend fun authorizedHeaders(profileId: Int = currentProfileId): Map<String, String>? {
+        if (ProfileRepository.activeProfileId != profileId) return null
         ensureLoaded(profileId)
         if (!authState.isAuthenticated) return null
 
@@ -196,7 +199,11 @@ object TraktAuthRepository : TrackingAuthProvider {
     }
 
     suspend fun refreshUserSettings(profileId: Int = currentProfileId): String? {
+        if (ProfileRepository.activeProfileId != profileId) return null
         ensureLoaded(profileId)
+        // Capture after ensureLoaded(), which may itself advance the generation
+        // when the repository is first opened for the active profile.
+        val expectedProfileGeneration = profileGeneration
         val headers = authorizedHeaders(profileId) ?: return null
         val response = runCatching {
             httpGetTextWithHeaders(
@@ -208,6 +215,7 @@ object TraktAuthRepository : TrackingAuthProvider {
             log.w { "Failed to fetch Trakt user settings: ${error.message}" }
         }.getOrNull() ?: return null
 
+        if (!isCurrentProfile(profileId, expectedProfileGeneration)) return null
         val parsed = runCatching {
             json.decodeFromString<TraktUserSettingsResponse>(response)
         }.getOrNull() ?: return null
@@ -223,12 +231,18 @@ object TraktAuthRepository : TrackingAuthProvider {
 
     fun onDisconnectRequested(profileId: Int = currentProfileId) {
         ensureLoaded(profileId)
+        val expectedProfileGeneration = profileGeneration
         scope.launch {
-            disconnect(profileId)
+            disconnect(profileId, expectedProfileGeneration)
         }
     }
 
-    private suspend fun completeAuthorizationFromCallback(callbackUrl: String, profileId: Int = currentProfileId) {
+    private suspend fun completeAuthorizationFromCallback(
+        callbackUrl: String,
+        profileId: Int,
+        expectedProfileGeneration: Long,
+    ) {
+        if (!isCurrentProfile(profileId, expectedProfileGeneration)) return
         publish(isLoading = true, errorMessage = null)
 
         val parsedUrl = runCatching { Url(callbackUrl) }
@@ -286,13 +300,14 @@ object TraktAuthRepository : TrackingAuthProvider {
             return
         }
 
-        exchangeAuthorizationCode(code, codeVerifier, profileId)
+        exchangeAuthorizationCode(code, codeVerifier, profileId, expectedProfileGeneration)
     }
 
     private suspend fun exchangeAuthorizationCode(
         code: String,
         codeVerifier: String,
-        profileId: Int = currentProfileId,
+        profileId: Int,
+        expectedProfileGeneration: Long,
     ) {
         val body = json.encodeToString(
             TraktAuthorizationCodeRequest(
@@ -315,6 +330,7 @@ object TraktAuthRepository : TrackingAuthProvider {
             log.w { "Trakt authorization-code exchange transport failure: ${error.message}" }
         }.getOrNull()
 
+        if (!isCurrentProfile(profileId, expectedProfileGeneration)) return
         if (response == null) {
             clearPendingAuthorization()
             persist(profileId)
@@ -353,6 +369,7 @@ object TraktAuthRepository : TrackingAuthProvider {
         )
         persist(profileId)
         refreshUserSettings(profileId)
+        if (!isCurrentProfile(profileId, expectedProfileGeneration)) return
         publish(
             isLoading = false,
             statusMessage = localizedString(Res.string.trakt_connected_status),
@@ -360,7 +377,11 @@ object TraktAuthRepository : TrackingAuthProvider {
         )
     }
 
-    private suspend fun disconnect(profileId: Int = currentProfileId) {
+    private suspend fun disconnect(
+        profileId: Int,
+        expectedProfileGeneration: Long,
+    ) {
+        if (!isCurrentProfile(profileId, expectedProfileGeneration)) return
         publish(isLoading = true, errorMessage = null)
 
         val token = authState.accessToken?.takeIf { it.isNotBlank() }
@@ -384,6 +405,9 @@ object TraktAuthRepository : TrackingAuthProvider {
             }
         }
 
+        // The revoke request may outlive the profile that started it. Do not clear
+        // or publish credentials belonging to a profile selected in the meantime.
+        if (!isCurrentProfile(profileId, expectedProfileGeneration)) return
         authState = TraktAuthState()
         persist(profileId)
         publish(
@@ -394,6 +418,8 @@ object TraktAuthRepository : TrackingAuthProvider {
     }
 
     private suspend fun refreshTokenIfNeeded(force: Boolean, profileId: Int = currentProfileId): Boolean = refreshMutex.withLock {
+        val expectedProfileGeneration = profileGeneration
+        if (!isCurrentProfile(profileId, expectedProfileGeneration)) return@withLock false
         if (!hasRequiredCredentials()) return@withLock false
         val refreshToken = authState.refreshToken?.takeIf { it.isNotBlank() }
             ?: return@withLock false
@@ -422,11 +448,14 @@ object TraktAuthRepository : TrackingAuthProvider {
             log.w { "Trakt token refresh transport failure: ${error.message}" }
         }.getOrNull() ?: return@withLock false
 
-        if (ProfileRepository.activeProfileId != profileId || authState.refreshToken != refreshToken) {
+        if (!isCurrentProfile(profileId, expectedProfileGeneration) || authState.refreshToken != refreshToken) {
             return@withLock false
         }
 
-        when (traktTokenRefreshResponseAction(response.status)) {
+        val oauthErrorCode = runCatching {
+            json.decodeFromString<TraktOAuthError>(response.body).error
+        }.getOrNull()
+        when (traktTokenRefreshResponseAction(response.status, oauthErrorCode)) {
             TraktTokenRefreshResponseAction.INVALIDATE -> {
                 log.w { "Trakt rejected the refresh token with HTTP 400; clearing local credentials" }
                 invalidateCredentials(profileId)
@@ -453,10 +482,24 @@ object TraktAuthRepository : TrackingAuthProvider {
             createdAt = parsed.createdAt,
             expiresIn = parsed.expiresIn,
         )
-        persist(profileId)
+        // Capture the profile's complete rotated token pair before suspending so a
+        // concurrent profile switch cannot serialize a different profile's auth state.
+        val refreshedPayload = json.encodeToString(authState)
+        val persisted = withContext(Dispatchers.IO) {
+            TraktAuthStorage.savePayloadDurably(profileId, refreshedPayload)
+        }
+        if (!persisted) {
+            log.e { "Failed to durably persist the rotated Trakt token pair for profile $profileId" }
+        }
+        if (!isCurrentProfile(profileId, expectedProfileGeneration)) return@withLock false
         publish()
         true
     }
+
+    private fun isCurrentProfile(profileId: Int, generation: Long): Boolean =
+        currentProfileId == profileId &&
+            profileGeneration == generation &&
+            ProfileRepository.activeProfileId == profileId
 
     private fun invalidateCredentials(profileId: Int) {
         authState = TraktAuthState()
@@ -574,9 +617,13 @@ internal enum class TraktTokenRefreshResponseAction {
     TRANSIENT_FAILURE,
 }
 
-internal fun traktTokenRefreshResponseAction(status: Int): TraktTokenRefreshResponseAction = when {
-    status == 400 -> TraktTokenRefreshResponseAction.INVALIDATE
+internal fun traktTokenRefreshResponseAction(
+    status: Int,
+    errorCode: String? = null,
+): TraktTokenRefreshResponseAction = when {
     status in 200..299 -> TraktTokenRefreshResponseAction.ACCEPT
+    status == 400 && errorCode.equals("invalid_grant", ignoreCase = true) ->
+        TraktTokenRefreshResponseAction.INVALIDATE
     else -> TraktTokenRefreshResponseAction.TRANSIENT_FAILURE
 }
 

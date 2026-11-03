@@ -8,6 +8,9 @@ import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.fetchAddonResponseText
 import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.features.addons.supportsResource
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
+import com.nuvio.app.features.cloudstream.parseCloudStreamRouteId
+import com.nuvio.app.features.cloudstream.toMetaDetails
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.filterReleasedItems
 import com.nuvio.app.features.mdblist.MdbListMetadataService
@@ -60,6 +63,10 @@ object MetaDetailsRepository {
         val requestKey = "$type:$id"
         ServerItemRef.parse(id)?.let { ref ->
             loadServerMeta(requestKey, ref)
+            return
+        }
+        parseCloudStreamRouteId(id)?.let { route ->
+            loadCloudStreamMeta(requestKey, route.providerId, route.data)
             return
         }
         val currentState = _uiState.value
@@ -216,6 +223,15 @@ object MetaDetailsRepository {
                 ?.also { if (cacheResult) cachedMetaByRequestKey[requestKey] = CachedMetaEntry(baseMeta = it) }
         }
 
+        parseCloudStreamRouteId(id)?.let { route ->
+            return runCatching {
+                CloudStreamRepository.initialize()
+                CloudStreamRepository.load(route.providerId, route.data).getOrThrow().toMetaDetails()
+            }.onFailure { if (it is CancellationException) throw it }
+                .getOrNull()
+                ?.also { if (cacheResult) cachedMetaByRequestKey[requestKey] = CachedMetaEntry(baseMeta = it) }
+        }
+
         val metaLookupId = resolveMetaLookupId(itemId = id, itemType = type)
         val manifests = findReadyMetaManifests(type = type, id = metaLookupId)
 
@@ -235,6 +251,40 @@ object MetaDetailsRepository {
             if (cacheResult) {
                 cachedMetaByRequestKey[requestKey] = CachedMetaEntry(baseMeta = result)
             }
+        }
+    }
+
+    private fun loadCloudStreamMeta(requestKey: String, providerId: String, data: String) {
+        if (_uiState.value.meta?.id == requestKey.substringAfter(':') && !_uiState.value.isLoading) {
+            activeRequestKey = requestKey
+            return
+        }
+        if (_uiState.value.isLoading && activeRequestKey == requestKey) return
+
+        activeRequestKey = requestKey
+        _uiState.value = MetaDetailsUiState(isLoading = true)
+        scope.launch {
+            val result = runCatching {
+                CloudStreamRepository.initialize()
+                CloudStreamRepository.load(providerId, data).getOrThrow().toMetaDetails()
+            }
+            if (activeRequestKey != requestKey) return@launch
+            result.fold(
+                onSuccess = { meta ->
+                    cachedMetaByRequestKey[requestKey] = CachedMetaEntry(baseMeta = meta)
+                    // Provider metadata is authoritative; do not enrich opaque CloudStream IDs with TMDB.
+                    _uiState.value = MetaDetailsUiState(meta = meta.withUnreleasedFilter())
+                },
+                onFailure = { error ->
+                    if (error is CancellationException) throw error
+                    log.w(error) { "CloudStream details failed provider=$providerId" }
+                    _uiState.value = MetaDetailsUiState(
+                        errorMessage = error.message?.takeIf { it.isNotBlank() }
+                            ?: "Unable to load details from this CloudStream provider.",
+                    )
+                    activeRequestKey = null
+                },
+            )
         }
     }
 

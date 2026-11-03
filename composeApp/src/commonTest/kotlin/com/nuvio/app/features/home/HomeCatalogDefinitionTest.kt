@@ -3,8 +3,10 @@ package com.nuvio.app.features.home
 import com.nuvio.app.features.addons.AddonManifest
 import com.nuvio.app.features.addons.AddonResource
 import com.nuvio.app.features.addons.ManagedAddon
+import com.nuvio.app.features.addons.isWaitingForFirstEnabledManifest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
@@ -32,7 +34,7 @@ class HomeCatalogDefinitionTest {
     }
 
     @Test
-    fun `addon refresh signature tracks unresolved terminal and loaded manifest states`() {
+    fun `addon refresh signature ignores transient loading and error state`() {
         val pendingAddon = ManagedAddon(
             manifestUrl = "https://example.test/manifest.json",
             isRefreshing = true,
@@ -60,7 +62,9 @@ class HomeCatalogDefinitionTest {
         val loadedSignature = buildAddonCatalogRefreshSignature(listOf(loadedAddon))
 
         assertTrue(pendingSignature.isNotEmpty())
-        assertNotEquals(pendingSignature, failedSignature)
+        assertEquals(pendingSignature, failedSignature)
+        assertTrue(listOf(pendingAddon).isWaitingForFirstEnabledManifest())
+        assertFalse(listOf(failedAddon).isWaitingForFirstEnabledManifest())
         assertNotEquals(pendingSignature, loadedSignature)
         assertNotEquals(failedSignature, loadedSignature)
     }

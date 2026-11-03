@@ -218,7 +218,6 @@ object WatchedRepository {
         profileGeneration += 1L
         activeSource = WatchProgressSource.NUVIO_SYNC
         sourceGeneration += 1L
-        hasLoaded = true
         itemsStore.update { nuvioItems, providerItems, dirtyNuvioKeys, dirtyProviderKeys ->
             nuvioItems.clear()
             providerItems.clear()
@@ -235,6 +234,7 @@ object WatchedRepository {
         providersLoadedFromRemote.clear()
 
         val payload = WatchedStorage.loadPayload(profileId).orEmpty().trim()
+        hasLoaded = true
         if (payload.isNotEmpty()) {
             val storedPayload = if (shouldRestoreWatchedPayload(payload.length)) {
                 runCatching {

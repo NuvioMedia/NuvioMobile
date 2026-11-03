@@ -51,6 +51,7 @@ import com.nuvio.app.core.ui.themePalette
 import com.nuvio.app.features.membership.CosmeticEntitlement
 import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.membership.ProfileBackgroundRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -79,9 +80,23 @@ fun ProfileEditScreen(
     var selectedBackgroundUrl by rememberSaveable { mutableStateOf(currentProfile?.profileBackgroundUrl) }
     var usesPrimaryAddons by rememberSaveable { mutableStateOf(currentProfile?.usesPrimaryAddons ?: false) }
     var isSaving by remember { mutableStateOf(false) }
+    var saveFailed by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showPinSetup by remember { mutableStateOf(false) }
     var showPinClear by remember { mutableStateOf(false) }
+
+    // The profile may be refreshed from the account after this screen is composed.
+    // Keep the editable background fields in sync with the persisted profile, and
+    // reset them when switching between profiles in the same navigation destination.
+    LaunchedEffect(
+        currentProfile?.profileIndex,
+        currentProfile?.profileBackgroundId,
+        currentProfile?.profileBackgroundUrl,
+    ) {
+        selectedBackgroundId = currentProfile?.profileBackgroundId
+        selectedBackgroundUrl = currentProfile?.profileBackgroundUrl
+    }
+
     val memberAccess by remember {
         MemberAccessRepository.ensureStarted()
         MemberAccessRepository.access
@@ -104,6 +119,8 @@ fun ProfileEditScreen(
 
     val customAvatarUrl = remember(avatarUrl) { normalizedAvatarUrl(avatarUrl) }
     val avatarUrlIsInvalid = avatarUrl.isNotBlank() && customAvatarUrl == null
+    val backgroundUrlIsInvalid = selectedBackgroundUrl
+        ?.let { it.isNotBlank() && !it.isValidAvatarUrl() } == true
     val selectedAvatarItem = remember(selectedAvatarId, avatars) {
         selectedAvatarId?.let { id -> avatars.find { it.id == id } }
     }
@@ -173,6 +190,38 @@ fun ProfileEditScreen(
             }
         }
 
+        item {
+            NuvioSurfaceCard {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(
+                        text = stringResource(Res.string.profile_custom_background_url),
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = stringResource(Res.string.profile_custom_background_url_description),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    NuvioInputField(
+                        value = selectedBackgroundUrl.orEmpty(),
+                        onValueChange = { value ->
+                            selectedBackgroundUrl = value.trim().takeIf(String::isNotBlank)
+                            if (!selectedBackgroundUrl.isNullOrBlank()) selectedBackgroundId = null
+                        },
+                        placeholder = stringResource(Res.string.profile_custom_background_url_placeholder),
+                    )
+                    if (backgroundUrlIsInvalid) {
+                        Text(
+                            text = stringResource(Res.string.profile_custom_background_url_invalid),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+            }
+        }
+
         if (canChooseBackground) {
             item {
                 NuvioSurfaceCard {
@@ -191,7 +240,6 @@ fun ProfileEditScreen(
                             backgrounds = backgroundCatalog,
                             selectedBackgroundId = selectedBackgroundId,
                             selectedBackgroundUrl = selectedBackgroundUrl,
-                            customBackgroundUrl = currentProfile?.profileBackgroundUrl,
                             standardBackgroundColor = previewAccent,
                             onSelectionChange = { id, url ->
                                 selectedBackgroundId = id
@@ -270,6 +318,13 @@ fun ProfileEditScreen(
 
         item {
             Spacer(modifier = Modifier.height(8.dp))
+            if (saveFailed) {
+                Text(
+                    text = stringResource(Res.string.profile_save_failed),
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
             NuvioPrimaryButton(
                 text = if (isSaving) {
                     stringResource(Res.string.profile_saving)
@@ -278,33 +333,43 @@ fun ProfileEditScreen(
                 } else {
                     stringResource(Res.string.collections_editor_save_changes)
                 },
-                enabled = name.isNotBlank() && !avatarUrlIsInvalid && !isSaving,
+                enabled = name.isNotBlank() && !avatarUrlIsInvalid && !backgroundUrlIsInvalid && !isSaving,
                 onClick = {
                     isSaving = true
+                    saveFailed = false
                     scope.launch {
-                        val avatarColorHex = visibleAvatarItem?.bgColor ?: fallbackColorHex
-                        if (isNew) {
-                            ProfileRepository.createProfile(
-                                name = name,
-                                avatarColorHex = avatarColorHex,
-                                avatarId = if (customAvatarUrl == null) selectedAvatarId else null,
-                                avatarUrl = customAvatarUrl,
-                                usesPrimaryAddons = usesPrimaryAddons,
-                            )
-                        } else {
-                            ProfileRepository.updateProfile(
-                                profileIndex = currentProfile!!.profileIndex,
-                                name = name,
-                                avatarColorHex = avatarColorHex,
-                                avatarId = if (customAvatarUrl == null) selectedAvatarId else null,
-                                avatarUrl = customAvatarUrl,
-                                profileBackgroundId = selectedBackgroundId,
-                                profileBackgroundUrl = selectedBackgroundUrl,
-                                usesPrimaryAddons = usesPrimaryAddons,
-                            )
+                        try {
+                            val avatarColorHex = visibleAvatarItem?.bgColor ?: fallbackColorHex
+                            val saved = if (isNew) {
+                                ProfileRepository.createProfile(
+                                    name = name,
+                                    avatarColorHex = avatarColorHex,
+                                    avatarId = if (customAvatarUrl == null) selectedAvatarId else null,
+                                    avatarUrl = customAvatarUrl,
+                                    profileBackgroundUrl = selectedBackgroundUrl,
+                                    usesPrimaryAddons = usesPrimaryAddons,
+                                )
+                            } else {
+                                val profileIndex = currentProfile?.profileIndex
+                                profileIndex != null && ProfileRepository.updateProfile(
+                                    profileIndex = profileIndex,
+                                    name = name,
+                                    avatarColorHex = avatarColorHex,
+                                    avatarId = if (customAvatarUrl == null) selectedAvatarId else null,
+                                    avatarUrl = customAvatarUrl,
+                                    profileBackgroundId = selectedBackgroundId,
+                                    profileBackgroundUrl = selectedBackgroundUrl,
+                                    usesPrimaryAddons = usesPrimaryAddons,
+                                )
+                            }
+                            if (saved) onSaved() else saveFailed = true
+                        } catch (cancelled: CancellationException) {
+                            throw cancelled
+                        } catch (_: Exception) {
+                            saveFailed = true
+                        } finally {
+                            isSaving = false
                         }
-                        isSaving = false
-                        onSaved()
                     }
                 },
             )

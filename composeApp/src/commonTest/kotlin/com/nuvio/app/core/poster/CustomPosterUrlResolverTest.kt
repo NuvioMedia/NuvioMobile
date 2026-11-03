@@ -288,6 +288,19 @@ class CustomPosterUrlResolverTest {
     }
 
     @Test
+    fun resolve_optional_pipe_returns_empty_when_no_declared_ID_available() {
+        val ids = CustomPosterUrlResolver.extractIds("kitsu:7442")
+        val url = CustomPosterUrlResolver.resolve(
+            "https://example.com/poster?content_id={imdb_id|tmdb_id?}&type={type}",
+            ids, "series"
+        )
+        assertEquals(
+            "https://example.com/poster?content_id=&type=series",
+            url
+        )
+    }
+
+    @Test
     fun resolve_pipe_returns_null_when_no_declared_ID_available() {
         val ids = CustomPosterUrlResolver.extractIds("tmdb:1396")
         val url = CustomPosterUrlResolver.resolve(

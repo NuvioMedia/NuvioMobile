@@ -28,8 +28,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.SkeletonBlock
 import com.nuvio.app.features.debrid.DebridProviders
+import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
 
 internal val LocalStreamHighlight = staticCompositionLocalOf<(StreamItem) -> String?> { { null } }
 
@@ -69,6 +72,29 @@ internal fun StreamCard(
     outlined: Boolean = false,
 ) {
     val partyLabel = if (isCurrent) null else LocalStreamHighlight.current(stream)
+    val formatSettings by remember {
+        StreamBadgeSettingsRepository.ensureLoaded()
+        StreamBadgeSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val providerFamily = when {
+        stream.addonId.contains("cloudstream", ignoreCase = true) ||
+            stream.addonId.contains("plugin", ignoreCase = true) -> StreamProviderFamily.CLOUDSTREAM_PLUGIN
+        stream.isInstalledAddonStream -> StreamProviderFamily.NUVIO_ADDON
+        else -> StreamProviderFamily.OTHER
+    }
+    val formattedPresentation = remember(stream, formatSettings.streamFormattingEnabled, formatSettings.streamFormatPreset, formatSettings.streamFormattingScope) {
+        StreamFormattingEngine.format(
+            stream = stream,
+            preset = if (formatSettings.streamFormattingEnabled) formatSettings.streamFormatPreset else StreamFormatPreset.ORIGINAL,
+            providerId = stream.addonId,
+            providerFamily = providerFamily,
+            settings = StreamFormattingSettings(
+                enabled = formatSettings.streamFormattingEnabled,
+                preset = formatSettings.streamFormatPreset,
+                scope = formatSettings.streamFormattingScope,
+            ),
+        )
+    }
     val cardShape = RoundedCornerShape(12.dp)
     val badgeImages = stream.badges.filter { it.imageURL.isNotBlank() }
     val hasBadges = badgeImages.isNotEmpty() || (showFileSizeBadges && stream.behaviorHints.videoSize != null)
@@ -121,6 +147,7 @@ internal fun StreamCard(
 
             StreamNameWithInstantService(
                 stream = stream,
+                displayName = formattedPresentation.title,
                 appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
             ) {
                 if (isCurrent && !currentLabel.isNullOrBlank()) {
@@ -140,7 +167,7 @@ internal fun StreamCard(
                 }
             }
 
-            val subtitle = stream.streamSubtitle
+            val subtitle = formattedPresentation.summary ?: stream.streamSubtitle
             if (!subtitle.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(2.dp))
                 Text(
@@ -231,6 +258,7 @@ private fun StreamCardBadgeRow(
 @Composable
 private fun StreamNameWithInstantService(
     stream: StreamItem,
+    displayName: String = stream.streamLabel,
     appendInstantServiceToDefaultName: Boolean,
     trailingContent: @Composable RowScope.() -> Unit = {},
 ) {
@@ -256,7 +284,7 @@ private fun StreamNameWithInstantService(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            text = stream.streamLabel,
+            text = displayName,
             modifier = Modifier.weight(1f, fill = false),
             style = nameStyle,
             color = MaterialTheme.colorScheme.onSurface,

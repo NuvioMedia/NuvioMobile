@@ -157,6 +157,49 @@ class QualityFirstAutoPlayPolicyTest {
     }
 
     @Test
+    fun `best quality metadata wins when addons report the same direct URL`() {
+        val lowerQuality = stream("A", "https://same/video.mp4", "Movie 720p")
+        val higherQuality = stream("B", "https://same/video.mp4", "Movie 1080p")
+
+        val ranked = QualityFirstAutoPlayPolicy.rankCandidates(
+            listOf(lowerQuality, higherQuality),
+            StreamAutoPlayPreferredQuality.ANY,
+            debridEnabled = true,
+        )
+
+        assertEquals(listOf("B"), ranked.map { it.addonName })
+        assertEquals(1080, QualityFirstAutoPlayPolicy.detectQualityHeight(ranked.single()))
+    }
+
+    @Test
+    fun `same direct URL with different request headers remains distinct`() {
+        val first = StreamItem(
+            name = "Source A",
+            url = "https://same/video.m3u8",
+            addonName = "A",
+            addonId = "addon:a",
+            behaviorHints = StreamBehaviorHints(
+                proxyHeaders = StreamProxyHeaders(request = mapOf("Referer" to "https://a.example")),
+            ),
+        )
+        val second = first.copy(
+            addonName = "B",
+            addonId = "addon:b",
+            behaviorHints = StreamBehaviorHints(
+                proxyHeaders = StreamProxyHeaders(request = mapOf("Referer" to "https://b.example")),
+            ),
+        )
+
+        val ranked = QualityFirstAutoPlayPolicy.rankCandidates(
+            listOf(first, second),
+            StreamAutoPlayPreferredQuality.ANY,
+            debridEnabled = true,
+        )
+
+        assertEquals(listOf("A", "B"), ranked.map { it.addonName })
+    }
+
+    @Test
     fun `filename quality takes precedence over conflicting description metadata`() {
         val stream = StreamItem(
             name = "Movie 1080p BluRay",
@@ -200,6 +243,94 @@ class QualityFirstAutoPlayPolicyTest {
                 p2pEnabled = true,
             ).map { it.addonName },
         )
+    }
+
+    @Test
+    fun `refreshing fallback keeps current stream and appends only untried new identities`() {
+        val current = stream("current", "https://a/current", "Movie 1080p")
+        val failed = stream("failed", "https://b/failed", "Movie 1080p")
+        val discovered = stream("new", "https://c/new", "Movie 720p")
+        val duplicateUrl = stream("duplicate", "https://c/new", "Movie 720p")
+
+        val refreshed = QualityFirstAutoPlayPolicy.refreshedFallbackCandidates(
+            current = current,
+            discovered = listOf(current, failed, discovered, duplicateUrl),
+            attemptedKeys = setOf(QualityFirstAutoPlayPolicy.candidateIdentityKey(failed)),
+        )
+
+        assertEquals(listOf("current", "new"), refreshed.map { it.addonName })
+    }
+
+    @Test
+    fun `newly discovered candidate can restart an exhausted pending queue`() {
+        val failed = stream("failed", "https://a/failed", "Movie 1080p")
+        val discovered = stream("late", "https://b/late", "Movie 720p")
+
+        val refreshed = QualityFirstAutoPlayPolicy.refreshedFallbackCandidates(
+            current = null,
+            discovered = listOf(failed, discovered),
+            attemptedKeys = setOf(QualityFirstAutoPlayPolicy.candidateIdentityKey(failed)),
+        )
+
+        assertEquals(listOf("late"), refreshed.map { it.addonName })
+    }
+
+    @Test
+    fun `external and YouTube streams keep distinct fallback identities`() {
+        val externalA = StreamItem(
+            name = "Open externally",
+            externalUrl = "https://external.example/a",
+            addonName = "provider",
+            addonId = "addon:provider",
+        )
+        val externalB = externalA.copy(externalUrl = "https://external.example/b")
+        val youtubeA = StreamItem(
+            name = "YouTube",
+            ytId = "video-a",
+            addonName = "provider",
+            addonId = "addon:provider",
+        )
+        val youtubeB = youtubeA.copy(ytId = "video-b")
+
+        assertEquals(
+            listOf("https://external.example/a", "https://external.example/b"),
+            QualityFirstAutoPlayPolicy.rankCandidates(
+                listOf(externalA, externalB),
+                StreamAutoPlayPreferredQuality.ANY,
+                debridEnabled = true,
+            ).map { it.externalOpenUrl },
+        )
+        assertEquals(
+            listOf("video-a", "video-b"),
+            QualityFirstAutoPlayPolicy.rankCandidates(
+                listOf(youtubeA, youtubeB),
+                StreamAutoPlayPreferredQuality.ANY,
+                debridEnabled = true,
+            ).map { it.youTubeIdToResolve },
+        )
+    }
+
+    @Test
+    fun `debrid streams with different media ids are not deduplicated`() {
+        fun debrid(mediaId: String) = StreamItem(
+            name = "Cached source",
+            addonName = "provider",
+            addonId = "addon:provider",
+            clientResolve = StreamClientResolve(
+                type = "debrid",
+                service = "realdebrid",
+                mediaId = mediaId,
+                isCached = true,
+            ),
+        )
+
+        val ranked = QualityFirstAutoPlayPolicy.rankCandidates(
+            listOf(debrid("media-a"), debrid("media-b")),
+            StreamAutoPlayPreferredQuality.ANY,
+            debridEnabled = true,
+        )
+
+        assertEquals(listOf("media-a", "media-b"), ranked.map { it.clientResolve?.mediaId })
     }
 
     private fun stream(addon: String, url: String?, name: String) = StreamItem(

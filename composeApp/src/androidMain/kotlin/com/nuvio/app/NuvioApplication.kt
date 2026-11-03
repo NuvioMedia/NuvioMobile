@@ -21,6 +21,19 @@ import com.nuvio.app.core.poster.CustomPosterFallbackInterceptor
  */
 class NuvioApplication : Application(), SingletonImageLoader.Factory {
 
+    override fun onCreate() {
+        super.onCreate()
+        // The Telegram TDLib runtime is intentionally compiled only into Android Full.
+        // Reflection keeps the Play Store distribution and non-Android targets independent.
+        runCatching {
+            Class.forName("com.nuvio.app.features.telegram.TelegramAndroidBootstrap")
+                .getMethod("install", Application::class.java)
+                .invoke(null, this)
+        }.onFailure { error ->
+            android.util.Log.d("NuvioApplication", "Optional Telegram runtime is not installed: ${error.message}")
+        }
+    }
+
     override fun newImageLoader(context: android.content.Context): ImageLoader {
         return ImageLoader.Builder(context)
             .crossfade(true)

@@ -1,6 +1,9 @@
 package com.nuvio.app
 
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.provider.OpenableColumns
 import android.content.res.Configuration
 import com.nuvio.app.features.autosync.AutoSyncPreferencesAndroid
 import android.os.Bundle
@@ -18,6 +21,7 @@ import com.nuvio.app.core.storage.PlatformLocalAccountDataCleaner
 import com.nuvio.app.core.sync.SyncClientIdentityStorage
 import com.nuvio.app.features.addons.AddonHttpClientProvider
 import com.nuvio.app.features.addons.AddonStorage
+import com.nuvio.app.features.cloudstream.CloudStreamPlatformStorage
 import com.nuvio.app.features.collection.CollectionMobileSettingsStorage
 import com.nuvio.app.features.collection.CollectionStorage
 import com.nuvio.app.features.debrid.DebridSettingsStorage
@@ -76,6 +80,9 @@ import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentStorage
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesStorage
 import com.nuvio.app.features.watchprogress.ResumePromptStorage
 import com.nuvio.app.features.watchprogress.WatchProgressStorage
+import com.nuvio.app.features.livetv.LiveTvIncomingSourceRepository
+import com.nuvio.app.features.livetv.LiveTvStorage
+import com.nuvio.app.features.settings.NuvioEnhancedBackupFileBridge
 
 open class MainActivity : AppCompatActivity() {
     private var pipRemoteActionReceiver: PipRemoteActionReceiver? = null
@@ -98,6 +105,11 @@ open class MainActivity : AppCompatActivity() {
         SyncClientIdentityStorage.initialize(applicationContext)
         AddonHttpClientProvider.initialize(applicationContext)
         AddonStorage.initialize(applicationContext)
+        LiveTvStorage.initialize(applicationContext)
+        NuvioEnhancedBackupFileBridge.bindActivity(this)
+        // Pass the Activity so the CloudStream compatibility runtime can expose the
+        // current host activity to providers that use CloudStream's CommonActivity APIs.
+        CloudStreamPlatformStorage.initialize(this)
         AuthStorage.initialize(applicationContext)
         ServerConfigurationStorage.initialize(applicationContext)
         LibraryStorage.initialize(applicationContext)
@@ -183,6 +195,7 @@ open class MainActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        NuvioEnhancedBackupFileBridge.unbindActivity(this)
         EpisodeReleaseNotificationPlatform.unbindActivity(this)
         val receiver = pipRemoteActionReceiver
         if (receiver != null) {
@@ -190,6 +203,12 @@ open class MainActivity : AppCompatActivity() {
             pipRemoteActionReceiver = null
         }
         super.onDestroy()
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        if (NuvioEnhancedBackupFileBridge.handleActivityResult(requestCode, resultCode, data)) return
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onRequestPermissionsResult(
@@ -204,8 +223,84 @@ open class MainActivity : AppCompatActivity() {
     }
 
     private fun handleIncomingAppIntent(intent: Intent?) {
-        val appUrl = (intent?.dataString ?: intent?.getStringExtra(LinkActivity.EXTRA_LINK))?.trim().orEmpty()
+        if (intent == null) return
+        if (handleSharedStreamIntent(intent)) return
+        val appUrl = (intent.dataString ?: intent.getStringExtra(LinkActivity.EXTRA_LINK))?.trim().orEmpty()
         if (appUrl.isBlank()) return
         handleAppUrl(appUrl)
+    }
+
+    private fun handleSharedStreamIntent(intent: Intent): Boolean {
+        when (intent.action) {
+            Intent.ACTION_SEND -> {
+                val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()
+                if (!sharedText.isNullOrBlank()) {
+                    LiveTvIncomingSourceRepository.submitText(sharedText)
+                    return true
+                }
+                val sharedUri = if (Build.VERSION.SDK_INT >= 33) {
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
+                } else {
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
+                }
+                if (sharedUri != null && submitPlaylistUri(sharedUri)) return true
+            }
+
+            Intent.ACTION_VIEW -> {
+                val dataString = intent.dataString?.trim().orEmpty()
+                if (dataString.startsWith("magnet:", ignoreCase = true)) {
+                    LiveTvIncomingSourceRepository.submitText(dataString)
+                    return true
+                }
+                if (dataString.startsWith("http://", ignoreCase = true) ||
+                    dataString.startsWith("https://", ignoreCase = true)
+                ) {
+                    val path = dataString.substringBefore('?').substringBefore('#').lowercase()
+                    if (
+                        path.endsWith(".m3u") ||
+                        path.endsWith(".m3u8") ||
+                        path.endsWith(".mp4") ||
+                        path.endsWith(".mkv") ||
+                        path.endsWith(".webm") ||
+                        path.endsWith(".mov") ||
+                        path.endsWith(".ts")
+                    ) {
+                        LiveTvIncomingSourceRepository.submitText(dataString)
+                        return true
+                    }
+                }
+                val data = intent.data
+                if (data != null && submitPlaylistUri(data)) return true
+            }
+        }
+        return false
+    }
+
+    private fun submitPlaylistUri(uri: Uri): Boolean {
+        val text = runCatching {
+            contentResolver.openInputStream(uri)?.use { input ->
+                input.bufferedReader().use { reader -> reader.readText() }
+            }
+        }.getOrNull()?.trim().orEmpty()
+        if (text.isBlank()) return false
+        LiveTvIncomingSourceRepository.submitPlaylistData(
+            fileName = displayNameFor(uri),
+            data = text,
+        )
+        return true
+    }
+
+    private fun displayNameFor(uri: Uri): String {
+        if (uri.scheme == "file") {
+            return uri.lastPathSegment?.substringAfterLast('/').orEmpty()
+                .ifBlank { "Shared M3U playlist" }
+        }
+        return runCatching {
+            contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+                val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
+            }
+        }.getOrNull().orEmpty().ifBlank { "Shared M3U playlist" }
     }
 }

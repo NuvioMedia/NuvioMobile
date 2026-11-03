@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,7 +50,12 @@ fun ProfileBackgroundBackdrop(
                 ProfileBackgroundRepository.loadSelectedAndPreload(selectedId, isPortrait)
             }
         }
-        val backgroundModel: Any? = when (backgroundSelection) {
+        // User-supplied image/GIF URLs are independent from the supporter background catalogue.
+        // Validate before passing them to Coil so malformed values fall back to the built-in backdrop.
+        val directCustomBackgroundUrl = profile?.profileBackgroundUrl
+            ?.trim()
+            ?.takeIf { it.isValidAvatarUrl() }
+        val backgroundModel: Any? = directCustomBackgroundUrl ?: when (backgroundSelection) {
             is ProfileBackgroundSelection.Catalog -> backgroundCatalog
                 .firstOrNull { it.id == backgroundSelection.id }
                 ?.let { background ->
@@ -58,11 +65,12 @@ fun ProfileBackgroundBackdrop(
                         background.landscapeImageBytes
                     }
                 }
-            is ProfileBackgroundSelection.Custom -> backgroundSelection.url
+            is ProfileBackgroundSelection.Custom -> backgroundSelection.url.takeIf { it.isValidAvatarUrl() }
             null -> null
         }
 
-        if (backgroundModel == null) {
+        var backgroundImageFailed by remember(backgroundModel) { mutableStateOf(false) }
+        if (backgroundModel == null || backgroundImageFailed) {
             ProfileMeshBackground(
                 profileColor = profileColor,
                 modifier = Modifier.fillMaxSize(),
@@ -73,6 +81,7 @@ fun ProfileBackgroundBackdrop(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
+                onError = { backgroundImageFailed = true },
             )
             Box(
                 modifier = Modifier

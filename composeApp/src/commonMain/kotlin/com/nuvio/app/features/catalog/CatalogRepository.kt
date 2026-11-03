@@ -2,6 +2,8 @@ package com.nuvio.app.features.catalog
 
 import com.nuvio.app.core.poster.CustomPosterUrlRepository
 import com.nuvio.app.core.poster.withCustomPosterUrls
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
+import com.nuvio.app.features.cloudstream.toMetaPreview
 import com.nuvio.app.features.collection.CollectionRepository
 import com.nuvio.app.features.collection.TmdbCollectionSourceResolver
 import com.nuvio.app.features.collection.catalogRouteKey
@@ -10,6 +12,10 @@ import com.nuvio.app.features.servers.ServerCatalog
 import com.nuvio.app.features.servers.serverMessage
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogTab
+import com.nuvio.app.features.home.MergedHomeRowDisplayMode
+import com.nuvio.app.features.home.MergedHomeRowContentType
+import com.nuvio.app.features.home.contentTypeForDisplay
+import com.nuvio.app.features.home.buildMergedHomeTypeTabs
 import com.nuvio.app.features.home.ResolvedMergedHomeRowSource
 import com.nuvio.app.features.home.filterReleasedItems
 import com.nuvio.app.features.home.mergeHomeRowItems
@@ -303,28 +309,51 @@ object CatalogRepository {
     }
 
     private fun publishMergedSession(session: MergedCatalogSession, isLoading: Boolean) {
+        val contentType = session.definition.contentTypeForDisplay()
         val mergedItems = mergeHomeRowItems(
             sourceItems = session.sources.map { it.items },
             deduplicate = session.definition.deduplicate,
             maxItems = Int.MAX_VALUE,
+            blendMode = session.definition.resolvedBlendMode(),
+            sortMode = session.definition.resolvedSortMode(),
+            contentType = contentType,
+            hideTitlesWithoutPosters = session.definition.hideTitlesWithoutPosters,
         )
         val hasMore = session.sources.any { it.nextSkip != null }
         val failedSourceKeys = session.sources
             .filter { it.retrySkip != null }
             .mapTo(linkedSetOf()) { it.source.definition.key }
-        val sourceTabs = buildList {
-            add(HomeCatalogTab("all", "All", mergedItems, mergedItems.size, hasMore))
-            session.sources.forEach { source ->
-                add(
-                    HomeCatalogTab(
-                        key = source.source.definition.key,
-                        title = source.source.title,
+        val sourceTabs = when (session.definition.resolvedDisplayMode()) {
+            MergedHomeRowDisplayMode.SOURCE_TABS -> buildList {
+                add(HomeCatalogTab("all", "All", mergedItems, mergedItems.size, hasMore))
+                session.sources.forEach { source ->
+                    val items = com.nuvio.app.features.home.filterMergedHomeItems(
                         items = source.items,
-                        availableItemCount = source.items.size,
-                        hasMore = source.nextSkip != null,
-                    ),
-                )
+                        contentType = contentType,
+                        hideTitlesWithoutPosters = session.definition.hideTitlesWithoutPosters,
+                    )
+                    add(
+                        HomeCatalogTab(
+                            key = source.source.definition.key,
+                            title = com.nuvio.app.features.home.cleanMergedSourceTabTitle(source.source.title),
+                            items = items,
+                            availableItemCount = items.size,
+                            hasMore = source.nextSkip != null,
+                        ),
+                    )
+                }
             }
+            MergedHomeRowDisplayMode.TYPE_TABS -> buildMergedHomeTypeTabs(
+                sourceItems = session.sources.map { it.items },
+                allItems = mergedItems,
+                deduplicate = session.definition.deduplicate,
+                blendMode = session.definition.resolvedBlendMode(),
+                sortMode = session.definition.resolvedSortMode(),
+                hideTitlesWithoutPosters = session.definition.hideTitlesWithoutPosters,
+                hasMore = hasMore,
+                maxItems = Int.MAX_VALUE,
+            )
+            MergedHomeRowDisplayMode.UNIFIED_CAROUSEL -> emptyList()
         }
         val errorMessage = when {
             failedSourceKeys.isNotEmpty() -> "Some source catalogs could not be loaded. You can retry them."
@@ -405,6 +434,19 @@ object CatalogRepository {
                         skip = requestedSkip.takeIf { it > 0 },
                         forceRefresh = forceRefresh,
                     )
+
+                    is CatalogTarget.CloudStream -> {
+                        val sections = CloudStreamRepository.getMainPage(
+                            target.providerId,
+                            cloudStreamPageNumber(requestedSkip),
+                        ).getOrThrow()
+                        val items = sections.firstOrNull { it.first == target.sectionName }?.second.orEmpty()
+                        CatalogPage(
+                            items = items.map { it.toMetaPreview() },
+                            rawItemCount = items.size,
+                            nextSkip = cloudStreamNextPageSkip(requestedSkip, items.size),
+                        )
+                    }
 
                     is CatalogTarget.CollectionSource -> fetchCollectionSourcePage(
                         target = target,

@@ -66,7 +66,6 @@ import nuvio.composeapp.generated.resources.settings_homescreen_hidden
 import nuvio.composeapp.generated.resources.settings_homescreen_addon_catalogs_disabled
 import nuvio.composeapp.generated.resources.settings_homescreen_not_in_hero
 import nuvio.composeapp.generated.resources.settings_homescreen_pinned
-import nuvio.composeapp.generated.resources.settings_homescreen_pinned_at_position
 import nuvio.composeapp.generated.resources.settings_homescreen_pinned_to_bottom
 import nuvio.composeapp.generated.resources.settings_homescreen_pinned_to_top
 import nuvio.composeapp.generated.resources.settings_homescreen_reorder
@@ -509,8 +508,7 @@ internal fun HomescreenCatalogRow(
                             append(
                                 when (item.rowPlacement) {
                                     HomeCatalogRowPlacement.NORMAL -> ""
-                                    HomeCatalogRowPlacement.PINNED_POSITION ->
-                                        stringResource(Res.string.settings_homescreen_pinned_at_position)
+                                    HomeCatalogRowPlacement.PINNED_POSITION -> ""
                                     HomeCatalogRowPlacement.PINNED_TOP ->
                                         stringResource(Res.string.settings_homescreen_pinned_to_top)
                                     HomeCatalogRowPlacement.PINNED_BOTTOM ->
@@ -608,10 +606,6 @@ internal fun HomescreenCatalogRow(
                         onClick = { onRowPlacementChange(HomeCatalogRowPlacement.NORMAL) },
                         enabled = item.rowPlacement != HomeCatalogRowPlacement.NORMAL,
                     ) { Text("Default") }
-                    TextButton(
-                        onClick = { onRowPlacementChange(HomeCatalogRowPlacement.PINNED_POSITION) },
-                        enabled = item.rowPlacement != HomeCatalogRowPlacement.PINNED_POSITION && !item.isPinnedToTop,
-                    ) { Text("Pin here") }
                     TextButton(
                         onClick = { onRowPlacementChange(HomeCatalogRowPlacement.PINNED_TOP) },
                         enabled = item.rowPlacement != HomeCatalogRowPlacement.PINNED_TOP && !item.isPinnedToTop,

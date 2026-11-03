@@ -68,32 +68,38 @@ internal actual object SimklPkceCrypto {
 internal actual object SimklAuthStorage {
     private const val METADATA_KEY = "simkl_auth_metadata"
     private const val ACCESS_TOKEN_KEY = "simkl_access_token"
+    private const val REFRESH_TOKEN_KEY = "simkl_refresh_token"
     private const val CODE_VERIFIER_KEY = "simkl_code_verifier"
     private const val KEYCHAIN_SERVICE = "com.nuvio.media.simkl"
 
-    actual fun loadMetadataPayload(): String? =
-        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(METADATA_KEY))
+    actual fun loadMetadataPayload(profileId: Int): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(METADATA_KEY, profileId))
 
-    actual fun saveMetadataPayload(payload: String) {
-        NSUserDefaults.standardUserDefaults.setObject(payload, forKey = ProfileScopedKey.of(METADATA_KEY))
+    actual fun saveMetadataPayload(profileId: Int, payload: String) {
+        NSUserDefaults.standardUserDefaults.setObject(payload, forKey = ProfileScopedKey.of(METADATA_KEY, profileId))
     }
 
-    actual fun loadAccessToken(): String? = loadKeychainValue(ACCESS_TOKEN_KEY)
+    actual fun loadAccessToken(profileId: Int): String? = loadKeychainValue(ACCESS_TOKEN_KEY, profileId)
 
-    actual fun saveAccessToken(value: String?) = saveKeychainValue(ACCESS_TOKEN_KEY, value)
+    actual fun saveAccessToken(profileId: Int, value: String?) = saveKeychainValue(ACCESS_TOKEN_KEY, value, profileId)
 
-    actual fun loadCodeVerifier(): String? = loadKeychainValue(CODE_VERIFIER_KEY)
+    actual fun loadRefreshToken(profileId: Int): String? = loadKeychainValue(REFRESH_TOKEN_KEY, profileId)
 
-    actual fun saveCodeVerifier(value: String?) = saveKeychainValue(CODE_VERIFIER_KEY, value)
+    actual fun saveRefreshToken(profileId: Int, value: String?) = saveKeychainValue(REFRESH_TOKEN_KEY, value, profileId)
+
+    actual fun loadCodeVerifier(profileId: Int): String? = loadKeychainValue(CODE_VERIFIER_KEY, profileId)
+
+    actual fun saveCodeVerifier(profileId: Int, value: String?) = saveKeychainValue(CODE_VERIFIER_KEY, value, profileId)
 
     actual fun removeProfile(profileId: Int) {
         NSUserDefaults.standardUserDefaults.removeObjectForKey(ProfileScopedKey.of(METADATA_KEY, profileId))
         deleteKeychainValue(ACCESS_TOKEN_KEY, profileId)
+        deleteKeychainValue(REFRESH_TOKEN_KEY, profileId)
         deleteKeychainValue(CODE_VERIFIER_KEY, profileId)
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    private fun loadKeychainValue(key: String): String? = withKeychainQuery(key) { query ->
+    private fun loadKeychainValue(key: String, profileId: Int): String? = withKeychainQuery(key, profileId) { query ->
         CFDictionarySetValue(query, kSecReturnData, kCFBooleanTrue)
         CFDictionarySetValue(query, kSecMatchLimit, kSecMatchLimitOne)
         memScoped {
@@ -113,10 +119,10 @@ internal actual object SimklAuthStorage {
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    private fun saveKeychainValue(key: String, value: String?) {
-        deleteKeychainValue(key)
+    private fun saveKeychainValue(key: String, value: String?, profileId: Int) {
+        deleteKeychainValue(key, profileId)
         if (value.isNullOrBlank()) return
-        withKeychainQuery(key) { query ->
+        withKeychainQuery(key, profileId) { query ->
             val bytes = value.encodeToByteArray().toUByteArray()
             val data = CFDataCreate(null, bytes.refTo(0), bytes.size.toLong())
                 ?: error("Unable to encode Simkl credential")
@@ -130,21 +136,21 @@ internal actual object SimklAuthStorage {
     }
 
     @OptIn(ExperimentalForeignApi::class)
-    private fun deleteKeychainValue(key: String, profileId: Int? = null) {
+    private fun deleteKeychainValue(key: String, profileId: Int) {
         withKeychainQuery(key, profileId) { query -> SecItemDelete(query) }
     }
 
     @OptIn(ExperimentalForeignApi::class)
     private inline fun <T> withKeychainQuery(
         key: String,
-        profileId: Int? = null,
+        profileId: Int,
         block: (CFMutableDictionaryRef) -> T,
     ): T {
         val service = CFStringCreateWithCString(null, KEYCHAIN_SERVICE, kCFStringEncodingUTF8)
             ?: error("Unable to encode Keychain service")
         val account = CFStringCreateWithCString(
             null,
-            profileId?.let { id -> ProfileScopedKey.of(key, id) } ?: ProfileScopedKey.of(key),
+            ProfileScopedKey.of(key, profileId),
             kCFStringEncodingUTF8,
         ) ?: error("Unable to encode Keychain account")
         val query = CFDictionaryCreateMutable(

@@ -36,6 +36,7 @@ internal data class SimklStoredAuthState(
     val hasFetchedUserSettings: Boolean = false,
     val settingsActivityWatermark: String? = null,
     val tokenExpiresAtEpochMs: Long? = null,
+    val refreshTokenExpiresAtEpochMs: Long? = null,
     val pendingAuthorizationState: String? = null,
     val pendingAuthorizationStartedAtEpochMs: Long? = null,
 ) {

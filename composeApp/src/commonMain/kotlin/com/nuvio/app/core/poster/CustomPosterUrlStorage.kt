@@ -5,4 +5,6 @@ internal expect object CustomPosterUrlStorage {
     fun savePattern(pattern: String?)
     fun loadEnabledScreens(): Set<String>?
     fun saveEnabledScreens(keys: Set<String>?)
+    fun loadMode(): String?
+    fun saveMode(mode: String)
 }

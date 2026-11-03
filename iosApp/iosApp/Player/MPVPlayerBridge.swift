@@ -824,14 +824,34 @@ final class MPVPlayerViewController: UIViewController {
     func setResize(_ mode: Int) {
         guard mpv != nil else { return }
         switch mode {
-        case 1: // Fill
-            setStringProperty("panscan", "1.0")
+        case 0: // Best Fit: preserve the source display aspect ratio.
+            setStringProperty("keepaspect", "yes")
+            setStringProperty("video-aspect-method", "container")
+            setStringProperty("video-aspect-override", "no")
             setStringProperty("video-unscaled", "no")
-        case 2: // Zoom
-            setStringProperty("panscan", "1.0")
-            setStringProperty("video-unscaled", "no")
-        default: // Fit
+            setStringProperty("video-zoom", "0")
+            setStringProperty("panscan", "0")
+        case 1: // Official Fit.
             setStringProperty("panscan", "0.0")
+            setStringProperty("video-aspect-override", "no")
+            setStringProperty("video-unscaled", "no")
+        case 2: // Official Fill.
+            setStringProperty("panscan", "1.0")
+            setStringProperty("video-aspect-override", "no")
+            setStringProperty("video-unscaled", "no")
+        case 3: // Official Zoom.
+            setStringProperty("panscan", "0.5")
+            setStringProperty("video-aspect-override", "no")
+            setStringProperty("video-unscaled", "no")
+        case 4: // Fixed 16:9.
+            setStringProperty("keepaspect", "yes")
+            setStringProperty("video-aspect-override", "16:9")
+            setStringProperty("video-unscaled", "no")
+            setStringProperty("video-zoom", "0")
+            setStringProperty("panscan", "0")
+        default:
+            setStringProperty("panscan", "0.0")
+            setStringProperty("video-aspect-override", "no")
             setStringProperty("video-unscaled", "no")
         }
     }

@@ -547,6 +547,38 @@ internal fun StreamDestination(
             NuvioToastController.show("No playable links were found. Choose another quality or try again.")
         }
     }
+    // Keep the fallback queue synchronized with provider results that arrive after
+    // the first matching-quality stream has already started playback.
+    LaunchedEffect(
+        qualityFlowEnabled,
+        qualitySelectionStarted,
+        selectedSemiAutoQuality,
+        qualityEligibleStreams,
+        qualityPreferredSourceOrder,
+        debridEnabledForQualitySelection,
+        p2pEnabled,
+        expectedStreamsRequestToken,
+        streamsUiState.requestToken,
+    ) {
+        if (!qualityFlowEnabled || !qualitySelectionStarted) return@LaunchedEffect
+        if (streamsUiState.requestToken != expectedStreamsRequestToken) return@LaunchedEffect
+        val selectedName = selectedSemiAutoQuality ?: return@LaunchedEffect
+        val requestedQuality = runCatching {
+            StreamAutoPlayPreferredQuality.valueOf(selectedName)
+        }.getOrNull() ?: return@LaunchedEffect
+        val updatedCandidates = QualityFirstAutoPlayPolicy.rankCandidatesWithFallback(
+            streams = qualityEligibleStreams,
+            requestedQuality = requestedQuality,
+            debridEnabled = debridEnabledForQualitySelection,
+            preferredSourceOrder = qualityPreferredSourceOrder,
+            p2pEnabled = p2pEnabled,
+        )
+        StreamsRepository.refreshQualityFirstAutoPlayCandidates(
+            expectedRequestToken = expectedStreamsRequestToken,
+            discoveredCandidates = updatedCandidates,
+        )
+    }
+
     val showLoadingScreen = autoPlayNavigationStarted || resolvingDebridStream || resolvingYouTubeStream || preparingServerStream ||
         (qualityFlowEnabled && qualityAutoPlayLoading) ||
         (!qualityFlowEnabled && streamsUiState.shouldShowAutoPlayLoading(

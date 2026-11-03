@@ -73,7 +73,10 @@ object AuthRepository {
                         }
                     }
                     is SessionStatus.RefreshFailure -> {
-                        _state.value = AuthState.Unauthenticated
+                        // Supabase can emit this while retrying an expired session after
+                        // a transient network/server failure. Only NotAuthenticated is
+                        // the terminal sign-out signal; do not flicker to logged-out here.
+                        log.w { "Supabase session refresh is pending; retaining the last known auth state" }
                     }
                 }
             }
@@ -83,17 +86,35 @@ object AuthRepository {
     private suspend fun validateRemoteSession(userId: String): Boolean {
         if (userId.isBlank() || validatedRemoteUserId == userId) return true
 
-        return runCatching {
-            SupabaseProvider.client.auth.retrieveUserForCurrentSession(false)
+        return try {
+            val auth = SupabaseProvider.client.auth
+            try {
+                auth.retrieveUserForCurrentSession(updateSession = false)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Throwable) {
+                val statusCode = error.findCause<RestException>()?.statusCode
+                if (!shouldRetryRemoteSessionValidationAfterRefresh(statusCode, error.message.orEmpty())) throw error
+
+                // A user lookup can return 401 when the stored access JWT has expired.
+                // Refresh the Supabase session once before treating that response as
+                // proof that the account was revoked; otherwise the account cleaner
+                // would also erase independent Trakt and Simkl credentials.
+                log.w(error) { "Supabase user validation returned 401; refreshing the session and retrying once" }
+                auth.refreshCurrentSession()
+                auth.retrieveUserForCurrentSession(updateSession = false)
+            }
             validatedRemoteUserId = userId
             true
-        }.getOrElse { e ->
-            if (isInvalidRemoteSessionError(e)) {
-                log.w(e) { "Stored Supabase session no longer belongs to an active account; clearing local auth" }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            if (isInvalidRemoteSessionError(error)) {
+                log.w(error) { "Stored Supabase session no longer belongs to an active account; clearing local auth" }
                 clearLocalSessionAfterRemoteInvalidation()
                 false
             } else {
-                log.w(e) { "Unable to validate stored Supabase session; keeping cached auth state" }
+                log.w(error) { "Unable to validate stored Supabase session; keeping cached auth state" }
                 true
             }
         }
@@ -200,6 +221,24 @@ object AuthRepository {
     suspend fun signOutIfSessionInvalid(error: Throwable, source: String): Boolean {
         if (!isInvalidRemoteSessionError(error)) return false
 
+        if (shouldRetryRemoteSessionValidationAfterRefresh(error.findCause<RestException>()?.statusCode, error.message.orEmpty())) {
+            try {
+                SupabaseProvider.client.auth.refreshCurrentSession()
+                log.w(error) { "$source returned 401; Supabase refresh succeeded, preserving local account data" }
+                return false
+            } catch (refreshError: CancellationException) {
+                throw refreshError
+            } catch (refreshError: Throwable) {
+                if (!isInvalidRemoteSessionError(refreshError)) {
+                    log.w(refreshError) { "$source returned 401, but session refresh failed transiently; preserving local account data" }
+                    return false
+                }
+                log.w(refreshError) { "$source returned 401 and Supabase rejected the refresh grant; clearing local auth" }
+                clearLocalSessionAfterRemoteInvalidation()
+                return true
+            }
+        }
+
         log.w(error) { "$source failed because the current Supabase account/session is no longer valid; clearing local auth" }
         clearLocalSessionAfterRemoteInvalidation()
         return true
@@ -242,8 +281,6 @@ object AuthRepository {
 
     private fun isInvalidRemoteSessionError(error: Throwable): Boolean {
         val restError = error.findCause<RestException>()
-        if (restError?.statusCode == 401 || restError?.statusCode == 403) return true
-
         val message = buildString {
             append(error.message.orEmpty())
             if (restError != null) {
@@ -252,18 +289,10 @@ object AuthRepository {
                 append(' ')
                 append(restError.description)
             }
-        }.lowercase()
+        }
 
-        return (
-            "jwt" in message &&
-                ("invalid" in message || "expired" in message || "malformed" in message)
-            ) || (
-            "user" in message &&
-                ("does not exist" in message || "not found" in message || "deleted" in message)
-            ) || (
-            "foreign key" in message &&
-                ("auth.users" in message || "user_id" in message)
-            )
+        val authErrorCode = error.findCause<AuthRestException>()?.errorCode?.toString()
+        return isInvalidRemoteSessionFailure(restError?.statusCode, message, authErrorCode)
     }
 
     private inline fun <reified T : Throwable> Throwable.findCause(): T? {
@@ -284,4 +313,49 @@ object AuthRepository {
                 ?.description
                 ?.trim()
                 ?.takeIf { it.isNotEmpty() }
+}
+
+
+/**
+ * A forbidden response from PostgREST is commonly an RLS/permission denial, not an
+ * expired account session. Treating every 403 as a bad session caused the account
+ * cleaner to wipe unrelated local integrations (including Trakt and Simkl).
+ */
+internal fun shouldRetryRemoteSessionValidationAfterRefresh(statusCode: Int?, message: String = ""): Boolean {
+    if (statusCode == 403) return false
+    if (statusCode == 401) return true
+    val normalized = message.lowercase()
+    return "jwt" in normalized && "expired" in normalized
+}
+
+internal fun isInvalidRemoteSessionFailure(
+    statusCode: Int?,
+    message: String,
+    errorCode: String? = null,
+): Boolean {
+    val normalizedErrorCode = errorCode.orEmpty().lowercase().filter(Char::isLetterOrDigit)
+    if (normalizedErrorCode in setOf(
+            "refreshtokennotfound",
+            "refreshtokenalreadyused",
+            "sessionnotfound",
+            "sessionexpired",
+            "usernotfound",
+            "userbanned",
+        )
+    ) return true
+
+    if (statusCode == 401) return true
+    if (statusCode == 403) return false
+
+    val normalized = message.lowercase()
+    return (
+        "jwt" in normalized &&
+            ("invalid" in normalized || "expired" in normalized || "malformed" in normalized)
+        ) || (
+        "user" in normalized &&
+            ("does not exist" in normalized || "not found" in normalized || "deleted" in normalized)
+        ) || (
+        "foreign key" in normalized &&
+            ("auth.users" in normalized || "user_id" in normalized)
+        )
 }

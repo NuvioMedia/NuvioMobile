@@ -1,9 +1,15 @@
 package com.nuvio.app.features.home
+import androidx.compose.foundation.background
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil3.compose.AsyncImage
+import com.nuvio.app.features.settings.ThemeSettingsRepository
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
 import androidx.compose.foundation.gestures.stopScroll
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -95,7 +101,9 @@ import com.nuvio.app.features.watching.application.WatchingState
 import com.nuvio.app.features.watching.domain.WatchingContentRef
 import com.nuvio.app.features.watching.domain.isReleasedBy
 import com.nuvio.app.features.collection.CollectionRepository
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.profiles.ProfileRepository
+import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.home.components.HomeCollectionRowSection
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -131,6 +139,11 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         AddonRepository.initialize()
         CollectionRepository.initialize()
+        // CloudStream plugins persist independently of Stremio add-ons. Restore their
+        // profile state and request their home catalogs on every Home entry, including
+        // installs where the user has no Stremio add-ons configured.
+        CloudStreamRepository.initialize()
+        HomeRepository.applyCurrentSettings()
         ContinueWatchingPreferencesRepository.ensureLoaded()
         WatchedRepository.ensureLoaded()
         WatchProgressRepository.ensureLoaded()
@@ -146,6 +159,10 @@ fun HomeScreen(
     val homeSettingsUiState by remember {
         HomeCatalogSettingsRepository.snapshot()
         HomeCatalogSettingsRepository.uiState
+    }.collectAsStateWithLifecycle()
+    val homeBackgroundUrl by remember {
+        ThemeSettingsRepository.ensureLoaded()
+        ThemeSettingsRepository.homeBackgroundUrl
     }.collectAsStateWithLifecycle()
     val homeListState = rememberLazyListState()
     val continueWatchingListState = rememberLazyListState()
@@ -190,6 +207,9 @@ fun HomeScreen(
             NetworkCondition.Online -> {
                 if (observedOfflineState) {
                     observedOfflineState = false
+                    AddonRepository.refreshAll()
+                    PluginRepository.refreshAll()
+                    CloudStreamRepository.refreshAll()
                     HomeRepository.refresh(addonsUiState.addons.enabledAddons(), force = true)
                 }
             }
@@ -992,6 +1012,21 @@ fun HomeScreen(
             horizontalPadding = 0.dp,
             topPadding = if (showHeroSlot) 0.dp else null,
             listState = homeListState,
+            backgroundContent = homeBackgroundUrl.takeIf { it.isNotBlank() }?.let { backgroundUrl ->
+                {
+                    AsyncImage(
+                        model = backgroundUrl,
+                        contentDescription = null,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.56f)),
+                    )
+                }
+            },
         ) {
             if (showHeroSlot) {
                 item(key = "home_hero", contentType = "hero") {
@@ -1056,7 +1091,12 @@ fun HomeScreen(
                     }
                 }
 
-                !hasActiveAddons && !hasServerLibraries && !hasRenderableCollectionRows -> {
+                shouldShowHomeEmptyState(
+                    hasActiveAddons = hasActiveAddons,
+                    hasServerLibraries = hasServerLibraries,
+                    hasRenderableCollectionRows = hasRenderableCollectionRows,
+                    hasRenderableHomeSections = homeUiState.sections.isNotEmpty(),
+                ) -> {
                     homeContinueWatchingSections(
                         preferences = continueWatchingPreferences,
                         continueWatchingItems = continueWatchingItems,
@@ -1200,6 +1240,34 @@ fun HomeScreen(
                             }
                         }
                     }
+
+                    // CloudStream catalogs are managed by CloudStreamRepository rather
+                    // than HomeCatalogSettingsRepository. Render them independently so
+                    // they are not lost when the home settings list contains only
+                    // Stremio/server/collection rows.
+                    homeUiState.sections
+                        .filter { section ->
+                            section.key.startsWith("cloudstream:") && section.items.isNotEmpty()
+                        }
+                        .forEach { section ->
+                            item(key = section.key, contentType = "catalog") {
+                                HomeCatalogRowSection(
+                                    section = section,
+                                    entries = section.items.take(HOME_CATALOG_PREVIEW_LIMIT),
+                                    modifier = Modifier.padding(bottom = 12.dp),
+                                    sectionPadding = homeSectionPadding,
+                                    onViewAllClick = if (section.canOpenCatalog(HOME_CATALOG_PREVIEW_LIMIT)) {
+                                        onCatalogClick?.let { { it(section) } }
+                                    } else {
+                                        null
+                                    },
+                                    watchedKeys = watchedUiState.watchedKeys,
+                                    fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                                    onPosterClick = onPosterClick,
+                                    onPosterLongClick = onPosterLongClick,
+                                )
+                            }
+                        }
                 }
             }
         }

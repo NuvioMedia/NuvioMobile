@@ -76,9 +76,13 @@ class NextEpisodeCardTest {
 
     @Test
     fun shortSwipeReturnsToPlaceAndStillAllowsPlayback() {
-        showCard()
+        showCard(includePlayerSurfaceGestures = false)
         val bounds = card().getUnclippedBoundsInRoot()
-        card().performTouchInput { swipe(center, Offset(centerX + width * 0.12f, centerY)) }
+        card().performTouchInput {
+            down(center)
+            moveBy(Offset(width * 0.12f, 0f))
+            up()
+        }
         compose.waitForIdle()
         assertEquals(bounds, card().getUnclippedBoundsInRoot())
         compose.runOnIdle {
@@ -151,13 +155,17 @@ class NextEpisodeCardTest {
         }
     }
 
-    private fun showCard(hasAired: Boolean = true) {
+    private fun showCard(
+        hasAired: Boolean = true,
+        includePlayerSurfaceGestures: Boolean = true,
+    ) {
         compose.setContent {
             NuvioTheme {
                 val unlocked = rememberUpdatedState(false)
                 val noop = rememberUpdatedState<() -> Unit>({})
-                Box(
-                    modifier = Modifier.size(640.dp, 360.dp).playerSurfaceDragGestures(
+                val surfaceModifier = Modifier.size(640.dp, 360.dp)
+                val gestureModifier = if (includePlayerSurfaceGestures) {
+                    surfaceModifier.playerSurfaceDragGestures(
                         gestureController = null,
                         layoutSize = IntSize(640, 360),
                         playbackGesturesEnabled = true,
@@ -174,7 +182,12 @@ class NextEpisodeCardTest {
                         clearLiveGestureFeedbackState = noop,
                         revealLockedOverlayState = noop,
                         commitHorizontalSeekState = rememberUpdatedState { _: Long -> seeks++ },
-                    ),
+                    )
+                } else {
+                    surfaceModifier
+                }
+                Box(
+                    modifier = gestureModifier,
                     contentAlignment = Alignment.Center,
                 ) {
                     NextEpisodeCard(

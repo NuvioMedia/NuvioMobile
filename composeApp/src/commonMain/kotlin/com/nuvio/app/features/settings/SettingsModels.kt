@@ -181,6 +181,11 @@ internal enum class SettingsPage(
         category = SettingsCategory.Watch,
         parentPage = ContentDiscovery,
     ),
+    CloudStream(
+        titleRes = Res.string.compose_settings_page_cloudstream,
+        category = SettingsCategory.Watch,
+        parentPage = ContentDiscovery,
+    ),
     MediaServers(
         titleRes = Res.string.compose_settings_page_media_servers,
         category = SettingsCategory.Watch,
@@ -226,6 +231,11 @@ internal enum class SettingsPage(
         category = SettingsCategory.Services,
         parentPage = Integrations,
     ),
+    Telegram(
+        titleRes = Res.string.settings_telegram_title,
+        category = SettingsCategory.Services,
+        parentPage = Integrations,
+    ),
     TraktAuthentication(
         titleRes = Res.string.compose_settings_page_tracking,
         category = SettingsCategory.Services,
@@ -263,6 +273,7 @@ internal val SettingsPage.icon: ImageVector
         SettingsPage.ContentDiscovery -> Icons.Default.Explore
         SettingsPage.Addons -> Icons.Default.Extension
         SettingsPage.Plugins -> Icons.Default.Power
+        SettingsPage.CloudStream -> Icons.Default.Hub
         SettingsPage.MediaServers -> Icons.Default.Dns
         SettingsPage.MediaServer -> Icons.Default.Dns
         SettingsPage.Homescreen -> Icons.Default.Dashboard
@@ -272,6 +283,7 @@ internal val SettingsPage.icon: ImageVector
         SettingsPage.TmdbEnrichment -> Icons.Default.Link
         SettingsPage.MdbListRatings -> Icons.Default.Link
         SettingsPage.Debrid -> Icons.Default.Link
+        SettingsPage.Telegram -> Icons.Default.Link
         SettingsPage.TraktAuthentication -> Icons.Default.Sync
         SettingsPage.PlaybackPlayer -> Icons.Default.SmartDisplay
         SettingsPage.PlaybackStreamSelection -> Icons.AutoMirrored.Filled.PlaylistPlay

@@ -38,7 +38,7 @@ data class PlayerSettingsUiState(
     val showPlayerLoadingStatus: Boolean = true,
     val pauseOverlayEnabled: Boolean = true,
     val showParentalGuide: Boolean = true,
-    val resizeMode: PlayerResizeMode = PlayerResizeMode.Fit,
+    val resizeMode: PlayerResizeMode = PlayerResizeMode.BestFit,
     val holdToSpeedEnabled: Boolean = true,
     val holdToSpeedValue: Float = 2f,
     val touchGesturesEnabled: Boolean = true,
@@ -127,7 +127,7 @@ object PlayerSettingsRepository {
     private var showPlayerLoadingStatus = true
     private var pauseOverlayEnabled = true
     private var showParentalGuide = true
-    private var resizeMode = PlayerResizeMode.Fit
+    private var resizeMode = PlayerResizeMode.BestFit
     private var holdToSpeedEnabled = true
     private var holdToSpeedValue = 2f
     private var touchGesturesEnabled = true
@@ -221,7 +221,7 @@ object PlayerSettingsRepository {
         showPlayerLoadingStatus = true
         pauseOverlayEnabled = true
         showParentalGuide = true
-        resizeMode = PlayerResizeMode.Fit
+        resizeMode = PlayerResizeMode.BestFit
         holdToSpeedEnabled = true
         holdToSpeedValue = 2f
         touchGesturesEnabled = true
@@ -303,15 +303,12 @@ object PlayerSettingsRepository {
     }
 
     private fun loadFromDisk() {
-        hasLoaded = true
         useLegacyPlayerLayout = PlayerSettingsStorage.loadUseLegacyPlayerLayout() ?: false
         showLoadingOverlay = PlayerSettingsStorage.loadShowLoadingOverlay() ?: true
         showPlayerLoadingStatus = PlayerSettingsStorage.loadShowPlayerLoadingStatus() ?: true
         pauseOverlayEnabled = PlayerSettingsStorage.loadPauseOverlayEnabled() ?: true
         showParentalGuide = PlayerSettingsStorage.loadShowParentalGuide() ?: true
-        resizeMode = PlayerSettingsStorage.loadResizeMode()
-            ?.let { runCatching { PlayerResizeMode.valueOf(it) }.getOrNull() }
-            ?: PlayerResizeMode.Fit
+        resizeMode = PlayerResizeMode.fromStoredName(PlayerSettingsStorage.loadResizeMode())
         holdToSpeedEnabled = PlayerSettingsStorage.loadHoldToSpeedEnabled() ?: true
         holdToSpeedValue = PlayerSettingsStorage.loadHoldToSpeedValue() ?: 2f
         touchGesturesEnabled = PlayerSettingsStorage.loadTouchGesturesEnabled() ?: true
@@ -475,6 +472,7 @@ object PlayerSettingsRepository {
         iosContrast = PlayerSettingsStorage.loadIosContrast() ?: 0
         iosSaturation = PlayerSettingsStorage.loadIosSaturation() ?: 0
         iosGamma = PlayerSettingsStorage.loadIosGamma() ?: 0
+        hasLoaded = true
         publish()
     }
 

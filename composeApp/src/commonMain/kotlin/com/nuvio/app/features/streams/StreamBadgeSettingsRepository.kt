@@ -24,6 +24,9 @@ data class StreamBadgeSettingsUiState(
     val playerBadgeSource: String = "",
     val badgePlacement: StreamBadgePlacement = StreamBadgePlacement.BOTTOM,
     val backgroundMode: StreamBackgroundMode = StreamBackgroundMode.Normal,
+    val streamFormattingEnabled: Boolean = false,
+    val streamFormatPreset: StreamFormatPreset = StreamFormatPreset.NUVIOEX_MODERN,
+    val streamFormattingScope: StreamFormattingScope = StreamFormattingScope(),
 )
 
 enum class StreamBackgroundMode {
@@ -54,6 +57,9 @@ object StreamBadgeSettingsRepository {
     private var playerBadgeSource = ""
     private var badgePlacement = StreamBadgePlacement.BOTTOM
     private var backgroundMode = StreamBackgroundMode.Normal
+    private var streamFormattingEnabled = false
+    private var streamFormatPreset = StreamFormatPreset.NUVIOEX_MODERN
+    private var streamFormattingScope = StreamFormattingScope()
 
     fun ensureLoaded() {
         if (hasLoaded) return
@@ -73,6 +79,9 @@ object StreamBadgeSettingsRepository {
         playerBadgeSource = ""
         badgePlacement = StreamBadgePlacement.BOTTOM
         backgroundMode = StreamBackgroundMode.Normal
+        streamFormattingEnabled = false
+        streamFormatPreset = StreamFormatPreset.NUVIOEX_MODERN
+        streamFormattingScope = StreamFormattingScope()
         _uiState.value = StreamBadgeSettingsUiState()
     }
 
@@ -186,6 +195,30 @@ object StreamBadgeSettingsRepository {
         StreamBadgeSettingsStorage.saveStreamBadgePlacement(placement.name)
     }
 
+    fun setStreamFormattingEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (streamFormattingEnabled == enabled) return
+        streamFormattingEnabled = enabled
+        publish()
+        StreamBadgeSettingsStorage.saveStreamFormattingEnabled(enabled)
+    }
+
+    fun setStreamFormatPreset(preset: StreamFormatPreset) {
+        ensureLoaded()
+        if (streamFormatPreset == preset) return
+        streamFormatPreset = preset
+        publish()
+        StreamBadgeSettingsStorage.saveStreamFormatPreset(preset.name)
+    }
+
+    fun setStreamFormattingScope(scope: StreamFormattingScope) {
+        ensureLoaded()
+        if (streamFormattingScope == scope) return
+        streamFormattingScope = scope
+        publish()
+        StreamBadgeSettingsStorage.saveStreamFormattingScope(json.encodeToString(scope))
+    }
+
     fun setBackgroundMode(mode: StreamBackgroundMode) {
         ensureLoaded()
         if (backgroundMode == mode) return
@@ -207,6 +240,13 @@ object StreamBadgeSettingsRepository {
         showAddonLogo = StreamBadgeSettingsStorage.loadShowAddonLogo() ?: false
         showInPlayer = StreamBadgeSettingsStorage.loadShowInPlayer() ?: false
         playerBadgeSource = StreamBadgeSettingsStorage.loadPlayerBadgeSource().orEmpty()
+        streamFormattingEnabled = StreamBadgeSettingsStorage.loadStreamFormattingEnabled() ?: false
+        streamFormatPreset = StreamBadgeSettingsStorage.loadStreamFormatPreset()
+            ?.let { stored -> StreamFormatPreset.entries.firstOrNull { it.name.equals(stored, ignoreCase = true) } }
+            ?: StreamFormatPreset.NUVIOEX_MODERN
+        streamFormattingScope = StreamBadgeSettingsStorage.loadStreamFormattingScope()
+            ?.let { stored -> runCatching { json.decodeFromString<StreamFormattingScope>(stored) }.getOrNull() }
+            ?: StreamFormattingScope()
         backgroundMode = StreamBadgeSettingsStorage.loadStreamBackgroundMode()
             ?.let { storedMode -> StreamBackgroundMode.entries.firstOrNull { it.name.equals(storedMode, ignoreCase = true) } }
             ?: StreamBackgroundMode.Normal
@@ -233,6 +273,9 @@ object StreamBadgeSettingsRepository {
             playerBadgeSource = playerBadgeSource,
             badgePlacement = badgePlacement,
             backgroundMode = backgroundMode,
+            streamFormattingEnabled = streamFormattingEnabled,
+            streamFormatPreset = streamFormatPreset,
+            streamFormattingScope = streamFormattingScope,
         )
     }
 

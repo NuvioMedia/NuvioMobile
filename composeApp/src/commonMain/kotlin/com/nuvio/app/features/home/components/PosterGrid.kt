@@ -15,6 +15,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,13 +59,17 @@ internal fun PosterGridRow(
     onPosterLongClick: ((MetaPreview) -> Unit)? = null,
 ) {
     val posterCardStyle = rememberPosterCardStyleUiState()
+    val catalogSettings by HomeCatalogSettingsRepository.uiState.collectAsStateWithLifecycle()
+    val visibleItems = if (catalogSettings.hideMergedTitlesWithoutPosters) {
+        items.filterNot { it.poster.isNullOrBlank() }
+    } else items
 
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top,
     ) {
-        items.forEach { item ->
+        visibleItems.forEach { item ->
             PosterGridTile(
                 item = item,
                 cornerRadiusDp = posterCardStyle.cornerRadiusDp,
@@ -77,7 +84,7 @@ internal fun PosterGridRow(
                 onLongClick = onPosterLongClick?.let { { it(item) } },
             )
         }
-        repeat(columns - items.size) {
+        repeat((columns - visibleItems.size).coerceAtLeast(0)) {
             Spacer(modifier = Modifier.weight(1f))
         }
     }

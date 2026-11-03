@@ -25,6 +25,13 @@ dependencyResolutionManagement {
             }
         }
         mavenCentral()
+        // CloudStream Full distribution dependencies hosted on JitPack.
+        // Restrict this repository to GitHub-backed coordinates only.
+        maven("https://jitpack.io") {
+            content {
+                includeGroupByRegex("com\\.github\\..*")
+            }
+        }
     }
 }
 

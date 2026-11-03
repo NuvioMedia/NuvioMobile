@@ -277,8 +277,8 @@ object DownloadsRepository {
 
     private fun loadFromDisk() {
         _hasUnseenCompleted.value = false
-        hasLoaded = true
         val payload = DownloadsStorage.loadPayload().orEmpty().trim()
+        hasLoaded = true
         if (payload.isEmpty()) {
             _uiState.value = DownloadsUiState()
             notifyLiveStatusPlatform()

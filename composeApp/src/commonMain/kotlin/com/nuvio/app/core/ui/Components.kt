@@ -1,4 +1,5 @@
 package com.nuvio.app.core.ui
+import androidx.compose.foundation.layout.BoxScope
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -79,24 +80,28 @@ fun NuvioScreen(
     horizontalPadding: Dp = MaterialTheme.nuvio.spacing.screenHorizontal,
     topPadding: Dp? = null,
     listState: LazyListState = rememberLazyListState(),
+    backgroundContent: (@Composable BoxScope.() -> Unit)? = null,
     content: LazyListScope.() -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
     val statusBarTop = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
-    LazyColumn(
-        state = listState,
-        modifier = modifier
-            .fillMaxSize()
-            .background(tokens.colors.background),
-        contentPadding = PaddingValues(
-            start = horizontalPadding,
-            top = topPadding ?: tokens.spacing.screenTop + statusBarTop + nuvioPlatformExtraTopPadding,
-            end = horizontalPadding,
-            bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom),
-        ).withVerticalBar(),
-        verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap),
-        content = content,
-    )
+    Box(modifier = modifier.fillMaxSize()) {
+        backgroundContent?.invoke(this)
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .background(if (backgroundContent == null) tokens.colors.background else Color.Transparent),
+            contentPadding = PaddingValues(
+                start = horizontalPadding,
+                top = topPadding ?: tokens.spacing.screenTop + statusBarTop + nuvioPlatformExtraTopPadding,
+                end = horizontalPadding,
+                bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom),
+            ).withVerticalBar(),
+            verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap),
+            content = content,
+        )
+    }
 }
 
 internal fun Modifier.nuvioConsumePointerEvents(): Modifier =
