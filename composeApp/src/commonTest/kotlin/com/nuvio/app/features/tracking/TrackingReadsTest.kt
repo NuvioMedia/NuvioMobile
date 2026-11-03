@@ -78,7 +78,7 @@ class TrackingReadsTest {
         group: String? = null,
     ) = TrackingLibraryTab(
         key = key,
-        title = key.substringAfterLast(':').replaceFirstChar(Char::uppercase),
+        title = key,
         providerId = provider,
         kind = kind,
         selectionGroup = group,
