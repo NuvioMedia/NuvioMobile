@@ -610,8 +610,7 @@ object HomeCatalogSettingsRepository {
         val start = minOf(fromIndex, toIndex)
         val end = maxOf(fromIndex, toIndex)
         return cohort.subList(start, end + 1).none { item ->
-            item.rowPlacement == HomeCatalogRowPlacement.PINNED_POSITION ||
-                pinSection(item) != fromSection
+            pinSection(item) != fromSection
         }
     }
 
