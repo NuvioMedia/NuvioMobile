@@ -32,6 +32,8 @@ import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.library.LibraryScreen
 import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.library.LibrarySortOption
+import com.nuvio.app.features.livetv.LiveTvChannel
+import com.nuvio.app.features.livetv.LiveTvScreen
 import com.nuvio.app.features.profiles.NuvioProfile
 import com.nuvio.app.features.profiles.ProfileBackgroundBackdrop
 import com.nuvio.app.features.search.SearchScreen
@@ -91,6 +93,7 @@ internal data class AppTabActions(
     val onLibraryPosterLongClick: ((LibraryItem, LibrarySection) -> Unit)? = null,
     val onLibrarySectionViewAllClick: ((LibrarySection, LibrarySortOption) -> Unit)? = null,
     val onCloudFilePlay: ((CloudLibraryItem, CloudLibraryFile) -> Unit)? = null,
+    val onLiveTvChannelClick: (LiveTvChannel) -> Unit = {},
     val onConnectCloudClick: (() -> Unit)? = null,
     val onDownloadsClick: () -> Unit = {},
     val onContinueWatchingClick: ((ContinueWatchingItem) -> Unit)? = null,
@@ -102,6 +105,7 @@ internal data class AppTabActions(
     val onContinueWatchingSettingsClick: () -> Unit = {},
     val onAddonsSettingsClick: () -> Unit = {},
     val onPluginsSettingsClick: () -> Unit = {},
+    val onCloudStreamSettingsClick: () -> Unit = {},
     val onAccountSettingsClick: () -> Unit = {},
     val onSupportersContributorsSettingsClick: () -> Unit = {},
     val onLicensesAttributionsSettingsClick: () -> Unit = {},
@@ -147,6 +151,13 @@ internal fun AppTabHost(
                 }
             }
 
+            AppScreenTab.LiveTv -> {
+                LiveTvScreen(
+                    modifier = Modifier.fillMaxSize(),
+                    onChannelClick = actions.onLiveTvChannelClick,
+                )
+            }
+
             AppScreenTab.Search -> {
                 SearchScreen(
                     modifier = Modifier.fillMaxSize(),
@@ -190,6 +201,7 @@ internal fun AppTabHost(
                     onContinueWatchingClick = actions.onContinueWatchingSettingsClick,
                     onAddonsClick = actions.onAddonsSettingsClick,
                     onPluginsClick = actions.onPluginsSettingsClick,
+                    onCloudStreamClick = actions.onCloudStreamSettingsClick,
                     onAccountClick = actions.onAccountSettingsClick,
                     onSupportersContributorsClick = actions.onSupportersContributorsSettingsClick,
                     onLicensesAttributionsClick = actions.onLicensesAttributionsSettingsClick,

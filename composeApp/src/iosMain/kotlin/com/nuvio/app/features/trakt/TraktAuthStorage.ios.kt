@@ -13,6 +13,11 @@ internal actual object TraktAuthStorage {
         NSUserDefaults.standardUserDefaults.setObject(payload, forKey = ProfileScopedKey.of(payloadKey, profileId))
     }
 
+    actual fun savePayloadDurably(profileId: Int, payload: String): Boolean {
+        NSUserDefaults.standardUserDefaults.setObject(payload, forKey = ProfileScopedKey.of(payloadKey, profileId))
+        return NSUserDefaults.standardUserDefaults.synchronize()
+    }
+
     actual fun removeProfile(profileId: Int) {
         NSUserDefaults.standardUserDefaults.removeObjectForKey(ProfileScopedKey.of(payloadKey, profileId))
     }

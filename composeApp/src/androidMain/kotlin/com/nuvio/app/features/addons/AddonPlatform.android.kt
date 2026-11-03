@@ -7,7 +7,6 @@ import com.nuvio.app.core.network.IPv4FirstDns
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import java.io.IOException
 import nuvio.composeapp.generated.resources.Res
@@ -26,6 +25,7 @@ import java.io.File
 import java.io.InputStream
 import kotlin.text.Charsets
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.coroutineContext
 
 actual object AddonStorage {
     private const val preferencesName = "nuvio_addons"
@@ -208,15 +208,30 @@ private suspend fun executeTextRequest(
         builder.method(normalizedMethod, null)
     }.build()
 
-    AddonHttpClientProvider.get().newCall(request).execute().use { response ->
-        val payload = readResponseBody(response.body)
-        if (!response.isSuccessful) {
-            error(runBlocking { getString(Res.string.network_request_failed_http, response.code) })
+    val call = AddonHttpClientProvider.get().newCall(request)
+    val cancelHandle = coroutineContext[Job]?.invokeOnCompletion { cause ->
+        if (cause is CancellationException) call.cancel()
+    }
+    try {
+        val (isSuccessful, responseCode, payload) = call.execute().use { response ->
+            Triple(
+                response.isSuccessful,
+                response.code,
+                readResponseBody(response.body),
+            )
+        }
+        if (!isSuccessful) {
+            error(getString(Res.string.network_request_failed_http, responseCode))
         }
         if (payload.isBlank()) {
-            throw IllegalStateException(runBlocking { getString(Res.string.network_empty_response_body) })
+            throw IllegalStateException(getString(Res.string.network_empty_response_body))
         }
         payload
+    } catch (error: IOException) {
+        if (call.isCanceled()) throw CancellationException("Cancelled HTTP request", error)
+        throw error
+    } finally {
+        cancelHandle?.dispose()
     }
 }
 

@@ -24,6 +24,13 @@ internal actual object TraktAuthStorage {
             ?.apply()
     }
 
+    actual fun savePayloadDurably(profileId: Int, payload: String): Boolean =
+        preferences
+            ?.edit()
+            ?.putString(ProfileScopedKey.of(payloadKey, profileId), payload)
+            ?.commit()
+            ?: false
+
     actual fun removeProfile(profileId: Int) {
         preferences
             ?.edit()

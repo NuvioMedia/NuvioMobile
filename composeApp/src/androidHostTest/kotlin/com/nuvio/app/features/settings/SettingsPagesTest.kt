@@ -75,6 +75,28 @@ class SettingsPagesTest {
     }
 
     @Test
+    fun contentDiscoveryShowsAndOpensCloudStreamWhenEnabled() {
+        var opened = false
+        compose.setContent {
+            NuvioTheme {
+                LazyColumn(Modifier.fillMaxSize()) {
+                    contentDiscoveryContent(
+                        isTablet = false,
+                        showPluginsEntry = true,
+                        showCloudStreamEntry = true,
+                        onAddonsClick = {},
+                        onPluginsClick = {},
+                        onCloudStreamClick = { opened = true },
+                        onMediaServersClick = {},
+                    )
+                }
+            }
+        }
+        compose.onNodeWithText("CloudStream / CS3").performScrollTo().performClick()
+        compose.runOnIdle { assertTrue(opened) }
+    }
+
+    @Test
     fun tabletServicesGroupContainsIntegrationsAndTracking() {
         var opened: SettingsPage? = null
         compose.setContent {
@@ -235,6 +257,7 @@ class SettingsPagesTest {
                 "liquid-glass" to SettingsPage.Layout,
                 "navigation-bar" to SettingsPage.Layout,
                 "app-icon" to SettingsPage.Appearance,
+                "cloudstream" to SettingsPage.CloudStream,
             ).forEach { (key, page) ->
                 assertEquals(SettingsSearchTarget.Page(page), entries.single { it.key == key }.target)
             }

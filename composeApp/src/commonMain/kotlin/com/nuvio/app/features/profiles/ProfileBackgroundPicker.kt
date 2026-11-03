@@ -31,16 +31,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import coil3.compose.LocalPlatformContext
-import coil3.request.CachePolicy
-import coil3.request.ImageRequest
-import coil3.request.crossfade
 import com.nuvio.app.core.ui.themePalette
 import com.nuvio.app.core.ui.accentBrush
+import coil3.compose.AsyncImage
 import com.nuvio.app.features.membership.ProfileBackgroundCatalogItem
 import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.profile_background_custom
 import nuvio.composeapp.generated.resources.profile_background_normal
 import org.jetbrains.compose.resources.stringResource
 
@@ -50,7 +45,6 @@ internal fun ProfileBackgroundPicker(
     backgrounds: List<ProfileBackgroundCatalogItem>,
     selectedBackgroundId: String?,
     selectedBackgroundUrl: String?,
-    customBackgroundUrl: String?,
     standardBackgroundColor: Color,
     onSelectionChange: (String?, String?) -> Unit,
     modifier: Modifier = Modifier,
@@ -78,27 +72,6 @@ internal fun ProfileBackgroundPicker(
                         ),
                     ),
             )
-        }
-        customBackgroundUrl?.trim()?.takeIf { it.isNotBlank() }?.let { imageUrl ->
-            ProfileBackgroundItem(
-                label = stringResource(Res.string.profile_background_custom),
-                isSelected = selectedBackgroundId == null && selectedBackgroundUrl == imageUrl,
-                onClick = { onSelectionChange(null, imageUrl) },
-            ) {
-                val context = LocalPlatformContext.current
-                AsyncImage(
-                    model = ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .memoryCacheKey("custom-profile-background-$imageUrl")
-                        .diskCacheKey("custom-profile-background-$imageUrl")
-                        .diskCachePolicy(CachePolicy.ENABLED)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop,
-                )
-            }
         }
         backgrounds.forEach { background ->
             ProfileBackgroundItem(

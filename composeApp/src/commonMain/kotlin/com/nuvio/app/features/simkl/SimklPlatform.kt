@@ -10,11 +10,13 @@ internal expect object SimklPkceCrypto {
 }
 
 internal expect object SimklAuthStorage {
-    fun loadMetadataPayload(): String?
-    fun saveMetadataPayload(payload: String)
-    fun loadAccessToken(): String?
-    fun saveAccessToken(value: String?)
-    fun loadCodeVerifier(): String?
-    fun saveCodeVerifier(value: String?)
+    fun loadMetadataPayload(profileId: Int): String?
+    fun saveMetadataPayload(profileId: Int, payload: String)
+    fun loadAccessToken(profileId: Int): String?
+    fun saveAccessToken(profileId: Int, value: String?)
+    fun loadRefreshToken(profileId: Int): String?
+    fun saveRefreshToken(profileId: Int, value: String?)
+    fun loadCodeVerifier(profileId: Int): String?
+    fun saveCodeVerifier(profileId: Int, value: String?)
     fun removeProfile(profileId: Int)
 }

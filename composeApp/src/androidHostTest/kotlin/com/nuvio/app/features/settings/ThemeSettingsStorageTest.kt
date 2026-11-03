@@ -42,6 +42,18 @@ class ThemeSettingsStorageTest {
     }
 
     @Test
+    fun homeBackgroundUrlRoundTripsThroughProfileSync() {
+        ThemeSettingsStorage.saveHomeBackgroundUrl("https://example.com/home.jpg")
+        val payload = ThemeSettingsStorage.exportToSyncPayload()
+        assertEquals("https://example.com/home.jpg", payload.decodeSyncString("home_background_url"))
+
+        ThemeSettingsStorage.saveHomeBackgroundUrl("https://example.com/other.jpg")
+        ThemeSettingsStorage.replaceFromSyncPayload(payload)
+
+        assertEquals("https://example.com/home.jpg", ThemeSettingsStorage.loadHomeBackgroundUrl())
+    }
+
+    @Test
     fun olderPayloadClearsOnlyTheCurrentProfilesGlowPreference() {
         val preferences = RuntimeEnvironment.getApplication()
             .getSharedPreferences("nuvio_theme_settings", Context.MODE_PRIVATE)

@@ -64,8 +64,8 @@ internal fun interface SimklHttpEngine {
 
 internal class SimklApiClient(
     private val engine: SimklHttpEngine,
-    private val accessToken: () -> String?,
-    private val onUnauthorized: () -> Unit,
+    private val accessToken: suspend () -> String?,
+    private val onUnauthorized: suspend (usedAccessToken: String?) -> String?,
     private val nowEpochMs: () -> Long = SimklPlatformClock::nowEpochMs,
     private val sleep: suspend (Long) -> Unit = { delayMs -> delay(delayMs) },
     private val retryJitterMs: () -> Long = { Random.nextLong(RETRY_JITTER_BOUND_MS + 1L) },
@@ -76,7 +76,7 @@ internal class SimklApiClient(
     private var nextPostAtEpochMs = 0L
 
     suspend fun execute(request: SimklApiRequest): SimklApiResponse = requestMutex.withLock {
-        val token = if (request.requiresAuthentication) {
+        var token = if (request.requiresAuthentication) {
             accessToken()?.takeIf(String::isNotBlank)
                 ?: throw SimklApiException(
                     status = 401,
@@ -93,8 +93,10 @@ internal class SimklApiClient(
             -> MAX_ATTEMPTS
             SimklRetryPolicy.NEVER -> 1
         }
+        var attempt = 0
         var syncWriteLockRetried = false
-        for (attempt in 0 until maxAttempts) {
+        var unauthorizedRetried = false
+        while (attempt < maxAttempts) {
             val response = try {
                 executeRateLimited(request.method) {
                     engine.execute(
@@ -110,7 +112,7 @@ internal class SimklApiClient(
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Throwable) {
-                if (attempt == maxAttempts - 1) {
+                if (attempt >= maxAttempts - 1) {
                     throw SimklApiException(
                         status = null,
                         errorCode = "transport_failure",
@@ -119,6 +121,7 @@ internal class SimklApiClient(
                     )
                 }
                 sleep(retryDelayMs(attempt, retryAfterHeader = null, retryJitterMs()))
+                attempt += 1
                 continue
             }
 
@@ -137,6 +140,7 @@ internal class SimklApiClient(
             ) {
                 syncWriteLockRetried = true
                 sleep(SYNC_WRITE_LOCK_RETRY_DELAY_MS)
+                attempt += 1
                 continue
             }
 
@@ -146,12 +150,26 @@ internal class SimklApiClient(
                     return@withLock response.toApiResponse(isSoftSuccess = true)
                 }
                 SimklResponseAction.REAUTHENTICATE -> {
-                    if (request.requiresAuthentication) onUnauthorized()
-                    throw response.toApiException(json)
+                    val errorCode = response.errorCode(json)
+                    if (
+                        !request.requiresAuthentication ||
+                        !shouldRefreshAfterSimklUnauthorized(errorCode) ||
+                        unauthorizedRetried
+                    ) {
+                        throw response.toApiException(json)
+                    }
+                    val renewedToken = onUnauthorized(token)
+                        ?.takeIf(String::isNotBlank)
+                        ?: throw response.toApiException(json)
+                    if (renewedToken == token) throw response.toApiException(json)
+                    token = renewedToken
+                    unauthorizedRetried = true
+                    // Retry the original call once with the new access token. This
+                    // authentication recovery does not consume transient retry budget.
                 }
                 SimklResponseAction.FAIL -> throw response.toApiException(json)
                 SimklResponseAction.RETRY -> {
-                    if (attempt == maxAttempts - 1) throw response.toApiException(json)
+                    if (attempt >= maxAttempts - 1) throw response.toApiException(json)
                     sleep(
                         retryDelayMs(
                             attempt = attempt,
@@ -159,6 +177,7 @@ internal class SimklApiClient(
                             jitterMs = retryJitterMs(),
                         ),
                     )
+                    attempt += 1
                 }
             }
         }
@@ -243,10 +262,13 @@ internal object SimklApi {
                 )
             },
             accessToken = SimklAuthRepository::authorizedAccessToken,
-            onUnauthorized = SimklAuthRepository::onUnauthorizedResponse,
+            onUnauthorized = SimklAuthRepository::refreshAfterUnauthorized,
         )
     }
 }
+
+internal fun shouldRefreshAfterSimklUnauthorized(errorCode: String?): Boolean =
+    errorCode?.trim()?.lowercase() !in setOf("user_token_required", "invalid_client")
 
 internal enum class SimklResponseAction {
     SUCCESS,

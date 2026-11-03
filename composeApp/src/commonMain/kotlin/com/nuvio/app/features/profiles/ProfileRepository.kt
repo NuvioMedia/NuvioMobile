@@ -25,6 +25,7 @@ import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepositor
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.plugins.PluginRepository
+import com.nuvio.app.features.cloudstream.CloudStreamRepository
 import com.nuvio.app.features.search.SearchHistoryRepository
 import com.nuvio.app.features.search.SearchRepository
 import com.nuvio.app.features.servers.ServerRepository
@@ -91,6 +92,7 @@ object ProfileRepository {
         val stored = decodeStoredPayload() ?: return false
         loadedCacheForUserId = stored.userId
         applyStoredPayload(stored)
+        CustomPosterUrlRepository.onProfileChanged()
         ThemeSettingsRepository.onProfileChanged()
         return _state.value.profiles.isNotEmpty()
     }
@@ -103,34 +105,52 @@ object ProfileRepository {
         if (stored == null) {
             _state.value = ProfileState()
             activeProfileIndex = 1
+            CustomPosterUrlRepository.onProfileChanged()
             return
         }
 
         if (stored.userId != userId) {
             _state.value = ProfileState()
             activeProfileIndex = 1
+            CustomPosterUrlRepository.onProfileChanged()
             return
         }
 
         applyStoredPayload(stored)
+        CustomPosterUrlRepository.onProfileChanged()
     }
 
     fun clearInMemory() {
         loadedCacheForUserId = null
         activeProfileIndex = 1
         _state.value = ProfileState()
+        CustomPosterUrlRepository.onProfileChanged()
     }
 
-    suspend fun pullProfiles() {
+    suspend fun pullProfiles(): Boolean {
         if (AuthRepository.state.value.isAnonymous) {
             if (!_state.value.isLoaded) {
                 _state.value = _state.value.copy(isLoaded = true)
             }
-            return
+            return true
         }
         try {
             val result = SupabaseProvider.client.postgrest.rpc("sync_pull_profiles")
-            val profiles = result.decodeList<NuvioProfile>()
+            val currentUserId = (AuthRepository.state.value as? AuthState.Authenticated)?.userId
+            val cachedProfiles = decodeStoredPayload()
+                ?.takeIf { it.userId == currentUserId }
+                ?.profiles
+                .orEmpty()
+                .associateBy { it.profileIndex }
+            val profiles = result.decodeList<NuvioProfile>().map { remoteProfile ->
+                val cachedProfile = cachedProfiles[remoteProfile.profileIndex]
+                // Keep custom backgrounds available on installations whose profile-sync
+                // RPC has not yet started returning the optional background columns.
+                remoteProfile.copy(
+                    profileBackgroundId = remoteProfile.profileBackgroundId ?: cachedProfile?.profileBackgroundId,
+                    profileBackgroundUrl = remoteProfile.profileBackgroundUrl ?: cachedProfile?.profileBackgroundUrl,
+                )
+            }
             _state.value = _state.value.copy(
                 profiles = profiles.sortedBy { it.profileIndex },
                 isLoaded = true,
@@ -141,12 +161,16 @@ object ProfileRepository {
                 activeProfileIndex = _state.value.activeProfile!!.profileIndex
             }
             persist()
+            return true
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (e: Throwable) {
-            if (AuthRepository.signOutIfSessionInvalid(e, "Profile pull")) return
+            if (AuthRepository.signOutIfSessionInvalid(e, "Profile pull")) return false
             log.e(e) { "Failed to pull profiles" }
             if (!_state.value.isLoaded) {
                 _state.value = _state.value.copy(isLoaded = true)
             }
+            return false
         }
     }
 
@@ -169,6 +193,7 @@ object ProfileRepository {
         AddonRepository.onProfileChanged(profileIndex)
         if (com.nuvio.app.core.build.AppFeaturePolicy.pluginsEnabled) {
             PluginRepository.onProfileChanged(profileIndex)
+            CloudStreamRepository.onProfileChanged(profileIndex)
         }
         ThemeSettingsRepository.onProfileChanged()
         PosterCardStyleRepository.onProfileChanged()
@@ -194,10 +219,10 @@ object ProfileRepository {
         ProfileSettingsSync.onProfileChanged()
     }
 
-    suspend fun pushProfiles(profiles: List<ProfilePushPayload>) {
+    suspend fun pushProfiles(profiles: List<ProfilePushPayload>): Boolean {
         if (AuthRepository.state.value.isAnonymous) {
             applyPayloadsLocally(profiles)
-            return
+            return true
         }
         try {
             val params = buildJsonObject {
@@ -206,10 +231,17 @@ object ProfileRepository {
                 putSyncOriginClientId()
             }
             SupabaseProvider.client.postgrest.rpc("sync_push_profiles", params)
+            // Cache the user's submitted profile fields before pulling the server copy.
+            // This protects optional cosmetic fields when an older RPC response omits them.
+            applyPayloadsLocally(profiles)
             pullProfiles()
+            return true
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
         } catch (e: Throwable) {
-            if (AuthRepository.signOutIfSessionInvalid(e, "Profile push")) return
+            if (AuthRepository.signOutIfSessionInvalid(e, "Profile push")) return false
             log.e(e) { "Failed to push profiles" }
+            return false
         }
     }
 
@@ -219,9 +251,10 @@ object ProfileRepository {
         avatarId: String? = null,
         avatarUrl: String? = null,
         usesPrimaryAddons: Boolean = false,
-    ) {
+        profileBackgroundUrl: String? = null,
+    ): Boolean {
         val existing = _state.value.profiles
-        val nextIndex = ((1..MAX_PROFILES).toSet() - existing.map { it.profileIndex }.toSet()).minOrNull() ?: return
+        val nextIndex = ((1..MAX_PROFILES).toSet() - existing.map { it.profileIndex }.toSet()).minOrNull() ?: return false
 
         val allPayloads = existing.map { profile ->
             ProfilePushPayload(
@@ -242,9 +275,10 @@ object ProfileRepository {
             usesPrimaryAddons = usesPrimaryAddons,
             avatarId = avatarId,
             avatarUrl = avatarUrl,
+            profileBackgroundUrl = profileBackgroundUrl,
         )
 
-        pushProfiles(allPayloads)
+        return pushProfiles(allPayloads)
     }
 
     suspend fun updateProfile(
@@ -256,7 +290,8 @@ object ProfileRepository {
         profileBackgroundId: String? = null,
         profileBackgroundUrl: String? = null,
         usesPrimaryAddons: Boolean = false,
-    ) {
+    ): Boolean {
+        if (_state.value.profiles.none { it.profileIndex == profileIndex }) return false
         val allPayloads = _state.value.profiles.map { profile ->
             if (profile.profileIndex == profileIndex) {
                 ProfilePushPayload(
@@ -284,7 +319,7 @@ object ProfileRepository {
             }
         }
 
-        pushProfiles(allPayloads)
+        return pushProfiles(allPayloads)
     }
 
     suspend fun deleteProfile(profileIndex: Int) {

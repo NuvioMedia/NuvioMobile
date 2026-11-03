@@ -1454,6 +1454,7 @@
     <string name="profile_remove_pin_for">%1$s için PIN'i kaldır</string>
     <string name="profile_remove_pin_lock">PIN kilidini kaldır</string>
     <string name="profile_saving">Kaydediliyor...</string>
+    <string name="profile_save_failed">Profil kaydedilemedi. Bağlantınızı kontrol edip tekrar deneyin.</string>
     <string name="profile_security">Güvenlik</string>
     <string name="profile_security_pin_disabled">Bu profile geçmeden önce kilitlenmesini istiyorsan bir PIN ekle.</string>
     <string name="profile_security_pin_enabled">Bu profil PIN ile korunuyor.</string>

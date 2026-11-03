@@ -70,7 +70,7 @@ class RootTabHostTest {
         val homeToken = tokens.getValue(AppScreenTab.Home)
 
         repeat(2) {
-            for (tab in listOf(AppScreenTab.Search, AppScreenTab.Library, AppScreenTab.Settings, AppScreenTab.Home)) {
+            for (tab in AppScreenTab.entries.filter { it != AppScreenTab.Home } + AppScreenTab.Home) {
                 select(tab)
                 compose.onNodeWithTag(tab.name).assertIsDisplayed()
                 AppScreenTab.entries.filter { it != tab }.forEach { hidden ->
@@ -115,7 +115,7 @@ class RootTabHostTest {
             }
         }
 
-        for (tab in listOf(AppScreenTab.Search, AppScreenTab.Library, AppScreenTab.Settings, AppScreenTab.Home)) {
+        for (tab in AppScreenTab.entries.filter { it != AppScreenTab.Home } + AppScreenTab.Home) {
             select(tab)
             compose.runOnIdle { assertEquals(setOf(tab), runningEffects) }
         }
@@ -183,14 +183,14 @@ class RootTabHostTest {
             dispatcher = requireNotNull(LocalOnBackPressedDispatcherOwner.current).onBackPressedDispatcher
             BackHandler { handled += tab }
         }
-        for (tab in listOf(AppScreenTab.Search, AppScreenTab.Library, AppScreenTab.Settings, AppScreenTab.Home)) {
+        for (tab in AppScreenTab.entries.filter { it != AppScreenTab.Home } + AppScreenTab.Home) {
             select(tab)
             compose.runOnIdle { dispatcher.onBackPressed() }
         }
 
         compose.runOnIdle {
             assertEquals(
-                listOf(AppScreenTab.Search, AppScreenTab.Library, AppScreenTab.Settings, AppScreenTab.Home),
+                AppScreenTab.entries.filter { it != AppScreenTab.Home } + AppScreenTab.Home,
                 handled,
             )
         }

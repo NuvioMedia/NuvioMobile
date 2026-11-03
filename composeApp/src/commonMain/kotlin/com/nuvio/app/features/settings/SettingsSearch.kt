@@ -485,6 +485,12 @@ internal fun settingsSearchEntries(
             title = pluginsPage,
             description = stringResource(Res.string.settings_content_discovery_plugins_description),
         )
+        addPage(
+            page = SettingsPage.CloudStream,
+            key = "cloudstream",
+            title = stringResource(Res.string.compose_settings_page_cloudstream),
+            description = stringResource(Res.string.settings_content_discovery_cloudstream_description),
+        )
     }
     addPage(
         page = SettingsPage.Homescreen,

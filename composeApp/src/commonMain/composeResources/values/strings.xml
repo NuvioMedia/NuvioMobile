@@ -459,7 +459,7 @@
     <string name="compose_player_reload">Reload</string>
     <string name="compose_player_reset">Reset</string>
     <string name="compose_player_reset_defaults">Reset Defaults</string>
-    <string name="compose_player_resize_fill">Fill</string>
+    <string name="compose_player_resize_fill">Full</string>
     <string name="compose_player_resize_fit">Fit</string>
     <string name="compose_player_resize_zoom">Zoom</string>
     <string name="compose_player_seek_back_10">Seek backward 10 seconds</string>
@@ -517,6 +517,7 @@
     <string name="compose_settings_page_notifications">Notifications</string>
     <string name="compose_settings_page_playback">Playback</string>
     <string name="compose_settings_page_plugins">Plugins</string>
+    <string name="compose_settings_page_cloudstream">CloudStream / CS3</string>
     <string name="compose_settings_page_poster_customization">Poster Card Style</string>
     <string name="compose_settings_page_privacy_policy">Privacy Policy</string>
     <string name="compose_settings_page_root">Settings</string>
@@ -721,6 +722,12 @@
     <string name="settings_homescreen_section_catalogs">CATALOGS</string>
     <string name="settings_homescreen_section_catalogs_collections">CATALOGS &amp; COLLECTIONS</string>
     <string name="settings_homescreen_section_collections">COLLECTIONS</string>
+    <string name="settings_homescreen_background_title">HOME SCREEN BACKGROUND</string>
+    <string name="settings_homescreen_background_description">Use a custom image URL behind the Home screen. Leave blank to use the default background.</string>
+    <string name="settings_homescreen_background_url">Image URL</string>
+    <string name="settings_homescreen_background_save">Save</string>
+    <string name="settings_homescreen_background_clear">Clear</string>
+    <string name="settings_homescreen_background_invalid_url">Enter a valid HTTP or HTTPS image URL.</string>
     <string name="settings_homescreen_section_hero">HOME LAYOUT</string>
     <string name="settings_homescreen_section_hero_sources">HERO CATALOGS</string>
     <string name="settings_homescreen_selected_count">%1$d of %2$d selected</string>
@@ -846,6 +853,7 @@
     <string name="settings_content_discovery_addons_description">Install, remove, refresh, and sort your content sources.</string>
     <string name="settings_content_discovery_addons_description_appstore">Add and manage the addons you use with Nuvio.</string>
     <string name="settings_content_discovery_plugins_description">Install JavaScript scraper repositories and test providers internally.</string>
+    <string name="settings_content_discovery_cloudstream_description">Install CloudStream CS3 repositories, search providers, and manage CloudStream sources.</string>
     <string name="settings_content_discovery_homescreen_description">Adjust home layout, content visibility, and poster behavior</string>
     <string name="settings_content_discovery_meta_screen_description">Settings for the detail and episode screens.</string>
     <string name="settings_content_discovery_collections_description">Create custom catalog groupings with folders shown on Home.</string>
@@ -1667,6 +1675,7 @@
     <string name="profile_remove_pin_for">Remove PIN for %1$s</string>
     <string name="profile_remove_pin_lock">Remove PIN Lock</string>
     <string name="profile_saving">Saving...</string>
+    <string name="profile_save_failed">Couldn't save the profile. Check your connection and try again.</string>
     <string name="profile_security">Security</string>
     <string name="profile_security_pin_disabled">Add a PIN if you want this profile locked before switching into it.</string>
     <string name="profile_security_pin_enabled">This profile is protected with a PIN.</string>
@@ -2624,4 +2633,41 @@
     <string name="settings_merged_rows_cancel">Cancel</string>
     <string name="settings_merged_rows_unavailable_source">Some saved sources are currently unavailable. Remove them or choose available catalogs below.</string>
     <string name="settings_merged_rows_duplicate">Duplicate</string>
+
+    <string name="settings_merged_rows_type">Type</string>
+    <string name="settings_merged_rows_type_all">All</string>
+    <string name="settings_merged_rows_type_movies">Movies</string>
+    <string name="settings_merged_rows_type_series">Series</string>
+    <string name="settings_merged_rows_blend">Blend</string>
+    <string name="settings_merged_rows_blend_interleave">Interleave</string>
+    <string name="settings_merged_rows_blend_smart">Smart Freshness &amp; Popularity</string>
+    <string name="settings_merged_rows_sort">Sort</string>
+    <string name="settings_merged_rows_sort_off">Off</string>
+    <string name="settings_merged_rows_sort_popularity">Popularity</string>
+    <string name="settings_merged_rows_sort_top_rated">Top rated</string>
+    <string name="settings_merged_rows_sort_newest">Newest</string>
+    <string name="settings_merged_rows_sort_oldest">Oldest</string>
+    <string name="settings_merged_rows_hide_included">Hide included source rows from Home</string>
+    <string name="settings_merged_rows_hide_without_posters">Hide titles without usable posters</string>
+
+    <string name="settings_custom_poster_mode">Custom poster source mode</string>
+    <string name="settings_custom_poster_mode_off">Off</string>
+    <string name="settings_custom_poster_mode_off_description">Use original posters and leave existing catalog metadata unchanged.</string>
+    <string name="settings_custom_poster_mode_tags_only">Tags only</string>
+    <string name="settings_custom_poster_mode_tags_description">Keep original poster artwork. This image URL returns artwork only, so separate rating or trending tags must come from catalog metadata.</string>
+    <string name="settings_custom_poster_mode_posters_tags">Posters + tags</string>
+    <string name="settings_custom_poster_mode_posters_description">Use the custom poster URL pattern. Any ratings or trending artwork baked into its returned image are shown with that poster.</string>
+    <string name="profile_custom_background_url">Custom background URL</string>
+    <string name="profile_custom_background_url_description">Paste an image or GIF link to use behind the profile selection screen.</string>
+    <string name="profile_custom_background_url_placeholder">https://example.com/background.gif</string>
+    <string name="profile_custom_background_url_invalid">Enter a valid HTTP or HTTPS image URL.</string>
+    <string name="settings_merged_rows_mode_type_tabs">All / Movies / Series</string>
+    <string name="settings_merged_rows_blend_interleave_description">Rotate evenly between providers, taking one available title from each in turn.</string>
+    <string name="settings_merged_rows_blend_smart_description">Prioritise newer and popular titles, use ratings as a secondary signal, and balance provider contribution.</string>
+    <string name="settings_merged_rows_sort_description">Sorting is applied after blending. Off preserves the blended order.</string>
+    <string name="settings_merged_rows_mode_type_tabs_description">Show one combined All tab and separate Movies and Series tabs across every catalog in this merged row.</string>
+    <string name="settings_telegram_title">Telegram</string>
+    <string name="settings_telegram_description">Find playable video files in your selected Telegram channels and groups.</string>
+    <string name="compose_player_resize_best_fit">Best Fit</string>
+    <string name="compose_player_resize_16_9">16:9</string>
 </resources>

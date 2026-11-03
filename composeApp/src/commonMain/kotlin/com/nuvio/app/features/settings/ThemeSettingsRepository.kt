@@ -43,6 +43,9 @@ object ThemeSettingsRepository {
     private val _navBarGlowEnabled = MutableStateFlow(true)
     val navBarGlowEnabled: StateFlow<Boolean> = _navBarGlowEnabled.asStateFlow()
 
+    private val _homeBackgroundUrl = MutableStateFlow("")
+    val homeBackgroundUrl: StateFlow<String> = _homeBackgroundUrl.asStateFlow()
+
     private var hasLoaded = false
     private var observesMembership = false
 
@@ -69,6 +72,7 @@ object ThemeSettingsRepository {
         _selectedAppLanguage.value = AppLanguage.DEVICE
         _navBarGlowEnabled.value = true
         _navBarStyle.value = NavBarStyle.ADAPTIVE
+        _homeBackgroundUrl.value = ""
     }
 
     private fun loadFromDisk() {
@@ -95,6 +99,7 @@ object ThemeSettingsRepository {
         _selectedAppLanguage.value = appLanguage
         _navBarGlowEnabled.value = ThemeSettingsStorage.loadNavBarGlowEnabled() ?: true
         _navBarStyle.value = NavBarStyle.fromKey(ThemeSettingsStorage.loadNavBarStyle())
+        _homeBackgroundUrl.value = ThemeSettingsStorage.loadHomeBackgroundUrl().orEmpty()
     }
 
     fun setTheme(theme: AppTheme) {
@@ -153,6 +158,14 @@ object ThemeSettingsRepository {
         if (_navBarGlowEnabled.value == enabled) return
         _navBarGlowEnabled.value = enabled
         ThemeSettingsStorage.saveNavBarGlowEnabled(enabled)
+    }
+
+    fun setHomeBackgroundUrl(url: String) {
+        ensureLoaded()
+        val normalizedUrl = url.trim()
+        if (_homeBackgroundUrl.value == normalizedUrl) return
+        _homeBackgroundUrl.value = normalizedUrl
+        ThemeSettingsStorage.saveHomeBackgroundUrl(normalizedUrl)
     }
 
     private fun observeMembership() {

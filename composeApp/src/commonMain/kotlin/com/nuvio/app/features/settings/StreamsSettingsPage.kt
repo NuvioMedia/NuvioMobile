@@ -59,6 +59,12 @@ import com.nuvio.app.features.streams.StreamBadgeImportResult
 import com.nuvio.app.features.streams.StreamBadgePlacement
 import com.nuvio.app.features.streams.StreamBadgeRules
 import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
+import com.nuvio.app.features.streams.StreamFormatPreset
+import com.nuvio.app.features.streams.StreamFormattingEngine
+import com.nuvio.app.features.streams.StreamFormattingSettings
+import com.nuvio.app.features.streams.StreamFormattingScope
+import com.nuvio.app.features.streams.StreamProviderFamily
+import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamBackgroundMode
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
@@ -115,6 +121,14 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
         var showBadgePositionDialog by rememberSaveable { mutableStateOf(false) }
         var showPlayerBadgesDialog by rememberSaveable { mutableStateOf(false) }
         var showBackgroundDialog by rememberSaveable { mutableStateOf(false) }
+        var showStreamFormatDialog by rememberSaveable { mutableStateOf(false) }
+        var showStreamFormatScopeDialog by rememberSaveable { mutableStateOf(false) }
+        var draftIncludeNuvioAddons by rememberSaveable { mutableStateOf(true) }
+        var draftIncludeCloudstreamPlugins by rememberSaveable { mutableStateOf(true) }
+        var draftIncludeOtherProviders by rememberSaveable { mutableStateOf(false) }
+        var draftIncludedProviderIds by rememberSaveable { mutableStateOf("") }
+        var draftExcludedProviderIds by rememberSaveable { mutableStateOf("") }
+        var draftStreamFormatPreset by rememberSaveable { mutableStateOf(StreamFormatPreset.NUVIOEX_MODERN) }
         val badgePlacementLabel = streamBadgePlacementLabel(currentSettings.badgePlacement)
 
         SettingsSection(
@@ -180,6 +194,43 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
                     )
                 }
                 SettingsSwitchRow(
+                    title = "Stream formatting",
+                    description = "Standardise stream names and show detected media details.",
+                    checked = currentSettings.streamFormattingEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = StreamBadgeSettingsRepository::setStreamFormattingEnabled,
+                )
+                SettingsNavigationRow(
+                    title = "Formatting scope",
+                    description = buildList {
+                        if (currentSettings.streamFormattingScope.includeNuvioAddons) add("Nuvio addons")
+                        if (currentSettings.streamFormattingScope.includeCloudstreamPlugins) add("CloudStream plugins")
+                        if (currentSettings.streamFormattingScope.includeOtherProviders) add("Other providers")
+                    }.joinToString(", ").ifBlank { "No providers selected" },
+                    enabled = currentSettings.streamFormattingEnabled,
+                    isTablet = isTablet,
+                    onClick = {
+                        val scope = currentSettings.streamFormattingScope
+                        draftIncludeNuvioAddons = scope.includeNuvioAddons
+                        draftIncludeCloudstreamPlugins = scope.includeCloudstreamPlugins
+                        draftIncludeOtherProviders = scope.includeOtherProviders
+                        draftIncludedProviderIds = scope.includedProviderIds.joinToString(", ")
+                        draftExcludedProviderIds = scope.excludedProviderIds.joinToString(", ")
+                        showStreamFormatScopeDialog = true
+                    },
+                )
+                SettingsNavigationRow(
+                    title = "Formatting preset",
+                    description = currentSettings.streamFormatPreset.name.replace('_', ' ').lowercase()
+                        .replaceFirstChar { it.uppercase() },
+                    enabled = currentSettings.streamFormattingEnabled,
+                    isTablet = isTablet,
+                    onClick = {
+                        draftStreamFormatPreset = currentSettings.streamFormatPreset
+                        showStreamFormatDialog = true
+                    },
+                )
+                SettingsSwitchRow(
                     title = stringResource(Res.string.settings_stream_addon_logo_title),
                     description = stringResource(Res.string.settings_stream_addon_logo_description),
                     checked = currentSettings.showAddonLogo,
@@ -228,6 +279,136 @@ internal fun LazyListScope.streamsSettingsContent(isTablet: Boolean) {
                 },
                 onDismiss = { showBadgePositionDialog = false },
             )
+        }
+
+        if (showStreamFormatScopeDialog) {
+            DialogSurface(
+                onDismissRequest = { showStreamFormatScopeDialog = false },
+                title = "Stream formatting scope",
+                message = "Choose which provider families are eligible. Existing provider formatting is preserved automatically.",
+            ) {
+                SettingsSwitchRow(
+                    title = "Nuvio addons",
+                    description = "Apply to installed Nuvio addons.",
+                    checked = draftIncludeNuvioAddons,
+                    isTablet = isTablet,
+                    onCheckedChange = { draftIncludeNuvioAddons = it },
+                )
+                SettingsSwitchRow(
+                    title = "CloudStream plugins",
+                    description = "Apply to CloudStream plugin streams.",
+                    checked = draftIncludeCloudstreamPlugins,
+                    isTablet = isTablet,
+                    onCheckedChange = { draftIncludeCloudstreamPlugins = it },
+                )
+                SettingsSwitchRow(
+                    title = "Other providers",
+                    description = "Apply to streams from other provider types.",
+                    checked = draftIncludeOtherProviders,
+                    isTablet = isTablet,
+                    onCheckedChange = { draftIncludeOtherProviders = it },
+                )
+                OutlinedTextField(
+                    value = draftIncludedProviderIds,
+                    onValueChange = { draftIncludedProviderIds = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Only these providers (optional)") },
+                    supportingText = { Text("Comma-separated addon/plugin names or IDs. Blank means all enabled families.") },
+                )
+                OutlinedTextField(
+                    value = draftExcludedProviderIds,
+                    onValueChange = { draftExcludedProviderIds = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    label = { Text("Exclude providers (optional)") },
+                    supportingText = { Text("Comma-separated addon/plugin names or IDs. Exclusions take priority.") },
+                )
+                DialogButtons {
+                    DialogButton(
+                        text = stringResource(Res.string.action_cancel),
+                        onClick = { showStreamFormatScopeDialog = false },
+                        style = DialogButtonStyle.Secondary,
+                    )
+                    DialogButton(
+                        text = "Apply",
+                        onClick = {
+                            StreamBadgeSettingsRepository.setStreamFormattingScope(
+                                StreamFormattingScope(
+                                    includeNuvioAddons = draftIncludeNuvioAddons,
+                                    includeCloudstreamPlugins = draftIncludeCloudstreamPlugins,
+                                    includeOtherProviders = draftIncludeOtherProviders,
+                                    includedProviderIds = draftIncludedProviderIds.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
+                                    excludedProviderIds = draftExcludedProviderIds.split(",").map { it.trim() }.filter { it.isNotEmpty() }.toSet(),
+                                ),
+                            )
+                            showStreamFormatScopeDialog = false
+                        },
+                    )
+                }
+            }
+        }
+
+        if (showStreamFormatDialog) {
+            DialogSurface(
+                onDismissRequest = { showStreamFormatDialog = false },
+                title = "Stream formatting preset",
+                message = "Choose how stream details are presented. Original preserves provider formatting.",
+            ) {
+                val tokens = MaterialTheme.nuvio
+                val previewStream = remember(draftStreamFormatPreset) {
+                    StreamItem(
+                        name = "Example.Movie.2024.1080p.WEB-DL.HEVC.DDP5.1.HDR10.2GB",
+                        title = "Example Movie (2024)",
+                        description = "English ESubs",
+                        addonName = "Preview Add-on",
+                        addonId = "addon:format-preview",
+                    )
+                }
+                val preview = StreamFormattingEngine.format(
+                    stream = previewStream,
+                    preset = draftStreamFormatPreset,
+                    providerId = previewStream.addonId,
+                    providerFamily = StreamProviderFamily.NUVIO_ADDON,
+                    settings = StreamFormattingSettings(preset = draftStreamFormatPreset),
+                )
+                Text(
+                    text = "Preview",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = tokens.colors.textSecondary,
+                )
+                Text(
+                    text = preview.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = tokens.colors.textPrimary,
+                )
+                preview.summary?.takeIf { it.isNotBlank() }?.let { summary ->
+                    Text(
+                        text = summary,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = tokens.colors.textSecondary,
+                    )
+                }
+                StreamFormatPreset.entries.forEach { preset ->
+                    DialogOption(
+                        text = preset.name.replace('_', ' ').lowercase().replaceFirstChar { it.uppercase() },
+                        selected = draftStreamFormatPreset == preset,
+                        onClick = { draftStreamFormatPreset = preset },
+                    )
+                }
+                DialogButtons {
+                    DialogButton(
+                        text = stringResource(Res.string.action_cancel),
+                        onClick = { showStreamFormatDialog = false },
+                        style = DialogButtonStyle.Secondary,
+                    )
+                    DialogButton(
+                        text = "Apply",
+                        onClick = {
+                            StreamBadgeSettingsRepository.setStreamFormatPreset(draftStreamFormatPreset)
+                            showStreamFormatDialog = false
+                        },
+                    )
+                }
+            }
         }
     }
 }

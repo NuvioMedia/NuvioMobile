@@ -13,6 +13,10 @@ class SimklApiClientTest {
     fun `response classification retries only documented transient statuses`() {
         assertEquals(SimklResponseAction.SUCCESS, classifySimklResponse(200))
         assertEquals(SimklResponseAction.REAUTHENTICATE, classifySimklResponse(401))
+        assertFalse(shouldRefreshAfterSimklUnauthorized("user_token_required"))
+        assertFalse(shouldRefreshAfterSimklUnauthorized("invalid_client"))
+        assertTrue(shouldRefreshAfterSimklUnauthorized(null))
+        assertTrue(shouldRefreshAfterSimklUnauthorized("invalid_token"))
         assertEquals(SimklResponseAction.RETRY, classifySimklResponse(429))
         assertEquals(SimklResponseAction.RETRY, classifySimklResponse(500))
         assertEquals(SimklResponseAction.RETRY, classifySimklResponse(502))
@@ -292,6 +296,36 @@ class SimklApiClientTest {
     }
 
     @Test
+    fun `authenticated 401 refreshes once and retries with the new token`() = runBlocking {
+        val engine = RecordingEngine(
+            response(401),
+            response(200),
+        )
+        val harness = TestHarness(engine)
+        harness.refreshedToken = "refreshed-token"
+
+        harness.client.execute(SimklApiRequest(SimklHttpMethod.GET, "/private"))
+
+        assertTrue(harness.wasUnauthorized)
+        assertEquals(2, engine.requests.size)
+        assertEquals("Bearer token", engine.requests[0].headers["Authorization"])
+        assertEquals("Bearer refreshed-token", engine.requests[1].headers["Authorization"])
+    }
+
+    @Test
+    fun `user token required does not trigger refresh`() = runBlocking {
+        val engine = RecordingEngine(response(401, """{"error":"user_token_required"}"""))
+        val harness = TestHarness(engine)
+
+        assertFailsWith<SimklApiException> {
+            harness.client.execute(SimklApiRequest(SimklHttpMethod.GET, "/private"))
+        }
+
+        assertFalse(harness.wasUnauthorized)
+        assertEquals(1, engine.requests.size)
+    }
+
+    @Test
     fun `duplicate scrobble stop is a soft success`() = runBlocking {
         val engine = RecordingEngine(response(409))
         val harness = TestHarness(engine)
@@ -317,13 +351,17 @@ class SimklApiClientTest {
         var now = 0L
         val sleeps = mutableListOf<Long>()
         var wasUnauthorized = false
+        var refreshedToken: String? = null
         val client = SimklApiClient(
             engine = engine.also { recording ->
                 recording.now = { now }
                 recording.onResponse = { now += responseDurationMs }
             },
             accessToken = { "token" },
-            onUnauthorized = { wasUnauthorized = true },
+            onUnauthorized = {
+                wasUnauthorized = true
+                refreshedToken
+            },
             nowEpochMs = { now },
             sleep = { delayMs ->
                 sleeps += delayMs
