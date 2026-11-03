@@ -555,7 +555,7 @@
     <string name="settings_advanced_section_diagnostics">DIAGNÓSTICOS</string>
     <string name="settings_advanced_section_cache">CACHE</string>
     <string name="settings_advanced_remember_last_profile">Lembrar último perfil</string>
-    <string name="settings_advanced_remember_last_profile_description">Lembra o último perfil selecionado ao iniciar.</string>
+    <string name="settings_advanced_remember_last_profile_description">Lembra o último perfil selecionado ao iniciar</string>
     <string name="settings_advanced_sentry_reports">Relatórios de falhas do Sentry</string>
     <string name="settings_advanced_sentry_reports_subtitle">Envie relatórios de falhas e ANR com contexto seguro. Ativado por padrão.</string>
     <string name="sentry_enable_dialog_title">Ativar relatórios de falhas?</string>
@@ -572,7 +572,7 @@
     <string name="sentry_turn_off">Desativar</string>
     <string name="sentry_turn_on">Ativar</string>
     <string name="settings_advanced_clear_cw_cache">Limpar cache do Continuar assistindo</string>
-    <string name="settings_advanced_clear_cw_cache_subtitle">Remove os dados em cache do Continuar assistindo e atualiza o progresso de reprodução.</string>
+    <string name="settings_advanced_clear_cw_cache_subtitle">Remove os dados em cache do Continuar assistindo e atualiza o progresso de reprodução</string>
     <string name="settings_advanced_clear_cw_cache_done">Cache limpo</string>
     <string name="settings_licenses_attributions_section_app">LICENÇA DO APP</string>
     <string name="settings_licenses_attributions_section_data">DADOS &amp; SERVIÇOS</string>
