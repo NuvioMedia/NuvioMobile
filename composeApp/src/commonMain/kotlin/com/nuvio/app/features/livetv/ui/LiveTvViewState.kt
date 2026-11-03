@@ -66,6 +66,16 @@ internal object LiveTvViewState {
         user.customGroups.forEach { g -> if (g.id !in user.hiddenGroups && locked(g.id, g.name)) { lockedIds += g.id; lockedTitles[g.id] = g.name } }
         val visible = shown.filter { it.groupId !in lockedIds }
         val byKey = visible.associateBy { it.key }
+        // What your own groups can show: also channels whose playlist group is hidden (hiding a
+        // group only hides that group). Channels hidden one by one, or in a locked group, stay out.
+        val customPool = run {
+            val hiddenLocked = HashSet<String>()
+            channels.filter { it.groupId in user.hiddenGroups }.distinctBy { it.groupId }
+                .forEach { c -> if (locked(c.groupId, c.group)) hiddenLocked += c.groupId }
+            byKey + channels
+                .filter { it.groupId in user.hiddenGroups && it.key !in user.hiddenChannels && it.groupId !in hiddenLocked }
+                .associateBy { it.key }
+        }
         val favorites = user.favorites.mapNotNull { byKey[it] }
         // Adult channels never show in Recently watched.
         val recent = user.recent.mapNotNull { byKey[it] }.filterNot { ParentalControls.isAdultChannel(it) }
@@ -96,7 +106,7 @@ internal object LiveTvViewState {
         val custom = user.customGroups.filter { it.id !in user.hiddenGroups }
         custom.forEach { g ->
             if (g.id in lockedIds) { regular += LiveGroupSection(ChannelGroup(g.id, g.name, 0, locked = true), emptyList()); return@forEach }
-            val list = sorted(g.channelKeys.mapNotNull { byKey[it] })
+            val list = sorted(g.channelKeys.mapNotNull { customPool[it] })
             regular += LiveGroupSection(ChannelGroup(g.id, g.name, list.size), list)
         }
         // Locked playlist groups keep their place in the list, with nothing inside until unlocked.
