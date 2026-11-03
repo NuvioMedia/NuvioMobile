@@ -199,6 +199,18 @@ class LibraryDisplaySettingsTest {
         )
         assertEquals(listOf("watchlist"), simklProjection.availableSections.map { it.type })
         assertEquals("watchlist", simklProjection.selectedSectionKey)
+
+        val allStatusesProjection = buildLibraryVerticalProjection(
+            sections = listOf(watchlist, personal.copy(items = emptyList())),
+            sourceMode = LibrarySourceMode.TRAKT,
+            selectedSectionKey = "watchlist",
+            selectedType = null,
+            sortOption = LibrarySortOption.DEFAULT,
+            selectSection = false,
+        )
+        assertEquals(null, allStatusesProjection.selectedSectionKey)
+        assertEquals(listOf("watchlist", "personal:1"), allStatusesProjection.availableSections.map { it.type })
+        assertEquals(listOf("a", "favorite", "series", "z"), allStatusesProjection.entries.map { it.item.id })
     }
 
     @Test

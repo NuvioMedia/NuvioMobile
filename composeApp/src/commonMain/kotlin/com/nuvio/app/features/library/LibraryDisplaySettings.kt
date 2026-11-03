@@ -168,9 +168,10 @@ internal fun buildLibraryVerticalProjection(
     selectedType: String?,
     sortOption: LibrarySortOption,
     providerOrders: Map<String, Map<String, Int>> = emptyMap(),
+    selectSection: Boolean = true,
 ): LibraryVerticalProjection {
     val availableSections = if (sourceMode.isRemoteTrackingSource) sections else emptyList()
-    val selectedSection = if (sourceMode.isRemoteTrackingSource) {
+    val selectedSection = if (sourceMode.isRemoteTrackingSource && selectSection) {
         sections.firstOrNull { it.type == selectedSectionKey } ?: sections.firstOrNull()
     } else {
         null

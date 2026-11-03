@@ -18,9 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Shuffle
@@ -282,7 +280,7 @@ fun DetailActions(
             add(
                 DetailSecondaryAction(
                     label = stringResource(if (isSaved) Res.string.hero_remove_from_library else Res.string.hero_add_to_library),
-                    icon = if (isSaved) Icons.Default.Check else Icons.Default.Add,
+                    icon = Icons.Default.Bookmark,
                     isActive = isSaved,
                     onClick = onSaveClick,
                     onLongClick = onSaveLongClick,

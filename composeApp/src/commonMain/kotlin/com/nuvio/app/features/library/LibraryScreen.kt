@@ -183,14 +183,21 @@ fun LibraryScreen(
     }
     val providerOrders = rememberLibraryProviderOrders(uiState.sourceMode, orderListKeys, effectiveSortOption)
     val visibleSortOption = if (providerOrders.failed) LibrarySortOption.DEFAULT else effectiveSortOption
-    val sortedSections = remember(uiState.sections, displaySettings, uiState.sourceMode, sourceMode, providerOrders) {
+    val sortedSections = remember(uiState.sections, displaySettings, uiState.sourceMode, sourceMode, providerOrders, selectedLibraryType) {
         if (sourceMode == LibraryViewMode.Saved && displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL) {
             sortLibrarySections(
                 sections = uiState.sections,
                 selected = visibleSortOption,
                 sourceMode = uiState.sourceMode,
                 providerOrders = providerOrders.ranks,
-            )
+            ).map { section ->
+                section.copy(
+                    items = section.items.filter { item ->
+                        selectedLibraryType.isNullOrBlank() ||
+                            (item.mediaCategory ?: item.type).equals(selectedLibraryType, ignoreCase = true)
+                    },
+                )
+            }
         } else {
             emptyList()
         }
@@ -204,7 +211,7 @@ fun LibraryScreen(
         sourceMode,
         providerOrders,
     ) {
-        if (sourceMode == LibraryViewMode.Saved && displaySettings.layoutMode == LibraryLayoutMode.VERTICAL) {
+        if (sourceMode == LibraryViewMode.Saved) {
             buildLibraryVerticalProjection(
                 sections = uiState.sections,
                 sourceMode = uiState.sourceMode,
@@ -212,6 +219,7 @@ fun LibraryScreen(
                 selectedType = selectedLibraryType,
                 sortOption = visibleSortOption,
                 providerOrders = providerOrders.ranks,
+                selectSection = displaySettings.layoutMode == LibraryLayoutMode.VERTICAL,
             )
         } else {
             LibraryVerticalProjection(
@@ -281,11 +289,11 @@ fun LibraryScreen(
         sourceMode == LibraryViewMode.Saved &&
         displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL &&
         uiState.isLoaded &&
-        sortedSections.isNotEmpty()
+        sortedSections.any { it.items.isNotEmpty() }
     ) {
         disintegration.sync(
             sourceMode = uiState.sourceMode,
-            sections = sortedSections,
+            sections = sortedSections.filter { it.items.isNotEmpty() },
             previewLimit = LIBRARY_SECTION_PREVIEW_LIMIT,
             request = disintegrationRequest,
         )
@@ -372,14 +380,41 @@ fun LibraryScreen(
                                 }
                             },
                         )
-                        LibrarySourceSwitch(
-                            selectedMode = sourceMode,
-                            showServers = hasServers,
-                            onModeSelected = { mode ->
-                                sourceModeName = mode.name
-                            },
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                        )
+                        if (sourceMode == LibraryViewMode.Saved) {
+                            LibraryTopControls(
+                                selectedMode = sourceMode,
+                                showServers = hasServers,
+                                onModeSelected = { mode -> sourceModeName = mode.name },
+                                sourceMode = uiState.sourceMode,
+                                sortOption = effectiveSortOption,
+                                projection = verticalProjection,
+                                onTypeSelected = { type -> selectedLibraryType = type },
+                                onSortSelected = LibraryDisplaySettingsRepository::setSortOption,
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        } else {
+                            LibrarySourceSwitch(
+                                selectedMode = sourceMode,
+                                showServers = hasServers,
+                                onModeSelected = { mode -> sourceModeName = mode.name },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        }
+                        if (
+                            sourceMode == LibraryViewMode.Saved &&
+                            displaySettings.layoutMode == LibraryLayoutMode.VERTICAL &&
+                            verticalProjection.availableSections.isNotEmpty()
+                        ) {
+                            LibraryStatusTabs(
+                                sections = verticalProjection.availableSections,
+                                selectedSectionKey = verticalProjection.selectedSectionKey,
+                                onSectionSelected = { sectionKey ->
+                                    selectedLibrarySectionKey = sectionKey
+                                    selectedLibraryType = null
+                                },
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                            )
+                        }
                         Spacer(modifier = Modifier.height(6.dp))
                     }
                 }
@@ -493,24 +528,17 @@ fun LibraryScreen(
                     }
 
                     else -> {
-                        item(
-                            key = "library-saved-controls:${uiState.sourceMode}:" +
-                                "${displaySettings.layoutMode}:$effectiveSortOption",
+                        if (
+                            (displaySettings.layoutMode == LibraryLayoutMode.VERTICAL && verticalProjection.entries.isEmpty()) ||
+                            (displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL && librarySectionsDisplay.isEmpty())
                         ) {
-                            LibrarySavedControls(
-                                layoutMode = displaySettings.layoutMode,
-                                sourceMode = uiState.sourceMode,
-                                sortOption = effectiveSortOption,
-                                verticalProjection = verticalProjection,
-                                onSectionSelected = { sectionKey ->
-                                    selectedLibrarySectionKey = sectionKey
-                                    selectedLibraryType = null
-                                },
-                                onTypeSelected = { type -> selectedLibraryType = type },
-                                onSortSelected = LibraryDisplaySettingsRepository::setSortOption,
-                                modifier = libraryContentTransitionModifier()
-                                    .padding(horizontal = 16.dp),
-                            )
+                            item(key = "library-empty-filtered:${uiState.sourceMode}:${displaySettings.layoutMode}") {
+                                HomeEmptyStateCard(
+                                    modifier = Modifier.padding(horizontal = 16.dp),
+                                    title = stringResource(Res.string.library_empty_title),
+                                    message = stringResource(Res.string.library_empty_message),
+                                )
+                            }
                         }
                         when (displaySettings.layoutMode) {
                             LibraryLayoutMode.HORIZONTAL -> librarySections(
@@ -1228,7 +1256,7 @@ private fun CloudLibrarySkeletonRow(
     }
 }
 
-private enum class LibraryViewMode {
+internal enum class LibraryViewMode {
     Saved,
     Cloud,
     Servers,

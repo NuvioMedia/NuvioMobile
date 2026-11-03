@@ -612,10 +612,25 @@ object LibraryRepository {
         val sourceMode = effectiveLibrarySourceMode()
         activeLibraryProvider(sourceMode)?.let { provider ->
             val providerSnapshot = provider.snapshot()
+            val sectionsByKey = providerSnapshot.sections.associateBy(LibrarySection::type)
+            // Keep provider-supported destinations visible even when a list is empty. The
+            // vertical selector should describe provider capabilities, not only populated lists.
+            val providerSections = providerSnapshot.tabs
+                .filter { tab -> tab.isMembershipDestination || tab.kind == TrackingLibraryTabKind.STATUS }
+                .map { tab ->
+                    sectionsByKey[tab.key] ?: LibrarySection(
+                        type = tab.key,
+                        displayTitle = tab.title,
+                        items = emptyList(),
+                    )
+                }
+            val unlistedSections = providerSnapshot.sections.filter { section ->
+                providerSnapshot.tabs.none { tab -> tab.key == section.type }
+            }
             val newUiState = LibraryUiState(
                 sourceMode = sourceMode,
                 items = providerSnapshot.items,
-                sections = providerSnapshot.sections,
+                sections = providerSections + unlistedSections,
                 isLoaded = providerSnapshot.hasLoaded,
                 isLoading = providerSnapshot.isLoading,
                 errorMessage = providerSnapshot.errorMessage,

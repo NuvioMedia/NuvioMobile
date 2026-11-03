@@ -4,7 +4,9 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
@@ -36,69 +38,95 @@ import nuvio.composeapp.generated.resources.library_sort_released_desc
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-internal fun LibrarySavedControls(
-    layoutMode: LibraryLayoutMode,
+internal fun LibraryTopControls(
+    selectedMode: LibraryViewMode,
+    showServers: Boolean,
+    onModeSelected: (LibraryViewMode) -> Unit,
     sourceMode: LibrarySourceMode,
     sortOption: LibrarySortOption,
-    verticalProjection: LibraryVerticalProjection,
-    onSectionSelected: (String) -> Unit,
+    projection: LibraryVerticalProjection,
     onTypeSelected: (String?) -> Unit,
     onSortSelected: (LibrarySortOption) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val sortOptions = availableLibrarySortOptions(sourceMode)
     val allTypesLabel = stringResource(Res.string.library_filter_all_types)
+    val typeOptions = buildList {
+        add(NuvioDropdownOption(key = "", label = allTypesLabel))
+        addAll(projection.availableTypes.map { type ->
+            NuvioDropdownOption(key = type, label = localizedMediaTypeLabel(type))
+        })
+    }
+    val sortOptions = availableLibrarySortOptions(sourceMode).map { option ->
+        NuvioDropdownOption(key = option.name, label = librarySortOptionLabel(option))
+    }
 
     Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        if (layoutMode == LibraryLayoutMode.VERTICAL && sourceMode.isRemoteTrackingSource) {
-            verticalProjection.availableSections.forEach { section ->
-                Chip(
-                    label = localizedLibrarySectionTitle(section.type, section.displayTitle),
-                    selected = section.type == verticalProjection.selectedSectionKey,
-                    enabled = verticalProjection.availableSections.size > 1,
-                    onClick = { onSectionSelected(section.type) },
-                )
-            }
-        }
-
-        if (layoutMode == LibraryLayoutMode.VERTICAL) {
-            val typeOptions = buildList {
-                add(NuvioDropdownOption(key = "", label = allTypesLabel))
-                addAll(
-                    verticalProjection.availableTypes.map { type ->
-                        NuvioDropdownOption(key = type, label = localizedMediaTypeLabel(type))
-                    },
-                )
-            }
-            NuvioDropdownChip(
-                title = stringResource(Res.string.library_filter_type),
-                label = verticalProjection.selectedType
-                    ?.let(::localizedMediaTypeLabel)
-                    ?: allTypesLabel,
-                selectedKey = verticalProjection.selectedType.orEmpty(),
-                options = typeOptions,
-                enabled = typeOptions.size > 1,
-                onSelected = { option -> onTypeSelected(option.key.ifBlank { null }) },
-            )
-        }
-
+        Chip(
+            label = stringResource(Res.string.library_source_saved),
+            selected = selectedMode == LibraryViewMode.Saved,
+            onClick = { onModeSelected(LibraryViewMode.Saved) },
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        )
+        Chip(
+            label = stringResource(Res.string.library_source_cloud),
+            selected = selectedMode == LibraryViewMode.Cloud,
+            onClick = { onModeSelected(LibraryViewMode.Cloud) },
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        )
+        NuvioDropdownChip(
+            title = stringResource(Res.string.library_filter_type),
+            label = projection.selectedType?.let(::localizedMediaTypeLabel) ?: allTypesLabel,
+            selectedKey = projection.selectedType.orEmpty(),
+            options = typeOptions,
+            enabled = typeOptions.size > 1,
+            onSelected = { option -> onTypeSelected(option.key.ifBlank { null }) },
+            modifier = Modifier.weight(1f).fillMaxWidth(),
+        )
         NuvioDropdownChip(
             title = stringResource(Res.string.library_filter_sort),
             label = librarySortOptionLabel(sortOption),
             selectedKey = sortOption.name,
-            options = sortOptions.map { option ->
-                NuvioDropdownOption(key = option.name, label = librarySortOptionLabel(option))
-            },
+            options = sortOptions,
             enabled = sortOptions.size > 1,
             onSelected = { option ->
-                LibrarySortOption.entries
-                    .firstOrNull { it.name == option.key }
-                    ?.let(onSortSelected)
+                LibrarySortOption.entries.firstOrNull { it.name == option.key }?.let(onSortSelected)
             },
+            modifier = Modifier.weight(1f).fillMaxWidth(),
         )
+    }
+
+    if (showServers) {
+        Chip(
+            label = stringResource(Res.string.library_source_servers),
+            selected = selectedMode == LibraryViewMode.Servers,
+            onClick = { onModeSelected(LibraryViewMode.Servers) },
+            modifier = Modifier.padding(top = 6.dp),
+        )
+    }
+}
+
+@Composable
+internal fun LibraryStatusTabs(
+    sections: List<LibrarySection>,
+    selectedSectionKey: String?,
+    onSectionSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        sections.forEach { section ->
+            Chip(
+                label = localizedLibrarySectionTitle(section.type, section.displayTitle),
+                selected = section.type == selectedSectionKey,
+                onClick = { onSectionSelected(section.type) },
+                enabled = sections.size > 1,
+            )
+        }
     }
 }
 
