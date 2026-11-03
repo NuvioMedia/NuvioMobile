@@ -64,6 +64,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationPlatform
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -1159,9 +1160,17 @@ private fun ConfirmDialog(title: String, message: String, confirm: String, destr
 
 @Composable
 private fun <T> ChoiceDialog(title: String, options: List<Pair<T, String>>, selected: T, onDismiss: () -> Unit, onPick: (T) -> Unit) {
+    // Long lists (catch-up time shift has 49 choices) scroll, and open at the current choice.
+    val listState = rememberLazyListState(
+        initialFirstVisibleItemIndex = (options.indexOfFirst { it.first == selected } - 2).coerceAtLeast(0),
+    )
     DialogSurface(onDismissRequest = onDismiss, title = title) {
-        Column(verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
-            options.forEach { (v, label) -> DialogOption(text = label, selected = v == selected, onClick = { onPick(v); onDismiss() }) }
+        LazyColumn(
+            state = listState,
+            verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
+            modifier = Modifier.weight(1f, fill = false).heightIn(max = 420.dp),
+        ) {
+            items(options) { (v, label) -> DialogOption(text = label, selected = v == selected, onClick = { onPick(v); onDismiss() }) }
         }
         DialogButtons { DialogButton(text = stringResource(Res.string.action_cancel), onClick = onDismiss) }
     }
