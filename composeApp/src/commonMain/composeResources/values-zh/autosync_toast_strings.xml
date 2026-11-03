@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_failed">同步失败：自动同步无法将该字幕与视频匹配。</string>
+    <string name="autosync_toast_failed_no_reference">同步失败：没有可用于比对的内嵌字幕。</string>
+    <string name="autosync_toast_failed_unsupported">同步失败：不支持该字幕格式。</string>
+    <string name="autosync_label_synced">已自动同步</string>
+</resources>
