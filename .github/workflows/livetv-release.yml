@@ -133,3 +133,18 @@ jobs:
             gh release create downloader -R "$GITHUB_REPOSITORY" --title "$APP_NAME (always the newest version)" \
               --notes "Replaced with the newest build every release." --latest=false --prerelease
           gh release upload downloader "dl/$APP_NAME.apk" -R "$GITHUB_REPOSITORY" --clobber
+
+      # Brings the README from dev onto main, so the front page shows the newest one. Only the README
+      # changes on main; the app that was just released is untouched.
+      - name: Update the README on main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch --no-tags origin dev main
+          # A separate folder, so files changed by the build above are never touched.
+          git worktree add --detach "$RUNNER_TEMP/readme" origin/main
+          cd "$RUNNER_TEMP/readme"
+          git checkout origin/dev -- README.md
+          if git diff --cached --quiet; then echo "README on main is already the newest."; exit 0; fi
+          git -c user.name=homelessbrian -c user.email=briansmithhb@gmail.com commit -m "README: newest from dev"
+          git push origin HEAD:main
