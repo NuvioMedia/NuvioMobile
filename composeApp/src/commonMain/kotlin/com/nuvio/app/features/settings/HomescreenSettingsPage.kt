@@ -46,6 +46,10 @@ import nuvio.composeapp.generated.resources.action_retry
 import nuvio.composeapp.generated.resources.action_reset
 import nuvio.composeapp.generated.resources.layout_hide_unreleased
 import nuvio.composeapp.generated.resources.layout_hide_unreleased_sub
+import nuvio.composeapp.generated.resources.layout_hide_watched
+import nuvio.composeapp.generated.resources.layout_hide_watched_sub
+import nuvio.composeapp.generated.resources.layout_hide_dismissed
+import nuvio.composeapp.generated.resources.layout_hide_dismissed_sub
 import nuvio.composeapp.generated.resources.layout_catalog_type
 import nuvio.composeapp.generated.resources.layout_catalog_type_sub
 import nuvio.composeapp.generated.resources.settings_homescreen_empty_message
@@ -75,6 +79,8 @@ internal fun LazyListScope.homescreenSettingsContent(
     heroEnabled: Boolean,
     showCatalogType: Boolean,
     hideUnreleasedContent: Boolean,
+    hideWatchedContent: Boolean = false,
+    hideDismissedContent: Boolean = true,
     items: List<HomeCatalogSettingsItem>,
     isCatalogLoading: Boolean,
     catalogErrorMessage: String?,
@@ -117,6 +123,22 @@ internal fun LazyListScope.homescreenSettingsContent(
                     checked = hideUnreleasedContent,
                     isTablet = isTablet,
                     onCheckedChange = HomeCatalogSettingsRepository::setHideUnreleasedContent,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.layout_hide_watched),
+                    description = stringResource(Res.string.layout_hide_watched_sub),
+                    checked = hideWatchedContent,
+                    isTablet = isTablet,
+                    onCheckedChange = HomeCatalogSettingsRepository::setHideWatchedContent,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.layout_hide_dismissed),
+                    description = stringResource(Res.string.layout_hide_dismissed_sub),
+                    checked = hideDismissedContent,
+                    isTablet = isTablet,
+                    onCheckedChange = HomeCatalogSettingsRepository::setHideDismissedContent,
                 )
             }
         }

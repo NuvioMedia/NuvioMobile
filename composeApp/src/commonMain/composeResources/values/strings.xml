@@ -728,6 +728,17 @@
     <string name="settings_homescreen_show_hero_description">Display hero carousel at top of home.</string>
     <string name="layout_hide_unreleased">Hide Unreleased Content</string>
     <string name="layout_hide_unreleased_sub">Hide movies and shows that haven't been released yet.</string>
+    <string name="layout_hide_watched">Hide Watched Content</string>
+    <string name="layout_hide_watched_sub">Hide watched movies and completed series from catalogs and search.</string>
+    <string name="layout_hide_dismissed">Hide Dismissed Content</string>
+    <string name="layout_hide_dismissed_sub">Hide movies and series manually marked as dismissed.</string>
+    <string name="action_dismiss_content">Dismiss content</string>
+    <string name="action_undismiss_content">Restore from dismissed</string>
+    <string name="dismissed_content_toast">Content dismissed</string>
+    <string name="undismissed_content_toast">Content restored</string>
+    <string name="settings_dismissed_items_title">Dismissed Content</string>
+    <string name="settings_dismissed_items_empty">No dismissed items</string>
+    <string name="action_restore_all">Restore all</string>
     <string name="layout_catalog_type">Show Catalog Type</string>
     <string name="layout_catalog_type_sub">Show type suffix next to catalog name (Movie/Series).</string>
     <string name="settings_homescreen_summary">%1$d of %2$d catalogs visible • %3$d hero sources selected</string>

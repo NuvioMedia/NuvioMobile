@@ -150,12 +150,23 @@ fun SearchScreen(
     }
     val addonManifestsLoading = addonsUiState.addons.hasPendingEnabledManifests()
 
-    ScreenActivityEffect(addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) { screenActive ->
+    ScreenActivityEffect(
+        addonRefreshKey,
+        homeCatalogSettingsUiState.hideUnreleasedContent,
+        homeCatalogSettingsUiState.hideWatchedContent,
+        homeCatalogSettingsUiState.hideDismissedContent,
+    ) { screenActive ->
         if (!screenActive) return@ScreenActivityEffect
         SearchRepository.refreshDiscover(addonsUiState.addons)
     }
 
-    ScreenActivityEffect(query, addonRefreshKey, homeCatalogSettingsUiState.hideUnreleasedContent) { screenActive ->
+    ScreenActivityEffect(
+        query,
+        addonRefreshKey,
+        homeCatalogSettingsUiState.hideUnreleasedContent,
+        homeCatalogSettingsUiState.hideWatchedContent,
+        homeCatalogSettingsUiState.hideDismissedContent,
+    ) { screenActive ->
         if (!screenActive) return@ScreenActivityEffect
         val normalizedQuery = query.trim()
         if (normalizedQuery.isBlank()) {

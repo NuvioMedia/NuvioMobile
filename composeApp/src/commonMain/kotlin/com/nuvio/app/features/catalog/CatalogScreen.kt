@@ -94,6 +94,8 @@ fun CatalogScreen(
     val initialScrollPosition = remember(
         target,
         homeCatalogSettingsUiState.hideUnreleasedContent,
+        homeCatalogSettingsUiState.hideWatchedContent,
+        homeCatalogSettingsUiState.hideDismissedContent,
     ) {
         CatalogRepository.scrollPosition(
             target = target,
@@ -106,13 +108,24 @@ fun CatalogScreen(
     var headerHeightPx by remember { mutableIntStateOf(0) }
     var observedOfflineState by remember { mutableStateOf(false) }
 
-    LaunchedEffect(target, homeCatalogSettingsUiState.hideUnreleasedContent) {
+    LaunchedEffect(
+        target,
+        homeCatalogSettingsUiState.hideUnreleasedContent,
+        homeCatalogSettingsUiState.hideWatchedContent,
+        homeCatalogSettingsUiState.hideDismissedContent,
+    ) {
         CatalogRepository.load(
             target = target,
         )
     }
 
-    LaunchedEffect(gridState, target, homeCatalogSettingsUiState.hideUnreleasedContent) {
+    LaunchedEffect(
+        gridState,
+        target,
+        homeCatalogSettingsUiState.hideUnreleasedContent,
+        homeCatalogSettingsUiState.hideWatchedContent,
+        homeCatalogSettingsUiState.hideDismissedContent,
+    ) {
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
             .distinctUntilChanged()
             .collect { (index, offset) ->

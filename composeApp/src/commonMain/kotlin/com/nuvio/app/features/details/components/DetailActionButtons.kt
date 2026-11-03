@@ -24,6 +24,10 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Shuffle
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import nuvio.composeapp.generated.resources.action_dismiss_content
+import nuvio.composeapp.generated.resources.action_undismiss_content
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -256,6 +260,8 @@ fun DetailActions(
     onWatchedClick: () -> Unit,
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
+    isDismissed: Boolean = false,
+    onDismissClick: (() -> Unit)? = null,
 ) {
     val shuffleAction = onShuffleClick?.let { onClick ->
         DetailSecondaryAction(
@@ -288,6 +294,16 @@ fun DetailActions(
                     onLongClick = onSaveLongClick,
                 ),
             )
+            onDismissClick?.let { onDismiss ->
+                add(
+                    DetailSecondaryAction(
+                        label = stringResource(if (isDismissed) Res.string.action_undismiss_content else Res.string.action_dismiss_content),
+                        icon = if (isDismissed) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        isActive = isDismissed,
+                        onClick = onDismiss,
+                    ),
+                )
+            }
         },
         isTablet = isTablet,
         onPlayClick = onPlayClick,

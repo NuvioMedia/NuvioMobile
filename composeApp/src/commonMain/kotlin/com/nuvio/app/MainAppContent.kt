@@ -21,6 +21,13 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import com.nuvio.app.features.dismissed.DismissedRepository
+import nuvio.composeapp.generated.resources.action_dismiss_content
+import nuvio.composeapp.generated.resources.action_undismiss_content
+import nuvio.composeapp.generated.resources.dismissed_content_toast
+import nuvio.composeapp.generated.resources.undismissed_content_toast
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -1725,6 +1732,7 @@ internal fun MainAppContent(
                         item = preview,
                         fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
                     )
+                    val isDismissed = DismissedRepository.isDismissed(preview.type, preview.id)
                     val removesFromLibrary = isSaved &&
                         (posterActionTarget.libraryItem != null || !isRemoteLibrarySource)
                     NuvioPosterZoomActionOverlay(
@@ -1866,6 +1874,25 @@ internal fun MainAppContent(
                                 onSelected = {
                                     coroutineScope.launch {
                                         WatchingActions.togglePosterWatched(preview)
+                                    }
+                                },
+                            ),
+                            PosterZoomOverlayAction(
+                                icon = if (isDismissed) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                label = if (isDismissed) {
+                                    stringResource(Res.string.action_undismiss_content)
+                                } else {
+                                    stringResource(Res.string.action_dismiss_content)
+                                },
+                                onSelected = {
+                                    coroutineScope.launch {
+                                        if (isDismissed) {
+                                            DismissedRepository.undismiss(preview.type, preview.id)
+                                            NuvioToastController.show(getString(Res.string.undismissed_content_toast))
+                                        } else {
+                                            DismissedRepository.dismiss(preview)
+                                            NuvioToastController.show(getString(Res.string.dismissed_content_toast))
+                                        }
                                     }
                                 },
                             ),

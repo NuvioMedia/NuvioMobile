@@ -7,6 +7,10 @@ import com.nuvio.app.features.collection.TmdbCollectionSourceResolver
 import com.nuvio.app.features.collection.catalogRouteKey
 import com.nuvio.app.features.library.LibraryRepository
 import com.nuvio.app.features.servers.ServerCatalog
+import com.nuvio.app.features.dismissed.DismissedRepository
+import com.nuvio.app.features.dismissed.dismissedItemKeys
+import com.nuvio.app.features.watched.WatchedRepository
+import com.nuvio.app.features.watching.application.WatchingState
 import com.nuvio.app.features.servers.serverMessage
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.filterReleasedItems
@@ -160,6 +164,17 @@ object CatalogRepository {
 
                     is CatalogTarget.Library -> error(getString(Res.string.catalog_load_failed))
                 }.withUnreleasedFilter(request.hideUnreleasedContent)
+                .also {
+                    WatchedRepository.ensureLoaded()
+                    DismissedRepository.ensureLoaded()
+                }
+                .withWatchedAndDismissedFilter(
+                    hideWatchedContent = request.hideWatchedContent,
+                    hideDismissedContent = request.hideDismissedContent,
+                    watchedKeys = WatchedRepository.uiState.value.watchedKeys,
+                    fullyWatchedSeriesKeys = WatchedRepository.fullyWatchedSeriesKeys.value,
+                    dismissedKeys = DismissedRepository.uiState.value.dismissedKeys,
+                )
             }.fold(
                 onSuccess = { page ->
                     if (activeRequest != request) return@fold
@@ -211,12 +226,29 @@ object CatalogRepository {
         CatalogRequest(
             target = target,
             hideUnreleasedContent = HomeCatalogSettingsRepository.snapshot().hideUnreleasedContent,
+            hideWatchedContent = HomeCatalogSettingsRepository.snapshot().hideWatchedContent,
+            hideDismissedContent = HomeCatalogSettingsRepository.snapshot().hideDismissedContent,
         )
 }
 
 private fun CatalogPage.withUnreleasedFilter(hideUnreleasedContent: Boolean): CatalogPage {
     if (!hideUnreleasedContent) return this
     val filteredItems = items.filterReleasedItems(CurrentDateProvider.todayIsoDate())
+    return if (filteredItems.size == items.size) this else copy(items = filteredItems)
+}
+
+private fun CatalogPage.withWatchedAndDismissedFilter(
+    hideWatchedContent: Boolean,
+    hideDismissedContent: Boolean,
+    watchedKeys: Set<String>,
+    fullyWatchedSeriesKeys: Set<String>,
+    dismissedKeys: Set<String>,
+): CatalogPage {
+    if (!hideWatchedContent && !hideDismissedContent) return this
+    val filteredItems = items.filterNot { item ->
+        (hideWatchedContent && WatchingState.isPosterWatched(watchedKeys, item, fullyWatchedSeriesKeys)) ||
+        (hideDismissedContent && dismissedItemKeys(item.type, item.id).any(dismissedKeys::contains))
+    }
     return if (filteredItems.size == items.size) this else copy(items = filteredItems)
 }
 
@@ -242,4 +274,6 @@ private suspend fun fetchCollectionSourcePage(
 private data class CatalogRequest(
     val target: CatalogTarget,
     val hideUnreleasedContent: Boolean,
+    val hideWatchedContent: Boolean = false,
+    val hideDismissedContent: Boolean = true,
 )

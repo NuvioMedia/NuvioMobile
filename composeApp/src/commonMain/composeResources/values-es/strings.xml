@@ -728,6 +728,17 @@
     <string name="settings_homescreen_show_hero_description">Mostrar un carrusel destacado en la parte superior del inicio. Elige hasta 2 catálogos de origen abajo.</string>
     <string name="layout_hide_unreleased">Ocultar contenido inédito</string>
     <string name="layout_hide_unreleased_sub">Oculta películas y programas que aún no se han estrenado.</string>
+    <string name="layout_hide_watched">Ocultar contenido visto</string>
+    <string name="layout_hide_watched_sub">Oculta películas y series completadas en catálogos y búsquedas.</string>
+    <string name="layout_hide_dismissed">Ocultar contenido descartado</string>
+    <string name="layout_hide_dismissed_sub">Oculta películas y series marcadas manualmente como descartadas.</string>
+    <string name="action_dismiss_content">Descartar contenido</string>
+    <string name="action_undismiss_content">Quitar de descartados</string>
+    <string name="dismissed_content_toast">Contenido descartado</string>
+    <string name="undismissed_content_toast">Contenido restaurado</string>
+    <string name="settings_dismissed_items_title">Contenidos descartados</string>
+    <string name="settings_dismissed_items_empty">No hay contenidos descartados</string>
+    <string name="action_restore_all">Restaurar todo</string>
     <string name="layout_catalog_type">Mostrar tipo de catálogo</string>
     <string name="layout_catalog_type_sub">Mostrar el sufijo de tipo junto al nombre del catálogo (Película/Serie).</string>
     <string name="settings_homescreen_summary">%1$d de %2$d catálogos visibles • %3$d fuentes de Destacado seleccionadas</string>

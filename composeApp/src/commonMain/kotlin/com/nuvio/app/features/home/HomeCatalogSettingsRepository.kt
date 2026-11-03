@@ -38,6 +38,8 @@ data class HomeCatalogSettingsUiState(
     val heroEnabled: Boolean = true,
     val showCatalogType: Boolean = true,
     val hideUnreleasedContent: Boolean = false,
+    val hideWatchedContent: Boolean = false,
+    val hideDismissedContent: Boolean = true,
     val items: List<HomeCatalogSettingsItem> = emptyList(),
 ) {
     val signature: String
@@ -47,6 +49,10 @@ data class HomeCatalogSettingsUiState(
             append(showCatalogType)
             append('|')
             append(hideUnreleasedContent)
+            append('|')
+            append(hideWatchedContent)
+            append('|')
+            append(hideDismissedContent)
             append('|')
             append(
                 items.joinToString(separator = "|") { item ->
@@ -67,6 +73,8 @@ internal data class HomeCatalogSettingsSnapshot(
     val heroEnabled: Boolean,
     val showCatalogType: Boolean,
     val hideUnreleasedContent: Boolean,
+    val hideWatchedContent: Boolean,
+    val hideDismissedContent: Boolean,
     val preferences: Map<String, HomeCatalogPreference>,
 )
 
@@ -84,6 +92,8 @@ private data class StoredHomeCatalogSettingsPayload(
     val heroEnabled: Boolean = true,
     val showCatalogType: Boolean = true,
     val hideUnreleasedContent: Boolean = false,
+    val hideWatchedContent: Boolean = false,
+    val hideDismissedContent: Boolean = true,
     val items: List<StoredHomeCatalogPreference> = emptyList(),
 )
 
@@ -112,6 +122,8 @@ object HomeCatalogSettingsRepository {
     private var heroEnabled = true
     private var showCatalogType = true
     private var hideUnreleasedContent = false
+    private var hideWatchedContent = false
+    private var hideDismissedContent = true
 
     fun onProfileChanged() {
         hasLoaded = false
@@ -119,6 +131,8 @@ object HomeCatalogSettingsRepository {
         heroEnabled = true
         showCatalogType = true
         hideUnreleasedContent = false
+        hideWatchedContent = false
+        hideDismissedContent = true
         definitions = emptyList()
         collectionDefinitions = emptyList()
         lastCatalogSync = null
@@ -136,6 +150,8 @@ object HomeCatalogSettingsRepository {
         heroEnabled = true
         showCatalogType = true
         hideUnreleasedContent = false
+        hideWatchedContent = false
+        hideDismissedContent = true
         _uiState.value = HomeCatalogSettingsUiState()
     }
 
@@ -182,6 +198,8 @@ object HomeCatalogSettingsRepository {
             heroEnabled = heroEnabled,
             showCatalogType = showCatalogType,
             hideUnreleasedContent = hideUnreleasedContent,
+            hideWatchedContent = hideWatchedContent,
+            hideDismissedContent = hideDismissedContent,
             preferences = preferences.mapValues { (_, value) ->
                 HomeCatalogPreference(
                     customTitle = value.customTitle,
@@ -205,6 +223,26 @@ object HomeCatalogSettingsRepository {
         ensureLoaded()
         if (showCatalogType == enabled) return
         showCatalogType = enabled
+        publish()
+        persist()
+        HomeRepository.applyCurrentSettings()
+        HomeCatalogSettingsSyncService.triggerPush()
+    }
+
+    fun setHideWatchedContent(enabled: Boolean) {
+        ensureLoaded()
+        if (hideWatchedContent == enabled) return
+        hideWatchedContent = enabled
+        publish()
+        persist()
+        HomeRepository.applyCurrentSettings()
+        HomeCatalogSettingsSyncService.triggerPush()
+    }
+
+    fun setHideDismissedContent(enabled: Boolean) {
+        ensureLoaded()
+        if (hideDismissedContent == enabled) return
+        hideDismissedContent = enabled
         publish()
         persist()
         HomeRepository.applyCurrentSettings()
@@ -250,6 +288,8 @@ object HomeCatalogSettingsRepository {
         heroEnabled = true
         showCatalogType = true
         hideUnreleasedContent = false
+        hideWatchedContent = false
+        hideDismissedContent = true
         preferences = emptyMap()
         normalizePreferences()
         publish()
@@ -301,6 +341,8 @@ object HomeCatalogSettingsRepository {
             heroEnabled = parsedPayload.heroEnabled
             showCatalogType = parsedPayload.showCatalogType
             hideUnreleasedContent = parsedPayload.hideUnreleasedContent
+            hideWatchedContent = parsedPayload.hideWatchedContent
+            hideDismissedContent = parsedPayload.hideDismissedContent
             preferences = parsedPayload.items.associateBy { it.key }
             publish()
             return
@@ -401,6 +443,8 @@ object HomeCatalogSettingsRepository {
             heroEnabled = heroEnabled,
             showCatalogType = showCatalogType,
             hideUnreleasedContent = hideUnreleasedContent,
+            hideWatchedContent = hideWatchedContent,
+            hideDismissedContent = hideDismissedContent,
             items = items,
         )
     }
@@ -412,6 +456,8 @@ object HomeCatalogSettingsRepository {
                     heroEnabled = heroEnabled,
                     showCatalogType = showCatalogType,
                     hideUnreleasedContent = hideUnreleasedContent,
+            hideWatchedContent = hideWatchedContent,
+            hideDismissedContent = hideDismissedContent,
                     items = preferences.values.sortedBy { it.order },
                 ),
             ),
@@ -510,6 +556,8 @@ object HomeCatalogSettingsRepository {
         return SyncHomeCatalogPayload(
             showCatalogType = showCatalogType,
             hideUnreleasedContent = hideUnreleasedContent,
+            hideWatchedContent = hideWatchedContent,
+            hideDismissedContent = hideDismissedContent,
             items = items,
         )
     }
@@ -518,6 +566,8 @@ object HomeCatalogSettingsRepository {
         ensureLoaded()
         showCatalogType = payload.showCatalogType
         hideUnreleasedContent = payload.hideUnreleasedContent
+        hideWatchedContent = payload.hideWatchedContent
+        hideDismissedContent = payload.hideDismissedContent
         if (payload.items.isNotEmpty()) {
             val existingHeroState = preferences.mapValues { it.value.heroSourceEnabled }
             val remotePreferences = payload.items.associate { item ->

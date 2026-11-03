@@ -26,6 +26,10 @@ import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.home.filterReleasedItems
 import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
+import com.nuvio.app.features.dismissed.DismissedRepository
+import com.nuvio.app.features.dismissed.dismissedItemKeys
+import com.nuvio.app.features.watched.WatchedRepository
+import com.nuvio.app.features.watching.application.WatchingState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +62,8 @@ internal fun resolveDiscoverCatalog(
 private data class DiscoverRequestKey(
     val sources: List<DiscoverCatalogOption>,
     val hideUnreleasedContent: Boolean,
+    val hideWatchedContent: Boolean = false,
+    val hideDismissedContent: Boolean = true,
     val hasPendingAddonManifests: Boolean,
 )
 
@@ -123,7 +129,12 @@ object SearchRepository {
         val requestKey = buildString {
             append(normalizedQuery.lowercase())
             append('|')
-            append(HomeCatalogSettingsRepository.snapshot().hideUnreleasedContent)
+            val snapshot = HomeCatalogSettingsRepository.snapshot()
+            append(snapshot.hideUnreleasedContent)
+            append('|')
+            append(snapshot.hideWatchedContent)
+            append('|')
+            append(snapshot.hideDismissedContent)
             append('|')
             append(hasPendingAddonManifests)
             append('|')
@@ -276,10 +287,13 @@ object SearchRepository {
             )
         }
         val current = _discoverUiState.value
-        val hideUnreleasedContent = HomeCatalogSettingsRepository.snapshot().hideUnreleasedContent
+        val snapshot = HomeCatalogSettingsRepository.snapshot()
+        val hideUnreleasedContent = snapshot.hideUnreleasedContent
         val requestKey = DiscoverRequestKey(
             sources = sources,
             hideUnreleasedContent = hideUnreleasedContent,
+            hideWatchedContent = snapshot.hideWatchedContent,
+            hideDismissedContent = snapshot.hideDismissedContent,
             hasPendingAddonManifests = hasPendingAddonManifests,
         )
         if (canReuseRequestState(forceRefresh, requestKey, lastDiscoverRequestKey)) {
@@ -482,7 +496,7 @@ object SearchRepository {
             catalogId = catalogId,
             search = query,
             forceRefresh = forceRefresh,
-        ).withUnreleasedFilter()
+        ).withUnreleasedFilter().withWatchedAndDismissedFilter()
         val posterPattern = com.nuvio.app.core.poster.CustomPosterUrlRepository.let {
             it.ensureLoaded()
             it.patternForScreen(com.nuvio.app.core.poster.CustomPosterScreen.SEARCH)
@@ -559,7 +573,7 @@ object SearchRepository {
                         skip = requestedSkip.takeIf { it > 0 },
                         forceRefresh = forceRefresh,
                     )
-                }.withUnreleasedFilter()
+                }.withUnreleasedFilter().withWatchedAndDismissedFilter()
             }.fold(
                 onSuccess = { page ->
                     val latest = _discoverUiState.value
@@ -644,6 +658,21 @@ private fun Array<IndexedSearchResult?>.orderedSections(): List<HomeCatalogSecti
 private fun CatalogPage.withUnreleasedFilter(): CatalogPage {
     if (!HomeCatalogSettingsRepository.snapshot().hideUnreleasedContent) return this
     val filteredItems = items.filterReleasedItems(CurrentDateProvider.todayIsoDate())
+    return if (filteredItems.size == items.size) this else copy(items = filteredItems)
+}
+
+private fun CatalogPage.withWatchedAndDismissedFilter(): CatalogPage {
+    val snapshot = HomeCatalogSettingsRepository.snapshot()
+    if (!snapshot.hideWatchedContent && !snapshot.hideDismissedContent) return this
+    WatchedRepository.ensureLoaded()
+    DismissedRepository.ensureLoaded()
+    val watchedKeys = WatchedRepository.uiState.value.watchedKeys
+    val fullyWatched = WatchedRepository.fullyWatchedSeriesKeys.value
+    val dismissedKeys = DismissedRepository.uiState.value.dismissedKeys
+    val filteredItems = items.filterNot { item ->
+        (snapshot.hideWatchedContent && WatchingState.isPosterWatched(watchedKeys, item, fullyWatched)) ||
+        (snapshot.hideDismissedContent && dismissedItemKeys(item.type, item.id).any(dismissedKeys::contains))
+    }
     return if (filteredItems.size == items.size) this else copy(items = filteredItems)
 }
 

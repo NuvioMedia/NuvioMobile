@@ -97,6 +97,9 @@ import com.nuvio.app.core.ui.rememberHeroStretchState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import com.nuvio.app.features.details.components.DetailActions
+import com.nuvio.app.features.dismissed.DismissedRepository
+import nuvio.composeapp.generated.resources.dismissed_content_toast
+import nuvio.composeapp.generated.resources.undismissed_content_toast
 import com.nuvio.app.features.details.components.CommentDetailSheet
 import com.nuvio.app.features.details.components.DetailAdditionalInfoSection
 import com.nuvio.app.features.details.components.DetailCastSection
@@ -578,6 +581,21 @@ fun MetaDetailsScreen(
                                     )
                                 },
                             )
+                        }
+                        Unit
+                    }
+                }
+                val isDismissed = DismissedRepository.isDismissed(meta.type, meta.id)
+                val toggleDismissed = remember(metaPreview, isDismissed) {
+                    {
+                        detailsScope.launch {
+                            if (isDismissed) {
+                                DismissedRepository.undismiss(metaPreview.type, metaPreview.id)
+                                NuvioToastController.show(getString(Res.string.undismissed_content_toast))
+                            } else {
+                                DismissedRepository.dismiss(metaPreview)
+                                NuvioToastController.show(getString(Res.string.dismissed_content_toast))
+                            }
                         }
                         Unit
                     }
@@ -1186,6 +1204,8 @@ fun MetaDetailsScreen(
                                                         onWatchedClick = toggleWatched,
                                                         onSaveClick = toggleSaved,
                                                         onSaveLongClick = openLibraryListPicker,
+                                                        isDismissed = isDismissed,
+                                                        onDismissClick = toggleDismissed,
                                                     )
                                                 }
                                             } else {
@@ -1239,6 +1259,8 @@ fun MetaDetailsScreen(
                                     onSaveClick = toggleSaved,
                                     onSaveLongClick = openLibraryListPicker,
                                     onWatchedClick = toggleWatched,
+                                    isDismissed = isDismissed,
+                                    onDismissClick = toggleDismissed,
                                     showManualPlayOption = showManualPlayOption,
                                     preferredEpisodeSeasonNumber = seriesAction?.seasonNumber,
                                     preferredEpisodeNumber = seriesAction?.episodeNumber,
@@ -1929,6 +1951,8 @@ private fun LazyListScope.configuredMetaSectionItems(
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
     onWatchedClick: () -> Unit,
+    isDismissed: Boolean = false,
+    onDismissClick: (() -> Unit)? = null,
     showManualPlayOption: Boolean,
     preferredEpisodeSeasonNumber: Int?,
     preferredEpisodeNumber: Int?,
@@ -2013,6 +2037,8 @@ private fun LazyListScope.configuredMetaSectionItems(
                     onPrimaryPlayLongClick = onPrimaryPlayLongClick,
                     onSaveClick = onSaveClick,
                     onSaveLongClick = onSaveLongClick,
+                    isDismissed = isDismissed,
+                    onDismissClick = onDismissClick,
                     onWatchedClick = onWatchedClick,
                     showManualPlayOption = showManualPlayOption,
                     preferredEpisodeSeasonNumber = preferredEpisodeSeasonNumber,
@@ -2243,6 +2269,8 @@ private fun ConfiguredMetaSections(
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
     onWatchedClick: () -> Unit,
+    isDismissed: Boolean = false,
+    onDismissClick: (() -> Unit)? = null,
     showManualPlayOption: Boolean,
     preferredEpisodeSeasonNumber: Int?,
     preferredEpisodeNumber: Int?,
@@ -2312,6 +2340,8 @@ private fun ConfiguredMetaSections(
                     onWatchedClick = onWatchedClick,
                     onSaveClick = onSaveClick,
                     onSaveLongClick = onSaveLongClick,
+                    isDismissed = isDismissed,
+                    onDismissClick = onDismissClick,
                 )
             }
             MetaScreenSectionKey.OVERVIEW -> {

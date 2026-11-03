@@ -17,6 +17,10 @@ import com.nuvio.app.features.collection.findCollectionCatalog
 import com.nuvio.app.features.servers.ServerCatalog
 import com.nuvio.app.features.trakt.TraktPublicListSourceResolver
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
+import com.nuvio.app.features.dismissed.DismissedRepository
+import com.nuvio.app.features.dismissed.dismissedItemKeys
+import com.nuvio.app.features.watched.WatchedRepository
+import com.nuvio.app.features.watching.application.WatchingState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -184,6 +188,19 @@ object HomeRepository {
             if (todayIsoDate == null) this else filterReleasedItems(todayIsoDate)
         fun HomeCatalogSection.withPosterOverlay(): HomeCatalogSection =
             copy(items = items.reapplyCustomPosterUrls(posterPattern))
+        fun HomeCatalogSection.withWatchedAndDismissedFilter(): HomeCatalogSection {
+            if (!snapshot.hideWatchedContent && !snapshot.hideDismissedContent) return this
+            WatchedRepository.ensureLoaded()
+            DismissedRepository.ensureLoaded()
+            val watchedKeys = WatchedRepository.uiState.value.watchedKeys
+            val fullyWatched = WatchedRepository.fullyWatchedSeriesKeys.value
+            val dismissedKeys = DismissedRepository.uiState.value.dismissedKeys
+            val filtered = items.filterNot { item ->
+                (snapshot.hideWatchedContent && WatchingState.isPosterWatched(watchedKeys, item, fullyWatched)) ||
+                (snapshot.hideDismissedContent && dismissedItemKeys(item.type, item.id).any(dismissedKeys::contains))
+            }
+            return if (filtered.size == items.size) this else copy(items = filtered)
+        }
 
         val sections = currentDefinitions
             .sortedBy { definition -> preferences[definition.key]?.order ?: Int.MAX_VALUE }
@@ -194,6 +211,7 @@ object HomeRepository {
                 val section = cachedSections[definition.cacheKey]
                     ?.withPosterOverlay()
                     ?.withReleaseFilter()
+                    ?.withWatchedAndDismissedFilter()
                     ?: return@mapNotNull null
                 if (section.items.isEmpty()) return@mapNotNull null
                 val customTitle = preference?.customTitle.orEmpty()
@@ -207,7 +225,7 @@ object HomeRepository {
             currentDefinitions
                 .filter { definition -> preferences[definition.key]?.heroSourceEnabled != false }
                 .mapNotNull { definition -> cachedSections[definition.cacheKey] }
-                .map { section -> section.withPosterOverlay().withReleaseFilter() }
+                .map { section -> section.withPosterOverlay().withReleaseFilter().withWatchedAndDismissedFilter() }
                 .flatMap { section -> section.items }
                 .distinctBy { item -> "${item.type}:${item.id}" }
                 .shuffled(heroRandom)
@@ -424,6 +442,10 @@ object HomeRepository {
         append(requestKey.orEmpty())
         append("|hideUnreleased=")
         append(snapshot.hideUnreleasedContent)
+        append("|hideWatched=")
+        append(snapshot.hideWatchedContent)
+        append("|hideDismissed=")
+        append(snapshot.hideDismissedContent)
         append("|collections=")
         collections.forEach { collection ->
             val preference = snapshot.preferences["collection_${collection.id}"]
