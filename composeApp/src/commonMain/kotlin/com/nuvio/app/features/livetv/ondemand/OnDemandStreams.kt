@@ -37,8 +37,8 @@ internal object OnDemandStreams {
     /** The On Demand source for a request, or nothing when it is off, empty, or the request isn't a movie or episode. */
     fun sources(type: String, videoId: String, parentMetaId: String?, season: Int?, episode: Int?): List<ServerStreamSource> {
         val settings = LiveTvPreferences.currentSettings()
-        // Only this phone-visible switch counts: the TV's side-menu choice (synced) is a TV layout thing.
-        if (!settings.onDemandInStreams) return emptyList()
+        // The TV's "Off the menu only" is a TV layout thing; only "Off" (or this switch) hides it here.
+        if (!(settings.onDemandInStreams && settings.onDemandEnabled)) return emptyList()
         if (!OnDemandRepository.hasContent.value) return emptyList()
         if (!type.equals("movie", true) && !type.equals("series", true) && !type.equals("tv", true)) return emptyList()
         return listOf(

@@ -335,6 +335,8 @@ data class LiveTvSettings(
     val frameRateMode: String = "OFF",
     /** Show On Demand in Nuvio's side menu (when there's something to show). */
     val onDemandInSidebar: Boolean = true,
+    /** On Demand at all (TV: Menu & Features → On Demand → Off). Missing on older setups: on. */
+    val onDemandEnabled: Boolean = true,
     /** Recordings in the side menu (once anything is recorded or set to record). */
     val recordingsInSidebar: Boolean = true,
     /**

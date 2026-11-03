@@ -116,6 +116,7 @@ internal object LiveTvKeys {
     const val matchFrameRate = "match_frame_rate"
     const val frameRateMode = "frame_rate_mode"
     const val onDemandInSidebar = "on_demand_in_sidebar"
+    const val onDemandEnabled = "on_demand_enabled"
     const val recordingsInSidebar = "recordings_in_sidebar"
     const val sideMenuOrder = "side_menu_order"
     const val sideMenuHidden = "side_menu_hidden"
@@ -723,6 +724,7 @@ internal open class LiveTvPreferencesStore {
             // Before the three choices it was on or off; on worked like "On start/stop".
             frameRateMode = p.str(LiveTvKeys.frameRateMode) ?: if (p.bool(LiveTvKeys.matchFrameRate) == true) "START_STOP" else d.frameRateMode,
             onDemandInSidebar = p.bool(LiveTvKeys.onDemandInSidebar) ?: d.onDemandInSidebar,
+            onDemandEnabled = p.bool(LiveTvKeys.onDemandEnabled) ?: d.onDemandEnabled,
             recordingsInSidebar = p.bool(LiveTvKeys.recordingsInSidebar) ?: d.recordingsInSidebar,
             sideMenuOrder = p.str(LiveTvKeys.sideMenuOrder) ?: d.sideMenuOrder,
             sideMenuHidden = p.str(LiveTvKeys.sideMenuHidden) ?: d.sideMenuHidden,
@@ -980,6 +982,7 @@ internal open class LiveTvPreferencesStore {
         p[LiveTvKeys.frameRateMode] = s.frameRateMode
         p[LiveTvKeys.matchFrameRate] = s.matchFrameRate
         p[LiveTvKeys.onDemandInSidebar] = s.onDemandInSidebar
+        p[LiveTvKeys.onDemandEnabled] = s.onDemandEnabled
         p[LiveTvKeys.recordingsInSidebar] = s.recordingsInSidebar
         p[LiveTvKeys.sideMenuOrder] = s.sideMenuOrder
         p[LiveTvKeys.sideMenuHidden] = s.sideMenuHidden
