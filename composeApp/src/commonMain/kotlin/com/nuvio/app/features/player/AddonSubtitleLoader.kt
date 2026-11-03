@@ -136,8 +136,9 @@ private suspend fun parseAddonSubtitles(response: String, request: SubtitleAddon
         val url = obj.stringValue("url") ?: return@mapIndexedNotNull null
         val language = listOf("lang", "language", "languageCode", "locale", "label")
             .firstNotNullOfOrNull(obj::stringValue) ?: "unknown"
+        val addonProvidedId = obj.stringValue("id")
         AddonSubtitle(
-            id = obj.stringValue("id") ?: "${request.addonId}_$index",
+            id = addonProvidedId ?: "${request.addonId}_$index",
             url = url,
             language = normalizeLanguageCode(language) ?: language,
             display = getString(
@@ -146,6 +147,7 @@ private suspend fun parseAddonSubtitles(response: String, request: SubtitleAddon
                 request.addonName,
             ),
             addonName = request.addonName,
+            label = addonProvidedId?.takeIf { it != language && it != url },
         )
     }
 }
