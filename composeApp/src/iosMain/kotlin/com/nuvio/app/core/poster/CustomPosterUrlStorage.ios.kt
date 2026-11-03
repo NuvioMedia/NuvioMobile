@@ -6,6 +6,7 @@ import platform.Foundation.NSUserDefaults
 actual object CustomPosterUrlStorage {
     private const val patternKey = "custom_poster_url_pattern"
     private const val enabledScreensKey = "custom_poster_enabled_screens"
+    private const val modeKey = "custom_poster_source_mode"
 
     actual fun loadPattern(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(patternKey))
@@ -32,5 +33,12 @@ actual object CustomPosterUrlStorage {
         } else {
             NSUserDefaults.standardUserDefaults.setObject(keys.toList(), forKey = ProfileScopedKey.of(enabledScreensKey))
         }
+    }
+
+    actual fun loadMode(): String? =
+        NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(modeKey))
+
+    actual fun saveMode(mode: String) {
+        NSUserDefaults.standardUserDefaults.setObject(mode, forKey = ProfileScopedKey.of(modeKey))
     }
 }

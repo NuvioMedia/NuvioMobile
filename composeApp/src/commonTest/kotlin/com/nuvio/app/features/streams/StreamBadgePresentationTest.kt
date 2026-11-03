@@ -3,6 +3,7 @@ package com.nuvio.app.features.streams
 import com.nuvio.app.features.debrid.DebridProviders
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class StreamBadgePresentationTest {
     @Test
@@ -212,4 +213,76 @@ class StreamBadgePresentationTest {
         assertEquals(emptyList(), badgeNames(StreamBadgeRules()))
         assertEquals(listOf("WEB"), badgeNames(webRules))
     }
+
+    @Test
+    fun `plugin filename metadata is retained and receives batch badges`() {
+        val scraper = com.nuvio.app.features.plugins.PluginScraper(
+            id = "repo:provider",
+            repositoryUrl = "https://example.test/manifest.json",
+            name = "Provider",
+            description = "",
+            version = "1",
+            filename = "provider.js",
+            supportedTypes = listOf("movie"),
+            enabled = true,
+            manifestEnabled = true,
+            code = "",
+        )
+        val pluginStream = com.nuvio.app.features.plugins.PluginRuntimeResult(
+            title = "Movie 2026",
+            url = "https://cdn.example.test/movie.mkv",
+            filename = "Movie.2026.1080p.WEB-DL.BATCH-GROUP.mkv",
+        ).toStreamItem(scraper)
+        val rules = StreamBadgeRules(
+            imports = listOf(
+                StreamBadgeImport(
+                    sourceUrl = "https://example.test/badges.json",
+                    filters = listOf(
+                        StreamBadgeFilter(
+                            name = "BATCH",
+                            pattern = "(?i)batch-group",
+                            imageURL = "https://example.test/batch.png",
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            "Movie.2026.1080p.WEB-DL.BATCH-GROUP.mkv",
+            pluginStream.behaviorHints.filename,
+        )
+        val presented = StreamBadgePresentation.apply(
+            groups = listOf(AddonStreamGroup("Provider", "plugin:repo:provider", listOf(pluginStream))),
+            rules = rules,
+        ).single().streams.single()
+        assertEquals(listOf("BATCH"), presented.badges.map { it.name })
+    }
+
+    @Test
+    fun `plugin stream identity ignores provider label but preserves request header variants`() {
+        val first = StreamItem(
+            url = "https://cdn.example.test/movie.mkv",
+            sourceName = "Provider A",
+            addonName = "Provider A",
+            addonId = "plugin:a",
+            behaviorHints = StreamBehaviorHints(
+                proxyHeaders = StreamProxyHeaders(request = mapOf("Referer" to "https://a.example")),
+            ),
+        )
+        val sameLinkFromAnotherProvider = first.copy(
+            sourceName = "Provider B",
+            addonName = "Provider B",
+            addonId = "plugin:b",
+        )
+        val differentHeaders = first.copy(
+            behaviorHints = StreamBehaviorHints(
+                proxyHeaders = StreamProxyHeaders(request = mapOf("Referer" to "https://b.example")),
+            ),
+        )
+
+        assertEquals(pluginStreamIdentity(first), pluginStreamIdentity(sameLinkFromAnotherProvider))
+        assertTrue(pluginStreamIdentity(first) != pluginStreamIdentity(differentHeaders))
+    }
+
 }

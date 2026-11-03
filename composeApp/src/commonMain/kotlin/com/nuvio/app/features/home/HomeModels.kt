@@ -83,6 +83,19 @@ internal fun shouldShowHomeHeroSlot(
     hasRenderableHomeRows: Boolean,
 ): Boolean = heroEnabled && (hasHeroItems || isResolvingHeroSources || hasRenderableHomeRows)
 
+/**
+ * The empty-state decision must account for every independent home source.
+ * CloudStream catalogs are not Stremio add-ons and must remain renderable when
+ * the user has no Stremio add-ons or server libraries configured.
+ */
+internal fun shouldShowHomeEmptyState(
+    hasActiveAddons: Boolean,
+    hasServerLibraries: Boolean,
+    hasRenderableCollectionRows: Boolean,
+    hasRenderableHomeSections: Boolean,
+): Boolean = !hasActiveAddons && !hasServerLibraries &&
+    !hasRenderableCollectionRows && !hasRenderableHomeSections
+
 internal data class CatalogRequest(
     val addon: ManagedAddon,
     val catalogId: String,

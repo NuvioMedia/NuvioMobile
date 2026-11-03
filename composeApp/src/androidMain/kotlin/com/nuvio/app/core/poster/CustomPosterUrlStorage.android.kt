@@ -8,6 +8,7 @@ actual object CustomPosterUrlStorage {
     private const val preferencesName = "nuvio_custom_poster_url"
     private const val patternKey = "custom_poster_url_pattern"
     private const val enabledScreensKey = "custom_poster_enabled_screens"
+    private const val modeKey = "custom_poster_source_mode"
 
     private var preferences: SharedPreferences? = null
 
@@ -39,5 +40,12 @@ actual object CustomPosterUrlStorage {
                 else putStringSet(ProfileScopedKey.of(enabledScreensKey), keys)
             }
             ?.apply()
+    }
+
+    actual fun loadMode(): String? =
+        preferences?.getString(ProfileScopedKey.of(modeKey), null)
+
+    actual fun saveMode(mode: String) {
+        preferences?.edit()?.putString(ProfileScopedKey.of(modeKey), mode)?.apply()
     }
 }

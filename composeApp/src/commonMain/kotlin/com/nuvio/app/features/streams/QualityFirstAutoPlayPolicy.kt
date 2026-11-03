@@ -38,7 +38,6 @@ object QualityFirstAutoPlayPolicy {
         val candidates = streams
             .filter { p2pEnabled || !it.isTorrentStream }
             .filter { it.isSelectableForPlayback(debridEnabled) }
-            .distinctBy(::identityKey)
             .filter { stream ->
                 val height = detectQualityHeight(stream)
                 targetHeight == null || height == targetHeight
@@ -62,7 +61,14 @@ object QualityFirstAutoPlayPolicy {
             }.thenBy { indexed ->
                 audioRanks[indexed.index]
             }.thenBy { it.index },
-        ).map { it.value }
+        )
+            .asSequence()
+            .map { it.value }
+            // Resolve duplicate identities only after ranking. The same URL can
+            // be reported with different quality/format metadata by multiple addons;
+            // keeping the first raw item could otherwise hide the better candidate.
+            .distinctBy(::candidateIdentityKey)
+            .toList()
     }
 
     /**
@@ -101,7 +107,7 @@ object QualityFirstAutoPlayPolicy {
                     p2pEnabled = p2pEnabled,
                 ).asSequence()
             }
-            .distinctBy(::identityKey)
+            .distinctBy(::candidateIdentityKey)
             .toList()
     }
 
@@ -181,10 +187,51 @@ object QualityFirstAutoPlayPolicy {
         }
     }
 
-    private fun identityKey(stream: StreamItem): String {
-        stream.playableDirectUrl?.let { return "url:$it" }
+    /**
+     * Rebuilds the not-yet-tried fallback queue as more providers finish fetching.
+     * The in-flight candidate stays first, already failed candidates stay excluded,
+     * and newly discovered links follow the current quality/source ranking.
+     */
+    internal fun refreshedFallbackCandidates(
+        current: StreamItem?,
+        discovered: List<StreamItem>,
+        attemptedKeys: Set<String>,
+    ): List<StreamItem> = buildList {
+        current?.let(::add)
+        addAll(discovered)
+    }.filterNot { candidateIdentityKey(it) in attemptedKeys }
+        .distinctBy(::candidateIdentityKey)
+
+    internal fun candidateIdentityKey(stream: StreamItem): String {
+        stream.playableDirectUrl?.let { url ->
+            val requestHeaders = stream.behaviorHints.proxyHeaders?.request
+                .orEmpty()
+                .entries
+                .sortedBy { it.key.lowercase() }
+                .joinToString("&") { (name, value) -> "$name=$value" }
+            return if (requestHeaders.isBlank()) {
+                "url:$url"
+            } else {
+                "url:$url|headers:$requestHeaders"
+            }
+        }
+        stream.externalOpenUrl?.let { return "external:$it" }
+        stream.youTubeIdToResolve?.let { return "youtube:$it" }
         stream.p2pInfoHash?.let { return "p2p:${it.lowercase()}:${stream.p2pFileIdx ?: -1}" }
         stream.serverTarget?.let { return "server:${it.item.encode()}:${it.mediaSourceId.orEmpty()}" }
+        stream.clientResolve?.let { resolve ->
+            val identity = listOfNotNull(
+                resolve.type,
+                resolve.service,
+                resolve.serviceIndex?.toString(),
+                resolve.mediaId,
+                resolve.mediaOnlyId,
+                resolve.infoHash,
+                resolve.fileIdx?.toString(),
+                resolve.torrentName,
+            ).joinToString("|")
+            if (identity.isNotBlank()) return "resolve:$identity"
+        }
         return "stream:${stream.addonId}:${stream.streamLabel}:${stream.behaviorHints.filename.orEmpty()}"
     }
 }

@@ -34,8 +34,12 @@ import com.nuvio.app.features.home.HomeCatalogSettingsItem
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogSettingsUiState
 import com.nuvio.app.features.home.MergedHomeRowDefinition
+import com.nuvio.app.features.home.MergedHomeRowContentType
 import com.nuvio.app.features.home.MergedHomeRowDisplayMode
+import com.nuvio.app.features.home.MergedHomeRowBlendMode
+import com.nuvio.app.features.home.MergedHomeRowSortMode
 import com.nuvio.app.features.home.mergedHomeRowKey
+import com.nuvio.app.features.home.cleanMergedSourceTabTitle
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.settings_merged_rows_add
 import nuvio.composeapp.generated.resources.settings_merged_rows_cancel
@@ -51,13 +55,26 @@ import nuvio.composeapp.generated.resources.settings_merged_rows_edit
 import nuvio.composeapp.generated.resources.settings_merged_rows_edit_title
 import nuvio.composeapp.generated.resources.settings_merged_rows_empty
 import nuvio.composeapp.generated.resources.settings_merged_rows_mode_tabs
+import nuvio.composeapp.generated.resources.settings_merged_rows_mode_type_tabs
+import nuvio.composeapp.generated.resources.settings_merged_rows_mode_type_tabs_description
 import nuvio.composeapp.generated.resources.settings_merged_rows_mode_unified
 import nuvio.composeapp.generated.resources.settings_merged_rows_name
 import nuvio.composeapp.generated.resources.settings_merged_rows_save
 import nuvio.composeapp.generated.resources.settings_merged_rows_select_sources
 import nuvio.composeapp.generated.resources.settings_merged_rows_source_limit
 import nuvio.composeapp.generated.resources.settings_merged_rows_title
+import nuvio.composeapp.generated.resources.settings_merged_rows_type
+import nuvio.composeapp.generated.resources.settings_merged_rows_type_all
+import nuvio.composeapp.generated.resources.settings_merged_rows_type_movies
+import nuvio.composeapp.generated.resources.settings_merged_rows_type_series
 import nuvio.composeapp.generated.resources.settings_merged_rows_unavailable_source
+import nuvio.composeapp.generated.resources.settings_merged_rows_blend
+import nuvio.composeapp.generated.resources.settings_merged_rows_blend_interleave
+import nuvio.composeapp.generated.resources.settings_merged_rows_blend_smart
+import nuvio.composeapp.generated.resources.settings_merged_rows_blend_interleave_description
+import nuvio.composeapp.generated.resources.settings_merged_rows_blend_smart_description
+import nuvio.composeapp.generated.resources.settings_merged_rows_hide_included
+import nuvio.composeapp.generated.resources.settings_merged_rows_hide_without_posters
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.mergedHomeRowsSettingsContent(
@@ -92,6 +109,9 @@ private fun MergedHomeRowsEditor(
     var draftTitle by remember { mutableStateOf("") }
     var draftSourceKeys by remember { mutableStateOf(setOf<String>()) }
     var draftMode by remember { mutableStateOf(MergedHomeRowDisplayMode.SOURCE_TABS) }
+    var draftBlendMode by remember { mutableStateOf(MergedHomeRowBlendMode.SMART_FRESHNESS_POPULARITY) }
+    var draftContentType by remember { mutableStateOf(MergedHomeRowContentType.ALL) }
+    var draftHideIncludedRows by remember { mutableStateOf(false) }
     var draftDeduplicate by remember { mutableStateOf(true) }
     var deleteTarget by remember { mutableStateOf<MergedHomeRowDefinition?>(null) }
 
@@ -100,6 +120,9 @@ private fun MergedHomeRowsEditor(
         draftTitle = ""
         draftSourceKeys = emptySet()
         draftMode = MergedHomeRowDisplayMode.SOURCE_TABS
+        draftContentType = MergedHomeRowContentType.ALL
+        draftBlendMode = MergedHomeRowBlendMode.SMART_FRESHNESS_POPULARITY
+        draftHideIncludedRows = false
         draftDeduplicate = true
         editorOpen = true
     }
@@ -109,6 +132,13 @@ private fun MergedHomeRowsEditor(
         draftTitle = row.title
         draftSourceKeys = row.sourceKeys.toSet()
         draftMode = row.resolvedDisplayMode()
+        draftContentType = if (row.resolvedDisplayMode() == MergedHomeRowDisplayMode.TYPE_TABS) {
+            MergedHomeRowContentType.ALL
+        } else {
+            row.resolvedContentType()
+        }
+        draftBlendMode = row.resolvedBlendMode()
+        draftHideIncludedRows = row.hideIncludedRows
         draftDeduplicate = row.deduplicate
         editorOpen = true
     }
@@ -158,7 +188,11 @@ private fun MergedHomeRowsEditor(
                                 Text(row.title, style = MaterialTheme.typography.titleMedium)
                                 Spacer(Modifier.height(3.dp))
                                 Text(
-                                    text = "${row.sourceKeys.size} catalogs · ${if (row.resolvedDisplayMode() == MergedHomeRowDisplayMode.SOURCE_TABS) stringResource(Res.string.settings_merged_rows_mode_tabs) else stringResource(Res.string.settings_merged_rows_mode_unified)}",
+                                    text = "${row.sourceKeys.size} catalogs · ${stringResource(when (row.resolvedDisplayMode()) {
+                                        MergedHomeRowDisplayMode.SOURCE_TABS -> Res.string.settings_merged_rows_mode_tabs
+                                        MergedHomeRowDisplayMode.TYPE_TABS -> Res.string.settings_merged_rows_mode_type_tabs
+                                        MergedHomeRowDisplayMode.UNIFIED_CAROUSEL -> Res.string.settings_merged_rows_mode_unified
+                                    })}",
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -172,7 +206,7 @@ private fun MergedHomeRowsEditor(
                         }
                         Text(
                             text = row.sourceKeys.joinToString(" · ") { key ->
-                                availableSources.firstOrNull { it.key == key }?.displayTitle ?: key
+                                availableSources.firstOrNull { it.key == key }?.displayTitle?.let(::cleanMergedSourceTabTitle) ?: key
                             },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -221,6 +255,17 @@ private fun MergedHomeRowsEditor(
                         singleLine = true,
                         label = { Text(stringResource(Res.string.settings_merged_rows_name)) },
                     )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(
+                            checked = draftDeduplicate,
+                            onCheckedChange = { draftDeduplicate = it },
+                        )
+                        Text(
+                            stringResource(Res.string.settings_merged_rows_deduplicate),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                     Text(stringResource(Res.string.settings_merged_rows_display_mode), style = MaterialTheme.typography.titleSmall)
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(
@@ -244,7 +289,78 @@ private fun MergedHomeRowsEditor(
                             style = MaterialTheme.typography.bodyMedium,
                         )
                     }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        RadioButton(
+                            selected = draftMode == MergedHomeRowDisplayMode.TYPE_TABS,
+                            onClick = {
+                                draftMode = MergedHomeRowDisplayMode.TYPE_TABS
+                                draftContentType = MergedHomeRowContentType.ALL
+                            },
+                        )
+                        Text(
+                            stringResource(Res.string.settings_merged_rows_mode_type_tabs),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                    if (draftMode == MergedHomeRowDisplayMode.TYPE_TABS) {
+                        Text(
+                            text = stringResource(Res.string.settings_merged_rows_mode_type_tabs_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
 
+                    if (draftMode != MergedHomeRowDisplayMode.TYPE_TABS) {
+                        Text(stringResource(Res.string.settings_merged_rows_type), style = MaterialTheme.typography.titleSmall)
+                        listOf(
+                            MergedHomeRowContentType.ALL to Res.string.settings_merged_rows_type_all,
+                            MergedHomeRowContentType.MOVIES to Res.string.settings_merged_rows_type_movies,
+                            MergedHomeRowContentType.SERIES to Res.string.settings_merged_rows_type_series,
+                        ).forEach { (type, label) ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                RadioButton(
+                                    selected = draftContentType == type,
+                                    onClick = { draftContentType = type },
+                                )
+                                Text(stringResource(label), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                            }
+                        }
+                    }
+
+                    Text("Blending method", style = MaterialTheme.typography.titleSmall)
+                    listOf(
+                        MergedHomeRowBlendMode.INTERLEAVE to "Interleave",
+                        MergedHomeRowBlendMode.SMART_FRESHNESS_POPULARITY to "Smart Blend",
+                        MergedHomeRowBlendMode.FRESHNESS_WEIGHTED to "Freshness Weighted",
+                        MergedHomeRowBlendMode.POPULARITY_WEIGHTED to "Popularity Weighted",
+                        MergedHomeRowBlendMode.RATING_WEIGHTED to "Rating Weighted",
+                        MergedHomeRowBlendMode.PROVIDER_PRIORITY to "Provider Priority",
+                        MergedHomeRowBlendMode.RANDOM to "Random Blend",
+                    ).forEach { (mode, label) ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            RadioButton(selected = draftBlendMode == mode, onClick = { draftBlendMode = mode })
+                            Text(label, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
+                    Text(
+                        text = when (draftBlendMode) {
+                            MergedHomeRowBlendMode.INTERLEAVE -> "Take turns between providers in configured order."
+                            MergedHomeRowBlendMode.SMART_FRESHNESS_POPULARITY -> "Balance freshness, popularity, ratings and provider diversity."
+                            MergedHomeRowBlendMode.FRESHNESS_WEIGHTED -> "Give newer releases more influence without strict chronological sorting."
+                            MergedHomeRowBlendMode.POPULARITY_WEIGHTED -> "Give popular titles more influence while retaining provider diversity."
+                            MergedHomeRowBlendMode.RATING_WEIGHTED -> "Give highly rated titles more influence while retaining provider diversity."
+                            MergedHomeRowBlendMode.PROVIDER_PRIORITY -> "Respect provider order and take turns between providers."
+                            MergedHomeRowBlendMode.RANDOM -> "Shuffle each provider queue, then interleave the results."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Checkbox(checked = draftHideIncludedRows, onCheckedChange = { draftHideIncludedRows = it })
+                        Text(stringResource(Res.string.settings_merged_rows_hide_included), modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
+                    }
                     Text(stringResource(Res.string.settings_merged_rows_select_sources), style = MaterialTheme.typography.titleSmall)
                     Text(stringResource(Res.string.settings_merged_rows_source_limit), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
 
@@ -278,28 +394,12 @@ private fun MergedHomeRowsEditor(
                             )
                             Spacer(Modifier.width(8.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(source.displayTitle, style = MaterialTheme.typography.bodyMedium)
+                                Text(cleanMergedSourceTabTitle(source.displayTitle), style = MaterialTheme.typography.bodyMedium)
                                 Text(source.addonName, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(
-                                    text = "${source.key.substringBeforeLast(':').substringAfterLast(':')}/${source.key.substringAfterLast(':')}",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
                             }
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Checkbox(
-                            checked = draftDeduplicate,
-                            onCheckedChange = { draftDeduplicate = it },
-                        )
-                        Text(
-                            stringResource(Res.string.settings_merged_rows_deduplicate),
-                            modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
                 }
             },
             confirmButton = {
@@ -313,12 +413,18 @@ private fun MergedHomeRowsEditor(
                                 sourceKeys = draftSourceKeys.toList(),
                                 displayMode = draftMode,
                                 deduplicate = draftDeduplicate,
+                                contentType = draftContentType,
+                                blendMode = draftBlendMode,
+                                hideIncludedRows = draftHideIncludedRows,
                             )
                         } ?: (HomeCatalogSettingsRepository.createMergedRow(
                             title = draftTitle,
                             sourceKeys = draftSourceKeys.toList(),
                             displayMode = draftMode,
                             deduplicate = draftDeduplicate,
+                            contentType = draftContentType,
+                            blendMode = draftBlendMode,
+                            hideIncludedRows = draftHideIncludedRows,
                         ) != null)
                         if (saved) editorOpen = false
                     },
