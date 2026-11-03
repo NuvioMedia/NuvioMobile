@@ -229,9 +229,6 @@ private fun StandingsLine(table: Standings, r: StandingsRow, mine: Boolean, onCl
                 (r.clincher?.let { "$it - " } ?: "") + r.shortName,
                 style = MaterialTheme.typography.bodyMedium, color = primary, fontWeight = if (mine) FontWeight.Bold else FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
-            r.form?.takeIf { table.kind != StandingsKind.RACING }?.let { f ->
-                Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) { f.forEach { FormSquare(it, 10.dp) } }
-            }
         }
         Row {
             table.columns.forEach { c ->

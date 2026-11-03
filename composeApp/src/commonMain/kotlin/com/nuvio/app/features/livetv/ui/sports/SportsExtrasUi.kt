@@ -24,6 +24,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.LineHeightStyle
+import androidx.compose.ui.unit.sp
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.livetv.sports.GameExtras
@@ -125,7 +127,15 @@ internal fun FormSquare(r: Char, size: androidx.compose.ui.unit.Dp = 14.dp) {
         ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(r.toString(), style = MaterialTheme.typography.labelSmall, color = Color.White, fontWeight = FontWeight.Black)
+        // Letter sized to the square, so small squares show a whole, readable W / L / D.
+        val letter = (size.value * 0.68f).sp
+        Text(
+            r.toString(),
+            style = MaterialTheme.typography.labelSmall.copy(fontSize = letter, lineHeight = letter, lineHeightStyle = LineHeightStyle(LineHeightStyle.Alignment.Center, LineHeightStyle.Trim.Both)),
+            color = Color.White,
+            fontWeight = FontWeight.Bold,
+            maxLines = 1,
+        )
     }
 }
 
