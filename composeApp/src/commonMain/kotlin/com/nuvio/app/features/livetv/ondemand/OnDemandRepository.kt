@@ -299,6 +299,12 @@ internal object OnDemandRepository {
             tmdbId?.takeIf { it.isNotBlank() }?.let { id ->
                 runCatching { OnDemandStore.byTmdb(kind, id) }.getOrDefault(emptyList()).forEach { candidates[it.uid] = it }
             }
+            // Same name (and year within one), as on the TV: catches titles whose provider TMDB id is missing or wrong.
+            if (title.isNotBlank()) {
+                runCatching { OnDemandStore.byTitle(kind, title) }.getOrDefault(emptyList())
+                    .filter { year == null || it.year == null || kotlin.math.abs(it.year - year) <= 1 }
+                    .forEach { candidates.putIfAbsent(it.uid, it) }
+            }
             val core = VodTitles.coreKey(title)
             if (candidates.isEmpty() && title.isNotBlank() && core.length >= 3) {
                 val found = runCatching { OnDemandStore.search(kind, VodTitles.displayTitle(title), emptySet(), 80, VodSort.DEFAULT, false) }

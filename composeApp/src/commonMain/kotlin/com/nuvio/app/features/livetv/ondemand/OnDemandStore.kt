@@ -38,6 +38,9 @@ internal expect object OnDemandStore {
     /** Every title of [kind] the provider matched to this TMDB id. */
     fun byTmdb(kind: VodKind, tmdbId: String): List<VodItem>
 
+    /** Every title of [kind] whose name reads the same as [title] (same as the TV's byTitle). */
+    fun byTitle(kind: VodKind, title: String): List<VodItem>
+
     /** Every copy of a title: same TMDB id, or same name and year (other quality, other provider). */
     fun versions(item: VodItem): List<VodItem>
 

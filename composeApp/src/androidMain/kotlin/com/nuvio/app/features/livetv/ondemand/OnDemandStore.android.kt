@@ -239,6 +239,12 @@ internal actual object OnDemandStore {
     actual fun byTmdb(kind: VodKind, tmdbId: String): List<VodItem> =
         query("SELECT * FROM items WHERE kind = ? AND tmdb = ?", arrayListOf(kind.key, tmdbId))
 
+    actual fun byTitle(kind: VodKind, title: String): List<VodItem> {
+        val norm = VodTitles.normalize(title)
+        if (norm.isBlank()) return emptyList()
+        return query("SELECT * FROM items WHERE kind = ? AND norm = ?", arrayListOf(kind.key, norm))
+    }
+
     actual fun versions(item: VodItem): List<VodItem> =
         if (!item.tmdbId.isNullOrBlank()) query("SELECT * FROM items WHERE kind = ? AND tmdb = ?", arrayListOf(item.kind.key, item.tmdbId))
         else query(

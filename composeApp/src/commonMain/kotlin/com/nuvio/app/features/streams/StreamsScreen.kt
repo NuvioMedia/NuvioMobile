@@ -181,6 +181,7 @@ fun StreamsScreen(
     val effectiveResumeProgressFraction = resumeState.progressFraction
 
     LaunchedEffect(type, videoId, seasonNumber, episodeNumber, manualSelection) {
+        com.nuvio.app.features.livetv.ondemand.OnDemandStreams.rememberTitle(parentMetaId, videoId, title)
         StreamsRepository.load(
             type = type,
             videoId = videoId,

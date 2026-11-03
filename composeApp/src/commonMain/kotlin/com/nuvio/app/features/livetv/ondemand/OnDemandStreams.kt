@@ -21,6 +21,19 @@ internal object OnDemandStreams {
 
     fun isOnDemandGroup(addonId: String?): Boolean = addonId == GROUP_ID
 
+    /** Title shown on the streams screen, by item id: used when the details aren't cached (opened from a row, search, Continue Watching). */
+    private val titleHints = HashMap<String, String>()
+
+    fun rememberTitle(parentMetaId: String?, videoId: String, title: String) {
+        val id = baseId(parentMetaId, videoId)
+        if (id.isNotBlank() && title.isNotBlank()) titleHints[id] = title
+    }
+
+    /** The movie's or show's own id ("tt123", "tmdb:456"), without season/episode parts. */
+    private fun baseId(parentMetaId: String?, videoId: String): String =
+        parentMetaId?.takeIf { it.isNotBlank() }
+            ?: if (videoId.startsWith("tmdb:", true)) videoId.split(':').take(2).joinToString(":") else videoId.substringBefore(':')
+
     /** The On Demand source for a request, or nothing when it is off, empty, or the request isn't a movie or episode. */
     fun sources(type: String, videoId: String, parentMetaId: String?, season: Int?, episode: Int?): List<ServerStreamSource> {
         val settings = LiveTvPreferences.currentSettings()
@@ -39,10 +52,12 @@ internal object OnDemandStreams {
     }
 
     private suspend fun lookup(type: String, videoId: String, parentMetaId: String?, season: Int?, episode: Int?): List<StreamItem> {
-        val meta = runCatching { MetaDetailsRepository.peek(type, parentMetaId ?: videoId.substringBefore(':')) }.getOrNull()
-        val title = meta?.name.orEmpty()
+        val id = baseId(parentMetaId, videoId)
+        val meta = runCatching { MetaDetailsRepository.peek(type, id) }.getOrNull()
+            ?: runCatching { MetaDetailsRepository.fetch(type, id) }.getOrNull()
+        val title = meta?.name?.takeIf { it.isNotBlank() } ?: titleHints[id].orEmpty()
         val year = meta?.releaseInfo?.take(4)?.toIntOrNull()
-        val tmdbId = runCatching {
+        val tmdbId = Regex("^tmdb:(\\d+)", RegexOption.IGNORE_CASE).find(id)?.groupValues?.get(1) ?: runCatching {
             TmdbService.ensureTmdbId(parentMetaId ?: videoId, if (type.equals("movie", true)) "movie" else "series", meta?.imdbId)
         }.getOrNull()
         if (title.isBlank() && tmdbId == null) return emptyList()

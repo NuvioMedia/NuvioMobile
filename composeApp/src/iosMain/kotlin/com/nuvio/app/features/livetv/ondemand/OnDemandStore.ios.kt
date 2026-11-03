@@ -48,6 +48,12 @@ internal actual object OnDemandStore {
     actual fun byTmdb(kind: VodKind, tmdbId: String): List<VodItem> =
         items.values.filter { it.kind == kind && it.tmdbId == tmdbId }
 
+    actual fun byTitle(kind: VodKind, title: String): List<VodItem> {
+        val norm = VodTitles.normalize(title)
+        if (norm.isBlank()) return emptyList()
+        return items.values.filter { it.kind == kind && VodTitles.normalize(it.name) == norm }
+    }
+
     actual fun versions(item: VodItem): List<VodItem> = listOf(item)
 
     actual fun categoryNames(playlistId: String, kind: VodKind): Map<String, String> =
