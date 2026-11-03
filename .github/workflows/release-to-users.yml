@@ -1,21 +1,16 @@
-name: Release Live TV build
+name: Release to Users
 
-# Builds and publishes a release from this fork's own branch, for Live TV changes that
-# land between upstream releases. Tags are "<upstream version>-iptv.<n>", for example
-# 0.6.6-beta-iptv.1, so the in-app updater and the hourly upstream sync don't collide.
-#
-# Uses the same secrets as "Sync Nuvio Mobile releases".
+# Publishes the phone app to users from the main branch (what was tested and approved), whichever
+# branch is picked in the Run workflow menu. Unfinished work on dev is never released.
+# The version number is picked automatically: Nuvio Mobile 0.6.6 -> 0.6.6-beta-iptv.1, .2, ...
+# The app's built-in updater offers each new release.
 on:
   workflow_dispatch:
     inputs:
-      suffix:
-        description: "Live TV release number for this upstream version (1, 2, 3 …)"
-        required: true
-        default: "1"
       notes:
-        description: "What's new (Markdown)"
+        description: "What changed (shown on the release page)"
         required: false
-        default: ""
+        type: string
 
 permissions:
   contents: write
@@ -24,7 +19,7 @@ env:
   APP_NAME: NuvioMobilePlusIPTV
 
 concurrency:
-  group: livetv-release
+  group: release-to-users
   cancel-in-progress: false
 
 jobs:
@@ -33,22 +28,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: main
           fetch-depth: 0
 
-      - name: Work out the version
+      - name: Work out the version number
         id: ver
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           BASE=$(sed -nE 's/^[[:space:]]*MARKETING_VERSION[[:space:]]*=[[:space:]]*([^[:space:]#]+).*$/\1/p' iosApp/Configuration/Version.xcconfig | head -1)
-          TAG="${BASE%-beta}-beta-iptv.${{ inputs.suffix }}"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
-          echo "Release tag: $TAG"
-          # Android version code = Nuvio build number x 100 + release number, so it always goes up.
           NUM=$(sed -nE 's/^[[:space:]]*CURRENT_PROJECT_VERSION[[:space:]]*=[[:space:]]*([0-9]+).*$/\1/p' iosApp/Configuration/Version.xcconfig | head -1)
-          SUF="${{ inputs.suffix }}"
-          case "$SUF" in ''|*[!0-9]*) echo "::error::Release number must be a whole number"; exit 1;; esac
-          if [ "$SUF" -lt 1 ] || [ "$SUF" -gt 99 ]; then echo "::error::Release number must be 1 to 99"; exit 1; fi
-          echo "code=$((NUM * 100 + SUF))" >> "$GITHUB_OUTPUT"
-          echo "Version code: $((NUM * 100 + SUF))"
+          if [ -z "$BASE" ] || [ -z "$NUM" ]; then echo "::error::Couldn't read the Nuvio Mobile version"; exit 1; fi
+          PREFIX="${BASE%-beta}-beta-iptv."
+          LAST=$(gh release list -R "$GITHUB_REPOSITORY" --limit 200 --json tagName -q '.[].tagName' \
+            | grep -F "$PREFIX" | sed "s/^$(printf '%s' "$PREFIX" | sed 's/[.[\*^$/]/\\&/g')//" \
+            | grep -E '^[0-9]+$' | sort -n | tail -1 || true)
+          N=$(( ${LAST:-0} + 1 ))
+          if [ "$N" -gt 99 ]; then echo "::error::Too many releases on one Nuvio Mobile version (max 99)"; exit 1; fi
+          TAG="$PREFIX$N"
+          echo "Nuvio Mobile $BASE -> release $TAG (version code $((NUM * 100 + N)))"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "code=$((NUM * 100 + N))" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-java@v4
         with:
@@ -116,7 +116,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          target_commitish: ${{ github.sha }}
+          target_commitish: main
           name: Nuvio Mobile + IPTV ${{ steps.ver.outputs.tag }}
           prerelease: true
           files: out/*.apk

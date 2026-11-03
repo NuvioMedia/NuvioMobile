@@ -1,0 +1,47 @@
+# Merge a Nuvio Mobile release into the dev branch by hand, keeping the fork's side wherever both
+# changed the same lines. Then fix anything the update broke, run "Live TV check" and
+# "Build Test App", and check it on a phone. Users only get it through "Release to Users"
+# (which releases from main).
+name: Merge Nuvio Update
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Nuvio Mobile release tag to merge, e.g. 0.6.7-beta"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  merge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+
+      - name: Merge the release
+        env:
+          TAG: ${{ inputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream "https://github.com/NuvioMedia/NuvioMobile.git"
+          git fetch --no-tags upstream "+refs/tags/$TAG:refs/remotes/upstream/release"
+          # Note which files both sides changed, before keeping the fork's version of them.
+          git merge --no-commit --no-ff refs/remotes/upstream/release >/dev/null 2>&1 || true
+          CONFLICTS=$(git diff --name-only --diff-filter=U || true)
+          git merge --abort 2>/dev/null || true
+          git merge --no-edit -X ours -m "Merge Nuvio Mobile $TAG" refs/remotes/upstream/release
+          git push
+          {
+            echo "Merged Nuvio Mobile $TAG into dev."
+            if [ -n "$CONFLICTS" ]; then
+              echo; echo "Both sides changed these files; the fork's version was kept, so check them:"
+              echo "$CONFLICTS" | sed 's/^/- /'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
