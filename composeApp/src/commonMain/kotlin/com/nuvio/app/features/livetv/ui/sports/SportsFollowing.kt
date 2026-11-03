@@ -2,6 +2,8 @@ package com.nuvio.app.features.livetv.ui.sports
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -416,6 +418,7 @@ internal fun SportsSettingsSheet(settings: SportsSettings, onDismiss: () -> Unit
     fun update(t: (SportsSettings) -> SportsSettings) = repo.updateSettings(t)
     NuvioModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Text(stringResource(Res.string.livetv_sports_settings), style = MaterialTheme.typography.titleMedium, color = tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s8))
+        Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()).padding(bottom = NuvioTokens.Space.s16)) {
         SettingsGroup(isTablet = false) {
             SettingsSwitchRow(title = stringResource(Res.string.livetv_sports_hide_scores), description = stringResource(Res.string.livetv_sports_hide_scores_description), checked = settings.hideScores, isTablet = false, onCheckedChange = { on -> update { it.copy(hideScores = on) } })
             SettingsGroupDivider(isTablet = false)
@@ -435,10 +438,11 @@ internal fun SportsSettingsSheet(settings: SportsSettings, onDismiss: () -> Unit
             SettingsGroupDivider(isTablet = false)
             SettingsNavigationRow(title = stringResource(Res.string.livetv_sports_clear_fixes), description = stringResource(Res.string.livetv_sports_clear_fixes_description), isTablet = false, onClick = { repo.clearFixes(); onDismiss() })
         }
+        }
     }
     if (pickRegion) {
         DialogSurface(onDismissRequest = { pickRegion = false }, title = stringResource(Res.string.livetv_sports_region)) {
-            Column(verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
                 DialogOption(text = "Automatic (" + SportsCatalog.regionName(SportsCatalog.deviceRegion()) + ")", selected = settings.region.isBlank(), onClick = { update { it.copy(region = "") }; pickRegion = false })
                 SportsCatalog.regions.forEach { (code, name) ->
                     DialogOption(text = name, selected = settings.region == code, onClick = { update { it.copy(region = code) }; pickRegion = false })
@@ -449,7 +453,7 @@ internal fun SportsSettingsSheet(settings: SportsSettings, onDismiss: () -> Unit
     }
     if (pickChannels) {
         DialogSurface(onDismissRequest = { pickChannels = false }, title = stringResource(Res.string.livetv_sports_channels_from)) {
-            Column(verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
                 ChannelRegions.all.forEach { (code, name) ->
                     DialogOption(text = name, selected = settings.channelRegion == code, onClick = { update { it.copy(channelRegion = code) }; pickChannels = false })
                 }
@@ -459,7 +463,7 @@ internal fun SportsSettingsSheet(settings: SportsSettings, onDismiss: () -> Unit
     }
     if (pickLead) {
         DialogSurface(onDismissRequest = { pickLead = false }, title = stringResource(Res.string.livetv_sports_remind_lead)) {
-            Column(verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
+            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
                 REMIND_MINUTES.forEach { m ->
                     DialogOption(text = if (m == 0) "At the start" else "$m minutes before", selected = settings.remindMinutes == m, onClick = { update { it.copy(remindMinutes = m) }; pickLead = false })
                 }
