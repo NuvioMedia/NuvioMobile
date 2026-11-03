@@ -69,6 +69,14 @@ internal fun PlaybackStreamSettings(
         ) {
             SettingsGroup(isTablet = isTablet) {
                 SettingsSwitchRow(
+                    title = "Use per-title source language",
+                    description = "Prioritize streams that appear to match the language selected for a title.",
+                    checked = settings.perTitleStreamLanguageEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = PlayerSettingsRepository::setPerTitleStreamLanguageEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
                     title = stringResource(Res.string.settings_playback_reuse_last_link),
                     description = stringResource(Res.string.settings_playback_reuse_last_link_description),
                     checked = settings.streamReuseLastLinkEnabled,

@@ -11,6 +11,7 @@ data class PersistedPlayerTrackPreference(
     val audioLanguage: String? = null,
     val audioName: String? = null,
     val audioTrackId: String? = null,
+    val sourceStreamLanguage: String? = null,
     val subtitleIsForced: Boolean? = null,
 )
 

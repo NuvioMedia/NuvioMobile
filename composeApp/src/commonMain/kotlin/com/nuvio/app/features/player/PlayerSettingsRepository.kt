@@ -52,6 +52,7 @@ data class PlayerSettingsUiState(
     val secondaryPreferredSubtitleLanguage: String? = null,
     val subtitleStyle: SubtitleStyleState = SubtitleStyleState.DEFAULT,
     val streamReuseLastLinkEnabled: Boolean = false,
+    val perTitleStreamLanguageEnabled: Boolean = false,
     val streamReuseLastLinkCacheHours: Int = 24,
     val androidPlaybackEngine: AndroidPlaybackEngine = AndroidPlaybackEngine.ExoPlayer,
     val autoSwitchPlaybackEngineOnError: Boolean = true,
@@ -138,6 +139,7 @@ object PlayerSettingsRepository {
     private var secondaryPreferredSubtitleLanguage: String? = null
     private var subtitleStyle = SubtitleStyleState.DEFAULT
     private var streamReuseLastLinkEnabled = false
+    private var perTitleStreamLanguageEnabled = false
     private var streamReuseLastLinkCacheHours = 24
     private var androidPlaybackEngine = AndroidPlaybackEngine.ExoPlayer
     private var autoSwitchPlaybackEngineOnError = true
@@ -347,6 +349,7 @@ object PlayerSettingsRepository {
             appearance = decodeSubtitleAppearance(PlayerSettingsStorage.loadSubtitleAppearance()),
         )
         streamReuseLastLinkEnabled = PlayerSettingsStorage.loadStreamReuseLastLinkEnabled() ?: false
+        perTitleStreamLanguageEnabled = PlayerSettingsStorage.loadPerTitleStreamLanguageEnabled() ?: false
         streamReuseLastLinkCacheHours = PlayerSettingsStorage.loadStreamReuseLastLinkCacheHours() ?: 24
         androidPlaybackEngine = PlayerSettingsStorage.loadAndroidPlaybackEngine()
             ?.let { runCatching { AndroidPlaybackEngine.valueOf(it) }.getOrNull() }
@@ -855,6 +858,14 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveStreamAutoPlayMode(mode.name)
     }
 
+    fun setPerTitleStreamLanguageEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (perTitleStreamLanguageEnabled == enabled) return
+        perTitleStreamLanguageEnabled = enabled
+        PlayerSettingsStorage.savePerTitleStreamLanguageEnabled(enabled)
+        publish()
+    }
+
     fun setStreamAutoPlaySource(source: StreamAutoPlaySource) {
         ensureLoaded()
         val normalizedSource = normalizeStreamAutoPlaySource(source)
@@ -1228,6 +1239,7 @@ object PlayerSettingsRepository {
             secondaryPreferredSubtitleLanguage = secondaryPreferredSubtitleLanguage,
             subtitleStyle = subtitleStyle,
             streamReuseLastLinkEnabled = streamReuseLastLinkEnabled,
+            perTitleStreamLanguageEnabled = perTitleStreamLanguageEnabled,
             streamReuseLastLinkCacheHours = streamReuseLastLinkCacheHours,
             androidPlaybackEngine = androidPlaybackEngine,
             autoSwitchPlaybackEngineOnError = autoSwitchPlaybackEngineOnError,
