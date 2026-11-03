@@ -3,6 +3,7 @@ package com.nuvio.app.features.livetv.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.draw.rotate
@@ -629,24 +630,35 @@ internal fun ChannelRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12),
     ) {
-        when {
-            showLogo -> ChannelLogo(
-                channel,
-                width = if (logoOnly) 104.dp else 64.dp,
-                height = if (logoOnly) 64.dp else 44.dp,
-                inset = if (logoOnly) NuvioTokens.Space.s3 else NuvioTokens.Space.s4,
-            )
-            // Numbers without names or logos: the number takes the logo's place.
-            showNumber && !showName -> Box(
-                modifier = Modifier.width(64.dp).height(44.dp).clip(RoundedCornerShape(NuvioTokens.Radius.md)).background(tokens.colors.surfaceCard),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(channel.number.toString(), style = MaterialTheme.typography.titleMedium, color = tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
+        // Favorites get a small star on the logo's corner (or on the number box when logos are off).
+        val starOnTile = showLogo || (showNumber && !showName)
+        if (starOnTile) {
+            Box {
+                if (showLogo) {
+                    ChannelLogo(
+                        channel,
+                        width = if (logoOnly) 104.dp else 64.dp,
+                        height = if (logoOnly) 64.dp else 44.dp,
+                        inset = if (logoOnly) NuvioTokens.Space.s3 else NuvioTokens.Space.s4,
+                    )
+                } else {
+                    // Numbers without names or logos: the number takes the logo's place.
+                    Box(
+                        modifier = Modifier.width(64.dp).height(44.dp).clip(RoundedCornerShape(NuvioTokens.Radius.md)).background(tokens.colors.surfaceCard),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(channel.number.toString(), style = MaterialTheme.typography.titleMedium, color = tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
+                    }
+                }
+                if (isFavorite) {
+                    FavoriteBadge(Modifier.align(Alignment.TopEnd).offset(x = 5.dp, y = (-5).dp))
+                }
             }
         }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s2)) {
             val numberInLine = showNumber && (showName || showLogo)
-            if (showName || numberInLine || isFavorite) {
+            val starInLine = isFavorite && !starOnTile
+            if (showName || numberInLine || starInLine) {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
                     if (numberInLine) {
                         Text(channel.number.toString(), style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted)
@@ -662,7 +674,7 @@ internal fun ChannelRow(
                             modifier = Modifier.weight(1f, fill = false),
                         )
                     }
-                    if (isFavorite) {
+                    if (starInLine) {
                         Icon(Icons.Filled.Star, contentDescription = null, tint = tokens.colors.accent, modifier = Modifier.size(NuvioTokens.Icon.sm))
                     }
                 }
@@ -708,6 +720,20 @@ internal fun ChannelRow(
 @Composable
 internal fun ChannelLogo(channel: LiveChannel, size: androidx.compose.ui.unit.Dp, show: Boolean = true) {
     ChannelLogo(channel, width = size, height = size, show = show)
+}
+
+/** The small favorite star that sits on the corner of a channel's logo (a dark circle so it shows on any logo). */
+@Composable
+internal fun FavoriteBadge(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .size(18.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.72f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(Icons.Filled.Star, contentDescription = null, tint = MaterialTheme.nuvio.colors.accent, modifier = Modifier.size(12.dp))
+    }
 }
 
 /** The channel's logo in a rounded box (or its first letters when it has none). */

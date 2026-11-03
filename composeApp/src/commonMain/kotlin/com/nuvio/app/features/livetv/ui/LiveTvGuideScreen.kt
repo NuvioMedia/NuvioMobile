@@ -262,6 +262,7 @@ fun LiveTvGuideScreen(
             items(channels, key = { it.key }) { channel ->
                 GuideRow(
                     channel = channel,
+                    isFavorite = channel.key in state.favoriteKeys,
                     programs = programs[channel.key].orEmpty(),
                     gridStart = gridStart,
                     gridEnd = gridEnd,
@@ -300,6 +301,7 @@ private fun NowLine(gridStart: Long, now: Long, pxPerMs: () -> Float, height: Dp
 @Composable
 private fun GuideRow(
     channel: LiveChannel,
+    isFavorite: Boolean,
     programs: List<EpgProgram>,
     gridStart: Long,
     gridEnd: Long,
@@ -314,6 +316,7 @@ private fun GuideRow(
     Row(modifier = Modifier.fillMaxWidth().height(RowHeight)) {
         GuideChannelTile(
             channel = channel,
+            isFavorite = isFavorite,
             onPlay = onPlay,
             modifier = Modifier.width(ChannelColumnWidth).fillMaxHeight().padding(start = NuvioTokens.Space.s8, end = NuvioTokens.Space.s6),
         )
@@ -389,56 +392,63 @@ private fun GuideRow(
 
 /** The channel's tile in the guide: logo, name and number, as the Channel Display settings say. */
 @Composable
-private fun GuideChannelTile(channel: LiveChannel, onPlay: () -> Unit, modifier: Modifier = Modifier) {
+private fun GuideChannelTile(channel: LiveChannel, isFavorite: Boolean, onPlay: () -> Unit, modifier: Modifier = Modifier) {
     val tokens = MaterialTheme.nuvio
     val settings by LiveTvPreferences.settings.collectAsStateWithLifecycle()
     val showLogo = settings.phoneChannelLogos
     val showName = settings.phoneChannelNames
     val showNumber = settings.phoneChannelNumbers
     val shape = RoundedCornerShape(NuvioTokens.Radius.lg)
-    Column(
-        modifier = modifier
-            .clip(shape)
-            .background(tokens.colors.surface)
-            .border(1.dp, tokens.colors.textPrimary.copy(alpha = 0.06f), shape)
-            .clickable(onClick = onPlay)
-            .padding(NuvioTokens.Space.s3),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        when {
-            // Only logos: the logo fills the tile.
-            showLogo && !showName && !showNumber -> LogoFill(channel, Modifier.fillMaxSize())
-            showLogo -> {
-                LogoFill(channel, Modifier.fillMaxWidth().weight(1f))
-                val line = listOfNotNull(
-                    channel.number.toString().takeIf { showNumber },
-                    channel.name.takeIf { showName },
-                ).joinToString("  ")
-                Text(line, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            }
-            else -> {
-                if (showNumber) {
-                    Text(
-                        channel.number.toString(),
-                        style = if (showName) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
-                        color = if (showName) tokens.colors.textMuted else tokens.colors.textPrimary,
-                        fontWeight = if (showName) FontWeight.Normal else FontWeight.SemiBold,
-                        maxLines = 1,
-                    )
+    Box(modifier = modifier) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(shape)
+                .background(tokens.colors.surface)
+                .border(1.dp, tokens.colors.textPrimary.copy(alpha = 0.06f), shape)
+                .clickable(onClick = onPlay)
+                .padding(NuvioTokens.Space.s3),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            when {
+                // Only logos: the logo fills the tile.
+                showLogo && !showName && !showNumber -> LogoFill(channel, Modifier.fillMaxSize())
+                showLogo -> {
+                    LogoFill(channel, Modifier.fillMaxWidth().weight(1f))
+                    val line = listOfNotNull(
+                        channel.number.toString().takeIf { showNumber },
+                        channel.name.takeIf { showName },
+                    ).joinToString("  ")
+                    Text(line, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                if (showName) {
-                    Text(
-                        channel.name,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = tokens.colors.textPrimary,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        maxLines = if (showNumber) 2 else 3,
-                        overflow = TextOverflow.Ellipsis,
-                    )
+                else -> {
+                    if (showNumber) {
+                        Text(
+                            channel.number.toString(),
+                            style = if (showName) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
+                            color = if (showName) tokens.colors.textMuted else tokens.colors.textPrimary,
+                            fontWeight = if (showName) FontWeight.Normal else FontWeight.SemiBold,
+                            maxLines = 1,
+                        )
+                    }
+                    if (showName) {
+                        Text(
+                            channel.name,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = tokens.colors.textPrimary,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            maxLines = if (showNumber) 2 else 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
             }
+        }
+        // Favorites: a small star on the tile's corner.
+        if (isFavorite) {
+            FavoriteBadge(Modifier.align(Alignment.TopEnd).padding(NuvioTokens.Space.s3))
         }
     }
 }
