@@ -1,5 +1,20 @@
 package com.nuvio.app.features.livetv.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.style.TextAlign
+import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.NuvioInputField
+import com.nuvio.app.core.ui.NuvioProgressBar
+import nuvio.composeapp.generated.resources.livetv_search_hint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -86,6 +101,7 @@ import org.jetbrains.compose.resources.stringResource
 
 private val ChannelColumnWidth = 92.dp
 private val RowHeight = 64.dp
+private val RowGap = 6.dp
 private val HourWidth = 240.dp
 private const val HOUR_MS = 60L * 60L * 1000L
 private const val SLOT_MS = 30L * 60L * 1000L
@@ -126,7 +142,14 @@ fun LiveTvGuideScreen(
     // Saved, so backing out of a channel returns to the same group and spot in the guide.
     var selectedGroupId by rememberSaveable { mutableStateOf<String?>(null) }
     val selected = sections.firstOrNull { it.group.id == selectedGroupId } ?: sections.firstOrNull()
-    val channels = if (selectedGroupId == ChannelGroup.ALL) state.visible.filter { playlistId == null || it.sourceId == playlistId } else selected?.channels.orEmpty()
+    var searching by rememberSaveable { mutableStateOf(false) }
+    var query by rememberSaveable { mutableStateOf("") }
+    val playlistChannels = state.visible.filter { playlistId == null || it.sourceId == playlistId }
+    val channels = when {
+        searching && query.isNotBlank() -> remember(playlistChannels, query) { LiveTvViewState.search(playlistChannels, query) }
+        selectedGroupId == ChannelGroup.ALL -> playlistChannels
+        else -> selected?.channels.orEmpty()
+    }
 
     // The grid goes back as far as the "Guide hours back" setting (so catch-up shows can be
     // picked from it) and 24 hours ahead of now.
@@ -168,50 +191,73 @@ fun LiveTvGuideScreen(
             onBack = onBack,
             modifier = Modifier.padding(horizontal = NuvioTokens.Space.s8),
             actions = {
-                IconButton(onClick = ::jumpToNow) {
-                    Icon(Icons.Filled.Schedule, contentDescription = stringResource(Res.string.livetv_guide_now), tint = tokens.colors.accent)
-                }
+                GuideRoundButton(
+                    icon = if (searching) Icons.Filled.Close else Icons.Filled.Search,
+                    description = stringResource(Res.string.livetv_search_hint),
+                    onClick = { searching = !searching; if (!searching) query = "" },
+                )
+                Spacer(Modifier.width(NuvioTokens.Space.s8))
+                GuideRoundButton(icon = Icons.Filled.Schedule, description = stringResource(Res.string.livetv_guide_now), onClick = ::jumpToNow)
             },
         )
-        PlaylistDropdown(
-            choices = playlistChoices,
-            selectedId = playlistId,
-            allDetail = allSections.count { it.group.sourceId != null }.let { if (it == 1) "1 group" else "$it groups" },
-            onSelect = PlaylistFilter::select,
-            modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s4),
-        )
+        AnimatedVisibility(visible = searching) {
+            NuvioInputField(
+                value = query,
+                onValueChange = { query = it },
+                placeholder = stringResource(Res.string.livetv_search_hint),
+                modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s4),
+            )
+        }
         Row(
             modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s6),
             horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
         ) {
+            val searchingNow = searching && query.isNotBlank()
             sections.forEach { s ->
-                Chip(label = s.group.title, selected = selected?.group?.id == s.group.id && selectedGroupId != ChannelGroup.ALL, onClick = { selectedGroupId = s.group.id })
+                GroupPill(s.group, selected = !searchingNow && selected?.group?.id == s.group.id && selectedGroupId != ChannelGroup.ALL) {
+                    selectedGroupId = s.group.id; searching = false; query = ""
+                }
             }
-            Chip(label = stringResource(Res.string.livetv_guide_all), selected = selectedGroupId == ChannelGroup.ALL, onClick = { selectedGroupId = ChannelGroup.ALL })
+            GroupPill(
+                ChannelGroup(ChannelGroup.ALL, stringResource(Res.string.livetv_guide_all), 0, special = true),
+                selected = !searchingNow && selectedGroupId == ChannelGroup.ALL,
+            ) { selectedGroupId = ChannelGroup.ALL; searching = false; query = "" }
         }
-        // Time ruler.
-        Row(modifier = Modifier.fillMaxWidth().height(28.dp)) {
-            Spacer(Modifier.width(ChannelColumnWidth))
+        // Time ruler, with the playlist menu in the corner above the channel column.
+        Row(modifier = Modifier.fillMaxWidth().height(34.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.width(ChannelColumnWidth).padding(start = NuvioTokens.Space.s8, end = NuvioTokens.Space.s4)) {
+                PlaylistDropdown(
+                    choices = playlistChoices,
+                    selectedId = playlistId,
+                    allDetail = allSections.count { it.group.sourceId != null }.let { if (it == 1) "1 group" else "$it groups" },
+                    onSelect = PlaylistFilter::select,
+                    compact = true,
+                )
+            }
             Box(modifier = Modifier.weight(1f).fillMaxHeight().horizontalScroll(hScroll, enabled = false)) {
-                Row {
+                Row(modifier = Modifier.fillMaxHeight(), verticalAlignment = Alignment.CenterVertically) {
                     var t = gridStart
                     while (t < gridEnd) {
+                        val current = now >= t && now < t + SLOT_MS
                         Text(
                             text = formatClock(t),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = tokens.colors.textMuted,
-                            modifier = Modifier.width(HourWidth / 2).padding(start = NuvioTokens.Space.s6, top = NuvioTokens.Space.s6),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (current) tokens.colors.textPrimary else tokens.colors.textMuted,
+                            fontWeight = if (current) FontWeight.SemiBold else FontWeight.Normal,
+                            maxLines = 1,
+                            modifier = Modifier.width(HourWidth / 2).padding(start = NuvioTokens.Space.s6),
                         )
                         t += SLOT_MS
                     }
                 }
-                NowLine(gridStart, now, ::pxPerMs, height = 28.dp)
+                NowLine(gridStart, now, ::pxPerMs, height = 34.dp)
             }
         }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = nuvioSafeBottomPadding(NuvioTokens.Space.s16)),
+            verticalArrangement = Arrangement.spacedBy(RowGap),
+            contentPadding = androidx.compose.foundation.layout.PaddingValues(top = NuvioTokens.Space.s2, bottom = nuvioSafeBottomPadding(NuvioTokens.Space.s16)),
         ) {
             items(channels, key = { it.key }) { channel ->
                 GuideRow(
@@ -244,7 +290,7 @@ private fun NowLine(gridStart: Long, now: Long, pxPerMs: () -> Float, height: Dp
     val density = LocalDensity.current
     val x = with(density) { ((now - gridStart) * pxPerMs()).toDp() }
     if (x > 0.dp) {
-        Box(modifier = Modifier.offset(x = x).width(2.dp).height(height).background(Color.LiveNowLine))
+        Box(modifier = Modifier.offset(x = x).width(2.dp).height(height).background(MaterialTheme.nuvio.colors.accent))
     }
 }
 
@@ -263,31 +309,17 @@ private fun GuideRow(
     val tokens = MaterialTheme.nuvio
     val density = LocalDensity.current
     Row(modifier = Modifier.fillMaxWidth().height(RowHeight)) {
-        Column(
-            modifier = Modifier
-                .width(ChannelColumnWidth)
-                .fillMaxHeight()
-                .background(tokens.colors.background)
-                .clickable(onClick = onPlay)
-                .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s4),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
-        ) {
-            ChannelLogo(channel, size = 36.dp)
-            Text(
-                text = channel.name,
-                style = MaterialTheme.typography.labelSmall,
-                color = tokens.colors.textSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
+        GuideChannelTile(
+            channel = channel,
+            onPlay = onPlay,
+            modifier = Modifier.width(ChannelColumnWidth).fillMaxHeight().padding(start = NuvioTokens.Space.s8, end = NuvioTokens.Space.s6),
+        )
         Box(modifier = Modifier.weight(1f).fillMaxHeight().horizontalScroll(hScroll)) {
             val totalWidth = with(density) { ((gridEnd - gridStart) * pxPerMs()).toDp() }
             Box(modifier = Modifier.width(totalWidth).fillMaxHeight()) {
                 if (programs.isEmpty()) {
                     Box(
-                        modifier = Modifier.fillMaxSize().padding(NuvioTokens.Space.s2).clip(tokens.shapes.compactCard).background(tokens.colors.surface),
+                        modifier = Modifier.fillMaxSize().padding(end = NuvioTokens.Space.s4).clip(RoundedCornerShape(NuvioTokens.Radius.lg)).background(tokens.colors.surface.copy(alpha = 0.6f)),
                         contentAlignment = Alignment.CenterStart,
                     ) {
                         Text(stringResource(Res.string.livetv_guide_no_info), style = MaterialTheme.typography.bodySmall, color = tokens.colors.textMuted, modifier = Modifier.padding(start = NuvioTokens.Space.s12))
@@ -298,21 +330,22 @@ private fun GuideRow(
                     val stop = p.stopMs.coerceAtMost(gridEnd)
                     if (stop <= start) return@forEach
                     val x = with(density) { ((start - gridStart) * pxPerMs()).toDp() }
-                    val w = with(density) { ((stop - start) * pxPerMs()).toDp() }
+                    val w = with(density) { ((stop - start) * pxPerMs()).toDp() } - NuvioTokens.Space.s4
+                    if (w <= 0.dp) return@forEach
                     val live = p.isLive(now)
                     val replayable = !live && LiveTvCatchup.isReplayable(channel, p, now)
+                    val shape = RoundedCornerShape(NuvioTokens.Radius.lg)
                     Box(
                         modifier = Modifier
                             .offset(x = x)
                             .width(w)
                             .fillMaxHeight()
-                            .padding(NuvioTokens.Space.s2)
-                            .clip(tokens.shapes.compactCard)
-                            .background(if (live) tokens.colors.accent.copy(alpha = tokens.opacity.selected) else tokens.colors.surface)
-                            .clickable { onProgram(p) }
-                            .padding(horizontal = NuvioTokens.Space.s8, vertical = NuvioTokens.Space.s6),
+                            .clip(shape)
+                            .background(if (live) tokens.colors.accent.copy(alpha = 0.22f).compositeOver(tokens.colors.surfaceCard) else tokens.colors.surface)
+                            .border(1.dp, if (live) tokens.colors.accent.copy(alpha = 0.4f) else tokens.colors.textPrimary.copy(alpha = 0.06f), shape)
+                            .clickable { onProgram(p) },
                     ) {
-                        Column {
+                        Column(modifier = Modifier.padding(horizontal = NuvioTokens.Space.s10, vertical = NuvioTokens.Space.s6)) {
                             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s4)) {
                                 if (replayable) {
                                     Icon(Icons.Filled.Replay, contentDescription = null, tint = tokens.colors.textMuted, modifier = Modifier.width(12.dp).height(12.dp))
@@ -321,25 +354,134 @@ private fun GuideRow(
                                     text = p.title,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = tokens.colors.textPrimary,
-                                    fontWeight = if (live) FontWeight.SemiBold else FontWeight.Normal,
-                                    maxLines = 2,
+                                    fontWeight = if (live) FontWeight.SemiBold else FontWeight.Medium,
+                                    maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
-                            if (w > 90.dp) {
+                            if (w > 50.dp) {
                                 Text(
-                                    text = formatClock(p.startMs) + " – " + formatClock(p.stopMs),
+                                    text = if (w > 120.dp) formatClock(p.startMs) + " – " + formatClock(p.stopMs) else formatClock(p.startMs),
                                     style = MaterialTheme.typography.labelSmall,
                                     color = tokens.colors.textMuted,
                                     maxLines = 1,
                                 )
                             }
                         }
+                        if (live && w > 70.dp) {
+                            NuvioProgressBar(
+                                progress = p.progress(now),
+                                height = NuvioTokens.Space.s3,
+                                fillColor = tokens.colors.accent,
+                                modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(start = NuvioTokens.Space.s10, end = NuvioTokens.Space.s10, bottom = NuvioTokens.Space.s6),
+                            )
+                        }
                     }
                 }
                 NowLine(gridStart, now, pxPerMs, height = RowHeight)
             }
         }
+    }
+}
+
+/** The channel's tile in the guide: logo, name and number, as the Channel Display settings say. */
+@Composable
+private fun GuideChannelTile(channel: LiveChannel, onPlay: () -> Unit, modifier: Modifier = Modifier) {
+    val tokens = MaterialTheme.nuvio
+    val settings by LiveTvPreferences.settings.collectAsStateWithLifecycle()
+    val showLogo = settings.phoneChannelLogos
+    val showName = settings.phoneChannelNames
+    val showNumber = settings.phoneChannelNumbers
+    val shape = RoundedCornerShape(NuvioTokens.Radius.lg)
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .background(tokens.colors.surface)
+            .border(1.dp, tokens.colors.textPrimary.copy(alpha = 0.06f), shape)
+            .clickable(onClick = onPlay)
+            .padding(NuvioTokens.Space.s3),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        when {
+            // Only logos: the logo fills the tile.
+            showLogo && !showName && !showNumber -> LogoFill(channel, Modifier.fillMaxSize())
+            showLogo -> {
+                LogoFill(channel, Modifier.fillMaxWidth().weight(1f))
+                val line = listOfNotNull(
+                    channel.number.toString().takeIf { showNumber },
+                    channel.name.takeIf { showName },
+                ).joinToString("  ")
+                Text(line, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textSecondary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            else -> {
+                if (showNumber) {
+                    Text(
+                        channel.number.toString(),
+                        style = if (showName) MaterialTheme.typography.labelMedium else MaterialTheme.typography.titleMedium,
+                        color = if (showName) tokens.colors.textMuted else tokens.colors.textPrimary,
+                        fontWeight = if (showName) FontWeight.Normal else FontWeight.SemiBold,
+                        maxLines = 1,
+                    )
+                }
+                if (showName) {
+                    Text(
+                        channel.name,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = tokens.colors.textPrimary,
+                        fontWeight = FontWeight.Medium,
+                        textAlign = TextAlign.Center,
+                        maxLines = if (showNumber) 2 else 3,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LogoFill(channel: LiveChannel, modifier: Modifier) {
+    val tokens = MaterialTheme.nuvio
+    val logo = channel.logo?.takeIf { it.isNotBlank() }
+    Box(modifier = modifier, contentAlignment = Alignment.Center) {
+        if (logo != null) {
+            AsyncImage(model = logo, contentDescription = channel.name, modifier = Modifier.fillMaxSize().padding(NuvioTokens.Space.s2), contentScale = ContentScale.Fit)
+        } else {
+            Text(channel.name.trim().take(3).uppercase(), style = MaterialTheme.typography.labelLarge, color = tokens.colors.textMuted, fontWeight = FontWeight.Bold, maxLines = 1)
+        }
+    }
+}
+
+/** A group in the guide's top row: filled with the theme colour when picked. */
+@Composable
+private fun GroupPill(group: ChannelGroup, selected: Boolean, onClick: () -> Unit) {
+    val tokens = MaterialTheme.nuvio
+    val shape = RoundedCornerShape(NuvioTokens.Radius.full)
+    Row(
+        modifier = Modifier
+            .clip(shape)
+            .background(if (selected) tokens.colors.accent else Color.Transparent)
+            .border(1.dp, if (selected) tokens.colors.accent else tokens.colors.textPrimary.copy(alpha = 0.16f), shape)
+            .clickable(onClick = onClick)
+            .padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s8),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
+    ) {
+        val color = if (selected) tokens.colors.onAccent else tokens.colors.textSecondary
+        Icon(groupIcon(group), contentDescription = null, tint = color, modifier = Modifier.size(NuvioTokens.Icon.sm))
+        Text(group.title, style = MaterialTheme.typography.labelLarge, color = color, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1)
+    }
+}
+
+@Composable
+private fun GuideRoundButton(icon: ImageVector, description: String, onClick: () -> Unit) {
+    val tokens = MaterialTheme.nuvio
+    Box(
+        modifier = Modifier.size(38.dp).clip(CircleShape).background(tokens.colors.surface).clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDescription = description, tint = tokens.colors.textPrimary, modifier = Modifier.size(NuvioTokens.Icon.md))
     }
 }
 

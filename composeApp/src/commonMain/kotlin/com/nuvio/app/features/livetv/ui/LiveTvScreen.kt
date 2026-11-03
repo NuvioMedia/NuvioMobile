@@ -1,6 +1,25 @@
 package com.nuvio.app.features.livetv.ui
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.material.icons.filled.ChildCare
+import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Newspaper
+import androidx.compose.material.icons.filled.TheaterComedy
+import kotlinx.coroutines.launch
+import nuvio.composeapp.generated.resources.livetv_group_channels
+import nuvio.composeapp.generated.resources.livetv_group_one_channel
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -213,11 +232,40 @@ fun LiveTvScreen(
     val nowNext: Map<String, NowNext> = remember(programs, now) {
         LiveTvRepository.nowNext(programs.keys, now)
     }
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    // Where the sticky header ends, so the open group's name can sit pinned just under it.
+    var boxTopPx by remember { mutableStateOf(0f) }
+    var headerBottomPx by remember { mutableStateOf(0f) }
+    val showList = state.hasSources && !(searching && query.isNotBlank())
+    // The open group whose channels are at the top of the list, once its own card has scrolled away.
+    val pinnedGroupId by remember(sections, showList) {
+        derivedStateOf {
+            if (!showList) return@derivedStateOf null
+            val visible = listState.layoutInfo.visibleItemsInfo
+            val header = visible.firstOrNull { it.index == 0 } ?: return@derivedStateOf null
+            val edge = header.offset + header.size
+            val first = visible.firstOrNull { it.index > 0 && it.offset + it.size > edge } ?: return@derivedStateOf null
+            val key = first.key as? String ?: return@derivedStateOf null
+            if (key.startsWith("g:")) return@derivedStateOf null
+            sections.filter { it.group.id in expanded.value && key.startsWith(it.group.id + "/") }
+                .maxByOrNull { it.group.id.length }?.group?.id
+        }
+    }
+    /** The list position of a group's card (the sticky header is item 0). Mirrors the items below. */
+    fun groupCardIndex(groupId: String): Int? {
+        var index = 1
+        sections.forEach { s ->
+            if (s.group.id == groupId) return index
+            index += 1 + if (s.group.id in expanded.value) s.channels.size else 0
+        }
+        return null
+    }
 
-    Box(modifier = modifier.fillMaxSize().liveTvSideInsets()) {
+    Box(modifier = modifier.fillMaxSize().liveTvSideInsets().onGloballyPositioned { boxTopPx = it.positionInRoot().y }) {
         NuvioScreen(modifier = Modifier.fillMaxSize(), listState = listState) {
             stickyHeader {
-                Column(modifier = Modifier.background(tokens.colors.background)) {
+                Column(modifier = Modifier.background(tokens.colors.background).onGloballyPositioned { headerBottomPx = it.positionInRoot().y + it.size.height }) {
                     // The title has the top row to itself (with the menu for managing playlists); every page
                     // button sits in one labelled row under it, so none are hidden.
                     val headerActions = buildList {
@@ -292,9 +340,9 @@ fun LiveTvScreen(
                 }
                 items(searchResults.size, key = { "s:" + searchResults[it].key }) { i ->
                     val c = searchResults[i]
-                    ChannelRow(c, nowNext[c.key], now, c.key in state.favoriteKeys, onClick = { onPlayChannel(c, nowNext[c.key]?.now?.title) }) {
+                    ChannelRow(c, nowNext[c.key], now, c.key in state.favoriteKeys, onClick = { onPlayChannel(c, nowNext[c.key]?.now?.title) }, onLongClick = {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress); sheetChannel = c
-                    }
+                    })
                 }
             } else {
                 if (sections.isEmpty() && !status.loading) {
@@ -309,7 +357,7 @@ fun LiveTvScreen(
                     val id = section.group.id
                     val isCollapsed = id !in expanded.value
                     item(key = "g:$id") {
-                        GroupHeader(section.group, isCollapsed, playlistTag = if (playlistId == null && playlistChoices.size > 1) playlistNames[section.group.sourceId] else null) {
+                        GroupCard(section.group, section.channels, isCollapsed, playlistTag = if (playlistId == null && playlistChoices.size > 1) playlistNames[section.group.sourceId] else null) {
                             if (section.group.locked) unlockGroup = section.group
                             else {
                                 expanded.value = if (isCollapsed) expanded.value + id else expanded.value - id
@@ -324,10 +372,34 @@ fun LiveTvScreen(
                                 LiveTvListMemory.expanded = expanded.value + id
                                 LiveTvListMemory.saveScroll(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset)
                                 onPlayChannel(c, nowNext[c.key]?.now?.title)
-                            }) {
+                            }, onLongClick = {
                                 haptics.performHapticFeedback(HapticFeedbackType.LongPress); sheetChannel = c
-                            }
+                            }, modifier = Modifier.padding(start = NuvioTokens.Space.s12))
                         }
+                    }
+                }
+            }
+        }
+        val pinned = pinnedGroupId?.let { gid -> sections.firstOrNull { it.group.id == gid } }
+        if (pinned != null && headerBottomPx > boxTopPx) {
+            Box(
+                modifier = Modifier
+                    .offset(y = with(density) { (headerBottomPx - boxTopPx).toDp() })
+                    .fillMaxWidth()
+                    .background(tokens.colors.background)
+                    .padding(horizontal = tokens.spacing.screenHorizontal)
+                    .padding(bottom = NuvioTokens.Space.s6),
+            ) {
+                PinnedGroupBar(pinned.group) {
+                    val gid = pinned.group.id
+                    val index = groupCardIndex(gid)
+                    expanded.value = expanded.value - gid
+                    LiveTvListMemory.expanded = expanded.value
+                    // Back to the group's card, just under the header (not hidden behind it).
+                    if (index != null) scope.launch {
+                        listState.scrollToItem(index)
+                        val header = listState.layoutInfo.visibleItemsInfo.firstOrNull { it.index == 0 }
+                        if (header != null) listState.scrollBy(-(header.offset + header.size).toFloat())
                     }
                 }
             }
@@ -379,54 +451,150 @@ private fun EmptyLiveTv(onOpenSettings: () -> Unit) {
 }
 
 @Composable
-private fun GroupHeader(group: ChannelGroup, collapsed: Boolean, playlistTag: String? = null, onToggle: () -> Unit) {
+private fun GroupCard(
+    group: ChannelGroup,
+    channels: List<LiveChannel>,
+    collapsed: Boolean,
+    playlistTag: String? = null,
+    onToggle: () -> Unit,
+) {
+    val tokens = MaterialTheme.nuvio
+    val settings by LiveTvPreferences.settings.collectAsStateWithLifecycle()
+    val open = !collapsed && !group.locked
+    val arrow by animateFloatAsState(if (open) 180f else 0f)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(NuvioTokens.Radius.xl))
+            .background(tokens.colors.surface)
+            .clickable(onClick = onToggle)
+            .padding(NuvioTokens.Space.s12),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12),
+    ) {
+        GroupIconBox(group, size = 40.dp)
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s4)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8)) {
+                Text(
+                    text = group.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = tokens.colors.textPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f, fill = false),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (playlistTag != null) {
+                    Text(
+                        text = playlistTag,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = tokens.colors.textMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .widthIn(max = 110.dp)
+                            .clip(RoundedCornerShape(NuvioTokens.Radius.xs))
+                            .background(tokens.colors.surfaceCard)
+                            .padding(horizontal = NuvioTokens.Space.s6, vertical = NuvioTokens.Space.s2),
+                    )
+                }
+            }
+            if (!group.locked) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s4)) {
+                    // A peek at the group: its first few channel logos.
+                    if (settings.phoneChannelLogos) {
+                        channels.asSequence().filter { !it.logo.isNullOrBlank() }.take(4).forEach {
+                            ChannelLogo(it, width = 30.dp, height = 20.dp, inset = NuvioTokens.Space.s2, radius = NuvioTokens.Radius.xs)
+                        }
+                    }
+                    Text(
+                        text = if (group.count == 1) stringResource(Res.string.livetv_group_one_channel) else stringResource(Res.string.livetv_group_channels, group.count),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = tokens.colors.textMuted,
+                        maxLines = 1,
+                        modifier = Modifier.padding(start = NuvioTokens.Space.s2),
+                    )
+                }
+            }
+        }
+        if (!group.locked) {
+            Icon(
+                imageVector = Icons.Filled.ExpandMore,
+                contentDescription = null,
+                tint = if (open) tokens.colors.accent else tokens.colors.textMuted,
+                modifier = Modifier.rotate(arrow),
+            )
+        }
+    }
+}
+
+/** The open group's name, pinned under the header while its channels scroll; tap closes the group. */
+@Composable
+private fun PinnedGroupBar(group: ChannelGroup, onClose: () -> Unit) {
     val tokens = MaterialTheme.nuvio
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(tokens.shapes.compactCard)
-            .clickable(onClick = onToggle)
-            .padding(horizontal = NuvioTokens.Space.s4, vertical = NuvioTokens.Space.s10),
+            .clip(RoundedCornerShape(NuvioTokens.Radius.lg))
+            .background(tokens.colors.surface)
+            .clickable(onClick = onClose)
+            .padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s8),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
+        horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s10),
     ) {
-        if (group.id == ChannelGroup.FAVORITES) {
-            Icon(Icons.Filled.Star, contentDescription = null, tint = tokens.colors.accent, modifier = Modifier.size(NuvioTokens.Icon.md))
-        }
-        if (group.locked) {
-            Icon(Icons.Filled.Lock, contentDescription = null, tint = tokens.colors.textMuted, modifier = Modifier.size(NuvioTokens.Icon.md))
-        }
+        GroupIconBox(group, size = 28.dp)
         Text(
             text = group.title,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleSmall,
             color = tokens.colors.textPrimary,
             fontWeight = FontWeight.SemiBold,
             modifier = Modifier.weight(1f),
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
-        if (playlistTag != null) {
-            Text(
-                text = playlistTag,
-                style = MaterialTheme.typography.labelSmall,
-                color = tokens.colors.textMuted,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .widthIn(max = 110.dp)
-                    .clip(RoundedCornerShape(NuvioTokens.Radius.xs))
-                    .background(tokens.colors.surfaceElevated)
-                    .padding(horizontal = NuvioTokens.Space.s6, vertical = NuvioTokens.Space.s2),
-            )
-        }
-        if (!group.locked) {
-            Text(text = group.count.toString(), style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted)
-            Icon(
-                imageVector = if (collapsed) Icons.Filled.ExpandMore else Icons.Filled.ExpandLess,
-                contentDescription = null,
-                tint = tokens.colors.textMuted,
-            )
-        }
+        Icon(Icons.Filled.ExpandLess, contentDescription = null, tint = tokens.colors.accent)
+    }
+}
+
+@Composable
+internal fun GroupIconBox(group: ChannelGroup, size: androidx.compose.ui.unit.Dp) {
+    val tokens = MaterialTheme.nuvio
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(RoundedCornerShape(NuvioTokens.Radius.lg))
+            .background(tokens.colors.accent.copy(alpha = 0.16f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = groupIcon(group),
+            contentDescription = null,
+            tint = if (group.locked) tokens.colors.textMuted else tokens.colors.accent,
+            modifier = Modifier.size(size * 0.55f),
+        )
+    }
+}
+
+/** An icon picked from the group's name (news, sports, kids…); a plain TV for anything else. */
+internal fun groupIcon(group: ChannelGroup): ImageVector {
+    if (group.locked) return Icons.Filled.Lock
+    when (group.id) {
+        ChannelGroup.FAVORITES -> return Icons.Filled.Star
+        ChannelGroup.RECENT -> return Icons.Filled.History
+        ChannelGroup.ALL -> return Icons.Filled.LiveTv
+    }
+    val t = group.title.lowercase()
+    fun has(vararg words: String) = words.any { it in t }
+    return when {
+        has("news") -> Icons.Filled.Newspaper
+        has("sport", "football", "soccer", "nfl", "nba", "nhl", "mlb", "espn", "golf", "tennis", "racing", "fight", "ufc", "boxing", "cricket", "rugby") -> Icons.Filled.SportsSoccer
+        has("kid", "child", "cartoon", "family", "junior") -> Icons.Filled.ChildCare
+        has("movie", "cinema", "film", "vod") -> Icons.Filled.Movie
+        has("music", "radio", "mtv") -> Icons.Filled.MusicNote
+        has("doc", "nature", "science", "history", "discovery", "learning", "travel") -> Icons.Filled.Explore
+        has("local", "regional", "locals") -> Icons.Filled.Home
+        has("entertain", "comedy", "drama", "series", "shows", "general", "variety", "lifestyle", "reality") -> Icons.Filled.TheaterComedy
+        else -> Icons.Filled.LiveTv
     }
 }
 
@@ -439,40 +607,64 @@ internal fun ChannelRow(
     isFavorite: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
     val settings by LiveTvPreferences.settings.collectAsStateWithLifecycle()
+    val showLogo = settings.phoneChannelLogos
+    val showName = settings.phoneChannelNames
+    val showNumber = settings.phoneChannelNumbers
+    val logoOnly = showLogo && !showName && !showNumber
     val current = nowNext?.now
     val liveGames by SportsLive.byChannel.collectAsStateWithLifecycle()
     val sportsSettings by SportsRepository.settings.collectAsStateWithLifecycle()
     val game = liveGames[channel.key]?.takeIf { it.state == GameState.LIVE && !sportsSettings.hideScores && sportsSettings.scoreOnInfoBar }
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .clip(tokens.shapes.card)
+            .clip(RoundedCornerShape(NuvioTokens.Radius.xl))
             .background(tokens.colors.surface)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s10),
+            .padding(horizontal = NuvioTokens.Space.s10, vertical = NuvioTokens.Space.s10),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s12),
     ) {
-        ChannelLogo(channel, size = 48.dp, show = settings.showChannelLogos)
+        when {
+            showLogo -> ChannelLogo(
+                channel,
+                width = if (logoOnly) 104.dp else 64.dp,
+                height = if (logoOnly) 64.dp else 44.dp,
+                inset = if (logoOnly) NuvioTokens.Space.s3 else NuvioTokens.Space.s4,
+            )
+            // Numbers without names or logos: the number takes the logo's place.
+            showNumber && !showName -> Box(
+                modifier = Modifier.width(64.dp).height(44.dp).clip(RoundedCornerShape(NuvioTokens.Radius.md)).background(tokens.colors.surfaceCard),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(channel.number.toString(), style = MaterialTheme.typography.titleMedium, color = tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold, maxLines = 1)
+            }
+        }
         Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s2)) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
-                if (settings.showChannelNumbers) {
-                    Text(channel.number.toString(), style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted)
-                }
-                Text(
-                    text = channel.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = tokens.colors.textPrimary,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                if (isFavorite) {
-                    Icon(Icons.Filled.Star, contentDescription = null, tint = tokens.colors.accent, modifier = Modifier.size(NuvioTokens.Icon.sm))
+            val numberInLine = showNumber && (showName || showLogo)
+            if (showName || numberInLine || isFavorite) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
+                    if (numberInLine) {
+                        Text(channel.number.toString(), style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted)
+                    }
+                    if (showName) {
+                        Text(
+                            text = channel.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = tokens.colors.textPrimary,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                    }
+                    if (isFavorite) {
+                        Icon(Icons.Filled.Star, contentDescription = null, tint = tokens.colors.accent, modifier = Modifier.size(NuvioTokens.Icon.sm))
+                    }
                 }
             }
             if (game != null) {
@@ -491,11 +683,12 @@ internal fun ChannelRow(
                 Text(
                     text = current.title + (current.episode?.let { "  ·  $it" } ?: ""),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = tokens.colors.textSecondary,
+                    color = if (showName) tokens.colors.textSecondary else tokens.colors.textPrimary,
+                    fontWeight = if (showName) FontWeight.Normal else FontWeight.Medium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                NuvioProgressBar(progress = current.progress(nowMs), height = NuvioTokens.Space.s3)
+                NuvioProgressBar(progress = current.progress(nowMs), height = NuvioTokens.Space.s3, fillColor = tokens.colors.accent)
                 nowNext.next?.let { next ->
                     Text(
                         text = formatClock(next.startMs) + "  " + next.title,
@@ -506,7 +699,7 @@ internal fun ChannelRow(
                     )
                 }
             } else {
-                Text(channel.group, style = MaterialTheme.typography.bodySmall, color = tokens.colors.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(if (showName) channel.group else channel.name, style = MaterialTheme.typography.bodySmall, color = tokens.colors.textMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
         }
     }
@@ -514,11 +707,25 @@ internal fun ChannelRow(
 
 @Composable
 internal fun ChannelLogo(channel: LiveChannel, size: androidx.compose.ui.unit.Dp, show: Boolean = true) {
+    ChannelLogo(channel, width = size, height = size, show = show)
+}
+
+/** The channel's logo in a rounded box (or its first letters when it has none). */
+@Composable
+internal fun ChannelLogo(
+    channel: LiveChannel,
+    width: androidx.compose.ui.unit.Dp,
+    height: androidx.compose.ui.unit.Dp,
+    show: Boolean = true,
+    inset: androidx.compose.ui.unit.Dp = NuvioTokens.Space.s4,
+    radius: androidx.compose.ui.unit.Dp = NuvioTokens.Radius.md,
+) {
     val tokens = MaterialTheme.nuvio
     Box(
         modifier = Modifier
-            .size(size)
-            .clip(RoundedCornerShape(NuvioTokens.Radius.md))
+            .width(width)
+            .height(height)
+            .clip(RoundedCornerShape(radius))
             .background(tokens.colors.surfaceCard),
         contentAlignment = Alignment.Center,
     ) {
@@ -527,15 +734,16 @@ internal fun ChannelLogo(channel: LiveChannel, size: androidx.compose.ui.unit.Dp
             AsyncImage(
                 model = logo,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize().padding(NuvioTokens.Space.s4),
+                modifier = Modifier.fillMaxSize().padding(inset),
                 contentScale = ContentScale.Fit,
             )
         } else {
             Text(
                 text = channel.name.trim().take(2).uppercase(),
-                style = MaterialTheme.typography.labelLarge,
+                style = if (minOf(width, height) < 28.dp) MaterialTheme.typography.labelSmall else MaterialTheme.typography.labelLarge,
                 color = tokens.colors.textMuted,
                 fontWeight = FontWeight.Bold,
+                maxLines = 1,
             )
         }
     }

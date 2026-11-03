@@ -308,6 +308,13 @@ data class LiveTvSettings(
     /** Xtream catch-up: ask for HLS (.m3u8) first, which gives replays a length for seeking. */
     val catchupPreferHls: Boolean = true,
     /**
+     * What the phone shows for each channel (guide channel column, Live TV list). Kept on this
+     * device only, so the TV's own channel display isn't changed. At least one stays on.
+     */
+    val phoneChannelLogos: Boolean = true,
+    val phoneChannelNames: Boolean = true,
+    val phoneChannelNumbers: Boolean = true,
+    /**
      * Moves the time asked for in catch-up (and catch-up saves) later (+) or earlier (−), for
      * providers whose archive runs on a different clock than their guide: replays that start
      * the show before (or after) the one picked.

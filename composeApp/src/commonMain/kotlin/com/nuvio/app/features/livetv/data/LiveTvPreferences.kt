@@ -105,6 +105,9 @@ internal object LiveTvKeys {
     const val launcherCardShape = "launcher_card_shape"
     const val logoSourcesOff = "logo_sources_off"
     const val catchupPreferHls = "catchup_prefer_hls"
+    const val phoneLogos = "phone_channel_logos"
+    const val phoneNames = "phone_channel_names"
+    const val phoneNumbers = "phone_channel_numbers"
     const val catchupShift = "catchup_shift_minutes"
     const val parentalPin = "parental_pin"
     const val lockAdultContent = "lock_adult_content"
@@ -230,7 +233,8 @@ internal object LiveTvKeys {
     /** Per-device keys that sync never copies. */
     private val SYNC_EXCLUDED_BASE = setOf(
         "last_channel", "previous_channel", "last_group", "recent", "on_demand_imports",
-        "channel_quality", "developer_tools", "recording_storage"
+        "channel_quality", "developer_tools", "recording_storage",
+        "phone_channel_logos", "phone_channel_names", "phone_channel_numbers"
     )
     private val PROFILE_SUFFIX = Regex("""_p\d+$""")
 
@@ -708,6 +712,9 @@ internal open class LiveTvPreferencesStore {
             launcherCardShape = p.str(LiveTvKeys.launcherCardShape) ?: d.launcherCardShape,
             logoSourcesOff = p.str(LiveTvKeys.logoSourcesOff) ?: d.logoSourcesOff,
             catchupPreferHls = p.bool(LiveTvKeys.catchupPreferHls) ?: d.catchupPreferHls,
+            phoneChannelLogos = p.bool(LiveTvKeys.phoneLogos) ?: d.phoneChannelLogos,
+            phoneChannelNames = p.bool(LiveTvKeys.phoneNames) ?: d.phoneChannelNames,
+            phoneChannelNumbers = p.bool(LiveTvKeys.phoneNumbers) ?: d.phoneChannelNumbers,
             catchupShiftMinutes = p.int(LiveTvKeys.catchupShift) ?: d.catchupShiftMinutes,
             parentalPin = p.str(LiveTvKeys.parentalPin) ?: d.parentalPin,
             lockAdultContent = p.bool(LiveTvKeys.lockAdultContent) ?: d.lockAdultContent,
@@ -962,6 +969,9 @@ internal open class LiveTvPreferencesStore {
         p[LiveTvKeys.launcherCardShape] = s.launcherCardShape
         p[LiveTvKeys.logoSourcesOff] = s.logoSourcesOff
         p[LiveTvKeys.catchupPreferHls] = s.catchupPreferHls
+        p[LiveTvKeys.phoneLogos] = s.phoneChannelLogos
+        p[LiveTvKeys.phoneNames] = s.phoneChannelNames
+        p[LiveTvKeys.phoneNumbers] = s.phoneChannelNumbers
         p[LiveTvKeys.catchupShift] = s.catchupShiftMinutes
         p[LiveTvKeys.parentalPin] = s.parentalPin
         p[LiveTvKeys.lockAdultContent] = s.lockAdultContent

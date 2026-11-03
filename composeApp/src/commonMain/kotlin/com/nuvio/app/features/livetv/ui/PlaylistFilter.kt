@@ -65,6 +65,8 @@ internal fun PlaylistDropdown(
     allDetail: String,
     onSelect: (String?) -> Unit,
     modifier: Modifier = Modifier,
+    /** Just the playlist name and an arrow, for a small corner (the guide's top-left). */
+    compact: Boolean = false,
 ) {
     if (choices.size < 2) return
     val tokens = MaterialTheme.nuvio
@@ -77,21 +79,21 @@ internal fun PlaylistDropdown(
                 .clip(RoundedCornerShape(NuvioTokens.Radius.md))
                 .background(tokens.colors.surface)
                 .clickable { menuOpen = true }
-                .padding(horizontal = NuvioTokens.Space.s12, vertical = NuvioTokens.Space.s10),
+                .padding(horizontal = if (compact) NuvioTokens.Space.s8 else NuvioTokens.Space.s12, vertical = if (compact) NuvioTokens.Space.s6 else NuvioTokens.Space.s10),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
+            horizontalArrangement = Arrangement.spacedBy(if (compact) NuvioTokens.Space.s2 else NuvioTokens.Space.s8),
         ) {
-            Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null, tint = tokens.colors.textMuted, modifier = Modifier.size(NuvioTokens.Icon.md))
+            if (!compact) Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null, tint = tokens.colors.textMuted, modifier = Modifier.size(NuvioTokens.Icon.md))
             Text(
-                text = current?.name ?: "All playlists",
-                style = MaterialTheme.typography.bodyMedium,
+                text = current?.name ?: if (compact) "All" else "All playlists",
+                style = if (compact) MaterialTheme.typography.labelMedium else MaterialTheme.typography.bodyMedium,
                 color = tokens.colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            Text(text = current?.detail ?: allDetail, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, maxLines = 1)
-            Icon(Icons.Filled.ExpandMore, contentDescription = null, tint = tokens.colors.textMuted)
+            if (!compact) Text(text = current?.detail ?: allDetail, style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, maxLines = 1)
+            Icon(Icons.Filled.ExpandMore, contentDescription = null, tint = tokens.colors.textMuted, modifier = if (compact) Modifier.size(NuvioTokens.Icon.sm) else Modifier)
         }
         Menu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
             MenuItem(text = "All playlists", selected = current == null, onClick = { menuOpen = false; onSelect(null) })

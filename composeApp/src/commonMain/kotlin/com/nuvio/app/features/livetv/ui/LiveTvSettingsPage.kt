@@ -185,6 +185,13 @@ import nuvio.composeapp.generated.resources.livetv_vod_update_now_description
 import nuvio.composeapp.generated.resources.livetv_section_guides
 import nuvio.composeapp.generated.resources.livetv_section_playlists
 import nuvio.composeapp.generated.resources.livetv_section_watching
+import nuvio.composeapp.generated.resources.livetv_section_channel_display
+import nuvio.composeapp.generated.resources.livetv_phone_logos
+import nuvio.composeapp.generated.resources.livetv_phone_logos_description
+import nuvio.composeapp.generated.resources.livetv_phone_names
+import nuvio.composeapp.generated.resources.livetv_phone_names_description
+import nuvio.composeapp.generated.resources.livetv_phone_numbers
+import nuvio.composeapp.generated.resources.livetv_phone_numbers_description
 import nuvio.composeapp.generated.resources.livetv_show_tab
 import nuvio.composeapp.generated.resources.livetv_sports
 import nuvio.composeapp.generated.resources.livetv_parental
@@ -474,6 +481,39 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
                     checked = settings.showInSidebar,
                     isTablet = isTablet,
                     onCheckedChange = { on -> update { it.copy(showInSidebar = on) } },
+                )
+            }
+        }
+
+        SettingsSection(title = stringResource(Res.string.livetv_section_channel_display), isTablet = isTablet) {
+            // Turning one off is ignored when it's the last one on, so a channel always shows something.
+            val onCount = listOf(settings.phoneChannelLogos, settings.phoneChannelNames, settings.phoneChannelNumbers).count { it }
+            SettingsGroup(isTablet = isTablet) {
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.livetv_phone_logos),
+                    description = stringResource(Res.string.livetv_phone_logos_description),
+                    checked = settings.phoneChannelLogos,
+                    enabled = !(settings.phoneChannelLogos && onCount == 1),
+                    isTablet = isTablet,
+                    onCheckedChange = { on -> update { if (!on && !it.phoneChannelNames && !it.phoneChannelNumbers) it else it.copy(phoneChannelLogos = on) } },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.livetv_phone_names),
+                    description = stringResource(Res.string.livetv_phone_names_description),
+                    checked = settings.phoneChannelNames,
+                    enabled = !(settings.phoneChannelNames && onCount == 1),
+                    isTablet = isTablet,
+                    onCheckedChange = { on -> update { if (!on && !it.phoneChannelLogos && !it.phoneChannelNumbers) it else it.copy(phoneChannelNames = on) } },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.livetv_phone_numbers),
+                    description = stringResource(Res.string.livetv_phone_numbers_description),
+                    checked = settings.phoneChannelNumbers,
+                    enabled = !(settings.phoneChannelNumbers && onCount == 1),
+                    isTablet = isTablet,
+                    onCheckedChange = { on -> update { if (!on && !it.phoneChannelLogos && !it.phoneChannelNames) it else it.copy(phoneChannelNumbers = on) } },
                 )
             }
         }
