@@ -98,6 +98,9 @@ import nuvio.composeapp.generated.resources.livetv_add_playlist
 import nuvio.composeapp.generated.resources.livetv_empty_body
 import nuvio.composeapp.generated.resources.livetv_empty_title
 import nuvio.composeapp.generated.resources.livetv_guide
+import nuvio.composeapp.generated.resources.livetv_header_guide
+import nuvio.composeapp.generated.resources.livetv_header_search
+import nuvio.composeapp.generated.resources.livetv_header_settings
 import nuvio.composeapp.generated.resources.livetv_no_results
 import nuvio.composeapp.generated.resources.livetv_on_demand
 import nuvio.composeapp.generated.resources.livetv_rec_record_now
