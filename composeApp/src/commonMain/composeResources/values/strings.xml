@@ -2537,4 +2537,7 @@
     <string name="subtitle_shadow_opacity">Shadow opacity</string>
     <string name="subtitle_shadow_size">Shadow size</string>
     <string name="subtitle_reset_appearance">Reset appearance</string>
+    <string name="player_action_airplay">AirPlay</string>
+    <string name="player_error_airplay_unsupported">This source cannot be played with AirPlay.</string>
+    <string name="player_error_cast_unsupported">This source cannot be played with Google Cast.</string>
 </resources>

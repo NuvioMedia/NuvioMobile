@@ -1,6 +1,7 @@
 import Foundation
 import UIKit
 import AVFoundation
+import AVKit
 import Libmpv
 import ComposeApp
 
@@ -9,6 +10,10 @@ import ComposeApp
 final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
 
     private var playerVC: MPVPlayerViewController?
+    private var airPlayPlayer: AVPlayer?
+    private var airPlayController: AVPlayerViewController?
+    private var airPlayDelegate: AirPlayPlayerDelegate?
+    private var resumeLocalAfterAirPlay = false
 
     func createPlayerViewController() -> UIViewController {
         return ensurePlayerViewController()
@@ -22,6 +27,62 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
     }
 
     func loadFile(url: String) { ensurePlayerViewController().loadFile(url) }
+    func presentAirPlayPlayer(url: String, headersJson: String?, positionMs: Int64, title: String) -> Bool {
+        guard
+            let mediaURL = URL(string: url),
+            ["http", "https"].contains(mediaURL.scheme?.lowercased() ?? ""),
+            let presenter = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .flatMap({ $0.windows })
+                .first(where: \.isKeyWindow)?.rootViewController?.topMostPresentedController
+        else {
+            return false
+        }
+
+        if let current = airPlayController {
+            current.dismiss(animated: false)
+        }
+        let requestHeaders = parseRequestHeaders(headersJson)
+        let assetOptions: [String: Any] = requestHeaders.isEmpty
+            ? [:]
+            : ["AVURLAssetHTTPHeaderFieldsKey": requestHeaders]
+        let item = AVPlayerItem(asset: AVURLAsset(url: mediaURL, options: assetOptions))
+        let titleMetadata = AVMutableMetadataItem()
+        titleMetadata.identifier = .commonIdentifierTitle
+        titleMetadata.value = title as NSString
+        titleMetadata.extendedLanguageTag = "und"
+        item.externalMetadata = [titleMetadata]
+        let player = AVPlayer(playerItem: item)
+        let controller = AVPlayerViewController()
+        controller.player = player
+        controller.allowsPictureInPicturePlayback = false
+        player.allowsExternalPlayback = true
+        player.externalPlaybackVideoGravity = .resizeAspect
+        airPlayPlayer = player
+        airPlayController = controller
+        resumeLocalAfterAirPlay = playerVC?.isPlayerPlaying ?? false
+        playerVC?.pausePlayback()
+        let delegate = AirPlayPlayerDelegate { [weak self] in
+            guard let self else { return }
+            let seconds = CMTimeGetSeconds(player.currentTime())
+            let position = seconds.isFinite ? Int64(seconds * 1000) : positionMs
+            self.airPlayPlayer = nil
+            self.airPlayController = nil
+            self.airPlayDelegate = nil
+            self.playerVC?.seekToMs(max(0, position))
+            if self.resumeLocalAfterAirPlay {
+                self.playerVC?.playPlayback()
+            }
+            self.resumeLocalAfterAirPlay = false
+        }
+        airPlayDelegate = delegate
+        controller.delegate = delegate
+        presenter.present(controller, animated: true) {
+            player.seek(to: CMTime(value: max(0, positionMs), timescale: 1000))
+            player.play()
+        }
+        return true
+    }
     func loadFileWithAudio(videoUrl: String, audioUrl: String?, headersJson: String?, subtitlesJson: String?) {
         ensurePlayerViewController().loadFile(
             videoUrl,
@@ -203,10 +264,18 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
 
     // State - refreshes position from mpv on each call (polled from Kotlin every 250ms)
     func getIsLoading() -> Bool { playerVC?.refreshPlaybackState(); return playerVC?.isPlayerLoading ?? true }
-    func getIsPlaying() -> Bool { return playerVC?.isPlayerPlaying ?? false }
+    func getIsPlaying() -> Bool { return airPlayPlayer.map { $0.rate > 0 } ?? (playerVC?.isPlayerPlaying ?? false) }
     func getIsEnded() -> Bool { return playerVC?.isPlayerEnded ?? false }
-    func getDurationMs() -> Int64 { return playerVC?.durationMs ?? 0 }
-    func getPositionMs() -> Int64 { return playerVC?.positionMs ?? 0 }
+    func getDurationMs() -> Int64 {
+        guard let player = airPlayPlayer, let duration = player.currentItem?.duration else { return playerVC?.durationMs ?? 0 }
+        let seconds = CMTimeGetSeconds(duration)
+        return seconds.isFinite ? Int64(seconds * 1000) : playerVC?.durationMs ?? 0
+    }
+    func getPositionMs() -> Int64 {
+        guard let player = airPlayPlayer else { return playerVC?.positionMs ?? 0 }
+        let seconds = CMTimeGetSeconds(player.currentTime())
+        return seconds.isFinite ? max(0, Int64(seconds * 1000)) : 0
+    }
     func getBufferedMs() -> Int64 { return playerVC?.bufferedMs ?? 0 }
     func getPlaybackSpeed() -> Float { playerVC?.currentSpeed ?? 1.0 }
     func getErrorMessage() -> String { playerVC?.currentErrorMessage ?? "" }
@@ -235,6 +304,24 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
             headers[key] = headerValue
         }
         return headers
+    }
+}
+
+private final class AirPlayPlayerDelegate: NSObject, AVPlayerViewControllerDelegate {
+    private let onDismiss: () -> Void
+
+    init(onDismiss: @escaping () -> Void) {
+        self.onDismiss = onDismiss
+    }
+
+    func playerViewControllerDidEndDismissalTransition(_ playerViewController: AVPlayerViewController) {
+        onDismiss()
+    }
+}
+
+private extension UIViewController {
+    var topMostPresentedController: UIViewController {
+        presentedViewController?.topMostPresentedController ?? self
     }
 }
 
