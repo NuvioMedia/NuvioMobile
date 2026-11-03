@@ -199,9 +199,21 @@ internal object LiveTvRecorder {
         val hdrs = withUserAgent(headers)
         try {
             val isHls = url.substringBefore('?').endsWith(".m3u8", ignoreCase = true)
-            if (isHls) {
+            var hls = isHls
+            if (hls) {
                 problem = recordHls(rec, url, hdrs, finite) { secs, size -> rec = progress(rec, secs, size) }
-            } else {
+                // Some providers refuse the pieces of their .m3u8 stream but give the plain stream:
+                // if nothing was saved, try the same link as .ts once.
+                val plain = url.substringBefore('?').removeSuffix(".m3u8").takeIf { it != url.substringBefore('?') }
+                    ?.let { it + ".ts" + url.substringAfter('?', "").let { q -> if (q.isEmpty()) "" else "?$q" } }
+                if (!finite && plain != null && RecordingPlatform.dirSize(rec.dir) <= 2_048L && !stopping(rec.id) && LiveTvClock.nowMs() < currentStop(rec.id)) {
+                    url = plain
+                    hls = false
+                    problem = null
+                    rec = noteProblem(rec, null)
+                }
+            }
+            if (!hls) {
                 var first = true
                 var tries = 0
                 var recordedMs = 0L
@@ -319,7 +331,7 @@ internal object LiveTvRecorder {
         onProgress: (Double, Long) -> Unit,
     ): String? {
         var mediaUrl = url
-        var text = RecordingPlatform.fetchText(mediaUrl, headers)
+        var text = RecordingPlatform.fetchTextAt(mediaUrl, headers).let { (t, at) -> mediaUrl = at; t }
         if (STREAM_INF.containsMatchIn(text)) {
             val lines = text.lines()
             var best = -1L
@@ -332,7 +344,7 @@ internal object LiveTvRecorder {
                 }
             }
             mediaUrl = resolve(mediaUrl, bestUri ?: return "This channel's stream couldn't be read")
-            text = RecordingPlatform.fetchText(mediaUrl, headers)
+            text = RecordingPlatform.fetchTextAt(mediaUrl, headers).let { (t, at) -> mediaUrl = at; t }
         }
         if (text.contains("#EXT-X-KEY") && !text.contains("METHOD=NONE")) return "This channel is encrypted and can't be recorded"
         var path = filePath(rec)
@@ -389,7 +401,7 @@ internal object LiveTvRecorder {
             if (finite && text.contains("#EXT-X-ENDLIST")) break
             delay((target * 1000L / 2).coerceIn(1_000L, 6_000L))
             text = try {
-                RecordingPlatform.fetchText(mediaUrl, headers)
+                RecordingPlatform.fetchTextAt(mediaUrl, headers).let { (t, at) -> mediaUrl = at; t }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {

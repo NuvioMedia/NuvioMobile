@@ -41,6 +41,9 @@ internal expect object RecordingPlatform {
     /** Reads a small text resource (an HLS playlist) over HTTP. */
     suspend fun fetchText(url: String, headers: Map<String, String>): String
 
+    /** Like [fetchText], also giving the address it ended up at after redirects (what relative links are measured from). */
+    suspend fun fetchTextAt(url: String, headers: Map<String, String>): Pair<String, String>
+
     /** Keeps the app running (a foreground service with a notice) while anything records. */
     fun keepAlive(active: Boolean)
 

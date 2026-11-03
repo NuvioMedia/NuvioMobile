@@ -127,6 +127,23 @@ internal actual object RecordingPlatform {
         }
     }
 
+    actual suspend fun fetchTextAt(url: String, headers: Map<String, String>): Pair<String, String> = withContext(Dispatchers.IO) {
+        val request = Request.Builder().url(url).apply { headers.forEach { (k, v) -> if (k.isNotBlank() && v.isNotBlank()) header(k, v) } }.get().build()
+        try {
+            http.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) throw RecordingHttpError(response.code)
+                val body = response.body ?: throw IllegalStateException("Empty response")
+                body.string() to response.request.url.toString()
+            }
+        } catch (e: RecordingHttpError) {
+            throw e
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            throw IllegalStateException(describe(e), e)
+        }
+    }
+
     private fun describe(e: Exception): String = when (e) {
         is UnknownHostException -> "Couldn't find the provider's server"
         is SocketTimeoutException -> "The provider stopped sending (timeout)"

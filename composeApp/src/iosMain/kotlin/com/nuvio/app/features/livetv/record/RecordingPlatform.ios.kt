@@ -17,6 +17,7 @@ internal actual object RecordingPlatform {
         error("Recording isn't available on this platform yet")
     }
     actual suspend fun fetchText(url: String, headers: Map<String, String>): String = error("Recording isn't available on this platform yet")
+    actual suspend fun fetchTextAt(url: String, headers: Map<String, String>): Pair<String, String> = error("Recording isn't available on this platform yet")
     actual fun keepAlive(active: Boolean) {}
     actual fun scheduleAlarm(id: String, atMs: Long) {}
     actual fun cancelAlarm(id: String) {}
