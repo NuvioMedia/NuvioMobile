@@ -1368,6 +1368,16 @@ internal fun MainAppContent(
                             AppTabActions(
                                 onCatalogClick = onCatalogClick,
                                 onPosterClick = navController::openPreview,
+                                onPlayHeroTrailer = { meta ->
+                                    navController.navigate(
+                                        DetailRoute(
+                                            type = meta.type,
+                                            id = meta.id,
+                                            title = meta.name,
+                                            playTrailerOnOpen = true,
+                                        ),
+                                    )
+                                },
                                 onPosterLongClick = { meta ->
                                     openPosterActions(PosterActionTarget(preview = meta))
                                 },

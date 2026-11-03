@@ -86,6 +86,7 @@ internal data class AppTabRequests(
 internal data class AppTabActions(
     val onCatalogClick: ((HomeCatalogSection) -> Unit)? = null,
     val onPosterClick: ((MetaPreview) -> Unit)? = null,
+    val onPlayHeroTrailer: ((MetaPreview) -> Unit)? = null,
     val onPosterLongClick: ((MetaPreview) -> Unit)? = null,
     val onLibraryPosterClick: ((LibraryItem) -> Unit)? = null,
     val onLibraryPosterLongClick: ((LibraryItem, LibrarySection) -> Unit)? = null,
@@ -137,6 +138,7 @@ internal fun AppTabHost(
                         scrollToTopRequests = requests.homeScrollToTopRequests,
                         onCatalogClick = actions.onCatalogClick,
                         onPosterClick = actions.onPosterClick,
+                        onPlayHeroTrailer = actions.onPlayHeroTrailer,
                         onPosterLongClick = actions.onPosterLongClick,
                         onContinueWatchingClick = actions.onContinueWatchingClick,
                         onContinueWatchingLongPress = actions.onContinueWatchingLongPress,
