@@ -9,6 +9,8 @@ import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -25,6 +27,7 @@ import nuvio.composeapp.generated.resources.library_filter_all_types
 import nuvio.composeapp.generated.resources.library_filter_list
 import nuvio.composeapp.generated.resources.library_filter_sort
 import nuvio.composeapp.generated.resources.library_filter_type
+import nuvio.composeapp.generated.resources.library_filter_hide_watched
 import nuvio.composeapp.generated.resources.library_sort_added_asc
 import nuvio.composeapp.generated.resources.library_sort_added_desc
 import nuvio.composeapp.generated.resources.library_sort_title_asc
@@ -43,6 +46,8 @@ internal fun LibrarySavedControls(
     onSectionSelected: (String) -> Unit,
     onTypeSelected: (String?) -> Unit,
     onSortSelected: (LibrarySortOption) -> Unit,
+    hideWatched: Boolean,
+    onHideWatchedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val sortOptions = availableLibrarySortOptions(sourceMode)
@@ -101,6 +106,12 @@ internal fun LibrarySavedControls(
                     .firstOrNull { it.name == option.key }
                     ?.let(onSortSelected)
             },
+        )
+
+        FilterChip(
+            selected = hideWatched,
+            onClick = { onHideWatchedChange(!hideWatched) },
+            label = { Text(stringResource(Res.string.library_filter_hide_watched)) },
         )
     }
 }
