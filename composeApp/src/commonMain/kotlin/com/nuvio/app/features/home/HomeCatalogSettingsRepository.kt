@@ -49,7 +49,8 @@ enum class HomeCatalogRowPlacement(val storageValue: String) {
 
     companion object {
         fun fromStorage(value: String?): HomeCatalogRowPlacement =
-            values().firstOrNull { it.storageValue == value } ?: NORMAL
+            if (value == "pinned_position") NORMAL
+            else values().firstOrNull { it.storageValue == value } ?: NORMAL
     }
 }
 
@@ -345,12 +346,15 @@ object HomeCatalogSettingsRepository {
         ensureLoaded()
         val current = preferences[key] ?: defaultPreferenceForMissingKey(key) ?: return
         if (current.rowPlacement == placement.storageValue) return
-        if (placement == HomeCatalogRowPlacement.PINNED_POSITION) {
-            val visibleKeys = _uiState.value.items.map { it.key }
-            if (key in visibleKeys) persistVisibleOrder(visibleKeys)
+        // PINNED_POSITION is retained only for backward compatibility with older callers.
+        // It now behaves like NORMAL so it cannot freeze a row at its current index.
+        val effectivePlacement = if (placement == HomeCatalogRowPlacement.PINNED_POSITION) {
+            HomeCatalogRowPlacement.NORMAL
+        } else {
+            placement
         }
         updatePreference(key) { preference ->
-            preference.copy(rowPlacement = placement.storageValue)
+            preference.copy(rowPlacement = effectivePlacement.storageValue)
         }
     }
 
@@ -802,7 +806,7 @@ object HomeCatalogSettingsRepository {
                 enabled = stored?.enabled ?: true,
                 heroSourceEnabled = heroSourceEnabled,
                 order = stored?.order ?: nextOrder++,
-                rowPlacement = stored?.rowPlacement ?: HomeCatalogRowPlacement.NORMAL.storageValue,
+                rowPlacement = HomeCatalogRowPlacement.fromStorage(stored?.rowPlacement).storageValue,
             )
         }
         preferences = normalized.toMap()
