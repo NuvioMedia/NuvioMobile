@@ -23,7 +23,7 @@
     <string name="action_import">Importer</string>
     <string name="action_next">Suivant</string>
     <string name="action_ok">OK</string>
-    <string name="action_play">Lire</string>
+    <string name="action_play">Lecture</string>
     <string name="action_previous">Précédent</string>
     <string name="action_remove">Supprimer</string>
     <string name="action_remove_anyway">Retirer quand même</string>
@@ -686,7 +686,7 @@
     <string name="settings_appearance_nav_bar_style">Barre de navigation</string>
     <string name="settings_appearance_nav_bar_style_sheet_title">Style de la barre de navigation</string>
     <string name="settings_nav_bar_glow">Lueur du verre</string>
-    <string name="settings_nav_bar_glow_description">Ajouter une lumière douce autour de la barre flottante.</string>
+    <string name="settings_nav_bar_glow_description">Ajoute une lumière douce autour de la barre flottante.</string>
     <string name="settings_nav_bar_glow_on">Lueur activée</string>
     <string name="settings_nav_bar_glow_off">Lueur désactivée</string>
     <string name="settings_nav_bar_summary">%1$s · %2$s</string>
@@ -836,8 +836,8 @@
     <string name="settings_continue_watching_style_wide_description">Carte horizontale riche en informations</string>
     <string name="settings_continue_watching_up_next_description">Affiche l’épisode suivant à partir de l’épisode le plus avancé que vous avez regardé. Désactivez cette option pour les revisionnages afin d’utiliser plutôt l’épisode regardé le plus récemment.</string>
     <string name="settings_continue_watching_up_next_title">Suite à partir de l’épisode le plus avancé</string>
-    <string name="settings_continue_watching_use_episode_thumbnails_description">Préfère les vignettes d’épisode lorsqu’elles sont disponibles.</string>
-    <string name="settings_continue_watching_use_episode_thumbnails_title">Préférer les vignettes d’épisode dans Continuer à regarder</string>
+    <string name="settings_continue_watching_use_episode_thumbnails_description">Préfère les miniatures d’épisodes lorsqu’elles sont disponibles.</string>
+    <string name="settings_continue_watching_use_episode_thumbnails_title">Préférer les miniatures d’épisodes dans Continuer à regarder</string>
     <string name="settings_content_discovery_section_home">ACCUEIL</string>
     <string name="settings_content_discovery_section_sources">SOURCES</string>
     <string name="settings_content_discovery_section_search">RECHERCHE</string>
@@ -1109,7 +1109,7 @@
     <string name="settings_playback_last_link_cache_duration">Durée du cache du dernier lien</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 – Repli HEVC</string>
     <string name="settings_playback_map_dv7_to_hevc_description">Convertir le profil 7 de Dolby Vision en HEVC standard pour les appareils sans prise en charge matérielle de DV</string>
-    <string name="settings_playback_minutes_before_end">Minutes de seuil</string>
+    <string name="settings_playback_minutes_before_end">Minutes du seuil</string>
     <string name="settings_playback_minutes_before_end_description">Valeur de repli en l’absence de repère d’outro.</string>
     <string name="settings_playback_minutes_value">%1$s min</string>
     <string name="settings_playback_no_items_available">Aucun élément disponible</string>
@@ -1187,7 +1187,7 @@
     <string name="settings_playback_section_subtitle_audio">SOUS-TITRES ET AUDIO</string>
     <string name="settings_playback_section_subtitle_rendering">RENDU DES SOUS-TITRES</string>
     <string name="settings_playback_selected_count">%1$d sélectionné(s)</string>
-    <string name="settings_playback_show_loading_overlay">Superposition de chargement</string>
+    <string name="settings_playback_show_loading_overlay">Écran de chargement</string>
     <string name="settings_playback_show_loading_overlay_description">Afficher l’écran de chargement jusqu’à l’apparition de la première image vidéo.</string>
     <string name="settings_playback_pause_overlay">Superposition en pause</string>
     <string name="settings_playback_pause_overlay_description">Afficher la superposition de détails après 5 secondes de pause.</string>
@@ -1229,7 +1229,7 @@
     <string name="settings_playback_stream_selection_mode_regex_description">Lire la première source dont le texte correspond à votre motif regex.</string>
     <string name="settings_playback_stream_timeout">Délai de sélection du flux</string>
     <string name="settings_playback_stream_timeout_description">Temps d’attente des addons avant la sélection.</string>
-    <string name="settings_playback_threshold_minutes">Minutes de seuil</string>
+    <string name="settings_playback_threshold_minutes">Minutes du seuil</string>
     <string name="settings_playback_threshold_mode">Mode du seuil de l’épisode suivant</string>
     <string name="settings_playback_threshold_mode_minutes_before_end">Minutes avant la fin</string>
     <string name="settings_playback_threshold_mode_percentage">Pourcentage</string>
@@ -1288,7 +1288,7 @@
     <string name="settings_tmdb_module_more_like_this_description">Arrière-plans des recommandations TMDB sur la page de détail</string>
     <string name="settings_tmdb_module_networks">Chaînes</string>
     <string name="settings_tmdb_module_networks_description">Chaînes avec logos depuis TMDB</string>
-    <string name="settings_tmdb_module_production_companies">Sociétés de production</string>
+    <string name="settings_tmdb_module_production_companies">Productions</string>
     <string name="settings_tmdb_module_production_companies_description">Sociétés de production depuis TMDB</string>
     <string name="settings_tmdb_module_season_posters">Affiches de saison</string>
     <string name="settings_tmdb_module_season_posters_description">Utiliser les affiches de saison TMDB dans le sélecteur de saisons de l’écran de métadonnées pour les séries.</string>
@@ -1593,7 +1593,7 @@
     <string name="home_continue_watching_up_next">Épisode suivant</string>
     <string name="home_continue_watching_watched">%1$s vu</string>
     <string name="home_continue_watching_hours_minutes_left">Il reste %1$d h %2$d min</string>
-    <string name="home_continue_watching_minutes_left">%1$d min restantes</string>
+    <string name="home_continue_watching_minutes_left">Il reste %1$d min</string>
     <string name="home_empty_no_active_addons_message">Activez ou ajoutez un addon pour voir les catalogues à l’accueil.</string>
     <string name="home_empty_no_rows_message">Vos addons activés ne fournissent aucun catalogue pouvant être affiché à l’accueil.</string>
     <string name="home_empty_no_rows_title">Aucun contenu d’accueil disponible</string>
@@ -1998,7 +1998,7 @@
     <string name="cloud_library_type_usenet">Usenet</string>
     <string name="cloud_library_type_web">Web</string>
     <string name="cloud_library_type_files">Fichiers</string>
-    <string name="media_anime">Anime</string>
+    <string name="media_anime">Animés</string>
     <string name="media_channels">Chaînes</string>
     <string name="media_movies">Films</string>
     <string name="media_series">Séries</string>
@@ -2049,7 +2049,7 @@
     <!-- iOS video output presets -->
     <string name="player_ios_preset_native_edr_label">Native EDR</string>
     <string name="player_ios_preset_native_edr_desc">Optimal pour les iPhones et iPads compatibles HDR.</string>
-    <string name="player_ios_preset_sdr_tone_mapped_label">SDR tone mapped</string>
+    <string name="player_ios_preset_sdr_tone_mapped_label">SDR avec tone mapping</string>
     <string name="player_ios_preset_sdr_tone_mapped_desc">Blancs et noirs plus prévisibles sur une sortie de type SDR.</string>
     <string name="player_ios_preset_compatibility_label">Compatibilité</string>
     <string name="player_ios_preset_compatibility_desc">Au plus près de l’ancien comportement MPV iOS.</string>
@@ -2231,7 +2231,7 @@
     <string name="details_runtime_hours_minutes">%1$d h %2$d min</string>
     <string name="details_runtime_hours_only">%1$d h</string>
     <string name="details_runtime_minutes_only">%1$d min</string>
-    <string name="downloads_error_finalize_file_failed">Impossible de finaliser le fichier de téléchargement</string>
+    <string name="downloads_error_finalize_file_failed">Impossible de finaliser le fichier téléchargé</string>
     <string name="downloads_error_open_partial_file_failed">Impossible d’ouvrir le fichier de téléchargement partiel</string>
     <string name="downloads_error_partial_file_not_open">Le fichier de téléchargement partiel n’est pas ouvert</string>
     <string name="downloads_error_write_partial_file_failed">Impossible d’écrire dans le fichier de téléchargement partiel</string>
@@ -2269,9 +2269,9 @@
     <string name="plugins_group_by_repo_desc">Dans Flux, afficher un fournisseur par dépôt au lieu d’un par source.</string>
     <string name="plugins_group_by_repo_title">Regrouper les fournisseurs de plugins par dépôt</string>
     <string name="plugins_input_manifest_placeholder">URL du manifeste du plugin</string>
-    <string name="plugins_manifest_error_name_missing">Nom du manifeste manquant.</string>
+    <string name="plugins_manifest_error_name_missing">Le nom du manifeste est manquant.</string>
     <string name="plugins_manifest_error_no_providers">Le manifeste ne contient aucun fournisseur.</string>
-    <string name="plugins_manifest_error_version_missing">Version du manifeste manquante.</string>
+    <string name="plugins_manifest_error_version_missing">La version du manifeste est manquante.</string>
     <string name="plugins_manifest_name_missing">Le nom du manifeste est manquant.</string>
     <string name="plugins_manifest_no_providers">Le manifeste ne contient aucun fournisseur.</string>
     <string name="plugins_manifest_version_missing">La version du manifeste est manquante.</string>
