@@ -84,7 +84,7 @@ actual fun PlatformPlayerSurface(
     }
 
     val controller = remember(bridge) {
-        object : PlayerEngineController, PlayerSystemControlSource {
+        object : PlayerEngineController, PlayerSystemControlSource, PlayerRemotePlaybackController {
             override val keepsPlaybackInBackground: Boolean
                 get() = bridge.getKeepsPlaybackInBackground()
 
@@ -111,6 +111,14 @@ actual fun PlatformPlayerSurface(
             override fun retry() {
                 bridge.retry()
             }
+
+            override fun startAirPlay(url: String, headers: Map<String, String>, positionMs: Long, title: String): Boolean =
+                bridge.presentAirPlayPlayer(
+                    url = url,
+                    headersJson = encodePlaybackHeadersForBridge(headers),
+                    positionMs = positionMs,
+                    title = title,
+                )
 
             override fun updateNowPlayingMetadata(info: PlayerNowPlayingInfo) {
                 runCatching {

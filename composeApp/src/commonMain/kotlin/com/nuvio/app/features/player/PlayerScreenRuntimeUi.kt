@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Airplay
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -18,9 +21,11 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioStatusModal
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.core.ui.LocalFold
 import com.nuvio.app.features.p2p.P2pStreamingState
@@ -331,6 +336,24 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
     val partyState by PartyRepository.state.collectAsStateWithLifecycle()
     val partyActive = partyState.party != null
     val playerBadges = rememberPlayerBadges()
+    val airplayUnsupportedMessage = stringResource(Res.string.player_error_airplay_unsupported)
+    val castUnsupportedMessage = stringResource(Res.string.player_error_cast_unsupported)
+    val directHttpSource = activeSourceUrl.startsWith("http://", true) || activeSourceUrl.startsWith("https://", true)
+    val canCast = directHttpSource && activeTorrentInfoHash == null &&
+        activeSourceAudioUrl == null && !ServerStreams.isServerSourceId(activeProviderAddonId)
+    PlatformCastSessionEffect(
+        url = activeSourceUrl,
+        title = title,
+        positionMs = playbackSnapshot.positionMs,
+        headers = activeSourceHeaders,
+        canCast = canCast,
+        onPauseLocal = { playerController?.pause() },
+        onResumeLocal = { position ->
+            playerController?.seekTo(position)
+            playerController?.play()
+        },
+        onUnsupported = { NuvioToastController.show(castUnsupportedMessage) },
+    )
     LaunchedEffect(folded) {
         if (folded) {
             controlsVisible = true
@@ -381,6 +404,30 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
                 null
             },
             partyActive = partyActive,
+            castAction = {
+                if (isIos) {
+                    PlayerHeaderIconButton(
+                        icon = Icons.Rounded.Airplay,
+                        contentDescription = stringResource(Res.string.player_action_airplay),
+                        buttonSize = metrics.headerIconSize + 16.dp,
+                        iconSize = metrics.headerIconSize,
+                        onClick = {
+                            val remoteController = playerController as? PlayerRemotePlaybackController
+                            val started = canCast && remoteController?.startAirPlay(
+                                activeSourceUrl,
+                                activeSourceHeaders,
+                                playbackSnapshot.positionMs,
+                                title,
+                            ) == true
+                            if (!started) NuvioToastController.show(airplayUnsupportedMessage)
+                        },
+                    )
+                } else {
+                    PlatformCastAction(
+                        modifier = Modifier.size(metrics.headerIconSize + 16.dp),
+                    )
+                }
+            },
             onTogglePlayback = { togglePlayback() },
             onSeekBack = { seekBy(-10_000L) },
             onSeekForward = { seekBy(10_000L) },

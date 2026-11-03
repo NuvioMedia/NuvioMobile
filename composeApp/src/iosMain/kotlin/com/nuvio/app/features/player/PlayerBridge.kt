@@ -15,6 +15,7 @@ interface NuvioPlayerBridge {
         headersJson: String?,
         subtitlesJson: String? = null
     )
+    fun presentAirPlayPlayer(url: String, headersJson: String?, positionMs: Long, title: String): Boolean
     fun play()
     fun pause()
     fun seekTo(positionMs: Long)

@@ -109,6 +109,7 @@ internal fun PlayerControlsShell(
     onBack: () -> Unit,
     onPartyClick: (() -> Unit)? = null,
     partyActive: Boolean = false,
+    castAction: (@Composable () -> Unit)? = null,
     onTogglePlayback: () -> Unit,
     onSeekBack: () -> Unit,
     onSeekForward: () -> Unit,
@@ -243,6 +244,7 @@ internal fun PlayerControlsShell(
                     onOpenInExternalPlayer = onOpenInExternalPlayer,
                     onPartyClick = onPartyClick,
                     partyActive = partyActive,
+                    castAction = castAction,
                     onBack = onBack,
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -405,6 +407,7 @@ private fun PlayerHeader(
     onOpenInExternalPlayer: (() -> Unit)?,
     onPartyClick: (() -> Unit)?,
     partyActive: Boolean,
+    castAction: (@Composable () -> Unit)?,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -496,6 +499,7 @@ private fun PlayerHeader(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    castAction?.invoke()
                     if (onSubmitIntroClick != null) {
                         PlayerHeaderIconButton(
                             icon = Icons.Rounded.Flag,

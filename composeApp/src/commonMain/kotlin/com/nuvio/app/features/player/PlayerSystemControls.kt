@@ -12,3 +12,7 @@ interface PlayerSystemControlSource {
     val keepsPlaybackInBackground: Boolean
     fun setSystemControlHandler(handler: PlayerSystemControlHandler?)
 }
+
+interface PlayerRemotePlaybackController {
+    fun startAirPlay(url: String, headers: Map<String, String>, positionMs: Long, title: String): Boolean
+}
