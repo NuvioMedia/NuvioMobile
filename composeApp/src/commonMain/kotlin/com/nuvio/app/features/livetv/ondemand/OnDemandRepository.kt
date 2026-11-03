@@ -328,7 +328,10 @@ internal object OnDemandRepository {
                 !com.nuvio.app.features.livetv.parental.ParentalControls.isLocked("vod:$uid", name, settings, user.lockedGroups)
             }
             val out = ArrayList<OnDemandSource>()
-            for (item in allowed.take(6)) {
+            // Highest quality first (4K, Full HD, HD, SD, from the provider's name for each copy;
+            // the full name, since the shown title drops tags like "4K-D+ - "). Copies with no
+            // hint keep their order, last. Sorted before the limit so a 4K copy isn't cut.
+            for (item in allowed.sortedByDescending { qualityRank(VodTitles.qualityOf(it.name).orEmpty()) }.take(6)) {
                 val pl = playlist(item.playlistId) ?: continue
                 val headers = headersFor(item)
                 if (kind == VodKind.MOVIE) {
