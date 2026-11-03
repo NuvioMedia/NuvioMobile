@@ -453,7 +453,7 @@ private fun LogoFill(channel: LiveChannel, modifier: Modifier) {
     }
 }
 
-/** A group in the guide's top row: filled with the theme colour when picked. */
+/** A group in the guide's top row (its name as written in the playlist): filled with the theme colour when picked. */
 @Composable
 private fun GroupPill(group: ChannelGroup, selected: Boolean, onClick: () -> Unit) {
     val tokens = MaterialTheme.nuvio
@@ -469,7 +469,6 @@ private fun GroupPill(group: ChannelGroup, selected: Boolean, onClick: () -> Uni
         horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6),
     ) {
         val color = if (selected) tokens.colors.onAccent else tokens.colors.textSecondary
-        Icon(groupIcon(group), contentDescription = null, tint = color, modifier = Modifier.size(NuvioTokens.Icon.sm))
         Text(group.title, style = MaterialTheme.typography.labelLarge, color = color, fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal, maxLines = 1)
     }
 }
