@@ -269,6 +269,11 @@ private fun ExoPlayerSurface(
     val playbackDiagnostics = remember(playerSourceKey) { PlaybackDiagnostics() }
     var subtitleDelayMs by remember(playerSourceKey) { mutableStateOf(0) }
     var selectedExternalSubtitleMimeType by remember(playerSourceKey) { mutableStateOf<String?>(null) }
+    // Addon subtitle attached by media reload. A player rebuild (libass VIDEO_EFFECT) prepares
+    // resolvedMediaItem again, so it must carry this subtitle or the selection is lost.
+    var attachedAddonSubtitleConfig by remember(playerSourceKey) {
+        mutableStateOf<MediaItem.SubtitleConfiguration?>(null)
+    }
     val latestSubtitleDelayMs = rememberUpdatedState(subtitleDelayMs)
     val latestExternalSubtitleMimeType = rememberUpdatedState(selectedExternalSubtitleMimeType)
     var playerViewRef by remember { mutableStateOf<PlayerView?>(null) }
@@ -344,7 +349,7 @@ private fun ExoPlayerSurface(
         val adaptive = mimeType == MimeTypes.APPLICATION_M3U8 ||
             mimeType == MimeTypes.APPLICATION_MPD ||
             mimeType == MimeTypes.APPLICATION_SS
-        if (!playerSettings.vodCacheEnabled || useYoutubeChunkedPlayback || adaptive) {
+        val media = if (!playerSettings.vodCacheEnabled || useYoutubeChunkedPlayback || adaptive) {
             upstream
         } else {
             VodCache.wrap(
@@ -356,11 +361,17 @@ private fun ExoPlayerSurface(
                 sizeMb = playerSettings.vodCacheSizeMb,
             )
         }
+        SubtitleRoutingDataSourceFactory(
+            media = media,
+            subtitles = subtitleDataSourceFactory(context, externalSubtitles),
+        )
     }
 
     fun ExoPlayer.setPlaybackMediaItem(videoMediaItem: MediaItem, startPositionMs: Long? = null) {
         if (!sourceAudioUrl.isNullOrBlank()) {
-            val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
+            // Keep libass parsing for addon ASS subtitles, like sources the player builds itself.
+            val mediaSourceFactory = getAssMediaSourceFactoryCompat()
+                ?: DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
             val videoSource = mediaSourceFactory.createMediaSource(videoMediaItem)
             val audioSource = mediaSourceFactory.createMediaSource(playbackMediaItemFromUrl(sourceAudioUrl))
             val mergedSource = MergingMediaSource(videoSource, audioSource)
@@ -546,7 +557,9 @@ private fun ExoPlayerSurface(
     }
 
     LaunchedEffect(exoPlayer, resolvedMediaItem, initialPositionRequestKey) {
-        val mediaItem = resolvedMediaItem
+        val mediaItem = attachedAddonSubtitleConfig?.let { config ->
+            resolvedMediaItem.buildUpon().setSubtitleConfigurations(listOf(config)).build()
+        } ?: resolvedMediaItem
         val requestedStartPositionMs = fallbackStartPositionMs
             ?: initialPositionMs?.takeIf { it > 0L }
         playbackDiagnostics.attempt += 1
@@ -779,8 +792,7 @@ private fun ExoPlayerSurface(
                     val hasSelectedAss = tracks.groups.any { group ->
                         group.isSelected && group.type == C.TRACK_TYPE_TEXT &&
                             (0 until group.length).any { i ->
-                                group.isTrackSelected(i) &&
-                                    group.getTrackFormat(i).sampleMimeType == MimeTypes.TEXT_SSA
+                                group.isTrackSelected(i) && group.getTrackFormat(i).isAssSubtitleFormat()
                             }
                     }
                     val hasDvVideo = tracks.groups.any { group ->
@@ -808,6 +820,7 @@ private fun ExoPlayerSurface(
                             pendingSubtitleTrackIndex.clear()
                             pendingSubtitleTrackIndex.add(selectedSubIdx)
                         }
+                        fallbackStartPositionMs = exoPlayer.currentPosition.coerceAtLeast(0L)
                         videoEffectsNeeded = true
                     }
                 }
@@ -1006,6 +1019,7 @@ private fun ExoPlayerSurface(
                             useLibass = useLibass,
                         )
                         if (attached) {
+                            attachedAddonSubtitleConfig = null
                             exoPlayer.trackSelectionParameters = exoPlayer.trackSelectionParameters
                                 .buildUpon()
                                 .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
@@ -1024,15 +1038,17 @@ private fun ExoPlayerSurface(
                         val resolvedMime = PlayerSubtitleUtils.mimeTypeFromUrl(url)
                         selectedExternalSubtitleMimeType = resolvedMime
                         Log.d(TAG, "setSubtitleUri: currentPosition=$currentPosition, wasPlaying=$wasPlaying")
-                        val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(Uri.parse(url))
+                        val subtitleConfig = MediaItem.SubtitleConfiguration.Builder(markedSubtitleUri(url))
+                            .setId(addonSubtitleTrackId(url))
                             .setMimeType(resolvedMime)
                             .setSelectionFlags(C.SELECTION_FLAG_DEFAULT)
                             .setRoleFlags(C.ROLE_FLAG_SUBTITLE)
                             .build()
                         Log.d(
                             TAG,
-                            "setSubtitleUri: subtitleConfig built, uri=${subtitleConfig.uri}, mime=${subtitleConfig.mimeType}, selectionFlags=${subtitleConfig.selectionFlags}"
+                            "setSubtitleUri: subtitleConfig built, uri=${url.redactedForLogs()}, mime=${subtitleConfig.mimeType}, selectionFlags=${subtitleConfig.selectionFlags}"
                         )
+                        attachedAddonSubtitleConfig = subtitleConfig
                         val newMediaItem = currentMediaItem.buildUpon()
                             .setSubtitleConfigurations(listOf(subtitleConfig))
                             .build()
@@ -1056,6 +1072,7 @@ private fun ExoPlayerSurface(
                     subtitleSelectionJob?.cancel()
                     sidecarController.stopSidecarAddonSubtitle(clearView = true)
                     selectedExternalSubtitleMimeType = null
+                    attachedAddonSubtitleConfig = null
                     val currentPosition = exoPlayer.currentPosition
                     val wasPlaying = exoPlayer.isPlaying
                     val currentMediaItem = exoPlayer.currentMediaItem ?: return
@@ -1078,6 +1095,7 @@ private fun ExoPlayerSurface(
                     subtitleSelectionJob?.cancel()
                     sidecarController.stopSidecarAddonSubtitle(clearView = true)
                     selectedExternalSubtitleMimeType = null
+                    attachedAddonSubtitleConfig = null
                     val currentPosition = exoPlayer.currentPosition
                     val wasPlaying = exoPlayer.isPlaying
                     val currentMediaItem = exoPlayer.currentMediaItem ?: return
