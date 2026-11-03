@@ -209,6 +209,8 @@ internal fun StreamDestination(
                 sources = stream.sources,
                 bingeGroup = stream.behaviorHints.bingeGroup,
                 contentLanguage = resolveLaunchContentLanguage(),
+                addonLogo = stream.addonLogo,
+                streamDescription = stream.streamSubtitle,
             )
         }
         val playerLaunch = PlayerLaunch(
@@ -313,12 +315,14 @@ internal fun StreamDestination(
             if (cached.url.isBlank() && !cached.infoHash.isNullOrBlank()) {
                 val cachedStream = StreamItem(
                     name = cached.streamName,
+                    description = cached.streamDescription,
                     url = null,
                     infoHash = cached.infoHash,
                     fileIdx = cached.fileIdx,
                     sources = cached.sources,
                     addonName = cached.addonName,
                     addonId = cached.addonId,
+                    addonLogo = cached.addonLogo,
                     behaviorHints = StreamBehaviorHints(
                         filename = cached.filename,
                         videoSize = cached.videoSize,
@@ -352,7 +356,7 @@ internal fun StreamDestination(
                 episodeTitle = launch.episodeTitle,
                 episodeThumbnail = launch.episodeThumbnail,
                 streamTitle = cached.streamName,
-                streamSubtitle = null,
+                streamSubtitle = cached.streamDescription,
                 bingeGroup = cached.bingeGroup,
                 pauseDescription = pauseDescription,
                 providerName = cached.addonName,
@@ -370,9 +374,13 @@ internal fun StreamDestination(
                 sourceFilename = cached.filename,
                 stream = StreamItem(
                     name = cached.streamName,
+                    description = cached.streamDescription,
                     url = cached.url,
+                    infoHash = cached.infoHash,
+                    fileIdx = cached.fileIdx,
                     addonName = cached.addonName,
                     addonId = cached.addonId,
+                    addonLogo = cached.addonLogo,
                     streamType = cached.streamType,
                     behaviorHints = StreamBehaviorHints(
                         filename = cached.filename,
@@ -511,9 +519,13 @@ internal fun StreamDestination(
                 filename = stream.behaviorHints.filename,
                 videoHash = stream.behaviorHints.videoHash,
                 videoSize = stream.behaviorHints.videoSize,
+                infoHash = stream.p2pInfoHash,
+                fileIdx = stream.p2pFileIdx,
                 bingeGroup = stream.behaviorHints.bingeGroup,
                 streamType = stream.streamType,
                 contentLanguage = resolveLaunchContentLanguage(),
+                addonLogo = stream.addonLogo,
+                streamDescription = stream.streamSubtitle,
             )
         }
         val playerLaunch = PlayerLaunch(
@@ -709,9 +721,13 @@ internal fun StreamDestination(
                 filename = stream.behaviorHints.filename,
                 videoHash = stream.behaviorHints.videoHash,
                 videoSize = stream.behaviorHints.videoSize,
+                infoHash = stream.p2pInfoHash,
+                fileIdx = stream.p2pFileIdx,
                 bingeGroup = stream.behaviorHints.bingeGroup,
                 streamType = stream.streamType,
                 contentLanguage = resolveLaunchContentLanguage(),
+                addonLogo = stream.addonLogo,
+                streamDescription = stream.streamSubtitle,
             )
         }
         val playerLaunch = PlayerLaunch(

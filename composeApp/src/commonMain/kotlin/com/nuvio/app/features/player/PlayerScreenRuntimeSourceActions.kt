@@ -210,6 +210,8 @@ internal fun PlayerScreenRuntime.saveP2pStreamForReuse(
         fileIdx = stream.p2pFileIdx,
         sources = stream.sources,
         bingeGroup = stream.behaviorHints.bingeGroup,
+        addonLogo = stream.addonLogo,
+        streamDescription = stream.streamSubtitle,
     )
 }
 
@@ -646,8 +648,12 @@ private fun PlayerScreenRuntime.saveDirectStreamForReuse(
         filename = stream.behaviorHints.filename,
         videoHash = stream.behaviorHints.videoHash,
         videoSize = stream.behaviorHints.videoSize,
+        infoHash = stream.p2pInfoHash,
+        fileIdx = stream.p2pFileIdx,
         bingeGroup = stream.behaviorHints.bingeGroup,
         streamType = stream.streamType,
         contentLanguage = contentLanguage,
+        addonLogo = stream.addonLogo,
+        streamDescription = stream.streamSubtitle,
     )
 }
