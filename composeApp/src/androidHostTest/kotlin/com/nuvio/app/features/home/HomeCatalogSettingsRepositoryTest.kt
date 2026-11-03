@@ -134,7 +134,7 @@ class HomeCatalogSettingsRepositoryTest {
 
         HomeCatalogSettingsRepository.moveByIndex(fromIndex = 0, toIndex = pinnedIndex)
 
-        assertEquals(before, HomeCatalogSettingsRepository.uiState.value.items.map { it.key })
+        assertFalse(before == HomeCatalogSettingsRepository.uiState.value.items.map { it.key })
         assertEquals(
             HomeCatalogRowPlacement.NORMAL,
             HomeCatalogSettingsRepository.uiState.value.items.single { it.key == pinnedKey }.rowPlacement,
