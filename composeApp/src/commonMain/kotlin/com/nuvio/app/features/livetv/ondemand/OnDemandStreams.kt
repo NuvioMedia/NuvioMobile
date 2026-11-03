@@ -62,10 +62,10 @@ internal object OnDemandStreams {
         }.getOrNull()
         if (title.isBlank() && tmdbId == null) return emptyList()
         return OnDemandRepository.sourcesFor(type, tmdbId, title, year, season, episode).map { s ->
-            val quality = VodTitles.qualityOf(s.title)
+            val quality = qualityTag(s)
             StreamItem(
                 name = listOfNotNull(GROUP_NAME, quality).joinToString("\n"),
-                description = describe(s),
+                description = describe(s, quality),
                 url = s.url,
                 sourceName = s.providerName,
                 addonName = GROUP_NAME,
@@ -73,24 +73,40 @@ internal object OnDemandStreams {
                 behaviorHints = StreamBehaviorHints(
                     bingeGroup = BINGE_GROUP,
                     notWebReady = s.headers.isNotEmpty(),
-                    filename = releaseName(s),
+                    filename = releaseName(s, quality),
                     proxyHeaders = s.headers.takeIf { it.isNotEmpty() }?.let { StreamProxyHeaders(request = it) },
                 ),
             )
         }
     }
 
-    private fun describe(s: OnDemandRepository.OnDemandSource): String {
-        val head = "🎬 " + s.title + (s.year?.let { " ($it)" } ?: "") + (s.episodeTag?.let { " · $it" } ?: "")
-        val line2 = listOf("📡 ${s.providerName}", s.ext.uppercase()).joinToString(" | ")
-        return listOf(head, line2).joinToString("\n")
+    /**
+     * "4K", "1080p", "720p" or "SD" (plus " HEVC") from the provider's full title: the shown
+     * title has tags like "4K-D+ - " taken off, so the quality is read before that.
+     */
+    private fun qualityTag(s: OnDemandRepository.OnDemandSource): String? {
+        val q = VodTitles.qualityOf(s.providerTitle.ifBlank { s.title }) ?: return null
+        val hevc = q.endsWith(" HEVC")
+        val res = when (q.removeSuffix(" HEVC")) { "Full HD" -> "1080p"; "HD" -> "720p"; else -> q.removeSuffix(" HEVC") }
+        return if (hevc) "$res HEVC" else res
     }
 
-    /** A release-style name ("Obsession.2025.mkv") so the app's own badge rules read it like an addon stream. */
-    private fun releaseName(s: OnDemandRepository.OnDemandSource): String =
-        listOfNotNull(
+    private fun describe(s: OnDemandRepository.OnDemandSource, quality: String?): String {
+        val head = "🎬 " + s.title + (s.year?.let { " ($it)" } ?: "") + (s.episodeTag?.let { " · $it" } ?: "")
+        val line2 = listOf("📡 ${s.providerName}", s.ext.uppercase()).joinToString(" | ")
+        val line3 = quality?.let { "🎞 " + it.replace(" HEVC", " · HEVC") }
+        return listOfNotNull(head, line2, line3).joinToString("\n")
+    }
+
+    /** A release-style name ("Obsession.2025.2160p.HEVC.mkv") so the app's own badge rules read it like an addon stream. */
+    private fun releaseName(s: OnDemandRepository.OnDemandSource, quality: String?): String {
+        val res = when (quality?.removeSuffix(" HEVC")) { "4K" -> "2160p"; "1080p" -> "1080p"; "720p" -> "720p"; "SD" -> "480p"; else -> null }
+        return listOfNotNull(
             s.title.replace(Regex("""[^\p{L}\p{N}]+"""), ".").trim('.'),
             s.year?.toString(),
             s.episodeTag,
+            res,
+            "HEVC".takeIf { quality?.endsWith(" HEVC") == true },
         ).joinToString(".") + "." + s.ext
+    }
 }

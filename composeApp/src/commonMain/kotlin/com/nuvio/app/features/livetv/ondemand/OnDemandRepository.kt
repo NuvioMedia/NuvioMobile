@@ -280,6 +280,8 @@ internal object OnDemandRepository {
         val providerName: String,
         val ext: String,
         val episodeTag: String? = null,
+        /** The provider's full title, tags included ("4K-D+ - …"): where the quality is read from. */
+        val providerTitle: String = "",
     )
 
     /**
@@ -336,7 +338,7 @@ internal object OnDemandRepository {
                 val headers = headersFor(item)
                 if (kind == VodKind.MOVIE) {
                     val url = movieUrl(item) ?: continue
-                    out += OnDemandSource("${pl.name} · ${(item.ext ?: "mp4").uppercase()}", url, headers, item.displayTitle, item.year, pl.name, item.ext ?: "mp4")
+                    out += OnDemandSource("${pl.name} · ${(item.ext ?: "mp4").uppercase()}", url, headers, item.displayTitle, item.year, pl.name, item.ext ?: "mp4", providerTitle = item.name)
                 } else if (season != null && episode != null) {
                     val episodes = info(item)?.episodes.orEmpty()
                     val ep = episodes.firstOrNull { it.season == season && it.episode == episode }
@@ -345,6 +347,7 @@ internal object OnDemandRepository {
                     out += OnDemandSource(
                         "${pl.name} · S${season}E${episode} · ${ep.ext.uppercase()}", ep.url, headers, item.displayTitle, item.year, pl.name, ep.ext,
                         episodeTag = "S" + season.toString().padStart(2, '0') + "E" + episode.toString().padStart(2, '0'),
+                        providerTitle = item.name,
                     )
                 }
             }
