@@ -488,7 +488,7 @@ private fun GuideRoundButton(icon: ImageVector, description: String, onClick: ()
 }
 
 @Composable
-private fun ProgramDetailsDialog(
+internal fun ProgramDetailsDialog(
     channel: LiveChannel,
     program: EpgProgram,
     now: Long,

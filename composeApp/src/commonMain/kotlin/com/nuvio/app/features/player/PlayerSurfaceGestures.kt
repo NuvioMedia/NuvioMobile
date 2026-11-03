@@ -97,6 +97,10 @@ internal fun Modifier.playerSurfaceDragGestures(
                 null
             }
 
+            // Live TV: the middle of the screen (between brightness and volume) changes channel.
+            val channelSwipe = com.nuvio.app.features.livetv.player.LiveTvPlayback.channelSwipe
+                .takeIf { region == null && !isInSideGestureSystemEdge }
+
             var totalDx = 0f
             var totalDy = 0f
             var gestureMode: PlayerGestureMode? = null
@@ -144,6 +148,8 @@ internal fun Modifier.playerSurfaceDragGestures(
                             PlayerGestureMode.Volume
                         }
 
+                        verticalDominant && channelSwipe != null -> PlayerGestureMode.ChannelSwipe
+
                         else -> null
                     }
 
@@ -189,8 +195,14 @@ internal fun Modifier.playerSurfaceDragGestures(
                         controller?.setVolume((initialVolume?.fraction ?: 0f) + gestureDeltaFraction)
                             ?.let(showVolumeFeedbackState.value)
                     }
+
+                    PlayerGestureMode.ChannelSwipe -> Unit
                 }
                 change.consume()
+            }
+
+            if (gestureMode == PlayerGestureMode.ChannelSwipe && abs(totalDy) > height * 0.1f) {
+                channelSwipe?.invoke(totalDy < 0f)
             }
 
             if (gestureMode == PlayerGestureMode.HorizontalSeek && !isHoldToSpeedGestureActiveState.value) {

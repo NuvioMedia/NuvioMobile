@@ -74,6 +74,8 @@ internal enum class PlayerGestureMode {
     HorizontalSeek,
     Brightness,
     Volume,
+    /** Live TV: an up/down swipe in the middle of the video changes channel. */
+    ChannelSwipe,
 }
 
 internal data class PlayerAccumulatedSeekState(

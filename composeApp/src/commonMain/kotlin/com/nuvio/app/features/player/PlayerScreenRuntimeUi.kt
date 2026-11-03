@@ -257,8 +257,8 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             exit = fadeOut(animationSpec = tween(durationMillis = 180)),
         ) {
             PauseMetadataOverlay(
-                title = title,
-                logo = logo,
+                title = liveTitleOr(title),
+                logo = liveLogoOr(logo),
                 isEpisode = isEpisode,
                 seasonNumber = activeSeasonNumber,
                 episodeNumber = activeEpisodeNumber,
@@ -291,6 +291,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
             )
         }
         Box(modifier = panelModifier) {
+            RenderLiveTvChannels() // Live TV channel panel
             RenderPlayerModals(displayedPositionMs = displayedPositionMs)
             RenderParty(runtime = runtime)
         }
@@ -344,7 +345,7 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
         exit = fadeOut(),
     ) {
         PlayerControlsShell(
-            title = title,
+            title = liveTitleOr(title),
             streamTitle = activeStreamTitle,
             providerName = activeProviderName,
             seasonNumber = activeSeasonNumber,

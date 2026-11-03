@@ -2600,6 +2600,8 @@
     <string name="livetv_phone_names_description">The channel's name next to or under its logo.</string>
     <string name="livetv_phone_numbers">Channel numbers</string>
     <string name="livetv_phone_numbers_description">At least one of logos, names or numbers stays on. These only change this device.</string>
+    <string name="livetv_player_channels">Channels</string>
+    <string name="livetv_player_guide">Guide</string>
     <string name="livetv_now_line">Now line in the guide</string>
     <string name="livetv_now_line_description">The line down the guide that marks the current time. Also changes your TV when you use account sync.</string>
     <string name="livetv_group_channels">%1$d channels</string>

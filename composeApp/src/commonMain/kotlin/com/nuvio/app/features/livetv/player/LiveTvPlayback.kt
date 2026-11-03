@@ -143,6 +143,25 @@ internal object LiveTvPlayback {
         return PlayerLaunchStore.put(launchFor(channel, profileId, nowTitle))
     }
 
+    /**
+     * Changing channel inside the player (its channel panel or a swipe on the video): the same
+     * bookkeeping as picking the channel from a list, minus the new player screen.
+     */
+    fun switchTo(channel: LiveChannel): LivePlayRequest {
+        LiveTvPreferences.recordWatched(channel.key, addToRecent = !com.nuvio.app.features.livetv.parental.ParentalControls.isAdultChannel(channel))
+        val req = requestFor(channel)
+        synchronized(lock) {
+            backupTried.clear()
+            playing[req.url] = channel
+        }
+        currentKey = channel.key
+        return req
+    }
+
+    /** Set while a Live TV channel is on screen: a swipe up (true) or down (false) on the video changes channel. */
+    @kotlin.concurrent.Volatile
+    var channelSwipe: ((next: Boolean) -> Unit)? = null
+
     /** Whether this provider id is Live TV's (the player asks before trying a fallback). */
     fun owns(providerAddonId: String?): Boolean = providerAddonId == PROVIDER_ID
 
