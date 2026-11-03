@@ -180,6 +180,8 @@ import nuvio.composeapp.generated.resources.livetv_vod_import
 import nuvio.composeapp.generated.resources.livetv_vod_import_description
 import nuvio.composeapp.generated.resources.livetv_vod_merge_duplicates
 import nuvio.composeapp.generated.resources.livetv_vod_merge_duplicates_description
+import nuvio.composeapp.generated.resources.livetv_vod_in_streams
+import nuvio.composeapp.generated.resources.livetv_vod_in_streams_description
 import nuvio.composeapp.generated.resources.livetv_vod_update_now
 import nuvio.composeapp.generated.resources.livetv_vod_update_now_description
 import nuvio.composeapp.generated.resources.livetv_section_guides
@@ -622,6 +624,14 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
                     checked = settings.vodMergeDuplicates,
                     isTablet = isTablet,
                     onCheckedChange = { on -> update { it.copy(vodMergeDuplicates = on) } },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.livetv_vod_in_streams),
+                    description = stringResource(Res.string.livetv_vod_in_streams_description),
+                    checked = settings.onDemandInStreams,
+                    isTablet = isTablet,
+                    onCheckedChange = { on -> update { it.copy(onDemandInStreams = on) } },
                 )
             }
         }

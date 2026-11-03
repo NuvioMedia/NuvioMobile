@@ -2713,6 +2713,8 @@
     <string name="livetv_vod_default_sort_description">How groups are sorted unless you pick a sort for one</string>
     <string name="livetv_vod_merge_duplicates">Merge duplicates</string>
     <string name="livetv_vod_merge_duplicates_description">Show each title once, even when the provider lists several copies</string>
+    <string name="livetv_vod_in_streams">On Demand in streams</string>
+    <string name="livetv_vod_in_streams_description">Your provider's copy offered with your addon streams for movies and episodes</string>
     <string name="livetv_recordings">Recordings</string>
     <string name="livetv_section_recordings">Recordings</string>
     <string name="livetv_rec_empty">Nothing recorded yet. Open a show in the guide to record it, or long-press a channel to record it now.</string>
