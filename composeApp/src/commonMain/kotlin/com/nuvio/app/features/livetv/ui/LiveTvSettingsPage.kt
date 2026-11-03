@@ -192,6 +192,8 @@ import nuvio.composeapp.generated.resources.livetv_phone_names
 import nuvio.composeapp.generated.resources.livetv_phone_names_description
 import nuvio.composeapp.generated.resources.livetv_phone_numbers
 import nuvio.composeapp.generated.resources.livetv_phone_numbers_description
+import nuvio.composeapp.generated.resources.livetv_now_line
+import nuvio.composeapp.generated.resources.livetv_now_line_description
 import nuvio.composeapp.generated.resources.livetv_show_tab
 import nuvio.composeapp.generated.resources.livetv_sports
 import nuvio.composeapp.generated.resources.livetv_parental
@@ -514,6 +516,14 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
                     enabled = !(settings.phoneChannelNumbers && onCount == 1),
                     isTablet = isTablet,
                     onCheckedChange = { on -> update { if (!on && !it.phoneChannelLogos && !it.phoneChannelNames) it else it.copy(phoneChannelNumbers = on) } },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.livetv_now_line),
+                    description = stringResource(Res.string.livetv_now_line_description),
+                    checked = settings.showNowLine,
+                    isTablet = isTablet,
+                    onCheckedChange = { on -> update { it.copy(showNowLine = on) } },
                 )
             }
         }

@@ -287,6 +287,9 @@ fun LiveTvGuideScreen(
 
 @Composable
 private fun NowLine(gridStart: Long, now: Long, pxPerMs: () -> Float, height: Dp) {
+    // Settings > Live TV > Channel Display > Now line (shared with the TV app).
+    val settings by LiveTvPreferences.settings.collectAsStateWithLifecycle()
+    if (!settings.showNowLine) return
     val density = LocalDensity.current
     val x = with(density) { ((now - gridStart) * pxPerMs()).toDp() }
     if (x > 0.dp) {
