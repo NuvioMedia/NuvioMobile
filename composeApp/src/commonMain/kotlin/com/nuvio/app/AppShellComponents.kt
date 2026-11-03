@@ -1,6 +1,9 @@
 package com.nuvio.app
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,7 +49,6 @@ import com.nuvio.app.navigation.NuvioNavigator
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.app_brand_name
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -246,13 +248,22 @@ internal fun AppLoadingContent(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // "Nuvio + IPTV" in the theme's colours, and what the app does (as on the TV app).
             AppBrandWordmark(
-                contentDescription = stringResource(Res.string.app_brand_name),
+                contentDescription = "Nuvio + IPTV",
+                iptv = true,
                 modifier = Modifier
-                    .fillMaxWidth(0.48f)
-                    .height(44.dp),
+                    .fillMaxWidth(0.72f)
+                    .widthIn(max = 420.dp)
+                    .aspectRatio(1700f / 344f),
             )
-            Spacer(modifier = Modifier.height(tokens.spacing.sectionGap))
+            Spacer(modifier = Modifier.height(NuvioTokens.Space.s14))
+            Text(
+                text = "Live TV  ·  On Demand  ·  Streaming",
+                style = MaterialTheme.typography.bodyMedium,
+                color = tokens.colors.textSecondary,
+            )
+            Spacer(modifier = Modifier.height(NuvioTokens.Space.s40))
             NuvioLoadingIndicator()
         }
     }

@@ -44,3 +44,15 @@ internal fun AppTheme.wordmarkResource(fallback: AppIconOption): DrawableResourc
         AppTheme.GRAPHITE -> AppIconOption.GRAPHITE.wordmarkResource
         else -> fallback.wordmarkResource
     }
+
+/** The "Nuvio + IPTV" version of a Nuvio wordmark (same logo, "+ IPTV" in the logo's colours). */
+internal fun DrawableResource.iptvWordmark(): DrawableResource =
+    when (this) {
+        Res.drawable.app_logo_wordmark_gold -> Res.drawable.livetv_wordmark_iptv_gold
+        Res.drawable.app_logo_wordmark_arctic_blue -> Res.drawable.livetv_wordmark_iptv_arctic_blue
+        Res.drawable.app_logo_wordmark_emerald -> Res.drawable.livetv_wordmark_iptv_emerald
+        Res.drawable.app_logo_wordmark_rose_gold -> Res.drawable.livetv_wordmark_iptv_rose_gold
+        Res.drawable.app_logo_wordmark_copper -> Res.drawable.livetv_wordmark_iptv_copper
+        Res.drawable.app_logo_wordmark_graphite -> Res.drawable.livetv_wordmark_iptv_graphite
+        else -> Res.drawable.livetv_wordmark_iptv_original
+    }

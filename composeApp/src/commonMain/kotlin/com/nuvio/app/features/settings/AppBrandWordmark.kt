@@ -16,6 +16,8 @@ internal fun AppBrandWordmark(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     icon: AppIconOption? = null,
+    /** The "Nuvio + IPTV" wordmark (start-up screen). */
+    iptv: Boolean = false,
 ) {
     val state by remember {
         AppIconRepository.ensureLoaded()
@@ -23,7 +25,8 @@ internal fun AppBrandWordmark(
     }.collectAsStateWithLifecycle()
     Image(
         painter = painterResource(
-            icon?.wordmarkResource ?: MaterialTheme.appTheme.wordmarkResource(state.selected),
+            (icon?.wordmarkResource ?: MaterialTheme.appTheme.wordmarkResource(state.selected))
+                .let { if (iptv) it.iptvWordmark() else it },
         ),
         contentDescription = contentDescription,
         modifier = modifier,
