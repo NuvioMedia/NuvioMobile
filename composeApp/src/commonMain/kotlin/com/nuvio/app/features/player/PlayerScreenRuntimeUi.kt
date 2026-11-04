@@ -360,10 +360,14 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
         headers = activeSourceHeaders,
         canCast = canCastCurrentSource,
         wasPlaying = shouldPlay,
-        onPauseLocal = { playerController?.pause() },
+        onPauseLocal = {
+            shouldPlay = false
+            playerController?.pause()
+        },
         onRestoreLocal = { positionMs, resumePlayback ->
             playerController?.seekTo(positionMs)
-            if (resumePlayback) playerController?.play()
+            shouldPlay = resumePlayback
+            if (resumePlayback) playerController?.play() else playerController?.pause()
         },
         onUnsupported = {
             NuvioToastController.show("This source cannot be played with Google Cast.")
