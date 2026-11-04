@@ -210,7 +210,7 @@ class LibraryDisplaySettingsTest {
         )
         assertEquals(null, allStatusesProjection.selectedSectionKey)
         assertEquals(listOf("watchlist", "personal:1"), allStatusesProjection.availableSections.map { it.type })
-        assertEquals(listOf("a", "favorite", "series", "z"), allStatusesProjection.entries.map { it.item.id })
+        assertEquals(listOf("a", "series", "z"), allStatusesProjection.entries.map { it.item.id })
     }
 
     @Test
