@@ -407,7 +407,11 @@ object AddonRepository {
                         Result.failure(error)
                     }
                     val refreshFailureMessage = if (result.isFailure) {
-                        getString(Res.string.addon_load_manifest_failed)
+                        // Refresh jobs run on Dispatchers.Default and can outlive host-side tests.
+                        // Compose resource lookup may require an Android instrumented context, so
+                        // keep a safe fallback instead of leaking an exception from this background job.
+                        runCatching { getString(Res.string.addon_load_manifest_failed) }
+                            .getOrDefault("Failed to load add-on manifest")
                     } else {
                         null
                     }
