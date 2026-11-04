@@ -6,10 +6,12 @@ import com.nuvio.app.features.livetv.model.LiveTvClock
 import com.nuvio.app.features.livetv.model.PlaylistAccount
 import com.nuvio.app.features.livetv.model.PlaylistSource
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.HttpRedirect
 import io.ktor.client.plugins.timeout
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.statement.bodyAsChannel
+import io.ktor.utils.io.readAvailable
 import io.ktor.http.Url
 import io.ktor.http.contentLength
 import io.ktor.http.encodeURLParameter
@@ -82,7 +84,12 @@ internal class XtreamLoginError(message: String) : Exception(message)
  * playlist), the movie and series lists for On Demand, and the provider's guide (xmltv.php).
  */
 internal class XtreamClient(
-    private val client: HttpClient = createApiHttpClient()
+    // Follows redirects (panels move servers or hand out a load-balancer address with a 302); the
+    // app's shared client doesn't, which showed up as "HTTP 302" here.
+    private val client: HttpClient = createApiHttpClient().config {
+        followRedirects = true
+        install(HttpRedirect) { allowHttpsDowngrade = true }
+    }
 ) {
 
     // ---------- account ----------
@@ -160,11 +167,11 @@ internal class XtreamClient(
 
     /** get_live_streams, both as a list and as the TV app's keyed-object form. */
     suspend fun liveStreams(pl: PlaylistSource): List<XtreamLiveStream> {
-        val text = getText("${pl.xtreamApiUrl()}&action=get_live_streams", pl.userAgent)
-        return flatObjects(text).mapNotNull { f ->
+        val out = ArrayList<XtreamLiveStream>()
+        streamFlatObjects("${pl.xtreamApiUrl()}&action=get_live_streams", pl.userAgent) { f ->
             val streamId = f["stream_id"]
-            if (streamId.isNullOrBlank()) return@mapNotNull null
-            XtreamLiveStream(
+            if (streamId.isNullOrBlank()) return@streamFlatObjects
+            out += XtreamLiveStream(
                 streamId = streamId,
                 name = (f["name"] ?: "Channel $streamId").replace("\n", " ").trim(),
                 epgChannelId = f["epg_channel_id"],
@@ -175,6 +182,7 @@ internal class XtreamClient(
                 tvArchiveDays = f["tv_archive_duration"]?.takeIf { it != "0" }
             )
         }
+        return out
     }
 
     /**
@@ -252,12 +260,13 @@ internal class XtreamClient(
         val action = if (series) "get_series" else "get_vod_streams"
         var url = "${pl.xtreamApiUrl()}&action=$action"
         if (categoryId != null) url += "&category_id=" + categoryId.encodeURLParameter()
-        val text = getText(url, pl.userAgent)
-        return flatObjects(text).mapNotNull { f ->
-            val id = (if (series) f["series_id"] else f["stream_id"]) ?: return@mapNotNull null
+        // Read a piece at a time: big catalogs ran phones out of memory when read whole.
+        val out = ArrayList<XtreamVodItem>()
+        streamFlatObjects(url, pl.userAgent) { f ->
+            val id = (if (series) f["series_id"] else f["stream_id"]) ?: return@streamFlatObjects
             val name = f["name"]?.trim().orEmpty().ifBlank { f["title"].orEmpty() }
-            if (name.isBlank()) return@mapNotNull null
-            XtreamVodItem(
+            if (name.isBlank()) return@streamFlatObjects
+            out += XtreamVodItem(
                 isSeries = series,
                 id = id,
                 name = name,
@@ -271,6 +280,7 @@ internal class XtreamClient(
                 genre = f["genre"]?.trim()?.takeIf { it.isNotBlank() }
             )
         }
+        return out
     }
 
     /** get_vod_info / get_series_info for one title, as the panel sends it. */
@@ -348,6 +358,35 @@ internal class XtreamClient(
             if (text.isEmpty()) error("Empty response")
             text
         }
+
+    /** A list from the panel, read a piece at a time; [onObject] gets each item's simple fields. */
+    private suspend fun streamFlatObjects(url: String, userAgent: String, onObject: (Map<String, String>) -> Unit) {
+        client.prepareGet(url) {
+            header("User-Agent", userAgent.ifBlank { DEFAULT_UA })
+            header("Accept", "*/*")
+            timeout {
+                requestTimeoutMillis = 120_000
+                socketTimeoutMillis = 60_000
+            }
+        }.execute { response ->
+            val code = response.status.value
+            if (code !in 200..299) error(httpError(code))
+            val channel = response.bodyAsChannel()
+            val scanner = FlatJsonScanner(onObject)
+            val buffer = ByteArray(64 * 1024)
+            var total = 0L
+            while (true) {
+                val n = channel.readAvailable(buffer, 0, buffer.size)
+                if (n == -1) break
+                if (n == 0) continue
+                total += n
+                if (total > API_MAX_BYTES) error("Response exceeds size limit")
+                scanner.feed(buffer, n)
+            }
+            if (total == 0L) error("Empty response")
+            scanner.finish()
+        }
+    }
 
     companion object {
         const val DEFAULT_UA = "Mozilla/5.0 (Linux; Android 12; Android TV) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
