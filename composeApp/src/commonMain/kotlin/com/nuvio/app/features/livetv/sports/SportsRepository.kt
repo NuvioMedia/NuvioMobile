@@ -1238,6 +1238,19 @@ internal object SportsRepository {
         prefs.editSportsSettings { raw -> transform(SportsSettings.fromJson(raw)).toJson() }
     }
 
+    /** Turn a league on or off for All Events (Choose leagues); a league just turned on is fetched right away. */
+    fun toggleLeagueShown(league: League) {
+        updateSettings { SportsCatalog.toggleShown(league, it) }
+        kick.value++
+    }
+
+    /** In your region and switched off (not counting leagues you follow): the "hidden" count on All Events. */
+    fun hiddenLeagueCount(s: SportsSettings = settings.value, f: SportsFollows = follows.value): Int {
+        val region = SportsCatalog.regionOf(s)
+        val mine = followedLeagueIds(f)
+        return SportsCatalog.all.count { region in it.regions && !SportsCatalog.shown(it, s) && it.id !in mine }
+    }
+
     fun updateFollows(transform: (SportsFollows) -> SportsFollows) {
         prefs.editSportsMine { raw -> transform(SportsFollows.fromJson(raw)).toJson() }
         kick.value++

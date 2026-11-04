@@ -268,6 +268,7 @@ private fun AllEventsTab(
     val repo = SportsRepository
     var day by rememberSaveable { mutableIntStateOf(0) }
     var sportFilter by rememberSaveable { mutableStateOf<String?>(null) }
+    var choosingLeagues by remember { mutableStateOf(false) }
     LaunchedEffect(day) { if (day < -1) repo.wantPast() }
     val dayStart = repo.dayStart(day)
     val dayEnd = repo.dayStart(day + 1)
@@ -346,6 +347,7 @@ private fun AllEventsTab(
             contentPadding = PaddingValues(start = NuvioTokens.Space.s16, end = NuvioTokens.Space.s16, bottom = nuvioSafeBottomPadding(NuvioTokens.Space.s16)),
             verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
         ) {
+            item(key = "leagues-bar") { LeaguesBar(settings, follows) { choosingLeagues = true } }
             if (empty) {
                 item {
                     Text(
@@ -360,6 +362,7 @@ private fun AllEventsTab(
             section(finishedTitle, sections.finished, follows, settings, matches, now, use24h, actions)
         }
     }
+    if (choosingLeagues) LeaguesSheet(onDismiss = { choosingLeagues = false })
 }
 
 private fun LazyListScope.section(

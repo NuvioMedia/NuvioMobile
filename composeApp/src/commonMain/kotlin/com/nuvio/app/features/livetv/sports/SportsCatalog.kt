@@ -520,6 +520,19 @@ object SportsCatalog {
         }
     }
 
+    /** [s] with [league] turned on or off for All Events (see [shown] for how the choice is stored). */
+    fun toggleShown(league: League, s: SportsSettings): SportsSettings {
+        val inRegion = regionOf(s) in league.regions
+        val on = shown(league, s)
+        val h = s.hiddenLeagues.toMutableSet()
+        if (inRegion) {
+            if (on) h += league.id else h -= league.id
+        } else {
+            if (on) h -= "+${league.id}" else h += "+${league.id}"
+        }
+        return s.copy(hiddenLeagues = h)
+    }
+
     /** Leagues in the order the region cares about them. */
     fun ordered(s: SportsSettings): List<League> {
         val region = regionOf(s)
