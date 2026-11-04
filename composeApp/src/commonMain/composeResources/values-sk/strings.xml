@@ -1979,7 +1979,7 @@
     <string name="settings_card_depth_surface_trailers">Trailery</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming">Oddeliť riadok Neodvysielané</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">Presunúť neodvysielané epizódy do samostatného riadka Neodvysielané</string>
-    <string name="upcoming_section_title">Nespustené</string>
+    <string name="upcoming_section_title">Neodvysielané</string>
     <string name="settings_meta_background_mode">Režim pozadia</string>
     <string name="settings_meta_background_mode_description">Vyberte, ako sa má zobrazovať pozadie za stránkami s metadátami.</string>
     <string name="settings_meta_background_mode_normal">Normálny</string>
