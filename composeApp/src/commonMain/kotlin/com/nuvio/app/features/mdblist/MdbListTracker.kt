@@ -28,6 +28,7 @@ object MdbListTracker : TrackingAuthProvider {
     val library = MdbListLibraryService(api, sync, store, activeProfile, coroutineScope)
     private val history = MdbListHistoryService(api, sync)
     private val scrobble = MdbListScrobbleService(api, sync)
+    private val episodeMappings = MdbListEpisodeMappingService(coroutineScope)
     val account = MdbListAccountController(auth, store, coroutineScope, { api.refreshUser(it) })
     private val authenticated = MutableStateFlow(store.state.value.isAuthenticated)
     override val isAuthenticated = authenticated.asStateFlow()
@@ -39,9 +40,9 @@ object MdbListTracker : TrackingAuthProvider {
             TrackingCapability.LIBRARY_READ, TrackingCapability.LIBRARY_WRITE,
         )
     )
-    val writes = MdbListTrackingWrites(sync, history, scrobble)
-    val progressProvider = MdbListTrackingProgressProvider(sync, scrobble, store, activeProfile, ::ensureLoaded)
-    val watchedProvider = MdbListWatchedSyncAdapter(sync, history, store, activeProfile)
+    val writes = MdbListTrackingWrites(sync, history, scrobble, episodeMappings)
+    val progressProvider = MdbListTrackingProgressProvider(sync, scrobble, episodeMappings, store, activeProfile, ::ensureLoaded)
+    val watchedProvider = MdbListWatchedSyncAdapter(sync, history, episodeMappings, store, activeProfile)
     val libraryProvider = MdbListTrackingLibraryProvider(library, sync, ::ensureLoaded)
 
     init {
@@ -69,6 +70,8 @@ object MdbListTracker : TrackingAuthProvider {
 
     override fun onProfileChanged() {
         account.stopPolling()
+        // Profiles can use different addons, which number episodes their own way.
+        episodeMappings.clear()
         activeProfile.value = ProfileRepository.activeProfileId
         store.selectProfile(activeProfile.value)
         authenticated.value = store.state.value.isAuthenticated
