@@ -1321,6 +1321,8 @@ object WatchProgressRepository {
         if ((session.contentType == LiveTvWatchProgressType || session.parentMetaType == LiveTvWatchProgressType) &&
             !LiveTvPreferences.showInContinueWatching.value
         ) return
+        // Adult On Demand titles never go in Continue watching.
+        if (com.nuvio.app.features.livetv.ondemand.OnDemandPlayback.neverSaves(session.videoId)) return
         val targetProfileId = session.profileId
         val positionMs = snapshot.positionMs.coerceAtLeast(0L)
         val durationMs = snapshot.durationMs.coerceAtLeast(0L)

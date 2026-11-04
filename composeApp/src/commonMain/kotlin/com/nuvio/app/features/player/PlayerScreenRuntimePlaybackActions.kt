@@ -208,7 +208,14 @@ private fun TrackingScrobbleItemInputs.buildMedia(): TrackingMediaReference =
     )
 
 internal fun PlayerScreenRuntime.currentTrackingMedia(): TrackingMediaReference =
-    snapshotTrackingScrobbleItemInputs().buildMedia()
+    snapshotTrackingScrobbleItemInputs().buildMedia().let { media ->
+        // Adult On Demand titles are never sent to Trakt or Simkl (no identity: nothing is scrobbled).
+        if (com.nuvio.app.features.livetv.ondemand.OnDemandPlayback.neverSaves(activeVideoId)) {
+            TrackingMediaReference(kind = media.kind)
+        } else {
+            media
+        }
+    }
 
 internal fun PlayerScreenRuntime.emitTrackingScrobbleStart() {
     if (isShortPlaceholderDuration(playbackSnapshot.durationMs)) return

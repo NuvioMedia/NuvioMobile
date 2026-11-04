@@ -14,7 +14,9 @@ import com.nuvio.app.features.livetv.data.optJSONObject
 import com.nuvio.app.features.livetv.data.optString
 import com.nuvio.app.features.livetv.model.LiveTvClock
 import com.nuvio.app.features.livetv.model.PlaylistSource
+import com.nuvio.app.features.livetv.parental.ParentalControls
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
+import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.tmdb.buildTmdbUrl
 import io.ktor.http.encodeURLParameter
 import kotlinx.coroutines.CoroutineScope
@@ -79,6 +81,12 @@ internal object OnDemandRepository {
                 importing(prefs.currentPlaylists()).forEach { pl -> if (!OnDemandStore.hasLearnedPrefixes(pl.id)) VodTitles.knownPrefixes = OnDemandStore.learnPrefixes(pl.id) }
             }
             refresh(force = false)
+        }
+        // Adult titles never stay in Continue watching (also ones saved by older versions).
+        scope.launch {
+            delay(START_DELAY_MS)
+            val checked = HashMap<String, Boolean>()
+            WatchProgressRepository.uiState.collect { runCatching { removeAdultProgress(checked) } }
         }
         // A playlist with movies and series that arrives or is switched on later (settings, a
         // restore from Google Drive): import it straight away. One that's gone is dropped.
@@ -353,6 +361,29 @@ internal object OnDemandRepository {
             }
             out
         }
+
+    /** Adult titles (by their own name or their category's name), which never go in Continue watching. */
+    suspend fun isAdult(item: VodItem): Boolean {
+        if (ParentalControls.isAdult(item.name)) return true
+        val cat = withContext(Dispatchers.Default) {
+            runCatching { OnDemandStore.categoryNames(item.playlistId, item.kind)[item.categoryId] }.getOrNull()
+        }
+        return cat != null && ParentalControls.isAdult(cat)
+    }
+
+    /** Takes adult On Demand titles out of Continue watching (ones saved before they were kept out). */
+    private suspend fun removeAdultProgress(checked: MutableMap<String, Boolean>) {
+        val prefix = "${OnDemandPlayback.PROVIDER_ID}:"
+        WatchProgressRepository.continueWatching()
+            .filter { it.videoId.startsWith(prefix) }
+            .forEach { entry ->
+                val uid = entry.videoId.removePrefix(prefix).split(':').take(3).joinToString(":")
+                val adult = checked.getOrPut(uid) { itemByUid(uid)?.let { isAdult(it) } ?: false }
+                if (adult) {
+                    WatchProgressRepository.removeProgress(entry.parentMetaId, entry.seasonNumber, entry.episodeNumber)
+                }
+            }
+    }
 
     /** A title by its uid ("movie:<playlist>:<id>"). */
     suspend fun itemByUid(uid: String): VodItem? = withContext(Dispatchers.Default) {

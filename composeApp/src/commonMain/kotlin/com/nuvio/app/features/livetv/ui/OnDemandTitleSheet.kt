@@ -102,8 +102,11 @@ internal fun OnDemandTitleSheet(item: VodItem, actions: OnDemandActions, onDismi
         scope.launch { dismissNuvioBottomSheet(sheetState) { onDismiss(); then() } }
     }
     fun play(target: VodItem, episode: VodEpisode?) {
-        val launch = OnDemandPlayback.launch(target, episode, match, profileId)
-        if (launch == null) NuvioToastController.show(playFailed) else close { actions.onPlay(launch) }
+        scope.launch {
+            val adult = OnDemandRepository.isAdult(target) || OnDemandRepository.isAdult(item)
+            val launch = OnDemandPlayback.launch(target, episode, match, profileId, adult)
+            if (launch == null) NuvioToastController.show(playFailed) else close { actions.onPlay(launch) }
+        }
     }
 
     val title = match?.title ?: item.displayTitle

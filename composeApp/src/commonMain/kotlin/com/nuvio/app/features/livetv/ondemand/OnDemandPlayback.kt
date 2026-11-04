@@ -7,10 +7,26 @@ import com.nuvio.app.features.player.PlayerLaunch
 import com.nuvio.app.features.watched.WatchedItem
 import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 
 /** Builds what the app's player (and the watched list) needs for an On Demand title. */
 internal object OnDemandPlayback {
     const val PROVIDER_ID = "livetv-ondemand"
+
+    /** Adult titles that have been played (their provider ids): never saved to Continue watching. */
+    private val neverSaved = MutableStateFlow<Set<String>>(emptySet())
+
+    private fun baseId(item: VodItem) = "$PROVIDER_ID:${item.uid}"
+
+    fun markNeverSaved(item: VodItem) = neverSaved.update { it + baseId(item) }
+
+    /** True for an adult title's movie or episode, which Continue watching and Trakt/Simkl never get. */
+    fun neverSaves(videoId: String?): Boolean {
+        val v = videoId ?: return false
+        if (!v.startsWith("$PROVIDER_ID:")) return false
+        return neverSaved.value.any { v == it || v.startsWith("$it:") }
+    }
 
     /** The id a title is known by in the watched list: its TMDB match, else the provider's uid. */
     fun metaId(item: VodItem, match: VodMatch?): String =
@@ -38,8 +54,12 @@ internal object OnDemandPlayback {
     fun videoId(item: VodItem, episode: VodEpisode?): String =
         if (episode == null) "$PROVIDER_ID:${item.uid}" else "$PROVIDER_ID:${item.uid}:${episode.season}:${episode.episode}"
 
-    /** The player launch for a movie, or for one [episode] of a series. Null when the title has no link. */
-    fun launch(item: VodItem, episode: VodEpisode?, match: VodMatch?, profileId: Int): PlayerLaunch? {
+    /**
+     * The player launch for a movie, or for one [episode] of a series. Null when the title has no link.
+     * An [adult] title plays under its provider id only (not its TMDB match) and is never saved.
+     */
+    fun launch(item: VodItem, episode: VodEpisode?, match: VodMatch?, profileId: Int, adult: Boolean = false): PlayerLaunch? {
+        if (adult) return launch(item, episode, null, profileId, adult = false)?.also { markNeverSaved(item) }?.copy(initialPositionMs = 0L, initialProgressFraction = null)
         val url = if (episode != null) episode.url else OnDemandRepository.movieUrl(item) ?: return null
         val title = match?.title ?: item.displayTitle
         val videoId = videoId(item, episode)
