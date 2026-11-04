@@ -40,7 +40,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -74,6 +73,7 @@ import com.nuvio.app.core.ui.LocalVerticalBarPadding
 fun TabletDetailBackdrop(
     meta: MetaDetails,
     cinematic: Boolean,
+    backdropImage: ImageBitmap?,
     scrollOffsetPx: () -> Float,
     heroHeightPx: () -> Int,
     heroTrailerSourceUrl: String?,
@@ -93,10 +93,22 @@ fun TabletDetailBackdrop(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        if (cinematic) {
+            DetailBackdrop(
+                image = backdropImage,
+                alignment = BiasAlignment(0f, BackdropVerticalBias),
+            )
+        }
         BackdropArtwork(
             meta = meta,
             gradientColor = backgroundColor,
-            blur = false,
+            modifier = if (cinematic) {
+                Modifier
+                    .graphicsLayer { alpha = 1f - scrollProgress() }
+                    .featherArtwork()
+            } else {
+                Modifier
+            },
             heroTrailerSourceUrl = heroTrailerSourceUrl,
             heroTrailerSourceAudioUrl = heroTrailerSourceAudioUrl,
             heroTrailerReady = heroTrailerReady,
@@ -106,22 +118,14 @@ fun TabletDetailBackdrop(
             onHeroTrailerReady = onHeroTrailerReady,
             onHeroTrailerFinished = onHeroTrailerFinished,
         )
-        if (cinematic) {
-            BackdropArtwork(
-                meta = meta,
-                gradientColor = backgroundColor,
-                blur = true,
-                modifier = Modifier.graphicsLayer { alpha = scrollProgress() },
+        if (!cinematic) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer { alpha = scrollProgress() * 0.86f }
+                    .background(backgroundColor),
             )
         }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    alpha = scrollProgress() * if (cinematic) 0.36f else 0.86f
-                }
-                .background(backgroundColor),
-        )
     }
 }
 
@@ -129,7 +133,6 @@ fun TabletDetailBackdrop(
 private fun BackdropArtwork(
     meta: MetaDetails,
     gradientColor: Color,
-    blur: Boolean,
     modifier: Modifier = Modifier,
     heroTrailerSourceUrl: String? = null,
     heroTrailerSourceAudioUrl: String? = null,
@@ -155,7 +158,6 @@ private fun BackdropArtwork(
     )
     val artworkModifier = Modifier
         .fillMaxSize()
-        .then(if (blur) Modifier.blur(30.dp) else Modifier)
 
     Box(
         modifier = modifier
