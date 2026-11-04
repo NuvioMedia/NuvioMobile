@@ -112,7 +112,7 @@ actual fun PlatformCastSessionEffect(
                 val loadResult = client.load(
                     MediaLoadRequestData.Builder()
                         .setMediaInfo(media)
-                        .setAutoplay(true)
+                        .setAutoplay(request.wasPlaying)
                         .setCurrentTime(request.positionMs.coerceAtLeast(0L))
                         .build(),
                 )
