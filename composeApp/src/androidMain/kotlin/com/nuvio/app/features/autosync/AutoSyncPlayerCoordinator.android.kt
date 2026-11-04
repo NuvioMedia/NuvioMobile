@@ -232,8 +232,12 @@ internal class AutoSyncPlayerCoordinator(
      * ASS/SSA add-on subtitles drawn by libass. Nuvio loads the original as usual and libass keeps
      * showing it while the analysis runs. A confident result is applied by loading a copy whose
      * timestamps are rewritten into libass's track for it ([AutoSyncLibassSubtitles]), so styling is
-     * kept and the media source is not reloaded. Only ASS/SSA candidates compete, so switching to a
-     * better-fitting subtitle never drops the styling.
+     * kept and the media source is not reloaded.
+     *
+     * The startup search tries ASS/SSA candidates first, so the styling is kept whenever one fits.
+     * Only when none does are the other formats tried; a fitting SRT/VTT is then attached through
+     * Nuvio's sidecar and retimed there, and the ASS subtitle is put back if that fails. A synced
+     * subtitle without styling beats a styled one that is out of sync.
      */
     private fun startLibass(
         token: Long,
@@ -246,25 +250,36 @@ internal class AutoSyncPlayerCoordinator(
     ) {
         attach(url)
         EmbeddedSubtitleTimelineLoader.prefetch(scope, sourceUrl, sourceHeaders)
-        val assCandidates = {
-            candidates.filter { PlayerSubtitleUtils.mimeTypeFromUrl(it.url) == MimeTypes.TEXT_SSA }
-        }
+        fun isAss(candidateUrl: String) =
+            PlayerSubtitleUtils.mimeTypeFromUrl(candidateUrl) == MimeTypes.TEXT_SSA
 
         job = scope.launch {
             try {
                 var outcome: AutoSyncAnalysisOutcome? = null
-                val resolved = AutomaticSubtitleSync.findTimelineRetime(
-                    sourceKey = sourceUrl,
-                    sourceHeaders = sourceHeaders,
-                    selectedSubtitleUrl = url,
-                    selectedSubtitleHeaders = subtitleHeaders,
-                    preferredLanguage = subtitleLanguage,
-                    alternativeSubtitles = candidateScope.alternativeCandidates(assCandidates()),
-                    alternativeSubtitlesProvider = if (candidateScope.usesAlternativeProvider) {
-                        assCandidates
-                    } else null,
-                    onAnalysisOutcome = { outcome = it },
-                )
+                suspend fun search(ass: Boolean): AutoSyncResolvedTimeline? {
+                    val pool = { candidates.filter { isAss(it.url) == ass } }
+                    return AutomaticSubtitleSync.findTimelineRetime(
+                        sourceKey = sourceUrl,
+                        sourceHeaders = sourceHeaders,
+                        selectedSubtitleUrl = url,
+                        selectedSubtitleHeaders = subtitleHeaders,
+                        preferredLanguage = subtitleLanguage,
+                        alternativeSubtitles = candidateScope.alternativeCandidates(pool()),
+                        alternativeSubtitlesProvider = if (candidateScope.usesAlternativeProvider) pool else null,
+                        onAnalysisOutcome = { outcome = it },
+                    )
+                }
+                var resolved = search(ass = true)
+                // No ASS/SSA fits: try the other formats, unless the video has nothing to compare with.
+                if (
+                    resolved == null && candidateScope.usesAlternativeProvider &&
+                    token == operationToken &&
+                    outcome != AutoSyncAnalysisOutcome.NO_SUBTITLE_TRACKS &&
+                    outcome != AutoSyncAnalysisOutcome.NO_USABLE_REFERENCE &&
+                    candidates.any { !isAss(it.url) }
+                ) {
+                    resolved = search(ass = false)
+                }
                 currentCoroutineContext().ensureActive()
                 if (token != operationToken) return@launch
                 if (resolved == null) {
@@ -273,6 +288,19 @@ internal class AutoSyncPlayerCoordinator(
                 }
 
                 val chosenUrl = resolved.subtitleUrl
+                if (!isAss(chosenUrl)) {
+                    // Nuvio's own switch shows the SRT/VTT through the sidecar; retime it there.
+                    attach(chosenUrl)
+                    if (!applyAutoSyncSidecarTimeline(sidecar, chosenUrl, resolved.timeline)) {
+                        if (token == operationToken) attach(url)
+                        return@launch
+                    }
+                    onMimeTypeSelected(PlayerSubtitleUtils.mimeTypeFromUrl(chosenUrl))
+                    onSubtitleDelayChanged(0)
+                    appliedListener?.invoke(chosenUrl, 0)
+                    AutoSyncSyncedSubtitle.mark(chosenUrl)
+                    return@launch
+                }
                 val tolerance = AutoSyncPreferencesRepository.syncToleranceMs.value
                 val withinTolerance = tolerance > 0 && chosenUrl == url &&
                     resolved.timeline.maxAlignmentShiftMs() <= tolerance
