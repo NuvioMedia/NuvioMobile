@@ -144,6 +144,7 @@ fun SportsGameScreen(
             GameBody(ev, actions)
         }
     }
+    GameAlertsOffer()
 }
 
 @OptIn(ExperimentalFoundationApi::class)

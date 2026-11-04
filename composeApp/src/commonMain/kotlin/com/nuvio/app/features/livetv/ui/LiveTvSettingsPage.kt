@@ -56,6 +56,8 @@ import com.nuvio.app.features.livetv.record.LiveTvRecorder
 import com.nuvio.app.features.livetv.record.RecordingPlatform
 import com.nuvio.app.features.livetv.record.RecordingRules
 import com.nuvio.app.features.livetv.sports.SportsRepository
+import com.nuvio.app.features.livetv.ui.sports.GameAlertsRow
+import com.nuvio.app.features.livetv.ui.sports.GameAlertsSheet
 import com.nuvio.app.features.livetv.parental.ParentalControls
 import com.nuvio.app.features.livetv.ondemand.VodCategory
 import com.nuvio.app.features.livetv.ondemand.VodKind
@@ -234,8 +236,6 @@ import nuvio.composeapp.generated.resources.livetv_sports_show
 import nuvio.composeapp.generated.resources.livetv_sports_show_description
 import nuvio.composeapp.generated.resources.livetv_sports_hide_scores
 import nuvio.composeapp.generated.resources.livetv_sports_hide_scores_description
-import nuvio.composeapp.generated.resources.livetv_sports_scoring_alerts
-import nuvio.composeapp.generated.resources.livetv_sports_scoring_alerts_description
 import nuvio.composeapp.generated.resources.livetv_sports_score_chip
 import nuvio.composeapp.generated.resources.livetv_sports_score_chip_description
 import nuvio.composeapp.generated.resources.livetv_show_tab_description
@@ -341,6 +341,7 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
     val scope = rememberCoroutineScope()
     var exactAlarms by remember { mutableStateOf(RecordingPlatform.canScheduleExact()) }
     var notificationsOn by remember { mutableStateOf(RecordingPlatform.notificationsAllowed()) }
+    var showGameAlerts by remember { mutableStateOf(false) }
     fun update(transform: (com.nuvio.app.features.livetv.model.LiveTvSettings) -> com.nuvio.app.features.livetv.model.LiveTvSettings) =
         LiveTvPreferences.updateSettings(transform)
 
@@ -663,15 +664,10 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
                     onCheckedChange = { on -> SportsRepository.updateSettings { it.copy(scoreOnInfoBar = on) } },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
-                SettingsSwitchRow(
-                    title = stringResource(Res.string.livetv_sports_scoring_alerts),
-                    description = stringResource(Res.string.livetv_sports_scoring_alerts_description),
-                    checked = sports.scoringAlerts,
-                    isTablet = isTablet,
-                    onCheckedChange = { on -> SportsRepository.updateSettings { it.copy(scoringAlerts = on) } },
-                )
+                GameAlertsRow(isTablet = isTablet, onClick = { showGameAlerts = true })
             }
         }
+        if (showGameAlerts) GameAlertsSheet(onDismiss = { showGameAlerts = false })
 
         SettingsSection(title = stringResource(Res.string.livetv_parental), isTablet = isTablet) {
             SettingsGroup(isTablet = isTablet) {

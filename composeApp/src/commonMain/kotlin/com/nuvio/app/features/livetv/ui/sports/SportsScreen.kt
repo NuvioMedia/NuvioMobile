@@ -168,6 +168,7 @@ fun SportsScreen(
     }
 
     if (showSettings) SportsSettingsSheet(settings, onDismiss = { showSettings = false })
+    GameAlertsOffer()
 }
 
 // ------------------------------------------------------------------ My Sports

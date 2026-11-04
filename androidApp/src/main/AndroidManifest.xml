@@ -217,6 +217,12 @@
             android:foregroundServiceType="dataSync"
             android:stopWithTask="false" />
 
+        <service
+            android:name="com.nuvio.app.features.livetv.sports.SportsLiveService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync"
+            android:stopWithTask="false" />
+
         <receiver
             android:name="com.nuvio.app.features.livetv.record.RecordingAlarmReceiver"
             android:exported="false">

@@ -140,6 +140,7 @@ fun SportsLeagueScreen(
         }
     }
     teamSheet?.let { t -> TeamSheet(t, actions, onDismiss = { teamSheet = null }) }
+    GameAlertsOffer()
 }
 
 @Composable

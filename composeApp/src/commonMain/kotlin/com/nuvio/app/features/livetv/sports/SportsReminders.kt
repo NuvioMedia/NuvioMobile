@@ -12,6 +12,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 import kotlin.concurrent.Volatile
 
@@ -45,6 +47,7 @@ internal object SportsReminders {
         scope.launch {
             SportsLive.alerts.filterNotNull().collect { a -> runCatching { noticeScore(a) } }
         }
+        SportsLiveWatch.start()
     }
 
     // ------------------------------------------------------------------ what to remind about
@@ -92,20 +95,63 @@ internal object SportsReminders {
             armed[d.eventId] = at
             runCatching { RecordingPlatform.scheduleAlarm(LiveTvAlarms.SPORTS + d.eventId, at) }
         }
+        rearmKickOffs(now)
+    }
+
+    /** Kick-off alarms set: event id -> when. */
+    private val kickOffs = SyncMap<String, Long>()
+
+    /** Scores for my teams: an alarm at each of your teams' kick-offs starts the live score with the app closed. */
+    private fun rearmKickOffs(now: Long) {
+        val s = repo.settings.value
+        val f = repo.follows.value
+        val wanted = if (!s.scoringAlerts || s.hideScores) emptyList() else repo.events.value
+            .filter { it.state == GameState.PRE && it.hasTime && it.source != EventSource.GUIDE && it.startMs > now && it.startMs < now + 3 * DAY && SportsLiveWatch.isMine(it, f) }
+            .sortedBy { it.startMs }
+            .take(40)
+        val keep = wanted.mapTo(HashSet()) { it.id }
+        kickOffs.snapshot().keys.filter { it !in keep }.forEach { id ->
+            kickOffs.remove(id)
+            runCatching { RecordingPlatform.cancelAlarm(LiveTvAlarms.LIVE + id) }
+        }
+        wanted.forEach { ev ->
+            if (kickOffs[ev.id] == ev.startMs) return@forEach
+            kickOffs[ev.id] = ev.startMs
+            runCatching { RecordingPlatform.scheduleAlarm(LiveTvAlarms.LIVE + ev.id, ev.startMs) }
+        }
     }
 
     // ------------------------------------------------------------------ the alarm went off
 
-    /** The reminder for [eventId] is due: a notification (the app may not be open). */
+    /**
+     * The reminder for [eventId] is due: a notification. The app may not be open: the alarm can
+     * wake it before anything is loaded, so your follows and the saved games are read first.
+     */
     fun fire(eventId: String) {
-        if (!shown.add(eventId)) return
+        if (eventId in shown) return
         armed.remove(eventId)
-        val now = LiveTvClock.nowMs()
+        scope.launch { runCatching { fireLoaded(eventId) } }
+    }
+
+    private suspend fun fireLoaded(eventId: String) {
+        start()
+        repo.awaitSaved()
+        val follows = repo.storedFollows()
+        val settings = repo.storedSettings()
+        val saved = follows.reminders.firstOrNull { it.eventId == eventId }
+        // Not in the saved games yet (an old copy, a game added lately): the first update brings it.
         val ev = repo.eventById(eventId)
-        val saved = repo.follows.value.reminders.firstOrNull { it.eventId == eventId }
+            ?: withTimeoutOrNull(4_000) { repo.known.first { list -> list.any { it.id == eventId } }.firstOrNull { it.id == eventId } }
+        // Still wanted? A reminder you set, or (Game starting) a game of a team you follow.
+        val wanted = saved != null || (settings.remindMyTeams && ev != null && (ev.leagueId in follows.leagues ||
+            ev.sides.any { follows.followsTeam(ev.leagueId, it.team.id) } ||
+            (ev.leagueId in follows.pins && SportsCatalog.league(ev.leagueId)?.kind == LeagueKind.EVENT)))
+        if (!wanted) return
+        val now = LiveTvClock.nowMs()
         val title = ev?.title ?: saved?.title ?: return
         val start = ev?.startMs ?: saved?.startMs ?: return
         if (start + 10 * MINUTE < now) return
+        if (!shown.add(eventId)) return
         val mins = ((start - now) / MINUTE).toInt()
         val heading = when {
             mins <= 0 -> "Starting now"

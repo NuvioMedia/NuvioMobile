@@ -89,15 +89,8 @@ import nuvio.composeapp.generated.resources.livetv_sports_names
 import nuvio.composeapp.generated.resources.livetv_sports_only_my_channels
 import nuvio.composeapp.generated.resources.livetv_sports_only_my_channels_description
 import nuvio.composeapp.generated.resources.livetv_sports_region
-import nuvio.composeapp.generated.resources.livetv_sports_remind_lead
-import nuvio.composeapp.generated.resources.livetv_sports_remind_my_teams
-import nuvio.composeapp.generated.resources.livetv_sports_remind_my_teams_description
-import nuvio.composeapp.generated.resources.livetv_sports_scoring_alerts
-import nuvio.composeapp.generated.resources.livetv_sports_scoring_alerts_description
 import nuvio.composeapp.generated.resources.livetv_sports_search_hint
 import nuvio.composeapp.generated.resources.livetv_sports_settings
-import nuvio.composeapp.generated.resources.livetv_sports_switch_auto
-import nuvio.composeapp.generated.resources.livetv_sports_switch_auto_description
 import nuvio.composeapp.generated.resources.livetv_sports_teams
 import nuvio.composeapp.generated.resources.livetv_sports_unfollow
 import nuvio.composeapp.generated.resources.livetv_sports_channels_from
@@ -404,8 +397,6 @@ internal fun SportsFollowingTab(follows: SportsFollows, settings: SportsSettings
 
 // ------------------------------------------------------------------ settings sheet
 
-private val REMIND_MINUTES = listOf(0, 5, 10, 15, 30, 60)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun SportsSettingsSheet(settings: SportsSettings, onDismiss: () -> Unit) {
@@ -414,7 +405,7 @@ internal fun SportsSettingsSheet(settings: SportsSettings, onDismiss: () -> Unit
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var pickRegion by remember { mutableStateOf(false) }
     var pickChannels by remember { mutableStateOf(false) }
-    var pickLead by remember { mutableStateOf(false) }
+    var showAlerts by remember { mutableStateOf(false) }
     fun update(t: (SportsSettings) -> SportsSettings) = repo.updateSettings(t)
     NuvioModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Text(stringResource(Res.string.livetv_sports_settings), style = MaterialTheme.typography.titleMedium, color = tokens.colors.textPrimary, fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s8))
@@ -428,13 +419,7 @@ internal fun SportsSettingsSheet(settings: SportsSettings, onDismiss: () -> Unit
             SettingsGroupDivider(isTablet = false)
             SettingsNavigationRow(title = stringResource(Res.string.livetv_sports_channels_from), description = ChannelRegions.name(settings.channelRegion), isTablet = false, onClick = { pickChannels = true })
             SettingsGroupDivider(isTablet = false)
-            SettingsSwitchRow(title = stringResource(Res.string.livetv_sports_remind_my_teams), description = stringResource(Res.string.livetv_sports_remind_my_teams_description), checked = settings.remindMyTeams, isTablet = false, onCheckedChange = { on -> update { it.copy(remindMyTeams = on) } })
-            SettingsGroupDivider(isTablet = false)
-            SettingsNavigationRow(title = stringResource(Res.string.livetv_sports_remind_lead), description = if (settings.remindMinutes == 0) "At the start" else "${settings.remindMinutes} minutes before", isTablet = false, onClick = { pickLead = true })
-            SettingsGroupDivider(isTablet = false)
-            SettingsSwitchRow(title = stringResource(Res.string.livetv_sports_switch_auto), description = stringResource(Res.string.livetv_sports_switch_auto_description), checked = settings.autoSwitch, isTablet = false, onCheckedChange = { on -> update { it.copy(autoSwitch = on) } })
-            SettingsGroupDivider(isTablet = false)
-            SettingsSwitchRow(title = stringResource(Res.string.livetv_sports_scoring_alerts), description = stringResource(Res.string.livetv_sports_scoring_alerts_description), checked = settings.scoringAlerts, isTablet = false, onCheckedChange = { on -> update { it.copy(scoringAlerts = on) } })
+            GameAlertsRow(isTablet = false, onClick = { showAlerts = true })
             SettingsGroupDivider(isTablet = false)
             SettingsNavigationRow(title = stringResource(Res.string.livetv_sports_clear_fixes), description = stringResource(Res.string.livetv_sports_clear_fixes_description), isTablet = false, onClick = { repo.clearFixes(); onDismiss() })
         }
@@ -461,14 +446,5 @@ internal fun SportsSettingsSheet(settings: SportsSettings, onDismiss: () -> Unit
             DialogButtons { DialogButton(text = stringResource(Res.string.action_cancel), onClick = { pickChannels = false }) }
         }
     }
-    if (pickLead) {
-        DialogSurface(onDismissRequest = { pickLead = false }, title = stringResource(Res.string.livetv_sports_remind_lead)) {
-            Column(Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s6)) {
-                REMIND_MINUTES.forEach { m ->
-                    DialogOption(text = if (m == 0) "At the start" else "$m minutes before", selected = settings.remindMinutes == m, onClick = { update { it.copy(remindMinutes = m) }; pickLead = false })
-                }
-            }
-            DialogButtons { DialogButton(text = stringResource(Res.string.action_cancel), onClick = { pickLead = false }) }
-        }
-    }
+    if (showAlerts) GameAlertsSheet(onDismiss = { showAlerts = false })
 }

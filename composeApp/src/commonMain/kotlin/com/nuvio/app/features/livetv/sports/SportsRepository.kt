@@ -256,6 +256,10 @@ internal object SportsRepository {
 
     private val viewers = MutableStateFlow(0)
     private val foreground = MutableStateFlow(true)
+    /** Live scores are being watched in the background (a team you follow is playing, see [SportsLiveWatch]). */
+    private val watching = MutableStateFlow(false)
+    /** The games saved last time have been read back (see [awaitSaved]). */
+    private val cacheReady = MutableStateFlow(false)
     private val kick = MutableStateFlow(0)
     @Volatile private var started = false
 
@@ -266,6 +270,7 @@ internal object SportsRepository {
         LiveTvPlayback.gameFailover = { key, tried -> nextChannelForGame(key, tried) }
         scope.launch {
             runCatching { withContext(Dispatchers.Default) { loadCache() } }
+            cacheReady.value = true
             runCatching { updateLoop() }
         }
         scope.launch { runCatching { matchLoop() } }
@@ -280,6 +285,28 @@ internal object SportsRepository {
             // Nothing matched yet, one was put off (app away, video playing), or the last is hours old.
             if (_matches.value.isEmpty() || matchMissed || LiveTvClock.nowMs() - lastMatchAt > SAFETY_ROUND) matchKick.value++
         }
+    }
+
+    /**
+     * Starts the updates if they aren't running and waits (a few seconds at most) for the games
+     * saved last time: an alarm can wake the app before anything is loaded.
+     */
+    suspend fun awaitSaved() {
+        start()
+        withTimeoutOrNull(3_000) { cacheReady.first { it } }
+    }
+
+    /** Your follows and reminders as stored (right after the app wakes, [follows] may still be catching up). */
+    suspend fun storedFollows(): SportsFollows = SportsFollows.fromJson(prefs.sportsMineJson.first())
+
+    /** The Sports settings as stored (see [storedFollows]). */
+    suspend fun storedSettings(): SportsSettings = SportsSettings.fromJson(prefs.sportsSettingsJson.first())
+
+    /** Keeps the scores of your teams' games coming while the app is in the background. */
+    fun setWatching(on: Boolean) {
+        if (watching.value == on) return
+        watching.value = on
+        if (on) kick.value++
     }
 
     fun setForeground(on: Boolean) {
@@ -332,9 +359,11 @@ internal object SportsRepository {
         var lastKick = -1
         var lastFixtures = 0L
         while (true) {
-            val active = foreground.value && (settings.value.showInSidebar || viewers.value > 0)
+            val full = foreground.value && (settings.value.showInSidebar || viewers.value > 0)
+            // Watching your teams' games in the background: only the scores, nothing else.
+            val active = full || watching.value
             if (active) runCatching { updateOnce(LiveTvClock.nowMs()) }
-            if (active) {
+            if (full) {
                 val force = forceExtras.also { forceExtras = false }
                 runCatching { updateWeek(LiveTvClock.nowMs(), force) }
                 runCatching { updateAhead(LiveTvClock.nowMs(), force) }
@@ -342,7 +371,7 @@ internal object SportsRepository {
                 runCatching { updateTsdb(LiveTvClock.nowMs(), force) }
                 runCatching { updateSchedules(LiveTvClock.nowMs(), force) }
             }
-            if (active && LiveTvClock.nowMs() - lastFixtures > 12 * HOUR) {
+            if (full && LiveTvClock.nowMs() - lastFixtures > 12 * HOUR) {
                 lastFixtures = LiveTvClock.nowMs()
                 runCatching { updateFixtures() }
             }
@@ -1214,10 +1243,14 @@ internal object SportsRepository {
         kick.value++
     }
 
-    fun toggleTeam(team: TeamInfo) = updateFollows { f ->
-        val had = f.followedTeam(team)
-        if (had != null) f.copy(teams = f.teams - had)
-        else f.copy(teams = f.teams + FollowedTeam(team.leagueId, team.id, team.name, team.abbr, team.color, team.logo), setUp = true)
+    fun toggleTeam(team: TeamInfo) {
+        val adding = follows.value.followedTeam(team) == null
+        updateFollows { f ->
+            val had = f.followedTeam(team)
+            if (had != null) f.copy(teams = f.teams - had)
+            else f.copy(teams = f.teams + FollowedTeam(team.leagueId, team.id, team.name, team.abbr, team.color, team.logo), setUp = true)
+        }
+        if (adding) GameAlerts.onFollowed(team.name)
     }
 
     /** Moves a row of My Sports from [from] to [to] (Arrange My Sports). */
@@ -1231,13 +1264,21 @@ internal object SportsRepository {
     }
 
     /** A league's own row under My Sports (and its button in All Events): on or off. */
-    fun togglePin(leagueId: String) = updateFollows { f ->
-        if (leagueId in f.pins) f.copy(pins = f.pins - leagueId, unpinned = f.unpinned + leagueId)
-        else f.copy(pins = f.pins + leagueId, unpinned = f.unpinned - leagueId, setUp = true)
+    fun togglePin(leagueId: String) {
+        val adding = leagueId !in follows.value.pins
+        updateFollows { f ->
+            if (leagueId in f.pins) f.copy(pins = f.pins - leagueId, unpinned = f.unpinned + leagueId)
+            else f.copy(pins = f.pins + leagueId, unpinned = f.unpinned - leagueId, setUp = true)
+        }
+        if (adding) SportsCatalog.league(leagueId)?.let { GameAlerts.onFollowed(it.name) }
     }
 
-    fun toggleLeague(leagueId: String) = updateFollows { f ->
-        f.copy(leagues = if (leagueId in f.leagues) f.leagues - leagueId else f.leagues + leagueId, setUp = true)
+    fun toggleLeague(leagueId: String) {
+        val adding = leagueId !in follows.value.leagues
+        updateFollows { f ->
+            f.copy(leagues = if (leagueId in f.leagues) f.leagues - leagueId else f.leagues + leagueId, setUp = true)
+        }
+        if (adding) SportsCatalog.league(leagueId)?.let { GameAlerts.onFollowed(it.name) }
     }
 
     fun addWord(word: String) {
@@ -1252,16 +1293,24 @@ internal object SportsRepository {
 
     fun isReminded(ev: SportsEvent): Boolean = follows.value.reminders.any { it.eventId == ev.id }
 
-    fun toggleReminder(ev: SportsEvent) = updateFollows { f ->
-        if (f.reminders.any { it.eventId == ev.id }) f.copy(reminders = f.reminders.filterNot { it.eventId == ev.id })
-        else f.copy(reminders = (f.reminders.filter { it.startMs > LiveTvClock.nowMs() - 3 * HOUR } + SportsReminder(ev.id, ev.title, ev.startMs)))
+    fun toggleReminder(ev: SportsEvent) {
+        val adding = !isReminded(ev)
+        updateFollows { f ->
+            if (f.reminders.any { it.eventId == ev.id }) f.copy(reminders = f.reminders.filterNot { it.eventId == ev.id })
+            else f.copy(reminders = (f.reminders.filter { it.startMs > LiveTvClock.nowMs() - 3 * HOUR } + SportsReminder(ev.id, ev.title, ev.startMs)))
+        }
+        // A reminder can't show without notifications: ask for them now.
+        if (adding) GameAlerts.askForNotifications()
     }
 
     /** This game's reminder: open the game by itself when it starts, or just tell you (sets a reminder if there wasn't one). */
-    fun setAutoSwitch(ev: SportsEvent, on: Boolean) = updateFollows { f ->
-        val has = f.reminders.any { it.eventId == ev.id }
-        f.copy(reminders = if (has) f.reminders.map { if (it.eventId == ev.id) it.copy(autoSwitch = on) else it }
-            else f.reminders + SportsReminder(ev.id, ev.title, ev.startMs, on))
+    fun setAutoSwitch(ev: SportsEvent, on: Boolean) {
+        updateFollows { f ->
+            val has = f.reminders.any { it.eventId == ev.id }
+            f.copy(reminders = if (has) f.reminders.map { if (it.eventId == ev.id) it.copy(autoSwitch = on) else it }
+                else f.reminders + SportsReminder(ev.id, ev.title, ev.startMs, on))
+        }
+        GameAlerts.askForNotifications()
     }
 
     /** Whether [ev]'s reminder opens the game by itself: its own choice, else the setting. */

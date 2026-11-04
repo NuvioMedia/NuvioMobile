@@ -24,7 +24,7 @@ class RecordingAlarmReceiver : BroadcastReceiver() {
         when (intent.action) {
             ACTION_FIRE -> {
                 val id = intent.getStringExtra(EXTRA_ID) ?: return
-                val recording = !id.startsWith(LiveTvAlarms.SPORTS) && !id.startsWith(LiveTvAlarms.REMINDER)
+                val recording = !id.startsWith(LiveTvAlarms.SPORTS) && !id.startsWith(LiveTvAlarms.REMINDER) && !id.startsWith(LiveTvAlarms.LIVE)
                 // Keep the app awake long enough for the recording service (or the notification) to take over.
                 val pending = goAsync()
                 if (recording) LiveTvRecordingService.start(app)

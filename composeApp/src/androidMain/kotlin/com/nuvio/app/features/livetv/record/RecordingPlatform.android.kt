@@ -32,6 +32,9 @@ internal actual object RecordingPlatform {
     internal const val REMINDER_CHANNEL_ID = "livetv_reminders"
     private var appContext: Context? = null
 
+    /** The app's context once [initialize] ran (other Live TV parts on Android use it too). */
+    internal fun context(): Context? = appContext
+
     fun initialize(context: Context) {
         if (appContext == null) appContext = context.applicationContext
         ensureChannel()
