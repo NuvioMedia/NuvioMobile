@@ -24,13 +24,16 @@ import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.livetv.sync.CloudChoice
 import com.nuvio.app.features.livetv.sync.CloudPrompt
 import com.nuvio.app.features.livetv.sync.LiveTvCloudSync
+import com.nuvio.app.features.livetv.sync.SyncPart
+import com.nuvio.app.features.livetv.sync.SyncParts
 import com.nuvio.app.features.settings.SettingsGroup
 import com.nuvio.app.features.settings.SettingsGroupDivider
 import com.nuvio.app.features.settings.SettingsNavigationRow
+import com.nuvio.app.features.settings.SettingsSwitchRow
 
 /**
- * The two questions Nuvio account sync asks, shown over whatever screen is open: back this
- * device's Live TV setup up to the account, or choose between the saved setup and this one.
+ * The two questions Setup Sync asks, shown over whatever screen is open: save this
+ * device's Live TV setup, or choose between the saved setup and this one.
  */
 @Composable
 internal fun LiveTvCloudSyncPrompts() {
@@ -39,8 +42,9 @@ internal fun LiveTvCloudSyncPrompts() {
         CloudPrompt.BackUp -> DialogSurface(
             onDismissRequest = { LiveTvCloudSync.answerBackUp(false) },
             title = "Save your Live TV setup?",
-            message = "Save your playlists, guides and settings to your Nuvio account, so they follow you to your other devices. " +
-                "Your IPTV logins are included, kept encrypted. You can turn this off or delete the saved copy any time in Live TV settings.",
+            message = "Save your playlists, guides, favorites and Sports and Calendar choices so they follow you to your other devices. " +
+                "Your IPTV logins are included, kept encrypted. This phone keeps its own look and layout. " +
+                "In Live TV settings (Setup Sync) you can change what's synced, turn it off or delete the saved copy any time.",
         ) {
             DialogButtons {
                 DialogButton(text = "Not Now", onClick = { LiveTvCloudSync.answerBackUp(false) })
@@ -49,9 +53,9 @@ internal fun LiveTvCloudSyncPrompts() {
         }
         CloudPrompt.Choose -> DialogSurface(
             onDismissRequest = { LiveTvCloudSync.answerChoose(CloudChoice.Later) },
-            title = "Your account has a saved Live TV setup",
+            title = "You have a saved Live TV setup",
             message = "This device has a different setup. Combine keeps playlists and guides from both. " +
-                "Use the Saved Setup replaces this device's setup with the one saved in your account.",
+                "Use the Saved Setup replaces this device's setup with the saved one.",
         ) {
             DialogButtons {
                 DialogButton(text = "Not Now", onClick = { LiveTvCloudSync.answerChoose(CloudChoice.Later) })
@@ -65,34 +69,36 @@ internal fun LiveTvCloudSyncPrompts() {
 
 private enum class CloudConfirm { Off, Delete, Earlier }
 
-/** Live TV settings: the Nuvio account sync card (turn on or off, sync now, earlier copy, delete). */
+/** Live TV settings: the Setup Sync card (what to sync, turn on or off, sync now, earlier copy, delete). */
 @Composable
 internal fun LiveTvCloudSyncSection(isTablet: Boolean) {
     val tokens = MaterialTheme.nuvio
     val state by remember { LiveTvCloudSync.start(); LiveTvCloudSync.state }.collectAsStateWithLifecycle()
     var confirm by remember { mutableStateOf<CloudConfirm?>(null) }
+    val partsRevision by SyncParts.revision.collectAsStateWithLifecycle()
+    val partOn = remember(partsRevision) { SyncPart.entries.associateWith { SyncParts.isOn(it) } }
 
     NuvioSectionLabel(
-        text = "Nuvio account sync",
+        text = "Setup Sync",
         modifier = Modifier.padding(horizontal = NuvioTokens.Radius.card).padding(top = NuvioTokens.Space.s16, bottom = NuvioTokens.Space.s10),
     )
     SettingsGroup(isTablet = isTablet) {
         when {
             !state.available -> Text(
-                text = "Nuvio account sync works with the official Nuvio server.",
+                text = "Setup Sync works with the official Nuvio sign-in.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = tokens.colors.textMuted,
                 modifier = Modifier.padding(NuvioTokens.Space.s16),
             )
             !state.signedIn -> Text(
-                text = "Sign in to your Nuvio account to keep your Live TV setup the same on all your devices.",
+                text = "Sign in with your Nuvio account to keep your Live TV setup the same on all your devices.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = tokens.colors.textMuted,
                 modifier = Modifier.padding(NuvioTokens.Space.s16),
             )
             !state.enabled -> {
                 Text(
-                    text = "Save your playlists, guides and settings to your Nuvio account, and get them back on any device you sign in to.",
+                    text = "Keeps your playlists and settings the same on every device you sign in on.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = tokens.colors.textMuted,
                     modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s12),
@@ -109,6 +115,13 @@ internal fun LiveTvCloudSyncSection(isTablet: Boolean) {
                 )
             }
             else -> {
+                Text(
+                    text = "Keeps your playlists and settings the same on every device you sign in on.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = tokens.colors.textMuted,
+                    modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s12),
+                )
+                SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
                     title = "On",
                     description = (state.email ?: "") + (state.lastSyncMs.takeIf { it > 0 }?.let { " · last synced " + formatLocalDateTime(it) } ?: ""),
@@ -116,6 +129,20 @@ internal fun LiveTvCloudSyncSection(isTablet: Boolean) {
                     isTablet = isTablet,
                     onClick = {},
                 )
+                NuvioSectionLabel(
+                    text = "What to sync",
+                    modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16).padding(top = NuvioTokens.Space.s12, bottom = NuvioTokens.Space.s6),
+                )
+                SyncPart.entries.filter { it != SyncPart.LOOK }.forEach { part ->
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = part.label,
+                        description = part.description,
+                        checked = partOn[part] == true,
+                        isTablet = isTablet,
+                        onCheckedChange = { on -> SyncParts.set(part, on); LiveTvCloudSync.partsChanged() },
+                    )
+                }
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
                     title = "Sync Now",
@@ -135,15 +162,15 @@ internal fun LiveTvCloudSyncSection(isTablet: Boolean) {
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
-                    title = "Turn Off",
-                    description = "Stop syncing here. Your saved copy stays in your account",
+                    title = "Turn Off Setup Sync",
+                    description = "Stop syncing here. Your saved copy stays saved",
                     isTablet = isTablet,
                     onClick = { confirm = CloudConfirm.Off },
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsNavigationRow(
                     title = "Delete Saved Setup",
-                    description = "Remove the saved copy from your account. This device keeps its setup",
+                    description = "Remove the saved copy. This device keeps its setup",
                     isTablet = isTablet,
                     onClick = { confirm = CloudConfirm.Delete },
                 )
@@ -158,9 +185,9 @@ internal fun LiveTvCloudSyncSection(isTablet: Boolean) {
     confirm?.let { which ->
         val dismiss = { confirm = null }
         val (title, message, action) = when (which) {
-            CloudConfirm.Off -> Triple("Turn off sync?", "This device stops syncing. Your saved copy stays in your Nuvio account.", { LiveTvCloudSync.turnOff() })
-            CloudConfirm.Delete -> Triple("Delete the saved setup?", "The copy in your Nuvio account is removed and sync turns off here. This device keeps its own setup.", { LiveTvCloudSync.deleteCloudCopy() })
-            CloudConfirm.Earlier -> Triple("Restore the earlier copy?", "This replaces the setup on this device and in your account with the copy saved before the last change.", { LiveTvCloudSync.restorePrevious() })
+            CloudConfirm.Off -> Triple("Turn off Setup Sync?", "This device stops syncing. Your saved copy stays saved.", { LiveTvCloudSync.turnOff() })
+            CloudConfirm.Delete -> Triple("Delete the saved setup?", "The saved copy is removed and sync turns off here. This device keeps its own setup.", { LiveTvCloudSync.deleteCloudCopy() })
+            CloudConfirm.Earlier -> Triple("Restore the earlier copy?", "This replaces the setup on this device and the saved copy with the one saved before the last change.", { LiveTvCloudSync.restorePrevious() })
         }
         DialogSurface(onDismissRequest = dismiss, title = title, message = message) {
             DialogButtons {

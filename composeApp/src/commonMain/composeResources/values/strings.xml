@@ -2603,7 +2603,7 @@
     <string name="livetv_player_channels">Channels</string>
     <string name="livetv_player_guide">Guide</string>
     <string name="livetv_now_line">Now line in the guide</string>
-    <string name="livetv_now_line_description">The line down the guide that marks the current time. Also changes your TV when you use account sync.</string>
+    <string name="livetv_now_line_description">The line down the guide that marks the current time. Also changes your TV when you use Setup Sync.</string>
     <string name="livetv_group_channels">%1$d channels</string>
     <string name="livetv_group_one_channel">1 channel</string>
     <string name="livetv_section_backup">Backup</string>
