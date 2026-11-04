@@ -94,16 +94,19 @@ internal class AutoSyncPlayerEngineController(
 
     override fun selectSubtitleTrack(index: Int) {
         coordinator.cancel()
+        coordinator.forgetLibassCopies()
         base.selectSubtitleTrack(index)
     }
 
     override fun clearExternalSubtitle() {
         coordinator.cancel()
+        coordinator.forgetLibassCopies()
         base.clearExternalSubtitle()
     }
 
     override fun clearExternalSubtitleAndSelect(trackIndex: Int) {
         coordinator.cancel()
+        coordinator.forgetLibassCopies()
         base.clearExternalSubtitleAndSelect(trackIndex)
     }
 
