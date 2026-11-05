@@ -1315,6 +1315,9 @@ object WatchProgressRepository {
         persist: Boolean,
         syncRemote: Boolean,
     ) {
+        // A live stream's position only grows (mpv counts from where playback began); resuming
+        // there seeks past what the stream holds and nothing plays
+        if (snapshot.isLive) return
         val targetProfileId = session.profileId
         val positionMs = snapshot.positionMs.coerceAtLeast(0L)
         val durationMs = snapshot.durationMs.coerceAtLeast(0L)

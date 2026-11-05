@@ -1562,6 +1562,9 @@ private class NuvioLibmpvView(
     private var latestAudioTracks: List<LibmpvTrack> = emptyList()
     @Volatile
     private var latestSubtitleTracks: List<LibmpvTrack> = emptyList()
+    // The source loaded last, and whether its duration keeps growing (live, see LiveDurationGrowth)
+    private var requestedMpvPath: String? = null
+    private var liveDurationGrowth = LiveDurationGrowth()
 
     var subtitleText by mutableStateOf("")
         private set
@@ -1668,6 +1671,7 @@ private class NuvioLibmpvView(
         applyRequestHeadersNow(currentRequestHeaders)
         setPausedNow(!playWhenReady)
         mpv.setPropertyString("aid", "auto")
+        requestedMpvPath = sourceUrl.toMpvSource()
         mpv.command("loadfile", sourceUrl.toMpvSource(), "replace")
         currentSourceAudioUrl?.takeIf { it.isNotBlank() }?.let { sourceAudioUrl ->
             mpv.command("audio-add", sourceAudioUrl.toMpvSource(), "auto")
@@ -1752,6 +1756,11 @@ private class NuvioLibmpvView(
         val cacheBufferingState = mpv.getPropertyInt("cache-buffering-state")
         val durationMs = mpv.getPropertyDouble("duration").toMillis()
         val positionMs = mpv.getPropertyDouble("time-pos").toMillis()
+        liveDurationGrowth = liveDurationGrowth.next(
+            mediaKey = requestedMpvPath,
+            durationMs = durationMs,
+            fromRequestedMedia = mpv.getPropertyString("path") == requestedMpvPath,
+        )
         val cachePositionMs = mpv.getPropertyDouble("demuxer-cache-time").toMillis()
         val isCacheBuffering = cacheBufferingState != null && cacheBufferingState in 0 until 100
         val isLoading = pausedForCache ||
@@ -1772,6 +1781,7 @@ private class NuvioLibmpvView(
             playbackSpeed = (mpv.getPropertyDouble("speed") ?: 1.0).toFloat(),
             videoWidth = videoWidth,
             videoHeight = videoHeight,
+            isLive = liveDurationGrowth.grew,
         )
     }
 
@@ -2145,6 +2155,7 @@ private fun ExoPlayer.snapshot(): PlayerPlaybackSnapshot {
         playbackSpeed = playbackParameters.speed,
         videoWidth = videoWidth,
         videoHeight = videoHeight,
+        isLive = isCurrentMediaItemLive,
     )
 }
 
