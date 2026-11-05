@@ -2584,6 +2584,7 @@
     <string name="livetv_action_move_to_group">Add to a group</string>
     <string name="livetv_action_hide">Hide channel</string>
     <string name="livetv_rename_hint">Channel name</string>
+    <string name="livetv_search_row_title">Live TV</string>
     <string name="livetv_action_change_logo">Change logo</string>
     <string name="livetv_logo_search_hint">Search logos</string>
     <string name="livetv_logo_using_pick">Using your pick</string>
