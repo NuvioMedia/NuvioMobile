@@ -92,6 +92,9 @@ internal class SportsFeeds {
 
     @Volatile private var tsdbFolder = "sportsdb/"
 
+    /** Every game of the next week with its TV channels by country (TheSportsDB's TV listings, kept by the nuvio-data job). */
+    suspend fun tvListingsRaw(): String = get(DATA_URL + "sportsdb/tv.json")
+
     /** A TheSportsDB game's goals, cards, stats and line-ups (the nuvio-data job writes them). */
     suspend fun tsdbGameRaw(tsdbEventId: String): String = get(DATA_URL + "sportsdb/games/$tsdbEventId.json")
 
@@ -108,12 +111,27 @@ internal class SportsFeeds {
      * the shared job has reached that day and it isn't older than [maxAgeMs]. Null otherwise
      * (the day isn't in the file yet, or it's gone stale) — the caller's cue to ask ESPN itself.
      */
-    fun espnSharedDay(sharedRaw: String?, day: String, maxAgeMs: Long, now: Long): String? {
-        if (sharedRaw == null) return null
+    fun espnSharedDay(sharedRaw: String?, day: String, maxAgeMs: Long, now: Long): String? =
+        espnSharedDays(sharedRaw, listOf(day), maxAgeMs, now)[day]
+
+    /**
+     * Several days out of one shared-cache file, reading the file once. (A file holds about two
+     * weeks of a league's raw scoreboards, up to ~2 MB; reading it again for every day wanted
+     * made a lot of throwaway memory on every update.) [maxAgeMs] is per day, by its position in
+     * [days]; days missing or too old are left out.
+     */
+    fun espnSharedDays(sharedRaw: String?, days: List<String>, maxAgeMs: Long, now: Long, maxAgeFor: (Int) -> Long = { maxAgeMs }): Map<String, String> {
+        if (sharedRaw == null || days.isEmpty()) return emptyMap()
         return runCatching {
-            val d = JSONObject(sharedRaw).optJSONObject("days")?.optJSONObject(day) ?: return null
-            if (now - d.optLong("fetchedAt", 0L) > maxAgeMs) null else d.optString("raw").ifBlank { null }
-        }.getOrNull()
+            val all = JSONObject(sharedRaw).optJSONObject("days") ?: return emptyMap()
+            val out = HashMap<String, String>()
+            days.forEachIndexed { i, day ->
+                val d = all.optJSONObject(day) ?: return@forEachIndexed
+                if (now - d.optLong("fetchedAt", 0L) > maxAgeFor(i)) return@forEachIndexed
+                d.optString("raw").ifBlank { null }?.let { out[day] = it }
+            }
+            out
+        }.getOrDefault(emptyMap())
     }
 
     companion object {
@@ -584,13 +602,28 @@ internal class SportsFeeds {
             val clock = st?.optDouble("clock", Double.NaN) ?: Double.NaN
             val progress = if (state == GameState.LIVE) progressOf(league, period, clock, st?.str("displayClock")) else null
 
-            val broadcasts = LinkedHashSet<String>()
+            // Best first, since the first one is what a game card shows: national channels, then the
+            // home team's, then the away team's; team apps and websites after real TV channels.
+            val ranked = ArrayList<Pair<String, Int>>()
+            fun marketRank(m: String?) = when (m?.lowercase()) { "national" -> 0; "home" -> 1; "away" -> 2; else -> 3 }
             comp?.optJSONArray("broadcasts")?.let { a ->
-                for (b in 0 until a.length()) broadcasts += a.optJSONObject(b)?.optJSONArray("names").strings()
+                for (b in 0 until a.length()) {
+                    val o = a.optJSONObject(b) ?: continue
+                    val rank = marketRank(o.str("market"))
+                    o.optJSONArray("names").strings().forEach { ranked += it to rank }
+                }
             }
             comp?.optJSONArray("geoBroadcasts")?.let { a ->
-                for (b in 0 until a.length()) a.optJSONObject(b)?.optJSONObject("media")?.str("shortName")?.let { broadcasts += it }
+                for (b in 0 until a.length()) {
+                    val o = a.optJSONObject(b) ?: continue
+                    val rank = marketRank(o.optJSONObject("market")?.str("type"))
+                    o.optJSONObject("media")?.str("shortName")?.let { ranked += it to rank }
+                }
             }
+            fun isApp(n: String) = n.lowercase().let { it.endsWith(" app") || it.contains(".com") || it.contains("league pass") || it.endsWith("+") }
+            val broadcasts = LinkedHashSet<String>()
+            ranked.withIndex().sortedWith(compareBy({ it.value.second }, { if (isApp(it.value.first)) 1 else 0 }, { it.index }))
+                .forEach { broadcasts += it.value.first }
             val venue = comp?.optJSONObject("venue")?.str("fullName") ?: ev.optJSONObject("circuit")?.str("fullName")
             val week = ev.optJSONObject("week")?.optInt("number", 0)?.takeIf { it > 0 }?.let { "Week $it" }
             val headline = comp?.optJSONArray("notes")?.optJSONObject(0)?.str("headline")

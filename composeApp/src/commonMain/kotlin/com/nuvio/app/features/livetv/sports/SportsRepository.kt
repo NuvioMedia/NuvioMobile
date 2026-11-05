@@ -84,8 +84,13 @@ internal object SportsRepository {
     /** Shows found in the guide, by day (the day's start). */
     private val guideData = MutableStateFlow<Map<Long, List<SportsEvent>>>(emptyMap())
 
-    /** Every game and event on the page's days (a week back to a week ahead). */
-    val events: StateFlow<List<SportsEvent>> = combine(leagueData, weekData, fixtureData, guideData, tsdbData) { l, w, f, g, t ->
+    /** TheSportsDB's TV listings (nuvio-data's sportsdb/tv.json): channels in many countries, for [events]. */
+    private val tvData = MutableStateFlow<List<TvListing>>(emptyList())
+    private val tvCache = SportsTvListings.Cache()
+    private val tvCountries = settings.map { SportsTvListings.countriesFor(it) }.distinctUntilChanged()
+
+    /** Every game and event on the page's days (a week back to a week ahead), before the TV listings. */
+    private val plainEvents: StateFlow<List<SportsEvent>> = combine(leagueData, weekData, fixtureData, guideData, tsdbData) { l, w, f, g, t ->
         val now = LiveTvClock.nowMs()
         val guide = mergeWrestlingAirings(g.values.flatten()).map { timed(it, now) }
         val from = dayStart(-DAYS_BACK - 1)
@@ -137,6 +142,11 @@ internal object SportsRepository {
             }
         }
         (espn + (fixtures + guide.filterNot { it.id in replacedGuide }).filterNot(::coveredByEspn) + tsdb).distinctBy { it.id }
+    }.stateIn(scope, SharingStarted.Eagerly, emptyList())
+
+    /** Every game and event on the page's days (a week back to a week ahead), with your country's channels from the TV listings. */
+    val events: StateFlow<List<SportsEvent>> = combine(plainEvents, tvData, tvCountries) { ev, tv, countries ->
+        runCatching { SportsTvListings.addChannels(ev, tv, countries, tvCache) }.getOrDefault(ev)
     }.stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     /**
@@ -358,6 +368,7 @@ internal object SportsRepository {
     private suspend fun updateLoop() {
         var lastKick = -1
         var lastFixtures = 0L
+        var lastTv = 0L
         while (true) {
             val full = foreground.value && (settings.value.showInSidebar || viewers.value > 0)
             // Watching your teams' games in the background: only the scores, nothing else.
@@ -370,6 +381,10 @@ internal object SportsRepository {
                 runCatching { updatePast(LiveTvClock.nowMs()) }
                 runCatching { updateTsdb(LiveTvClock.nowMs(), force) }
                 runCatching { updateSchedules(LiveTvClock.nowMs(), force) }
+            }
+            if (full && LiveTvClock.nowMs() - lastTv > 4 * HOUR) {
+                lastTv = LiveTvClock.nowMs()
+                runCatching { updateTv() }
             }
             if (full && LiveTvClock.nowMs() - lastFixtures > 12 * HOUR) {
                 lastFixtures = LiveTvClock.nowMs()
@@ -679,10 +694,8 @@ internal object SportsRepository {
     /** [l]'s scoreboard for [days] from the shared cache nuvio-data keeps; ESPN itself only for a day the cache hasn't reached. */
     private suspend fun fetchViaSharedCache(l: League, days: List<String>, now: Long): List<String> {
         val shared = feeds.espnSharedRaw(l.id)
-        val byDay = days.mapIndexed { i, d ->
-            val maxAge = if (i == 1) 20 * MINUTE else 90 * MINUTE
-            d to feeds.espnSharedDay(shared, d, maxAge, now)
-        }
+        val got = feeds.espnSharedDays(shared, days, 90 * MINUTE, now) { i -> if (i == 1) 20 * MINUTE else 90 * MINUTE }
+        val byDay = days.map { d -> d to got[d] }
         val have = byDay.mapNotNull { it.second }
         val missing = byDay.filter { it.second == null }.map { it.first }
         if (missing.isEmpty()) return have
@@ -695,7 +708,8 @@ internal object SportsRepository {
 
     private suspend fun fetchWeekViaSharedCache(l: League, singleDays: List<String>, now: Long): List<String> {
         val shared = feeds.espnSharedRaw(l.id)
-        val byDay = singleDays.map { d -> d to feeds.espnSharedDay(shared, d, 6 * HOUR, now) }
+        val got = feeds.espnSharedDays(shared, singleDays, 6 * HOUR, now)
+        val byDay = singleDays.map { d -> d to got[d] }
         val have = byDay.mapNotNull { it.second }
         val missing = byDay.filter { it.second == null }.map { it.first }
         if (missing.isEmpty()) return have
@@ -708,6 +722,13 @@ internal object SportsRepository {
 
     private suspend fun coroutineScopeFetch(list: List<League>, block: suspend (League) -> Unit) {
         coroutineScope { list.map { l -> async { block(l) } }.awaitAll() }
+    }
+
+    /** TheSportsDB's TV listings (a few hundred games' channels in many countries); the last saved copy when the file can't be reached. */
+    private suspend fun updateTv() {
+        val raw = runCatching { feeds.tvListingsRaw() }.onSuccess { runCatching { LiveTvFiles.writeSmall(DIR, "tv.json", it) } }.getOrNull() ?: return
+        val list = runCatching { SportsTvListings.parse(raw) }.getOrDefault(emptyList())
+        if (list.isNotEmpty()) tvData.value = list
     }
 
     private suspend fun updateFixtures() {
@@ -792,6 +813,12 @@ internal object SportsRepository {
             runCatching { ts[id] = LeagueData(SportsFeeds.parseFootballLeague(l, text, tsdbTeams[id].orEmpty().associateBy { it.id }), 0L, null) }
         }
         tsdbData.value = ts
+        runCatching {
+            LiveTvFiles.readSmall(DIR, "tv.json")?.let { raw ->
+                val list = SportsTvListings.parse(raw)
+                if (list.isNotEmpty()) tvData.value = list
+            }
+        }
     }
 
     // ------------------------------------------------------------------ matching channels

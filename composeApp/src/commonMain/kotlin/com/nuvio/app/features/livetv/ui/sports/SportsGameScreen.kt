@@ -229,7 +229,9 @@ private fun GameBody(ev: SportsEvent, actions: SportsActions) {
                         fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.weight(1f),
                     )
-                    if (ev.broadcasts.isNotEmpty()) Text(ev.broadcasts.take(3).joinToString(", "), style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, maxLines = 1)
+                    // The channel of yours the game is on first (before it starts), then the TV networks.
+                    val shownNetworks = (listOfNotNull(matches.firstOrNull()?.channel?.name?.takeIf { it.isNotBlank() && ev.state == GameState.PRE }) + ev.broadcasts).distinct().take(3)
+                    if (shownNetworks.isNotEmpty()) Text(shownNetworks.joinToString(", "), style = MaterialTheme.typography.labelSmall, color = tokens.colors.textMuted, maxLines = 1)
                 }
                 ev.situation?.takeIf { !hide }?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = tokens.colors.textSecondary) }
             }
