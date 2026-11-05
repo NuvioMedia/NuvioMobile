@@ -58,6 +58,7 @@ val buildsReleaseApks = requestedTaskNames.any {
 
 android {
     namespace = "com.nuvio.android"
+    ndkVersion = "29.0.14206865"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
     compileSdkMinor = libs.versions.android.compileSdkMinor.get().toInt()
 
