@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.6.8",
+          "buildVersion": "151",
+          "date": "2026-11-05T18:26:56Z",
+          "localizedDescription": "- 0403e6f6 fix(player): detach mpv surfaces on the playback thread @tapframe  \r\n- 68c815b2 feat(streams): update blur @tapframe  \r\n- b90454d7 feat(details): update blur @tapframe  \r\n- [fix(ios): keep an add-on subtitle selected before mpv loads the file (#2517)](https://github.com/NuvioMedia/NuvioMobile/pull/2517) @skoruppa  \r\n- [sync ASS/SSA add-on subtitles drawn by libass (#2515)](https://github.com/NuvioMedia/NuvioMobile/pull/2515) @skoruppa  \r\n- [fix(i18n): drop trailing period from two pt-BR descriptions (#2506)](https://github.com/NuvioMedia/NuvioMobile/pull/2506) @jhojhocraazy  \r\n- [fix(player): stop Exo/libmpv auto-switch ping-pong on the same source (#2485)](https://github.com/NuvioMedia/NuvioMobile/pull/2485) @halibiram  \r\n- [fix(player): resume a closed torrent stream at the stalled frame (#2479)](https://github.com/NuvioMedia/NuvioMobile/pull/2479) @halibiram  \r\n- [feat(player): audio downmix and center mix on Android (#2456)](https://github.com/NuvioMedia/NuvioMobile/pull/2456) @kernexshadow  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.8-beta/nuvio-0.6.8-full-release.ipa",
+          "size": 68872061,
+          "sha256": "9eceec453ad23433909fec5d1c9029e21283d70f4bb191baca9c0dc85d7725c2",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.6.7",
           "buildVersion": "150",
           "date": "2026-11-04T02:57:36Z",
