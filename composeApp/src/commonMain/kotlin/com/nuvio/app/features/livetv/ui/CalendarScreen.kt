@@ -25,7 +25,9 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FiberManualRecord
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -64,13 +66,21 @@ import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.features.livetv.calendar.CalendarEntry
 import com.nuvio.app.features.livetv.calendar.CalendarFollow
+import com.nuvio.app.features.livetv.calendar.CalendarGames
+import com.nuvio.app.features.livetv.calendar.CalendarGuide
+import com.nuvio.app.features.livetv.calendar.CalendarGuideHit
 import com.nuvio.app.features.livetv.calendar.CalendarKind
 import com.nuvio.app.features.livetv.calendar.CalendarRepository
 import com.nuvio.app.features.livetv.data.CivilTime
+import com.nuvio.app.features.livetv.LiveTvDeepLinks
 import com.nuvio.app.features.livetv.data.LiveTvPreferences
+import com.nuvio.app.features.livetv.data.LiveTvRepository
 import com.nuvio.app.features.livetv.data.LiveTvTimeZones
 import com.nuvio.app.features.livetv.model.LiveTvClock
 import com.nuvio.app.features.livetv.sports.SportsDates
+import com.nuvio.app.features.livetv.sports.SportsRepository
+import com.nuvio.app.features.livetv.ui.sports.GameCard
+import com.nuvio.app.features.livetv.ui.sports.use24h
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.livetv_calendar
@@ -91,6 +101,17 @@ import nuvio.composeapp.generated.resources.livetv_calendar_news_talk
 import nuvio.composeapp.generated.resources.livetv_calendar_next
 import nuvio.composeapp.generated.resources.livetv_calendar_nothing_scheduled
 import nuvio.composeapp.generated.resources.livetv_calendar_open
+import nuvio.composeapp.generated.resources.livetv_calendar_on_tv
+import nuvio.composeapp.generated.resources.livetv_calendar_sports
+import nuvio.composeapp.generated.resources.livetv_calendar_watch_live
+import nuvio.composeapp.generated.resources.livetv_calendar_record
+import nuvio.composeapp.generated.resources.livetv_calendar_cancel_recording
+import nuvio.composeapp.generated.resources.livetv_calendar_remind
+import nuvio.composeapp.generated.resources.livetv_calendar_cancel_reminder
+import nuvio.composeapp.generated.resources.livetv_calendar_choose_channel
+import nuvio.composeapp.generated.resources.livetv_calendar_pick_channel
+import nuvio.composeapp.generated.resources.livetv_calendar_rec_badge
+import nuvio.composeapp.generated.resources.livetv_calendar_reminder_badge
 import nuvio.composeapp.generated.resources.livetv_calendar_recent_empty
 import nuvio.composeapp.generated.resources.livetv_calendar_recent_tab
 import nuvio.composeapp.generated.resources.livetv_calendar_shows
@@ -105,7 +126,7 @@ import nuvio.composeapp.generated.resources.livetv_calendar_week
 import org.jetbrains.compose.resources.stringResource
 
 private enum class CalTab { UPCOMING, AIRING, RECENT, FOLLOWING }
-private enum class CalFilter { ALL, SHOWS, MOVIES }
+private enum class CalFilter { ALL, SHOWS, MOVIES, SPORTS, ON_TV }
 private enum class CalView { LIST, WEEK, MONTH }
 
 private const val DAY_MS = 24 * 3_600_000L
@@ -137,21 +158,39 @@ internal fun CalendarScreen(
     val tab = CalTab.valueOf(tabName)
     val filter = CalFilter.valueOf(filterName)
     val view = CalView.valueOf(viewName)
+    val known by SportsRepository.known.collectAsStateWithLifecycle()
+    val sportsFollows by SportsRepository.follows.collectAsStateWithLifecycle()
+    val sportsSettings by SportsRepository.settings.collectAsStateWithLifecycle()
+    val matches by SportsRepository.matches.collectAsStateWithLifecycle()
+    val guideHits by CalendarGuide.hits.collectAsStateWithLifecycle()
+    val channels by LiveTvRepository.channels.collectAsStateWithLifecycle()
+    val games = remember(known, sportsFollows, settings.calendarSports, sportsSettings.showInSidebar) {
+        if (settings.calendarSports && sportsSettings.showInSidebar) CalendarGames.entries(known, sportsFollows, 0L) else emptyList()
+    }
+    val everything = remember(state.entries, games) {
+        (state.entries + games).sortedWith(compareBy<CalendarEntry> { it.dayMs }.thenBy { it.airMs ?: Long.MAX_VALUE }.thenBy { it.title })
+    }
     LaunchedEffect(Unit) { CalendarRepository.refresh() }
+    LaunchedEffect(state.entries, channels.size) { CalendarGuide.match(state.entries) }
     LaunchedEffect(tab) { if (tab == CalTab.AIRING) CalendarRepository.loadAiring() }
 
     val today = SportsDates.dayStart(0)
     val now = LiveTvClock.nowMs()
-    val pool = remember(state.entries, filter, settings.calendarHideWatched) {
-        state.entries.filter { e ->
+    val pool = remember(everything, filter, settings.calendarHideWatched, guideHits, matches) {
+        everything.filter { e ->
             when (filter) {
                 CalFilter.ALL -> true
                 CalFilter.SHOWS -> e.kind == CalendarKind.EPISODE
                 CalFilter.MOVIES -> e.kind == CalendarKind.MOVIE
+                CalFilter.SPORTS -> e.kind == CalendarKind.GAME
+                CalFilter.ON_TV -> guideHits[e.key].orEmpty().isNotEmpty() || (e.kind == CalendarKind.GAME && matches[e.eventId].orEmpty().isNotEmpty())
             } && !(settings.calendarHideWatched && e.watched)
         }
     }
-    val open: (CalendarEntry) -> Unit = { e -> onOpenTitle(e.type, e.contentId, e.title) }
+    val open: (CalendarEntry) -> Unit = { e ->
+        if (e.kind == CalendarKind.GAME) e.eventId?.let { LiveTvDeepLinks.handle(LiveTvDeepLinks.sportsGameUrl(it)) }
+        else onOpenTitle(e.type, e.contentId, e.title)
+    }
     val hold: (CalendarEntry) -> Unit = { e -> menuFor = e }
 
     Column(modifier = modifier.fillMaxSize().background(tokens.colors.background).statusBarsPadding().liveTvSideInsets()) {
@@ -180,6 +219,8 @@ internal fun CalendarScreen(
                 item { SmallChip(stringResource(Res.string.livetv_calendar_all), filter == CalFilter.ALL) { filterName = CalFilter.ALL.name } }
                 item { SmallChip(stringResource(Res.string.livetv_calendar_shows), filter == CalFilter.SHOWS) { filterName = CalFilter.SHOWS.name } }
                 item { SmallChip(stringResource(Res.string.livetv_calendar_movies), filter == CalFilter.MOVIES) { filterName = CalFilter.MOVIES.name } }
+                if (games.isNotEmpty()) item { SmallChip(stringResource(Res.string.livetv_calendar_sports), filter == CalFilter.SPORTS) { filterName = CalFilter.SPORTS.name } }
+                if (channels.isNotEmpty()) item { SmallChip(stringResource(Res.string.livetv_calendar_on_tv), filter == CalFilter.ON_TV) { filterName = CalFilter.ON_TV.name } }
             }
         }
         if (tab == CalTab.UPCOMING) {
@@ -262,7 +303,9 @@ internal fun CalendarScreen(
             })
         }
     }
-    menuFor?.let { e -> EntrySheet(e, followed = CalendarRepository.isFollowed(e.contentId), onDismiss = { menuFor = null }, onOpen = { open(e) }) }
+    menuFor?.let { e ->
+        EntrySheet(e, followed = CalendarRepository.isFollowed(e.contentId), hits = guideHits[e.key].orEmpty(), onDismiss = { menuFor = null }, onOpen = { open(e) })
+    }
 }
 
 private fun followAsEntry(f: CalendarFollow) = CalendarEntry(
@@ -571,6 +614,14 @@ private fun DayHeader(dayMs: Long, today: Long) {
 @Composable
 private fun CalendarRow(e: CalendarEntry, onClick: (CalendarEntry) -> Unit, onHold: (CalendarEntry) -> Unit) {
     val tokens = MaterialTheme.nuvio
+    if (e.kind == CalendarKind.GAME) {
+        GameRow(e, onClick)
+        return
+    }
+    val allHits by CalendarGuide.hits.collectAsStateWithLifecycle()
+    val hit = allHits[e.key]?.firstOrNull()
+    val recBadge = stringResource(Res.string.livetv_calendar_rec_badge)
+    val remindBadge = stringResource(Res.string.livetv_calendar_reminder_badge)
     val image = (if (e.spoiler) null else e.episodeImage) ?: e.background ?: e.poster
     val timeText = e.airMs?.let { formatClock(it) }
     val streamingLabel = stringResource(Res.string.livetv_calendar_streaming)
@@ -612,6 +663,14 @@ private fun CalendarRow(e: CalendarEntry, onClick: (CalendarEntry) -> Unit, onHo
                 where?.let { if (isNotEmpty()) append(" · "); append(it) }
                 if (e.watched) { if (isNotEmpty()) append(" · "); append(watchedLabel) }
             }
+            if (hit != null) {
+                val onTv = buildString {
+                    append("▶ ").append(hit.channelName).append(" · ").append(formatClock(hit.startMs))
+                    if (CalendarGuide.isRecording(hit)) append(" · ").append(recBadge)
+                    if (CalendarGuide.isReminder(hit)) append(" · ").append(remindBadge)
+                }
+                Text(onTv, style = MaterialTheme.typography.labelSmall, color = tokens.colors.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
             val tags = e.tags.joinToString(" · ") { it.label }
             val bottom = listOf(whenLine, tags).filter { it.isNotBlank() }.joinToString("  ·  ")
             if (bottom.isNotBlank()) {
@@ -621,27 +680,102 @@ private fun CalendarRow(e: CalendarEntry, onClick: (CalendarEntry) -> Unit, onHo
     }
 }
 
+@Composable
+private fun GameRow(e: CalendarEntry, onClick: (CalendarEntry) -> Unit) {
+    val ev = e.eventId?.let { SportsRepository.eventById(it) } ?: return
+    val follows by SportsRepository.follows.collectAsStateWithLifecycle()
+    val settings by SportsRepository.settings.collectAsStateWithLifecycle()
+    val matches by SportsRepository.matches.collectAsStateWithLifecycle()
+    GameCard(
+        ev = ev, follows = follows, now = LiveTvClock.nowMs(), use24h = use24h(), hideScores = settings.hideScores,
+        channels = matches[ev.id]?.size, onClick = { onClick(e) },
+    )
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EntrySheet(e: CalendarEntry, followed: Boolean, onDismiss: () -> Unit, onOpen: () -> Unit) {
+private fun EntrySheet(e: CalendarEntry, followed: Boolean, hits: List<CalendarGuideHit>, onDismiss: () -> Unit, onOpen: () -> Unit) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scope = rememberCoroutineScope()
+    var notice by remember { mutableStateOf<String?>(null) }
+    var choosing by remember { mutableStateOf(false) }
     fun close(then: () -> Unit = {}) { scope.launch { dismissNuvioBottomSheet(sheetState) { onDismiss(); then() } } }
+    val now = LiveTvClock.nowMs()
+    val tokens = MaterialTheme.nuvio
+    // Re-read the recording / reminder state after each change.
+    val tick = notice
+    val onNow = hits.firstOrNull { now in it.startMs until it.stopMs }
+    val upcoming = hits.firstOrNull { it.stopMs > now }
+    val isGame = e.kind == CalendarKind.GAME
     NuvioModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState) {
         Text(
             e.title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold,
             modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s8),
         )
+        notice?.let {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = tokens.colors.accent, modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s2))
+        }
         NuvioBottomSheetDivider()
+        if (!isGame) {
+            if (onNow != null) {
+                NuvioBottomSheetActionRow(
+                    title = stringResource(Res.string.livetv_calendar_watch_live) + " · " + onNow.channelName, icon = Icons.Filled.PlayArrow,
+                    onClick = { close { LiveTvDeepLinks.handle(LiveTvDeepLinks.channelUrl(onNow.channelKey)) } },
+                )
+            }
+            if (upcoming != null) {
+                val recording = remember(tick, upcoming) { CalendarGuide.isRecording(upcoming) }
+                NuvioBottomSheetActionRow(
+                    title = stringResource(if (recording) Res.string.livetv_calendar_cancel_recording else Res.string.livetv_calendar_record) + " · " + upcoming.channelName,
+                    icon = Icons.Filled.FiberManualRecord,
+                    onClick = { notice = CalendarGuide.record(e, upcoming) },
+                )
+                if (upcoming.startMs > now) {
+                    val reminded = remember(tick, upcoming) { CalendarGuide.isReminder(upcoming) }
+                    NuvioBottomSheetActionRow(
+                        title = stringResource(if (reminded) Res.string.livetv_calendar_cancel_reminder else Res.string.livetv_calendar_remind),
+                        icon = Icons.Filled.Notifications,
+                        onClick = { notice = CalendarGuide.remind(e, upcoming) },
+                    )
+                }
+            }
+            if (hits.size > 1) {
+                NuvioBottomSheetActionRow(
+                    title = stringResource(Res.string.livetv_calendar_choose_channel) + " (" + hits.size + ")",
+                    icon = Icons.Filled.Info, onClick = { choosing = !choosing },
+                )
+                if (choosing) {
+                    Text(
+                        stringResource(Res.string.livetv_calendar_pick_channel), style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted,
+                        modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s4),
+                    )
+                    hits.filter { it.stopMs > now }.forEach { h ->
+                        val live = now in h.startMs until h.stopMs
+                        NuvioBottomSheetActionRow(
+                            title = h.channelName + " · " + formatClock(h.startMs),
+                            icon = if (live) Icons.Filled.PlayArrow else Icons.Filled.FiberManualRecord,
+                            selected = CalendarGuide.isRecording(h),
+                            onClick = {
+                                if (live) close { LiveTvDeepLinks.handle(LiveTvDeepLinks.channelUrl(h.channelKey)) }
+                                else notice = CalendarGuide.record(e, h)
+                            },
+                        )
+                    }
+                }
+            }
+            NuvioBottomSheetDivider()
+        }
         NuvioBottomSheetActionRow(title = stringResource(Res.string.livetv_calendar_open), icon = Icons.Filled.Info, onClick = { close(onOpen) })
-        NuvioBottomSheetActionRow(
-            title = stringResource(if (followed) Res.string.livetv_calendar_unfollow else Res.string.livetv_calendar_follow),
-            icon = Icons.Filled.Notifications,
-            onClick = { CalendarRepository.toggleFollow(e); close() },
-        )
-        NuvioBottomSheetActionRow(
-            title = stringResource(Res.string.livetv_calendar_hide), icon = Icons.Filled.VisibilityOff,
-            onClick = { CalendarRepository.hide(e); close() },
-        )
+        if (!isGame) {
+            NuvioBottomSheetActionRow(
+                title = stringResource(if (followed) Res.string.livetv_calendar_unfollow else Res.string.livetv_calendar_follow),
+                icon = Icons.Filled.Notifications,
+                onClick = { CalendarRepository.toggleFollow(e); close() },
+            )
+            NuvioBottomSheetActionRow(
+                title = stringResource(Res.string.livetv_calendar_hide), icon = Icons.Filled.VisibilityOff,
+                onClick = { CalendarRepository.hide(e); close() },
+            )
+        }
     }
 }

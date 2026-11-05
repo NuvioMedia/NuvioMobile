@@ -2781,6 +2781,17 @@
     <string name="livetv_calendar_airing_empty">No new episodes found for today.</string>
     <string name="livetv_calendar_recent_empty">Nothing aired recently.</string>
     <string name="livetv_calendar_following_empty">You aren\'t following anything yet. Hold a show or movie on the Calendar and choose Follow.</string>
+    <string name="livetv_calendar_sports">Sports</string>
+    <string name="livetv_calendar_on_tv">On my TV</string>
+    <string name="livetv_calendar_watch_live">Watch live</string>
+    <string name="livetv_calendar_record">Record</string>
+    <string name="livetv_calendar_cancel_recording">Cancel recording</string>
+    <string name="livetv_calendar_remind">Remind me when it starts</string>
+    <string name="livetv_calendar_cancel_reminder">Cancel reminder</string>
+    <string name="livetv_calendar_choose_channel">Choose the channel</string>
+    <string name="livetv_calendar_pick_channel">Tap a channel to watch or record it there</string>
+    <string name="livetv_calendar_rec_badge">REC</string>
+    <string name="livetv_calendar_reminder_badge">Reminder</string>
     <string name="livetv_calendar_empty">Nothing coming up. Add shows and movies to your Library, or watch something, and their dates show up here.</string>
     <string name="livetv_section_recordings">Recordings</string>
     <string name="livetv_rec_empty">Nothing recorded yet. Open a show in the guide to record it, or long-press a channel to record it now.</string>

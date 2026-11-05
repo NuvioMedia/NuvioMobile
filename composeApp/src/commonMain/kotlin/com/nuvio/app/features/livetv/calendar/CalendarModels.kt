@@ -3,7 +3,7 @@ package com.nuvio.app.features.livetv.calendar
 import com.nuvio.app.features.livetv.data.CivilTime
 import com.nuvio.app.features.livetv.data.LiveTvTimeZones
 
-enum class CalendarKind { EPISODE, MOVIE }
+enum class CalendarKind { EPISODE, MOVIE, GAME }
 
 /** Tags beside an entry. */
 enum class CalendarTag(val label: String) {
@@ -57,6 +57,8 @@ data class CalendarEntry(
     val runtimeMin: Int? = null,
     /** What it's about (the episode's summary, the movie's overview). */
     val description: String? = null,
+    /** Games: the Sports event id (the row is drawn as a Sports game card). */
+    val eventId: String? = null,
 ) {
     val followed: Boolean get() = CalendarReason.BELL in reasons
 
