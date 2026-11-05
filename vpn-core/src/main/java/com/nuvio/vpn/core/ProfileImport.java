@@ -80,7 +80,7 @@ public final class ProfileImport {
             if (line.startsWith("<") && line.endsWith(">")) {
                 String tag = line.substring(1, line.length() - 1).toLowerCase(Locale.ROOT);
                 if (!tag.matches("ca|cert|key|tls-auth|tls-crypt|tls-crypt-v2|auth-user-pass|pkcs12|extra-certs|dh")) {
-                    throw new IOException("Unsupported OpenVPN inline block.");
+                    throw new IOException("Unsupported OpenVPN block <" + safeName(tag) + ">.");
                 }
                 inlineBlock = tag;
                 continue;
@@ -95,11 +95,11 @@ public final class ProfileImport {
             if (option.matches("up|down|route-up|route-pre-down|ipchange|plugin|script-security|config|cd|chroot|daemon|log|log-append|writepid|status|auth-user-pass-verify|client-connect|client-disconnect|learn-address|tls-verify|iproute|tls-crypt-v2-verify|setenv|setenv-safe|engine|providers")
                     || option.startsWith("management")
                     || option.startsWith("pkcs11")) {
-                throw new IOException("OpenVPN executable, file, or management options are not supported.");
+                throw new IOException("OpenVPN option \"" + safeName(option) + "\" is not supported (scripts, files and management options can't be used).");
             }
             if (option.matches("ca|cert|key|tls-auth|tls-crypt|tls-crypt-v2|pkcs12|extra-certs|dh|crl-verify|askpass|auth-user-pass")
                     && !value.isEmpty() && !value.equals("[inline]")) {
-                throw new IOException("Use a self-contained OpenVPN profile with inline credentials/certificates.");
+                throw new IOException("Option \"" + safeName(option) + "\" points to a separate file. Put it inline in the profile instead.");
             }
         }
         if (protocol == Protocol.WIREGUARD && !(interfaceSeen && peerSeen)) {
@@ -108,6 +108,12 @@ public final class ProfileImport {
         if (protocol == Protocol.OPENVPN && (!(clientSeen && remoteSeen) || inlineBlock != null)) {
             throw new IOException("Expected a self-contained OpenVPN client configuration with a remote server.");
         }
+    }
+
+    /** Option names are not secret, but keep what is shown short and plain. */
+    private static String safeName(String name) {
+        String clean = name.replaceAll("[^a-z0-9_-]", "?");
+        return clean.length() > 30 ? clean.substring(0, 30) : clean;
     }
 
     /** Contains private keys. Never log, serialize, or treat this preflight result as validated. */

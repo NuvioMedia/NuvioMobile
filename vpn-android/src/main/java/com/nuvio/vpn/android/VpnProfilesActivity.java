@@ -289,7 +289,7 @@ public final class VpnProfilesActivity extends Activity {
         if (e instanceof LinkageError) return getString(R.string.vpn_import_reason_engine);
         if (e instanceof java.security.GeneralSecurityException) return getString(R.string.vpn_import_reason_storage);
         String text = e.getMessage();
-        if (e instanceof IOException && text != null && text.length() <= 120) return text;
+        if (e instanceof IOException && text != null && text.length() <= 200) return text;
         return getString(R.string.vpn_import_reason_other);
     }
 
