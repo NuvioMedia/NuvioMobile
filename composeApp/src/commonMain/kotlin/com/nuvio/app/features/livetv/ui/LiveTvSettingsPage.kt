@@ -183,6 +183,13 @@ import nuvio.composeapp.generated.resources.livetv_rec_storage_description
 import nuvio.composeapp.generated.resources.livetv_rec_this_device
 import nuvio.composeapp.generated.resources.livetv_vod_default_sort
 import nuvio.composeapp.generated.resources.livetv_vod_default_sort_description
+import nuvio.composeapp.generated.resources.livetv_vod_autoplay
+import nuvio.composeapp.generated.resources.livetv_vod_autoplay_description
+import nuvio.composeapp.generated.resources.livetv_vod_pos_after_first
+import nuvio.composeapp.generated.resources.livetv_vod_pos_first
+import nuvio.composeapp.generated.resources.livetv_vod_pos_last
+import nuvio.composeapp.generated.resources.livetv_vod_tab_position
+import nuvio.composeapp.generated.resources.livetv_vod_tab_position_description
 import nuvio.composeapp.generated.resources.livetv_vod_import
 import nuvio.composeapp.generated.resources.livetv_vod_import_description
 import nuvio.composeapp.generated.resources.livetv_vod_merge_duplicates
@@ -302,6 +309,7 @@ private sealed interface LiveDialog {
     data object StreamFormat : LiveDialog
     data object CatchupShift : LiveDialog
     data object VodDefaultSort : LiveDialog
+    data object VodTabPosition : LiveDialog
     data object RecordPre : LiveDialog
     data object RecordPost : LiveDialog
     data object RecordKeep : LiveDialog
@@ -638,6 +646,22 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
                     checked = settings.onDemandInStreams,
                     isTablet = isTablet,
                     onCheckedChange = { on -> update { it.copy(onDemandInStreams = on) } },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.livetv_vod_tab_position),
+                    description = stringResource(Res.string.livetv_vod_tab_position_description),
+                    isTablet = isTablet,
+                    trailingContent = { ValueLabel(vodTabPositionLabel(settings.onDemandStreamsPosition)) },
+                    onClick = { dialog = LiveDialog.VodTabPosition },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.livetv_vod_autoplay),
+                    description = stringResource(Res.string.livetv_vod_autoplay_description),
+                    checked = settings.onDemandAutoPlay,
+                    isTablet = isTablet,
+                    onCheckedChange = { on -> update { it.copy(onDemandAutoPlay = on) } },
                 )
             }
         }
@@ -996,6 +1020,12 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
                 onDismiss = close,
             ) { v -> update { it.copy(catchupShiftMinutes = v) } }
         }
+        LiveDialog.VodTabPosition -> ChoiceDialog(
+            title = stringResource(Res.string.livetv_vod_tab_position),
+            options = listOf("FIRST", "AFTER_FIRST", "LAST").map { it to vodTabPositionLabel(it) },
+            selected = settings.onDemandStreamsPosition,
+            onDismiss = close,
+        ) { v -> update { it.copy(onDemandStreamsPosition = v) } }
         LiveDialog.VodDefaultSort -> ChoiceDialog(
             title = stringResource(Res.string.livetv_vod_default_sort),
             options = VodSort.entries.map { it to it.label },
@@ -1167,6 +1197,15 @@ private fun ConfirmDialog(title: String, message: String, confirm: String, destr
         }
     }
 }
+
+@Composable
+private fun vodTabPositionLabel(v: String): String = stringResource(
+    when (v) {
+        "FIRST" -> Res.string.livetv_vod_pos_first
+        "AFTER_FIRST" -> Res.string.livetv_vod_pos_after_first
+        else -> Res.string.livetv_vod_pos_last
+    },
+)
 
 @Composable
 private fun <T> ChoiceDialog(title: String, options: List<Pair<T, String>>, selected: T, onDismiss: () -> Unit, onPick: (T) -> Unit) {

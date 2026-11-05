@@ -10,6 +10,13 @@ object StreamAutoPlaySelector {
         preferredGroupIds: Set<String> = emptySet(),
     ): List<AddonStreamGroup> {
         if (groups.isEmpty()) return groups
+        // Live TV fork: the On Demand tab goes where it is set in Live TV settings (first, after
+        // the first addon, or last), not wherever sorting by installed addons would put it.
+        val onDemand = groups.firstOrNull { com.nuvio.app.features.livetv.ondemand.OnDemandStreams.isOnDemandGroup(it.addonId) }
+        if (onDemand != null) {
+            val rest = orderAddonStreams(groups.filter { it !== onDemand }, installedOrder, preferredGroupIds)
+            return com.nuvio.app.features.livetv.ondemand.OnDemandStreams.place(rest, onDemand)
+        }
         if (preferredGroupIds.isNotEmpty()) {
             val (preferred, rest) = groups.partition { it.addonId in preferredGroupIds }
             return preferred + orderAddonStreams(rest, installedOrder)
@@ -86,6 +93,13 @@ object StreamAutoPlaySelector {
             StreamAutoPlaySource.ALL_SOURCES -> streams
             StreamAutoPlaySource.INSTALLED_ADDONS_ONLY -> streams.filter { it.serverTarget != null || it.addonName in installedAddonNames }
             StreamAutoPlaySource.ENABLED_PLUGINS_ONLY -> streams.filter { it.addonName !in installedAddonNames }
+        }.filterNot {
+            // Live TV fork: provider copies (On Demand) aren't picked automatically, except to carry
+            // on a show you are already watching from your provider (same binge group), or when
+            // allowed in Live TV settings (with On Demand as the first tab).
+            com.nuvio.app.features.livetv.ondemand.OnDemandStreams.isOnDemandGroup(it.addonId) &&
+                !com.nuvio.app.features.livetv.ondemand.OnDemandStreams.autoPlayAllowed() &&
+                preferredBingeGroup?.trim() != com.nuvio.app.features.livetv.ondemand.OnDemandStreams.BINGE_GROUP
         }
         val candidateStreams = sourceScopedStreams.filter { stream ->
             val isAddonStream = stream.addonName in installedAddonNames

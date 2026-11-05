@@ -2719,6 +2719,13 @@
     <string name="livetv_vod_merge_duplicates_description">Show each title once, even when the provider lists several copies</string>
     <string name="livetv_vod_in_streams">On Demand in streams</string>
     <string name="livetv_vod_in_streams_description">Your provider's copy offered with your addon streams for movies and episodes</string>
+    <string name="livetv_vod_tab_position">On Demand tab position</string>
+    <string name="livetv_vod_tab_position_description">Where its tab goes in the stream list</string>
+    <string name="livetv_vod_pos_first">First</string>
+    <string name="livetv_vod_pos_after_first">After the first addon</string>
+    <string name="livetv_vod_pos_last">Last</string>
+    <string name="livetv_vod_autoplay">Let auto-play pick On Demand</string>
+    <string name="livetv_vod_autoplay_description">Only when its tab is first. Otherwise auto-play skips your provider's copy, except to carry on a show you are already watching from it</string>
     <string name="livetv_recordings">Recordings</string>
     <string name="livetv_section_recordings">Recordings</string>
     <string name="livetv_rec_empty">Nothing recorded yet. Open a show in the guide to record it, or long-press a channel to record it now.</string>

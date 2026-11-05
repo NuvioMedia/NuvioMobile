@@ -21,6 +21,19 @@ internal object OnDemandStreams {
 
     fun isOnDemandGroup(addonId: String?): Boolean = addonId == GROUP_ID
 
+    /** Where the On Demand tab goes in the stream list: "FIRST", "AFTER_FIRST" (the first addon) or "LAST". */
+    fun tabPosition(): String = LiveTvPreferences.currentSettings().onDemandStreamsPosition
+
+    /** Auto-play may pick your provider's copy: switched on, and its tab is first. */
+    fun autoPlayAllowed(): Boolean = LiveTvPreferences.currentSettings().let { it.onDemandAutoPlay && it.onDemandStreamsPosition == "FIRST" }
+
+    /** [mine] put where it is set to go among the already ordered [groups]: first, after the first one, or last. */
+    fun <T> place(groups: List<T>, mine: T): List<T> = when (tabPosition()) {
+        "FIRST" -> listOf(mine) + groups
+        "AFTER_FIRST" -> groups.take(1) + mine + groups.drop(1)
+        else -> groups + mine
+    }
+
     /** Title shown on the streams screen, by item id: used when the details aren't cached (opened from a row, search, Continue Watching). */
     private val titleHints = HashMap<String, String>()
 
