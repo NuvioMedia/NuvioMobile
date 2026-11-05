@@ -22,6 +22,7 @@ dependencies {
     implementation("androidx.media3:media3-datasource:1.8.0")
     // Device tests exercise the library's package-private storage/settings classes.
     androidTestImplementation(project(":vpn-core"))
+    androidTestImplementation("com.squareup.okhttp3:okhttp:4.12.0")
     androidTestImplementation("com.wireguard.android:tunnel:1.0.20260102")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

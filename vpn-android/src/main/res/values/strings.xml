@@ -6,14 +6,13 @@
     <string name="vpn_connecting">Connecting…</string>
     <string name="vpn_waiting_handshake">Waiting for a verified VPN connection</string>
     <string name="vpn_connection_failed">Could not verify a VPN connection</string>
-    <string name="vpn_select_wireguard_profile">Select a saved WireGuard profile to connect.</string>
+    <string name="vpn_select_wireguard_profile">Select a saved VPN profile to connect.</string>
     <string name="vpn_requires_app_scope">Choose HTTP, HTTP + HTTPS or Full app to enable automatic protection.</string>
-    <string name="vpn_openvpn_unavailable">OpenVPN connections are not available yet. Select a WireGuard profile.</string>
     <string name="vpn_ready_to_connect">Connects automatically when you start a stream. All app traffic then uses the VPN.</string>
-    <string name="vpn_active_app_detail">All network traffic from this app uses WireGuard. Other apps are unaffected.</string>
+    <string name="vpn_active_app_detail">All network traffic from this app uses the VPN. Other apps are unaffected.</string>
     <string name="vpn_verification_pending">The VPN connection is not verified yet. Keep it on to retry, or disconnect.</string>
     <string name="vpn_connection_error_detail">VPN protection is not verified. Disconnect before trying again.</string>
-    <string name="vpn_connection_limits">WireGuard connections are supported. OpenVPN profiles can be saved but cannot connect yet.</string>
+    <string name="vpn_connection_limits">Import a self-contained OpenVPN or WireGuard profile. OpenVPN providers may require separate service credentials.</string>
     <string name="vpn_connection_traffic">Received %1$s · Sent %2$s</string>
     <string name="vpn_egress_address">VPN IP: %1$s</string>
     <string name="vpn_import_title">Import configuration</string>
@@ -65,4 +64,17 @@
     <string name="vpn_active_web_detail">HTTP and HTTPS playback use the VPN. Other app traffic keeps its normal connection.</string>
     <string name="vpn_ready_web">Connects automatically for HTTP and HTTPS streams, including preloads.</string>
     <string name="vpn_profiles_description">Import OpenVPN and WireGuard configurations</string>
+    <string name="vpn_service_credentials">OpenVPN service credentials</string>
+    <string name="vpn_service_username">Service username</string>
+    <string name="vpn_service_password">Service password</string>
+    <string name="vpn_save_credentials">Save credentials</string>
+    <string name="vpn_credentials_saved">Service credentials saved.</string>
+    <string name="vpn_credentials_failed">Could not update service credentials. Check the profile and try again.</string>
+    <string name="vpn_auth_rejected">The OpenVPN server rejected authentication. Check the profile�s service credentials before retrying playback.</string>
+    <string name="vpn_credentials_required">Set the service credentials for this OpenVPN profile.</string>
+    <string name="vpn_apply_title">Apply VPN settings to</string>
+    <string name="vpn_apply_all">All profiles</string>
+    <string name="vpn_apply_all_detail">Share the VPN selection and protection mode with every Nuvio profile using the default.</string>
+    <string name="vpn_apply_one">Only this profile</string>
+    <string name="vpn_apply_one_detail">Start with the shared settings and choose a separate VPN or protection mode for this Nuvio profile.</string>
 </resources>

@@ -81,14 +81,14 @@ public final class VpnAndroidTest {
 
     @Test public void selectedPreparationRequiresExplicitAppScopeAndProfile() throws Exception {
         try {
-            WireGuardProfiles.prepareSelectedAppWide(context);
+            WireGuardProfiles.prepareSelected(context, ProtectionMode.APP_WIDE);
             fail("Missing selection accepted");
         } catch (IOException expected) {
             assertEquals("Select a VPN profile and protection scope first.", expected.getMessage());
         }
         write("vpn-settings-v2", new VpnPreferences(ProtectionMode.HTTP_ONLY, ID).encode());
         try {
-            WireGuardProfiles.prepareSelectedAppWide(context);
+            WireGuardProfiles.prepareSelected(context, ProtectionMode.APP_WIDE);
             fail("HTTP-only mode accepted as app-wide");
         } catch (IOException expected) {
             assertEquals("Select a VPN profile and protection scope first.", expected.getMessage());

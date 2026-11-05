@@ -6,8 +6,6 @@ import android.security.keystore.KeyProperties;
 import android.util.Base64;
 import com.nuvio.vpn.core.ProfileEnvelope;
 import com.nuvio.vpn.core.ProfileImport;
-import com.nuvio.vpn.core.ProtectionMode;
-import com.nuvio.vpn.core.VpnPreferences;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -45,7 +43,7 @@ public final class VpnBackup {
     }
 
     public static String exportSetup(Context context) throws Exception {
-        synchronized (LOCK) {
+        synchronized (AndroidProfileStore.LOCK) {
             AndroidProfileStore store = new AndroidProfileStore(context);
             JSONArray profiles = new JSONArray();
             ArrayList<AndroidProfileStore.Entry> entries = new ArrayList<>(store.list());
@@ -59,12 +57,11 @@ public final class VpnBackup {
                     finally { Arrays.fill(content, '\0'); }
                 }
             }
-            VpnPreferences settings = new AndroidVpnSettings(context).read();
-            if (settings.getSelectedProfileId() != null && entries.stream().noneMatch(e -> e.id.equals(settings.getSelectedProfileId())))
-                throw new IOException("VPN selection changed during backup. Retry sync.");
-            return new JSONObject().put("version", 1).put("profiles", profiles)
-                    .put("selected", settings.getSelectedProfileId() == null ? JSONObject.NULL : settings.getSelectedProfileId())
-                    .put("scope", settings.getMode().name()).toString();
+            HashSet<String> ids = new HashSet<>();
+            for (AndroidProfileStore.Entry entry : entries) ids.add(entry.id);
+            ProfileSelections settings = new AndroidVpnSettings(context).snapshot();
+            settings.checkProfiles(ids);
+            return settings.writeTo(new JSONObject().put("version", 1).put("profiles", profiles)).toString();
         }
     }
 
@@ -82,8 +79,7 @@ public final class VpnBackup {
             if (payload.getInt("version") != 1) throw new IOException("Unsupported VPN backup version.");
             JSONArray profiles = payload.getJSONArray("profiles");
             if (profiles.length() > 32) throw new IOException("VPN profile limit reached.");
-            ProtectionMode mode = ProtectionMode.valueOf(payload.getString("scope"));
-            String selected = payload.isNull("selected") ? null : payload.getString("selected");
+            ProfileSelections selections = ProfileSelections.parse(payload);
             HashSet<String> ids = new HashSet<>();
             ArrayList<ProfileImport.Candidate> candidates = new ArrayList<>();
             try {
@@ -102,9 +98,11 @@ public final class VpnBackup {
                     }
                     finally { Arrays.fill(raw, (byte) 0); }
                 }
-                if (selected != null && !ids.contains(selected)) throw new IOException("Selected VPN profile is missing from backup.");
-                if (selected == null && mode != ProtectionMode.OFF) throw new IOException("Protected backup has no selected profile.");
-                if (new JSONObject(exportSetup(context)).toString().equals(payload.toString())) return;
+                selections.checkProfiles(ids);
+                String current = null;
+                try { current = exportSetup(context); }
+                catch (Exception unreadable) { /* A validated backup can repair unreadable local state. */ }
+                if (payload.toString().equals(current)) return;
                 AndroidProfileStore store = new AndroidProfileStore(context);
                 AndroidVpnSettings settings = new AndroidVpnSettings(context);
                 ArrayList<AndroidProfileStore.Restored> restored = new ArrayList<>();
@@ -117,9 +115,18 @@ public final class VpnBackup {
                 // temporarily turn protected playback into a direct connection.
                 try {
                     VpnPlaybackProtection.beginProfileRestore(context);
-                    if (store.replace(restored, onlyIfEmpty)) settings.save(new VpnPreferences(mode, selected));
+                    store.replace(restored, onlyIfEmpty, settings, selections);
                 } finally { VpnPlaybackProtection.endProfileRestore(context); }
             } finally { for (ProfileImport.Candidate candidate : candidates) candidate.close(); }
+        }
+    }
+
+    static void updateCredentials(Context context, String id, byte[] expected, String username, String password) throws Exception {
+        synchronized (LOCK) {
+            try {
+                VpnPlaybackProtection.beginProfileRestore(context);
+                new AndroidProfileStore(context).updateCredentials(id, expected, username, password);
+            } finally { VpnPlaybackProtection.endProfileRestore(context); }
         }
     }
 

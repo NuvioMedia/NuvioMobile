@@ -1,0 +1,14 @@
+OpenVPN 3 Core 3.11.8 (MPL-2.0)
+https://github.com/OpenVPN/openvpn3/tree/4f3bdef73245d4ee9e8216c5d65baccc9568f6ef
+The host module's openvpn/CMakeLists.txt contains the source adaptations for mbed TLS hostname policy and CBC padding.
+
+Asio (Boost Software License 1.0)
+https://github.com/chriskohlhoff/asio/tree/231cb29bab30f82712fcd54faaea42424cc6e710
+
+Mbed TLS (Apache-2.0)
+https://github.com/Mbed-TLS/mbedtls/tree/068ff080b369adfac81509f9b57b2afabaf82dc5
+Includes Curve25519 code from Project Everest (https://project-everest.github.io/)
+and p256-m by Manuel Pégourié-Gonnard (https://github.com/mpg/p256-m), used under Apache-2.0.
+
+LZ4 library (BSD-2-Clause)
+https://github.com/lz4/lz4/tree/ebb370ca83af193212df4dcbadcc5d87bc0de2f0

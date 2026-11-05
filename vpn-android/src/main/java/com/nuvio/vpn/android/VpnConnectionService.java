@@ -4,11 +4,9 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
-import android.os.IBinder;
 import android.os.SystemClock;
 import com.nuvio.vpn.core.ProtectionMode;
 import com.nuvio.vpn.core.VpnPreferences;
@@ -20,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** One foreground lifecycle for UID-wide routing and HTTP-only userspace routing. */
-public final class WireGuardConnectionService extends Service {
+public final class VpnConnectionService extends android.net.VpnService {
     private static final String CONNECT = "com.nuvio.vpn.CONNECT";
     private static final String DISCONNECT = "com.nuvio.vpn.DISCONNECT";
     private static final String DISABLE = "com.nuvio.vpn.DISABLE";
@@ -40,9 +38,14 @@ public final class WireGuardConnectionService extends Service {
         final Phase phase;
         final long received, sent;
         final String egress;
+        final boolean authRejected;
         final ProtectionMode mode;
         Snapshot(Phase phase, long received, long sent) { this(phase, received, sent, null); }
         Snapshot(Phase phase, long received, long sent, String egress) {
+            this(phase, received, sent, egress, false);
+        }
+        Snapshot(Phase phase, long received, long sent, String egress, boolean authRejected) {
+            this.authRejected = authRejected;
             this.phase = phase; this.received = received; this.sent = sent; this.egress = egress;
             mode = phase == Phase.IDLE ? ProtectionMode.OFF : requestedMode;
         }
@@ -66,43 +69,48 @@ public final class WireGuardConnectionService extends Service {
                 && value.isUp() && !value.retiring ? value : null;
     }
     static void standby(Context context, String profile, ProtectionMode mode) {
-        Intent intent = new Intent(context, WireGuardConnectionService.class).setAction(CONNECT)
+        Intent intent = new Intent(context, VpnConnectionService.class).setAction(CONNECT)
                 .putExtra("profile", profile).putExtra("scope", mode.name()).putExtra("standby", true);
         if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent); else context.startService(intent);
     }
     static void demandHttp(Context context, String profile) {
-        context.startService(new Intent(context, WireGuardConnectionService.class).setAction(DEMAND_HTTP).putExtra("profile", profile));
+        context.startService(new Intent(context, VpnConnectionService.class).setAction(DEMAND_HTTP).putExtra("profile", profile));
     }
     static void releaseProxy(Context context, String token) {
-        if (running) context.startService(new Intent(context, WireGuardConnectionService.class).setAction(RELEASE_PROXY).putExtra("token", token));
+        if (running) context.startService(new Intent(context, VpnConnectionService.class).setAction(RELEASE_PROXY).putExtra("token", token));
     }
     static void connect(Context context, String expectedProfile) {
         connect(context, expectedProfile, ProtectionMode.APP_WIDE);
     }
     static void connect(Context context, String expectedProfile, ProtectionMode mode) {
-        Intent intent = new Intent(context, WireGuardConnectionService.class).setAction(CONNECT)
+        Intent intent = new Intent(context, VpnConnectionService.class).setAction(CONNECT)
                 .putExtra("profile", expectedProfile).putExtra("scope", mode.name());
         if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent); else context.startService(intent);
     }
     static void disconnect(Context context) {
-        if (running) context.startService(new Intent(context, WireGuardConnectionService.class).setAction(DISCONNECT));
+        if (running) context.startService(new Intent(context, VpnConnectionService.class).setAction(DISCONNECT));
     }
     static void settingsChanged(Context context) {
-        VpnPlaybackProtection.settingsChanged();
+        VpnPlaybackProtection.backupChanged();
+        userProfileChanged(context);
+    }
+    static void userProfileChanged(Context context) {
+        VpnPlaybackProtection.publishSelectionChange();
         VpnHttpClient.invalidate();
-        if (running) context.startService(new Intent(context, WireGuardConnectionService.class).setAction(CHANGED));
+        if (running) context.startService(new Intent(context, VpnConnectionService.class).setAction(CHANGED));
     }
 
     // SDK/JNI calls are serialized across service destruction and recreation.
     private static final ScheduledExecutorService worker = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> monitor;
     private final AtomicLong generation = new AtomicLong();
-    private WireGuardEngine engine;
+    private TunnelEngine engine;
     private String profile;
     private ProtectionMode scope = ProtectionMode.OFF;
     private volatile boolean destroyed;
     private long started, lastProbe, lastStatsLog, lastEgressProbe;
     private boolean probeVerified;
+    private long verifiedSession;
     private boolean demandFailed;
     private String egress;
 
@@ -141,14 +149,14 @@ public final class WireGuardConnectionService extends Service {
                     if (!(engine instanceof HttpStreamTunnel) || !java.util.Objects.equals(profile, expected) || !matchesSettings())
                         throw new IllegalStateException("Proxy session changed.");
                     HttpStreamTunnel proxy = (HttpStreamTunnel) engine;
-                    if (!proxy.isConfigured()) proxy.configure(WireGuardProfiles.prepareSelected(this, scope));
+                    if (!proxy.isConfigured()) configurePlayback(proxy, profile, scope);
                     demandFailed = false;
                     current = new Snapshot(Phase.CONNECTING, 0, 0);
                     poll();
                 } catch (Exception | LinkageError failure) {
                     demandFailed = true;
                     current = new Snapshot(Phase.ERROR, 0, 0);
-                    event("wireguard_http_demand_failed: " + failure.getClass().getSimpleName());
+                    event("vpn_http_demand_failed: " + failure.getClass().getSimpleName());
                     updateNotification();
                 }
             });
@@ -190,7 +198,6 @@ public final class WireGuardConnectionService extends Service {
                 throw new IllegalStateException("Connection selection changed.");
             if (mode == ProtectionMode.APP_WIDE && android.net.VpnService.prepare(this) != null)
                 throw new IllegalStateException("VPN consent is required.");
-            Config config = standby ? null : WireGuardProfiles.prepareSelected(this, mode);
             profile = expected;
             scope = mode;
             started = SystemClock.elapsedRealtime();
@@ -199,25 +206,42 @@ public final class WireGuardConnectionService extends Service {
             demandFailed = false;
             egress = null;
             if (!matchesSettings() || generation.get() != token) throw new IllegalStateException("Connection selection changed.");
-            engine = mode.isPlaybackScoped() ? new HttpStreamTunnel(config, mode == ProtectionMode.HTTP_HTTPS)
-                    : new AppWideWireGuardEngine(this, config, failed -> {
+            if (mode.isPlaybackScoped()) {
+                HttpStreamTunnel proxy = new HttpStreamTunnel(null, mode == ProtectionMode.HTTP_HTTPS);
+                engine = proxy;
+                if (!standby) configurePlayback(proxy, expected, mode);
+            } else if (selectedIsOpenVpn(expected)) {
+                engine = OpenVpnSession.selected(this, expected, null);
+            } else {
+                Config config = WireGuardProfiles.prepareSelected(this, mode);
+                engine = new AppWideWireGuardEngine(this, config, failed -> {
                         if (destroyed || engine != failed) return;
                         generation.incrementAndGet();
                         current = new Snapshot(Phase.ERROR, 0, 0);
                         VpnHttpClient.invalidate();
-                        event("wireguard_down");
+                        event("vpn_down");
                         updateNotification();
                     });
+            }
             httpProxy = engine instanceof HttpStreamTunnel ? (HttpStreamTunnel) engine : null;
             if (destroyed || !matchesSettings() || generation.get() != token) { end(); return; }
-            event(standby ? "http_proxy_standby; no_wireguard_connection" : "wireguard_interface_up; scope=" + mode.name() + "; handshake_pending");
+            event(standby ? "http_proxy_standby; no_vpn_connection" : "vpn_interface_up; scope=" + mode.name() + "; handshake_pending");
             current = new Snapshot(standby ? Phase.STANDBY : Phase.CONNECTING, 0, 0);
             poll();
         } catch (Exception | LinkageError failure) {
-            event("wireguard_connect_failed: " + failure.getClass().getSimpleName());
+            event("vpn_connect_failed: " + failure.getClass().getSimpleName());
             closeEngine();
             if (!destroyed) { current = new Snapshot(Phase.ERROR, 0, 0); updateNotification(); }
         }
+    }
+    private boolean selectedIsOpenVpn(String id) throws Exception {
+        try (com.nuvio.vpn.core.ProfileEnvelope.Opened profile = new AndroidProfileStore(this).open(id)) {
+            return profile.getProtocol() == com.nuvio.vpn.core.ProfileImport.Protocol.OPENVPN;
+        }
+    }
+    private void configurePlayback(HttpStreamTunnel proxy, String id, ProtectionMode mode) throws Exception {
+        if (selectedIsOpenVpn(id)) proxy.configureOpenVpn(this, id);
+        else proxy.configure(WireGuardProfiles.prepareSelected(this, mode));
     }
     private boolean matchesSettings() {
         try {
@@ -235,15 +259,21 @@ public final class WireGuardConnectionService extends Service {
                 updateNotification();
                 return;
             }
-            if (!engine.isUp()) { current = new Snapshot(Phase.ERROR, 0, 0); updateNotification(); return; }
+            if (!engine.isUp()) {
+                current = new Snapshot(Phase.ERROR, 0, 0, null, engine.authRejected());
+                updateNotification();
+                return;
+            }
             long now = SystemClock.elapsedRealtime();
-            WireGuardTraffic stats = engine.statistics();
-            if ((!probeVerified || System.currentTimeMillis() - stats.handshakeMillis > 180000) && now - lastProbe >= 10000) {
+            TunnelTraffic stats = engine.statistics();
+            if (!stats.authenticated || stats.session != verifiedSession) probeVerified = false;
+            if (!probeVerified && (stats.session > 0 && stats.session != verifiedSession || now - lastProbe >= 10000)) {
                 lastProbe = now;
+                verifiedSession = stats.session;
                 probeVerified = engine.probe();
                 stats = engine.statistics();
             }
-            boolean verified = stats.handshakeMillis > 0 && System.currentTimeMillis() - stats.handshakeMillis <= 180000
+            boolean verified = stats.authenticated && stats.session == verifiedSession
                     && stats.received > 0 && probeVerified;
             if (verified && egress == null && (lastEgressProbe == 0 || now - lastEgressProbe >= 60000)) {
                 lastEgressProbe = now;
@@ -251,27 +281,27 @@ public final class WireGuardConnectionService extends Service {
             }
             if (destroyed || generation.get() != token || !engine.isUp()) return;
             Phase phase = verified ? Phase.CONNECTED : now - started > 30000 ? Phase.WAITING : Phase.CONNECTING;
-            if (phase != current.phase) event(verified ? "wireguard_handshake_and_tunneled_probe_verified" : "wireguard_waiting_for_verified_connection");
+            if (phase != current.phase) event(verified ? "vpn_handshake_and_tunneled_probe_verified" : "vpn_waiting_for_verified_connection");
             current = new Snapshot(phase, stats.received, stats.sent, verified ? egress : null);
             if (verified && now - lastStatsLog >= 10000) {
                 lastStatsLog = now;
-                event("wireguard_traffic: received=" + stats.received + "; sent=" + stats.sent);
+                event("vpn_traffic: received=" + stats.received + "; sent=" + stats.sent);
             }
             updateNotification();
         } catch (Exception | LinkageError failure) {
             if (destroyed) return;
-            if (current.phase != Phase.ERROR) event("wireguard_monitor_failed: " + failure.getClass().getSimpleName());
+            if (current.phase != Phase.ERROR) event("vpn_monitor_failed: " + failure.getClass().getSimpleName());
             current = new Snapshot(Phase.ERROR, 0, 0);
             updateNotification();
         }
     }
     private void closeEngine() {
-        WireGuardEngine closing = engine;
+        TunnelEngine closing = engine;
         engine = null;
         httpProxy = null;
         if (closing != null) {
             try { closing.close(); }
-            catch (Exception | LinkageError failure) { event("wireguard_stop_failed: " + failure.getClass().getSimpleName()); }
+            catch (Exception | LinkageError failure) { event("vpn_stop_failed: " + failure.getClass().getSimpleName()); }
         }
         profile = null;
         scope = ProtectionMode.OFF;
@@ -281,13 +311,13 @@ public final class WireGuardConnectionService extends Service {
         requestedProfile = null;
         requestedMode = ProtectionMode.OFF;
         closeEngine();
-        event("wireguard_disconnected");
+        event("vpn_disconnected");
         stopForeground(true);
         stopSelf();
     }
     private Notification notification() {
         PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, VpnProfilesActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
-        PendingIntent stop = PendingIntent.getService(this, 1, new Intent(this, WireGuardConnectionService.class).setAction(DISABLE), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        PendingIntent stop = PendingIntent.getService(this, 1, new Intent(this, VpnConnectionService.class).setAction(DISABLE), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder builder = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, CHANNEL) : new Notification.Builder(this);
         int message = current.phase == Phase.CONNECTED ? (current.mode.isPlaybackScoped() ? (current.mode == ProtectionMode.HTTP_HTTPS ? R.string.vpn_connected_web : R.string.vpn_connected_http) : R.string.vpn_connected_app)
                 : current.phase == Phase.STANDBY ? R.string.vpn_connection_unavailable
@@ -313,5 +343,10 @@ public final class WireGuardConnectionService extends Service {
         current = new Snapshot(Phase.IDLE, 0, 0);
         super.onDestroy();
     }
-    @Override public IBinder onBind(Intent intent) { return null; }
+    @Override public void onRevoke() {
+        generation.incrementAndGet();
+        VpnHttpClient.invalidate();
+        worker.execute(this::end);
+        super.onRevoke();
+    }
 }

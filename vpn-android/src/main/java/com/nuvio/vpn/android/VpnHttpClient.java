@@ -63,7 +63,7 @@ public final class VpnHttpClient implements Call.Factory {
     private synchronized OkHttpClient client(VpnPreferences settings) {
         ProtectionMode mode = settings.getMode();
         String profile = mode == ProtectionMode.OFF ? null : settings.getSelectedProfileId();
-        String key = mode.name() + ":" + profile + ":" + WireGuardConnectionService.epoch() + ":" + poolRevision.get();
+        String key = mode.name() + ":" + profile + ":" + VpnConnectionService.epoch() + ":" + poolRevision.get();
         if (current != null && key.equals(currentKey)) return current;
         if (current != null) current.connectionPool().evictAll();
         Dispatcher dispatcher = new Dispatcher(baseline.dispatcher().executorService());
@@ -83,7 +83,7 @@ public final class VpnHttpClient implements Call.Factory {
         if (mode.isPlaybackScoped()) {
             builder.proxy(null).proxySelector(new HttpOnlySelector(baseline, profile, mode));
             builder.proxyAuthenticator((route, response) -> {
-                HttpStreamTunnel proxy = WireGuardConnectionService.httpProxy(profile);
+                HttpStreamTunnel proxy = VpnConnectionService.httpProxy(profile);
                 if (route != null && proxy != null && route.proxy().address() instanceof InetSocketAddress) {
                     InetSocketAddress address = (InetSocketAddress) route.proxy().address();
                     if (address.getPort() == proxy.port && address.getAddress() != null && address.getAddress().isLoopbackAddress()) {
@@ -159,7 +159,7 @@ public final class VpnHttpClient implements Call.Factory {
                 Call call = activeCall.get();
                 VpnPlaybackProtection.beforeRequest(uri.toString(), () -> call != null && call.isCanceled());
                 VpnPreferences latest = VpnPlaybackProtection.settings();
-                HttpStreamTunnel proxy = WireGuardConnectionService.httpProxy(profile);
+                HttpStreamTunnel proxy = VpnConnectionService.httpProxy(profile);
                 if (latest.getMode() == mode && Objects.equals(profile, latest.getSelectedProfileId()) && proxy != null)
                     return Collections.singletonList(new Proxy(Proxy.Type.HTTP, new InetSocketAddress("127.0.0.1", proxy.port)));
             } catch (IOException failure) { /* A required tunnel must never select a direct fallback. */ }

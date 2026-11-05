@@ -5,6 +5,9 @@ import platform.Foundation.NSUserDefaults
 actual object ProfileStorage {
     private const val payloadKey = "profile_payload"
 
+    actual fun onActiveProfileChanged(id: Int) = Unit
+    actual fun onProfileRemoved(id: Int) = Unit
+
     actual fun loadPayload(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(payloadKey)
 

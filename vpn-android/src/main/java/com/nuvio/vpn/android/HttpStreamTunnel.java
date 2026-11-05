@@ -11,9 +11,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 /** A WireGuard userspace netstack, restricted to authenticated local playback proxy requests. */
-final class HttpStreamTunnel implements WireGuardEngine {
+final class HttpStreamTunnel implements TunnelEngine {
     static { System.loadLibrary("nuvio-http-vpn"); }
     private volatile long handle;
+    private volatile OpenVpnSession openVpn;
     final int port;
     final String token;
     volatile boolean retiring;
@@ -39,6 +40,16 @@ final class HttpStreamTunnel implements WireGuardEngine {
         if (handle == 0 || !configureNative(handle, input(config))) throw new IOException("HTTP-only WireGuard could not start.");
         configured = true;
     }
+    void configureOpenVpn(VpnConnectionService service, String id) throws Exception {
+        openVpn = OpenVpnSession.selected(service, id, this);
+        configured = true;
+    }
+    int attachOpenVpn(String[] addresses, String[] dns, int mtu) throws JSONException {
+        JSONArray ips = new JSONArray();
+        for (String cidr : addresses) ips.put(cidr.substring(0, cidr.lastIndexOf('/')));
+        return attachOpenVpnNative(handle, new JSONObject().put("addresses", ips)
+                .put("dns", new JSONArray(java.util.Arrays.asList(dns))).put("mtu", mtu).toString());
+    }
     private String input(Config config) throws IOException {
         try {
             JSONArray addresses = new JSONArray();
@@ -60,19 +71,23 @@ final class HttpStreamTunnel implements WireGuardEngine {
         catch (IOException | RuntimeException failure) { return false; }
     }
 
-    @Override public boolean isUp() { return handle != 0; }
-    @Override public WireGuardTraffic statistics() throws IOException {
+    @Override public boolean isUp() { return handle != 0 && (openVpn == null || openVpn.isUp()); }
+    @Override public boolean authRejected() { return openVpn != null && openVpn.authRejected(); }
+    @Override public TunnelTraffic statistics() throws IOException {
+        if (openVpn != null) return openVpn.statistics();
         long[] stats = statsNative(handle);
         if (stats == null || stats.length != 3) throw new IOException("WireGuard statistics are unavailable.");
-        return new WireGuardTraffic(stats[0], stats[1], stats[2]);
+        return new TunnelTraffic(stats[0], stats[1], stats[2]);
     }
     @Override public boolean probe() { return handle != 0 && probeNative(handle); }
     @Override public String egress() { return handle == 0 ? null : egressNative(handle); }
     @Override public void close() {
+        if (openVpn != null) { openVpn.close(); openVpn = null; }
         long old = handle;
         handle = 0;
         if (old != 0) stopNative(old);
     }
+    private static native int attachOpenVpnNative(long handle, String input);
     private static native long startNative(String configuration);
     private static native void stopNative(long handle);
     private static native boolean configureNative(long handle, String configuration);

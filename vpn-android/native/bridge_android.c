@@ -93,3 +93,12 @@ JNIEXPORT jstring JNICALL Java_com_nuvio_vpn_android_HttpStreamTunnel_egressNati
 JNIEXPORT jboolean JNICALL Java_com_nuvio_vpn_android_HttpStreamTunnel_requestCancelledNative(JNIEnv *env, jclass type, jlong request) {
     return nuvioRequestCancelled((long long)request) ? JNI_TRUE : JNI_FALSE;
 }
+
+JNIEXPORT jint JNICALL Java_com_nuvio_vpn_android_HttpStreamTunnel_attachOpenVpnNative(JNIEnv *env, jclass type, jlong handle, jstring input) {
+    if (input == NULL) return -1;
+    const char *text = (*env)->GetStringUTFChars(env, input, NULL);
+    if (text == NULL) return -1;
+    int fd = nuvioAttachOpenVPN((long long)handle, (char *)text);
+    (*env)->ReleaseStringUTFChars(env,input,text);
+    return fd;
+}

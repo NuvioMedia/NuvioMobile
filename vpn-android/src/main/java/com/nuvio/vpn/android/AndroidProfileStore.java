@@ -26,7 +26,7 @@ import javax.crypto.SecretKey;
 final class AndroidProfileStore {
     private static final String KEY_ALIAS = "nuvio.vpn.profiles.v1";
     private static final int MAX_PROFILES = 32;
-    private static final Object LOCK = new Object();
+    static final Object LOCK = new Object();
     private final File directory;
 
     AndroidProfileStore(Context context) {
@@ -55,10 +55,10 @@ final class AndroidProfileStore {
     }
 
     /** Apply the agreed backup snapshot exactly, so deletions are not resurrected on the next sync. */
-    boolean replace(List<Restored> profiles, boolean onlyIfEmpty) throws IOException, GeneralSecurityException {
+    void replace(List<Restored> profiles, boolean onlyIfEmpty, AndroidVpnSettings settings, ProfileSelections selections) throws IOException, GeneralSecurityException {
         synchronized (LOCK) {
             ensureDirectory();
-            if (onlyIfEmpty && profileFiles().length != 0) return false;
+            if (onlyIfEmpty && profileFiles().length != 0) return;
             if (profiles.size() > MAX_PROFILES) throw new IOException("Profile limit reached.");
             java.util.Map<String, byte[]> previous = new java.util.LinkedHashMap<>();
             java.util.Map<String, byte[]> prepared = new java.util.LinkedHashMap<>();
@@ -74,6 +74,7 @@ final class AndroidProfileStore {
                 try {
                     for (java.util.Map.Entry<String, byte[]> profile : prepared.entrySet()) writeEncrypted(profile.getKey(), profile.getValue());
                     for (String id : previous.keySet()) if (!prepared.containsKey(id)) delete(id);
+                    settings.replace(selections);
                 } catch (IOException | RuntimeException failed) {
                     // Playback is paused throughout this transaction. Roll back an ordinary IO failure;
                     // after process death the next restore can safely finish the exact snapshot.
@@ -84,10 +85,28 @@ final class AndroidProfileStore {
                     throw failed;
                 }
                 VpnPlaybackProtection.backupChanged();
-                return true;
             } finally {
                 for (byte[] value : previous.values()) Arrays.fill(value, (byte) 0);
                 for (byte[] value : prepared.values()) Arrays.fill(value, (byte) 0);
+            }
+        }
+    }
+
+    byte[] revision(String id) throws Exception {
+        synchronized (LOCK) {
+            byte[] sealed = readBounded(new AtomicFile(file(id)));
+            try { return MessageDigest.getInstance("SHA-256").digest(sealed); }
+            finally { Arrays.fill(sealed, (byte)0); }
+        }
+    }
+
+    void updateCredentials(String id, byte[] expected, String username, String password) throws Exception {
+        synchronized (LOCK) {
+            if (!MessageDigest.isEqual(expected, revision(id))) throw new IOException("Profile changed.");
+            try (ProfileEnvelope.Opened opened = open(id);
+                 ProfileImport.Candidate candidate = OpenVpnCredentials.replace(opened, username, password)) {
+                OpenVpnSession.requireReady(candidate.copyContents());
+                save(id, opened.getLabel(), candidate);
             }
         }
     }
@@ -116,11 +135,13 @@ final class AndroidProfileStore {
                 try {
                     encrypted = readBounded(new AtomicFile(file));
                     try (ProfileEnvelope.Opened profile = ProfileEnvelope.open(id, encrypted, key(false))) {
-                        result.add(new Entry(id, profile.getLabel(), profile.getProtocol(), true));
+                        result.add(new Entry(id, profile.getLabel(), profile.getProtocol(), true,
+                                profile.getProtocol() == ProfileImport.Protocol.OPENVPN
+                                ? OpenVpnCredentials.inspect(profile.copyContents()) : OpenVpnCredentials.Login.NONE));
                     }
                 } catch (IOException | GeneralSecurityException e) {
                     // Preserve damaged/key-invalidated files; let the user explicitly remove them.
-                    result.add(new Entry(id, "", null, false));
+                    result.add(new Entry(id, "", null, false, OpenVpnCredentials.Login.NONE));
                 } finally { if (encrypted != null) Arrays.fill(encrypted, (byte) 0); }
             }
             result.sort((a, b) -> a.name.compareToIgnoreCase(b.name));
@@ -199,7 +220,9 @@ final class AndroidProfileStore {
         final String name;
         final ProfileImport.Protocol protocol;
         final boolean readable;
-        Entry(String id, String name, ProfileImport.Protocol protocol, boolean readable) {
+        final OpenVpnCredentials.Login login;
+        Entry(String id, String name, ProfileImport.Protocol protocol, boolean readable, OpenVpnCredentials.Login login) {
+            this.login = login;
             this.id = id; this.name = name; this.protocol = protocol; this.readable = readable;
         }
     }

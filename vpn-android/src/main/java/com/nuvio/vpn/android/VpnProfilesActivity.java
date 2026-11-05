@@ -15,6 +15,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.LinearLayout;
@@ -41,10 +42,11 @@ public final class VpnProfilesActivity extends Activity {
     private final ArrayList<Button> actions = new ArrayList<>();
     private AndroidProfileStore store;
     private AndroidVpnSettings settings;
-    private RadioGroup scope;
+    private RadioGroup scope, audience;
+    private int allProfilesId, onlyProfileId;
     private ProtectionMode savedMode;
     private String selectedProfileId;
-    private ProfileImport.Protocol selectedProtocol;
+    private boolean needsCredentials;
     private int offId;
     private int httpId;
     private int httpsId;
@@ -90,7 +92,7 @@ public final class VpnProfilesActivity extends Activity {
         getWindow().getDecorView().setSystemUiVisibility(0);
         event("screen_opened");
         store = new AndroidProfileStore(getApplicationContext());
-        settings = new AndroidVpnSettings(getApplicationContext());
+        settings = new AndroidVpnSettings(getApplicationContext(), VpnPlaybackProtection.activeUserProfile());
         ScrollView scroll = new ScrollView(this);
         scroll.setFillViewport(true);
         scroll.setBackgroundColor(appearance.color(0));
@@ -142,15 +144,36 @@ public final class VpnProfilesActivity extends Activity {
         notice.addView(connectionTraffic);
         notice.addView(connectionAction);
         content.addView(notice);
+        ui.section(content, R.string.vpn_apply_title);
+        LinearLayout audienceCard = ui.card();
+        audience = new RadioGroup(this);
+        audience.setSaveEnabled(false);
+        allProfilesId = option(audience, R.string.vpn_apply_all, R.string.vpn_apply_all_detail);
+        onlyProfileId = option(audience, R.string.vpn_apply_one, R.string.vpn_apply_one_detail);
+        audience.setOnCheckedChangeListener((group, checkedId) -> {
+            if (busy || checkedId == -1) return;
+            setBusy(true);
+            worker.execute(() -> {
+                int outcome = R.string.vpn_scope_saved;
+                try {
+                    settings.setShared(checkedId == allProfilesId);
+                    VpnConnectionService.settingsChanged(this);
+                } catch (IOException failure) { outcome = R.string.vpn_scope_failed; }
+                final int message = outcome;
+                showResult(() -> refresh(message));
+            });
+        });
+        audienceCard.addView(audience);
+        content.addView(audienceCard);
         ui.section(content, R.string.vpn_scope_title);
         LinearLayout scopeCard = ui.card();
         scope = new RadioGroup(this);
         scope.setOrientation(RadioGroup.VERTICAL);
         scope.setSaveEnabled(false);
-        offId = scopeOption(R.string.vpn_scope_off, R.string.vpn_scope_off_detail);
-        httpId = scopeOption(R.string.vpn_scope_http, R.string.vpn_scope_http_detail);
-        httpsId = scopeOption(R.string.vpn_scope_http_https, R.string.vpn_scope_http_https_detail);
-        appId = scopeOption(R.string.vpn_scope_app, R.string.vpn_scope_app_detail);
+        offId = option(scope, R.string.vpn_scope_off, R.string.vpn_scope_off_detail);
+        httpId = option(scope, R.string.vpn_scope_http, R.string.vpn_scope_http_detail);
+        httpsId = option(scope, R.string.vpn_scope_http_https, R.string.vpn_scope_http_https_detail);
+        appId = option(scope, R.string.vpn_scope_app, R.string.vpn_scope_app_detail);
         scope.setOnCheckedChangeListener((group, checkedId) -> {
             if (busy || checkedId == -1) return;
             ProtectionMode mode = checkedId == appId ? ProtectionMode.APP_WIDE
@@ -160,7 +183,7 @@ public final class VpnProfilesActivity extends Activity {
             worker.execute(() -> {
                 try {
                     settings.saveMode(mode);
-                    WireGuardConnectionService.settingsChanged(this);
+                    VpnConnectionService.settingsChanged(this);
                     event("scope_intent_saved: " + mode.name());
                     showResult(() -> { savedMode = mode; setBusy(false); status.setText(R.string.vpn_scope_saved); });
                 } catch (Exception e) {
@@ -233,20 +256,65 @@ public final class VpnProfilesActivity extends Activity {
         status.setText(R.string.vpn_profiles_importing);
         worker.execute(() -> {
             int message = R.string.vpn_profiles_imported;
+            String needsCredentials = null;
             try (InputStream input = getContentResolver().openInputStream(uri)) {
                 if (input == null) throw new IOException("Configuration is unavailable.");
                 try (ProfileImport.Candidate candidate = ProfileImport.read(input, protocol)) {
                     if (protocol == ProfileImport.Protocol.WIREGUARD) WireGuardProfiles.parse(candidate);
-                    store.save(displayName(uri, protocol), candidate);
+                    String id = java.util.UUID.randomUUID().toString();
+                    if (protocol == ProfileImport.Protocol.OPENVPN && OpenVpnSession.evaluate(candidate.copyContents()) == 2)
+                        needsCredentials = id;
+                    store.save(id, displayName(uri, protocol), candidate);
                     event("import_saved: " + protocol.name());
                 }
                 // Keep no URI grant, plaintext copy, or persisted document reference.
-            } catch (Exception e) {
+            } catch (Exception | LinkageError e) {
                 event("import_failed: " + protocol.name() + "; " + e.getClass().getSimpleName());
                 message = R.string.vpn_profiles_import_failed;
             }
             final int notice = message;
-            showResult(() -> { setBusy(false); refresh(notice); });
+            final String prompt = needsCredentials;
+            showResult(() -> {
+                setBusy(false);
+                refresh(notice);
+                if (notice == R.string.vpn_profiles_imported && prompt != null) editCredentials(prompt);
+            });
+        });
+    }
+
+    private void editCredentials(String id) {
+        worker.execute(() -> {
+            try {
+                byte[] revision = store.revision(id);
+                showResult(() -> {
+                    LinearLayout fields = ui.column();
+                    fields.setPadding(dp(20), dp(8), dp(20), 0);
+                    EditText username = new EditText(this);
+                    username.setSingleLine(); username.setHint(R.string.vpn_service_username);
+                    EditText password = new EditText(this);
+                    password.setSingleLine();
+                    password.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+                    password.setHint(R.string.vpn_service_password);
+                    username.setSaveEnabled(false); password.setSaveEnabled(false);
+                    fields.addView(username); fields.addView(password);
+                    AlertDialog dialog = new AlertDialog.Builder(this).setTitle(R.string.vpn_service_credentials)
+                            .setView(fields).setNegativeButton(android.R.string.cancel,null)
+                            .setPositiveButton(R.string.vpn_save_credentials,(ignored,which) -> {
+                                String user = username.getText().toString(), secret = password.getText().toString();
+                                setBusy(true);
+                                worker.execute(() -> {
+                                    int message;
+                                    try { VpnBackup.updateCredentials(this,id,revision,user,secret); message = R.string.vpn_credentials_saved; }
+                                    catch (Exception | LinkageError failure) { message = R.string.vpn_credentials_failed; }
+                                    int notice = message;
+                                    showResult(() -> { setBusy(false); refresh(notice); });
+                                });
+                            }).create();
+                    dialog.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
+                    dialog.setOnDismissListener(ignored -> { username.getText().clear(); password.getText().clear(); });
+                    dialog.show();
+                });
+            } catch (Exception changed) { showResult(() -> status.setText(R.string.vpn_credentials_failed)); }
         });
     }
 
@@ -277,18 +345,20 @@ public final class VpnProfilesActivity extends Activity {
                 if (!available) {
                     // Never silently switch to another profile after loss, corruption or key invalidation.
                     settings.selectProfile(null);
-                    WireGuardConnectionService.settingsChanged(this);
+                    VpnConnectionService.settingsChanged(this);
                     event("unavailable_selection_cleared; scope_off");
                     preferences = settings.read();
                 }
                 final VpnPreferences snapshot = preferences;
+                final boolean shared = !settings.snapshot().overrides.containsKey(VpnPlaybackProtection.activeUserProfile());
                 final int message = available ? notice : R.string.vpn_profiles_selection_unavailable;
                 showResult(() -> {
                     savedMode = snapshot.getMode();
                     selectedProfileId = snapshot.getSelectedProfileId();
-                    selectedProtocol = null;
-                    for (AndroidProfileStore.Entry entry : entries)
-                        if (entry.readable && entry.id.equals(selectedProfileId)) selectedProtocol = entry.protocol;
+                    needsCredentials = false;
+                    for (AndroidProfileStore.Entry entry : entries) if (entry.id.equals(selectedProfileId))
+                        needsCredentials = entry.login == OpenVpnCredentials.Login.REQUIRED;
+                    audience.check(shared ? allProfilesId : onlyProfileId);
                     scope.check(idForMode(savedMode));
                     profiles.removeAllViews();
                     while (actions.size() > persistentActionCount) actions.remove(actions.size() - 1);
@@ -311,6 +381,11 @@ public final class VpnProfilesActivity extends Activity {
                                 TextView selectedLabel = ui.paragraph(getString(R.string.vpn_profiles_selected));
                                 selectedLabel.setTextColor(appearance.color(5));
                                 row.addView(selectedLabel);
+                            }
+                            if (entry.login != OpenVpnCredentials.Login.NONE) {
+                                Button credentials = button(R.string.vpn_service_credentials, () -> editCredentials(entry.id));
+                                credentials.setTag("credentials:" + entry.id);
+                                row.addView(credentials);
                             }
                             Button select = button(selectedEntry ? R.string.vpn_profiles_clear_selection : R.string.vpn_profiles_select,
                                     () -> selectProfile(selectedEntry ? null : entry));
@@ -353,7 +428,7 @@ public final class VpnProfilesActivity extends Activity {
                         settings.selectProfile(entry.id);
                     }
                 }
-                WireGuardConnectionService.settingsChanged(this);
+                VpnConnectionService.settingsChanged(this);
                 event(entry == null ? "selection_cleared; scope_off" : "selection_saved");
             } catch (Exception e) {
                 event("selection_failed: " + e.getClass().getSimpleName());
@@ -376,8 +451,8 @@ public final class VpnProfilesActivity extends Activity {
                         int message = R.string.vpn_profiles_removed;
                         try {
                             // Clear the reference first so an interrupted deletion cannot leave a selected target.
-                            if (entry.id.equals(settings.read().getSelectedProfileId())) settings.selectProfile(null);
-                            WireGuardConnectionService.settingsChanged(this);
+                            settings.forgetVpn(entry.id);
+                            VpnConnectionService.settingsChanged(this);
                             store.delete(entry.id);
                             event("profile_removed");
                         }
@@ -410,13 +485,13 @@ public final class VpnProfilesActivity extends Activity {
         return button;
     }
 
-    private int scopeOption(int label, int detail) {
+    private int option(RadioGroup group, int label, int detail) {
         RadioButton button = ui.option(getString(label), getString(detail));
         button.setId(View.generateViewId());
         button.setSaveEnabled(false);
         actions.add(button);
-        if (scope.getChildCount() != 0) ui.divider(scope);
-        scope.addView(button);
+        if (group.getChildCount() != 0) ui.divider(group);
+        group.addView(button);
         return button.getId();
     }
 
@@ -445,28 +520,29 @@ public final class VpnProfilesActivity extends Activity {
 
     private void connectionAction() {
         if (busy) return;
-        if (savedMode == ProtectionMode.OFF) WireGuardConnectionService.disconnect(this);
+        if (savedMode == ProtectionMode.OFF) VpnConnectionService.disconnect(this);
         else scope.check(offId);
     }
 
     private void renderConnection() {
         if (connectionTitle == null) return;
-        WireGuardConnectionService.Snapshot state = WireGuardConnectionService.snapshot();
-        boolean active = WireGuardConnectionService.isRunning();
-        boolean verifying = active && state.phase != WireGuardConnectionService.Phase.STANDBY;
-        int title = state.phase == WireGuardConnectionService.Phase.CONNECTED
+        VpnConnectionService.Snapshot state = VpnConnectionService.snapshot();
+        boolean active = VpnConnectionService.isRunning();
+        boolean verifying = active && state.phase != VpnConnectionService.Phase.STANDBY;
+        int title = state.phase == VpnConnectionService.Phase.CONNECTED
                 ? (state.mode.isPlaybackScoped() ? (state.mode == ProtectionMode.HTTP_HTTPS ? R.string.vpn_connected_web : R.string.vpn_connected_http) : R.string.vpn_connected_app)
-                : state.phase == WireGuardConnectionService.Phase.CONNECTING ? R.string.vpn_connecting
-                : state.phase == WireGuardConnectionService.Phase.WAITING ? R.string.vpn_waiting_handshake
-                : state.phase == WireGuardConnectionService.Phase.ERROR ? R.string.vpn_connection_failed
+                : state.phase == VpnConnectionService.Phase.CONNECTING ? R.string.vpn_connecting
+                : state.phase == VpnConnectionService.Phase.WAITING ? R.string.vpn_waiting_handshake
+                : state.phase == VpnConnectionService.Phase.ERROR ? R.string.vpn_connection_failed
                 : R.string.vpn_connection_unavailable;
         connectionTitle.setText(title);
-        int detail = state.phase == WireGuardConnectionService.Phase.CONNECTED
+        int detail = state.phase == VpnConnectionService.Phase.CONNECTED
                 ? (state.mode.isPlaybackScoped() ? (state.mode == ProtectionMode.HTTP_HTTPS ? R.string.vpn_active_web_detail : R.string.vpn_active_http_detail) : R.string.vpn_active_app_detail)
-                : active && state.phase == WireGuardConnectionService.Phase.ERROR ? R.string.vpn_connection_error_detail
+                : active && state.authRejected ? R.string.vpn_auth_rejected
+                : active && state.phase == VpnConnectionService.Phase.ERROR ? R.string.vpn_connection_error_detail
                 : verifying ? R.string.vpn_verification_pending
                 : selectedProfileId == null ? R.string.vpn_select_wireguard_profile
-                : selectedProtocol != ProfileImport.Protocol.WIREGUARD ? R.string.vpn_openvpn_unavailable
+                : needsCredentials ? R.string.vpn_credentials_required
                 : savedMode == ProtectionMode.OFF ? R.string.vpn_requires_app_scope
                 : savedMode.isPlaybackScoped() ? (savedMode == ProtectionMode.HTTP_HTTPS ? R.string.vpn_ready_web : R.string.vpn_ready_http) : R.string.vpn_ready_to_connect;
         connectionDetail.setText(detail);

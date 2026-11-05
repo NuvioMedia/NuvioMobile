@@ -123,3 +123,14 @@ func nuvioEgress(id C.longlong) *C.char {
 	}
 	return nil
 }
+
+//export nuvioAttachOpenVPN
+func nuvioAttachOpenVPN(id C.longlong, encoded *C.char) C.int {
+	if tunnel := nativeTunnel(int64(id)); tunnel != nil {
+		fd, err := tunnel.attachOpenVPN(C.GoString(encoded))
+		if err == nil {
+			return C.int(fd)
+		}
+	}
+	return -1
+}

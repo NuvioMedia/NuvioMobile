@@ -40,6 +40,7 @@ public final class VpnDeviceTest {
         // Safety guard: these tests clear only their standalone library test application's files.
         assertEquals("com.nuvio.vpn.android.test", context.getPackageName());
         clean();
+        VpnPlaybackProtection.setActiveUserProfile(1);
     }
 
     @After public void tearDown() { if (context != null) clean(); }
@@ -75,7 +76,7 @@ public final class VpnDeviceTest {
             VpnPlaybackProtection.prepare(context, "https://192.0.2.1/video").get(3, java.util.concurrent.TimeUnit.SECONDS);
             fail("A missing selected profile must block protected playback.");
         } catch (java.util.concurrent.ExecutionException expected) { }
-        assertFalse(WireGuardConnectionService.isRunning());
+        assertFalse(VpnConnectionService.isRunning());
         assertNotNull(android.net.VpnService.prepare(context));
     }
 
@@ -88,20 +89,20 @@ public final class VpnDeviceTest {
                 AndroidVpnSettings settings = new AndroidVpnSettings(context);
                 settings.selectProfile(ID);
                 settings.saveMode(mode);
-                WireGuardConnectionService.connect(context, ID);
+                VpnConnectionService.connect(context, ID);
                 long deadline = SystemClock.elapsedRealtime() + 5000;
-                while (WireGuardConnectionService.snapshot().phase != WireGuardConnectionService.Phase.ERROR
+                while (VpnConnectionService.snapshot().phase != VpnConnectionService.Phase.ERROR
                         && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(50);
-                assertEquals(WireGuardConnectionService.Phase.ERROR, WireGuardConnectionService.snapshot().phase);
+                assertEquals(VpnConnectionService.Phase.ERROR, VpnConnectionService.snapshot().phase);
                 assertNotNull(android.net.VpnService.prepare(context));
-                WireGuardConnectionService.disconnect(context);
+                VpnConnectionService.disconnect(context);
                 deadline = SystemClock.elapsedRealtime() + 5000;
-                while (WireGuardConnectionService.isRunning() && SystemClock.elapsedRealtime() < deadline)
+                while (VpnConnectionService.isRunning() && SystemClock.elapsedRealtime() < deadline)
                     SystemClock.sleep(50);
-                assertFalse(WireGuardConnectionService.isRunning());
+                assertFalse(VpnConnectionService.isRunning());
             }
         } finally {
-            WireGuardConnectionService.disconnect(context);
+            VpnConnectionService.disconnect(context);
             instrumentation.runOnMainSync(screen::finish);
         }
     }
@@ -157,7 +158,7 @@ public final class VpnDeviceTest {
             }
             echo.join(3000);
             assertFalse(echo.isAlive());
-            WireGuardTraffic traffic = proxy.statistics();
+            TunnelTraffic traffic = proxy.statistics();
             assertEquals(0, traffic.received);
             assertEquals(0, traffic.sent);
             assertEquals(0, traffic.handshakeMillis);
@@ -202,6 +203,54 @@ public final class VpnDeviceTest {
         try { VpnBackup.restoreSetup(context, invalid.toString()); fail("Missing selection accepted"); }
         catch (IOException expected) { }
         assertEquals(portable, VpnBackup.exportSetup(context));
+    }
+
+    @Test public void userProfilesInheritOrOverrideThePortableSelection() throws Exception {
+        AndroidVpnSettings settings = new AndroidVpnSettings(context);
+        AndroidProfileStore store = new AndroidProfileStore(context);
+        String alternate = "a4a6dfda-f490-4728-a7dd-1318e7d385a1";
+        try (ProfileImport.Candidate candidate = ProfileImport.read(
+                new ByteArrayInputStream(CONFIG.getBytes(StandardCharsets.UTF_8)), ProfileImport.Protocol.WIREGUARD)) {
+            store.save(ID, "Shared", candidate);
+            store.save(alternate, "Personal", candidate);
+        }
+        VpnPreferences shared = new VpnPreferences(ProtectionMode.HTTP_ONLY, ID);
+        VpnPreferences own = new VpnPreferences(ProtectionMode.HTTP_HTTPS, alternate);
+        settings.save(shared);
+        String oldBackup = VpnBackup.exportSetup(context);
+        assertFalse(oldBackup.contains("profileOverrides"));
+        VpnPlaybackProtection.setActiveUserProfile(2);
+        assertEquals(shared, settings.read());
+        settings.setShared(false);
+        assertEquals(shared, settings.read());
+        settings.save(own);
+        String backup = VpnBackup.exportSetup(context);
+        VpnPlaybackProtection.setActiveUserProfile(3);
+        assertEquals(shared, settings.read());
+        assertEquals(backup, VpnBackup.exportSetup(context));
+        settings.saveMode(ProtectionMode.APP_WIDE);
+        VpnPlaybackProtection.setActiveUserProfile(2);
+        assertEquals(own, settings.read());
+        settings.setShared(true);
+        assertEquals(new VpnPreferences(ProtectionMode.APP_WIDE, ID), settings.read());
+
+        VpnBackup.restoreSetup(context, backup);
+        assertEquals(own, settings.read());
+        assertEquals(backup, VpnBackup.exportSetup(context));
+        org.json.JSONObject invalid = new org.json.JSONObject(backup);
+        invalid.getJSONObject("profileOverrides").getJSONObject("2")
+                .put("selected", "11111111-1111-1111-1111-111111111111");
+        try { VpnBackup.restoreSetup(context, invalid.toString()); fail("Missing VPN in override accepted"); }
+        catch (IOException expected) { }
+        assertEquals(backup, VpnBackup.exportSetup(context));
+        settings.forgetVpn(alternate);
+        assertEquals(VpnPreferences.defaults(), settings.read());
+        VpnPlaybackProtection.removeUserProfile(2);
+        assertEquals(shared, settings.read());
+        VpnBackup.restoreSetup(context, backup);
+        VpnBackup.restoreSetup(context, oldBackup);
+        assertEquals(shared, settings.read());
+        assertEquals(oldBackup, VpnBackup.exportSetup(context));
     }
 
     @Test public void restorePausesRequestsWithoutDowngradingSavedProtection() throws Exception {
@@ -290,6 +339,70 @@ public final class VpnDeviceTest {
         write("vpn-settings-v2", "invalid-private-value".getBytes(StandardCharsets.US_ASCII));
         try { settings.read(); fail("Corrupt settings accepted"); }
         catch (IOException expected) { assertFalse(expected.getMessage().contains("invalid-private-value")); }
+    }
+
+    /** Optional live-server test. Inputs stay in this test application's private files directory. */
+    @Test public void openVpnAuthenticatedPlaybackRange() throws Exception {
+        String url = InstrumentationRegistry.getArguments().getString("openvpnRangeUrl");
+        org.junit.Assume.assumeTrue("Supply a live OpenVPN test endpoint", url != null);
+        ProtectionMode mode = ProtectionMode.valueOf(InstrumentationRegistry.getArguments().getString("openvpnScope","HTTP_ONLY"));
+        AndroidProfileStore store = new AndroidProfileStore(context);
+        try (java.io.FileInputStream in = new java.io.FileInputStream(new File(context.getFilesDir(),"acceptance.ovpn"));
+             ProfileImport.Candidate candidate = ProfileImport.read(in, ProfileImport.Protocol.OPENVPN)) {
+            store.save(ID,"Integration profile",candidate);
+            if (OpenVpnSession.evaluate(candidate.copyContents()) == 2) {
+                byte[] revision = store.revision(ID);
+                VpnBackup.updateCredentials(context, ID, revision, "fixture-user", "fixture-password");
+                try {
+                    store.updateCredentials(ID,revision,"stale","edit");
+                    fail("A stale credential edit overwrote the latest version");
+                } catch (IOException expected) { }
+            }
+        }
+        AndroidVpnSettings settings = new AndroidVpnSettings(context);
+        settings.save(new VpnPreferences(mode,ID));
+        String backup = VpnBackup.exportSetup(context);
+        store.delete(ID);
+        settings.save(VpnPreferences.defaults());
+        VpnBackup.restoreSetup(context, backup);
+        VpnConnectionService.settingsChanged(context);
+        try {
+            java.util.concurrent.CompletableFuture<Void> gate = VpnPlaybackProtection.prepare(context,url);
+            if ("true".equals(InstrumentationRegistry.getArguments().getString("openvpnReject"))) {
+                try { gate.get(45,java.util.concurrent.TimeUnit.SECONDS); fail("Invalid peer was accepted"); }
+                catch (java.util.concurrent.ExecutionException rejected) { assertTrue(rejected.getCause() instanceof IOException); }
+                assertFalse(VpnConnectionService.verifiedFor(ID,mode));
+                return;
+            }
+            gate.get(45,java.util.concurrent.TimeUnit.SECONDS);
+            android.net.ConnectivityManager cm = context.getSystemService(android.net.ConnectivityManager.class);
+            assertEquals(mode == ProtectionMode.APP_WIDE, cm.getNetworkCapabilities(cm.getActiveNetwork())
+                    .hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN));
+            java.net.HttpURLConnection connection = VpnHttpClient.openConnection(new java.net.URL(url));
+            connection.setRequestProperty("Range","bytes=31-158");
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(15000);
+            try {
+                assertEquals(206, connection.getResponseCode());
+                try (java.io.InputStream body = connection.getInputStream()) {
+                    java.security.MessageDigest sha = java.security.MessageDigest.getInstance("SHA-256");
+                    for(int n=31;n<=158;n++) {
+                        int value=body.read(); assertTrue(value>=0);
+                        if (InstrumentationRegistry.getArguments().getString("openvpnReference") == null) assertEquals(n,value);
+                        sha.update((byte)value);
+                    }
+                    assertEquals(-1, body.read());
+                    String reference = InstrumentationRegistry.getArguments().getString("openvpnReference");
+                    if (reference != null) assertEquals(reference, android.util.Base64.encodeToString(sha.digest(), android.util.Base64.NO_WRAP));
+                }
+            } finally { connection.disconnect(); }
+            assertTrue(VpnConnectionService.verifiedFor(ID,mode));
+            assertTrue(VpnConnectionService.snapshot().received > 0);
+        } finally {
+            settings.save(VpnPreferences.defaults());
+            VpnConnectionService.settingsChanged(context);
+            VpnConnectionService.disconnect(context);
+        }
     }
 
     private void write(String name, byte[] bytes) throws IOException {

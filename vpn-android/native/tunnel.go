@@ -35,6 +35,7 @@ type tunnelInput struct {
 
 type httpTunnel struct {
 	device      *device.Device
+	packetLink  io.Closer
 	transport   *http.Transport
 	direct      *http.Transport
 	server      *http.Server
@@ -114,9 +115,7 @@ func (t *httpTunnel) configure(input tunnelInput) error {
 		dev.Close()
 		return errors.New("wireguard initialization")
 	}
-	transport := &http.Transport{Proxy: nil, DialContext: network.DialContext, DisableCompression: true,
-		TLSHandshakeTimeout: 5 * time.Second, ResponseHeaderTimeout: 20 * time.Second,
-		MaxIdleConns: 64, MaxIdleConnsPerHost: 32, IdleConnTimeout: 60 * time.Second}
+	transport := privateTransport(network.DialContext)
 	t.mu.Lock()
 	if t.closed || t.device != nil {
 		t.mu.Unlock()
@@ -127,6 +126,12 @@ func (t *httpTunnel) configure(input tunnelInput) error {
 	t.device, t.transport = dev, transport
 	t.mu.Unlock()
 	return nil
+}
+
+func privateTransport(dial func(context.Context, string, string) (net.Conn, error)) *http.Transport {
+	return &http.Transport{Proxy: nil, DialContext: dial, DisableCompression: true,
+		TLSHandshakeTimeout: 5 * time.Second, ResponseHeaderTimeout: 20 * time.Second,
+		MaxIdleConns: 64, MaxIdleConnsPerHost: 32, IdleConnTimeout: 60 * time.Second}
 }
 
 func parseAddresses(values []string) ([]netip.Addr, error) {
@@ -316,6 +321,12 @@ func (t *httpTunnel) probe() bool {
 		return false
 	}
 	response.Body.Close()
+	t.mu.Lock()
+	openVPN := t.packetLink != nil
+	t.mu.Unlock()
+	if openVPN {
+		return response.StatusCode == http.StatusNoContent
+	}
 	rx, _, handshake := t.stats()
 	return response.StatusCode == http.StatusNoContent && rx > 0 && handshake > 0 && time.Now().UnixMilli()-handshake <= 180000
 }
@@ -358,6 +369,9 @@ func (t *httpTunnel) close() {
 		}
 		t.mu.Unlock()
 		t.server.Close()
+		if t.packetLink != nil {
+			t.packetLink.Close()
+		}
 		if t.transport != nil {
 			t.transport.CloseIdleConnections()
 		}

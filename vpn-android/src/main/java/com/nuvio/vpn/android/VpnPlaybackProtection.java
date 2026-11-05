@@ -21,6 +21,7 @@ public final class VpnPlaybackProtection {
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static volatile Pending pending;
     private static volatile Context application;
+    private static volatile int activeUserProfile;
     private static volatile VpnPreferences cachedSettings;
     private static volatile boolean profilesRestoring;
     private static final java.util.concurrent.atomic.AtomicLong settingsRevision = new java.util.concurrent.atomic.AtomicLong();
@@ -35,7 +36,7 @@ public final class VpnPlaybackProtection {
     }
     static void beginProfileRestore(Context app) {
         profilesRestoring = true;
-        WireGuardConnectionService.disconnect(app);
+        VpnConnectionService.disconnect(app);
         settingsChanged();
         VpnHttpClient.invalidate();
         fail("VPN profiles are being restored. Retry playback.");
@@ -44,7 +45,7 @@ public final class VpnPlaybackProtection {
         // Finish on the playback actor so a new request cannot race the final service generation.
         worker.submit(() -> {
             profilesRestoring = false;
-            WireGuardConnectionService.settingsChanged(app);
+            VpnConnectionService.settingsChanged(app);
         }).get(5, TimeUnit.SECONDS);
     }
 
@@ -53,7 +54,30 @@ public final class VpnPlaybackProtection {
         worker.execute(() -> { try { settings(); } catch (IOException ignored) { } });
     }
 
-    static VpnPreferences settings() throws IOException {
+    static int activeUserProfile() { return activeUserProfile; }
+
+    /** Hosts publish the Nuvio profile before its players and settings start using it. */
+    public static synchronized void setActiveUserProfile(int id) {
+        synchronized (AndroidVpnSettings.LOCK) {
+            if (id <= 0 || activeUserProfile == id) return;
+            activeUserProfile = id;
+            cachedSettings = null;
+        }
+        Context app = application;
+        if (app != null) {
+            VpnConnectionService.userProfileChanged(app);
+        }
+    }
+
+    public static void removeUserProfile(int id) throws IOException {
+        Context app = application;
+        if (app != null && new AndroidVpnSettings(app).removeUser(id)) {
+            if (id == activeUserProfile) VpnConnectionService.settingsChanged(app);
+            else backupChanged();
+        }
+    }
+
+    static synchronized VpnPreferences settings() throws IOException {
         if (application == null) throw new IOException("VPN settings are unavailable.");
         VpnPreferences value = new AndroidVpnSettings(application).read();
         cachedSettings = value;
@@ -79,6 +103,9 @@ public final class VpnPlaybackProtection {
     }
     static void settingsChanged() {
         backupChanged();
+        publishSelectionChange();
+    }
+    static void publishSelectionChange() {
         settingsRevision.incrementAndGet();
         for (Runnable listener : settingsListeners) main.post(() -> { if (settingsListeners.contains(listener)) listener.run(); });
     }
@@ -127,8 +154,7 @@ public final class VpnPlaybackProtection {
             if (result.isDone()) return;
             try {
                 if (profilesRestoring) throw new IOException("VPN profiles are being restored.");
-                VpnPreferences settings = new AndroidVpnSettings(app).read();
-                cachedSettings = settings;
+                VpnPreferences settings = settings();
                 if (!settings.getMode().isPlaybackScoped()) { result.complete(null); return; }
                 proxyReady(new ProxyRequest(app, settings.getSelectedProfileId(), settings.getMode(), result));
             } catch (Exception failure) { result.completeExceptionally(new IOException("HTTP playback protection could not be prepared.")); }
@@ -150,7 +176,7 @@ public final class VpnPlaybackProtection {
                     if (remaining <= 0) nativeLeases.remove(proxy.token); else nativeLeases.put(proxy.token, remaining);
                 }
                 // A short handoff grace period avoids tearing down a proxy between channel changes.
-                worker.schedule(() -> WireGuardConnectionService.releaseProxy(app, proxy.token), 2, TimeUnit.SECONDS);
+                worker.schedule(() -> VpnConnectionService.releaseProxy(app, proxy.token), 2, TimeUnit.SECONDS);
             });
         }
     }
@@ -171,9 +197,9 @@ public final class VpnPlaybackProtection {
             if (settings.getMode() != request.mode || !java.util.Objects.equals(request.profile, settings.getSelectedProfileId()))
                 throw new IOException("VPN settings changed before playback started.");
             synchronized (nativeLeases) {
-                HttpStreamTunnel proxy = WireGuardConnectionService.readyProxy(request.profile);
+                HttpStreamTunnel proxy = VpnConnectionService.readyProxy(request.profile);
                 if (proxy != null) {
-                    if (request.result.isDone()) WireGuardConnectionService.releaseProxy(request.app, proxy.token);
+                    if (request.result.isDone()) VpnConnectionService.releaseProxy(request.app, proxy.token);
                     else {
                         nativeLeases.put(proxy.token, nativeLeases.getOrDefault(proxy.token, 0) + 1);
                         NativeProxy lease = new NativeProxy(request.app, proxy);
@@ -183,11 +209,11 @@ public final class VpnPlaybackProtection {
                 }
             }
             if (SystemClock.elapsedRealtime() - request.since > 30000) throw new IOException("HTTP playback protection timed out.");
-            if (!WireGuardConnectionService.isRunning()) {
+            if (!VpnConnectionService.isRunning()) {
                 if (request.result.isDone()) return;
-                WireGuardConnectionService.standby(request.app, request.profile, request.mode);
-            } else if (WireGuardConnectionService.snapshot().phase == WireGuardConnectionService.Phase.ERROR) {
-                WireGuardConnectionService.disconnect(request.app);
+                VpnConnectionService.standby(request.app, request.profile, request.mode);
+            } else if (VpnConnectionService.snapshot().phase == VpnConnectionService.Phase.ERROR) {
+                VpnConnectionService.disconnect(request.app);
             }
             worker.schedule(() -> proxyReady(request), 250, TimeUnit.MILLISECONDS);
         } catch (Exception failure) { request.result.completeExceptionally(new IOException("HTTP playback protection could not be prepared.")); }
@@ -210,8 +236,7 @@ public final class VpnPlaybackProtection {
         worker.execute(() -> {
             try {
                 if (profilesRestoring) throw new IOException("VPN profiles are being restored.");
-                VpnPreferences settings = new AndroidVpnSettings(app).read();
-                cachedSettings = settings;
+                VpnPreferences settings = settings();
                 if (settings.getMode() == ProtectionMode.OFF) { result.complete(null); return; }
                 URI uri = source == null ? null : new URI(source);
                 String scheme = uri == null ? null : uri.getScheme();
@@ -229,7 +254,7 @@ public final class VpnPlaybackProtection {
                 }
                 String profile = settings.getSelectedProfileId();
                 if (profile == null) throw new IOException("Select a VPN profile in Settings before playing.");
-                if (WireGuardConnectionService.verifiedFor(profile, settings.getMode())) { result.complete(null); return; }
+                if (VpnConnectionService.verifiedFor(profile, settings.getMode())) { result.complete(null); return; }
                 if (pending != null && (!pending.profile.equals(profile) || pending.mode != settings.getMode())) {
                     Pending obsolete = pending;
                     pending = null;
@@ -237,7 +262,10 @@ public final class VpnPlaybackProtection {
                 }
                 if (pending == null) {
                     // Validate the selected protocol and routes before requesting consent or starting a service.
-                    WireGuardProfiles.prepareSelected(app, settings.getMode());
+                    try (com.nuvio.vpn.core.ProfileEnvelope.Opened opened = new AndroidProfileStore(app).open(settings.getSelectedProfileId())) {
+                        if (opened.getProtocol() == com.nuvio.vpn.core.ProfileImport.Protocol.OPENVPN) OpenVpnSession.requireReady(opened.copyContents());
+                        else WireGuardProfiles.prepareSelected(app, settings.getMode());
+                    }
                     Pending request = new Pending(app, profile, settings.getMode());
                     synchronized (nativeLeases) { pending = request; }
                     if ((app.getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
@@ -268,27 +296,27 @@ public final class VpnPlaybackProtection {
             VpnPreferences settings = new AndroidVpnSettings(request.app).read();
             if (settings.getMode() != request.mode || !request.profile.equals(settings.getSelectedProfileId()))
                 throw new IOException("VPN settings changed.");
-            if (WireGuardConnectionService.isRunning()) {
-                WireGuardConnectionService.Phase phase = WireGuardConnectionService.snapshot().phase;
-                HttpStreamTunnel proxy = WireGuardConnectionService.readyProxy(request.profile);
+            if (VpnConnectionService.isRunning()) {
+                VpnConnectionService.Phase phase = VpnConnectionService.snapshot().phase;
+                HttpStreamTunnel proxy = VpnConnectionService.readyProxy(request.profile);
                 if (request.mode.isPlaybackScoped() && proxy != null && !proxy.isConfigured()) {
                     request.started = true;
-                    WireGuardConnectionService.demandHttp(request.app, request.profile);
+                    VpnConnectionService.demandHttp(request.app, request.profile);
                     return;
                 }
-                if (WireGuardConnectionService.ownsProfile(request.profile, request.mode)
-                        && phase != WireGuardConnectionService.Phase.ERROR
-                        && phase != WireGuardConnectionService.Phase.STANDBY
-                        && phase != WireGuardConnectionService.Phase.IDLE) {
+                if (VpnConnectionService.ownsProfile(request.profile, request.mode)
+                        && phase != VpnConnectionService.Phase.ERROR
+                        && phase != VpnConnectionService.Phase.STANDBY
+                        && phase != VpnConnectionService.Phase.IDLE) {
                     request.started = true;
                     return;
                 }
-                WireGuardConnectionService.disconnect(request.app);
+                VpnConnectionService.disconnect(request.app);
                 worker.schedule(() -> start(request), 250, TimeUnit.MILLISECONDS);
                 return;
             }
             request.started = true;
-            WireGuardConnectionService.connect(request.app, request.profile, request.mode);
+            VpnConnectionService.connect(request.app, request.profile, request.mode);
         } catch (Exception failure) { fail("VPN connection could not start. Check VPN settings."); }
     }
 
@@ -299,13 +327,14 @@ public final class VpnPlaybackProtection {
             if (settings.getMode() != request.mode || !request.profile.equals(settings.getSelectedProfileId())) {
                 fail("VPN settings changed before playback started."); return;
             }
-            if (WireGuardConnectionService.verifiedFor(request.profile, request.mode)) {
+            if (VpnConnectionService.verifiedFor(request.profile, request.mode)) {
                 pending = null;
                 request.result.complete(null);
                 return;
             }
-            if (request.started && WireGuardConnectionService.snapshot().phase == WireGuardConnectionService.Phase.ERROR) {
-                fail("VPN could not be verified. Playback was not started."); return;
+            if (request.started && VpnConnectionService.snapshot().phase == VpnConnectionService.Phase.ERROR) {
+                fail(VpnConnectionService.snapshot().authRejected ? request.app.getString(R.string.vpn_auth_rejected)
+                        : "VPN could not be verified. Playback was not started."); return;
             }
             if (SystemClock.elapsedRealtime() - request.since > 60000) {
                 fail("VPN connection timed out. Playback was not started."); return;

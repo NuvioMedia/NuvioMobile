@@ -30,10 +30,6 @@ public final class WireGuardProfiles {
     }
 
     /** Reopens the encrypted selection, validates it, and prepares host-only routing; starts no service. */
-    public static Config prepareSelectedAppWide(Context context) throws IOException, GeneralSecurityException {
-        return prepareSelected(context, ProtectionMode.APP_WIDE);
-    }
-
     static Config prepareSelected(Context context, ProtectionMode scope) throws IOException, GeneralSecurityException {
         Context app = context.getApplicationContext();
         VpnPreferences preferences = new AndroidVpnSettings(app).read();
