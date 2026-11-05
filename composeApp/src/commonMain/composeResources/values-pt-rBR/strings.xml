@@ -419,6 +419,10 @@
     <string name="compose_nav_profile">Perfil</string>
     <string name="compose_nav_search">Busca</string>
     <string name="compose_player_audio_tracks">Faixas de Áudio</string>
+    <string name="compose_player_audio_delay">Atraso do Áudio</string>
+    <string name="compose_player_audio_amplification">Amplificação</string>
+    <string name="compose_player_audio_amplification_keep">Manter nos Próximos Vídeos</string>
+    <string name="compose_player_center_mix">Nível do Canal Central</string>
     <string name="compose_player_audio">Áudio</string>
     <string name="compose_player_auto_sync">Sincronização automática</string>
     <string name="compose_player_bold">Negrito</string>
@@ -1267,6 +1271,14 @@
     <string name="settings_tmdb_personal_api_key">Chave de API pessoal</string>
     <string name="settings_playback_exo_chapters">Mostrar Capítulos</string>
     <string name="settings_playback_exo_chapters_description">Lê os capítulos dos arquivos MKV para marcá-los na barra de progresso e listá-los no player. Faz algumas pequenas requisições extras quando a reprodução começa. O libmpv sempre mostra os capítulos</string>
+    <string name="settings_playback_remember_audio_delay">Lembrar Atraso do Áudio por Dispositivo</string>
+    <string name="settings_playback_remember_audio_delay_description">Restaura o atraso do áudio definido no player sempre que a mesma saída tocar de novo, como o alto-falante do celular, fones com fio ou cada dispositivo Bluetooth</string>
+    <string name="settings_playback_downmix_section">Downmix</string>
+    <string name="settings_playback_downmix">Ativar Downmix</string>
+    <string name="settings_playback_downmix_description">Mixa o áudio surround para o número de canais abaixo com o decodificador FFmpeg do app. Requer a prioridade do decodificador de Vídeo “Preferir decodificadores do app (FFmpeg)”. A saída Bluetooth sempre recebe um downmix 2.0.</string>
+    <string name="settings_playback_downmix_channels">Número de Canais</string>
+    <string name="settings_playback_downmix_maintain_volume">Manter Áudio Original no Downmix</string>
+    <string name="settings_playback_downmix_maintain_volume_description">Quando desativado, a normalização do downmix pode reduzir o volume geral.</string>
     <string name="settings_tmdb_enable_enrichment">Ativar Enriquecimento do TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Usar o TMDB como fonte de metadados para aprimorar dados de addons</string>
     <string name="settings_tmdb_language_code_label">Código de idioma</string>

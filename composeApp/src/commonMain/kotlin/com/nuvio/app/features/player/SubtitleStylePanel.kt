@@ -1,7 +1,10 @@
 package com.nuvio.app.features.player
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +22,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -42,6 +49,11 @@ import nuvio.composeapp.generated.resources.compose_player_subtitle_delay
 import nuvio.composeapp.generated.resources.subtitle_reset_appearance
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+
+private const val STEPPER_HOLD_START_MS = 500L
+private const val STEPPER_HOLD_REPEAT_MS = 100L
 
 @Composable
 fun SubtitleStylePanel(
@@ -135,6 +147,10 @@ internal fun SubtitleStyleSection(
     }
 }
 
+/**
+ * [onDecreaseHold] and [onIncreaseHold], when set, repeat while the button is held and get how
+ * long it has been held; releasing after a repeat does not add a tap.
+ */
 @Composable
 internal fun SubtitleStyleStepper(
     value: String,
@@ -142,6 +158,8 @@ internal fun SubtitleStyleStepper(
     onIncrease: () -> Unit,
     valueWidth: Dp = 84.dp,
     enabled: Boolean = true,
+    onDecreaseHold: ((heldMs: Long) -> Unit)? = null,
+    onIncreaseHold: ((heldMs: Long) -> Unit)? = null,
 ) {
     Row(
         modifier = Modifier.alpha(if (enabled) 1f else 0.42f),
@@ -152,6 +170,7 @@ internal fun SubtitleStyleStepper(
             icon = Icons.Rounded.Remove,
             onClick = onDecrease,
             enabled = enabled,
+            onHold = onDecreaseHold,
         )
         Box(
             modifier = Modifier
@@ -171,6 +190,7 @@ internal fun SubtitleStyleStepper(
             icon = Icons.Rounded.Add,
             onClick = onIncrease,
             enabled = enabled,
+            onHold = onIncreaseHold,
         )
     }
 }
@@ -180,13 +200,44 @@ private fun SubtitleStepperButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     onClick: () -> Unit,
     enabled: Boolean,
+    onHold: ((heldMs: Long) -> Unit)? = null,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    // True while a hold is repeating, so the release that ends it is not also counted as a tap.
+    // The click runs before the release recomposes and cancels the hold, which clears it.
+    val holdRepeated = remember { BooleanArray(1) }
+    if (onHold != null) {
+        val isPressed by interactionSource.collectIsPressedAsState()
+        val latestOnHold by rememberUpdatedState(onHold)
+        LaunchedEffect(isPressed, enabled) {
+            if (!isPressed || !enabled) return@LaunchedEffect
+            try {
+                delay(STEPPER_HOLD_START_MS)
+                var heldMs = STEPPER_HOLD_START_MS
+                while (isActive) {
+                    holdRepeated[0] = true
+                    latestOnHold(heldMs)
+                    delay(STEPPER_HOLD_REPEAT_MS)
+                    heldMs += STEPPER_HOLD_REPEAT_MS
+                }
+            } finally {
+                holdRepeated[0] = false
+            }
+        }
+    }
+
     Box(
         modifier = Modifier
             .size(40.dp)
             .clip(RoundedCornerShape(12.dp))
             .background(Color.White.copy(alpha = 0.08f))
-            .clickable(enabled = enabled, onClick = onClick),
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                enabled = enabled,
+            ) {
+                if (holdRepeated[0]) holdRepeated[0] = false else onClick()
+            },
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -281,7 +332,7 @@ private fun SubtitleAutoSyncSection(
 }
 
 @Composable
-private fun SubtitleTextAction(
+internal fun SubtitleTextAction(
     label: String,
     onClick: () -> Unit,
     enabled: Boolean = true,
