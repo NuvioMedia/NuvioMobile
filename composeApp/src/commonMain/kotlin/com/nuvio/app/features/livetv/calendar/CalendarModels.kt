@@ -18,7 +18,7 @@ enum class CalendarTag(val label: String) {
 }
 
 /** Why an entry is on your Calendar. */
-enum class CalendarReason { LIBRARY, WATCHING }
+enum class CalendarReason { LIBRARY, WATCHING, BELL, AIRING_TODAY }
 
 data class CalendarEntry(
     /** Unique per entry. */
@@ -58,6 +58,8 @@ data class CalendarEntry(
     /** What it's about (the episode's summary, the movie's overview). */
     val description: String? = null,
 ) {
+    val followed: Boolean get() = CalendarReason.BELL in reasons
+
     val episodeCode: String?
         get() = if (season == null || episode == null) null else buildString {
             append("S$season · E$episode")
@@ -68,6 +70,31 @@ data class CalendarEntry(
     val videoId: String?
         get() = if (season != null && episode != null && contentId.startsWith("tt")) "$contentId:$season:$episode" else null
 }
+
+/** A show (or movie) you follow: it's on the Calendar whether or not it's in your Library. */
+data class CalendarFollow(
+    /** Nuvio's id for it (usually the IMDb id, "tt…"). */
+    val id: String,
+    /** "series" or "movie". */
+    val type: String,
+    val name: String,
+    val poster: String? = null,
+    val background: String? = null,
+    val imdbId: String? = null,
+    val addonBaseUrl: String? = null,
+    val addedAt: Long = 0L,
+)
+
+/** A show taken off the Calendar. */
+data class CalendarHidden(val id: String, val name: String)
+
+/** Airing today: every show with a new episode on one day. */
+data class AiringToday(
+    val dayMs: Long? = null,
+    val entries: List<CalendarEntry> = emptyList(),
+    val loading: Boolean = false,
+    val problem: String? = null,
+)
 
 /** What the Calendar shows. */
 data class CalendarState(

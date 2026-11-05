@@ -17,6 +17,19 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import com.nuvio.app.features.livetv.data.LiveTvDirs
+import com.nuvio.app.features.livetv.data.LiveTvFiles
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
+import kotlinx.serialization.json.put
 
 /**
  * The Calendar: upcoming episodes of the shows in your Library and watch history, and release
@@ -34,6 +47,149 @@ internal object CalendarRepository {
 
     private val _state = MutableStateFlow(CalendarState())
     val state: StateFlow<CalendarState> = _state.asStateFlow()
+
+    private val _follows = MutableStateFlow<List<CalendarFollow>>(emptyList())
+    val follows: StateFlow<List<CalendarFollow>> = _follows.asStateFlow()
+    private val _hidden = MutableStateFlow<List<CalendarHidden>>(emptyList())
+    val hidden: StateFlow<List<CalendarHidden>> = _hidden.asStateFlow()
+    private val _airing = MutableStateFlow(AiringToday())
+    val airing: StateFlow<AiringToday> = _airing.asStateFlow()
+    private var listsLoaded = false
+
+    private fun str(o: JsonObject, k: String) = o[k]?.let { runCatching { it.jsonPrimitive.contentOrNull }.getOrNull() }.orEmpty()
+
+    private fun loadLists() {
+        if (listsLoaded) return
+        listsLoaded = true
+        runCatching {
+            LiveTvFiles.readSmall(LiveTvDirs.CALENDAR, "follows.json")?.let { raw ->
+                _follows.value = Json.parseToJsonElement(raw).jsonArray.mapNotNull { el ->
+                    val o = el as? JsonObject ?: return@mapNotNull null
+                    val id = str(o, "id").ifBlank { return@mapNotNull null }
+                    CalendarFollow(id, str(o, "type").ifBlank { "series" }, str(o, "name"), str(o, "poster").ifBlank { null },
+                        str(o, "background").ifBlank { null }, str(o, "imdb").ifBlank { null }, str(o, "addon").ifBlank { null },
+                        o["at"]?.jsonPrimitive?.longOrNull ?: 0L)
+                }
+            }
+        }
+        runCatching {
+            LiveTvFiles.readSmall(LiveTvDirs.CALENDAR, "hidden.json")?.let { raw ->
+                _hidden.value = Json.parseToJsonElement(raw).jsonArray.mapNotNull { el ->
+                    val o = el as? JsonObject ?: return@mapNotNull null
+                    CalendarHidden(str(o, "id").ifBlank { return@mapNotNull null }, str(o, "name"))
+                }
+            }
+        }
+    }
+
+    private fun saveLists() {
+        runCatching {
+            LiveTvFiles.writeSmall(LiveTvDirs.CALENDAR, "follows.json", buildJsonArray {
+                for (f in _follows.value) add(buildJsonObject {
+                    put("id", f.id); put("type", f.type); put("name", f.name); put("poster", f.poster.orEmpty())
+                    put("background", f.background.orEmpty()); put("imdb", f.imdbId.orEmpty()); put("addon", f.addonBaseUrl.orEmpty())
+                    put("at", f.addedAt)
+                })
+            }.toString())
+            LiveTvFiles.writeSmall(LiveTvDirs.CALENDAR, "hidden.json", buildJsonArray {
+                for (h in _hidden.value) add(buildJsonObject { put("id", h.id); put("name", h.name) })
+            }.toString())
+        }
+    }
+
+    fun isFollowed(id: String): Boolean = _follows.value.any { it.id == id || it.imdbId == id }
+
+    /** Follows [e]'s show or movie if it isn't followed yet, otherwise stops following it. Returns whether it's followed now. */
+    fun toggleFollow(e: CalendarEntry): Boolean {
+        loadLists()
+        val existing = _follows.value.firstOrNull { it.id == e.contentId || it.imdbId == e.contentId }
+        val on = existing == null
+        _follows.value = if (existing != null) _follows.value - existing else _follows.value + CalendarFollow(
+            id = e.contentId, type = e.type, name = e.title, poster = e.poster, background = e.background,
+            imdbId = e.contentId.takeIf { it.startsWith("tt") }, addonBaseUrl = e.addonBaseUrl, addedAt = LiveTvClock.nowMs(),
+        )
+        saveLists()
+        refresh(force = false)
+        return on
+    }
+
+    fun toggleFollow(f: CalendarFollow) {
+        loadLists()
+        _follows.value = if (_follows.value.any { it.id == f.id }) _follows.value.filter { it.id != f.id } else _follows.value + f
+        saveLists()
+        refresh(force = false)
+    }
+
+    /** Takes a show or movie off the Calendar (it's also dropped from Following). */
+    fun hide(e: CalendarEntry) {
+        loadLists()
+        if (_hidden.value.none { it.id == e.contentId }) _hidden.value = _hidden.value + CalendarHidden(e.contentId, e.title)
+        _follows.value = _follows.value.filter { it.id != e.contentId && it.imdbId != e.contentId }
+        saveLists()
+        refresh(force = false)
+    }
+
+    fun unhide(id: String) {
+        loadLists()
+        _hidden.value = _hidden.value.filter { it.id != id }
+        saveLists()
+        refresh(force = false)
+    }
+
+    /** Every show with a new episode on the day starting at [dayMs] (TV in your country, and streaming). */
+    fun loadAiring(dayMs: Long = SportsDates.dayStart(0), force: Boolean = false) {
+        val cur = _airing.value
+        if (!force && cur.dayMs == dayMs && (cur.loading || cur.entries.isNotEmpty())) return
+        _airing.value = AiringToday(dayMs, cur.entries.takeIf { cur.dayMs == dayMs }.orEmpty(), loading = true)
+        scope.launch {
+            loadLists()
+            val s = LiveTvPreferences.settings.value
+            val list = runCatching { CalendarSources.airingOn(dayMs, s.calendarCountry.ifBlank { "US" }) }.getOrNull()
+            if (list == null) {
+                _airing.value = AiringToday(dayMs, emptyList(), false, "Couldn't get today's shows. Check your connection.")
+                return@launch
+            }
+            val followed = _follows.value.flatMap { listOfNotNull(it.id, it.imdbId) }.toSet()
+            val skipTypes = if (s.calendarSkipNewsTalk) setOf("News", "Talk Show", "Sports", "Panel Show") else emptySet()
+            val hiddenIds = _hidden.value.map { it.id }.toSet()
+            val entries = list.filter { (show, _) -> show.type !in skipTypes && (show.imdb == null || show.imdb !in hiddenIds) }
+                .groupBy { it.first.id }
+                .mapNotNull { (_, eps) ->
+                    val (show, e) = eps.first()
+                    val lastNumber = eps.maxOf { it.second.number }
+                    val local = CalendarAirTimes.local(e.airMs, show.zone, show.streaming)
+                    val id = show.imdb ?: return@mapNotNull null
+                    CalendarEntry(
+                        key = "today|$id|${e.season}|${e.number}",
+                        kind = CalendarKind.EPISODE,
+                        contentId = id,
+                        type = "series",
+                        title = show.name,
+                        poster = show.image,
+                        background = show.backdrop ?: CalendarSources.knownBackdrop(id),
+                        season = e.season,
+                        episode = e.number,
+                        lastEpisode = lastNumber.takeIf { eps.size > 1 && it > e.number },
+                        episodeTitle = if (eps.size > 1) null else e.name,
+                        episodeImage = e.image,
+                        description = e.summary.takeIf { eps.size == 1 },
+                        airMs = local,
+                        dayMs = local?.let { SportsDates.dayOf(it) } ?: e.dayMs ?: dayMs,
+                        network = show.network,
+                        streaming = show.streaming || e.airMs == null,
+                        tags = buildList {
+                            if (e.number == 1 && e.season == 1) add(CalendarTag.SERIES_PREMIERE)
+                            else if (e.number == 1) add(CalendarTag.SEASON_PREMIERE)
+                        },
+                        reasons = if (id in followed) setOf(CalendarReason.AIRING_TODAY, CalendarReason.BELL) else setOf(CalendarReason.AIRING_TODAY),
+                        runtimeMin = e.runtime,
+                    )
+                }
+                .distinctBy { it.key }
+                .sortedWith(compareBy<CalendarEntry> { it.streaming }.thenBy { it.airMs ?: Long.MAX_VALUE }.thenBy { it.title })
+            _airing.value = AiringToday(dayMs, entries, false, null)
+        }
+    }
 
     /** Shows the saved dates at once, then looks up whatever is due again. [force] looks everything up again. */
     fun refresh(force: Boolean = false) {
@@ -82,6 +238,7 @@ internal object CalendarRepository {
     }
 
     private fun candidates(): List<Candidate> {
+        loadLists()
         val out = LinkedHashMap<String, Candidate>()
         fun keyOf(id: String, imdb: String?) = imdb?.takeIf { it.startsWith("tt") } ?: id
         fun add(c: Candidate) {
@@ -95,6 +252,10 @@ internal object CalendarRepository {
                         old.reasons, old.year, old.lastWatched)
                 }
             }
+        }
+        for (f in _follows.value) {
+            add(Candidate(f.id, f.type, f.name, f.poster, f.background, f.imdbId ?: f.id.takeIf { it.startsWith("tt") }, tmdbOf(f.id),
+                f.addonBaseUrl, mutableSetOf(CalendarReason.BELL), null))
         }
         for (e in LibraryRepository.uiState.value.items) {
             val type = if (e.type.equals("movie", true)) "movie" else if (isSeries(e.type)) "series" else continue
@@ -118,7 +279,8 @@ internal object CalendarRepository {
                 add(Candidate(id, "series", w.name, w.poster, null, id.takeIf { it.startsWith("tt") }, tmdbOf(id), null,
                     mutableSetOf(CalendarReason.WATCHING), null, w.markedAtEpochMs))
             }
-        return out.values.toList()
+        val hiddenIds = _hidden.value.map { it.id }.toSet()
+        return out.values.filter { it.id !in hiddenIds && (it.imdb == null || it.imdb !in hiddenIds) }
     }
 
     private fun seenEpisodes(): Map<String, Seen> {
@@ -172,10 +334,10 @@ internal object CalendarRepository {
         // What you're watching first, then your Library (newest first): a Library of hundreds of
         // titles doesn't mean hundreds of look-ups every time.
         val shows = all.filter { it.type == "series" }
-            .sortedWith(compareByDescending<Candidate> { CalendarReason.WATCHING in it.reasons }.thenByDescending { it.lastWatched })
+            .sortedWith(compareByDescending<Candidate> { CalendarReason.BELL in it.reasons }.thenByDescending { CalendarReason.WATCHING in it.reasons }.thenByDescending { it.lastWatched })
             .take(MAX_SHOWS)
         val thisYear = SportsDates.localYearMonth().first
-        val movies = all.filter { it.type == "movie" && (it.year == null || it.year >= thisYear - 1) }.take(MAX_MOVIES)
+        val movies = all.filter { it.type == "movie" && (CalendarReason.BELL in it.reasons || it.year == null || it.year >= thisYear - 1) }.take(MAX_MOVIES)
         if (fetch) _state.value = _state.value.copy(loading = true, progress = 0 to (shows.size + movies.size), problem = null)
         val seen = seenEpisodes()
         val fromMs = SportsDates.dayStart(-30)

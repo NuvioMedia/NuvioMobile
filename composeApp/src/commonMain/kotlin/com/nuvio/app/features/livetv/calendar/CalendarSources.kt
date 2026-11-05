@@ -53,6 +53,8 @@ internal object CalendarSources {
         val backdrop: String? = null,
         /** The network's time zone ("America/New_York"); null when not known. */
         val zone: String? = null,
+        /** TVmaze's kind of show ("Scripted", "Talk Show", "News"…). */
+        val type: String = "",
     )
 
     data class Episode(
@@ -247,6 +249,44 @@ internal object CalendarSources {
         return data
     }
 
+    private class AiringRaw(val at: Long, val tv: String, val web: String)
+    private val airingCache = HashMap<String, AiringRaw>()
+
+    /** Airing Today: every show with an episode on the day starting at [dayMs] (TV in [country], and streaming). */
+    suspend fun airingOn(dayMs: Long, country: String): List<Pair<Show, Episode>>? {
+        val t = com.nuvio.app.features.livetv.data.CivilTime.at(dayMs + 12 * HOUR, com.nuvio.app.features.livetv.data.LiveTvTimeZones.SYSTEM)
+        val date = "${t.year}-${t.month.toString().padStart(2, '0')}-${t.day.toString().padStart(2, '0')}"
+        val key = "$country|$date"
+        val now = LiveTvClock.nowMs()
+        var raw = airingCache[key]?.takeIf { now - it.at < 2 * HOUR }
+        if (raw == null) {
+            val tv = tvm("/schedule?country=$country&date=$date")
+            val web = tvm("/schedule/web?date=$date")
+            if (tv == null && web == null) return null
+            raw = AiringRaw(now, tv ?: "[]", web ?: "[]")
+            airingCache[key] = raw
+        }
+        val out = ArrayList<Pair<Show, Episode>>()
+        listOf(raw.tv, raw.web).forEachIndexed { which, text ->
+            runCatching {
+                for (el in json.parseToJsonElement(text).jsonArray) {
+                    val o = el as? JsonObject ?: continue
+                    val showJson = o.obj("show") ?: o.obj("_embedded")?.obj("show") ?: continue
+                    if (which == 1) {
+                        // Streaming: services in this country, or everywhere.
+                        val c = showJson.obj("webChannel")?.obj("country")?.str("code")
+                        if (!c.isNullOrBlank() && !c.equals(country, ignoreCase = true)) continue
+                    }
+                    if (o["number"] == null || o["number"] is JsonNull) continue
+                    val show = parseShow(showJson) ?: continue
+                    val ep = parseEpisode(o, null) ?: continue
+                    out += show to ep
+                }
+            }
+        }
+        return out
+    }
+
     private fun parseShow(o: JsonObject): Show? {
         val id = o.int("id").takeIf { it > 0 } ?: return null
         val network = o.obj("network")
@@ -255,6 +295,7 @@ internal object CalendarSources {
             id = id,
             name = o.str("name"),
             status = o.str("status"),
+            type = o.str("type"),
             network = network?.str("name")?.ifBlank { null } ?: web?.str("name")?.ifBlank { null },
             streaming = network == null && web != null,
             image = o.obj("image")?.let { it.str("original").ifBlank { it.str("medium") } }?.ifBlank { null }?.https(),
@@ -300,7 +341,7 @@ internal object CalendarSources {
         put("show", buildJsonObject {
             put("id", d.show.id); put("name", d.show.name); put("status", d.show.status)
             put("network", d.show.network.orEmpty()); put("streaming", d.show.streaming); put("image", d.show.image.orEmpty())
-            put("imdb", d.show.imdb.orEmpty()); put("bg", d.show.backdrop.orEmpty()); put("tz", d.show.zone.orEmpty())
+            put("imdb", d.show.imdb.orEmpty()); put("bg", d.show.backdrop.orEmpty()); put("tz", d.show.zone.orEmpty()); put("type", d.show.type)
         })
         put("episodes", buildJsonArray {
             for (e in d.episodes) add(buildJsonObject {
@@ -317,7 +358,7 @@ internal object CalendarSources {
             id = s.int("id"), name = s.str("name"), status = s.str("status"),
             network = s.str("network").ifBlank { null }, streaming = s["streaming"]?.jsonPrimitive?.contentOrNull == "true",
             image = s.str("image").ifBlank { null }, imdb = s.str("imdb").ifBlank { null },
-            backdrop = s.str("bg").ifBlank { null }, zone = s.str("tz").ifBlank { null },
+            backdrop = s.str("bg").ifBlank { null }, zone = s.str("tz").ifBlank { null }, type = s.str("type"),
         )
         val eps = (o.arr("episodes") ?: JsonArray(emptyList())).mapNotNull { el ->
             val e = el as? JsonObject ?: return@mapNotNull null
