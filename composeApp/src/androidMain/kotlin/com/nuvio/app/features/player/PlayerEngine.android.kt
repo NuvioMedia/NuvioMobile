@@ -471,8 +471,10 @@ private fun ExoPlayerSurface(
             localFileSource = isLocalFileSource,
         )
 
+        // Audio focus is handled by PlayerAudioFocus, so a denied request (e.g. during a call)
+        // doesn't stop playback.
         val playerBuilder = ExoPlayer.Builder(context)
-            .setAudioAttributes(playbackAudioAttributes, true)
+            .setAudioAttributes(playbackAudioAttributes, false)
             .setTrackSelector(trackSelector)
             .setLoadControl(loadControl)
 
@@ -554,6 +556,19 @@ private fun ExoPlayerSurface(
 
     DisposableEffect(nowPlayingController) {
         onDispose { nowPlayingController.release() }
+    }
+
+    val audioFocus = remember(context, exoPlayer) {
+        PlayerAudioFocus(
+            context = context,
+            playWhenReady = { exoPlayer.playWhenReady },
+            pause = exoPlayer::pause,
+            resume = exoPlayer::play,
+        )
+    }
+
+    DisposableEffect(audioFocus) {
+        onDispose { audioFocus.abandon() }
     }
 
     LaunchedEffect(exoPlayer, resolvedMediaItem, initialPositionRequestKey) {
@@ -729,6 +744,10 @@ private fun ExoPlayerSurface(
                 }
                 syncPlayerViewKeepScreenOn()
                 dispatchExoPlayerSnapshot()
+            }
+
+            override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                if (playWhenReady) audioFocus.request()
             }
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -1264,8 +1283,14 @@ private fun LibmpvPlayerSurface(
         onDispose { nowPlayingController?.release() }
     }
 
+    val mpvPaused = remember { AtomicBoolean(true) }
     val audioFocus = remember(context) {
-        PlayerAudioFocus(context) { playerViewRef?.setPaused(true) }
+        PlayerAudioFocus(
+            context = context,
+            playWhenReady = { !mpvPaused.get() },
+            pause = { playerViewRef?.setPaused(true) },
+            resume = { playerViewRef?.setPaused(false) },
+        )
     }
 
     DisposableEffect(audioFocus) {
@@ -1326,8 +1351,9 @@ private fun LibmpvPlayerSurface(
                             "elapsedMs=${diagnosticElapsedSince(playbackDiagnostics.prepareStartedAtMs)}",
                     )
                 }
-                if (property == "pause" && !value) {
-                    coroutineScope.launch(Dispatchers.Main.immediate) { audioFocus.request() }
+                if (property == "pause") {
+                    mpvPaused.set(value)
+                    if (!value) coroutineScope.launch(Dispatchers.Main.immediate) { audioFocus.request() }
                 }
                 if (property == "eof-reached" || property == "pause" || property == "paused-for-cache" || property == "seeking") {
                     dispatchSnapshot(updateKeepScreenOn = true)
