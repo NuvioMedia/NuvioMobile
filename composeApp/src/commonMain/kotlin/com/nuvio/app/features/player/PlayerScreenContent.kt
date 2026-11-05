@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +18,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.core.ui.LocalFold
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.details.MetaScreenSettingsRepository
@@ -100,7 +103,17 @@ internal fun PlayerScreenContent(args: PlayerScreenArgs) {
     ) {
         val density = LocalDensity.current
         val horizontalSafePadding = playerHorizontalSafePadding()
-        val metrics = remember(maxWidth) { PlayerLayoutMetrics.fromWidth(maxWidth) }
+        val isInPip = rememberIsInPictureInPicture()
+        val dockPartyPanel = LocalFold.current == null && !isInPip && maxWidth > maxHeight
+        val partyPanelWidth = if (dockPartyPanel) minOf(420.dp, maxWidth * 0.45f) else 420.dp
+        val animatedPartyPanelInset by animateDpAsState(
+            targetValue = if (runtime.showPartyPanel && dockPartyPanel) partyPanelWidth else 0.dp,
+            animationSpec = tween(if (runtime.showPartyPanel) 250 else 200),
+            label = "partyPanelInset",
+        )
+        val partyPanelInset = if (dockPartyPanel) animatedPartyPanelInset else 0.dp
+        val playerWidth = maxWidth - partyPanelInset
+        val metrics = remember(playerWidth) { PlayerLayoutMetrics.fromWidth(playerWidth) }
 
         runtime.scope = rememberCoroutineScope()
         runtime.hapticFeedback = LocalHapticFeedback.current
@@ -166,6 +179,10 @@ internal fun PlayerScreenContent(args: PlayerScreenArgs) {
             videoSize = videoSize,
         )
         runtime.BindPlayerRuntimeEffects()
-        runtime.RenderPlayerRuntimeUi()
+        runtime.RenderPlayerRuntimeUi(
+            partyPanelWidth = partyPanelWidth,
+            partyPanelInset = partyPanelInset,
+            dockPartyPanel = dockPartyPanel,
+        )
     }
 }
