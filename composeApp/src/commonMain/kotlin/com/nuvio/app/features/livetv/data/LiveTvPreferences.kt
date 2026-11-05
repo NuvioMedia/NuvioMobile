@@ -514,6 +514,8 @@ internal object LiveTvCodec {
  * Open so a test can work on a store of its own; the app uses [LiveTvPreferences].
  */
 internal open class LiveTvPreferencesStore {
+    internal open val usesPlatformVpnBackup: Boolean get() = false
+
     private val lock = SynchronizedObject()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -1395,7 +1397,9 @@ internal open class LiveTvPreferencesStore {
 }
 
 /** The app's Live TV preferences. */
-internal object LiveTvPreferences : LiveTvPreferencesStore()
+internal object LiveTvPreferences : LiveTvPreferencesStore() {
+    override val usesPlatformVpnBackup: Boolean get() = true
+}
 
 internal const val DEFAULT_REMINDER_LEAD = 1
 

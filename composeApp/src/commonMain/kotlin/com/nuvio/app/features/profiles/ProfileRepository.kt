@@ -76,6 +76,10 @@ object ProfileRepository {
     val state: StateFlow<ProfileState> = _state.asStateFlow()
 
     private var activeProfileIndex: Int = 1
+        set(value) {
+            ProfileStorage.onActiveProfileChanged(value)
+            field = value
+        }
     private var loadedCacheForUserId: String? = null
 
     val activeProfileId: Int get() = activeProfileIndex
@@ -131,6 +135,9 @@ object ProfileRepository {
         try {
             val result = SupabaseProvider.client.postgrest.rpc("sync_pull_profiles")
             val profiles = result.decodeList<NuvioProfile>()
+            val retainedIds = profiles.mapTo(mutableSetOf()) { it.profileIndex }
+            _state.value.profiles.filter { it.profileIndex !in retainedIds }
+                .forEach { ProfileStorage.onProfileRemoved(it.profileIndex) }
             _state.value = _state.value.copy(
                 profiles = profiles.sortedBy { it.profileIndex },
                 isLoaded = true,
@@ -291,6 +298,7 @@ object ProfileRepository {
         if (AuthRepository.state.value.isAnonymous) {
             val remaining = _state.value.profiles.filter { it.profileIndex != profileIndex }
             ProfilePinCacheStorage.removePayload(profileIndex)
+            ProfileStorage.onProfileRemoved(profileIndex)
             ServerRepository.removeProfile(profileIndex)
             _state.value = _state.value.copy(
                 profiles = remaining,
@@ -308,6 +316,7 @@ object ProfileRepository {
                 putSyncOriginClientId()
             }
             SupabaseProvider.client.postgrest.rpc("sync_delete_profile_data", params)
+            ProfileStorage.onProfileRemoved(profileIndex)
             ServerRepository.removeProfile(profileIndex)
             pullProfiles()
         } catch (e: Throwable) {

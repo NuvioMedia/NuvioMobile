@@ -11,6 +11,17 @@ actual object ProfileStorage {
 
     fun initialize(context: Context) {
         preferences = context.getSharedPreferences(preferencesName, Context.MODE_PRIVATE)
+        if (loadPayload().isNullOrBlank() || ProfileRepository.state.value.isLoaded) {
+            onActiveProfileChanged(ProfileRepository.activeProfileId)
+        }
+    }
+
+    actual fun onActiveProfileChanged(id: Int) {
+        if (preferences != null) com.nuvio.vpn.android.VpnPlaybackProtection.setActiveUserProfile(id)
+    }
+
+    actual fun onProfileRemoved(id: Int) {
+        if (preferences != null) com.nuvio.vpn.android.VpnPlaybackProtection.removeUserProfile(id)
     }
 
     actual fun loadPayload(): String? =

@@ -41,12 +41,17 @@ class YoutubeChunkedDataSourceFactory(
         if (defaultRequestHeaders.isNotEmpty()) {
             upstreamFactory.setDefaultRequestProperties(defaultRequestHeaders)
         }
-        val upstream = upstreamFactory.createDataSource()
+        val protectedFactory = androidx.media3.datasource.okhttp.OkHttpDataSource.Factory(
+            com.nuvio.vpn.android.VpnHttpClient.wrap(okhttp3.OkHttpClient.Builder()
+                .connectTimeout(15, java.util.concurrent.TimeUnit.SECONDS)
+                .readTimeout(15, java.util.concurrent.TimeUnit.SECONDS).build())
+        ).setDefaultRequestProperties(defaultRequestHeaders)
+        val upstream = com.nuvio.vpn.android.VpnDataSources.route(upstreamFactory, protectedFactory).createDataSource()
         return YoutubeChunkedDataSource(upstream, chunkSizeBytes)
     }
 
     private class YoutubeChunkedDataSource(
-        private val upstream: DefaultHttpDataSource,
+        private val upstream: androidx.media3.datasource.HttpDataSource,
         private val chunkSize: Long
     ) : DataSource {
 

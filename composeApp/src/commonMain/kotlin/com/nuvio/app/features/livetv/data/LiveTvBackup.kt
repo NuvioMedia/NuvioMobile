@@ -62,7 +62,8 @@ internal object LiveTvBackup {
     fun syncHasSources(data: JsonObject?): Boolean {
         if (data == null) return false
         fun raw(key: String) = data.optJSONObject(key)?.optString("v")
-        return runCatching { LiveTvCodec.decodePlaylists(raw(LiveTvKeys.playlists)).isNotEmpty() }.getOrDefault(false) ||
+        return runCatching { parseObject(raw("vpn_profiles_v1").orEmpty()).optJSONArray("profiles")?.isNotEmpty() == true }.getOrDefault(false) ||
+            runCatching { LiveTvCodec.decodePlaylists(raw(LiveTvKeys.playlists)).isNotEmpty() }.getOrDefault(false) ||
             runCatching { LiveTvCodec.decodeEpgs(raw(LiveTvKeys.epgs)).isNotEmpty() }.getOrDefault(false)
     }
 
@@ -155,16 +156,27 @@ internal object LiveTvBackup {
 }
 
 /** This device's Live TV setup for sync (see [LiveTvBackup.exportForSync]). */
-internal fun LiveTvPreferencesStore.exportForSync(): JsonObject = LiveTvBackup.exportForSync(rawData.value)
+internal fun LiveTvPreferencesStore.exportForSync(): JsonObject {
+    val data = LiveTvBackup.exportForSync(rawData.value).toMutableMap()
+    if (usesPlatformVpnBackup) exportVpnBackup(data["vpn_profiles_v1"]?.let { (it as? JsonObject)?.optString("v") })?.let { native ->
+        // Android owns the encrypted native copy; migrate then remove any older plaintext preference.
+        if (rawData.value.containsKey("vpn_profiles_v1")) edit { it.remove("vpn_profiles_v1") }
+        data["vpn_profiles_v1"] = buildJsonObject { put("t", "str"); put("v", native) }
+    }
+    return JsonObject(data)
+}
 
 /**
  * Replaces this device's Live TV setup with [data] from [exportForSync], keeping per-device
  * state. Returns the playlists whose address or login changed: they need downloading again.
  */
 internal fun LiveTvPreferencesStore.importFromSync(data: JsonObject): Set<String> {
+    val nativeVpnRestored = usesPlatformVpnBackup &&
+        data.optJSONObject("vpn_profiles_v1")?.optString("v")?.let { restoreVpnBackup(it) } == true
+    val preferences = if (nativeVpnRestored) JsonObject(data.filterKeys { it != "vpn_profiles_v1" }) else data
     var changed: Set<String> = emptySet()
     edit { p ->
-        val imported = LiveTvBackup.importInto(p, data)
+        val imported = LiveTvBackup.importInto(p, preferences)
         changed = imported.changed
         p.clear()
         p.putAll(imported.data)

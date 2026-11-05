@@ -83,7 +83,7 @@ object SubtitleFileCache {
                     return@withContext FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
                 }
                 val request = Request.Builder().url(input.url).build()
-                okHttpClient.newCall(request).execute().use { response ->
+                com.nuvio.vpn.android.VpnHttpClient.wrap(okHttpClient).newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         Log.w(TAG, "HTTP ${response.code} downloading subtitle: ${input.url.redactedForLogs()}")
                         return@withContext null

@@ -151,6 +151,47 @@ actual fun PlatformPlayerSurface(
         mutableStateOf(requestedEngine.initialAndroidEngine())
     }
 
+    val vpnContext = LocalContext.current
+    var vpnRevision by remember { mutableStateOf(com.nuvio.vpn.android.VpnPlaybackProtection.settingsRevision()) }
+    DisposableEffect(Unit) {
+        val subscription = com.nuvio.vpn.android.VpnPlaybackProtection.observeSettings {
+            vpnRevision = com.nuvio.vpn.android.VpnPlaybackProtection.settingsRevision()
+        }
+        onDispose { subscription.close() }
+    }
+    var vpnReady by remember(sourceUrl, sourceAudioUrl, activeEngine, vpnRevision) { mutableStateOf(false) }
+    var nativeVpnProxy by remember(sourceUrl, sourceAudioUrl, activeEngine, vpnRevision) {
+        mutableStateOf<com.nuvio.vpn.android.VpnPlaybackProtection.NativeProxy?>(null)
+    }
+    LaunchedEffect(sourceUrl, sourceAudioUrl, activeEngine, vpnRevision) {
+        var held: com.nuvio.vpn.android.VpnPlaybackProtection.NativeProxy? = null
+        try {
+            while (true) {
+                val revision = com.nuvio.vpn.android.VpnPlaybackProtection.settingsRevision()
+                com.nuvio.app.core.vpn.awaitVpnForPlayback(vpnContext, sourceUrl)
+                sourceAudioUrl?.let { com.nuvio.app.core.vpn.awaitVpnForPlayback(vpnContext, it) }
+                if (activeEngine == ResolvedAndroidPlaybackEngine.Libmpv)
+                    held = com.nuvio.app.core.vpn.awaitNativeVpnProxy(vpnContext)
+                if (revision == com.nuvio.vpn.android.VpnPlaybackProtection.settingsRevision()) break
+                held?.close()
+                held = null
+            }
+            nativeVpnProxy = held
+            vpnReady = true
+            kotlinx.coroutines.awaitCancellation()
+        } catch (cancelled: kotlinx.coroutines.CancellationException) {
+            throw cancelled
+        } catch (failure: Exception) {
+            onError(failure.message ?: "VPN connection could not be verified. Playback was not started.")
+        } finally {
+            held?.close()
+        }
+    }
+    if (!vpnReady) {
+        Box(modifier)
+        return
+    }
+
     when (activeEngine) {
         ResolvedAndroidPlaybackEngine.ExoPlayer -> ExoPlayerSurface(
             sourceUrl = sourceUrl,
@@ -178,6 +219,7 @@ actual fun PlatformPlayerSurface(
                 }
             }
             LibmpvPlayerSurface(
+                vpnProxy = nativeVpnProxy?.address(),
                 sourceUrl = sourceUrl,
                 sourceAudioUrl = sourceAudioUrl,
                 sourceHeaders = sourceHeaders,
@@ -1195,6 +1237,7 @@ private fun ExoPlayerSurface(
 
 @Composable
 private fun LibmpvPlayerSurface(
+    vpnProxy: String?,
     sourceUrl: String,
     sourceAudioUrl: String?,
     sourceHeaders: Map<String, String>,
@@ -1424,7 +1467,7 @@ private fun LibmpvPlayerSurface(
         }
     }
 
-    LaunchedEffect(playerViewRef, sourceUrl, sourceAudioUrl, sanitizedSourceHeaders, externalSubtitles) {
+    LaunchedEffect(playerViewRef, sourceUrl, sourceAudioUrl, sanitizedSourceHeaders, externalSubtitles, vpnProxy) {
         val view = playerViewRef ?: return@LaunchedEffect
         playbackDiagnostics.attempt += 1
         playbackDiagnostics.prepareStartedAtMs = SystemClock.elapsedRealtime()
@@ -1437,6 +1480,7 @@ private fun LibmpvPlayerSurface(
         latestOnSnapshot.value(snapshot)
         nowPlayingController?.syncPlayback(snapshot)
         view.loadSource(
+            vpnProxy = vpnProxy,
             sourceUrl = sourceUrl,
             sourceAudioUrl = sourceAudioUrl,
             requestHeaders = sanitizedSourceHeaders,
@@ -1536,6 +1580,9 @@ private class NuvioLibmpvView(
     private val released = AtomicBoolean(false)
     private var currentSourceUrl: String? = null
     private var currentSourceAudioUrl: String? = null
+    private var currentVpnProxy: String? = null
+    private var originalHttpProxy = ""
+    private var ownsHttpProxy = false
     private var currentRequestHeaders: Map<String, String> = emptyMap()
     private var currentExternalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> = emptyList()
     @Volatile
@@ -1617,6 +1664,7 @@ private class NuvioLibmpvView(
     }
 
     suspend fun loadSource(
+        vpnProxy: String?,
         sourceUrl: String,
         sourceAudioUrl: String?,
         requestHeaders: Map<String, String>,
@@ -1628,10 +1676,24 @@ private class NuvioLibmpvView(
             if (!released.get()) {
                 val sameSource =
                     currentSourceUrl == sourceUrl &&
+                        currentVpnProxy == vpnProxy &&
                         currentSourceAudioUrl == sourceAudioUrl &&
                         currentRequestHeaders == requestHeaders &&
                         currentExternalSubtitles == externalSubtitles
                 currentSourceUrl = sourceUrl
+                if (vpnProxy != null) {
+                    if (!ownsHttpProxy) originalHttpProxy = mpv.getPropertyString("options/http-proxy").orEmpty()
+                    mpv.setPropertyString("options/http-proxy", vpnProxy)
+                    if (mpv.getPropertyString("options/http-proxy") != vpnProxy)
+                        throw java.io.IOException("HTTP-only VPN routing could not be applied to this player.")
+                    ownsHttpProxy = true
+                } else if (ownsHttpProxy) {
+                    mpv.setPropertyString("options/http-proxy", originalHttpProxy)
+                    if (mpv.getPropertyString("options/http-proxy").orEmpty() != originalHttpProxy)
+                        throw java.io.IOException("The player could not restore its connection settings.")
+                    ownsHttpProxy = false
+                }
+                currentVpnProxy = vpnProxy
                 currentSourceAudioUrl = sourceAudioUrl
                 currentRequestHeaders = requestHeaders
                 currentExternalSubtitles = externalSubtitles
