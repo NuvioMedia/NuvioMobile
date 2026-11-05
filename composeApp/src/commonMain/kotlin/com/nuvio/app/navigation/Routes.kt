@@ -167,6 +167,12 @@ data class LiveTvRecordingsRoute(override val title: String = "") : AppRoute {
 }
 
 @Serializable
+data class LiveTvCalendarRoute(override val title: String = "") : AppRoute {
+    override val preferredTabName: String
+        get() = "LiveTv"
+}
+
+@Serializable
 data class LiveTvManageRoute(override val title: String = "") : AppRoute {
     override val preferredTabName: String
         get() = "LiveTv"

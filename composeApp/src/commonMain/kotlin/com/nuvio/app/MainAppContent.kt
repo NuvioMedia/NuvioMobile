@@ -145,6 +145,7 @@ import com.nuvio.app.features.livetv.ui.LiveTvGuideScreen
 import com.nuvio.app.features.livetv.ui.OnDemandActions
 import com.nuvio.app.features.livetv.ui.OnDemandScreen
 import com.nuvio.app.features.livetv.ui.OnDemandSeeAllScreen
+import com.nuvio.app.features.livetv.ui.CalendarScreen
 import com.nuvio.app.features.livetv.ui.RecordingsScreen
 import com.nuvio.app.features.livetv.ui.LiveTvManageScreen
 import com.nuvio.app.features.livetv.ui.sports.SportsActions
@@ -394,6 +395,7 @@ internal fun MainAppContent(
     val liveTvCatchupUnavailable = stringResource(Res.string.livetv_catchup_unavailable)
     val liveTvOnDemandTitle = stringResource(Res.string.livetv_on_demand)
     val liveTvRecordingsTitle = stringResource(Res.string.livetv_recordings)
+    val liveTvCalendarTitle = stringResource(Res.string.livetv_calendar)
     val liveTvSportsTitle = stringResource(Res.string.livetv_sports)
     val liveTvChannelGone = stringResource(Res.string.livetv_channel_gone)
     val liveTvManageTitle = stringResource(Res.string.livetv_manage)
@@ -1601,6 +1603,7 @@ internal fun MainAppContent(
                                 onLiveTvGuideClick = { navController.navigate(LiveTvGuideRoute(liveTvGuideTitle)) },
                                 onLiveTvSportsClick = { navController.navigate(LiveTvSportsRoute(liveTvSportsTitle)) },
                                 onLiveTvManageClick = { navController.navigate(LiveTvManageRoute(liveTvManageTitle)) },
+                                onLiveTvCalendarClick = { navController.navigate(LiveTvCalendarRoute(liveTvCalendarTitle)) },
                                 onLiveTvSettingsClick = {
                                     if (useNativeNavigation && !isTabletLayout) {
                                         activateTab(AppScreenTab.Settings)
@@ -1767,6 +1770,14 @@ internal fun MainAppContent(
                 entry<LiveTvOnDemandRoute> { route ->
                     val onBack = rememberGuardedPopBackStack(navController, route)
                     OnDemandScreen(onBack = onBack, actions = onDemandActions, modifier = Modifier.fillMaxSize())
+                }
+                entry<LiveTvCalendarRoute> { route ->
+                    val onBack = rememberGuardedPopBackStack(navController, route)
+                    CalendarScreen(
+                        onBack = onBack,
+                        onOpenTitle = { type, id, title -> navController.navigate(DetailRoute(type = type, id = id, title = title)) },
+                        modifier = Modifier.fillMaxSize(),
+                    )
                 }
                 entry<LiveTvManageRoute> { route ->
                     val onBack = rememberGuardedPopBackStack(navController, route)

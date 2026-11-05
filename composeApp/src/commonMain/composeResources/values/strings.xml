@@ -2753,6 +2753,16 @@
     <string name="livetv_vod_autoplay">Let auto-play pick On Demand</string>
     <string name="livetv_vod_autoplay_description">Only when its tab is first. Otherwise auto-play skips your provider's copy, except to carry on a show you are already watching from it</string>
     <string name="livetv_recordings">Recordings</string>
+    <string name="livetv_calendar">Calendar</string>
+    <string name="livetv_calendar_all">All</string>
+    <string name="livetv_calendar_shows">Shows</string>
+    <string name="livetv_calendar_movies">Movies</string>
+    <string name="livetv_calendar_today">Today</string>
+    <string name="livetv_calendar_tomorrow">Tomorrow</string>
+    <string name="livetv_calendar_streaming">Streaming</string>
+    <string name="livetv_calendar_watched">Watched</string>
+    <string name="livetv_calendar_looking">Looking up your shows…</string>
+    <string name="livetv_calendar_empty">Nothing coming up. Add shows and movies to your Library, or watch something, and their dates show up here.</string>
     <string name="livetv_section_recordings">Recordings</string>
     <string name="livetv_rec_empty">Nothing recorded yet. Open a show in the guide to record it, or long-press a channel to record it now.</string>
     <string name="livetv_rec_recording">Recording now</string>

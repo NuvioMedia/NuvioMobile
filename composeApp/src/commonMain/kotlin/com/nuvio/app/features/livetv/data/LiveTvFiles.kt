@@ -62,4 +62,6 @@ internal object LiveTvDirs {
     const val SPORTS = "sports"
     /** Change logo's lists of library logos (kept a week). */
     const val LOGOS = "logos"
+    /** The Calendar's saved shows, movie dates and ids. */
+    const val CALENDAR = "calendar"
 }
