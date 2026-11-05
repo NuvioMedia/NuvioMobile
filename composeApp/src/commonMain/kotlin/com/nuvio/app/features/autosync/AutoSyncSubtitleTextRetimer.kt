@@ -13,6 +13,8 @@ internal object AutoSyncSubtitleTextRetimer {
     private val timingLineRegex = Regex("""^(\s*)($TIMESTAMP)(\s*-->\s*)($TIMESTAMP)(.*)$""")
     private val timestampRegex = Regex("""^(?:(\d+):)?(\d{1,2}):(\d{2})(?:([.,])(\d+))?$""")
     private val ttmlRegex = Regex("""<tt[\s>]""", RegexOption.IGNORE_CASE)
+    private val assEventsHeaderRegex =
+        Regex("""^[ \t]*\[Events\][ \t]*$""", setOf(RegexOption.IGNORE_CASE, RegexOption.MULTILINE))
     private const val ASS_DEFAULT_FIELD_COUNT = 10
     private const val ASS_DEFAULT_START_INDEX = 1
     private const val ASS_DEFAULT_END_INDEX = 2
@@ -25,8 +27,8 @@ internal object AutoSyncSubtitleTextRetimer {
             .replace('\r', '\n')
         if (ttmlRegex.containsMatchIn(text.take(512))) return null
         val mapper = AutoSyncTimelineTimeMapper(timeline)
-        val sample = text.take(4_096).lowercase()
-        return if (sample.contains("[events]") && sample.contains("dialogue:")) {
+        // Not a prefix sample: embedded [Fonts] or [Graphics] can push [Events] far into the file.
+        return if (assEventsHeaderRegex.containsMatchIn(text)) {
             retimeAss(text, mapper)
         } else {
             retimeTimingLines(text, mapper)

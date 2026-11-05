@@ -1,0 +1,4 @@
+<resources>
+    <string name="autosync_toast_no_fit">Synchronizacja nie powiodła się: te napisy nie pasują do tej wersji wideo.</string>
+    <string name="autosync_label_synced">Dopasowane</string>
+</resources>

@@ -34,5 +34,28 @@ internal class AutoSyncNoFitTracker(
         fun isNoFit(result: AutoSyncTimelineRetimeResult?): Boolean =
             result == null ||
                 (!result.confident && result.activityMargin < NO_FIT_MAX_ACTIVITY_MARGIN)
+
+        /**
+         * Whether one pair is evidence that the subtitle is out of sync with the video, which the
+         * viewer is told. Stricter than [isNoFit]: a missing result (too few cues, an implausible
+         * transform) and a sampled reference, which covers only the minutes already played, prove
+         * nothing about the subtitle.
+         */
+        fun confirmsNoFit(result: AutoSyncTimelineRetimeResult?, sampledReference: Boolean): Boolean =
+            result != null && !sampledReference && isNoFit(result)
+
+        /**
+         * Whether a subtitle is confirmed out of sync: it was tried against every reference it was
+         * ranked for (or abandoned by [AutoSyncNoFitTracker]), and every pair confirmed a no-fit.
+         */
+        fun isConfirmedNoFit(
+            evaluatedPairs: Int,
+            noFitPairs: Int,
+            rankedReferences: Int,
+            abandoned: Boolean,
+        ): Boolean =
+            evaluatedPairs > 0 &&
+                noFitPairs == evaluatedPairs &&
+                (abandoned || evaluatedPairs >= rankedReferences)
     }
 }

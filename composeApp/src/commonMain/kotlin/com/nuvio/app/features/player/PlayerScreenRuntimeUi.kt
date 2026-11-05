@@ -13,17 +13,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioStatusModal
+import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.core.ui.LocalFold
 import com.nuvio.app.features.p2p.P2pStreamingState
 import com.nuvio.app.features.party.PartyRepository
@@ -39,7 +42,11 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
-internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
+internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
+    partyPanelWidth: Dp,
+    partyPanelInset: Dp,
+    dockPartyPanel: Boolean,
+) {
     val runtime = this
     val isInPip = rememberIsInPictureInPicture()
     val displayedPositionMs = scrubbingPositionMs ?: playbackSnapshot.positionMs
@@ -183,6 +190,8 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .padding(end = partyPanelInset)
+            .clipToBounds()
             .onSizeChanged { layoutSize = it }
             .playerSurfaceTapGestures(
                 layoutSize = layoutSize,
@@ -215,40 +224,37 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
     ) {
         val playerSurfaceSourceUrl = if (isP2pPlaybackActive) p2pResolvedSourceUrl else activeSourceUrl
         val playbackKey = activePlaybackKey
+        val sourcePlaybackKey = playbackKey.copy(playbackEngine = null)
         val initialPositionRequestKey = currentInitialPositionRequestKey()
+
+        LaunchedEffect(sourcePlaybackKey) {
+            engineFailoverTriggered = false
+            engineFailoverDisarmed = false
+            playbackEngineOverride = null
+        }
+
+        val resolvedAutoEngineState = remember(sourcePlaybackKey) {
+            mutableStateOf<AndroidPlaybackEngine?>(null)
+        }
+        if (!initialLoadCompleted || resolvedAutoEngineState.value == null) {
+            resolvedAutoEngineState.value = resolveAutoPlaybackEngine(
+                playbackEngineSetting = playerSettingsUiState.androidPlaybackEngine,
+                videoId = activeVideoId,
+                streamFilename = activeTorrentFilename ?: activeStreamFilename,
+                streamName = activeStreamTitle,
+                streamDescription = activeStreamSubtitle,
+                contentTitle = title,
+                genres = playerMeta?.genres.orEmpty(),
+                country = playerMeta?.country,
+            )
+        }
+        val resolvedAutoEngine = resolvedAutoEngineState.value
+
         if (playerSurfaceSourceUrl != null) {
             key(playbackKey) {
                 val active = remember { mutableStateOf(true) }
                 DisposableEffect(Unit) {
                     onDispose { active.value = false }
-                }
-                // Genres/country come from metadata that can load after first composition, so
-                // the resolution re-runs while the source is still loading; once playback has
-                // loaded the engine is frozen, because a late metadata update must never
-                // restart a playing stream.
-                val resolvedAutoEngineState =
-                    remember(playbackKey.copy(playbackEngine = null)) { mutableStateOf<AndroidPlaybackEngine?>(null) }
-                if (!initialLoadCompleted || resolvedAutoEngineState.value == null) {
-                    resolvedAutoEngineState.value = resolveAutoPlaybackEngine(
-                        playbackEngineSetting = playerSettingsUiState.androidPlaybackEngine,
-                        videoId = activeVideoId,
-                        streamFilename = activeTorrentFilename ?: activeStreamFilename,
-                        streamName = activeStreamTitle,
-                        streamDescription = activeStreamSubtitle,
-                        contentTitle = title,
-                        genres = playerMeta?.genres.orEmpty(),
-                        country = playerMeta?.country,
-                    )
-                }
-                val resolvedAutoEngine = resolvedAutoEngineState.value
-                // Failover and manual switches are scoped to one source: a new source re-arms
-                // the failover and clears the previous engine choice. Keyed on the source, not
-                // on the full playbackKey, which includes the engine override — an effect keyed
-                // on it would undo the very switch that changed the key.
-                LaunchedEffect(playbackKey.copy(playbackEngine = null)) {
-                    engineFailoverTriggered = false
-                    engineFailoverDisarmed = false
-                    playbackEngineOverride = null
                 }
                 PlatformPlayerSurface(
                     sourceUrl = playerSurfaceSourceUrl,
@@ -261,7 +267,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                     playWhenReady = shouldPlay,
                     initialPositionMs = activeInitialPositionMs.takeIf { it > 0L },
                     initialPositionRequestKey = initialPositionRequestKey,
-                    resizeMode = resizeMode,
+                    resizeMode = if (partyPanelInset > 0.dp) PlayerResizeMode.Fit else resizeMode,
                     playbackEngine = playbackEngineOverride ?: resolvedAutoEngine,
                     onInitialPositionHandled = { key, handled ->
                         if (active.value && playbackKey == activePlaybackKey && key == currentInitialPositionRequestKey()) {
@@ -343,10 +349,15 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi() {
                 folded = fold != null,
             )
         }
-        Box(modifier = panelModifier) {
-            RenderPlayerModals(displayedPositionMs = displayedPositionMs)
-            RenderParty(runtime = runtime)
-        }
+    }
+    Box(modifier = panelModifier) {
+        RenderParty(
+            runtime = runtime,
+            panelWidth = partyPanelWidth,
+            modal = !dockPartyPanel,
+            panelVisible = showPartyPanel && !isInPip,
+        )
+        RenderPlayerModals(displayedPositionMs = displayedPositionMs)
     }
 }
 
@@ -749,8 +760,15 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         sourceStreamsState = sourceStreamsState,
         contentTitle = title,
         activeEpisodeTitle = activeEpisodeTitle,
-        activeSourceUrl = activeSourceUrl,
-        activeStreamTitle = activeStreamTitle,
+        currentStream = PlayerCurrentStream(
+            url = activeSourceUrl,
+            name = activeStreamTitle,
+            description = activeStreamSubtitle,
+            addonId = activeProviderAddonId,
+            infoHash = activeStream?.p2pInfoHash ?: activeTorrentInfoHash,
+            fileIdx = activeStream?.p2pFileIdx ?: activeTorrentFileIdx,
+            filename = activeSourceFilename,
+        ),
         onSourceFilterSelected = PlayerStreamsRepository::selectSourceFilter,
         onSourceStreamSelected = { stream -> switchToSource(stream) },
         onReloadSources = {
