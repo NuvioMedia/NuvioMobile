@@ -912,7 +912,12 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
             onDismiss = close,
             actions = listOf(
                 stringResource(Res.string.action_edit) to { dialog = LiveDialog.EditPlaylist(d.source) },
-                stringResource(Res.string.livetv_update_now) to { LiveTvRepository.updatePlaylistNow(d.source.id); close() },
+                stringResource(Res.string.livetv_update_now) to {
+                    LiveTvRepository.updatePlaylistNow(d.source.id)
+                    // A login with TV channels off only has On Demand to update.
+                    if (d.source.isXtream && d.source.importVod && d.source.enabled && !d.source.liveEnabled) OnDemandRepository.refreshNow(d.source.id)
+                    close()
+                },
                 stringResource(if (d.source.enabled) Res.string.livetv_disable else Res.string.livetv_enable) to {
                     LiveTvRepository.setPlaylistEnabled(d.source.id, !d.source.enabled); close()
                 },
@@ -1110,10 +1115,15 @@ private fun streamFormatLabel(f: String) = when (f) { "ts" -> "MPEG-TS"; "m3u8" 
 private fun playlistStatus(pl: PlaylistSource, account: PlaylistAccount?): String {
     val parts = ArrayList<String>()
     if (!pl.enabled) parts += "Off"
-    if (pl.lastError != null) parts += pl.lastError
-    else if (pl.lastUpdatedMs > 0) parts += stringResource(Res.string.livetv_updated_at, formatLocalDateTime(pl.lastUpdatedMs))
-    else parts += stringResource(Res.string.livetv_never_updated)
-    if (pl.channelCount > 0) parts += "${pl.channelCount} channels"
+    if (pl.isXtream && !pl.importLive) {
+        // TV channels switched off for this login: nothing to update or count on the Live TV side.
+        parts += stringResource(if (pl.importVod) Res.string.livetv_xtream_movies_only else Res.string.livetv_xtream_nothing_included)
+    } else {
+        if (pl.lastError != null) parts += pl.lastError
+        else if (pl.lastUpdatedMs > 0) parts += stringResource(Res.string.livetv_updated_at, formatLocalDateTime(pl.lastUpdatedMs))
+        else parts += stringResource(Res.string.livetv_never_updated)
+        if (pl.channelCount > 0) parts += "${pl.channelCount} channels"
+    }
     account?.let { a ->
         a.daysLeftLabel()?.let { parts += if (it == "expired") "Expired" else "Expires in $it" }
         if (a.status.isNotBlank() && !a.status.equals("Active", true)) parts += a.status
@@ -1207,6 +1217,8 @@ private fun XtreamForm(existing: PlaylistSource?, onDismiss: () -> Unit) {
     var pass by remember { mutableStateOf(existing?.xtreamPassword.orEmpty()) }
     var ua by remember { mutableStateOf(existing?.userAgent.orEmpty()) }
     var embedded by remember { mutableStateOf(existing?.useEmbeddedEpg ?: true) }
+    var includeLive by remember { mutableStateOf(existing?.importLive ?: true) }
+    var includeVod by remember { mutableStateOf(existing?.importVod ?: true) }
     DialogSurface(onDismissRequest = onDismiss, title = stringResource(if (existing == null) Res.string.livetv_add_xtream else Res.string.action_edit)) {
         NuvioInputField(value = name, onValueChange = { name = it }, placeholder = stringResource(Res.string.livetv_field_name))
         NuvioInputField(value = server, onValueChange = { server = it }, placeholder = stringResource(Res.string.livetv_field_server))
@@ -1214,6 +1226,8 @@ private fun XtreamForm(existing: PlaylistSource?, onDismiss: () -> Unit) {
         NuvioInputField(value = pass, onValueChange = { pass = it }, placeholder = stringResource(Res.string.livetv_field_password))
         NuvioInputField(value = ua, onValueChange = { ua = it }, placeholder = stringResource(Res.string.livetv_field_user_agent))
         SettingsSwitchRow(title = stringResource(Res.string.livetv_load_embedded_epg), checked = embedded, isTablet = false, horizontalPadding = 0.dp, onCheckedChange = { embedded = it })
+        SettingsSwitchRow(title = stringResource(Res.string.livetv_xtream_include_channels), checked = includeLive, isTablet = false, horizontalPadding = 0.dp, onCheckedChange = { includeLive = it })
+        SettingsSwitchRow(title = stringResource(Res.string.livetv_xtream_include_vod), checked = includeVod, isTablet = false, horizontalPadding = 0.dp, onCheckedChange = { includeVod = it })
         DialogButtons {
             DialogButton(text = stringResource(Res.string.action_cancel), onClick = onDismiss)
             DialogButton(
@@ -1221,9 +1235,9 @@ private fun XtreamForm(existing: PlaylistSource?, onDismiss: () -> Unit) {
                 style = DialogButtonStyle.Primary,
                 enabled = server.isNotBlank() && (PlaylistSource.credentialsFromLink(server) != null || (user.isNotBlank() && pass.isNotBlank())),
                 onClick = {
-                    if (existing == null) LiveTvRepository.addXtream(name, server, user, pass)
+                    if (existing == null) LiveTvRepository.addXtream(name, server, user, pass, importVod = includeVod, importLive = includeLive)
                     else LiveTvRepository.updatePlaylist(
-                        existing.copy(name = name.ifBlank { "Xtream" }, xtreamServer = server, xtreamUsername = user, xtreamPassword = pass, userAgent = ua.trim(), useEmbeddedEpg = embedded)
+                        existing.copy(name = name.ifBlank { "Xtream" }, xtreamServer = server, xtreamUsername = user, xtreamPassword = pass, userAgent = ua.trim(), useEmbeddedEpg = embedded, importVod = includeVod, importLive = includeLive)
                     )
                     onDismiss()
                 },

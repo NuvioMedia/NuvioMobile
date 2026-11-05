@@ -2631,6 +2631,10 @@
     <string name="livetv_add_m3u_description">A playlist link from your provider (.m3u or .m3u8)</string>
     <string name="livetv_add_xtream">Add Xtream login</string>
     <string name="livetv_add_xtream_description">Sign in with the server, username and password from your provider. Its TV guide comes with it.</string>
+    <string name="livetv_xtream_include_channels">Include TV channels</string>
+    <string name="livetv_xtream_include_vod">Include movies &amp; series (On Demand)</string>
+    <string name="livetv_xtream_movies_only">Movies &amp; series only (TV channels off)</string>
+    <string name="livetv_xtream_nothing_included">Nothing included: turn on TV channels or movies &amp; series under Edit</string>
     <string name="livetv_add_epg">Add EPG source</string>
     <string name="livetv_add_epg_description">Extra TV listings from an XMLTV link (ending in .xml or .xml.gz). Guides linked in your playlists load by themselves.</string>
     <string name="livetv_days_ahead">Days ahead</string>

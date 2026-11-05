@@ -153,7 +153,7 @@ internal object LiveTvRepository {
         return id
     }
 
-    fun addXtream(name: String, server: String, username: String, password: String): String {
+    fun addXtream(name: String, server: String, username: String, password: String, importVod: Boolean = false, importLive: Boolean = true): String {
         val id = newId()
         val fromLink = PlaylistSource.credentialsFromLink(server)
         val user = username.trim().ifBlank { fromLink?.first.orEmpty() }
@@ -163,7 +163,7 @@ internal object LiveTvRepository {
                 id = id, name = name.ifBlank { "Xtream" }, url = "",
                 xtreamServer = PlaylistSource.cleanXtreamServer(server),
                 xtreamUsername = user, xtreamPassword = pass,
-                importVod = false, importLive = true
+                importVod = importVod, importLive = importLive
             )
         }
         scope.launch { runCatching { refreshInternal(forcePlaylists = false, forceEpg = false, forceIds = setOf(id)) } }
