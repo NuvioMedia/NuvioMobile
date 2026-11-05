@@ -1,6 +1,4 @@
 <resources>
-    <string name="autosync_toast_failed">Synchronizacja nie powiodła się: nie udało się dopasować tych napisów do wideo.</string>
-    <string name="autosync_toast_failed_no_reference">Synchronizacja nie powiodła się: brak wbudowanych napisów do porównania.</string>
-    <string name="autosync_toast_failed_unsupported">Synchronizacja nie powiodła się: ten format napisów nie jest obsługiwany.</string>
-    <string name="autosync_label_synced">Zsynchronizowano automatycznie</string>
+    <string name="autosync_toast_no_fit">Synchronizacja nie powiodła się: te napisy nie pasują do tej wersji wideo.</string>
+    <string name="autosync_label_synced">Dopasowane</string>
 </resources>
