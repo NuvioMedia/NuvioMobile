@@ -33,13 +33,22 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import com.nuvio.app.features.livetv.LiveTvDeepLinks
+import com.nuvio.app.features.livetv.data.LiveTvPreferences
 import com.nuvio.app.features.livetv.data.LiveTvRepository
 import com.nuvio.app.features.livetv.model.EpgProgram
 import com.nuvio.app.features.livetv.model.LiveChannel
 import com.nuvio.app.features.livetv.model.LiveTvClock
+import com.nuvio.app.features.livetv.ondemand.OnDemandRepository
+import com.nuvio.app.features.livetv.ondemand.VodItem
+import com.nuvio.app.features.livetv.ondemand.VodKind
+import com.nuvio.app.features.livetv.parental.ParentalControls
+import androidx.compose.runtime.produceState
+import com.nuvio.app.core.ui.NuvioPosterCard
 import kotlinx.coroutines.delay
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.livetv_search_row_title
+import nuvio.composeapp.generated.resources.livetv_search_ondemand_movies
+import nuvio.composeapp.generated.resources.livetv_search_ondemand_series
 import nuvio.composeapp.generated.resources.livetv_sports_live_now
 import nuvio.composeapp.generated.resources.livetv_sports_upcoming
 import org.jetbrains.compose.resources.stringResource
@@ -197,4 +206,67 @@ private fun LiveSearchCard(hit: LiveSearchHit) {
             }
         }
     }
+}
+
+/** Lets the Search screen open an On Demand title; set by the main screen, which owns navigation. */
+internal object OnDemandSearchBridge {
+    var actions: OnDemandActions? = null
+}
+
+/** "On Demand: Movies" / "On Demand: Series" rows in Search: matches from your providers. */
+@Composable
+internal fun OnDemandSearchRows(
+    query: String,
+    modifier: Modifier = Modifier,
+) {
+    val q = query.trim()
+    if (q.length < 2) return
+    val actions = OnDemandSearchBridge.actions ?: return
+    val version by OnDemandRepository.version.collectAsStateWithLifecycle()
+    val user by LiveTvPreferences.userState.collectAsStateWithLifecycle()
+    val settings by LiveTvPreferences.settings.collectAsStateWithLifecycle()
+    val unlocked by ParentalControls.unlocked.collectAsStateWithLifecycle()
+    var selected by remember { mutableStateOf<VodItem?>(null) }
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        for (kind in listOf(VodKind.MOVIE, VodKind.SERIES)) {
+            val items by produceState(emptyList<VodItem>(), kind, q, version, user.vodHiddenCategories, unlocked) {
+                delay(300)
+                val cats = OnDemandRepository.categories(kind)
+                val locked = cats.filter { c ->
+                    ParentalControls.isLocked("vod:${c.uid}", c.name, settings, user.lockedGroups)
+                }.mapTo(HashSet()) { it.uid }
+                value = OnDemandRepository.search(kind, q, user.vodHiddenCategories + locked, limit = 40, merge = settings.vodMergeDuplicates)
+            }
+            if (items.isNotEmpty()) {
+                Text(
+                    text = stringResource(
+                        if (kind == VodKind.MOVIE) Res.string.livetv_search_ondemand_movies else Res.string.livetv_search_ondemand_series,
+                    ),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.padding(bottom = 12.dp),
+                ) {
+                    items(items, key = { it.uid }) { item ->
+                        val match = rememberVodMatch(item)
+                        NuvioPosterCard(
+                            title = match?.title ?: item.displayTitle,
+                            imageUrl = match?.poster?.takeIf { it.isNotBlank() } ?: item.icon,
+                            fallbackImageUrl = item.icon,
+                            detailLine = item.year?.toString(),
+                            isWatched = false,
+                            onClick = { selected = item },
+                            onLongClick = { selected = item },
+                        )
+                    }
+                }
+            }
+        }
+    }
+    selected?.let { item -> OnDemandTitleSheet(item = item, actions = actions, onDismiss = { selected = null }) }
 }

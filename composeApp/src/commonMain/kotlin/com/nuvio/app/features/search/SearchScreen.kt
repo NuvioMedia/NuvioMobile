@@ -64,6 +64,7 @@ import com.nuvio.app.features.home.components.HomeSkeletonRow
 import com.nuvio.app.features.home.components.posterGridColumnCountForWidth
 import com.nuvio.app.features.livetv.data.LiveTvPreferences
 import com.nuvio.app.features.livetv.ui.LiveTvSearchRow
+import com.nuvio.app.features.livetv.ui.OnDemandSearchRows
 import com.nuvio.app.features.watched.WatchedRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -337,6 +338,9 @@ fun SearchScreen(
                 if (liveTvSettings.showInSidebar) {
                     item(key = "live_tv_search_row") {
                         LiveTvSearchRow(query = normalizedQuery, modifier = Modifier.padding(bottom = 12.dp))
+                    }
+                    item(key = "on_demand_search_rows") {
+                        OnDemandSearchRows(query = normalizedQuery)
                     }
                 }
                 when {

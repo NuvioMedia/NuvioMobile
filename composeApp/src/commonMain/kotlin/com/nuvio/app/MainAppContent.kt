@@ -922,6 +922,8 @@ internal fun MainAppContent(
             onSeeAll = { kind, categoryUid, title -> navController.navigate(LiveTvOnDemandSeeAllRoute(kind = kind.key, categoryUid = categoryUid, title = title)) },
         )
 
+        androidx.compose.runtime.SideEffect { com.nuvio.app.features.livetv.ui.OnDemandSearchBridge.actions = onDemandActions }
+
         fun openRecording(rec: LiveTvRecording) {
             val playerLaunch = PlayerLaunch(
                 profileId = activePlaybackProfileId,
