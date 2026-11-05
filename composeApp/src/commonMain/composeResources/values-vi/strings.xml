@@ -419,6 +419,10 @@
     <string name="compose_nav_profile">Hồ sơ</string>
     <string name="compose_nav_search">Tìm kiếm</string>
     <string name="compose_player_audio_tracks">Âm thanh</string>
+    <string name="compose_player_audio_delay">Độ trễ âm thanh</string>
+    <string name="compose_player_audio_amplification">Khuếch đại</string>
+    <string name="compose_player_audio_amplification_keep">Áp dụng cho các video tiếp theo</string>
+    <string name="compose_player_center_mix">Mức trộn kênh trung tâm</string>
     <string name="compose_player_audio">Âm thanh</string>
     <string name="compose_player_auto_sync">Tự đồng bộ</string>
     <string name="compose_player_bold">In đậm</string>
@@ -641,7 +645,7 @@
     <string name="downloads_status_failed">Thất bại</string>
     <string name="downloads_status_paused">Đã tạm dừng • %1$s</string>
     <string name="episodes_cd_watched">Đã xem</string>
-    <string name="episodes_unavailable">Không có sẵn</string>
+    <string name="episodes_unavailable">Chưa phát sóng</string>
     <string name="episodes_season">Mùa %1$d</string>
     <string name="episodes_specials">Tập đặc biệt</string>
     <string name="floating_prompt_continue_where_left_off">Tiếp tục từ chỗ đã dừng.</string>
@@ -1266,6 +1270,14 @@
     <string name="settings_playback_vod_cache_warning">Ghi đĩa vẫn tiếp tục khi phát luồng đã đệm. Dung lượng mới sẽ áp dụng từ lần khởi động ứng dụng tiếp theo.</string>
     <string name="settings_playback_exo_chapters">Hiển thị chương</string>
     <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng. Thực hiện thêm một vài yêu cầu nhỏ khi bắt đầu phát lại. libmpv luôn hiển thị các chương.</string>
+    <string name="settings_playback_remember_audio_delay">Ghi nhớ độ trễ âm thanh cho từng thiết bị</string>
+    <string name="settings_playback_remember_audio_delay_description">Khôi phục độ trễ âm thanh đã đặt trong trình phát mỗi khi cùng đầu ra được sử dụng lại, ví dụ như loa điện thoại, tai nghe có dây hoặc từng thiết bị Bluetooth</string>
+    <string name="settings_playback_downmix_section">Hạ kênh âm thanh</string>
+    <string name="settings_playback_downmix">Bật hạ kênh âm thanh</string>
+    <string name="settings_playback_downmix_description">Trộn âm thanh vòm xuống số lượng kênh bên dưới bằng bộ giải mã FFmpeg của ứng dụng. Cần đặt ưu tiên bộ giải mã Video thành Ưu tiên bộ giải mã ứng dụng (FFmpeg). Đầu ra Bluetooth luôn bị hạ xuống kênh 2.0</string>
+    <string name="settings_playback_downmix_channels">Số lượng kênh</string>
+    <string name="settings_playback_downmix_maintain_volume">Giữ nguyên âm thanh gốc khi hạ kênh</string>
+    <string name="settings_playback_downmix_maintain_volume_description">Khi tắt, tính năng chuẩn hóa hạ kênh âm thanh có thể làm giảm âm lượng tổng thể.</string>
     <string name="settings_tmdb_api_key_label">Mã khoá API</string>
     <string name="settings_tmdb_api_key_override_description">Dùng mã khóa API TMDB của riêng bạn hoặc bỏ trống để sử dụng mặc định.</string>
     <string name="settings_tmdb_personal_api_key">Mã khóa API cá nhân</string>
