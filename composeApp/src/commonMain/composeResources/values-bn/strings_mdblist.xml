@@ -2,7 +2,7 @@
 <resources>
     <string name="settings_mdb_ratings_credentials_required">ট্র্যাকিং-এ MDBList সংযুক্ত করুন বা রেটিং আনতে একটি API কী লিখুন।</string>
     <string name="settings_mdb_ratings_key_override_description">একটি API কী রেটিং এর জন্য আপনার সংযুক্ত অ্যাকাউন্ট ওভাররাইড করে। এটি সাফ করুন এবং আবার সংযুক্ত অ্যাকাউন্ট ব্যবহার করতে সেভ করুন।</string>
-    <string name="settings_mdb_ratings_connected_account">সংযুক্ত অ্যাকাউন্ট ব্যবহার করে</string>
+    <string name="settings_mdb_ratings_connected_account">সংযুক্ত অ্যাকাউন্ট ব্যবহৃত হচ্ছে</string>
     <string name="tracking_source_mdblist">MDBList</string>
     <string name="settings_mdblist_library_description">ওয়াচলিস্ট এবং আপনার স্ট্যাটিক মুভি এবং শো তালিকা।</string>
     <string name="settings_mdblist_progress_description">MDBList থেকে দেখার হিস্ট্রি, দেখার অগ্রগতি এবং নেক্সট আপ।</string>
@@ -12,8 +12,8 @@
     <string name="library_mdblist_empty_message">আপনার ওয়াচলিস্টে সিনেমা এবং শো যোগ করুন বা একটি স্ট্যাটিক তালিকা তৈরি করুন।</string>
     <string name="settings_mdblist_connect">MDBList কানেক্ট করুন</string>
     <string name="settings_mdblist_connected_as">%1$s হিসেবে সংযুক্ত</string>
-    <string name="settings_mdblist_connected_description">হিসেবে সংযুক্ত সমস্ত ডিভাইস জুড়ে দেখা হিস্ট্রি এবং প্লেব্যাকের অগ্রগতি সিঙ্ক করুন</string>
-    <string name="settings_mdblist_sign_in_description">সমস্ত ডিভাইস জুড়ে দেখা হিস্ট্রি এবং প্লেব্যাকের অগ্রগতি সিঙ্ক করুন</string>
+    <string name="settings_mdblist_connected_description">সমস্ত ডিভাইস জুড়ে দেখার হিস্ট্রি এবং প্লেব্যাকের অগ্রগতি সিঙ্ক করুন</string>
+    <string name="settings_mdblist_sign_in_description">সমস্ত ডিভাইস জুড়ে দেখার হিস্ট্রি এবং প্লেব্যাকের অগ্রগতি সিঙ্ক করুন</string>
     <string name="settings_mdblist_finish_sign_in">সংযোগ অনুমোদন শেষ করুন</string>
     <string name="settings_mdblist_approval_description">আপনার MDBList অ্যাকাউন্টে সংযোগ অনুমোদন করুন।</string>
     <string name="settings_mdblist_open_login">সাইন-ইন পৃষ্ঠা খুলুন</string>
@@ -22,8 +22,8 @@
     <string name="settings_mdblist_sync_now">এখন সিঙ্ক করুন</string>
     <string name="settings_mdblist_visit">MDBList দেখুন</string>
     <string name="settings_mdblist_unavailable">MDBList-এর সাথে সিঙ্ক করা যায়নি। আবার চেষ্টা করুন।</string>
-    <string name="settings_mdblist_rate_limited">MDBList-এর অনুরোধের সীমা পৌঁছে গেছে। সীমা রিসেট করার পরে সিঙ্কিং আবার শুরু হবে।</string>
-    <string name="settings_mdblist_auth_expired">এই কোড মেয়াদ শেষ হয়েছে। একটি নতুন কোড পেতে আবার চেষ্টা করুন।</string>
+    <string name="settings_mdblist_rate_limited">MDBList-এর অনুরোধের সীমা পূর্ণ হয়েছে। সীমা রিসেট হওয়ার পর সিঙ্কিং আবার শুরু হবে।</string>
+    <string name="settings_mdblist_auth_expired">এই কোডের মেয়াদ শেষ হয়েছে। নতুন কোড পেতে আবার চেষ্টা করুন।</string>
     <string name="settings_mdblist_auth_denied">সংযোগ প্রত্যাখ্যান করা হয়েছে। আপনার অ্যাকাউন্ট সংযোগ করার জন্য আবার চেষ্টা করুন।</string>
     <string name="settings_mdblist_auth_revoked">আপনার MDBList সংযোগের মেয়াদ শেষ হয়েছে বা প্রত্যাহার করা হয়েছে। সিঙ্কিং আবার শুরু করতে আবার সংযোগ করুন।</string>
     <string name="settings_mdblist_invalid_response">MDBList একটি অসম্পূর্ণ প্রতিক্রিয়া ফিরিয়ে দিয়েছে। আবার চেষ্টা করুন।</string>
@@ -50,6 +50,6 @@
     <string name="library_list_delete_failed">তালিকা মোছা যায়নি</string>
     <string name="library_list_link">লিঙ্ক</string>
     <string name="library_list_friends">বন্ধুরা</string>
-    <string name="library_list_private_description">শুধুমাত্র আপনি এই তালিকা দেখতে পারেন।</string>
-    <string name="library_list_public_description">যে কেউ এই তালিকা দেখতে পারেন।</string>
+    <string name="library_list_private_description">শুধুমাত্র আপনি এই তালিকাটি দেখতে পারবেন।</string>
+    <string name="library_list_public_description">যে কেউ এই তালিকাটি দেখতে পারবেন।</string>
 </resources>
