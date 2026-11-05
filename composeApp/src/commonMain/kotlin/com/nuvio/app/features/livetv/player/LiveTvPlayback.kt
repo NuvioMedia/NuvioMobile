@@ -1,5 +1,6 @@
 package com.nuvio.app.features.livetv.player
 
+import com.nuvio.app.features.livetv.data.CatchupUrlBuilder
 import com.nuvio.app.features.livetv.data.LiveTvPreferences
 import com.nuvio.app.features.livetv.data.LiveTvRepository
 import com.nuvio.app.features.livetv.data.XtreamClient
@@ -57,7 +58,10 @@ internal object LiveTvPlayback {
     private var backupIndexFor: List<LiveChannel> = emptyList()
 
     /** A catch-up replay the player was handed: the show, and the other links still to try. */
-    private class CatchupContext(val channel: LiveChannel, val program: EpgProgram, val remaining: ArrayDeque<String>)
+    private class CatchupContext(val channel: LiveChannel, val program: EpgProgram, val remaining: ArrayDeque<String>, val primary: String)
+
+    /** Playlist id -> the kind of catch-up link that last worked there (this run only; see [CatchupUrlBuilder.linkForm]). */
+    private val catchupForms = HashMap<String, String>()
 
     /** The catch-up replay behind each source URL handed to the player (fallback links included). */
     private val catchups = HashMap<String, CatchupContext>()
@@ -189,11 +193,14 @@ internal object LiveTvPlayback {
         }
         val now = LiveTvClock.nowMs()
         val plan = LiveTvCatchup.plan(channel, program, prefs.currentSettings(), playlist, now, offsetMs) ?: return null
-        val req = request(channel, plan.url)
+        // The kind of link that worked last time on this provider goes first, so a skip or a
+        // second replay doesn't wait on links the provider never answers.
+        val links = CatchupUrlBuilder.preferForm(plan.url, plan.fallbacks, synchronized(lock) { catchupForms[channel.sourceId] })
+        val req = request(channel, links.first())
         synchronized(lock) {
             backupTried.clear()
             playing[req.url] = channel
-            catchups[req.url] = CatchupContext(channel, program, ArrayDeque(plan.fallbacks))
+            catchups[req.url] = CatchupContext(channel, program, ArrayDeque(links.drop(1)), plan.url)
         }
         prefs.recordWatched(channel.key)
         val launch = PlayerLaunch(
@@ -226,6 +233,12 @@ internal object LiveTvPlayback {
         if (url == null) return
         val ctx = synchronized(lock) { catchups[url] } ?: return
         val sourceId = ctx.channel.sourceId
+        // Remember the kind of link this provider answers (the "other clock" link can play an
+        // earlier show even when it's wrong, so it is never put first).
+        if (CatchupUrlBuilder.wholeMinutes(ctx.primary)) {
+            val form = CatchupUrlBuilder.linkForm(url, ctx.primary)
+            if ("+clock" !in form) synchronized(lock) { catchupForms[sourceId] = form }
+        }
         if (LiveTvCatchup.isTsTimeshift(url)) {
             val failedHls = synchronized(lock) { hlsFailedOn.remove(url) } != null
             if (failedHls) {

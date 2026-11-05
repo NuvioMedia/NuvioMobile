@@ -141,6 +141,50 @@ object CatchupUrlBuilder {
         return out.toList()
     }
 
+    /**
+     * Xtream replay links name a whole minute (9:10, never 9:10:45): the replay really starts
+     * at the start of that minute.
+     */
+    fun wholeMinutes(url: String): Boolean {
+        val path = url.substringBefore('?')
+        return TIMESHIFT_PATH.containsMatchIn(path) || path.endsWith("timeshift.php", ignoreCase = true)
+    }
+
+    /**
+     * Which kind of link [url] is, next to the first link tried ([primary]): "php" (the
+     * timeshift.php form), or "hls" / "ts", plus "+clock" when the time is written in the other
+     * clock and "+short" when it asks for a shorter window. Used to remember, per provider, the
+     * kind that worked, so the next replay goes straight to it.
+     */
+    fun linkForm(url: String, primary: String): String {
+        val path = url.substringBefore('?')
+        if (path.endsWith("timeshift.php", ignoreCase = true)) return "php"
+        val ext = if (path.endsWith(".m3u8", ignoreCase = true)) "hls" else "ts"
+        val m = TIMESHIFT_PATH.find(path)
+        val pm = TIMESHIFT_PATH.find(primary.substringBefore('?'))
+        val clock = if (m != null && pm != null && m.groupValues[2] != pm.groupValues[2]) "+clock" else ""
+        val short = if (m != null && pm != null &&
+            (m.groupValues[1].toLongOrNull() ?: 0) < (pm.groupValues[1].toLongOrNull() ?: 0)) "+short" else ""
+        return ext + clock + short
+    }
+
+    /**
+     * [primary] and its [alternatives] in the order to try them: the kind of link that worked
+     * last time on this provider ([form], from [linkForm]) first.
+     */
+    fun preferForm(primary: String, alternatives: List<String>, form: String?): List<String> {
+        val all = listOf(primary) + alternatives
+        if (form == null) return all
+        // HLS switched off for this provider (it failed there): don't go back to it.
+        if (form.startsWith("hls") && !primary.substringBefore('?').endsWith(".m3u8", ignoreCase = true)) return all
+        val pick = all.firstOrNull { linkForm(it, primary) == form }
+            ?: all.firstOrNull { linkForm(it, primary) == form.replace("+short", "") }
+            ?: return all
+        return listOf(pick) + all.filter { it != pick }
+    }
+
+    private val TIMESHIFT_PATH = Regex("""/timeshift/[^/]+/[^/]+/(\d+)/([0-9-]+:[0-9-]+)/\d+""", RegexOption.IGNORE_CASE)
+
     /** The TS version of an Xtream HLS catch-up link, for panels that don't offer HLS. */
     fun tsFallback(url: String): String? {
         val path = url.substringBefore('?')
