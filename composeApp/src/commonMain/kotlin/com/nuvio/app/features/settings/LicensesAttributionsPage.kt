@@ -60,11 +60,12 @@ private data class AttributionItem(
     val link: String,
 )
 
-private data class LicenseItem(
+internal data class LicenseItem(
     val titleRes: StringResource,
     val bodyRes: StringResource,
     val licenseRes: StringResource,
     val link: String,
+    val logo: IntegrationLogo? = null,
 )
 
 @Composable
@@ -146,6 +147,7 @@ private fun LicensesAttributionsBody(
                     bodyRes = Res.string.settings_licenses_attributions_haze_body,
                     licenseRes = Res.string.settings_licenses_attributions_haze_license,
                     link = HazeLicenseUrl,
+                    logo = IntegrationLogo.Haze,
                 ),
                 isTablet = isTablet,
             )
@@ -222,16 +224,26 @@ private fun LicenseRow(
     val uriHandler = LocalUriHandler.current
     val itemBody = stringResource(item.bodyRes)
     val itemLicense = stringResource(item.licenseRes)
+    val title = stringResource(item.titleRes)
     val body = buildString {
         append(itemBody)
         append("\n")
         append(itemLicense)
     }
     LinkedPlainRow(
-        title = stringResource(item.titleRes),
+        title = title,
         body = body,
         link = item.link,
         isTablet = isTablet,
+        leading = item.logo?.let { logo ->
+            {
+                IntegrationLogoImage(
+                    painter = integrationLogoPainter(logo),
+                    contentDescription = title,
+                    isTablet = isTablet,
+                )
+            }
+        },
         onOpen = { uriHandler.openUri(item.link) },
     )
 }
@@ -382,7 +394,7 @@ private fun attributionItems(): List<AttributionItem> = listOf(
     AttributionItem(
         titleRes = Res.string.settings_licenses_attributions_imdb_title,
         bodyRes = Res.string.settings_licenses_attributions_imdb_body,
-        logo = null,
+        logo = IntegrationLogo.ImdbData,
         link = ImdbDatasetsUrl,
     ),
 )
