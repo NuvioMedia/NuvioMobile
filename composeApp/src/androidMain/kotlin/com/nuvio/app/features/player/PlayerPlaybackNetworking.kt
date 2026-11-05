@@ -95,7 +95,7 @@ internal object PlayerPlaybackNetworking {
                 .build()
         } ?: baseClient
 
-        return OkHttpDataSource.Factory(client).apply {
+        return OkHttpDataSource.Factory(com.nuvio.vpn.android.VpnHttpClient.wrap(client)).apply {
             setDefaultRequestProperties(requestHeaders)
             if (requestHeaders.headerValue("User-Agent") == null) {
                 setUserAgent(DEFAULT_USER_AGENT)
@@ -123,7 +123,7 @@ internal object PlayerPlaybackNetworking {
         range: String? = null,
     ): HttpURLConnection {
         val mergedHeaders = withDefaultUserAgent(headers)
-        return (URL(url).openConnection() as HttpURLConnection).apply {
+        return com.nuvio.vpn.android.VpnHttpClient.openConnection(URL(url), playbackHttpClient).apply {
             if (this is HttpsURLConnection) {
                 sslSocketFactory = sslContext.socketFactory
                 hostnameVerifier = playbackHostnameVerifier

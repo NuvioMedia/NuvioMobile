@@ -108,6 +108,9 @@ internal object LiveTvCloudSync {
     fun start() {
         if (started) return
         started = true
+        com.nuvio.app.features.livetv.data.observeVpnBackupChanges {
+            scope.launch { delay(8_000); if (!applying && isOn()) syncIfChanged() }
+        }
         val available = isOfficialServer()
         _state.value = CloudSyncState(available = available, lastSyncMs = store.getLong(KEY_LAST_SYNC))
         if (!available) return

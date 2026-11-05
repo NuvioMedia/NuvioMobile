@@ -100,7 +100,7 @@ internal object MatroskaChapterLoader {
                 }
             }
             .build()
-        val call = httpClient.newCall(request)
+        val call = com.nuvio.vpn.android.VpnHttpClient.wrap(httpClient).newCall(request)
         return suspendCancellableCoroutine { continuation ->
             continuation.invokeOnCancellation { call.cancel() }
             call.enqueue(object : Callback {

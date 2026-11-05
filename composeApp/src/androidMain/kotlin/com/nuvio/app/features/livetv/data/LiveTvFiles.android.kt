@@ -176,10 +176,16 @@ internal actual object LiveTvFiles {
     }
 
     actual fun readSmall(dir: String, name: String): String? =
-        file(dir, name).takeIf { it.isFile }?.let { runCatching { it.readText() }.getOrNull() }
+        file(dir, name).takeIf { it.isFile }?.let { runCatching {
+            val text = it.readText()
+            if (name == "cloud_base.json" || name == "drive_base.json") com.nuvio.vpn.android.VpnBackup.openCache(text) else text
+        }.getOrNull() }
 
     actual fun writeSmall(dir: String, name: String, text: String) {
-        runCatching { file(dir, name).writeText(text) }
+        runCatching {
+            val stored = if (name == "cloud_base.json" || name == "drive_base.json") com.nuvio.vpn.android.VpnBackup.sealCache(text) else text
+            file(dir, name).writeText(stored)
+        }
     }
 
     actual val deviceName: String

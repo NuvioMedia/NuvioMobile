@@ -30,3 +30,5 @@ dependencyResolutionManagement {
 
 include(":composeApp")
 include(":androidApp")
+include(":vpn-core")
+include(":vpn-android")

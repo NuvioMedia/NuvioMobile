@@ -114,6 +114,7 @@ internal fun LazyListScope.settingsRootContent(
                             isTablet = isTablet,
                             onPageClick = onPageClick,
                         )
+                        PlatformVpnProfilesRow(isTablet)
                         SettingsGroupDivider(isTablet = isTablet)
                         SettingsPageRow(
                             page = SettingsPage.About,

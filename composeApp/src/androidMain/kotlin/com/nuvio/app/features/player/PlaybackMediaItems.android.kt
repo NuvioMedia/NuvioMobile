@@ -291,7 +291,7 @@ internal fun probeMimeType(url: String, headers: Map<String, String>): String? {
     val methods = listOf("HEAD", "GET")
     methods.forEach { method ->
         runCatching {
-            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+            val connection = com.nuvio.vpn.android.VpnHttpClient.openConnection(URL(url)).apply {
                 requestMethod = method
                 connectTimeout = 3_000
                 readTimeout = 3_000

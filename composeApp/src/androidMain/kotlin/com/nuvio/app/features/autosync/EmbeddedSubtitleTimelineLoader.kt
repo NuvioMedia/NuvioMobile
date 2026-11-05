@@ -1401,7 +1401,7 @@ internal object EmbeddedSubtitleTimelineLoader {
         if (remainingBudgetMs <= 0L) return null
 
         stats.requests++
-        val call = httpClient.newCall(requestBuilder.build())
+        val call = com.nuvio.vpn.android.VpnHttpClient.wrap(httpClient).newCall(requestBuilder.build())
         call.timeout().timeout(
             minOf(remainingBudgetMs.coerceAtLeast(1L), 5_000L),
             TimeUnit.MILLISECONDS,
