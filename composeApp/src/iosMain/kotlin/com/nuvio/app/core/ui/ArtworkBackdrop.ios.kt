@@ -1,4 +1,4 @@
-package com.nuvio.app.features.details.components
+package com.nuvio.app.core.ui
 
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asComposeImageBitmap
@@ -9,7 +9,7 @@ import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.ImageInfo
 
-internal actual fun prepareDetailBackdrop(image: Image): ImageBitmap {
+internal actual fun prepareArtworkBackdrop(image: Image): ImageBitmap {
     val source = image.toBitmap()
     val info = ImageInfo(source.width, source.height, ColorType.RGBA_8888, ColorAlphaType.UNPREMUL)
     val bytes = requireNotNull(source.readPixels(info, source.width * 4))

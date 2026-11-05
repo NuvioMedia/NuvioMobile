@@ -57,7 +57,9 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.format.extractReleaseYearForDisplay
+import com.nuvio.app.core.ui.ArtworkBackdrop
 import com.nuvio.app.core.ui.NuvioTokens
+import com.nuvio.app.core.ui.featherArtwork
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.formatRuntimeForDisplay
 import nuvio.composeapp.generated.resources.Res
@@ -94,7 +96,7 @@ fun TabletDetailBackdrop(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (cinematic) {
-            DetailBackdrop(
+            ArtworkBackdrop(
                 image = backdropImage,
                 alignment = BiasAlignment(0f, BackdropVerticalBias),
             )

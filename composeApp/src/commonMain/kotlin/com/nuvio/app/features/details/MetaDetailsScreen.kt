@@ -80,6 +80,7 @@ import com.nuvio.app.core.build.TrailerPlaybackMode
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
+import com.nuvio.app.core.ui.ArtworkBackdrop
 import com.nuvio.app.core.ui.NuvioBackButton
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.core.ui.verticalBarWidth
@@ -92,11 +93,11 @@ import com.nuvio.app.core.ui.PosterZoomOverlayAction
 import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.TrackingListPickerDialog
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
+import com.nuvio.app.core.ui.rememberArtworkBackdrop
 import com.nuvio.app.core.ui.rememberHeroStretchState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import com.nuvio.app.features.details.components.DetailActions
-import com.nuvio.app.features.details.components.DetailBackdrop
 import com.nuvio.app.features.details.components.CommentDetailSheet
 import com.nuvio.app.features.details.components.DetailAdditionalInfoSection
 import com.nuvio.app.features.details.components.DetailCastSection
@@ -115,7 +116,6 @@ import com.nuvio.app.features.details.components.SeasonWatchedActionSheet
 import com.nuvio.app.features.details.components.TabletDetailBackdrop
 import com.nuvio.app.features.details.components.TabletDetailHero
 import com.nuvio.app.features.details.components.TrailerPlayerPopup
-import com.nuvio.app.features.details.components.rememberDetailBackdrop
 import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.mdblist.MdbListSettingsRepository
 import com.nuvio.app.features.library.LibraryRepository
@@ -1038,7 +1038,7 @@ fun MetaDetailsScreen(
                     val backgroundMode = metaScreenSettingsUiState.backgroundMode
                     val cinematicBackground = backgroundMode == MetaScreenBackgroundMode.Cinematic &&
                         !backdropUrl.isNullOrBlank()
-                    val cinematicBackdrop = rememberDetailBackdrop(
+                    val cinematicBackdrop = rememberArtworkBackdrop(
                         imageUrl = backdropUrl.takeIf { cinematicBackground },
                         enabled = deferredMetaWorkAllowed,
                     )
@@ -1137,7 +1137,7 @@ fun MetaDetailsScreen(
                             } else when (backgroundMode) {
                                 MetaScreenBackgroundMode.Normal -> Unit
                                 MetaScreenBackgroundMode.Cinematic -> if (cinematicBackground) {
-                                    DetailBackdrop(image = cinematicBackdrop)
+                                    ArtworkBackdrop(image = cinematicBackdrop)
                                 }
                                 MetaScreenBackgroundMode.DominantColor -> if (deferredMetaWorkAllowed) {
                                     Box(

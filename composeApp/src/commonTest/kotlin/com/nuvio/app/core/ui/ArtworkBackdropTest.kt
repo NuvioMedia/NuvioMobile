@@ -1,10 +1,10 @@
-package com.nuvio.app.features.details.components
+package com.nuvio.app.core.ui
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-class DetailBackdropTest {
+class ArtworkBackdropTest {
     @Test
     fun uniformArtworkKeepsItsColorAndOpacity() {
         val color = 0xFFDB8234.toInt()

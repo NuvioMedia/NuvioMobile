@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.graphicsLayer
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.featherArtwork
 import com.nuvio.app.core.ui.heroStretchHeight
 import com.nuvio.app.core.ui.heroStretchZoom
 import com.nuvio.app.features.details.MetaDetails

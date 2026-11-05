@@ -1,4 +1,4 @@
-package com.nuvio.app.features.details.components
+package com.nuvio.app.core.ui
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -40,7 +40,7 @@ private val backdropScrim = Brush.verticalGradient(
 )
 
 @Composable
-internal fun rememberDetailBackdrop(imageUrl: String?, enabled: Boolean): ImageBitmap? {
+internal fun rememberArtworkBackdrop(imageUrl: String?, enabled: Boolean = true): ImageBitmap? {
     val context = LocalPlatformContext.current
     var image by remember(imageUrl) { mutableStateOf(backdropCache[imageUrl]) }
 
@@ -54,7 +54,7 @@ internal fun rememberDetailBackdrop(imageUrl: String?, enabled: Boolean): ImageB
         val result = SingletonImageLoader.get(context).execute(request) as? SuccessResult
             ?: return@LaunchedEffect
         val blurred = withContext(Dispatchers.Default) {
-            runCatching { prepareDetailBackdrop(result.image) }.getOrNull()
+            runCatching { prepareArtworkBackdrop(result.image) }.getOrNull()
         } ?: return@LaunchedEffect
         backdropCache[imageUrl] = blurred
         if (backdropCache.size > 8) backdropCache.remove(backdropCache.keys.first())
@@ -65,7 +65,7 @@ internal fun rememberDetailBackdrop(imageUrl: String?, enabled: Boolean): ImageB
 }
 
 @Composable
-internal fun DetailBackdrop(
+internal fun ArtworkBackdrop(
     image: ImageBitmap?,
     modifier: Modifier = Modifier,
     alignment: Alignment = Alignment.Center,
@@ -74,7 +74,7 @@ internal fun DetailBackdrop(
         Crossfade(
             targetState = image,
             animationSpec = tween(320, easing = FastOutSlowInEasing),
-            label = "detail_backdrop",
+            label = "artwork_backdrop",
         ) { bitmap ->
             if (bitmap != null) {
                 Image(
@@ -108,7 +108,7 @@ internal fun Modifier.featherArtwork(): Modifier = graphicsLayer {
     }
 }
 
-internal expect fun prepareDetailBackdrop(image: coil3.Image): ImageBitmap
+internal expect fun prepareArtworkBackdrop(image: coil3.Image): ImageBitmap
 
 internal fun blurBackdropPixels(pixels: IntArray, width: Int, height: Int) {
     require(width > 0 && height > 0 && pixels.size == width * height)
