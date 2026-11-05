@@ -59,7 +59,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
@@ -81,6 +80,7 @@ import com.nuvio.app.core.build.TrailerPlaybackMode
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
+import com.nuvio.app.core.ui.ArtworkBackdrop
 import com.nuvio.app.core.ui.NuvioBackButton
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.core.ui.verticalBarWidth
@@ -93,6 +93,7 @@ import com.nuvio.app.core.ui.PosterZoomOverlayAction
 import com.nuvio.app.core.ui.ScreenActivityEffect
 import com.nuvio.app.core.ui.TrackingListPickerDialog
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
+import com.nuvio.app.core.ui.rememberArtworkBackdrop
 import com.nuvio.app.core.ui.rememberHeroStretchState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
@@ -1035,6 +1036,12 @@ fun MetaDetailsScreen(
                     val contentMaxWidth = detailTabletContentMaxWidth(maxWidth, isTablet)
                     val backdropUrl = meta.background ?: meta.poster
                     val backgroundMode = metaScreenSettingsUiState.backgroundMode
+                    val cinematicBackground = backgroundMode == MetaScreenBackgroundMode.Cinematic &&
+                        !backdropUrl.isNullOrBlank()
+                    val cinematicBackdrop = rememberArtworkBackdrop(
+                        imageUrl = backdropUrl.takeIf { cinematicBackground },
+                        enabled = deferredMetaWorkAllowed,
+                    )
                     val dominantColorEnabled = backgroundMode == MetaScreenBackgroundMode.DominantColor &&
                         deferredMetaWorkAllowed &&
                         !backdropUrl.isNullOrBlank()
@@ -1113,7 +1120,8 @@ fun MetaDetailsScreen(
                             if (useTabletLayout) {
                                 TabletDetailBackdrop(
                                     meta = meta,
-                                    cinematic = backgroundMode == MetaScreenBackgroundMode.Cinematic,
+                                    cinematic = cinematicBackground,
+                                    backdropImage = cinematicBackdrop,
                                     scrollOffsetPx = detailScrollOffsetPx,
                                     heroHeightPx = { heroHeightPx.intValue },
                                     heroTrailerSourceUrl = heroTrailerSourceUrl,
@@ -1128,20 +1136,8 @@ fun MetaDetailsScreen(
                                 )
                             } else when (backgroundMode) {
                                 MetaScreenBackgroundMode.Normal -> Unit
-                                MetaScreenBackgroundMode.Cinematic -> if (deferredMetaWorkAllowed && backdropUrl != null) {
-                                    AsyncImage(
-                                        model = backdropUrl,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .blur(30.dp),
-                                        contentScale = ContentScale.Crop,
-                                    )
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(colorScheme.background.copy(alpha = 0.92f)),
-                                    )
+                                MetaScreenBackgroundMode.Cinematic -> if (cinematicBackground) {
+                                    ArtworkBackdrop(image = cinematicBackdrop)
                                 }
                                 MetaScreenBackgroundMode.DominantColor -> if (deferredMetaWorkAllowed) {
                                     Box(
@@ -1206,6 +1202,7 @@ fun MetaDetailsScreen(
                                             heroTrailerPlayWhenReady = heroTrailerPlayWhenReady,
                                             heroTrailerMuted = heroTrailerMuted,
                                             heroGradientColor = heroGradientColor,
+                                            cinematicBackground = cinematicBackground,
                                             onBackdropLoaded = onBackdropLoaded,
                                             onHeroTrailerMuteToggle = HeroTrailerAudioState::toggleMuted,
                                             onHeroTrailerReady = onHeroTrailerReady,
@@ -1314,7 +1311,7 @@ fun MetaDetailsScreen(
                                 }
                             }
 
-                            if (!useTabletLayout && backgroundMode.usesBackdropBackground && deferredMetaWorkAllowed && heroHeightPx.intValue > 0) {
+                            if (!useTabletLayout && dominantColorEnabled && heroHeightPx.intValue > 0) {
                                 val blendColor = dominantBackdropColor.takeIf { dominantColorEnabled }
                                     ?: colorScheme.background
                                 Box(

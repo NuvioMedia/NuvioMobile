@@ -41,6 +41,13 @@ expect fun ManagePlayerPictureInPicture(
 @Composable
 expect fun rememberIsInPictureInPicture(): Boolean
 
+/**
+ * Key of the output media audio plays on (speaker, wired or Bluetooth headphones…), updated when
+ * the output changes. Null while [enabled] is false or when the platform cannot tell.
+ */
+@Composable
+internal expect fun rememberAudioOutputKey(enabled: Boolean): String?
+
 @Composable
 fun rememberPlayerGestureController(restoreBrightness: Boolean): PlayerGestureController? {
     val controller = rememberPlatformPlayerGestureController() ?: return null

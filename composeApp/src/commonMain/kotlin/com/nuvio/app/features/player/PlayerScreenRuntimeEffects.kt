@@ -236,6 +236,9 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         playerController?.setSubtitleDelayMs(subtitleDelayMs)
     }
 
+    BindAudioDelayEffects()
+    BindAudioAmplificationEffects()
+
     LaunchedEffect(selectedAddonSubtitleId, useCustomSubtitles, activeSourceUrl) {
         subtitleAutoSyncState = SubtitleAutoSyncUiState()
     }

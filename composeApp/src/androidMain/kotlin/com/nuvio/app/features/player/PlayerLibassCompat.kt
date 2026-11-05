@@ -33,7 +33,8 @@ internal fun ExoPlayer.Builder.buildWithAssSupportCompat(
     context: Context,
     dataSourceFactory: DataSource.Factory = DefaultDataSource.Factory(context),
     extractorsFactory: ExtractorsFactory = DefaultExtractorsFactory(),
-    renderersFactory: RenderersFactory = DefaultRenderersFactory(context)
+    renderersFactory: RenderersFactory = DefaultRenderersFactory(context),
+    audioDelayUsProvider: () -> Long = { 0L },
 ): ExoPlayer {
     val assHandler = AssHandler()
     val assSubtitleParserFactory = CompatAssSubtitleParserFactory(assHandler)
@@ -52,7 +53,7 @@ internal fun ExoPlayer.Builder.buildWithAssSupportCompat(
     // NoSampleRenderer-based position fallback for tunneled playback.
     val assRenderersFactory = AssRenderersFactory(assHandler, renderersFactory)
     val player = this
-        .setMediaSourceFactory(mediaSourceFactory)
+        .setMediaSourceFactory(AudioDelayMediaSourceFactory(mediaSourceFactory, audioDelayUsProvider))
         .setRenderersFactory(assRenderersFactory)
         .build()
 
