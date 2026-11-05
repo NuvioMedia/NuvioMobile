@@ -17,8 +17,6 @@ import android.os.Handler
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
-import android.util.AttributeSet
-import android.view.SurfaceHolder
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.Composable
@@ -84,17 +82,12 @@ import com.nuvio.app.features.autosync.rememberAutoSyncCoordinator
 import com.nuvio.app.features.autosync.rememberLibmpvAutoSyncCoordinator
 import com.nuvio.app.R
 import com.nuvio.app.features.streams.normalizeStreamType
-import `is`.xyz.mpv.BaseMPVView
 import `is`.xyz.mpv.MPV
 import `is`.xyz.mpv.MPVNode
 import `is`.xyz.mpv.Utils
 import com.nuvio.tv.libass.media.widget.AssSubtitleSurfaceView
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.asCoroutineDispatcher
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -102,8 +95,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.net.URI
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
@@ -1646,17 +1637,10 @@ private tailrec fun Context.findActivity(): Activity? =
 
 private class NuvioLibmpvView(
     context: Context,
-    private val videoOutput: AndroidLibmpvVideoOutput,
+    videoOutput: AndroidLibmpvVideoOutput,
     private val hardwareDecodingEnabled: Boolean,
     private val yuv420pEnabled: Boolean,
-    attrs: AttributeSet? = null,
-) : BaseMPVView(context, attrs) {
-    private val mpvDispatcher = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "NuvioLibmpv").apply { isDaemon = true }
-    }.asCoroutineDispatcher()
-    private val mpvScope = CoroutineScope(SupervisorJob() + mpvDispatcher)
-    private val surfaceReady = CompletableDeferred<Unit>()
-    private val released = AtomicBoolean(false)
+) : MpvSurfaceView(context, videoOutput.mpvValue) {
     private var currentSourceUrl: String? = null
     private var currentSourceAudioUrl: String? = null
     private var currentRequestHeaders: Map<String, String> = emptyMap()
@@ -1696,7 +1680,6 @@ private class NuvioLibmpvView(
     }
 
     override fun initOptions() {
-        setVo(videoOutput.mpvValue)
         mpv.setOptionString("profile", "fast")
         mpv.setOptionString("hwdec", if (hardwareDecodingEnabled) "auto" else "no")
         if (yuv420pEnabled) {
@@ -1713,13 +1696,6 @@ private class NuvioLibmpvView(
         mpv.setPropertyBoolean("keep-open", true)
         mpv.setPropertyBoolean("input-default-bindings", true)
         mpv.setPropertyBoolean("audio-fallback-to-null", true)
-    }
-
-    override fun postInitOptions() = Unit
-
-    override fun surfaceCreated(holder: SurfaceHolder) {
-        super.surfaceCreated(holder)
-        surfaceReady.complete(Unit)
     }
 
     override fun observeProperties() {
@@ -2036,12 +2012,12 @@ private class NuvioLibmpvView(
                             !language.equals(SubtitleLanguageOption.FORCED, ignoreCase = true)
                     },
                 )
-                if (languages.isEmpty()) {
-                    mpv.setPropertyString("sid", "no")
-                    return
-                }
-                runCatching {
-                    mpv.setPropertyString("slang", languages.joinToString(","))
+                executeMpv {
+                    if (languages.isEmpty()) {
+                        mpv.setPropertyString("sid", "no")
+                    } else {
+                        mpv.setPropertyString("slang", languages.joinToString(","))
+                    }
                 }
             }
 
@@ -2134,27 +2110,8 @@ private class NuvioLibmpvView(
         }
     }
 
-    fun releaseMpv() {
-        if (!released.compareAndSet(false, true)) return
-        holder.removeCallback(this)
-        mpvScope.launch {
-            runCatching { mpv.destroy() }
-            mpvDispatcher.close()
-        }
-    }
-
     private fun setPausedNow(paused: Boolean) {
         runCatching { mpv.setPropertyBoolean("pause", paused) }
-    }
-
-    private fun executeMpv(block: () -> Unit) {
-        if (released.get()) return
-        mpvScope.launch {
-            if (released.get()) return@launch
-            runCatching(block).onFailure { error ->
-                Log.w(TAG, "libmpv operation failed", error)
-            }
-        }
     }
 
     private fun applyRequestHeadersNow(headers: Map<String, String>) {
