@@ -37,7 +37,6 @@ import platform.Foundation.NSURLSessionDataTask
 import platform.Foundation.NSURLSessionTask
 import platform.Foundation.setHTTPMethod
 import platform.Foundation.setValue
-import platform.UIKit.UIApplication
 import platform.Foundation.timeIntervalSince1970
 import platform.darwin.NSObject
 import platform.posix.FILE
@@ -153,16 +152,8 @@ internal actual object DownloadsPlatformDownloader {
             item
         }
 
-    actual fun removeFile(localFileUri: String?): Boolean {
-        if (localFileUri.isNullOrBlank()) return false
-        val path = localFileUri.toLocalPath() ?: return false
-        if (NSFileManager.defaultManager.fileExistsAtPath(path)) {
-            return removePathIfExists(path)
-        }
-
-        val fileName = path.substringAfterLast('/').takeIf { it.isNotBlank() } ?: return false
-        return removePathIfExists("${downloadsDirectoryPath()}/$fileName")
-    }
+    actual fun removeFile(localFileUri: String?): Boolean =
+        DownloadLocationManager.removeFile(localFileUri)
 
     actual fun removePartialFile(destinationFileName: String): Boolean {
         val destinationPath = "${downloadsDirectoryPath()}/$destinationFileName"
@@ -170,33 +161,11 @@ internal actual object DownloadsPlatformDownloader {
         return removePathIfExists("$destinationPath.part")
     }
 
-    actual fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String? {
-        localFileUri?.toLocalPath()
-            ?.takeIf { NSFileManager.defaultManager.fileExistsAtPath(it) }
-            ?.let { path ->
-                return NSURL.fileURLWithPath(path).absoluteString ?: "file://$path"
-            }
+    actual fun resolveLocalFileUri(localFileUri: String?, destinationFileName: String): String? =
+        DownloadLocationManager.resolveLocalFileUri(localFileUri, destinationFileName)
 
-        val fileName = destinationFileName.trim().takeIf { it.isNotBlank() }
-            ?: localFileUri?.toLocalPath()?.substringAfterLast('/')?.takeIf { it.isNotBlank() }
-            ?: return null
-        val currentPath = "${downloadsDirectoryPath()}/$fileName"
-        return if (NSFileManager.defaultManager.fileExistsAtPath(currentPath)) {
-            NSURL.fileURLWithPath(currentPath).absoluteString ?: "file://$currentPath"
-        } else {
-            null
-        }
-    }
-
-    actual fun openDownloadsDirectory(): Boolean {
-        val url = NSURL.fileURLWithPath(downloadsDirectoryPath())
-        UIApplication.sharedApplication.openURL(
-            url = url,
-            options = emptyMap<Any?, Any>(),
-            completionHandler = null,
-        )
-        return true
-    }
+    actual fun openDownloadsDirectory(): Boolean =
+        DownloadLocationManager.openDownloadLocation()
 }
 
 private class IosDownloadsTaskHandle(
@@ -394,7 +363,7 @@ private fun NSURLResponse?.toDownloadResult(): IosDownloadResult {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun downloadsDirectoryPath(): String {
+internal fun downloadsDirectoryPath(): String {
     val root = NSHomeDirectory().trimEnd('/')
     val path = "$root/Documents/nuvio_downloads"
     NSFileManager.defaultManager.createDirectoryAtPath(
@@ -407,7 +376,7 @@ private fun downloadsDirectoryPath(): String {
 }
 
 @OptIn(ExperimentalForeignApi::class)
-private fun removePathIfExists(path: String): Boolean {
+internal fun removePathIfExists(path: String): Boolean {
     if (!NSFileManager.defaultManager.fileExistsAtPath(path)) return true
     return NSFileManager.defaultManager.removeItemAtPath(path, null)
 }
@@ -483,7 +452,7 @@ private fun fileSizeOrNull(path: String): Long? {
     }
 }
 
-private fun String.toLocalPath(): String? {
+internal fun String.toLocalPath(): String? {
     val value = trim()
     if (value.startsWith("file:")) {
         return NSURL(string = value).path ?: value.removePrefix("file://")
