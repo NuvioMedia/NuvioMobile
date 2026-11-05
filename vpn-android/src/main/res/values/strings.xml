@@ -29,6 +29,10 @@
     <string name="vpn_profiles_importing">Importing configuration…</string>
     <string name="vpn_profiles_imported">Configuration imported.</string>
     <string name="vpn_profiles_import_failed">Could not import this configuration. Use a self-contained OpenVPN or WireGuard text file, up to 1 MiB, without desktop scripts or external certificate files.</string>
+    <string name="vpn_profiles_import_reason">Reason: %1$s</string>
+    <string name="vpn_import_reason_engine">The VPN engine could not be loaded on this device.</string>
+    <string name="vpn_import_reason_storage">The profile could not be stored securely on this device.</string>
+    <string name="vpn_import_reason_other">Something unexpected went wrong while saving it.</string>
     <string name="vpn_profiles_no_picker">No document picker is available. Install a file manager that supports opening documents, then try again.</string>
     <string name="vpn_profiles_storage_failed">Could not open encrypted profile storage.</string>
     <string name="vpn_profiles_empty">No saved profiles.</string>
@@ -70,7 +74,7 @@
     <string name="vpn_save_credentials">Save credentials</string>
     <string name="vpn_credentials_saved">Service credentials saved.</string>
     <string name="vpn_credentials_failed">Could not update service credentials. Check the profile and try again.</string>
-    <string name="vpn_auth_rejected">The OpenVPN server rejected authentication. Check the profile�s service credentials before retrying playback.</string>
+    <string name="vpn_auth_rejected">The OpenVPN server rejected authentication. Check the profile’s service credentials before retrying playback.</string>
     <string name="vpn_credentials_required">Set the service credentials for this OpenVPN profile.</string>
     <string name="vpn_apply_title">Apply VPN settings to</string>
     <string name="vpn_apply_all">All profiles</string>

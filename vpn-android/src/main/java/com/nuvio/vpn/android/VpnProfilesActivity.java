@@ -55,6 +55,7 @@ public final class VpnProfilesActivity extends Activity {
     private LinearLayout profiles;
     private TextView status;
     private boolean busy;
+    private volatile String importReason;
     private VpnAppearance appearance;
     private VpnSettingsViews ui;
     private View previousFocus;
@@ -271,6 +272,7 @@ public final class VpnProfilesActivity extends Activity {
             } catch (Exception | LinkageError e) {
                 event("import_failed: " + protocol.name() + "; " + e.getClass().getSimpleName());
                 message = R.string.vpn_profiles_import_failed;
+                importReason = importFailureReason(e);
             }
             final int notice = message;
             final String prompt = needsCredentials;
@@ -280,6 +282,15 @@ public final class VpnProfilesActivity extends Activity {
                 if (notice == R.string.vpn_profiles_imported && prompt != null) editCredentials(prompt);
             });
         });
+    }
+
+    /** Plain reason for a failed import. Only fixed app messages are shown, never file contents. */
+    private String importFailureReason(Throwable e) {
+        if (e instanceof LinkageError) return getString(R.string.vpn_import_reason_engine);
+        if (e instanceof java.security.GeneralSecurityException) return getString(R.string.vpn_import_reason_storage);
+        String text = e.getMessage();
+        if (e instanceof IOException && text != null && text.length() <= 120) return text;
+        return getString(R.string.vpn_import_reason_other);
     }
 
     private void editCredentials(String id) {
@@ -404,7 +415,11 @@ public final class VpnProfilesActivity extends Activity {
                         ui.gap(profiles, 10);
                     }
                     setBusy(false);
-                    status.setText(message == 0 ? "" : getString(message));
+                    String reason = importReason;
+                    importReason = null;
+                    status.setText(message == 0 ? "" : getString(message)
+                            + (message == R.string.vpn_profiles_import_failed && reason != null
+                            ? "\n\n" + getString(R.string.vpn_profiles_import_reason, reason) : ""));
                     if (getCurrentFocus() == null) actions.get(0).requestFocus();
                 });
             } catch (Exception e) {
