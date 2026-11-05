@@ -87,4 +87,16 @@
     <string name="date_month_august">ஆகஸ்ட்</string>
     <string name="date_month_september">செப்டம்பர்</string>
     <string name="date_month_october">அக்டோபர்</string>
+    <string name="date_month_november">நவம்பர்</string>
+    <string name="date_month_december">டிசம்பர்</string>
+    <string name="date_month_short_jan">ஜன</string>
+    <string name="date_month_short_feb">பிப்</string>
+    <string name="date_month_short_mar">மார்</string>
+    <string name="date_month_short_apr">ஏப்</string>
+    <string name="date_month_short_may">மே</string>
+    <string name="date_month_short_jun">ஜூன்</string>
+    <string name="date_month_short_jul">ஜூலை</string>
+    <string name="date_month_short_aug">ஆக</string>
+    <string name="date_month_short_sep">செப்</string>
+    <string name="date_month_short_oct">அக்</string>
 </resources>
