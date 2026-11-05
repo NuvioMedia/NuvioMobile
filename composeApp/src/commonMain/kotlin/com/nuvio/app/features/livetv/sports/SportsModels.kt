@@ -199,7 +199,9 @@ data class SportsSettings(
     /** Channel groups (lowercase names) whose channels go to the top of every game's list. */
     val preferredGroups: Set<String> = emptySet(),
     /** "Channels from" on the game page ("" = all; see [ChannelRegions]). */
-    val channelRegion: String = ""
+    val channelRegion: String = "",
+    /** League Networks: a network's id (see [LeagueNetworks]) -> the channel you picked for it. */
+    val leagueNetworkChannels: Map<String, String> = emptyMap()
 ) {
     fun toJson(): String = JSONObject()
         .put("showInSidebar", showInSidebar)
@@ -221,6 +223,7 @@ data class SportsSettings(
         .put("leagueChannels", JSONObject(leagueChannels as Map<*, *>))
         .put("preferredGroups", JSONArray(preferredGroups.toList()))
         .put("channelRegion", channelRegion)
+        .put("leagueNetworkChannels", JSONObject(leagueNetworkChannels as Map<*, *>))
         .toString()
 
     companion object {
@@ -249,7 +252,8 @@ data class SportsSettings(
                     teamChannels = o.optJSONObject("teamChannels").stringMap(),
                     leagueChannels = o.optJSONObject("leagueChannels").stringMap(),
                     preferredGroups = o.optJSONArray("preferredGroups").strings().toSet(),
-                    channelRegion = o.optString("channelRegion", "")
+                    channelRegion = o.optString("channelRegion", ""),
+                    leagueNetworkChannels = o.optJSONObject("leagueNetworkChannels").stringMap()
                 )
             }.getOrDefault(SportsSettings())
         }

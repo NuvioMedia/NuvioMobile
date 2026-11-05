@@ -94,7 +94,7 @@ data class SportsActions(
     val onOpenLeague: (League) -> Unit,
 )
 
-private enum class SportsTab { MINE, ALL, SEARCH, FOLLOWING }
+private enum class SportsTab { MINE, ALL, SEARCH, FOLLOWING, NETWORKS }
 
 /**
  * The Sports hub: My Sports (a row per team, league and name you follow), All Events (every game
@@ -155,6 +155,7 @@ fun SportsScreen(
             Chip(stringResource(Res.string.livetv_sports_all_events), selected = tab == SportsTab.ALL, onClick = { tabIndex = SportsTab.ALL.ordinal })
             Chip(stringResource(Res.string.livetv_sports_search), selected = tab == SportsTab.SEARCH, onClick = { tabIndex = SportsTab.SEARCH.ordinal })
             Chip(stringResource(Res.string.livetv_sports_following), selected = tab == SportsTab.FOLLOWING, onClick = { tabIndex = SportsTab.FOLLOWING.ordinal })
+            Chip("Networks", selected = tab == SportsTab.NETWORKS, onClick = { tabIndex = SportsTab.NETWORKS.ordinal })
         }
         problem?.let {
             Text(it, style = MaterialTheme.typography.bodySmall, color = tokens.colors.danger, modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16), maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -164,6 +165,7 @@ fun SportsScreen(
             SportsTab.ALL -> AllEventsTab(events, follows, settings, matches, now, use24h, loading, actions)
             SportsTab.SEARCH -> SportsSearchTab(known, follows, actions)
             SportsTab.FOLLOWING -> SportsFollowingTab(follows, settings, actions)
+            SportsTab.NETWORKS -> SportsNetworksTab(actions)
         }
     }
 

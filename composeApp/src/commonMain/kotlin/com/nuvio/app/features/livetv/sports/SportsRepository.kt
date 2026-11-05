@@ -4,6 +4,7 @@ import com.nuvio.app.features.livetv.data.LiveTvDirs
 import com.nuvio.app.features.livetv.data.LiveTvFiles
 import com.nuvio.app.features.livetv.data.LiveTvPreferences
 import com.nuvio.app.features.livetv.data.LiveTvRepository
+import com.nuvio.app.features.livetv.data.NowNext
 import com.nuvio.app.features.livetv.data.VideoPlaying
 import com.nuvio.app.features.livetv.model.LiveChannel
 import com.nuvio.app.features.livetv.model.LiveTvClock
@@ -24,6 +25,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.distinctUntilChangedBy
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -61,6 +64,28 @@ internal object SportsRepository {
     val follows: StateFlow<SportsFollows> = prefs.sportsMineJson
         .map { SportsFollows.fromJson(it) }
         .stateIn(scope, SharingStarted.Eagerly, SportsFollows())
+
+    /**
+     * League Networks: the channels whose names say they're a league's own channel (NFL Network,
+     * NBA TV…), by network id. Found by name only, so it's redone only when the channel list
+     * changes; channels you've hidden or locked are left out.
+     */
+    val leagueNetworks: StateFlow<Map<String, List<LiveChannel>>> = combine(
+        liveRepo.displayChannels
+            .distinctUntilChangedBy { list -> list.size to list.fold(0) { h, c -> h * 31 + c.name.hashCode() } }
+            .map { LeagueNetworks.find(it) }
+            .flowOn(Dispatchers.Default),
+        prefs.userState,
+        prefs.settings,
+    ) { found, user, live ->
+        found.mapValues { (_, list) ->
+            list.filter { ch ->
+                ch.key !in user.hiddenChannels && ch.groupId !in user.hiddenGroups &&
+                    !ParentalControls.isLocked(ch.groupId, ch.group, live, user.lockedGroups) &&
+                    !(ParentalControls.enabled(live) && live.lockAdultContent && ParentalControls.isAdult(ch.name))
+            }
+        }
+    }.stateIn(scope, SharingStarted.Eagerly, emptyMap())
 
     private class LeagueData(val events: List<SportsEvent>, val fetchedAt: Long, val error: String?)
 
@@ -1406,6 +1431,31 @@ internal object SportsRepository {
     fun eventById(id: String): SportsEvent? = events.value.firstOrNull { it.id == id } ?: known.value.firstOrNull { it.id == id }
 
     fun channelsForPicker(): List<LiveChannel> = liveRepo.displayChannels.value
+
+    /** League Networks: use this channel for the network (saved, and synced with the other Sports settings). */
+    fun pickLeagueNetwork(networkId: String, channelKey: String) =
+        updateSettings { it.copy(leagueNetworkChannels = it.leagueNetworkChannels + (networkId to channelKey)) }
+
+    /** League Networks: back to the automatic channel. */
+    fun resetLeagueNetwork(networkId: String) =
+        updateSettings { it.copy(leagueNetworkChannels = it.leagueNetworkChannels - networkId) }
+
+    /**
+     * What's on now and what's next on each channel, from the stored guide (a week ahead, so a
+     * channel that's only on some nights still says when). Times are shifted by the guide offset.
+     */
+    suspend fun nowAndNext(keys: Collection<String>): Map<String, NowNext> {
+        if (keys.isEmpty()) return emptyMap()
+        val shift = prefs.currentSettings().epgOffsetMinutes * MINUTE
+        val now = LiveTvClock.nowMs()
+        val listings = runCatching { liveRepo.programsIn(keys, now - shift, now - shift + 7 * DAY) }.getOrDefault(emptyMap())
+        return keys.associateWith { k ->
+            val list = listings[k].orEmpty()
+                .map { p -> if (shift == 0L) p else p.copy(startMs = p.startMs + shift, stopMs = p.stopMs + shift) }
+                .sortedBy { it.startMs }
+            NowNext(list.firstOrNull { now >= it.startMs && now < it.stopMs }, list.firstOrNull { it.startMs > now })
+        }
+    }
 
     // ------------------------------------------------------------------ days
 
