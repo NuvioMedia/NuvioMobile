@@ -90,6 +90,10 @@ import nuvio.composeapp.generated.resources.livetv_add_m3u
 import nuvio.composeapp.generated.resources.livetv_add_m3u_description
 import nuvio.composeapp.generated.resources.livetv_add_xtream
 import nuvio.composeapp.generated.resources.livetv_add_xtream_description
+import nuvio.composeapp.generated.resources.livetv_xtream_include_channels
+import nuvio.composeapp.generated.resources.livetv_xtream_include_vod
+import nuvio.composeapp.generated.resources.livetv_xtream_movies_only
+import nuvio.composeapp.generated.resources.livetv_xtream_nothing_included
 import nuvio.composeapp.generated.resources.livetv_backup_now
 import nuvio.composeapp.generated.resources.livetv_backup_now_description
 import nuvio.composeapp.generated.resources.livetv_catchup_prefer_hls
