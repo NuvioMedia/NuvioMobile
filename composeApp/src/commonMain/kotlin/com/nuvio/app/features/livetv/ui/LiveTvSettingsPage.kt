@@ -79,6 +79,7 @@ import com.nuvio.app.features.settings.SettingsGroupDivider
 import com.nuvio.app.features.settings.SettingsNavigationRow
 import com.nuvio.app.features.settings.SettingsSection
 import com.nuvio.app.features.settings.SettingsSwitchRow
+import com.nuvio.app.features.livetv.calendar.CalendarRepository
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_cancel
 import nuvio.composeapp.generated.resources.action_delete
@@ -726,6 +727,64 @@ private fun LiveTvSettingsBody(isTablet: Boolean) {
                     trailingContent = { ValueLabel(stringResource(Res.string.livetv_parental_locked_count, userState.lockedGroups.size)) },
                     onClick = { dialog = LiveDialog.ParentalAskPin(LiveDialog.ParentalGroups) },
                 )
+            }
+        }
+
+        SettingsSection(title = "Calendar", isTablet = isTablet) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsSwitchRow(
+                    title = "Upcoming row on Home",
+                    description = "Your shows' next episodes in Home's Upcoming row.",
+                    checked = settings.calendarUpcomingRow, isTablet = isTablet,
+                    onCheckedChange = { on -> update { it.copy(calendarUpcomingRow = on) } },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = "New episode cards on Home",
+                    description = "A card in Continue Watching when a followed show has a new episode out.",
+                    checked = settings.calendarNewEpisodeCards, isTablet = isTablet,
+                    onCheckedChange = { on -> update { it.copy(calendarNewEpisodeCards = on) } },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = "Hide spoilers",
+                    description = "Hide titles and pictures of episodes you haven't reached yet.",
+                    checked = settings.calendarHideSpoilers, isTablet = isTablet,
+                    onCheckedChange = { on -> update { it.copy(calendarHideSpoilers = on) } },
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = "Games on the Calendar",
+                    description = "Games for the teams you follow in Sports.",
+                    checked = settings.calendarSports, isTablet = isTablet,
+                    onCheckedChange = { on -> update { it.copy(calendarSports = on) } },
+                )
+            }
+        }
+
+        run {
+            val picks by CalendarRepository.channelPicks.collectAsStateWithLifecycle()
+            val channelCount by LiveTvRepository.channels.collectAsStateWithLifecycle()
+            val savedList = remember(picks, channelCount) { CalendarRepository.savedChannels() }
+            SettingsSection(title = "Calendar saved channels", isTablet = isTablet) {
+                SettingsGroup(isTablet = isTablet) {
+                    if (savedList.isEmpty()) {
+                        SettingsNavigationRow(
+                            title = "Nothing saved yet",
+                            description = "On the Calendar, open an episode, choose the channel, then pick Always use.",
+                            isTablet = isTablet, onClick = {},
+                        )
+                    }
+                    savedList.forEachIndexed { i, sc ->
+                        if (i > 0) SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = sc.label,
+                            description = sc.channel + (if (sc.forShow) " (this show)" else " (this network)") + " - tap to forget",
+                            isTablet = isTablet,
+                            onClick = { CalendarRepository.forgetSaved(sc.pickKey) },
+                        )
+                    }
+                }
             }
         }
 

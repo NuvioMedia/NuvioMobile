@@ -503,7 +503,7 @@ fun HomeScreen(
         }
     }.collectAsStateWithLifecycle(initialValue = com.nuvio.app.core.poster.CustomPosterUrlRepository.patternForScreen(com.nuvio.app.core.poster.CustomPosterScreen.CONTINUE_WATCHING))
 
-    val allContinueWatchingItems = remember(
+    val baseContinueWatchingItems = remember(
         visibleContinueWatchingEntries,
         cachedInProgressItems,
         effectivNextUpItems,
@@ -523,6 +523,35 @@ fun HomeScreen(
         ).let { items ->
             items.withCustomPosterUrls(cwPosterPattern)
         }
+    }
+    // Live TV Calendar: new-episode cards and the Upcoming row for shows you follow.
+    val calendarState by com.nuvio.app.features.livetv.calendar.CalendarRepository.state.collectAsStateWithLifecycle()
+    val calendarSettings by com.nuvio.app.features.livetv.data.LiveTvPreferences.settings.collectAsStateWithLifecycle()
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(6_000)
+        com.nuvio.app.features.livetv.calendar.CalendarRepository.ensureLoaded()
+        if (com.nuvio.app.features.livetv.calendar.CalendarRepository.follows.value.isNotEmpty()) {
+            com.nuvio.app.features.livetv.calendar.CalendarRepository.refresh()
+        }
+    }
+    val allContinueWatchingItems = remember(
+        baseContinueWatchingItems,
+        calendarState.entries,
+        calendarSettings.calendarNewEpisodeCards,
+        calendarSettings.calendarUpcomingRow,
+        continueWatchingPreferences.dismissedNextUpKeys,
+        cwPosterPattern,
+    ) {
+        val have = baseContinueWatchingItems.map { it.parentMetaId }.toSet()
+        val extra = com.nuvio.app.features.livetv.calendar.CalendarHomeFeed.items(
+            entries = calendarState.entries,
+            nowMs = WatchProgressClock.nowEpochMs(),
+            newEpisodeCards = calendarSettings.calendarNewEpisodeCards,
+            upcomingRow = calendarSettings.calendarUpcomingRow,
+            skipShows = have,
+            dismissed = continueWatchingPreferences.dismissedNextUpKeys,
+        ).withCustomPosterUrls(cwPosterPattern)
+        baseContinueWatchingItems + extra
     }
     val shuffleCandidates = remember(completedSeriesCandidates, continueWatchingPreferences.dismissedNextUpKeys) {
         completedSeriesCandidates.filter { candidate ->

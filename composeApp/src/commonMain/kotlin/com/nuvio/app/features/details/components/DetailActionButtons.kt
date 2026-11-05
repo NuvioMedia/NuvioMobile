@@ -18,6 +18,10 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.runtime.collectAsState
+import com.nuvio.app.features.livetv.calendar.CalendarBellHost
+import com.nuvio.app.features.livetv.calendar.CalendarRepository
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -265,6 +269,10 @@ fun DetailActions(
             onClick = onClick,
         )
     }
+    // The Calendar bell (Live TV): on = the show's new episodes are on your Calendar.
+    val bellTarget by CalendarBellHost.target.collectAsState()
+    val bellFollows by CalendarRepository.follows.collectAsState()
+    val bellOn = bellTarget?.let { t -> bellFollows.any { it.id == t.id || it.imdbId == t.id || (t.imdb != null && (it.id == t.imdb || it.imdbId == t.imdb)) } } == true
     DetailActionButtons(
         playLabel = if (playEnabled) playLabel else stringResource(Res.string.playback_unavailable),
         playEnabled = playEnabled,
@@ -288,6 +296,16 @@ fun DetailActions(
                     onLongClick = onSaveLongClick,
                 ),
             )
+            bellTarget?.let { t ->
+                add(
+                    DetailSecondaryAction(
+                        label = if (bellOn) "Stop following on Calendar" else "Follow on Calendar",
+                        icon = Icons.Default.Notifications,
+                        isActive = bellOn,
+                        onClick = { CalendarRepository.toggleBell(t.id, t.type, t.name, t.poster, t.background, t.imdb) },
+                    ),
+                )
+            }
         },
         isTablet = isTablet,
         onPlayClick = onPlayClick,

@@ -171,7 +171,8 @@ internal fun CalendarScreen(
         (state.entries + games).sortedWith(compareBy<CalendarEntry> { it.dayMs }.thenBy { it.airMs ?: Long.MAX_VALUE }.thenBy { it.title })
     }
     LaunchedEffect(Unit) { CalendarRepository.refresh() }
-    LaunchedEffect(state.entries, channels.size) { CalendarGuide.match(state.entries) }
+    val picks by CalendarRepository.channelPicks.collectAsStateWithLifecycle()
+    LaunchedEffect(state.entries, channels.size, picks) { CalendarGuide.match(state.entries) }
     LaunchedEffect(tab) { if (tab == CalTab.AIRING) CalendarRepository.loadAiring() }
 
     val today = SportsDates.dayStart(0)
@@ -761,6 +762,25 @@ private fun EntrySheet(e: CalendarEntry, followed: Boolean, hits: List<CalendarG
                             },
                         )
                     }
+                }
+            }
+            val saved = remember(tick, hits) { CalendarRepository.savedChoice(e) }
+            if (saved != null) {
+                Text(saved.first, style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted,
+                    modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s4))
+                NuvioBottomSheetActionRow(
+                    title = "Forget the saved channel", icon = Icons.Filled.VisibilityOff,
+                    onClick = { CalendarRepository.forgetSaved(saved.second); notice = "Saved channel forgotten" },
+                )
+            }
+            if (choosing) {
+                Text("Always use one of these for ${e.title}", style = MaterialTheme.typography.labelMedium, color = tokens.colors.textMuted,
+                    modifier = Modifier.padding(horizontal = NuvioTokens.Space.s16, vertical = NuvioTokens.Space.s4))
+                hits.forEach { h ->
+                    NuvioBottomSheetActionRow(
+                        title = "Always use " + h.channelName, icon = Icons.Filled.Notifications, selected = h.mine,
+                        onClick = { CalendarRepository.setAlways(e, h); notice = "Always using ${h.channelName} for ${e.title}" },
+                    )
                 }
             }
             NuvioBottomSheetDivider()

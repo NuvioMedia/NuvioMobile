@@ -78,6 +78,8 @@ import com.nuvio.app.features.livetv.model.LiveTvClock
 import com.nuvio.app.features.livetv.player.LiveTvCatchup
 import com.nuvio.app.features.livetv.record.LiveTvRecordingScheduler
 import com.nuvio.app.features.livetv.reminders.LiveTvReminders
+import com.nuvio.app.features.livetv.calendar.CalendarRepository
+import com.nuvio.app.features.livetv.calendar.CalendarSources
 import com.nuvio.app.features.livetv.model.Reminder
 import com.nuvio.app.features.livetv.data.LiveTvPreferences
 import com.nuvio.app.core.ui.NuvioToastController
@@ -517,6 +519,16 @@ internal fun ProgramDetailsDialog(
     val user by LiveTvPreferences.userState.collectAsStateWithLifecycle()
     val reminded = remember(user.reminders, program) { user.reminders.any { it.channelKey == channel.key && it.startMs == program.startMs } }
     val upcoming = program.startMs > now
+    // The Calendar bell: follow this show (its new episodes on the Calendar and on Home).
+    val bellFollows by CalendarRepository.follows.collectAsStateWithLifecycle()
+    var bellShow by remember(program.title) { mutableStateOf<CalendarSources.Show?>(null) }
+    LaunchedEffect(program.title) {
+        CalendarRepository.ensureLoaded()
+        if (!LiveTvRepository.isPlaceholderTitle(program.title)) {
+            bellShow = CalendarSources.findShowByName(program.title.replace(Regex("\\s*\\([^)]*\\)\\s*$"), ""))
+        }
+    }
+    val bellOn = bellShow?.let { b -> bellFollows.any { it.id == b.imdb || it.imdbId == b.imdb } } == true
     // Record: a show still to come or on now; a past show too when the channel keeps it in catch-up.
     val recordable = !LiveTvRepository.isPlaceholderTitle(program.title) && (program.stopMs > now || LiveTvCatchup.isReplayable(channel, program, now))
     DialogSurface(onDismissRequest = onDismiss, title = full.title) {
@@ -525,8 +537,18 @@ internal fun ProgramDetailsDialog(
             style = MaterialTheme.typography.bodyMedium,
             color = tokens.colors.textSecondary,
         )
-        if (recordable || upcoming) {
+        if (recordable || upcoming || bellShow != null) {
             Row(horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8), modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                bellShow?.let { b ->
+                    Chip(
+                        label = if (bellOn) "Following on Calendar" else "Follow on Calendar",
+                        selected = bellOn,
+                        onClick = {
+                            val on = CalendarRepository.toggleBell(b.imdb ?: return@Chip, "series", b.name, b.image, b.backdrop, b.imdb)
+                            NuvioToastController.show(if (on) "Following ${b.name}" else "Stopped following ${b.name}")
+                        },
+                    )
+                }
                 if (upcoming) {
                     Chip(
                         label = stringResource(if (reminded) Res.string.livetv_reminder_set else Res.string.livetv_remind_me),

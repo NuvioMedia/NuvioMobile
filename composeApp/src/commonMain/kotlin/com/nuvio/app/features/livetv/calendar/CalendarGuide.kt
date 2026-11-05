@@ -29,6 +29,8 @@ internal data class CalendarGuideHit(
     val group: String? = null,
     /** The guide's own episode number says it's this very episode (not a rerun). */
     val confirmed: Boolean = false,
+    /** The channel you told the Calendar to use for this show. */
+    val mine: Boolean = false,
 )
 
 /**
@@ -60,6 +62,7 @@ internal object CalendarGuide {
         val shift = LiveTvPreferences.currentSettings().epgOffsetMinutes * MIN
         val byKey = channels.associateBy { it.key }
         val favorites = runCatching { LiveTvPreferences.currentUserState().favorites.toSet() }.getOrDefault(emptySet())
+        val picks = CalendarRepository.channelPicks.value
         val found = HashMap<String, List<CalendarGuideHit>>()
         for (e in entries) {
             val air = e.airMs ?: continue
@@ -74,6 +77,7 @@ internal object CalendarGuide {
             }.getOrDefault(emptyList())
             val net = e.network?.let { LiveTvRepository.normalize(it) }.orEmpty()
             val lastEp = e.lastEpisode ?: e.episode
+            val picked = picks[CalendarRepository.showPickKey(e.contentId)] ?: CalendarRepository.pickKey(e.network)?.let { picks[it] }
             var looked = 0
             val options = rows.mapNotNull { (key, p0) ->
                 val ch = byKey[key] ?: return@mapNotNull null
@@ -86,6 +90,7 @@ internal object CalendarGuide {
                 if (sameEp == false) return@mapNotNull null
                 val chName = LiveTvRepository.normalize(ch.name)
                 var score = 0
+                if (key == picked) score += 1_000
                 if (sameEp == true) score += 200
                 if (net.isNotEmpty() && (chName == net || chName.startsWith(net) || chName.contains(net))) score += 100
                 if (key in favorites) score += 40
@@ -97,7 +102,18 @@ internal object CalendarGuide {
                     group = ch.group.ifBlank { null }, confirmed = sameEp == true,
                 )
             }.distinctBy { it.second.channelKey }.sortedByDescending { it.first }.map { it.second }
-            if (options.isNotEmpty()) found[e.key] = options
+            // The channel you set for this show yourself: first, even when its guide doesn't list the show.
+            val mineCh = picks[CalendarRepository.showPickKey(e.contentId)]?.let { byKey[it] }
+            val mine = mineCh?.let { ch ->
+                val own = options.firstOrNull { it.channelKey == ch.key }
+                own?.copy(mine = true) ?: CalendarGuideHit(
+                    ch.key, ch.name, ch.logo, air, air + (e.runtimeMin ?: 60) * MIN, e.title,
+                    playlist = ch.sourceName, catchup = ch.catchup != null, favorite = ch.key in favorites,
+                    group = ch.group.ifBlank { null }, mine = true,
+                )
+            }
+            val all = listOfNotNull(mine) + options.filter { it.channelKey != mine?.channelKey }
+            if (all.isNotEmpty()) found[e.key] = all
         }
         _hits.value = found
     }

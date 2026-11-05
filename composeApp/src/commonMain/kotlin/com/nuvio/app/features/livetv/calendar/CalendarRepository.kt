@@ -12,7 +12,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import com.nuvio.app.features.livetv.data.LiveTvRepository
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -97,6 +101,9 @@ internal object CalendarRepository {
         }
     }
 
+    /** Reads the followed / hidden lists from disk (once). */
+    fun ensureLoaded() = loadLists()
+
     fun isFollowed(id: String): Boolean = _follows.value.any { it.id == id || it.imdbId == id }
 
     /** Follows [e]'s show or movie if it isn't followed yet, otherwise stops following it. Returns whether it's followed now. */
@@ -118,6 +125,84 @@ internal object CalendarRepository {
         _follows.value = if (_follows.value.any { it.id == f.id }) _follows.value.filter { it.id != f.id } else _follows.value + f
         saveLists()
         refresh(force = false)
+    }
+
+    // ---- the bell on a show's page / in Live TV
+
+    /** Is the show or movie with this id (Nuvio id or IMDb id) on your Calendar by bell? */
+    fun isBellOn(id: String, imdb: String?): Boolean {
+        loadLists()
+        return _follows.value.any { it.id == id || it.imdbId == id || (imdb != null && (it.id == imdb || it.imdbId == imdb)) }
+    }
+
+    /** Rings or silences the bell. Returns whether it's on now. */
+    fun toggleBell(id: String, type: String, name: String, poster: String?, background: String?, imdb: String?): Boolean {
+        loadLists()
+        val existing = _follows.value.firstOrNull { it.id == id || it.imdbId == id || (imdb != null && (it.id == imdb || it.imdbId == imdb)) }
+        if (existing != null) toggleFollow(existing)
+        else toggleFollow(CalendarFollow(id, type, name, poster, background, imdb ?: id.takeIf { it.startsWith("tt") }, null, LiveTvClock.nowMs()))
+        return existing == null
+    }
+
+    // ---- channels you told the Calendar to use ("Always use this channel")
+
+    /** Saved picks: "show|<id>" -> channel key (for one show), or a squashed network name -> channel key. */
+    val channelPicks: StateFlow<Map<String, String>> = LiveTvPreferences.calendarChannelPicks
+        .map { raw ->
+            runCatching {
+                Json.parseToJsonElement(raw.ifBlank { "{}" }).jsonObject.mapValues { it.value.jsonPrimitive.content }
+            }.getOrDefault(emptyMap())
+        }
+        .stateIn(scope, SharingStarted.Eagerly, emptyMap())
+
+    fun showPickKey(contentId: String) = "show|$contentId"
+    fun pickKey(network: String?): String? = network?.let { LiveTvRepository.normalize(it) }?.takeIf { it.isNotEmpty() }
+    fun savedKey(e: CalendarEntry): String? = channelPicks.value[showPickKey(e.contentId)] ?: pickKey(e.network)?.let { channelPicks.value[it] }
+
+    private fun editPicks(change: (MutableMap<String, String>) -> Unit) {
+        LiveTvPreferences.editCalendarChannelPicks { raw ->
+            val m = runCatching {
+                Json.parseToJsonElement(raw.ifBlank { "{}" }).jsonObject.mapValues { it.value.jsonPrimitive.content }.toMutableMap()
+            }.getOrDefault(mutableMapOf())
+            change(m)
+            buildJsonObject { m.forEach { (k, v) -> put(k, v) } }.toString()
+        }
+    }
+
+    /** "Always use this channel" for [e]'s show (null: forget it, for the show and its network). */
+    fun setAlways(e: CalendarEntry, hit: CalendarGuideHit?) {
+        val net = pickKey(e.network)
+        val sk = showPickKey(e.contentId)
+        editPicks { m ->
+            if (hit == null) { m.remove(sk); if (net != null) m.remove(net) }
+            else { m[sk] = hit.channelKey; if (net != null) m.remove(net) }
+        }
+    }
+
+    fun forgetSaved(pickKey: String) = editPicks { it.remove(pickKey) }
+
+    /** What's saved for [e], in words, and where it's kept (to forget it). Null: nothing saved. */
+    fun savedChoice(e: CalendarEntry): Pair<String, String>? {
+        val chans = LiveTvRepository.channels.value
+        fun name(key: String) = chans.firstOrNull { it.key == key }?.name ?: "a channel no longer in your playlist"
+        channelPicks.value[showPickKey(e.contentId)]?.let { return "Using ${name(it)} for ${e.title}" to showPickKey(e.contentId) }
+        val k = pickKey(e.network) ?: return null
+        val v = channelPicks.value[k] ?: return null
+        return "Always using ${name(v)} for ${e.network}" to k
+    }
+
+    data class SavedChannel(val pickKey: String, val label: String, val forShow: Boolean, val channel: String)
+
+    /** Every channel you've told the Calendar to use (Settings > Calendar > Saved Channels). */
+    fun savedChannels(): List<SavedChannel> {
+        val chans = LiveTvRepository.channels.value.associateBy { it.key }
+        val names = (_state.value.entries + _airing.value.entries).associate { it.contentId to it.title } +
+            _follows.value.associate { (it.imdbId ?: it.id) to it.name }
+        return channelPicks.value.map { (k, v) ->
+            val chText = chans[v]?.name ?: "a channel no longer in your playlist"
+            if (k.startsWith("show|")) SavedChannel(k, names[k.removePrefix("show|")] ?: k.removePrefix("show|"), true, chText)
+            else SavedChannel(k, k, false, chText)
+        }.sortedWith(compareBy<SavedChannel> { it.forShow }.thenBy { it.label.lowercase() })
     }
 
     /** Takes a show or movie off the Calendar (it's also dropped from Following). */

@@ -501,6 +501,12 @@ fun MetaDetailsScreen(
             displayedMeta != null -> {
                 val meta = displayedMeta
                 val metaPreview = remember(meta) { meta.toMetaPreview() }
+                androidx.compose.runtime.DisposableEffect(meta.id, meta.type) {
+                    com.nuvio.app.features.livetv.calendar.CalendarRepository.ensureLoaded()
+                    com.nuvio.app.features.livetv.calendar.CalendarBellHost.target.value =
+                        com.nuvio.app.features.livetv.calendar.CalendarBellHost.forMeta(meta.id, meta.type, meta.name, meta.poster, meta.background, meta.imdbId)
+                    onDispose { com.nuvio.app.features.livetv.calendar.CalendarBellHost.target.value = null }
+                }
                 val todayIsoDate = CurrentDateProvider.todayIsoDate()
                 val isSaved = remember(
                     libraryUiState.items,

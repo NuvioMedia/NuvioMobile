@@ -201,6 +201,14 @@ internal object CalendarSources {
         return runCatching { json.parseToJsonElement(raw).jsonObject.int("id") }.getOrNull()?.takeIf { it > 0 }
     }
 
+    /** The show a guide listing is about, by name (null when TVmaze has none, or no IMDb id for it). */
+    suspend fun findShowByName(name: String): Show? {
+        val q = name.trim().takeIf { it.length >= 2 } ?: return null
+        val raw = tvm("/singlesearch/shows?q=" + q.encodeURLParameter()) ?: return null
+        val o = runCatching { json.parseToJsonElement(raw).jsonObject }.getOrNull() ?: return null
+        return parseShow(o)?.takeIf { it.imdb != null }
+    }
+
     // ---- TVmaze shows
 
     private val shows = HashMap<Int, ShowData>()
