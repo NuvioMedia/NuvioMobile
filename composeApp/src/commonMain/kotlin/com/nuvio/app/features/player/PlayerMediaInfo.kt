@@ -9,7 +9,7 @@ data class PlayerMediaInfo(
     val audioCodec: String? = null,
     val audioChannels: Int? = null,
     val audioSampleRate: Int? = null,
-    val audioProfile: String? = null,
+    val audioProfiles: List<String> = emptyList(),
     val hdr: List<String> = emptyList(),
     val bitDepth: Int? = null,
 )
@@ -24,7 +24,7 @@ internal fun mpvMediaInfo(property: (String) -> String?): PlayerMediaInfo =
         audioCodec = property("current-tracks/audio/codec")?.let(::mpvCodecLabel),
         audioChannels = property("audio-params/channel-count")?.toIntOrNull()?.takeIf { it > 0 },
         audioSampleRate = property("audio-params/samplerate")?.toIntOrNull()?.takeIf { it > 0 },
-        audioProfile = property("current-tracks/audio/codec-profile"),
+        audioProfiles = listOfNotNull(property("current-tracks/audio/codec-profile")),
         hdr = buildList {
             if (!property("current-tracks/video/dolby-vision-profile").isNullOrBlank()) add("DV")
             when (property("video-params/gamma")) {
@@ -42,7 +42,7 @@ private fun mpvBitDepth(pixelFormat: String): Int? = when {
 }
 
 private fun mpvCodecLabel(codec: String): String? =
-    when (codec.trim().lowercase()) {
+    when (val c = codec.trim().lowercase()) {
         "" -> null
         "h264" -> "AVC"
         "ac3" -> "AC-3"
@@ -50,5 +50,9 @@ private fun mpvCodecLabel(codec: String): String? =
         "truehd" -> "TrueHD"
         "opus" -> "Opus"
         "vorbis" -> "Vorbis"
-        else -> codec.trim().uppercase()
+        "dts" -> "DTS"
+        else -> when {
+            c.startsWith("pcm") -> "PCM"
+            else -> codec.trim().uppercase()
+        }
     }

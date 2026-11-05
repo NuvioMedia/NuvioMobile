@@ -54,7 +54,13 @@ internal fun PlayerScreenRuntime.restorePersistedAudioPreference(preference: Per
 internal fun PlayerScreenRuntime.refreshAudioTracksIfChanged() {
     if (playbackSnapshot.isLoading) return
     val controller = playerController ?: return
-    if (!preferredAudioSelectionApplied || controller.getAudioTracks() != audioTracks) {
+    if (!preferredAudioSelectionApplied) {
+        refreshTracks()
+        return
+    }
+    val tracks = controller.getAudioTracks()
+    // The engine caches its track list, so the same instance means nothing changed.
+    if (tracks !== audioTracks && tracks != audioTracks) {
         refreshTracks()
     }
 }

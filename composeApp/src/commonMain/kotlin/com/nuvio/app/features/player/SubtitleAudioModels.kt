@@ -32,6 +32,7 @@ data class AddonSubtitle(
     val display: String,
     val addonName: String? = null,
     val isSelected: Boolean = false,
+    val label: String? = null,
 )
 
 const val SUBTITLE_DELAY_MIN_MS = -60_000
@@ -54,6 +55,7 @@ data class SubtitleStyleState(
     val stripSdh: Boolean = false,
     val useForcedSubtitles: Boolean = false,
     val showOnlyPreferredLanguages: Boolean = false,
+    val appearance: SubtitleAppearance = SubtitleAppearance(),
 ) {
     companion object {
         val DEFAULT = SubtitleStyleState()

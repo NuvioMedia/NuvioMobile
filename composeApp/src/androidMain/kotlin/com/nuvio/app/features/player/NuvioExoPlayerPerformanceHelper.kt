@@ -17,6 +17,9 @@ internal object NuvioExoPlayerPerformanceHelper {
     private const val MIN_BUFFER_MS = 15_000
     private const val MAX_BUFFER_MS = 45_000
     private const val BUFFER_FOR_PLAYBACK_MS = 3_000
+    private const val LOCAL_FILE_MIN_BUFFER_MS = 5_000
+    private const val LOCAL_FILE_MAX_BUFFER_MS = 15_000
+    private const val LOCAL_FILE_TARGET_BUFFER_MB = 48
     private const val BACK_BUFFER_TARGET_SHARE_NUM = 1L
     private const val BACK_BUFFER_TARGET_SHARE_DEN = 2L
 
@@ -82,7 +85,11 @@ internal object NuvioExoPlayerPerformanceHelper {
     fun buildLoadControl(
         context: Context,
         bufferSettings: PlaybackBufferSettings = PlaybackBufferSettings(),
+        localFileSource: Boolean = false,
     ): DefaultLoadControl {
+        if (localFileSource && !bufferSettings.enabled) {
+            return localFileLoadControl()
+        }
         if (bufferSettings.enabled) {
             return buildCustomLoadControl(context, bufferSettings)
         }
@@ -107,6 +114,38 @@ internal object NuvioExoPlayerPerformanceHelper {
             bufferForPlaybackAfterRebufferMs = BUFFER_FOR_PLAYBACK_MS,
             backBufferMs = PlaybackBufferSettings.DEFAULT_BACK_BUFFER_MS,
         )
+    }
+
+    /**
+     * Downloaded files are read from disk, so a long buffer only wastes memory: keep the
+     * buffer small and let the byte cap win over the time thresholds.
+     */
+    private fun localFileLoadControl(): DefaultLoadControl {
+        if (enabled) {
+            return nativeLoadControl(
+                targetBufferMb = LOCAL_FILE_TARGET_BUFFER_MB,
+                minBufferMs = LOCAL_FILE_MIN_BUFFER_MS,
+                maxBufferMs = LOCAL_FILE_MAX_BUFFER_MS,
+                bufferForPlaybackMs = BUFFER_FOR_PLAYBACK_MS,
+                bufferForPlaybackAfterRebufferMs = BUFFER_FOR_PLAYBACK_MS,
+                backBufferMs = 0,
+            )
+        }
+        val targetBytes = (LOCAL_FILE_TARGET_BUFFER_MB.toLong() * 1024L * 1024L)
+            .coerceAtMost(Int.MAX_VALUE.toLong())
+            .toInt()
+        Log.i(TAG, "local file load control targetMb=$LOCAL_FILE_TARGET_BUFFER_MB")
+        return DefaultLoadControl.Builder()
+            .setTargetBufferBytes(targetBytes)
+            .setBufferDurationsMs(
+                LOCAL_FILE_MIN_BUFFER_MS,
+                LOCAL_FILE_MAX_BUFFER_MS,
+                BUFFER_FOR_PLAYBACK_MS,
+                BUFFER_FOR_PLAYBACK_MS,
+            )
+            .setPrioritizeTimeOverSizeThresholds(false)
+            .setBackBuffer(0, false)
+            .build()
     }
 
     private fun buildCustomLoadControl(

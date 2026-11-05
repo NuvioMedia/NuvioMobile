@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
+import androidx.compose.material.icons.automirrored.rounded.Toc
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Flag
 import androidx.compose.material.icons.rounded.Groups
@@ -112,6 +113,7 @@ internal fun PlayerControlActions(
     onAudioClick: () -> Unit,
     onSourcesClick: (() -> Unit)?,
     onEpisodesClick: (() -> Unit)?,
+    onChaptersClick: (() -> Unit)?,
     onNextEpisodeClick: (() -> Unit)?,
     onSpeedClick: () -> Unit,
     onResizeModeClick: () -> Unit,
@@ -128,6 +130,7 @@ internal fun PlayerControlActions(
         onAudioClick = onAudioClick,
         onSourcesClick = onSourcesClick,
         onEpisodesClick = onEpisodesClick,
+        onChaptersClick = onChaptersClick,
         onNextEpisodeClick = onNextEpisodeClick,
         onSpeedClick = onSpeedClick,
         onResizeModeClick = onResizeModeClick,
@@ -228,6 +231,7 @@ internal fun playerControlActions(
     onAudioClick: () -> Unit,
     onSourcesClick: (() -> Unit)?,
     onEpisodesClick: (() -> Unit)?,
+    onChaptersClick: (() -> Unit)?,
     onNextEpisodeClick: (() -> Unit)?,
     onSpeedClick: () -> Unit,
     onResizeModeClick: () -> Unit,
@@ -251,6 +255,12 @@ internal fun playerControlActions(
             stringResource(Res.string.compose_player_audio), onAudioClick,
             painter = appIconPainter(AppIconResource.PlayerAudioFilled),
         ),
+        onChaptersClick?.let {
+            PlayerControlAction(
+                stringResource(Res.string.compose_player_chapters), it,
+                icon = Icons.AutoMirrored.Rounded.Toc,
+            )
+        },
         onSourcesClick?.let {
             PlayerControlAction(
                 stringResource(Res.string.compose_player_sources), it,

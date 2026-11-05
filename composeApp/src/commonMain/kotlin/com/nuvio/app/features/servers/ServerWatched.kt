@@ -51,11 +51,11 @@ internal object ServerWatched {
         return scope.launch {
             var lookupFailures = 0
             val targets = items.filterNot(::isServerItem).flatMap { item ->
-                val request = ServerMatcher.request(item.type, item.videoId ?: item.id, item.season, item.episode)
+                val request = ServerMatcher.shared.request(item.type, item.videoId ?: item.id, item.season, item.episode)
                     ?: return@flatMap emptyList()
-                connections.filter { ServerMatcher.supports(it, request.kind) }.flatMap { connection ->
+                connections.filter { ServerMatcher.shared.supports(it, request.kind) }.flatMap { connection ->
                     try {
-                        ServerMatcher.match(connection, request, forceRefresh = false)
+                        ServerMatcher.shared.match(connection, request, forceRefresh = false)
                             .also { if (it.isEmpty()) log.i { "No ${connection.providerId} match for ${item.label()}" } }
                             .map { it to item }
                     } catch (error: CancellationException) {

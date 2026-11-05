@@ -8,15 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import com.nuvio.app.core.ui.Slider
 import com.nuvio.app.core.ui.HsvColor
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.formatHexColor
@@ -114,7 +111,6 @@ internal fun ThemeColorPicker(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ColorChannelSlider(
     title: String,
@@ -125,23 +121,17 @@ private fun ColorChannelSlider(
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
 ) {
     val tokens = MaterialTheme.nuvio
-    val sliderState = remember(valueRange) { SliderState(trackRange = valueRange) }
-    sliderState.value = value
     Column {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Text(title, style = MaterialTheme.typography.labelLarge, color = tokens.colors.textPrimary)
             Text(valueLabel, style = MaterialTheme.typography.labelLarge, color = tokens.colors.textSecondary)
         }
         Slider(
-            state = sliderState,
+            value = value,
             onValueChange = onValueChange,
+            valueRange = valueRange,
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = title },
-            track = {
-                Box(
-                    Modifier.fillMaxWidth().height(NuvioTokens.Space.s8)
-                        .clip(tokens.shapes.chip).background(brush),
-                )
-            },
+            trackBrush = brush,
         )
     }
 }

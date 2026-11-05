@@ -82,6 +82,8 @@ private data class PanelTarget(
 @Composable
 internal fun PartyPanel(
     visible: Boolean,
+    width: Dp,
+    modal: Boolean,
     state: PartyUiState,
     showChat: Boolean,
     onShowChatChange: (Boolean) -> Unit,
@@ -113,7 +115,8 @@ internal fun PartyPanel(
     PlayerSidePanel(
         visible = visible,
         onDismiss = onDismiss,
-        width = 420.dp,
+        width = width,
+        modal = modal,
     ) {
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val party = state.party
