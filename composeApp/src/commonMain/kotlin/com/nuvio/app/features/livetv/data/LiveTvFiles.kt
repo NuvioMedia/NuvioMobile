@@ -60,4 +60,6 @@ internal object LiveTvDirs {
     const val STATE = "state"
     /** The Sports hub's saved feeds, tables and channel matches. */
     const val SPORTS = "sports"
+    /** Change logo's lists of library logos (kept a week). */
+    const val LOGOS = "logos"
 }

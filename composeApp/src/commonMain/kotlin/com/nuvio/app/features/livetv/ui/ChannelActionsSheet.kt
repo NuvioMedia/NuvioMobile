@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Schedule
@@ -61,6 +62,7 @@ import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.action_save
 import nuvio.composeapp.generated.resources.livetv_action_add_favorite
 import nuvio.composeapp.generated.resources.livetv_action_assign_epg
+import nuvio.composeapp.generated.resources.livetv_action_change_logo
 import nuvio.composeapp.generated.resources.livetv_action_hide
 import nuvio.composeapp.generated.resources.livetv_action_move_to_group
 import nuvio.composeapp.generated.resources.livetv_action_remove_favorite
@@ -121,6 +123,7 @@ internal fun ChannelActionsSheet(
                 onClick = { LiveTvPreferences.toggleFavorite(channel.key); close() },
             )
             NuvioBottomSheetActionRow(title = stringResource(Res.string.livetv_action_rename), icon = Icons.Filled.Edit, onClick = { dialog = ChannelDialog.Rename })
+            NuvioBottomSheetActionRow(title = stringResource(Res.string.livetv_action_change_logo), icon = Icons.Filled.Image, onClick = { dialog = ChannelDialog.ChangeLogo })
             NuvioBottomSheetActionRow(title = stringResource(Res.string.livetv_action_assign_epg), icon = Icons.Filled.Schedule, onClick = { dialog = ChannelDialog.AssignEpg })
             NuvioBottomSheetActionRow(title = stringResource(Res.string.livetv_action_move_to_group), icon = Icons.Filled.FolderOpen, onClick = { dialog = ChannelDialog.MoveToGroup })
             NuvioBottomSheetActionRow(
@@ -134,13 +137,14 @@ internal fun ChannelActionsSheet(
 
     when (dialog) {
         ChannelDialog.Rename -> RenameChannelDialog(channel, onDismiss = { dialog = null; onDismiss() })
+        ChannelDialog.ChangeLogo -> ChangeLogoDialog(channel, onDismiss = { dialog = null; onDismiss() })
         ChannelDialog.AssignEpg -> AssignEpgDialog(channel, onDismiss = { dialog = null; onDismiss() })
         ChannelDialog.MoveToGroup -> MoveToGroupDialog(channel, customGroups, onDismiss = { dialog = null; onDismiss() })
         null -> Unit
     }
 }
 
-private enum class ChannelDialog { Rename, AssignEpg, MoveToGroup }
+private enum class ChannelDialog { Rename, ChangeLogo, AssignEpg, MoveToGroup }
 
 @Composable
 private fun RenameChannelDialog(channel: LiveChannel, onDismiss: () -> Unit) {
