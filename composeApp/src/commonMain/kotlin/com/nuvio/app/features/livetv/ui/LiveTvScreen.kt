@@ -59,6 +59,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -200,6 +201,7 @@ fun LiveTvScreen(
     // Groups start collapsed; tapping a header opens it. Kept across the trip to the player.
     val expanded = remember { mutableStateOf(LiveTvListMemory.expanded) }
     var sheetChannel by remember { mutableStateOf<LiveChannel?>(null) }
+    var pickFavoritesFor by remember { mutableStateOf<LiveGroupSection?>(null) }
     var unlockGroup by remember { mutableStateOf<ChannelGroup?>(null) }
     var overflow by remember { mutableStateOf(false) }
     val haptics = LocalHapticFeedback.current
@@ -362,7 +364,8 @@ fun LiveTvScreen(
                     val id = section.group.id
                     val isCollapsed = id !in expanded.value
                     item(key = "g:$id") {
-                        GroupCard(section.group, section.channels, isCollapsed, playlistTag = if (playlistId == null && playlistChoices.size > 1) playlistNames[section.group.sourceId] else null) {
+                        GroupCard(section.group, section.channels, isCollapsed, playlistTag = if (playlistId == null && playlistChoices.size > 1) playlistNames[section.group.sourceId] else null,
+                            onPickFavorites = if (id != ChannelGroup.FAVORITES && id != ChannelGroup.RECENT && section.channels.isNotEmpty()) ({ pickFavoritesFor = section }) else null) {
                             if (section.group.locked) unlockGroup = section.group
                             else {
                                 expanded.value = if (isCollapsed) expanded.value + id else expanded.value - id
@@ -409,6 +412,10 @@ fun LiveTvScreen(
                 }
             }
         }
+    }
+
+    pickFavoritesFor?.let { sec ->
+        PickFavoritesSheet(sec.group.title, sec.channels, state.favoriteKeys, onDismiss = { pickFavoritesFor = null })
     }
 
     sheetChannel?.let { channel ->
@@ -461,6 +468,8 @@ private fun GroupCard(
     channels: List<LiveChannel>,
     collapsed: Boolean,
     playlistTag: String? = null,
+    /** A small star that opens Pick favorites for this group (null: none). */
+    onPickFavorites: (() -> Unit)? = null,
     onToggle: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -521,6 +530,14 @@ private fun GroupCard(
                     )
                 }
             }
+        }
+        if (!group.locked && onPickFavorites != null) {
+            Icon(
+                imageVector = Icons.Filled.StarBorder,
+                contentDescription = "Pick favorites",
+                tint = tokens.colors.textMuted,
+                modifier = Modifier.size(36.dp).clip(CircleShape).clickable(onClick = onPickFavorites).padding(6.dp),
+            )
         }
         if (!group.locked) {
             Icon(
