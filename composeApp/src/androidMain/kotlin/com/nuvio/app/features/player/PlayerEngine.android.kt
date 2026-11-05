@@ -285,6 +285,8 @@ private fun ExoPlayerSurface(
     val subtitleStyleGuard = remember { SubtitleStyleGuard() }
     var decoderPriorityOverride by remember(playerSourceKey) { mutableStateOf<Int?>(null) }
     var fallbackStartPositionMs by remember(playerSourceKey) { mutableStateOf<Long?>(null) }
+    var playbackResumeGeneration by remember(playerSourceKey) { mutableStateOf(0) }
+    val stallSession = remember(playerSourceKey) { PlaybackReopenSession(initialPositionMs) }
     val effectiveDecoderPriority = decoderPriorityOverride ?: playerSettings.decoderPriority
 
     var resolvedMediaItem by remember(playerSourceKey, externalSubtitles) {
@@ -304,8 +306,6 @@ private fun ExoPlayerSurface(
                 .build(),
         )
     }
-    var probeAttempted by remember(playerSourceKey) { mutableStateOf(false) }
-
     val isLocalFileSource = remember(resolvedMediaItem) {
         resolvedMediaItem.isLocalFileSource()
     }
@@ -333,12 +333,13 @@ private fun ExoPlayerSurface(
         playerSettings.vodCacheSizeMode,
         playerSettings.vodCacheSizeMb,
     ) {
+        val loopbackSource = isLoopbackPlaybackSource(sourceUrl)
         val upstream = PlatformPlaybackDataSourceFactory.create(
             context = context,
             defaultRequestHeaders = sanitizedSourceHeaders,
             defaultResponseHeaders = sanitizedSourceResponseHeaders,
             useYoutubeChunkedPlayback = useYoutubeChunkedPlayback,
-            useLongReadTimeout = isLoopbackPlaybackSource(sourceUrl),
+            useLongReadTimeout = loopbackSource,
             externalSubtitles = externalSubtitles,
         )
         val mimeType = playbackMediaItemFromUrl(
@@ -349,7 +350,19 @@ private fun ExoPlayerSurface(
         val adaptive = mimeType == MimeTypes.APPLICATION_M3U8 ||
             mimeType == MimeTypes.APPLICATION_MPD ||
             mimeType == MimeTypes.APPLICATION_SS
-        val media = if (!playerSettings.vodCacheEnabled || useYoutubeChunkedPlayback || adaptive) {
+        // A torrent response that closes early would be stored as the whole file.
+        // The next open past that length then fails before the stream can resume.
+        if (loopbackSource && playerSettings.vodCacheEnabled && !useYoutubeChunkedPlayback && !adaptive) {
+            Log.i(TAG, "Skipping VOD cache for loopback playback")
+        }
+        val media = if (
+            !useVodCacheForSource(
+                vodCacheEnabled = playerSettings.vodCacheEnabled,
+                youtubeChunked = useYoutubeChunkedPlayback,
+                adaptive = adaptive,
+                loopback = loopbackSource,
+            )
+        ) {
             upstream
         } else {
             VodCache.wrap(
@@ -556,12 +569,11 @@ private fun ExoPlayerSurface(
         onDispose { nowPlayingController.release() }
     }
 
-    LaunchedEffect(exoPlayer, resolvedMediaItem, initialPositionRequestKey) {
+    LaunchedEffect(exoPlayer, resolvedMediaItem, initialPositionRequestKey, playbackResumeGeneration) {
         val mediaItem = attachedAddonSubtitleConfig?.let { config ->
             resolvedMediaItem.buildUpon().setSubtitleConfigurations(listOf(config)).build()
         } ?: resolvedMediaItem
-        val requestedStartPositionMs = fallbackStartPositionMs
-            ?: initialPositionMs?.takeIf { it > 0L }
+        val requestedStartPositionMs = stallSession.prepareStartPositionMs(fallbackStartPositionMs)
         playbackDiagnostics.attempt += 1
         playbackDiagnostics.prepareStartedAtMs = SystemClock.elapsedRealtime()
         Log.i(
@@ -572,7 +584,7 @@ private fun ExoPlayerSurface(
                 "startPositionMs=${requestedStartPositionMs ?: 0L}",
         )
         exoPlayer.setPlaybackMediaItem(mediaItem, requestedStartPositionMs)
-        if (fallbackStartPositionMs == null) {
+        if (!stallSession.isReopening(fallbackStartPositionMs)) {
             initialPositionRequestKey?.let { key ->
                 latestOnInitialPositionHandled.value(
                     key,
@@ -677,12 +689,33 @@ private fun ExoPlayerSurface(
                     error,
                 )
 
+                val positionMs = exoPlayer.currentPosition.coerceAtLeast(0L)
+                val durationMs = exoPlayer.duration.coerceAtLeast(0L)
+                if (
+                    stallSession.onFailure(
+                        failure = error.toPlaybackSourceFailure(),
+                        positionMs = positionMs,
+                        durationMs = durationMs,
+                    )
+                ) {
+                    val resumeMs = stallSession.prepareStartPositionMs()
+                    Log.w(TAG, "Playback stalled at ${resumeMs}ms. Reopening at that position.")
+                    Log.i(
+                        PLAYER_DIAGNOSTIC_TAG,
+                        "stall resume positionMs=$resumeMs durationMs=$durationMs",
+                    )
+                    preserveAudioSelectionForReload("stall resume")
+                    playbackResumeGeneration = stallSession.resumeGeneration
+                    latestOnError.value(null)
+                    return
+                }
+
                 val isSourceError = error.errorCode == PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW ||
                         error.errorCode == PlaybackException.ERROR_CODE_IO_UNSPECIFIED ||
                         error.cause?.toString()?.contains("UnrecognizedInputFormatException") == true
 
-                if (isSourceError && !probeAttempted) {
-                    probeAttempted = true
+                if (isSourceError && !stallSession.probeAttempted) {
+                    stallSession.markMimeProbe()
                     coroutineScope.launch {
                         val probedMime = withContext(Dispatchers.IO) {
                             probeMimeType(sourceUrl, sanitizedSourceHeaders)
@@ -724,6 +757,7 @@ private fun ExoPlayerSurface(
                 )
                 if (playbackState == Player.STATE_READY) {
                     fallbackStartPositionMs = null
+                    stallSession.onReady()
                     latestOnError.value(null)
                     exoPlayer.logCurrentTracks("STATE_READY")
                 }
