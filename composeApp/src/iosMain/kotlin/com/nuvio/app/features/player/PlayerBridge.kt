@@ -64,6 +64,11 @@ interface NuvioPlayerBridge {
     fun applyAudioLanguagePreferences(languages: List<String>)
     fun selectSubtitleTrack(trackId: Int)
     fun setSubtitleUrl(url: String)
+    /**
+     * Loads the local subtitle file at [path] in place of the external track loaded from
+     * [replacedUrl], keeping that track's title and language. Earlier AutoSync copies are dropped.
+     */
+    fun replaceExternalSubtitle(replacedUrl: String, path: String)
     fun clearExternalSubtitle()
     fun clearExternalSubtitleAndSelect(trackId: Int)
     fun setSubtitleDelayMs(delayMs: Int)
