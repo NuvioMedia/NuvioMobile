@@ -32,6 +32,14 @@ Install the two device-test APKs on an emulator and run:
 adb shell am instrument -w com.nuvio.vpn.android.test.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-The harness uses a separate application package and Keystore. For its optional OpenVPN server test, place a synthetic profile in its private `files/acceptance.ovpn` and supply the `openvpnScope` and `openvpnRangeUrl` instrumentation arguments. The test validates credential restore, the Android route, the returned range and received tunnel traffic. Run it with both UDP and TCP profiles.
+The harness uses a separate application package and Keystore. Its optional OpenVPN test expects a synthetic profile in the harness’s private `files/acceptance.ovpn` and a server reachable through the tunnel. For a profile that prompts for credentials, configure the test server to accept `fixture-user` and `fixture-password`. Serve HTTP 206 with bytes 31 through 158 containing those byte values, or pass the base64 SHA-256 of the expected 128 bytes as `openvpnReference`.
+
+Run the test with both UDP and TCP configurations. `openvpnScope` accepts `HTTP_ONLY`, `HTTP_HTTPS` and `APP_WIDE`. Grant the **test package** VPN consent on the emulator for the Full app case.
+
+```sh
+adb shell am instrument -w -e class com.nuvio.vpn.android.VpnDeviceTest#openVpnAuthenticatedPlaybackRange \
+  -e openvpnScope HTTP_HTTPS -e openvpnRangeUrl http://TEST_SERVER/movie \
+  com.nuvio.vpn.android.test.test/androidx.test.runner.AndroidJUnitRunner
+```
 
 Host builds use `:app:assembleFullDebug` and `:app:assembleFullRelease` on TV and `:androidApp:assembleFullDebug` and `:androidApp:assembleFullRelease` on Mobile. Check actual playback, HTTPS bypass in HTTP-only mode, a seek, next-episode handoff and fresh-login restore on a device.
