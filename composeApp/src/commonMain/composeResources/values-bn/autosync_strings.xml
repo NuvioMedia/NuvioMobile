@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">সাবটাইটেল অটো-সিঙ্ক</string>
+    <string name="settings_playback_subtitle_auto_sync_description">প্লেব্যাক শুরু হলে পছন্দের অ্যাডন সাবটাইটেল স্বয়ংক্রিয়ভাবে সিঙ্ক করুন। এর জন্য একটি পছন্দের সাবটাইটেল ভাষা থাকা প্রয়োজন।</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">অটো-সিঙ্ক সার্চ: পুঙ্খানুপুঙ্খ</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">সিঙ্ক করার আগে আরও নিখুঁত মিল খুঁজতে অন্যান্য সাবটাইটেল এবং এম্বেডেড ট্র্যাকগুলোর তুলনা করতে থাকে। কেবল শতভাগ নিশ্চিত মিলগুলোই প্রয়োগ করা হয়।</string>
+    <string name="settings_playback_auto_sync_mode_passive">অটো-সিঙ্ক সার্চ: দ্রুত</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">প্রথম শক্তিশালী মিলটি দ্রুত ব্যবহার করে। পুঙ্খানুপুঙ্খ মোডের মতোই কেবল শতভাগ নিশ্চিত মিলগুলোই প্রয়োগ করা হয়।</string>
+    <string name="settings_playback_auto_sync_tolerance">অটো-সিঙ্ক টলারেন্স: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">সিঙ্ক করার সময় সময়ের পার্থক্য এর চেয়ে বেশি না হলে সাবটাইটেলের মূল টাইমিং বজায় রাখুন। পরিবর্তন করতে ট্যাপ করুন।</string>
+    <string name="settings_playback_auto_sync_tolerance_off">বন্ধ</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources><string name="compose_settings_page_media_servers">মিডিয়া সার্ভার</string>
+<resources>
+    <string name="compose_settings_page_media_servers">মিডিয়া সার্ভার</string>
     <string name="compose_settings_page_media_server">সার্ভার</string>
     <string name="settings_content_discovery_media_servers_description">আপনার নিজস্ব লাইব্রেরি ব্রাউজ এবং প্লে করতে Jellyfin অথবা Emby সংযুক্ত করুন।</string>
     <string name="servers_section_connected">সার্ভারসমূহ</string>
@@ -31,7 +32,7 @@
     <string name="servers_signed_in_as">%1$s · %2$s</string>
     <string name="servers_status_disabled">বন্ধ আছে</string>
     <string name="servers_status_auth">আবার সাইন ইন করুন</string>
-    <string name="servers_status_unreachable">সার্ভার আনঅ্যাভেইলেবল</string>
+    <string name="servers_status_unreachable">সার্ভার উপলব্ধ নয়</string>
     <string name="servers_error_auth">ভুল ইউজারনেম বা পাসওয়ার্ড।</string>
     <string name="servers_error_address">একটি সঠিক সার্ভার অ্যাড্রেস লিখুন।</string>
     <string name="servers_error_unreachable">সার্ভারে পৌঁছানো যায়নি।</string>
@@ -39,7 +40,7 @@
     <string name="servers_error_forbidden">এই ইউজারের অ্যাক্সেস নেই।</string>
     <string name="servers_error_failed">সার্ভারের সাথে সংযুক্ত করা যায়নি।</string>
     <string name="servers_failure_auth">সেটিংস থেকে এই সার্ভারে আবার সাইন ইন করুন।</string>
-    <string name="servers_failure_unreachable">সার্ভারটি আনঅ্যাভেইলেবল।</string>
+    <string name="servers_failure_unreachable">সার্ভারটি উপলব্ধ নয়।</string>
     <string name="servers_failure_not_found">এই আইটেমটি আর সার্ভারে নেই।</string>
     <string name="servers_playback_failed">সার্ভার থেকে প্লেব্যাক শুরু করা যায়নি।</string>
     <string name="library_server_title_unsupported">আপনার মিডিয়া সার্ভার থেকে টাইটেলগুলো এই লাইব্রেরিতে যোগ করা যাবে না। সেগুলোকে এখানে সেভ করতে সার্ভারের জন্য 'অ্যাডন মেটাডেটা ব্যবহার করুন' চালু করুন।</string>
@@ -55,4 +56,8 @@
     <string name="servers_resume_row">দেখা চালিয়ে যান</string>
     <string name="servers_failure_unsupported">সার্ভারটি এই আইটেমটি সমর্থন করে না।</string>
     <string name="servers_failure_incomplete">এখনো এই সার্ভারের লাইব্রেরি চেক করা হচ্ছে। একটু পর আবার চেষ্টা করুন।</string>
-    </resources>
+    <string name="home_empty_no_sources_title">কোনো কন্টেন্ট সোর্স নেই</string>
+    <string name="home_empty_no_sources_message">হোমে ক্যাটালগ দেখতে একটি অ্যাডন যোগ করুন বা একটি মিডিয়া সার্ভার সংযুক্ত করুন।</string>
+    <string name="search_empty_no_sources_message">সার্চ করার জন্য একটি অ্যাডন যোগ করুন বা একটি মিডিয়া সার্ভার সংযুক্ত করুন।</string>
+    <string name="library_source_servers">সার্ভার</string>
+</resources>
