@@ -18,6 +18,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -243,16 +244,58 @@ internal object SportsRepository {
     private fun dedupeKey(ev: SportsEvent): String = ev.espnId?.let { "e:$it" } ?: ev.id
 
     private val _matches = MutableStateFlow<Map<String, List<ChannelMatch>>>(emptyMap())
+    private val _addonLive = MutableStateFlow<Map<String, List<ChannelMatch>>>(emptyMap())
     /**
      * Event id -> the channels showing it, best first, with your "Channels from" region's
      * channels moved up (done here, on what's already matched: changing the region is instant).
      */
     val matches: StateFlow<Map<String, List<ChannelMatch>>> = combine(
         _matches,
-        settings.map { it.channelRegion }.distinctUntilChanged()
-    ) { m, region ->
-        if (region.isBlank()) m else m.mapValues { (_, list) -> ChannelRegions.regionFirst(list, region) }
+        settings.map { it.channelRegion }.distinctUntilChanged(),
+        _addonLive
+    ) { m0, region, addon ->
+        val m = if (region.isBlank()) m0 else m0.mapValues { (_, list) -> ChannelRegions.regionFirst(list, region) }
+        // Streams from your sports addons (HighFly…) go after your own channels.
+        if (addon.isEmpty()) m else {
+            val out = HashMap(m)
+            for ((id, extra) in addon) if (extra.isNotEmpty()) out[id] = m[id].orEmpty() + extra
+            out
+        }
     }.stateIn(scope, SharingStarted.Eagerly, emptyMap())
+
+    // ---- games from the sports addons you have installed (see SportsAddonSource)
+
+    private val _addonVod = MutableStateFlow<Map<String, List<ChannelMatch>>>(emptyMap())
+    /** Finished games: event id -> their replays and highlights from your sports addons. */
+    val vodMatches: StateFlow<Map<String, List<ChannelMatch>>> = _addonVod.asStateFlow()
+    private val addonJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
+
+    /**
+     * A game page opened: look for it in your sports addons (live streams, or for a finished game its
+     * replays and highlights). Nothing is asked until a game is opened; while it's open and nothing
+     * is found yet, it looks again every minute and a half (streams appear close to the start).
+     */
+    fun openGame(ev: SportsEvent) {
+        addonJobs.remove(ev.id)?.cancel()
+        addonJobs[ev.id] = scope.launch {
+            var round = 0
+            while (kotlinx.coroutines.currentCoroutineContext().isActive) {
+                val found = runCatching { SportsAddonSource.find(ev) }.getOrNull()
+                if (found != null) {
+                    _addonLive.update { it + (ev.id to found.live) }
+                    _addonVod.update { it + (ev.id to found.vod) }
+                }
+                val got = found != null && (found.live.isNotEmpty() || found.vod.isNotEmpty())
+                if (ev.state == GameState.POST || got || ++round >= 20) break
+                delay(90_000L)
+            }
+        }
+    }
+
+    /** The game page was closed: stop looking. */
+    fun closeGame(eventId: String) {
+        addonJobs.remove(eventId)?.cancel()
+    }
 
     private val backupOn: StateFlow<Boolean> = prefs.settings.map { it.autoBackupChannel }.distinctUntilChanged()
         .stateIn(scope, SharingStarted.Eagerly, true)

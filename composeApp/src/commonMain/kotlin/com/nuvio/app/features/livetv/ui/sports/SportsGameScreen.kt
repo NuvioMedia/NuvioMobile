@@ -77,6 +77,7 @@ import com.nuvio.app.features.livetv.model.EpgProgram
 import com.nuvio.app.features.livetv.model.LiveChannel
 import com.nuvio.app.features.livetv.model.LiveTvClock
 import com.nuvio.app.features.livetv.sports.ChannelMatch
+import com.nuvio.app.features.livetv.sports.SportsAddonSource
 import com.nuvio.app.features.livetv.sports.ChannelRegions
 import com.nuvio.app.features.livetv.sports.GameExtras
 import com.nuvio.app.features.livetv.sports.GameState
@@ -167,6 +168,14 @@ private fun GameBody(ev: SportsEvent, actions: SportsActions) {
     val hide = settings.hideScores
     val showScore = ev.hasScore && !hide
     val matches = allMatches[ev.id].orEmpty()
+    // Recording and "fix channel" work on your own playlists' channels, not on an addon's streams.
+    val ownChannels = remember(matches) { matches.filter { it.channel.sourceId != SportsAddonSource.SOURCE_ID } }
+    // Your sports addons (HighFly, StremVerse…): streams for this game, or replays once it's over.
+    androidx.compose.runtime.DisposableEffect(ev.id) {
+        repo.openGame(ev)
+        onDispose { repo.closeGame(ev.id) }
+    }
+    val replays = repo.vodMatches.collectAsStateWithLifecycle().value[ev.id].orEmpty()
     val reminded = follows.reminders.any { it.eventId == ev.id }
     val recording = remember(schedules, ev.id) { SportsRecordings.forEvent(ev, schedules) }
     var askRecord by remember(ev.id) { mutableStateOf(false) }
@@ -242,7 +251,7 @@ private fun GameBody(ev: SportsEvent, actions: SportsActions) {
                 if (ev.state != GameState.POST && ev.hasTime) {
                     Chip(label = stringResource(if (reminded) Res.string.livetv_sports_reminded else Res.string.livetv_sports_remind), selected = reminded, onClick = { repo.toggleReminder(ev) })
                 }
-                if (ev.state != GameState.POST && ev.hasTime && hasChannels) {
+                if (ev.state != GameState.POST && ev.hasTime && hasChannels && ownChannels.isNotEmpty()) {
                     Chip(
                         label = if (recording != null) "● Recording set" else stringResource(Res.string.livetv_sports_record),
                         selected = recording != null,
@@ -276,8 +285,25 @@ private fun GameBody(ev: SportsEvent, actions: SportsActions) {
             SportsChannelRow(
                 m = m, copies = copies.size, ev = ev, use24h = use24h,
                 onPlay = { c -> actions.onPlay(c.channel, ev.title) },
-                onLongPress = { c -> haptics.performHapticFeedback(HapticFeedbackType.LongPress); channelMenu = c },
+                onLongPress = { c ->
+                    if (c.channel.sourceId != SportsAddonSource.SOURCE_ID) {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress); channelMenu = c
+                    }
+                },
             )
+        }
+        // ---- replays and highlights (finished games, from your sports addons)
+        if (ev.state == GameState.POST && replays.isNotEmpty()) {
+            item(key = "replays-h") {
+                Text("Replays & highlights", style = MaterialTheme.typography.titleSmall, color = tokens.colors.textPrimary, fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = NuvioTokens.Space.s8))
+            }
+            items(replays, key = { "r:" + it.channel.key }) { m ->
+                SportsChannelRow(
+                    m = m, copies = 1, ev = ev, use24h = use24h,
+                    onPlay = { c -> actions.onPlay(c.channel, ev.title) },
+                    onLongPress = {},
+                )
+            }
         }
         // ---- latest scoring
         if (plays.isNotEmpty()) {
@@ -307,9 +333,9 @@ private fun GameBody(ev: SportsEvent, actions: SportsActions) {
     }
 
     if (askRecord) {
-        RecordDialog(ev, matches, use24h, onRecord = { m, minutes -> askRecord = false; NuvioToastController.show(SportsRecordings.record(ev, m, minutes)) }, onDismiss = { askRecord = false })
+        RecordDialog(ev, ownChannels, use24h, onRecord = { m, minutes -> askRecord = false; NuvioToastController.show(SportsRecordings.record(ev, m, minutes)) }, onDismiss = { askRecord = false })
     }
-    if (fixing) FixChannelDialog(ev, matches, onDismiss = { fixing = false })
+    if (fixing) FixChannelDialog(ev, ownChannels, onDismiss = { fixing = false })
     if (regionPick) {
         RegionDialog(matches.map { SportsMatcher.channelRegionCode(it.channel) }, settings.channelRegion, onPick = { repo.updateSettings { s -> s.copy(channelRegion = it) }; regionPick = false }, onDismiss = { regionPick = false })
     }
