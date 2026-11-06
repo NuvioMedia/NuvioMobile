@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.6.9",
+          "buildVersion": "152",
+          "date": "2026-11-06T21:19:10Z",
+          "localizedDescription": "- ff522ec9 fix(i18n): add Tamil to iOS @tapframe  \r\n- [fix(skip-intro): drop open-ended Anime-Skip segments and prefer AniSkip (#2539)](https://github.com/NuvioMedia/NuvioMobile/pull/2539) @skoruppa  \r\n- [fix(player): leave edge swipes to the back gesture and lock tablets to landscape (#2542)](https://github.com/NuvioMedia/NuvioMobile/pull/2542) @skoruppa  \r\n- 2f9f4ae6 feat(settings): add ratings source picker @tapframe  \r\n- 9c26a7cf feat(details): add star ratings for titles and episodes @tapframe  \r\n- 1255999d feat(mdblist): sync and save ratings @tapframe  \r\n- 6982ec7d feat(simkl): save and read title ratings @tapframe  \r\n- 32298713 feat(tracking): add rating source setting @tapframe  \r\n- d816059e feat(streams): make chips see-through over backdrops @tapframe  \r\n- 9877adfc feat(details): fade tablet artwork into the cinematic backdrop @tapframe  \r\n- 5cf73ccc feat(details): show the cinematic backdrop behind the floating header @tapframe  \r\n- f6ac2840 feat(details): make buttons and chips see-through over backdrops @tapframe  \r\n- [i18n: add French strings for audio downmix, amplification and delay (#2532)](https://github.com/NuvioMedia/NuvioMobile/pull/2532) @SK-Gits  \r\n- [fix(player): allow playback during calls with ExoPlayer (#2531)](https://github.com/NuvioMedia/NuvioMobile/pull/2531) @sap6  \r\n- [i18n(vi): update translations for strings.xml and autosync_toast_strings.xml (#2530)](https://github.com/NuvioMedia/NuvioMobile/pull/2530) @blueocean2308  \r\n- [fix(i18n): update Bengali (বাংলা) localization and sync missing strings (#2529)](https://github.com/NuvioMedia/NuvioMobile/pull/2529) @TanvirSdq  \r\n- [feat(i18n): add Tamil language support and UI localization (#2528)](https://github.com/NuvioMedia/NuvioMobile/pull/2528) @vijay3695  \r\n- [Fix Arabic page-title wrapping in shared screen header (#2063)](https://github.com/NuvioMedia/NuvioMobile/pull/2063) @i7xre  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.9-beta/nuvio-0.6.9-full-release.ipa",
+          "size": 69322992,
+          "sha256": "a956c8f2041530bd7a80b14b5c9edd5a45a430c74da088d971d5117d2d691e27",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.6.8",
           "buildVersion": "151",
           "date": "2026-11-05T18:26:56Z",
