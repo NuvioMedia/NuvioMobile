@@ -1,0 +1,10 @@
+diff --git a/src/opengl/utils.c b/src/opengl/utils.c
+--- a/src/opengl/utils.c
++++ b/src/opengl/utils.c
+@@ -48,5 +48,6 @@ void gl_poll_callbacks(pl_gpu gpu)
+         case GL_ALREADY_SIGNALED:
+         case GL_CONDITION_SATISFIED:
+             PL_ARRAY_REMOVE_AT(p->callbacks, 0);
++            gl->DeleteSync(cb.sync);
+             cb.callback(cb.priv);
+             continue;

@@ -26,7 +26,6 @@ kmpalette = "4.0.0-beta02"
 ktor = "3.4.1"
 material3 = "1.13.0-beta01"
 androidx-media3 = "1.8.0"
-mpv-android-lib = "0.1.12"
 supabase = "3.4.1"
 quickjsKt = "1.0.15"
 ksoup = "0.2.6"
@@ -84,7 +83,6 @@ androidx-media3-session = { module = "androidx.media3:media3-session", version.r
 androidx-media3-common = { module = "androidx.media3:media3-common", version.ref = "androidx-media3" }
 androidx-media3-container = { module = "androidx.media3:media3-container", version.ref = "androidx-media3" }
 androidx-media3-extractor = { module = "androidx.media3:media3-extractor", version.ref = "androidx-media3" }
-mpv-android-lib = { module = "io.github.abdallahmehiz:mpv-android-lib", version.ref = "mpv-android-lib" }
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt", version.ref = "supabase" }
 supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt", version.ref = "supabase" }
 supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt", version.ref = "supabase" }
