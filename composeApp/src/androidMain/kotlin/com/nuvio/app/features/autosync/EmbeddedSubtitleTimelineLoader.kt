@@ -58,6 +58,8 @@ internal object EmbeddedSubtitleTimelineLoader {
     private const val LAST_MKV_CUE_ESTIMATED_DURATION_MS = 2_000L
     private const val MAX_MKV_INTER_CUE_ESTIMATED_DURATION_MS = 4_000L
     private const val MATROSKA_PGS_CODEC_ID = "S_HDMV/PGS"
+    private const val MATROSKA_ASS_CODEC_ID = "S_TEXT/ASS"
+    private const val MATROSKA_SSA_CODEC_ID = "S_TEXT/SSA"
     private const val MIN_INDEXED_CUES = 8
     private const val MIN_INDEXED_SPAN_MS = 30_000L
     private const val MAX_CACHE_ENTRIES = 2
@@ -399,9 +401,18 @@ internal object EmbeddedSubtitleTimelineLoader {
 
         val referenceTracks = subtitleTracks.mapNotNull { track ->
             val parsedTimeline = parsedCues[track.number] ?: return@mapNotNull null
-            val cues = parsedTimeline.cues
+            val indexedCues = parsedTimeline.cues
                 .sortedBy { it.startTimeMs }
                 .distinctBy { it.startTimeMs }
+            // ASS/SSA tracks index every sign and karaoke event along with the dialogue.
+            val cues = if (isMatroskaAssCodec(track.codecId)) {
+                AutoSyncAssDialogueFilter.indexedDialogueCues(
+                    cues = indexedCues,
+                    estimatedEndStartsMs = parsedTimeline.estimatedEndStartsMs,
+                )
+            } else {
+                indexedCues
+            }
             if (cues.size < MIN_INDEXED_CUES) return@mapNotNull null
             val spanMs = cues.last().startTimeMs - cues.first().startTimeMs
             if (spanMs < MIN_INDEXED_SPAN_MS) return@mapNotNull null
@@ -1270,6 +1281,10 @@ internal object EmbeddedSubtitleTimelineLoader {
             estimatedEndStartsMs = estimatedEndStartsMs,
         )
     }
+
+    private fun isMatroskaAssCodec(codecId: String?): Boolean =
+        codecId.equals(MATROSKA_ASS_CODEC_ID, ignoreCase = true) ||
+            codecId.equals(MATROSKA_SSA_CODEC_ID, ignoreCase = true)
 
     private fun buildFallbackTrackLabel(track: MatroskaSubtitleTrack): String {
         val language = track.languageIetf?.takeIf { it.isNotBlank() }
