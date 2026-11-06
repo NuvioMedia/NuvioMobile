@@ -2520,4 +2520,6 @@
         <item quantity="one">%d titolo</item>
         <item quantity="other">%d titoli</item>
     </plurals>
+    <string name="player_android_libmpv_output_gpu_next_desc">Renderer libmpv moderno con elaborazione di qualità superiore.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Renderer di compatibilità per dispositivi con problemi con GPU next.</string>
 </resources>

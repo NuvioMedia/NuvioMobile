@@ -2473,4 +2473,6 @@
     <string name="stream_info_subtitle_source_embedded">Ugrađeno</string>
     <string name="stream_info_player_engine">Pogon reprodukcije</string>
     <string name="stream_info_server">Poslužitelj</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Moderan libmpv renderer s kvalitetnijom obradom.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Kompatibilnostni renderer za uređaje s problemima s GPU next.</string>
 </resources>

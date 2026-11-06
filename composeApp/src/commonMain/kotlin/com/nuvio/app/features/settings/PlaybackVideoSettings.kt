@@ -19,6 +19,7 @@ import com.nuvio.app.features.player.AndroidLibmpvVideoOutput
 import com.nuvio.app.features.player.AndroidPlaybackEngine
 import com.nuvio.app.features.player.IosHardwareDecoderMode
 import com.nuvio.app.features.player.localizedLabel
+import com.nuvio.app.features.player.localizedDescription
 import com.nuvio.app.features.player.IosTargetPrimaries
 import com.nuvio.app.features.player.IosTargetTransfer
 import com.nuvio.app.features.player.PlayerSettingsRepository
@@ -168,7 +169,7 @@ internal fun PlaybackVideoSettings(
             options = AndroidLibmpvVideoOutput.entries,
             selected = settings.androidLibmpvVideoOutput,
             label = { it.label },
-            description = { it.description },
+            description = { it.localizedDescription() },
             onSelect = {
                 PlayerSettingsRepository.setAndroidLibmpvVideoOutput(it)
                 showLibmpvVideoOutputDialog = false

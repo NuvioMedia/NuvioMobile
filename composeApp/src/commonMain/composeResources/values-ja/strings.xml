@@ -1525,6 +1525,11 @@
     <string name="library_source_cloud">クラウド</string>
     <string name="library_source_saved">保存済み</string>
     <string name="library_title">ライブラリ</string>
+    <string name="library_status_watching">視聴中</string>
+    <string name="library_status_plan_to_watch">視聴予定</string>
+    <string name="library_status_on_hold">一時停止</string>
+    <string name="library_status_completed">完了</string>
+    <string name="library_status_dropped">中止</string>
     <string name="library_trakt_empty_message">Traktに連携してウォッチリストや個人リストにタイトルを保存してください。</string>
     <string name="library_trakt_empty_title">Traktライブラリは空です</string>
     <string name="library_trakt_load_failed">Traktライブラリを読み込めませんでした</string>
@@ -1945,4 +1950,6 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Embedded</string>
     <string name="stream_info_player_engine">Player Engine</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">より高品質な処理を備えた最新の libmpv レンダラー。</string>
+    <string name="player_android_libmpv_output_gpu_desc">GPU next で問題が発生するデバイス向けの互換性レンダラー。</string>
 </resources>

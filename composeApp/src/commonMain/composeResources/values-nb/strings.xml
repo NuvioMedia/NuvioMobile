@@ -987,6 +987,11 @@
     <string name="library_source_cloud">Sky</string>
     <string name="library_source_saved">Lagret</string>
     <string name="library_title">Bibliotek</string>
+    <string name="library_status_watching">Ser på</string>
+    <string name="library_status_plan_to_watch">Planlagt å se</string>
+    <string name="library_status_on_hold">På vent</string>
+    <string name="library_status_completed">Fullført</string>
+    <string name="library_status_dropped">Droppet</string>
     <string name="library_trakt_empty_message">Koble til Trakt og lagre titler til watchlist eller personlige lister.</string>
     <string name="library_trakt_empty_title">Trakt-biblioteket ditt er tomt</string>
     <string name="library_trakt_load_failed">Kunne ikke laste Trakt-bibliotek</string>
@@ -2319,4 +2324,6 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="movie_status_rumored">Ryktet</string>
     <string name="movie_status_in_production">I produksjon</string>
     <string name="movie_status_post_production">Postproduksjon</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Moderne libmpv-renderer med høyere kvalitet på behandlingen.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Kompatibilitetsrenderer for enheter som har problemer med GPU next.</string>
 </resources>

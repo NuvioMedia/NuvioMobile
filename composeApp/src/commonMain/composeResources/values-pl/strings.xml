@@ -2515,4 +2515,6 @@
     <string name="subtitle_shadow_opacity">Krycie cienia</string>
     <string name="subtitle_shadow_size">Rozmiar cienia</string>
     <string name="subtitle_reset_appearance">Resetuj wygląd</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Nowoczesny renderer libmpv z przetwarzaniem wyższej jakości.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Renderer zgodności dla urządzeń mających problemy z GPU next.</string>
 </resources>

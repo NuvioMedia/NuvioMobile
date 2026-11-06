@@ -3,6 +3,8 @@ package com.nuvio.app.features.player
 import androidx.compose.runtime.Composable
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.player_ios_hardware_decoder_off
+import nuvio.composeapp.generated.resources.player_android_libmpv_output_gpu_desc
+import nuvio.composeapp.generated.resources.player_android_libmpv_output_gpu_next_desc
 import nuvio.composeapp.generated.resources.player_ios_preset_compatibility_desc
 import nuvio.composeapp.generated.resources.player_ios_preset_compatibility_label
 import nuvio.composeapp.generated.resources.player_ios_preset_custom_desc
@@ -258,6 +260,12 @@ enum class IosAudioOutputMode(
                 ?.takeUnless { it == AvFoundation }
                 ?: Auto
     }
+}
+
+@Composable
+fun AndroidLibmpvVideoOutput.localizedDescription(): String = when (this) {
+    AndroidLibmpvVideoOutput.GpuNext -> stringResource(Res.string.player_android_libmpv_output_gpu_next_desc)
+    AndroidLibmpvVideoOutput.Gpu -> stringResource(Res.string.player_android_libmpv_output_gpu_desc)
 }
 
 @Composable

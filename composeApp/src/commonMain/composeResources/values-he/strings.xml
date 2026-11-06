@@ -440,6 +440,14 @@
     <string name="player_skip_intro">דלג על ההקדמה</string>
     <string name="player_skip_outro">דלג על הסיום</string>
     <string name="player_skip_recap">דלג על התקציר</string>
+    <string name="player_ios_preset_native_edr_label">EDR מקורי</string>
+    <string name="player_ios_preset_native_edr_desc">הטוב ביותר ל-iPhone ול-iPad עם תמיכת HDR.</string>
+    <string name="player_ios_preset_sdr_tone_mapped_label">מיפוי גוונים ל-SDR</string>
+    <string name="player_ios_preset_sdr_tone_mapped_desc">לבן ושחור צפויים יותר בפלט בסגנון SDR.</string>
+    <string name="player_ios_preset_compatibility_label">תאימות</string>
+    <string name="player_ios_preset_compatibility_desc">הקרוב ביותר להתנהגות ה-MPV הקודמת ב-iOS.</string>
+    <string name="player_ios_preset_custom_label">מותאם אישית</string>
+    <string name="player_ios_preset_custom_desc">השתמש בערכים המתקדמים שלמטה.</string>
     <string name="compose_player_no_subtitles_found">לא נמצאו כתוביות</string>
     <string name="lang_afrikaans">אפריקאנס</string>
     <string name="lang_albanian">אלבנית</string>
@@ -661,6 +669,11 @@
     <string name="library_source_cloud">ענן</string>
     <string name="library_source_saved">נשמר</string>
     <string name="library_title">ספרייה</string>
+    <string name="library_status_watching">בצפייה</string>
+    <string name="library_status_plan_to_watch">מתוכנן לצפייה</string>
+    <string name="library_status_on_hold">בהמתנה</string>
+    <string name="library_status_completed">הושלם</string>
+    <string name="library_status_dropped">ננטש</string>
     <string name="cloud_library_connect_action">חבר חשבון</string>
     <string name="cloud_library_disabled_title">ספריית הענן כבויה</string>
     <string name="cloud_library_empty_message">אין קבצי ענן הניתנים להפעלה התואמים לסינון הנוכחי.</string>
@@ -684,6 +697,9 @@
     <string name="cloud_library_type_files">קבצים</string>
     <string name="media_movies">סרטים</string>
     <string name="media_series">סדרות</string>
+    <string name="media_anime">אנימה</string>
+    <string name="media_channels">ערוצים</string>
+    <string name="media_tv">טלוויזיה</string>
     <string name="parental_alcohol">אלכוהול וסמים</string>
     <string name="parental_frightening">תוכן מפחיד</string>
     <string name="parental_nudity">עירום</string>
@@ -773,4 +789,6 @@
     <string name="stream_info_subtitle_source_addon">תוסף</string>
     <string name="stream_info_subtitle_source_embedded">מוטמע</string>
     <string name="stream_info_player_engine">מנוע נגן</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">רנדרר libmpv מודרני עם עיבוד באיכות גבוהה יותר.</string>
+    <string name="player_android_libmpv_output_gpu_desc">רנדרר תאימות למכשירים עם בעיות ב-GPU next.</string>
 </resources>

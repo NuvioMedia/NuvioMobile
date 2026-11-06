@@ -5,6 +5,15 @@ import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.tracking.TrackingListStatus
 import com.nuvio.app.features.tracking.TrackingProviderId
+import kotlinx.coroutines.runBlocking
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.library_status_completed
+import nuvio.composeapp.generated.resources.library_status_dropped
+import nuvio.composeapp.generated.resources.library_status_on_hold
+import nuvio.composeapp.generated.resources.library_status_plan_to_watch
+import nuvio.composeapp.generated.resources.library_status_watching
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.getString
 
 internal const val SIMKL_STATUS_SELECTION_GROUP = "simkl:status"
 
@@ -12,10 +21,14 @@ internal data class SimklLibraryStatusDefinition(
     val status: SimklListStatus,
     val key: String,
     val title: String,
+    val titleResource: StringResource,
     val trackingStatus: TrackingListStatus,
     val supportedContentTypes: Set<String>,
     val isMembershipDestination: Boolean = true,
 )
+
+internal fun SimklLibraryStatusDefinition.localizedTitle(): String =
+    runCatching { runBlocking { getString(titleResource) } }.getOrDefault(title)
 
 internal data class SimklLibraryProjection(
     val items: List<LibraryItem>,
@@ -27,6 +40,7 @@ internal val simklLibraryStatusDefinitions = listOf(
         status = SimklListStatus.WATCHING,
         key = "simkl:status:watching",
         title = "Watching",
+        titleResource = Res.string.library_status_watching,
         trackingStatus = TrackingListStatus.WATCHING,
         supportedContentTypes = setOf("series", "anime"),
     ),
@@ -34,6 +48,7 @@ internal val simklLibraryStatusDefinitions = listOf(
         status = SimklListStatus.PLAN_TO_WATCH,
         key = "simkl:status:plantowatch",
         title = "Plan to Watch",
+        titleResource = Res.string.library_status_plan_to_watch,
         trackingStatus = TrackingListStatus.PLAN_TO_WATCH,
         supportedContentTypes = setOf("movie", "series", "anime"),
     ),
@@ -41,6 +56,7 @@ internal val simklLibraryStatusDefinitions = listOf(
         status = SimklListStatus.ON_HOLD,
         key = "simkl:status:hold",
         title = "On Hold",
+        titleResource = Res.string.library_status_on_hold,
         trackingStatus = TrackingListStatus.ON_HOLD,
         supportedContentTypes = setOf("series", "anime"),
     ),
@@ -48,6 +64,7 @@ internal val simklLibraryStatusDefinitions = listOf(
         status = SimklListStatus.COMPLETED,
         key = "simkl:status:completed",
         title = "Completed",
+        titleResource = Res.string.library_status_completed,
         trackingStatus = TrackingListStatus.COMPLETED,
         supportedContentTypes = setOf("movie", "series", "anime"),
         isMembershipDestination = false,
@@ -56,6 +73,7 @@ internal val simklLibraryStatusDefinitions = listOf(
         status = SimklListStatus.DROPPED,
         key = "simkl:status:dropped",
         title = "Dropped",
+        titleResource = Res.string.library_status_dropped,
         trackingStatus = TrackingListStatus.DROPPED,
         supportedContentTypes = setOf("movie", "series", "anime"),
     ),
