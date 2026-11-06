@@ -9,14 +9,7 @@ import com.nuvio.app.core.network.IPv4FirstDns
 import okhttp3.OkHttpClient
 import java.net.HttpURLConnection
 import java.net.URL
-import java.security.SecureRandom
-import java.security.cert.X509Certificate
 import java.util.concurrent.TimeUnit
-import javax.net.ssl.HostnameVerifier
-import javax.net.ssl.HttpsURLConnection
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManager
-import javax.net.ssl.X509TrustManager
 
 internal object PlayerPlaybackNetworking {
     internal const val DEFAULT_USER_AGENT =
@@ -27,27 +20,9 @@ internal object PlayerPlaybackNetworking {
         "User-Agent" to DEFAULT_USER_AGENT,
     )
 
-    private val trustAllManager = object : X509TrustManager {
-        override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-
-        override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) = Unit
-
-        override fun getAcceptedIssuers(): Array<X509Certificate> = emptyArray()
-    }
-
-    private val playbackHostnameVerifier = HostnameVerifier { _, _ -> true }
-
-    private val sslContext: SSLContext by lazy {
-        SSLContext.getInstance("TLS").apply {
-            init(null, arrayOf<TrustManager>(trustAllManager), SecureRandom())
-        }
-    }
-
     private val playbackHttpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .dns(IPv4FirstDns())
-            .sslSocketFactory(sslContext.socketFactory, trustAllManager)
-            .hostnameVerifier(playbackHostnameVerifier)
             .connectTimeout(15, TimeUnit.SECONDS)
             .readTimeout(15, TimeUnit.SECONDS)
             .writeTimeout(15, TimeUnit.SECONDS)
@@ -124,10 +99,6 @@ internal object PlayerPlaybackNetworking {
     ): HttpURLConnection {
         val mergedHeaders = withDefaultUserAgent(headers)
         return (URL(url).openConnection() as HttpURLConnection).apply {
-            if (this is HttpsURLConnection) {
-                sslSocketFactory = sslContext.socketFactory
-                hostnameVerifier = playbackHostnameVerifier
-            }
             instanceFollowRedirects = true
             connectTimeout = connectTimeoutMs
             readTimeout = readTimeoutMs
