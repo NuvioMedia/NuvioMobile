@@ -212,6 +212,9 @@ fun LibraryScreen(
                 selectedType = selectedLibraryType,
                 sortOption = visibleSortOption,
                 providerOrders = providerOrders.ranks,
+                hideWatched = displaySettings.hideWatched,
+                watchedKeys = watchedUiState.watchedKeys,
+                fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
             )
         } else {
             LibraryVerticalProjection(
@@ -277,15 +280,20 @@ fun LibraryScreen(
     }
 
     val disintegration = remember { LibraryDisintegrationHolder() }
+    val visibleSections = remember(sortedSections, displaySettings.hideWatched, watchedUiState.watchedKeys, fullyWatchedSeriesKeys) {
+        if (displaySettings.hideWatched) {
+            hideWatchedLibraryItems(sortedSections, watchedUiState.watchedKeys, fullyWatchedSeriesKeys)
+        } else sortedSections
+    }
     val librarySectionsDisplay = if (
         sourceMode == LibraryViewMode.Saved &&
         displaySettings.layoutMode == LibraryLayoutMode.HORIZONTAL &&
         uiState.isLoaded &&
-        sortedSections.isNotEmpty()
+        visibleSections.isNotEmpty()
     ) {
         disintegration.sync(
             sourceMode = uiState.sourceMode,
-            sections = sortedSections,
+            sections = visibleSections,
             previewLimit = LIBRARY_SECTION_PREVIEW_LIMIT,
             request = disintegrationRequest,
         )
@@ -487,7 +495,8 @@ fun LibraryScreen(
                     else -> {
                         item(
                             key = "library-saved-controls:${uiState.sourceMode}:" +
-                                "${displaySettings.layoutMode}:$effectiveSortOption",
+                                "${displaySettings.layoutMode}:$effectiveSortOption:" +
+                                displaySettings.hideWatched,
                         ) {
                             LibrarySavedControls(
                                 layoutMode = displaySettings.layoutMode,
@@ -500,6 +509,8 @@ fun LibraryScreen(
                                 },
                                 onTypeSelected = { type -> selectedLibraryType = type },
                                 onSortSelected = LibraryDisplaySettingsRepository::setSortOption,
+                                hideWatched = displaySettings.hideWatched,
+                                onHideWatchedChange = LibraryDisplaySettingsRepository::setHideWatched,
                                 modifier = libraryContentTransitionModifier()
                                     .padding(horizontal = 16.dp),
                             )

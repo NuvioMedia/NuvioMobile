@@ -27,6 +27,7 @@ enum class LibrarySortOption {
 data class LibraryDisplaySettingsUiState(
     val layoutMode: LibraryLayoutMode = LibraryLayoutMode.HORIZONTAL,
     val sortOption: LibrarySortOption = LibrarySortOption.DEFAULT,
+    val hideWatched: Boolean = false,
 )
 
 object LibraryDisplaySettingsRepository {
@@ -60,6 +61,13 @@ object LibraryDisplaySettingsRepository {
         ensureLoaded()
         if (_uiState.value.sortOption == sortOption) return
         _uiState.value = _uiState.value.copy(sortOption = sortOption)
+        persist()
+    }
+
+    fun setHideWatched(hideWatched: Boolean) {
+        ensureLoaded()
+        if (_uiState.value.hideWatched == hideWatched) return
+        _uiState.value = _uiState.value.copy(hideWatched = hideWatched)
         persist()
     }
 
@@ -161,6 +169,21 @@ internal fun sortLibrarySections(
         section.copy(items = sortLibraryItems(section.items, selected, sourceMode, section.type, providerOrders[section.type]))
     }
 
+internal fun hideWatchedLibraryItems(
+    sections: List<LibrarySection>,
+    watchedKeys: Set<String>,
+    fullyWatchedSeriesKeys: Set<String>,
+): List<LibrarySection> = sections.mapNotNull { section ->
+    val visibleItems = section.items.filterNot { item ->
+        com.nuvio.app.features.watching.application.WatchingState.isPosterWatched(
+            watchedKeys = watchedKeys,
+            item = item.toMetaPreview(),
+            fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+        )
+    }
+    section.copy(items = visibleItems).takeIf { visibleItems.isNotEmpty() }
+}
+
 internal fun buildLibraryVerticalProjection(
     sections: List<LibrarySection>,
     sourceMode: LibrarySourceMode,
@@ -168,6 +191,9 @@ internal fun buildLibraryVerticalProjection(
     selectedType: String?,
     sortOption: LibrarySortOption,
     providerOrders: Map<String, Map<String, Int>> = emptyMap(),
+    hideWatched: Boolean = false,
+    watchedKeys: Set<String> = emptySet(),
+    fullyWatchedSeriesKeys: Set<String> = emptySet(),
 ): LibraryVerticalProjection {
     val availableSections = if (sourceMode.isRemoteTrackingSource) sections else emptyList()
     val selectedSection = if (sourceMode.isRemoteTrackingSource) {
@@ -198,7 +224,12 @@ internal fun buildLibraryVerticalProjection(
         ?.normalizedLibraryType()
         ?.takeIf { it in availableTypes }
     val filteredEntries = deduplicatedEntries.values.filter { entry ->
-        effectiveType == null || (entry.item.mediaCategory ?: entry.item.type).normalizedLibraryType() == effectiveType
+        (effectiveType == null || (entry.item.mediaCategory ?: entry.item.type).normalizedLibraryType() == effectiveType) &&
+            (!hideWatched || !com.nuvio.app.features.watching.application.WatchingState.isPosterWatched(
+                watchedKeys = watchedKeys,
+                item = entry.item.toMetaPreview(),
+                fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+            ))
     }
     val entryByKey = filteredEntries.associateBy { entry -> libraryDisplayItemKey(entry.item) }
     val sortedEntries = sortLibraryItems(
@@ -223,6 +254,7 @@ internal fun encodeLibraryDisplaySettings(state: LibraryDisplaySettingsUiState):
         StoredLibraryDisplaySettings(
             layoutMode = state.layoutMode.name,
             sortOption = state.sortOption.name,
+            hideWatched = state.hideWatched,
         ),
     )
 
@@ -241,6 +273,7 @@ internal fun decodeLibraryDisplaySettings(payload: String?): LibraryDisplaySetti
         sortOption = stored?.sortOption
             ?.let { value -> LibrarySortOption.entries.firstOrNull { it.name == value } }
             ?: LibrarySortOption.DEFAULT,
+        hideWatched = stored?.hideWatched ?: false,
     )
 }
 
@@ -278,6 +311,7 @@ internal val LibrarySourceMode.isRemoteTrackingSource: Boolean
 private data class StoredLibraryDisplaySettings(
     @SerialName("layout_mode") val layoutMode: String = LibraryLayoutMode.HORIZONTAL.name,
     @SerialName("sort_option") val sortOption: String = LibrarySortOption.DEFAULT.name,
+    @SerialName("hide_watched") val hideWatched: Boolean = false,
 )
 
 private fun libraryProviderOrderComparator(ranks: Map<String, Int>): Comparator<LibraryItem> =
