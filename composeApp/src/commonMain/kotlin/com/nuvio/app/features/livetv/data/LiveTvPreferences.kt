@@ -904,11 +904,22 @@ internal open class LiveTvPreferencesStore {
 
     // ---------- calendar (synced with the rest of Live TV's settings) ----------
 
-    val calendarFollows: Flow<String> = _data.map { it.str(LiveTvKeys.calendarFollows) ?: "" }.distinctUntilChanged()
-    fun editCalendarFollows(transform: (String) -> String) = edit { it[LiveTvKeys.calendarFollows] = transform(it.str(LiveTvKeys.calendarFollows) ?: "") }
+    // Each Nuvio profile has its own followed and hidden shows, the same as on the TV: the first profile
+    // keeps the original keys; another profile sees the first profile's list until it changes its own.
+    private fun mineOrShared(p: Map<String, PrefValue>, key: String, id: Int): String =
+        (if (id <= 1) p.str(key) else (p.str(my(key, id)) ?: p.str(key))) ?: ""
 
-    val calendarHiddenShows: Flow<String> = _data.map { it.str(LiveTvKeys.calendarHiddenShows) ?: "" }.distinctUntilChanged()
-    fun editCalendarHiddenShows(transform: (String) -> String) = edit { it[LiveTvKeys.calendarHiddenShows] = transform(it.str(LiveTvKeys.calendarHiddenShows) ?: "") }
+    val calendarFollows: Flow<String> = combine(_data, _profile) { p, id -> mineOrShared(p, LiveTvKeys.calendarFollows, id) }.distinctUntilChanged()
+    fun calendarFollowsNow(): String = mineOrShared(_data.value, LiveTvKeys.calendarFollows, currentProfile)
+    fun editCalendarFollows(transform: (String) -> String) = edit {
+        it[my(LiveTvKeys.calendarFollows)] = transform(mineOrShared(it, LiveTvKeys.calendarFollows, currentProfile))
+    }
+
+    val calendarHiddenShows: Flow<String> = combine(_data, _profile) { p, id -> mineOrShared(p, LiveTvKeys.calendarHiddenShows, id) }.distinctUntilChanged()
+    fun calendarHiddenShowsNow(): String = mineOrShared(_data.value, LiveTvKeys.calendarHiddenShows, currentProfile)
+    fun editCalendarHiddenShows(transform: (String) -> String) = edit {
+        it[my(LiveTvKeys.calendarHiddenShows)] = transform(mineOrShared(it, LiveTvKeys.calendarHiddenShows, currentProfile))
+    }
 
     val calendarChannelPicks: Flow<String> = _data.map { it.str(LiveTvKeys.calendarChannelPicks) ?: "" }.distinctUntilChanged()
     fun editCalendarChannelPicks(transform: (String) -> String) = edit { it[LiveTvKeys.calendarChannelPicks] = transform(it.str(LiveTvKeys.calendarChannelPicks) ?: "") }

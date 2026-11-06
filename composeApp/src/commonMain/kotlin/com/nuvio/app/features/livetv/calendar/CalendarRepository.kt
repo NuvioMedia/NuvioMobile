@@ -62,43 +62,87 @@ internal object CalendarRepository {
 
     private fun str(o: JsonObject, k: String) = o[k]?.let { runCatching { it.jsonPrimitive.contentOrNull }.getOrNull() }.orEmpty()
 
+    private fun decodeFollows(raw: String): List<CalendarFollow> = runCatching {
+        Json.parseToJsonElement(raw.ifBlank { "[]" }).jsonArray.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            // A movie the TV put on the Calendar from its guide ("airing") is kept in the list but is TV-only.
+            if (str(o, "type") == "airing") return@mapNotNull null
+            val id = str(o, "id").ifBlank { return@mapNotNull null }
+            CalendarFollow(id, str(o, "type").ifBlank { "series" }, str(o, "name"), str(o, "poster").ifBlank { null },
+                str(o, "background").ifBlank { null }, str(o, "imdb").ifBlank { null }, str(o, "addon").ifBlank { null },
+                o["at"]?.jsonPrimitive?.longOrNull ?: 0L)
+        }
+    }.getOrDefault(emptyList())
+
+    private fun followJson(f: CalendarFollow): JsonObject = buildJsonObject {
+        put("id", f.id); put("type", f.type); put("name", f.name); put("poster", f.poster.orEmpty())
+        put("background", f.background.orEmpty()); put("imdb", f.imdbId.orEmpty()); put("addon", f.addonBaseUrl.orEmpty())
+        put("at", f.addedAt)
+    }
+
+    /** [mine] is the phone's view of the list; entries it doesn't show (the TV's "airing" ones, extra fields) stay as the TV saved them. */
+    private fun mergeFollows(raw: String, mine: List<CalendarFollow>): String {
+        val old = runCatching { Json.parseToJsonElement(raw.ifBlank { "[]" }).jsonArray }.getOrDefault(JsonArray(emptyList()))
+        val wanted = mine.map { it.id }.toSet()
+        val keep = old.filter { el ->
+            val o = el as? JsonObject ?: return@filter false
+            str(o, "type") == "airing" || str(o, "id") in wanted
+        }
+        val have = keep.mapNotNull { (it as? JsonObject)?.let { o -> str(o, "id") } }.toSet()
+        return JsonArray(keep + mine.filter { it.id !in have }.map(::followJson)).toString()
+    }
+
+    private fun decodeHidden(raw: String): List<CalendarHidden> = runCatching {
+        Json.parseToJsonElement(raw.ifBlank { "[]" }).jsonArray.mapNotNull { el ->
+            val o = el as? JsonObject ?: return@mapNotNull null
+            CalendarHidden(str(o, "id").ifBlank { return@mapNotNull null }, str(o, "name"))
+        }
+    }.getOrDefault(emptyList())
+
+    private fun encodeHidden(list: List<CalendarHidden>): String =
+        buildJsonArray { for (h in list) add(buildJsonObject { put("id", h.id); put("name", h.name) }) }.toString()
+
     private fun loadLists() {
         if (listsLoaded) return
         listsLoaded = true
+        // Followed and hidden shows used to be kept in files on the phone only. Move what's there into the
+        // synced setting once (the files are emptied afterwards), so it follows the Nuvio profile like on the TV.
         runCatching {
-            LiveTvFiles.readSmall(LiveTvDirs.CALENDAR, "follows.json")?.let { raw ->
-                _follows.value = Json.parseToJsonElement(raw).jsonArray.mapNotNull { el ->
-                    val o = el as? JsonObject ?: return@mapNotNull null
-                    val id = str(o, "id").ifBlank { return@mapNotNull null }
-                    CalendarFollow(id, str(o, "type").ifBlank { "series" }, str(o, "name"), str(o, "poster").ifBlank { null },
-                        str(o, "background").ifBlank { null }, str(o, "imdb").ifBlank { null }, str(o, "addon").ifBlank { null },
-                        o["at"]?.jsonPrimitive?.longOrNull ?: 0L)
-                }
+            val oldFollows = LiveTvFiles.readSmall(LiveTvDirs.CALENDAR, "follows.json")?.let(::decodeFollows).orEmpty()
+            val oldHidden = LiveTvFiles.readSmall(LiveTvDirs.CALENDAR, "hidden.json")?.let(::decodeHidden).orEmpty()
+            if (oldFollows.isNotEmpty()) LiveTvPreferences.editCalendarFollows { raw ->
+                val there = decodeFollows(raw)
+                mergeFollows(raw, there + oldFollows.filter { o -> there.none { it.id == o.id } })
+            }
+            if (oldHidden.isNotEmpty()) LiveTvPreferences.editCalendarHiddenShows { raw ->
+                val there = decodeHidden(raw)
+                encodeHidden(there + oldHidden.filter { o -> there.none { it.id == o.id } })
+            }
+            if (oldFollows.isNotEmpty()) LiveTvFiles.writeSmall(LiveTvDirs.CALENDAR, "follows.json", "[]")
+            if (oldHidden.isNotEmpty()) LiveTvFiles.writeSmall(LiveTvDirs.CALENDAR, "hidden.json", "[]")
+        }
+        _follows.value = decodeFollows(LiveTvPreferences.calendarFollowsNow())
+        _hidden.value = decodeHidden(LiveTvPreferences.calendarHiddenShowsNow())
+        // Follow the synced setting from here on: a sync from the TV, or another Nuvio profile, updates the lists.
+        scope.launch {
+            LiveTvPreferences.calendarFollows.collect { raw ->
+                val list = decodeFollows(raw)
+                if (list != _follows.value) { _follows.value = list; refresh(force = false) }
             }
         }
-        runCatching {
-            LiveTvFiles.readSmall(LiveTvDirs.CALENDAR, "hidden.json")?.let { raw ->
-                _hidden.value = Json.parseToJsonElement(raw).jsonArray.mapNotNull { el ->
-                    val o = el as? JsonObject ?: return@mapNotNull null
-                    CalendarHidden(str(o, "id").ifBlank { return@mapNotNull null }, str(o, "name"))
-                }
+        scope.launch {
+            LiveTvPreferences.calendarHiddenShows.collect { raw ->
+                val list = decodeHidden(raw)
+                if (list != _hidden.value) { _hidden.value = list; refresh(force = false) }
             }
         }
     }
 
     private fun saveLists() {
-        runCatching {
-            LiveTvFiles.writeSmall(LiveTvDirs.CALENDAR, "follows.json", buildJsonArray {
-                for (f in _follows.value) add(buildJsonObject {
-                    put("id", f.id); put("type", f.type); put("name", f.name); put("poster", f.poster.orEmpty())
-                    put("background", f.background.orEmpty()); put("imdb", f.imdbId.orEmpty()); put("addon", f.addonBaseUrl.orEmpty())
-                    put("at", f.addedAt)
-                })
-            }.toString())
-            LiveTvFiles.writeSmall(LiveTvDirs.CALENDAR, "hidden.json", buildJsonArray {
-                for (h in _hidden.value) add(buildJsonObject { put("id", h.id); put("name", h.name) })
-            }.toString())
-        }
+        val follows = _follows.value
+        val hidden = _hidden.value
+        LiveTvPreferences.editCalendarFollows { raw -> mergeFollows(raw, follows) }
+        LiveTvPreferences.editCalendarHiddenShows { encodeHidden(hidden) }
     }
 
     /** Reads the followed / hidden lists from disk (once). */
