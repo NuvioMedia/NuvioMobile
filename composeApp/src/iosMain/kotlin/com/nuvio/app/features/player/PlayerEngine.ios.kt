@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +26,9 @@ import androidx.compose.ui.interop.UIKitViewController
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.touchlab.kermit.Logger
+import com.nuvio.app.features.autosync.AutoSyncMpvCoordinator
+import com.nuvio.app.features.autosync.AutoSyncMpvEngineController
+import com.nuvio.app.features.autosync.IosAutoSyncMpvPlatform
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.delay
@@ -294,8 +298,36 @@ actual fun PlatformPlayerSurface(
         }
     }
 
-    LaunchedEffect(controller, sourceUrl, sourceAudioUrl, sourceHeaders, sourceResponseHeaders) {
-        latestOnControllerReady.value(controller)
+    // AutoSync: the original subtitle shows right away and a confident result replaces it.
+    val coroutineScope = rememberCoroutineScope()
+    val latestExternalSubtitles = rememberUpdatedState(externalSubtitles)
+    val sanitizedSourceHeaders = remember(sourceHeaders) { sanitizePlaybackHeaders(sourceHeaders) }
+    val autoSyncCoordinator = remember(sourceUrl, sanitizedSourceHeaders, coroutineScope) {
+        AutoSyncMpvCoordinator(
+            scope = coroutineScope,
+            sourceUrl = sourceUrl,
+            sourceHeaders = sanitizedSourceHeaders,
+            getSubtitleHeaders = { subtitleUrl ->
+                latestExternalSubtitles.value
+                    .firstOrNull { it.url == subtitleUrl }
+                    ?.headers
+                    .orEmpty()
+            },
+            getPreferredLanguage = { latestPlayerSettings.value.preferredSubtitleLanguage },
+            platform = IosAutoSyncMpvPlatform,
+        )
+    }
+    DisposableEffect(autoSyncCoordinator) {
+        onDispose { autoSyncCoordinator.dispose() }
+    }
+    val autoSyncController = remember(controller, autoSyncCoordinator) {
+        object :
+            AutoSyncMpvEngineController(controller, autoSyncCoordinator, bridge::replaceExternalSubtitle),
+            PlayerSystemControlSource by controller {}
+    }
+
+    LaunchedEffect(autoSyncController, sourceUrl, sourceAudioUrl, sourceHeaders, sourceResponseHeaders) {
+        latestOnControllerReady.value(autoSyncController)
     }
 
     // Load file and set initial state
