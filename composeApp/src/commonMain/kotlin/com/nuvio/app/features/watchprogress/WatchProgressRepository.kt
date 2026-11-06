@@ -1400,6 +1400,13 @@ object WatchProgressRepository {
             ContinueWatchingPreferencesRepository.removeDismissedNextUpKeysForContent(entry.parentMetaId)
         }
 
+        if (syncRemote && progressProvider == null && entry.isCompleted && entry.durationMs <= 0L) {
+            // No duration to sync (MX Player completion): record it like "Mark as watched".
+            clearProgress(videoId = entry.videoId, parentMetaId = entry.parentMetaId)
+            WatchingActions.onProgressEntryUpdated(entry)
+            return
+        }
+
         upsertLocalEntry(entry)
         markProgressDirty(entry)
         progressProvider?.applyOptimisticProgress(entry)
