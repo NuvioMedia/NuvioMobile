@@ -51,6 +51,7 @@ actual object PlayerSettingsStorage {
     private const val subtitleUseForcedSubtitlesKey = "subtitle_use_forced_subtitles"
     private const val subtitleShowOnlyPreferredLanguagesKey = "subtitle_show_only_preferred_languages"
     private const val streamReuseLastLinkEnabledKey = "stream_reuse_last_link_enabled"
+    private const val perTitleStreamLanguageEnabledKey = "per_title_stream_language_enabled"
     private const val streamReuseLastLinkCacheHoursKey = "stream_reuse_last_link_cache_hours"
     private const val androidPlaybackEngineKey = "android_playback_engine"
     private const val autoSwitchPlaybackEngineOnErrorKey = "auto_switch_playback_engine_on_error"
@@ -681,6 +682,14 @@ actual object PlayerSettingsStorage {
             ?.edit()
             ?.putBoolean(ProfileScopedKey.of(streamReuseLastLinkEnabledKey), enabled)
             ?.apply()
+    }
+
+    actual fun loadPerTitleStreamLanguageEnabled(): Boolean? = preferences?.let { prefs ->
+        val key = ProfileScopedKey.of(perTitleStreamLanguageEnabledKey)
+        if (prefs.contains(key)) prefs.getBoolean(key, false) else null
+    }
+    actual fun savePerTitleStreamLanguageEnabled(enabled: Boolean) {
+        preferences?.edit()?.putBoolean(ProfileScopedKey.of(perTitleStreamLanguageEnabledKey), enabled)?.apply()
     }
 
     actual fun loadStreamReuseLastLinkCacheHours(): Int? =
@@ -1545,6 +1554,7 @@ actual object PlayerSettingsStorage {
         loadSubtitleUseForcedSubtitles()?.let { put(subtitleUseForcedSubtitlesKey, encodeSyncBoolean(it)) }
         loadSubtitleShowOnlyPreferredLanguages()?.let { put(subtitleShowOnlyPreferredLanguagesKey, encodeSyncBoolean(it)) }
         loadStreamReuseLastLinkEnabled()?.let { put(streamReuseLastLinkEnabledKey, encodeSyncBoolean(it)) }
+        loadPerTitleStreamLanguageEnabled()?.let { put(perTitleStreamLanguageEnabledKey, encodeSyncBoolean(it)) }
         loadStreamReuseLastLinkCacheHours()?.let { put(streamReuseLastLinkCacheHoursKey, encodeSyncInt(it)) }
         loadAndroidPlaybackEngine()?.let { put(androidPlaybackEngineKey, encodeSyncString(it)) }
         loadAutoSwitchPlaybackEngineOnError()?.let {
@@ -1639,6 +1649,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncBoolean(subtitleUseForcedSubtitlesKey)?.let(::saveSubtitleUseForcedSubtitles)
         payload.decodeSyncBoolean(subtitleShowOnlyPreferredLanguagesKey)?.let(::saveSubtitleShowOnlyPreferredLanguages)
         payload.decodeSyncBoolean(streamReuseLastLinkEnabledKey)?.let(::saveStreamReuseLastLinkEnabled)
+        payload.decodeSyncBoolean(perTitleStreamLanguageEnabledKey)?.let(::savePerTitleStreamLanguageEnabled)
         payload.decodeSyncInt(streamReuseLastLinkCacheHoursKey)?.let(::saveStreamReuseLastLinkCacheHours)
         payload.decodeSyncString(androidPlaybackEngineKey)?.let(::saveAndroidPlaybackEngine)
         payload.decodeSyncBoolean(autoSwitchPlaybackEngineOnErrorKey)?.let(::saveAutoSwitchPlaybackEngineOnError)
