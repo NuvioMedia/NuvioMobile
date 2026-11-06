@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 
 class WatchProgressSourceProjectionTest {
     @Test
-    fun `remote source excludes every Nuvio progress entry`() {
+    fun `Simkl source excludes every Nuvio progress entry`() {
         val nuvioEntries = listOf(
             entry(parentMetaId = "shared", updatedAt = 200L),
             entry(parentMetaId = "nuvio-only", updatedAt = 300L),
@@ -15,15 +15,81 @@ class WatchProgressSourceProjectionTest {
             entry(parentMetaId = "shared", updatedAt = 100L),
         )
 
-        listOf(WatchProgressSource.TRAKT, WatchProgressSource.SIMKL).forEach { source ->
-            val projected = projectWatchProgressSourceEntries(
-                source = source,
-                nuvioEntries = nuvioEntries,
-                providerEntries = providerEntries,
-            )
+        val projected = projectWatchProgressSourceEntries(
+            source = WatchProgressSource.SIMKL,
+            nuvioEntries = nuvioEntries,
+            providerEntries = providerEntries,
+        )
 
-            assertEquals(providerEntries, projected)
-        }
+        assertEquals(providerEntries, projected)
+    }
+
+    @Test
+    fun `newer matching local progress wins over Trakt and retains its opaque key`() {
+        val localEntry = entry(parentMetaId = "shared", updatedAt = 200L)
+        val traktEntry = entry(parentMetaId = "shared", updatedAt = 100L)
+            .copy(progressKey = "trakt:123")
+
+        val projected = projectWatchProgressSourceEntries(
+            source = WatchProgressSource.TRAKT,
+            nuvioEntries = listOf(localEntry),
+            providerEntries = listOf(traktEntry),
+        )
+
+        assertEquals(listOf(localEntry.copy(progressKey = "trakt:123")), projected)
+    }
+
+    @Test
+    fun `newer Trakt progress wins over matching local progress`() {
+        val localEntry = entry(parentMetaId = "shared", updatedAt = 100L)
+        val traktEntry = entry(parentMetaId = "shared", updatedAt = 200L)
+
+        val projected = projectWatchProgressSourceEntries(
+            source = WatchProgressSource.TRAKT,
+            nuvioEntries = listOf(localEntry),
+            providerEntries = listOf(traktEntry),
+        )
+
+        assertEquals(listOf(traktEntry), projected)
+    }
+
+    @Test
+    fun `equal timestamps keep Trakt progress`() {
+        val localEntry = entry(parentMetaId = "shared", updatedAt = 100L)
+            .copy(lastPositionMs = 20L)
+        val traktEntry = entry(parentMetaId = "shared", updatedAt = 100L)
+
+        val projected = projectWatchProgressSourceEntries(
+            source = WatchProgressSource.TRAKT,
+            nuvioEntries = listOf(localEntry),
+            providerEntries = listOf(traktEntry),
+        )
+
+        assertEquals(listOf(traktEntry), projected)
+    }
+
+    @Test
+    fun `missing Trakt row does not resurrect local progress`() {
+        val projected = projectWatchProgressSourceEntries(
+            source = WatchProgressSource.TRAKT,
+            nuvioEntries = listOf(entry(parentMetaId = "local-only")),
+            providerEntries = emptyList(),
+        )
+
+        assertEquals(emptyList(), projected)
+    }
+
+    @Test
+    fun `unmatched local progress is not injected into Trakt rows`() {
+        val traktEntry = entry(parentMetaId = "shared", updatedAt = 100L)
+
+        val projected = projectWatchProgressSourceEntries(
+            source = WatchProgressSource.TRAKT,
+            nuvioEntries = listOf(entry(parentMetaId = "local-only", updatedAt = 200L)),
+            providerEntries = listOf(traktEntry),
+        )
+
+        assertEquals(listOf(traktEntry), projected)
     }
 
     @Test
