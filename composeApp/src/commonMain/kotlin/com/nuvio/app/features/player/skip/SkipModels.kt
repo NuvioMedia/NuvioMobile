@@ -127,6 +127,7 @@ data class AnimeSkipShow(
 data class AnimeSkipEpisode(
     @SerialName("season") val season: String? = null,
     @SerialName("number") val number: String? = null,
+    @SerialName("baseDuration") val baseDuration: Double? = null,
     @SerialName("timestamps") val timestamps: List<AnimeSkipTimestamp>? = null,
 )
 
