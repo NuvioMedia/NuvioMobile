@@ -46,6 +46,8 @@
     <string name="vpn_profiles_selection_unavailable">The selected profile is unavailable. Selection cleared and VPN scope set to Off.</string>
     <string name="vpn_profiles_unreadable">Saved profile cannot be unlocked</string>
     <string name="vpn_profiles_pending">%1$s configuration</string>
+    <string name="vpn_profiles_login_saved">%1$s configuration · Login saved</string>
+    <string name="vpn_profiles_login_needed">%1$s configuration · Login needed</string>
     <string name="vpn_profiles_remove">Remove</string>
     <string name="vpn_profiles_remove_named">Remove %1$s</string>
     <string name="vpn_profiles_remove_question">Remove saved VPN profile?</string>

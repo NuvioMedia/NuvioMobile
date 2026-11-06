@@ -149,6 +149,9 @@ public final class VpnConnectionService extends android.net.VpnService {
                     if (!(engine instanceof HttpStreamTunnel) || !java.util.Objects.equals(profile, expected) || !matchesSettings())
                         throw new IllegalStateException("Proxy session changed.");
                     HttpStreamTunnel proxy = (HttpStreamTunnel) engine;
+                    failureReason = null;
+                    // The wait and its time limits count from when playback asked for the VPN, not from standby.
+                    started = SystemClock.elapsedRealtime();
                     if (!proxy.isConfigured()) configurePlayback(proxy, profile, scope);
                     demandFailed = false;
                     current = new Snapshot(Phase.CONNECTING, 0, 0);
@@ -156,6 +159,8 @@ public final class VpnConnectionService extends android.net.VpnService {
                 } catch (Exception | LinkageError failure) {
                     demandFailed = true;
                     current = new Snapshot(Phase.ERROR, 0, 0);
+                    noteFailure(failure instanceof java.io.IOException && failure.getMessage() != null
+                            ? failure.getMessage() : "The VPN could not start. Check the profile and its login.");
                     event("vpn_http_demand_failed: " + failure.getClass().getSimpleName());
                     updateNotification();
                 }
@@ -204,6 +209,7 @@ public final class VpnConnectionService extends android.net.VpnService {
             lastProbe = lastStatsLog = lastEgressProbe = 0;
             probeVerified = false;
             demandFailed = false;
+            failureReason = null;
             egress = null;
             if (!matchesSettings() || generation.get() != token) throw new IllegalStateException("Connection selection changed.");
             if (mode.isPlaybackScoped()) {
@@ -229,6 +235,8 @@ public final class VpnConnectionService extends android.net.VpnService {
             current = new Snapshot(standby ? Phase.STANDBY : Phase.CONNECTING, 0, 0);
             poll();
         } catch (Exception | LinkageError failure) {
+            noteFailure(failure instanceof java.io.IOException && failure.getMessage() != null
+                    ? failure.getMessage() : "The VPN could not start. Check the profile and its login.");
             event("vpn_connect_failed: " + failure.getClass().getSimpleName());
             closeEngine();
             if (!destroyed) { current = new Snapshot(Phase.ERROR, 0, 0); updateNotification(); }
@@ -260,6 +268,10 @@ public final class VpnConnectionService extends android.net.VpnService {
                 return;
             }
             if (!engine.isUp()) {
+                String detail = engine.lastDetail();
+                noteFailure((engine.authRejected() ? "The VPN server rejected the login."
+                        : "The VPN connection dropped or the server stopped answering.")
+                        + (detail == null ? "" : " (" + detail + ")"));
                 current = new Snapshot(Phase.ERROR, 0, 0, null, engine.authRejected());
                 updateNotification();
                 return;
@@ -275,6 +287,11 @@ public final class VpnConnectionService extends android.net.VpnService {
             }
             boolean verified = stats.authenticated && stats.session == verifiedSession
                     && stats.received > 0 && probeVerified;
+            if (!verified && now - started > 20000) {
+                noteFailure(stats.authenticated
+                        ? "The VPN connected, but nothing could be reached through it."
+                        : "The VPN server hasn't answered. Its address, port or protocol may not suit this app.");
+            }
             if (verified && egress == null && (lastEgressProbe == 0 || now - lastEgressProbe >= 60000)) {
                 lastEgressProbe = now;
                 egress = engine.egress();
@@ -329,7 +346,18 @@ public final class VpnConnectionService extends android.net.VpnService {
                 .addAction(new Notification.Action.Builder(null, getString(R.string.vpn_turn_off), stop).build()).build();
     }
     private void updateNotification() { getSystemService(NotificationManager.class).notify(NOTIFICATION, notification()); }
+    // Why the latest connection attempt did not work, in words a person can act on. Never holds secrets.
+    private static volatile String failureReason;
+    static String failureReason() { return failureReason; }
+    /** Keeps the first reason noted for an attempt; later ones are usually just the same failure seen again. */
+    static void noteFailure(String reason) {
+        if (failureReason == null) {
+            failureReason = reason;
+            VpnPlaybackProtection.report("reason: " + reason);
+        }
+    }
     private void event(String value) {
+        VpnPlaybackProtection.report(value);
         if ((getApplicationInfo().flags & android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0) android.util.Log.i("NuvioVpn", value);
     }
     @Override public void onDestroy() {

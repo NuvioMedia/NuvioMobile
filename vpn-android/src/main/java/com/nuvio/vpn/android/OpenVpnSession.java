@@ -57,8 +57,19 @@ final class OpenVpnSession implements TunnelEngine {
     private boolean protectSocket(int fd) { return proxy != null || service.protect(fd); }
     private int establish(String[] addresses, String[] dns, int mtu) {
         try {
-            if (addresses.length == 0 || dns.length == 0) return -1;
-            if (proxy != null) return proxy.attachOpenVpn(addresses, dns, mtu);
+            if (addresses.length == 0) {
+                VpnConnectionService.noteFailure("The VPN server didn't give this device an address.");
+                return -1;
+            }
+            if (dns.length == 0) {
+                VpnConnectionService.noteFailure("The VPN server didn't send a DNS address, which this app needs.");
+                return -1;
+            }
+            if (proxy != null) {
+                int result = proxy.attachOpenVpn(addresses, dns, mtu);
+                if (result < 0) VpnConnectionService.noteFailure("The VPN tunnel could not be set up inside the app.");
+                return result;
+            }
             VpnService.Builder builder = service.new Builder().setSession("OpenVPN").setMtu(mtu);
             builder.addAllowedApplication(service.getPackageName());
             boolean ipv4 = false, ipv6 = false;
@@ -75,13 +86,23 @@ final class OpenVpnSession implements TunnelEngine {
             if (ipv4) builder.addRoute("0.0.0.0",0);
             if (ipv6) builder.addRoute("::",0);
             ParcelFileDescriptor tun = builder.establish();
+            if (tun == null) VpnConnectionService.noteFailure("Android would not set up the VPN connection.");
             return tun == null ? -1 : tun.detachFd();
-        } catch (Exception failure) { return -1; }
+        } catch (Exception failure) {
+            VpnConnectionService.noteFailure("The VPN tunnel could not be set up.");
+            return -1;
+        }
     }
     @Override public boolean isUp() {
         return handle != 0 && statsNative(handle)[2] >= 0;
     }
     @Override public boolean authRejected() { return handle != 0 && statsNative(handle)[2] == -2; }
+    @Override public String lastDetail() {
+        long current = handle;
+        if (current == 0) return null;
+        try { String text = detailNative(current); return text == null || text.isEmpty() ? null : text; }
+        catch (RuntimeException | UnsatisfiedLinkError ignored) { return null; }
+    }
     @Override public TunnelTraffic statistics() {
         long[] values = statsNative(handle);
         return new TunnelTraffic(values[0], values[1], values[2] > 0, values[2]);
@@ -96,5 +117,6 @@ final class OpenVpnSession implements TunnelEngine {
     private static native int evaluateNative(byte[] profile, boolean noCert, boolean aesCbc);
     private native long startNative(byte[] profile, boolean noCert, boolean aesCbc);
     private static native long[] statsNative(long handle);
+    private static native String detailNative(long handle);
     private static native void stopNative(long handle);
 }

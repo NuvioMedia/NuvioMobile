@@ -384,7 +384,10 @@ public final class VpnProfilesActivity extends Activity {
                         String label = entry.readable ? entry.name : getString(R.string.vpn_profiles_unreadable);
                         TextView profileTitle = ui.title(label);
                         row.addView(profileTitle);
-                        if (entry.readable) row.addView(ui.paragraph(getString(R.string.vpn_profiles_pending,
+                        if (entry.readable) row.addView(ui.paragraph(getString(
+                                entry.login == OpenVpnCredentials.Login.REQUIRED ? R.string.vpn_profiles_login_needed
+                                        : entry.login == OpenVpnCredentials.Login.SAVED ? R.string.vpn_profiles_login_saved
+                                        : R.string.vpn_profiles_pending,
                                 entry.protocol == ProfileImport.Protocol.OPENVPN ? "OpenVPN" : "WireGuard")));
                         if (entry.readable) {
                             boolean selectedEntry = entry.id.equals(selectedProfileId);

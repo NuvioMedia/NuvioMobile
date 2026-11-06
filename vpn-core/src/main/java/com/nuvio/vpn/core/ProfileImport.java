@@ -92,7 +92,7 @@ public final class ProfileImport {
             if (option.equals("client")) clientSeen = true;
             if (option.equals("remote") && !value.isEmpty()) remoteSeen = true;
             // Imported files may not execute code, include files, or expose management sockets.
-            if (option.matches("up|down|route-up|route-pre-down|ipchange|plugin|script-security|config|cd|chroot|daemon|log|log-append|writepid|status|auth-user-pass-verify|client-connect|client-disconnect|learn-address|tls-verify|iproute|tls-crypt-v2-verify|setenv|setenv-safe|engine|providers")
+            if (option.matches("up|down|route-up|route-pre-down|ipchange|plugin|script-security|config|cd|chroot|daemon|log|log-append|writepid|status|auth-user-pass-verify|client-connect|client-disconnect|learn-address|tls-verify|iproute|tls-crypt-v2-verify|engine|providers")
                     || option.startsWith("management")
                     || option.startsWith("pkcs11")) {
                 throw new IOException("OpenVPN option \"" + safeName(option) + "\" is not supported (scripts, files and management options can't be used).");

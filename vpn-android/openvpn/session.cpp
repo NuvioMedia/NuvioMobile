@@ -3,6 +3,8 @@
 #include <android/log.h>
 #include <atomic>
 #include <memory>
+#include <mutex>
+#include <string>
 #include <thread>
 
 namespace {
@@ -17,6 +19,15 @@ public:
     std::thread thread;
     std::atomic<long long> received{0}, sent{0}, authenticated{0};
     std::atomic<bool> ended{false}, closing{false}, authRejected{false};
+    void note(const std::string &text) {
+        if (text.empty()) return;
+        std::lock_guard<std::mutex> lock(detailLock);
+        if (detail.size() < 400) detail += (detail.empty() ? "" : " | ") + text.substr(0, 160);
+    }
+    std::string lastDetail() {
+        std::lock_guard<std::mutex> lock(detailLock);
+        return detail;
+    }
     Session(JNIEnv *env, jobject instance) {
         env->GetJavaVM(&vm);
         owner = env->NewGlobalRef(instance);
@@ -28,7 +39,13 @@ public:
         JNIEnv *env = nullptr;
         if (vm->AttachCurrentThread(&env, nullptr) == JNI_OK) {
             callbackEnv = env;
-            try { if (!closing) connect(); } catch (...) {}
+            try {
+                if (!closing) {
+                    auto status = connect();
+                    if (status.error) note("engine: " + status.status + (status.message.empty() ? "" : " " + status.message));
+                }
+            } catch (const std::exception &failure) { note(std::string("engine exception: ") + failure.what()); }
+            catch (...) { note("engine exception"); }
             callbackEnv = nullptr;
             vm->DetachCurrentThread();
         }
@@ -42,7 +59,10 @@ public:
     bool tun_builder_new() override {
         addresses.clear(); dns.clear(); mtu = 1500; authenticated = 0; return true;
     }
-    bool tun_builder_set_layer(int layer) override { return layer == 3; }
+    bool tun_builder_set_layer(int layer) override {
+        if (layer != 3) note("profile uses layer " + std::to_string(layer) + " (dev tap), not supported");
+        return layer == 3;
+    }
     bool tun_builder_set_remote_address(const std::string &, bool) override { return true; }
     bool tun_builder_add_address(const std::string &ip, int prefix, const std::string &, bool, bool) override {
         if (addresses.size() >= 8) return false;
@@ -55,7 +75,7 @@ public:
     bool tun_builder_set_allow_family(int, bool) override { return true; }
     bool tun_builder_set_session_name(const std::string &) override { return true; }
     bool tun_builder_set_mtu(int value) override {
-        if (value < 576 || value > 9000) return false;
+        if (value < 576 || value > 9000) { note("server MTU " + std::to_string(value) + " refused"); return false; }
         mtu = value; return true;
     }
     bool tun_builder_set_dns_options(const openvpn::DnsOptions &options) override {
@@ -63,16 +83,19 @@ public:
         for (const auto &[priority, server] : options.servers) {
             if (server.transport == openvpn::DnsServer::Transport::HTTPS
                 || server.transport == openvpn::DnsServer::Transport::TLS
-                || server.dnssec == openvpn::DnsServer::Security::Yes) return false;
+                || server.dnssec == openvpn::DnsServer::Security::Yes) { note("secure DNS (DoH/DoT/DNSSEC) pushed, not supported"); return false; }
             for (const auto &item : server.addresses) {
-                if ((item.port != 0 && item.port != 53) || dns.size() >= 8) return false;
+                if ((item.port != 0 && item.port != 53) || dns.size() >= 8) { note("DNS server on port " + std::to_string(item.port) + " or too many, refused"); return false; }
                 dns.push_back(item.address);
             }
         }
         return true;
     }
     int tun_builder_establish() override {
-        if (!callbackEnv || addresses.empty() || dns.empty()) return -1;
+        if (!callbackEnv || addresses.empty() || dns.empty()) {
+            note(std::string("tunnel setup: ") + (addresses.empty() ? "no address pushed" : "no DNS pushed"));
+            return -1;
+        }
         if (callbackEnv->PushLocalFrame(32) < 0) return -1;
         auto addrArray = strings(addresses), dnsArray = strings(dns);
         int fd = addrArray && dnsArray ? callbackEnv->CallIntMethod(owner, establish, addrArray, dnsArray, mtu) : -1;
@@ -87,6 +110,12 @@ public:
         __android_log_print(ANDROID_LOG_INFO,"NuvioVpn","openvpn_event: %s",e.name.c_str());
 #endif
         if (closing) { stop(); return; }
+        if (e.error || e.name == "AUTH_FAILED" || e.name == "TLS_ERROR" || e.name == "CERT_VERIFY_FAIL"
+            || e.name == "DISCONNECTED" || e.name == "RECONNECTING" || e.name == "RESOLVE" && e.error
+            || e.name == "TUN_SETUP_FAILED" || e.name == "TUN_IFACE_CREATE" || e.name == "CONNECTION_TIMEOUT"
+            || e.name == "INACTIVE_TIMEOUT" || e.name == "PROXY_ERROR" || e.name == "CLIENT_HALT"
+            || e.name == "CLIENT_RESTART" || e.name == "INFO" || e.name == "COMPRESSION_ENABLED")
+            note(e.name + (e.info.empty() ? "" : ": " + e.info));
         if (e.name == "AUTH_FAILED") authRejected = true;
         if (e.name == "CONNECTED") { authenticated = ++generation; clock_tick(); }
         else if (e.error || e.name == "DISCONNECTED" || e.name == "RECONNECTING") authenticated = 0;
@@ -102,6 +131,8 @@ public:
 private:
     JNIEnv *callbackEnv = nullptr;
     std::vector<std::string> addresses, dns;
+    std::mutex detailLock;
+    std::string detail;
     int mtu = 1500;
     long long generation = 0;
     bool clearException() {
@@ -130,6 +161,7 @@ bool load(JNIEnv *env, jbyteArray data, jboolean noCert, jboolean aesCbc, core::
     cfg.content += "\nremote-cert-tls server\n";
     cfg.disableClientCert = noCert;
     cfg.enableNonPreferredDCAlgorithms = aesCbc;
+    cfg.compressionMode = "asym"; // accept the server's compression setting but never compress what we send
     cfg.connTimeout = 25;
     cfg.clockTickMS = 500;
     cfg.tunPersist = false;
@@ -181,4 +213,9 @@ extern "C" JNIEXPORT void JNICALL Java_com_nuvio_vpn_android_OpenVpnSession_stop
     s->stop();
     s->thread.join();
     env->DeleteGlobalRef(s->owner);
+}
+extern "C" JNIEXPORT jstring JNICALL Java_com_nuvio_vpn_android_OpenVpnSession_detailNative(
+        JNIEnv *env, jclass, jlong handle) {
+    auto *s = reinterpret_cast<Session *>(handle);
+    return env->NewStringUTF(s->lastDetail().c_str());
 }

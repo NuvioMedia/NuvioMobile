@@ -3,6 +3,7 @@ package com.nuvio.vpn.android;
 interface TunnelEngine extends AutoCloseable {
     boolean isUp();
     default boolean authRejected() { return false; }
+    default String lastDetail() { return null; }
     TunnelTraffic statistics() throws Exception;
     boolean probe();
     String egress();

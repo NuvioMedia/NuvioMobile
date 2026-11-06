@@ -21,6 +21,24 @@ public final class VpnPlaybackProtection {
     private static final Handler main = new Handler(Looper.getMainLooper());
     private static volatile Pending pending;
     private static volatile Context application;
+    /** Lets the host app collect short, non-secret VPN progress lines (for its start-up report). */
+    public static volatile java.util.function.Consumer<String> diagnostics;
+    static void report(String line) {
+        java.util.function.Consumer<String> sink = diagnostics;
+        if (sink == null) return;
+        try { sink.accept("VPN: " + line); } catch (RuntimeException ignored) { }
+    }
+    /** Keeps the real reason a preparation step failed (shown to the person, and written to the report). */
+    private static IOException prepareFailure(Throwable failure, String generic) {
+        String message = failure instanceof IOException ? failure.getMessage() : null;
+        report("prepare failed: " + failure.getClass().getSimpleName() + (message == null ? "" : " - " + message));
+        return new IOException(message != null && !message.isEmpty() ? message : generic);
+    }
+    /** The generic message plus, when the connection noted one, the actual reason. */
+    static String withReason(String base) {
+        String reason = VpnConnectionService.failureReason();
+        return reason == null || reason.isEmpty() ? base : base + " " + reason;
+    }
     private static volatile int activeUserProfile;
     private static volatile VpnPreferences cachedSettings;
     private static volatile boolean profilesRestoring;
@@ -134,7 +152,11 @@ public final class VpnPlaybackProtection {
             Thread.currentThread().interrupt();
             throw new IOException("Playback request was cancelled.");
         } catch (java.util.concurrent.ExecutionException failure) {
-            throw new IOException("VPN protection could not be verified. Playback was not started.");
+            // The reason worked out when the request failed, instead of one message for every cause.
+            Throwable cause = failure.getCause();
+            String message = cause == null ? null : cause.getMessage();
+            throw new IOException(message != null && !message.isEmpty()
+                    ? message : "VPN protection could not be verified. Playback was not started.");
         } catch (java.util.concurrent.TimeoutException failure) {
             request.cancel(false);
             throw new IOException("VPN connection timed out. Playback was not started.");
@@ -157,7 +179,7 @@ public final class VpnPlaybackProtection {
                 VpnPreferences settings = settings();
                 if (!settings.getMode().isPlaybackScoped()) { result.complete(null); return; }
                 proxyReady(new ProxyRequest(app, settings.getSelectedProfileId(), settings.getMode(), result));
-            } catch (Exception failure) { result.completeExceptionally(new IOException("HTTP playback protection could not be prepared.")); }
+            } catch (Exception failure) { result.completeExceptionally(prepareFailure(failure, "HTTP playback protection could not be prepared.")); }
         });
         return result;
     }
@@ -216,7 +238,7 @@ public final class VpnPlaybackProtection {
                 VpnConnectionService.disconnect(request.app);
             }
             worker.schedule(() -> proxyReady(request), 250, TimeUnit.MILLISECONDS);
-        } catch (Exception failure) { request.result.completeExceptionally(new IOException("HTTP playback protection could not be prepared.")); }
+        } catch (Exception failure) { request.result.completeExceptionally(prepareFailure(failure, "HTTP playback protection could not be prepared.")); }
     }
 
     private static final class ProxyRequest {
@@ -284,7 +306,7 @@ public final class VpnPlaybackProtection {
                     if (error == null) result.complete(null); else result.completeExceptionally(error);
                 });
             } catch (Exception | LinkageError failure) {
-                result.completeExceptionally(new IOException("VPN protection could not be prepared. Check your selected profile and scope."));
+                result.completeExceptionally(prepareFailure(failure, "VPN protection could not be prepared. Check your selected profile and scope."));
             }
         });
         return result;
@@ -334,10 +356,10 @@ public final class VpnPlaybackProtection {
             }
             if (request.started && VpnConnectionService.snapshot().phase == VpnConnectionService.Phase.ERROR) {
                 fail(VpnConnectionService.snapshot().authRejected ? request.app.getString(R.string.vpn_auth_rejected)
-                        : "VPN could not be verified. Playback was not started."); return;
+                        : withReason("VPN could not be verified. Playback was not started.")); return;
             }
             if (SystemClock.elapsedRealtime() - request.since > 60000) {
-                fail("VPN connection timed out. Playback was not started."); return;
+                fail(withReason("VPN connection timed out. Playback was not started.")); return;
             }
             worker.schedule(() -> check(request), 250, TimeUnit.MILLISECONDS);
         } catch (Exception failure) { fail("VPN settings could not be read. Playback was not started."); }
@@ -351,6 +373,7 @@ public final class VpnPlaybackProtection {
     }
 
     private static void fail(String message) {
+        report("playback blocked: " + message);
         // All pending state belongs to this actor, including UI-originated failures.
         worker.execute(() -> {
             Pending request = pending;

@@ -73,6 +73,7 @@ final class HttpStreamTunnel implements TunnelEngine {
 
     @Override public boolean isUp() { return handle != 0 && (openVpn == null || openVpn.isUp()); }
     @Override public boolean authRejected() { return openVpn != null && openVpn.authRejected(); }
+    @Override public String lastDetail() { return openVpn == null ? null : openVpn.lastDetail(); }
     @Override public TunnelTraffic statistics() throws IOException {
         if (openVpn != null) return openVpn.statistics();
         long[] stats = statsNative(handle);

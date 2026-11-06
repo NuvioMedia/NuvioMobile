@@ -99,10 +99,13 @@ public final class VpnCoreChecks {
             rejects(WG + hook + " = untrusted\n", ProfileImport.Protocol.WIREGUARD);
         }
         for (String option : new String[] {"up", "down", "plugin", "config", "management",
-                "management-client", "script-security", "tls-verify", "setenv", "pkcs11-providers"}) {
+                "management-client", "script-security", "tls-verify", "pkcs11-providers"}) {
             rejects(OVPN + option + " untrusted\n", ProfileImport.Protocol.OPENVPN);
             rejects(OVPN + "--" + option + " untrusted\n", ProfileImport.Protocol.OPENVPN);
         }
+        // Provider files often carry setenv; harmless because scripts never run.
+        read(OVPN + "setenv CLIENT_CERT 0\nsetenv-safe UV_NAME example\n", ProfileImport.Protocol.OPENVPN).close();
+        checks++;
         for (String option : new String[] {"ca", "cert", "key", "auth-user-pass", "tls-auth", "askpass"}) {
             rejects(OVPN + option + " secrets.txt\n", ProfileImport.Protocol.OPENVPN);
         }
