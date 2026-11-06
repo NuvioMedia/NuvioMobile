@@ -103,6 +103,7 @@ import com.nuvio.app.features.details.components.CommentDetailSheet
 import com.nuvio.app.features.details.components.DetailAdditionalInfoSection
 import com.nuvio.app.features.details.components.DetailCastSection
 import com.nuvio.app.features.details.components.DetailCommentsSection
+import com.nuvio.app.features.details.components.CinematicHeaderBackdrop
 import com.nuvio.app.features.details.components.DetailFloatingHeader
 import com.nuvio.app.features.details.components.DetailHero
 import com.nuvio.app.features.details.components.DetailMetaInfo
@@ -114,6 +115,7 @@ import com.nuvio.app.features.details.components.DetailSeriesListHeader
 import com.nuvio.app.features.details.components.DetailTrailersSection
 import com.nuvio.app.features.details.components.EpisodeWatchedActionSheet
 import com.nuvio.app.features.details.components.SeasonWatchedActionSheet
+import com.nuvio.app.features.details.components.TabletArtworkBackdropAlignment
 import com.nuvio.app.features.details.components.TabletDetailBackdrop
 import com.nuvio.app.features.details.components.TabletDetailHero
 import com.nuvio.app.features.details.components.TrailerPlayerPopup
@@ -1032,6 +1034,7 @@ fun MetaDetailsScreen(
                 BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
                     val colorScheme = MaterialTheme.colorScheme
                     val useTabletLayout = minOf(maxWidth, maxHeight) >= 600.dp
+                    val screenHeight = maxHeight
                     val isTablet = useTabletLayout || maxWidth >= 720.dp
                     val contentHorizontalPadding = if (isTablet) 32.dp else 18.dp
                     val contentMaxWidth = detailTabletContentMaxWidth(maxWidth, isTablet)
@@ -1344,6 +1347,21 @@ fun MetaDetailsScreen(
                             isSaved = isSaved,
                             isHeroCollapsed = isHeroCollapsed,
                             backgroundColor = dominantBackdropColor.takeIf { dominantColorEnabled },
+                            headerBackground = if (cinematicBackground) {
+                                {
+                                    CinematicHeaderBackdrop(
+                                        image = cinematicBackdrop,
+                                        screenHeight = screenHeight,
+                                        alignment = if (useTabletLayout) {
+                                            TabletArtworkBackdropAlignment
+                                        } else {
+                                            Alignment.Center
+                                        },
+                                    )
+                                }
+                            } else {
+                                null
+                            },
                             onBack = onBackFromDetails,
                             onToggleSaved = toggleSaved,
                         )
@@ -1795,6 +1813,7 @@ private fun DetailHeaderOverlay(
     isSaved: Boolean,
     isHeroCollapsed: State<Boolean>,
     backgroundColor: Color?,
+    headerBackground: (@Composable () -> Unit)?,
     onBack: () -> Unit,
     onToggleSaved: () -> Unit,
 ) {
@@ -1829,6 +1848,7 @@ private fun DetailHeaderOverlay(
             isSaved = isSaved,
             progress = headerProgress,
             backgroundColor = backgroundColor,
+            background = headerBackground,
             onBack = onBack,
             onToggleSaved = onToggleSaved,
             modifier = Modifier.zIndex(2f),

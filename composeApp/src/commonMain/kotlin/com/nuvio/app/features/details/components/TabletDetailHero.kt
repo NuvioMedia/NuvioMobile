@@ -98,7 +98,7 @@ fun TabletDetailBackdrop(
         if (cinematic) {
             ArtworkBackdrop(
                 image = backdropImage,
-                alignment = BiasAlignment(0f, BackdropVerticalBias),
+                alignment = TabletArtworkBackdropAlignment,
             )
         }
         BackdropArtwork(
@@ -453,3 +453,5 @@ private fun TabletHeroMetaRow(meta: MetaDetails, showImdbRating: Boolean) {
 private val TabletHeroHeight = 660.dp
 private val TabletHeroTopInset = 96.dp
 private const val BackdropVerticalBias = -0.6f
+
+internal val TabletArtworkBackdropAlignment: Alignment = BiasAlignment(0f, BackdropVerticalBias)
