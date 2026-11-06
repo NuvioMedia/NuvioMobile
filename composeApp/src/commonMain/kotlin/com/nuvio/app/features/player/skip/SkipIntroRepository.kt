@@ -248,17 +248,13 @@ object SkipIntroRepository {
                 val response = SkipIntroApi.queryAnimeSkip(clientId, query) ?: continue
                 val episodes = response.data?.findEpisodesByShowId ?: continue
 
-                // A show can hold several community entries for the same episode number,
-                // some of them incomplete; use the first one that yields usable segments.
                 val result = episodes
-                    .asSequence()
                     .filter { ep ->
                         ep.number?.toIntOrNull() == episode &&
                             (season == null || ep.season?.toIntOrNull() == season)
                     }
-                    .map { it.timestamps.orEmpty().toAnimeSkipIntervals(it.baseDuration) }
-                    .firstOrNull { it.isNotEmpty() }
-                if (result != null) return result
+                    .bestAnimeSkipIntervals()
+                if (result.isNotEmpty()) return result
             }
             emptyList()
         } catch (_: Exception) {
@@ -338,6 +334,22 @@ internal suspend fun resolveMovieSkipImdbId(
         }?.trim()?.takeIf { imdbPattern.matches(it) }
     }
 }
+
+/**
+ * A show can hold several community entries for the same episode number, some of them incomplete.
+ * Pick the entry covering the most segment categories (opening / ending / recap), then the one
+ * with the most segments; on a tie the earlier entry wins.
+ */
+internal fun List<AnimeSkipEpisode>.bestAnimeSkipIntervals(): List<SkipInterval> =
+    map { it.timestamps.orEmpty().toAnimeSkipIntervals(it.baseDuration) }
+        .filter { it.isNotEmpty() }
+        .maxWithOrNull(
+            compareBy<List<SkipInterval>>(
+                { intervals -> intervals.mapNotNull { segmentCategory(it.type) }.toSet().size },
+                { it.size }
+            )
+        )
+        .orEmpty()
 
 /**
  * Anime-Skip timestamps only mark where a segment starts; each one ends where the next begins.
