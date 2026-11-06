@@ -16,6 +16,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -82,8 +84,9 @@ object AvatarRepository {
         normalizedAvatarUrl(profile.avatarUrl)?.let { url -> return url.takeIf { it.startsWith(storage) } }
         val avatar = profile.avatarId?.let { id -> avatars.value.firstOrNull { it.id == id } } ?: return null
         if (!avatar.memberOnly) return avatar.storagePath.takeIf { it.isNotBlank() }?.let(::avatarStorageUrl)
+        val sanitizedPath = avatar.storagePath.trim().trimStart('/')
         return try {
-            SupabaseProvider.client.storage[MemberAvatarBucket].createSignedUrl(avatar.storagePath, 1.days)
+            SupabaseProvider.client.storage[MemberAvatarBucket].createSignedUrl(sanitizedPath, 1.days)
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
@@ -192,10 +195,15 @@ object AvatarRepository {
             lastMemberRefresh = TimeSource.Monotonic.markNow()
             memberCatalogMetadata = remote
             saveCachedCatalog()
+            val downloadSemaphore = Semaphore(6)
             memberCatalog = coroutineScope {
                 remote.map { item ->
-                    async { loadMemberAvatar(item) }
-                }.awaitAll().filterNotNull()
+                    async {
+                        downloadSemaphore.withPermit {
+                            loadMemberAvatar(item)
+                        }
+                    }
+                }.awaitAll()
             }.sortedWith(compareBy({ it.category }, { it.sortOrder }))
             publishCatalog()
         } catch (error: CancellationException) {
@@ -207,25 +215,25 @@ object AvatarRepository {
         }
     }
 
-    private suspend fun loadMemberAvatar(item: MemberAvatarCatalogItem): AvatarCatalogItem? {
+    private suspend fun loadMemberAvatar(item: MemberAvatarCatalogItem): AvatarCatalogItem {
         return try {
             val cacheKey = memberAvatarCacheKey(item)
+            val sanitizedPath = item.storagePath.trim().trimStart('/')
             val localImageUrl = MemberAssetStorage.loadProfileAvatar(cacheKey)
                 ?: SupabaseProvider.client.storage[MemberAvatarBucket]
-                    .downloadAuthenticated(item.storagePath)
+                    .downloadAuthenticated(sanitizedPath)
                     .let { bytes -> MemberAssetStorage.saveProfileAvatar(cacheKey, bytes) }
-                ?: return null
             item.toAvatarCatalogItem(localImageUrl)
         } catch (error: CancellationException) {
             throw error
         } catch (error: Exception) {
             log.w(error) { "Unable to load supporter avatar ${item.id}" }
-            null
+            item.toAvatarCatalogItem(localImageUrl = null)
         }
     }
 
-    private fun loadCachedMemberAvatar(item: MemberAvatarCatalogItem): AvatarCatalogItem? {
-        val localImageUrl = MemberAssetStorage.loadProfileAvatar(memberAvatarCacheKey(item)) ?: return null
+    private fun loadCachedMemberAvatar(item: MemberAvatarCatalogItem): AvatarCatalogItem {
+        val localImageUrl = MemberAssetStorage.loadProfileAvatar(memberAvatarCacheKey(item))
         return item.toAvatarCatalogItem(localImageUrl)
     }
 
@@ -236,7 +244,7 @@ object AvatarRepository {
         return "${item.id}-v${item.assetVersion}.$extension"
     }
 
-    private fun MemberAvatarCatalogItem.toAvatarCatalogItem(localImageUrl: String): AvatarCatalogItem =
+    private fun MemberAvatarCatalogItem.toAvatarCatalogItem(localImageUrl: String? = null): AvatarCatalogItem =
         AvatarCatalogItem(
             id = id,
             displayName = displayName,
