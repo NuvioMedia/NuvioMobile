@@ -4,6 +4,8 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.systemGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.runtime.Composable
@@ -14,6 +16,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -144,6 +147,15 @@ internal fun PlayerScreenContent(args: PlayerScreenArgs) {
         runtime.sideGestureSystemEdgeExclusionPx = with(density) {
             PlayerSideGestureSystemEdgeExclusion.toPx()
         }
+        // Left/right system gesture insets are only non-zero when the device uses
+        // gesture navigation, so this keeps the edge back swipe working there and
+        // changes nothing for 3-button navigation.
+        val systemGestureInsets = WindowInsets.systemGestures
+        val layoutDirection = LocalLayoutDirection.current
+        runtime.horizontalSeekSystemEdgeExclusionPx = maxOf(
+            systemGestureInsets.getLeft(density, layoutDirection),
+            systemGestureInsets.getRight(density, layoutDirection),
+        ).toFloat()
         runtime.resizeModeFitLabel = stringResource(Res.string.compose_player_resize_fit)
         runtime.resizeModeFillLabel = stringResource(Res.string.compose_player_resize_fill)
         runtime.resizeModeZoomLabel = stringResource(Res.string.compose_player_resize_zoom)
