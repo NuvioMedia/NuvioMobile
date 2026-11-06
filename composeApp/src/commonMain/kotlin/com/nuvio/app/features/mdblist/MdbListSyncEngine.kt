@@ -1,10 +1,12 @@
 package com.nuvio.app.features.mdblist
 
+import kotlinx.coroutines.CancellationException
+
 class MdbListSyncEngine(
     private val remote: MdbListSyncRemote,
     private val now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() }
 ) {
-    suspend fun synchronize(previous: MdbListSyncSnapshot): MdbListSyncSnapshot {
+    suspend fun synchronize(previous: MdbListSyncSnapshot, includeRatings: Boolean = false): MdbListSyncSnapshot {
         val activities = remote.activities()
         val previousActivities = previous.activities
         val full = !previous.isInitialized || previousActivities == null
@@ -28,10 +30,23 @@ class MdbListSyncEngine(
             activities.droppedChanged(previousActivities)) {
             remote.dropped()
         } else previous.dropped
+        val ratings = when {
+            !includeRatings -> null
+            previous.ratings == null || full || expired || MdbListSyncBucket.RATINGS in previous.invalidatedBuckets ||
+                activities.ratingsChanged(previousActivities) -> try {
+                remote.ratings()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                previous.ratings
+            }
+            else -> previous.ratings
+        }
         val next = previous.copy(
             watched = watched,
             playback = playback,
             dropped = dropped,
+            ratings = ratings,
             activities = activities,
             watermark = activities.serverTime,
             checkedAtEpochMs = now(),

@@ -36,13 +36,14 @@ object MdbListTracker : TrackingAuthProvider {
         TrackingProviderId.MDBLIST, "MDBList", setOf(
             TrackingCapability.AUTHENTICATION, TrackingCapability.WATCHED_READ, TrackingCapability.WATCHED_WRITE,
             TrackingCapability.PROGRESS_READ, TrackingCapability.PROGRESS_WRITE, TrackingCapability.SCROBBLE,
-            TrackingCapability.LIBRARY_READ, TrackingCapability.LIBRARY_WRITE,
+            TrackingCapability.LIBRARY_READ, TrackingCapability.LIBRARY_WRITE, TrackingCapability.RATINGS,
         )
     )
     val writes = MdbListTrackingWrites(sync, history, scrobble)
     val progressProvider = MdbListTrackingProgressProvider(sync, scrobble, store, activeProfile, ::ensureLoaded)
     val watchedProvider = MdbListWatchedSyncAdapter(sync, history, store, activeProfile)
     val libraryProvider = MdbListTrackingLibraryProvider(library, sync, ::ensureLoaded)
+    val ratingProvider = MdbListUserRatings(api, sync)
 
     init {
         coroutineScope.launch {
@@ -60,6 +61,7 @@ object MdbListTracker : TrackingAuthProvider {
         TrackingProviderRegistry.registerProgressProvider(progressProvider)
         TrackingProviderRegistry.registerWatchedProvider(watchedProvider)
         TrackingProviderRegistry.registerLibraryProvider(libraryProvider)
+        TrackingProviderRegistry.registerRatingProvider(ratingProvider)
     }
 
     override fun ensureLoaded() {
