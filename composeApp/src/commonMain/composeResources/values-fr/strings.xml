@@ -419,6 +419,10 @@
     <string name="compose_nav_profile">Profil</string>
     <string name="compose_nav_search">Rechercher</string>
     <string name="compose_player_audio_tracks">Pistes audio</string>
+    <string name="compose_player_audio_delay">Délai audio</string>
+    <string name="compose_player_audio_amplification">Amplification</string>
+    <string name="compose_player_audio_amplification_keep">Conserver pour les prochaines vidéos</string>
+    <string name="compose_player_center_mix">Niveau du canal central</string>
     <string name="compose_player_audio">Audio</string>
     <string name="compose_player_auto_sync">Synchronisation automatique</string>
     <string name="compose_player_bold">Gras</string>
@@ -1266,6 +1270,14 @@
     <string name="settings_playback_vod_cache_warning">Les écritures sur le disque se poursuivent pendant la lecture d’un flux mis en cache. Une nouvelle taille s’applique au prochain démarrage de l’application.</string>
     <string name="settings_playback_exo_chapters">Afficher les chapitres</string>
     <string name="settings_playback_exo_chapters_description">Lire les chapitres des fichiers MKV pour les repérer sur la barre de progression et les lister dans le lecteur. Effectue quelques petites requêtes supplémentaires une fois la lecture démarrée. libmpv affiche toujours les chapitres</string>
+    <string name="settings_playback_remember_audio_delay">Mémoriser le délai audio par appareil</string>
+    <string name="settings_playback_remember_audio_delay_description">Rétablir le délai audio réglé dans le lecteur chaque fois que la même sortie est de nouveau utilisée, comme le haut-parleur du téléphone, un casque filaire ou chaque appareil Bluetooth</string>
+    <string name="settings_playback_downmix_section">Downmix</string>
+    <string name="settings_playback_downmix">Activer le downmix</string>
+    <string name="settings_playback_downmix_description">Mixe l’audio surround vers le nombre de canaux ci-dessous avec le décodeur FFmpeg de l’application. Nécessite la priorité des décodeurs «&#160;Préférer les décodeurs de l’application (FFmpeg)&#160;». La sortie Bluetooth reçoit toujours un downmix 2.0.</string>
+    <string name="settings_playback_downmix_channels">Nombre de canaux</string>
+    <string name="settings_playback_downmix_maintain_volume">Conserver l’audio d’origine lors du downmix</string>
+    <string name="settings_playback_downmix_maintain_volume_description">Lorsque cette option est désactivée, la normalisation du downmix peut réduire le volume global.</string>
     <string name="settings_tmdb_api_key_label">Clé API</string>
     <string name="settings_tmdb_api_key_override_description">Utiliser votre propre clé API TMDB, ou laisser vide pour utiliser la clé par défaut.</string>
     <string name="settings_tmdb_personal_api_key">Clé API personnelle</string>
