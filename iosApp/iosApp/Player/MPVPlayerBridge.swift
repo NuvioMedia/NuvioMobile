@@ -170,6 +170,9 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
     }
     func selectSubtitleTrack(trackId: Int32) { playerVC?.selectSubtitle(Int(trackId)) }
     func setSubtitleUrl(url: String) { playerVC?.addSubtitleUrl(url) }
+    func replaceExternalSubtitle(replacedUrl: String, path: String) {
+        playerVC?.replaceExternalSubtitle(replacedUrl, path: path)
+    }
     func clearExternalSubtitle() { playerVC?.removeExternalSubtitles() }
     func clearExternalSubtitleAndSelect(trackId: Int32) { playerVC?.removeExternalSubtitlesAndSelect(Int(trackId)) }
     func setSubtitleDelayMs(delayMs: Int32) { playerVC?.setSubtitleDelayMs(Int(delayMs)) }
@@ -871,6 +874,45 @@ final class MPVPlayerViewController: UIViewController {
             return
         }
         command("sub-add", args: [url, "select"])
+    }
+
+    /// Loads the local file at `path` in place of the external track loaded from `replacedUrl`,
+    /// under that track's title and language, then drops the replaced track and earlier AutoSync
+    /// copies (files named `autosync_*` next to `path`).
+    func replaceExternalSubtitle(_ replacedUrl: String, path: String) {
+        guard mpv != nil, isFileLoaded else {
+            pendingSubtitleUrl = path
+            return
+        }
+        var title: String?
+        var language: String?
+        let count = getInt("track-list/count")
+        for i in stride(from: count - 1, through: 0, by: -1) {
+            guard (getString("track-list/\(i)/type") ?? "") == "sub",
+                  getFlag("track-list/\(i)/external"),
+                  getString("track-list/\(i)/external-filename") == replacedUrl else { continue }
+            title = getString("track-list/\(i)/title") ?? (replacedUrl as NSString).lastPathComponent
+            language = getString("track-list/\(i)/lang")
+            break
+        }
+        var args: [String?] = [path, "cached"]
+        if let title {
+            args.append(title)
+            if let language { args.append(language) }
+        }
+        command("sub-add", args: args, checkForErrors: false)
+
+        let earlierCopyPrefix = (path as NSString).deletingLastPathComponent + "/autosync_"
+        let updatedCount = getInt("track-list/count")
+        for i in stride(from: updatedCount - 1, through: 0, by: -1) {
+            guard (getString("track-list/\(i)/type") ?? "") == "sub",
+                  getFlag("track-list/\(i)/external"),
+                  let filename = getString("track-list/\(i)/external-filename"),
+                  filename != path,
+                  filename == replacedUrl || filename.hasPrefix(earlierCopyPrefix) else { continue }
+            let id = getInt("track-list/\(i)/id")
+            command("sub-remove", args: ["\(id)"], checkForErrors: false)
+        }
     }
 
     private func addSubtitle(_ subtitle: PluginSubtitle, mode: String) {

@@ -7,6 +7,7 @@ import androidx.compose.ui.window.ComposeUIViewController
 import com.nuvio.app.core.ui.LocalFold
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.core.ui.NativeProfileSwitcherController
+import com.nuvio.app.features.autosync.AutoSyncPreferencesIos
 import com.nuvio.app.navigation.AppRoute
 import platform.UIKit.UIColor
 import platform.UIKit.UIViewController
@@ -109,15 +110,18 @@ private fun nuvioComposeViewController(
     verticalBar: VerticalBar = VerticalBar(),
     hinge: Hinge = Hinge(),
     content: @androidx.compose.runtime.Composable () -> Unit,
-): UIViewController = ComposeUIViewController(
-    configure = { onFocusBehavior = OnFocusBehavior.DoNothing },
-    content = {
-        CompositionLocalProvider(
-            LocalVerticalBarPadding provides verticalBar.padding,
-            LocalFold provides hinge.fold,
-            content = content,
-        )
-    },
-).apply {
-    view.backgroundColor = nuvioBackgroundColor
+): UIViewController {
+    AutoSyncPreferencesIos.initialize()
+    return ComposeUIViewController(
+        configure = { onFocusBehavior = OnFocusBehavior.DoNothing },
+        content = {
+            CompositionLocalProvider(
+                LocalVerticalBarPadding provides verticalBar.padding,
+                LocalFold provides hinge.fold,
+                content = content,
+            )
+        },
+    ).apply {
+        view.backgroundColor = nuvioBackgroundColor
+    }
 }
