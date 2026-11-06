@@ -14,23 +14,56 @@ internal val playbackAudioAttributes: AudioAttributes = AudioAttributes.Builder(
     .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
     .build()
 
+/**
+ * Requests audio focus when playback starts so other apps pause. A denied request (e.g. while a
+ * call holds focus) doesn't stop playback. Pauses on focus loss and resumes after a transient loss
+ * (e.g. an incoming call) if it was playing. Ducking is left to the system.
+ */
 @OptIn(UnstableApi::class)
-internal class PlayerAudioFocus(context: Context, onLoss: () -> Unit) {
+internal class PlayerAudioFocus(
+    context: Context,
+    private val playWhenReady: () -> Boolean,
+    private val pause: () -> Unit,
+    private val resume: () -> Unit,
+) {
     private val audioManager = AudioManagerCompat.getAudioManager(context)
+    private var hasFocus = false
+    private var resumeOnGain = false
+
     private val request = AudioFocusRequestCompat.Builder(AudioManagerCompat.AUDIOFOCUS_GAIN)
         .setAudioAttributes(playbackAudioAttributes)
         .setOnAudioFocusChangeListener { focusChange ->
-            if (focusChange == AudioManager.AUDIOFOCUS_LOSS || focusChange == AudioManager.AUDIOFOCUS_LOSS_TRANSIENT) {
-                onLoss()
+            when (focusChange) {
+                AudioManager.AUDIOFOCUS_GAIN -> {
+                    hasFocus = true
+                    if (resumeOnGain) {
+                        resumeOnGain = false
+                        resume()
+                    }
+                }
+                AudioManager.AUDIOFOCUS_LOSS -> {
+                    abandon()
+                    pause()
+                }
+                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                    hasFocus = false
+                    resumeOnGain = resumeOnGain || playWhenReady()
+                    pause()
+                }
             }
         }
         .build()
 
     fun request() {
-        AudioManagerCompat.requestAudioFocus(audioManager, request)
+        resumeOnGain = false
+        if (hasFocus) return
+        hasFocus = AudioManagerCompat.requestAudioFocus(audioManager, request) ==
+            AudioManager.AUDIOFOCUS_REQUEST_GRANTED
     }
 
     fun abandon() {
+        hasFocus = false
+        resumeOnGain = false
         AudioManagerCompat.abandonAudioFocusRequest(audioManager, request)
     }
 }
