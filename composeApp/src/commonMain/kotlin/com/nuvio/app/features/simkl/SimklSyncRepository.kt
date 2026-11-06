@@ -2,6 +2,7 @@ package com.nuvio.app.features.simkl
 
 import co.touchlab.kermit.Logger
 import com.nuvio.app.features.profiles.ProfileRepository
+import com.nuvio.app.features.tracking.TrackingMediaReference
 import com.nuvio.app.features.tracking.TrackingProfileStore
 import com.nuvio.app.features.tracking.TrackingProviderId
 import com.nuvio.app.features.tracking.TrackingProviderRegistry
@@ -235,6 +236,24 @@ object SimklSyncRepository : TrackingProfileStore {
                 SimklWatchDiagnostics.logSnapshot(stage = "mutation-commit", snapshot = snapshot)
             }
         }
+    }
+
+    internal suspend fun commitRating(media: TrackingMediaReference, rating: Int?) {
+        ensureLoaded()
+        val generation = profileGeneration
+        val profileId = ProfileRepository.activeProfileId
+        val ratedAt = SimklPlatformClock.nowEpochMs().epochMsToUtcIso()
+        val committed = snapshotMutex.withLock {
+            if (generation != profileGeneration || profileId != ProfileRepository.activeProfileId) {
+                return@withLock true
+            }
+            val current = _state.value
+            val snapshot = current.snapshot.withRating(media, rating, ratedAt) ?: return@withLock false
+            SimklSyncStorage.savePayload(json.encodeToString(snapshot))
+            _state.value = current.copy(snapshot = snapshot)
+            true
+        }
+        if (!committed) refreshAsync(TrackingRefreshIntent.INVALIDATED, SimklRefreshOrigin.MUTATION)
     }
 
     override fun onProfileChanged() {
