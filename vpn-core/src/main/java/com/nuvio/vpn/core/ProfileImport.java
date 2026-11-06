@@ -57,6 +57,8 @@ public final class ProfileImport {
         boolean interfaceSeen = false;
         boolean peerSeen = false;
         boolean clientSeen = false;
+        boolean tlsClientSeen = false;
+        boolean pullSeen = false;
         boolean remoteSeen = false;
         String inlineBlock = null;
         for (String rawLine : text.split("\\r?\\n")) {
@@ -90,6 +92,8 @@ public final class ProfileImport {
             if (option.startsWith("--")) option = option.substring(2);
             String value = fields.length == 2 ? fields[1].trim() : "";
             if (option.equals("client")) clientSeen = true;
+            if (option.equals("tls-client")) tlsClientSeen = true;
+            if (option.equals("pull")) pullSeen = true;
             if (option.equals("remote") && !value.isEmpty()) remoteSeen = true;
             // Imported files may not execute code, include files, or expose management sockets.
             if (option.matches("up|down|route-up|route-pre-down|ipchange|plugin|script-security|config|cd|chroot|daemon|log|log-append|writepid|status|auth-user-pass-verify|client-connect|client-disconnect|learn-address|tls-verify|iproute|tls-crypt-v2-verify|engine|providers")
@@ -105,7 +109,9 @@ public final class ProfileImport {
         if (protocol == Protocol.WIREGUARD && !(interfaceSeen && peerSeen)) {
             throw new IOException("Expected a WireGuard configuration with Interface and Peer sections.");
         }
-        if (protocol == Protocol.OPENVPN && (!(clientSeen && remoteSeen) || inlineBlock != null)) {
+        // OpenVPN defines "client" as the combination of "tls-client" and "pull".
+        if (protocol == Protocol.OPENVPN
+                && (!((clientSeen || (tlsClientSeen && pullSeen)) && remoteSeen) || inlineBlock != null)) {
             throw new IOException("Expected a self-contained OpenVPN client configuration with a remote server.");
         }
     }

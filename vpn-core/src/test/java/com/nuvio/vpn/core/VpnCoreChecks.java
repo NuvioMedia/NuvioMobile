@@ -70,6 +70,22 @@ public final class VpnCoreChecks {
     }
 
     private static void imports() throws Exception {
+        // ExpressVPN uses the long form of "client": "tls-client" plus "pull".
+        String express = OVPN.replace("client\n", "tls-client\npull\n");
+        for (String profile : new String[] {express,
+                OVPN.replace("client\n", "--pull\n--tls-client\n")}) {
+            try (ProfileImport.Candidate candidate = read(profile, ProfileImport.Protocol.OPENVPN)) {
+                check(candidate.getProtocol() == ProfileImport.Protocol.OPENVPN);
+            }
+        }
+        rejects(express.replace("tls-client\n", ""), ProfileImport.Protocol.OPENVPN);
+        rejects(express.replace("pull\n", ""), ProfileImport.Protocol.OPENVPN);
+        rejects(express.replace("remote vpn.example 1194\n", ""), ProfileImport.Protocol.OPENVPN);
+        rejects(express + "<key>\nunclosed\n", ProfileImport.Protocol.OPENVPN);
+        rejects(express + "up untrusted\n", ProfileImport.Protocol.OPENVPN);
+        rejects(express + "ca secrets.txt\n", ProfileImport.Protocol.OPENVPN);
+        rejects("remote vpn.example 1194\n<ca>\ntls-client\npull\n</ca>\n",
+                ProfileImport.Protocol.OPENVPN);
         try (ProfileImport.Candidate candidate = read(WG, ProfileImport.Protocol.WIREGUARD)) {
             check(candidate.getProtocol() == ProfileImport.Protocol.WIREGUARD);
             check(!candidate.toString().contains("secret-key"));
