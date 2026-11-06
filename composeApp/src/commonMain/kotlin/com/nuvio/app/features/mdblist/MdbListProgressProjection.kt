@@ -10,29 +10,9 @@ internal class MdbListProgressProjection(snapshot: MdbListSyncSnapshot) {
         mediaIndex.resolve(MdbListItemType.SHOW, record.ids).ids.aliases().map { it to record.season }
     }.groupBy({ it.first }, { it.second })
     private val historyByKey = snapshot.watched.associateBy(MdbListWatchedRecord::key)
-    val watchedItems = snapshot.watched.filter { it.type in setOf(MdbListItemType.MOVIE, MdbListItemType.EPISODE) }
-        .map { record ->
-            WatchedItem(
-                id = record.media.ids.contentId,
-                type = record.type.contentType,
-                name = record.media.title ?: record.media.ids.contentId,
-                season = record.season,
-                episode = record.episode,
-                videoId = videoId(record.media, record.season, record.episode),
-                markedAtEpochMs = mdbListTimestamp(record.watchedAt),
-                poster = record.media.poster,
-                releaseInfo = record.media.year?.toString(),
-                trackingProviderId = "mdblist",
-                trackingProviderItemId = record.media.ids.mdblist?.let { "mdblist:$it" },
-                trackingSourceUrl = record.media.sourceUrl(record.type),
-            )
-        }.sortedByDescending(WatchedItem::markedAtEpochMs)
-    val watchedKeys = snapshot.watched.flatMapTo(linkedSetOf()) { record ->
-        if (record.type !in setOf(MdbListItemType.MOVIE, MdbListItemType.EPISODE)) emptySet()
-        else record.media.ids.aliases().flatMap { id ->
-            watchedItemKeys(record.type.contentType, id, record.season, record.episode)
-        }
-    }
+    private val watchedRecords = snapshot.watched.filter { it.type in setOf(MdbListItemType.MOVIE, MdbListItemType.EPISODE) }
+    val watchedItems: List<WatchedItem> = watchedItems { null }
+    val watchedKeys: Set<String> = watchedKeys { null }
     val hiddenContentIds = droppedById.filterValues { null in it }.keys
     val showIdSiblings = (snapshot.watched.filter { it.type != MdbListItemType.MOVIE }.map { it.media.ids.aliases() } +
         snapshot.playback.filter { it.type != MdbListItemType.MOVIE }.map { it.media.ids.aliases() })
@@ -63,6 +43,51 @@ internal class MdbListProgressProjection(snapshot: MdbListSyncSnapshot) {
             val ids = com.nuvio.app.features.tracking.parseTrackingExternalIds(contentId).toMdbListIds() ?: return null
             mediaIndex.resolve(MdbListItemType.SHOW, ids).ids.contentId
         }.getOrNull()
+
+    fun tmdbShowId(contentId: String): Long? =
+        com.nuvio.app.features.tracking.parseTrackingExternalIds(contentId).toMdbListIds()
+            ?.let { mediaIndex.resolve(MdbListItemType.SHOW, it).ids.tmdb }
+
+    /**
+     * Watched movies and episodes, with the episodes of shows [mappingFor] remaps in the addon's
+     * numbering. Episodes the addon does not list are left out.
+     */
+    fun watchedItems(mappingFor: (String) -> MdbListEpisodeMapping?): List<WatchedItem> =
+        watchedRecords.mapNotNull { record ->
+            val episode = record.addonEpisode(mappingFor) ?: return@mapNotNull null
+            WatchedItem(
+                id = record.media.ids.contentId,
+                type = record.type.contentType,
+                name = record.media.title ?: record.media.ids.contentId,
+                season = episode.season,
+                episode = episode.episode,
+                videoId = episode.videoId ?: videoId(record.media, episode.season, episode.episode),
+                markedAtEpochMs = mdbListTimestamp(record.watchedAt),
+                poster = record.media.poster,
+                releaseInfo = record.media.year?.toString(),
+                trackingProviderId = "mdblist",
+                trackingProviderItemId = record.media.ids.mdblist?.let { "mdblist:$it" },
+                trackingSourceUrl = record.media.sourceUrl(record.type),
+            )
+        }.sortedByDescending(WatchedItem::markedAtEpochMs)
+
+    /** Watched keys of every id the show is known by, numbered as in [watchedItems]. */
+    fun watchedKeys(mappingFor: (String) -> MdbListEpisodeMapping?): Set<String> =
+        watchedRecords.flatMapTo(linkedSetOf()) { record ->
+            val episode = record.addonEpisode(mappingFor) ?: return@flatMapTo emptyList()
+            record.media.ids.aliases().flatMap { id ->
+                watchedItemKeys(record.type.contentType, id, episode.season, episode.episode)
+            }
+        }
+
+    private fun MdbListWatchedRecord.addonEpisode(mappingFor: (String) -> MdbListEpisodeMapping?): RecordEpisode? {
+        // Specials are not remapped: both sides list them as season 0.
+        if (season == null || episode == null || season == 0) return RecordEpisode(season, episode)
+        val mapping = mappingFor(media.ids.contentId)?.takeIf { it.remaps } ?: return RecordEpisode(season, episode)
+        return mapping.toAddon(season, episode)?.let { RecordEpisode(it.season, it.episode, it.videoId) }
+    }
+
+    private data class RecordEpisode(val season: Int?, val episode: Int?, val videoId: String? = null)
 
     private fun entry(
         type: MdbListItemType,
