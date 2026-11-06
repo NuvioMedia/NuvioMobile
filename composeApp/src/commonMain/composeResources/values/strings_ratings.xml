@@ -1,0 +1,11 @@
+<resources>
+    <string name="rating_rate">Rate</string>
+    <string name="rating_your_rating">Your rating</string>
+    <string name="rating_rate_episode">Rate episode</string>
+    <string name="rating_rated">Rated %1$s/10</string>
+    <string name="rating_value">%1$s out of 10</string>
+    <string name="rating_syncs_to">Syncs to %1$s</string>
+    <string name="rating_saved">Rating saved</string>
+    <string name="rating_removed">Rating removed</string>
+    <string name="rating_failed">Couldn't update your rating on %1$s</string>
+</resources>

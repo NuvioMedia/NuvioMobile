@@ -32,6 +32,8 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarOutline
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
@@ -79,6 +81,7 @@ import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.build.TrailerPlaybackMode
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
+import com.nuvio.app.core.i18n.localizedEpisodeTitle
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
 import com.nuvio.app.core.ui.ArtworkBackdrop
 import com.nuvio.app.core.ui.LocalOnBackdrop
@@ -114,6 +117,10 @@ import com.nuvio.app.features.details.components.DetailSeriesListEpisode
 import com.nuvio.app.features.details.components.DetailSeriesListHeader
 import com.nuvio.app.features.details.components.DetailTrailersSection
 import com.nuvio.app.features.details.components.EpisodeWatchedActionSheet
+import com.nuvio.app.features.details.components.RatingSheet
+import com.nuvio.app.features.details.components.formatRating
+import com.nuvio.app.features.details.components.ratingReference
+import com.nuvio.app.features.details.components.rememberRatingState
 import com.nuvio.app.features.details.components.SeasonWatchedActionSheet
 import com.nuvio.app.features.details.components.TabletArtworkBackdropAlignment
 import com.nuvio.app.features.details.components.TabletDetailBackdrop
@@ -148,6 +155,7 @@ import com.nuvio.app.features.tracking.TrackingMembershipApplyResult
 import com.nuvio.app.features.tracking.toggleTrackingLibraryMembership
 import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tracking.TrackingProviderId
+import com.nuvio.app.features.tracking.TrackingRatings
 import com.nuvio.app.features.trailer.TrailerPlaybackResolver
 import com.nuvio.app.features.trailer.TrailerPlaybackSource
 import com.nuvio.app.features.watched.WatchedRepository
@@ -249,6 +257,7 @@ fun MetaDetailsScreen(
     var observedOfflineState by remember(type, id) { mutableStateOf(false) }
     var selectedEpisodeForActions by remember(type, id) { mutableStateOf<MetaVideo?>(null) }
     var selectedEpisodeZoomAnchor by remember(type, id) { mutableStateOf<PosterZoomAnchor?>(null) }
+    var episodeToRate by remember(type, id) { mutableStateOf<MetaVideo?>(null) }
     val episodeOverlayHazeState = rememberHazeState()
     var selectedSeasonForActions by remember(type, id) { mutableStateOf<Int?>(null) }
     val commentsEnabled by remember {
@@ -1440,6 +1449,7 @@ fun MetaDetailsScreen(
                                 onPlayManually = {
                                     onEpisodeManualPlayClick(selectedEpisode)
                                 },
+                                ratingMedia = remember(meta, selectedEpisode) { meta.ratingReference(selectedEpisode) },
                             )
                         }
 
@@ -1689,6 +1699,9 @@ fun MetaDetailsScreen(
             val seasonLabel = selectedEpisode.season?.let {
                 stringResource(Res.string.episodes_season, it)
             } ?: stringResource(Res.string.episodes_specials)
+            val episodeRating = remember(meta, selectedEpisode) {
+                TrackingRatings.current(meta.ratingReference(selectedEpisode))
+            }
             NuvioPosterZoomActionOverlay(
                 imageUrl = zoomAnchor.imageUrl ?: selectedEpisode.thumbnail ?: meta.background ?: meta.poster,
                 title = selectedEpisode.title,
@@ -1751,6 +1764,20 @@ fun MetaDetailsScreen(
                             },
                         ),
                     )
+                    if (episodeRating.isAvailable) {
+                        val rated = episodeRating.rating
+                        add(
+                            PosterZoomOverlayAction(
+                                icon = if (rated != null) Icons.Rounded.Star else Icons.Rounded.StarOutline,
+                                label = if (rated != null) {
+                                    stringResource(Res.string.rating_rated, formatRating(rated))
+                                } else {
+                                    stringResource(Res.string.rating_rate_episode)
+                                },
+                                onSelected = { episodeToRate = selectedEpisode },
+                            ),
+                        )
+                    }
                     if (
                         onPlayManually != null &&
                         StreamAutoPlayPolicy.isEffectivelyEnabled(playerSettingsUiState) &&
@@ -1796,6 +1823,19 @@ fun MetaDetailsScreen(
                     selectedEpisodeForActions = null
                     selectedEpisodeZoomAnchor = null
                 },
+            )
+        }
+
+        val ratedEpisode = episodeToRate
+        if (meta != null && ratedEpisode != null) {
+            val ratingMedia = remember(meta, ratedEpisode) { meta.ratingReference(ratedEpisode) }
+            val ratingState by rememberRatingState(ratingMedia)
+            RatingSheet(
+                media = ratingMedia,
+                title = localizedEpisodeTitle(ratedEpisode.title, ratedEpisode.episode) ?: ratedEpisode.title,
+                subtitle = localizedSeasonEpisodeCode(ratedEpisode.season, ratedEpisode.episode),
+                state = ratingState,
+                onDismiss = { episodeToRate = null },
             )
         }
     }
