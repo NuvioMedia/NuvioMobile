@@ -55,6 +55,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.focusedAlignment
+import com.nuvio.app.core.ui.rememberBackdropFocusState
 import com.nuvio.app.core.ui.heroStretchHeight
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.core.ui.ScreenActivityEffect
@@ -221,23 +223,30 @@ fun HomeHeroSection(
                         .heroStretchZoom(stretchPx),
                 ) {
                     visiblePages.forEach { layer ->
-                        AsyncImage(
-                            model = items[layer.itemIndex].banner ?: items[layer.itemIndex].poster,
-                            contentDescription = items[layer.itemIndex].name,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .graphicsLayer {
-                                    val offset = scrollOffsetPx
-                                    val scrollScale = heroBackgroundScrollScale(offset)
-                                    alpha = layer.visibility
-                                    translationX = -layer.offset * heroWidthPx * HERO_BACKGROUND_PARALLAX
-                                    translationY = heroBackgroundScrollTranslationY(offset)
-                                    scaleX = HERO_BACKGROUND_SCALE * scrollScale
-                                    scaleY = HERO_BACKGROUND_SCALE * scrollScale
-                                },
-                            alignment = if (layout.isTablet) Alignment.TopCenter else Alignment.Center,
-                            contentScale = ContentScale.Crop,
-                        )
+                        key(layer.itemIndex) {
+                            val layerImageUrl = items[layer.itemIndex].banner ?: items[layer.itemIndex].poster
+                            val backdropFocus = rememberBackdropFocusState(layerImageUrl)
+                            AsyncImage(
+                                model = layerImageUrl,
+                                contentDescription = items[layer.itemIndex].name,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .graphicsLayer {
+                                        val offset = scrollOffsetPx
+                                        val scrollScale = heroBackgroundScrollScale(offset)
+                                        alpha = layer.visibility
+                                        translationX = -layer.offset * heroWidthPx * HERO_BACKGROUND_PARALLAX
+                                        translationY = heroBackgroundScrollTranslationY(offset)
+                                        scaleX = HERO_BACKGROUND_SCALE * scrollScale
+                                        scaleY = HERO_BACKGROUND_SCALE * scrollScale
+                                    },
+                                alignment = backdropFocus.focusedAlignment(
+                                    if (layout.isTablet) Alignment.TopCenter else Alignment.Center,
+                                ),
+                                contentScale = ContentScale.Crop,
+                                onSuccess = { state -> backdropFocus.onImageLoaded(state.result.image) },
+                            )
+                        }
                     }
                 }
 
