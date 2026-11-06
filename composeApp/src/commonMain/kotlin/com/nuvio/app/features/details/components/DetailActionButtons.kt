@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.AppIconResource
 import com.nuvio.app.core.ui.appIconPainter
+import com.nuvio.app.core.ui.backdropControlColor
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.details_actions_menu_label
@@ -208,7 +209,7 @@ fun DetailActionButtons(
                     color = if (actionsExpanded) {
                         MaterialTheme.colorScheme.onBackground
                     } else {
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.82f)
+                        backdropControlColor(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.82f))
                     },
                     contentColor = if (actionsExpanded) {
                         MaterialTheme.colorScheme.background
@@ -316,7 +317,7 @@ private fun DetailIconAction(
         color = if (active) {
             MaterialTheme.colorScheme.onBackground
         } else {
-            MaterialTheme.colorScheme.surfaceVariant
+            backdropControlColor(MaterialTheme.colorScheme.surfaceVariant)
         },
         contentColor = if (active) {
             MaterialTheme.colorScheme.background

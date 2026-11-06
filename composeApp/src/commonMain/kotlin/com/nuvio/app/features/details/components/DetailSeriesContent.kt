@@ -67,6 +67,7 @@ import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
 import com.nuvio.app.core.ui.NuvioAnimatedWatchedBadge
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
 import com.nuvio.app.core.ui.NuvioProgressBar
+import com.nuvio.app.core.ui.backdropControlColor
 import com.nuvio.app.core.ui.nuvioCardDepth
 import com.nuvio.app.core.ui.nuvioHorizontalScrollBleed
 import com.nuvio.app.core.ui.posterCardClickable
@@ -521,7 +522,7 @@ private fun SeasonTextChipScrollRow(
                     .clip(RoundedCornerShape(sizing.seasonChipRadius))
                     .background(
                         if (isSelected) {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                            backdropControlColor(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                         } else {
                             Color.Transparent
                         },

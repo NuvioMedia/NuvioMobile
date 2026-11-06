@@ -14,8 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.CacheDrawScope
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -31,6 +33,16 @@ import coil3.request.SuccessResult
 import coil3.size.Precision
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+internal val LocalOnBackdrop = staticCompositionLocalOf { false }
+
+@Composable
+internal fun backdropControlColor(default: Color): Color =
+    if (LocalOnBackdrop.current) {
+        MaterialTheme.nuvio.colors.textPrimary.copy(alpha = NuvioTokens.Opacity.hover)
+    } else {
+        default
+    }
 
 private val backdropCache = linkedMapOf<String, ImageBitmap>()
 private val backdropScrim = Brush.verticalGradient(
@@ -90,7 +102,9 @@ internal fun ArtworkBackdrop(
     }
 }
 
-internal fun Modifier.featherArtwork(): Modifier = graphicsLayer {
+internal fun Modifier.featherArtwork(
+    edgeMask: (CacheDrawScope.() -> Brush)? = null,
+): Modifier = graphicsLayer {
     compositingStrategy = CompositingStrategy.Offscreen
 }.drawWithCache {
     val fade = Brush.verticalGradient(
@@ -102,9 +116,11 @@ internal fun Modifier.featherArtwork(): Modifier = graphicsLayer {
         startY = size.height * 0.58f,
         endY = size.height,
     )
+    val extraFade = edgeMask?.invoke(this)
     onDrawWithContent {
         drawContent()
         drawRect(fade, blendMode = BlendMode.DstIn)
+        if (extraFade != null) drawRect(extraFade, blendMode = BlendMode.DstIn)
     }
 }
 

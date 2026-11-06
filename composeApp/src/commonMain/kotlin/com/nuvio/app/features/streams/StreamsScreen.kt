@@ -60,11 +60,13 @@ import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.ui.ArtworkBackdrop
+import com.nuvio.app.core.ui.LocalOnBackdrop
 import com.nuvio.app.core.ui.NuvioBackButton
 import com.nuvio.app.core.ui.NuvioBottomSheetActionRow
 import com.nuvio.app.core.ui.NuvioBottomSheetDivider
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.NuvioToastController
+import com.nuvio.app.core.ui.backdropControlColor
 import com.nuvio.app.core.ui.dismissNuvioBottomSheet
 import com.nuvio.app.core.ui.featherArtwork
 import com.nuvio.app.core.ui.rememberArtworkBackdrop
@@ -431,51 +433,53 @@ private fun MobileStreamsLayout(
             ArtworkBackdrop(image = rememberArtworkBackdrop(heroArtwork))
         }
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            if (isEpisode && seasonNumber != null && episodeNumber != null) {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    EpisodeHeaderArtwork(
-                        imageUrl = heroArtwork,
-                        cinematic = cinematic,
-                        blurred = blurEpisodeThumbnail,
-                        modifier = Modifier.matchParentSize(),
-                    )
-                    EpisodeHeroBlock(
-                        seasonNumber = seasonNumber,
-                        episodeNumber = episodeNumber,
-                        episodeTitle = episodeTitle ?: title,
-                        showTitle = title,
+        CompositionLocalProvider(LocalOnBackdrop provides cinematic) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                if (isEpisode && seasonNumber != null && episodeNumber != null) {
+                    Box(modifier = Modifier.fillMaxWidth()) {
+                        EpisodeHeaderArtwork(
+                            imageUrl = heroArtwork,
+                            cinematic = cinematic,
+                            blurred = blurEpisodeThumbnail,
+                            modifier = Modifier.matchParentSize(),
+                        )
+                        EpisodeHeroBlock(
+                            seasonNumber = seasonNumber,
+                            episodeNumber = episodeNumber,
+                            episodeTitle = episodeTitle ?: title,
+                            showTitle = title,
+                        )
+                    }
+                } else {
+                    MovieHeroBlock(
+                        title = title,
+                        logo = logo,
                     )
                 }
-            } else {
-                MovieHeroBlock(
-                    title = title,
-                    logo = logo,
+                if ((resumePositionMs != null && resumePositionMs > 0L) || (resumeProgressFraction != null && resumeProgressFraction > 0f)) {
+                    ResumeBanner(
+                        positionMs = resumePositionMs,
+                        progressFraction = resumeProgressFraction,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    )
+                }
+                ProviderFilterRow(
+                    groups = uiState.groups,
+                    selectedFilter = uiState.selectedFilter,
+                    onFilterSelected = { addonId -> StreamsRepository.selectFilter(addonId) },
+                    onRefresh = onRefresh,
+                )
+                StreamList(
+                    uiState = uiState,
+                    debridEnabled = debridEnabled,
+                    appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
+                    onStreamSelected = onStreamSelected,
+                    onStreamLongPress = onStreamLongPress,
+                    resumePositionMs = resumePositionMs,
+                    resumeProgressFraction = resumeProgressFraction,
+                    modifier = Modifier.weight(1f),
                 )
             }
-            if ((resumePositionMs != null && resumePositionMs > 0L) || (resumeProgressFraction != null && resumeProgressFraction > 0f)) {
-                ResumeBanner(
-                    positionMs = resumePositionMs,
-                    progressFraction = resumeProgressFraction,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                )
-            }
-            ProviderFilterRow(
-                groups = uiState.groups,
-                selectedFilter = uiState.selectedFilter,
-                onFilterSelected = { addonId -> StreamsRepository.selectFilter(addonId) },
-                onRefresh = onRefresh,
-            )
-            StreamList(
-                uiState = uiState,
-                debridEnabled = debridEnabled,
-                appendInstantServiceToDefaultName = appendInstantServiceToDefaultName,
-                onStreamSelected = onStreamSelected,
-                onStreamLongPress = onStreamLongPress,
-                resumePositionMs = resumePositionMs,
-                resumeProgressFraction = resumeProgressFraction,
-                modifier = Modifier.weight(1f),
-            )
         }
     }
 }
@@ -520,7 +524,7 @@ internal fun ResumeBanner(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f))
+            .background(backdropControlColor(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)))
             .padding(horizontal = 14.dp, vertical = 10.dp),
     ) {
         Text(
