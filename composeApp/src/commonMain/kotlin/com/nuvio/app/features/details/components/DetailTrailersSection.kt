@@ -40,6 +40,7 @@ import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.Menu
 import com.nuvio.app.core.ui.MenuItem
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
+import com.nuvio.app.core.ui.backdropControlColor
 import com.nuvio.app.core.ui.nuvioCardDepth
 import com.nuvio.app.core.ui.nuvioHorizontalScrollBleed
 import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
@@ -105,7 +106,7 @@ fun DetailTrailersSection(
                 Box {
                     Surface(
                         shape = RoundedCornerShape(sizing.selectorRadius),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        color = backdropControlColor(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
                         tonalElevation = 0.dp,
                         modifier = Modifier
                             .clip(RoundedCornerShape(sizing.selectorRadius))

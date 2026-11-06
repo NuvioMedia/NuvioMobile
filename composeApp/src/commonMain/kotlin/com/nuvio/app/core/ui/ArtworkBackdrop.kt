@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
@@ -31,6 +32,16 @@ import coil3.request.SuccessResult
 import coil3.size.Precision
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
+internal val LocalOnBackdrop = staticCompositionLocalOf { false }
+
+@Composable
+internal fun backdropControlColor(default: Color): Color =
+    if (LocalOnBackdrop.current) {
+        MaterialTheme.nuvio.colors.textPrimary.copy(alpha = NuvioTokens.Opacity.hover)
+    } else {
+        default
+    }
 
 private val backdropCache = linkedMapOf<String, ImageBitmap>()
 private val backdropScrim = Brush.verticalGradient(
