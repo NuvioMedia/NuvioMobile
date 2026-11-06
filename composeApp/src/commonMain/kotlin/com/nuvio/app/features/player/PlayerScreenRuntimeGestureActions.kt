@@ -157,6 +157,10 @@ internal fun PlayerScreenRuntime.showVolumeFeedback(level: PlayerAudioLevel) {
 }
 
 internal fun PlayerScreenRuntime.togglePlayback() {
+    if (systemSuspended && resumeSuspendedPlayback()) {
+        controlsVisible = true
+        return
+    }
     if (isPartyControlLocked) {
         toggleOwnPlayback()
         return
@@ -178,6 +182,7 @@ internal fun PlayerScreenRuntime.togglePlayback() {
 /** Sets the requested state; system controls may send pause, skip and play in a row. */
 internal fun PlayerScreenRuntime.setPlaybackPlaying(playing: Boolean) {
     if (playing == shouldPlay) return
+    if (playing && systemSuspended && resumeSuspendedPlayback()) return
     if (isPartyControlLocked) {
         toggleOwnPlayback()
         return

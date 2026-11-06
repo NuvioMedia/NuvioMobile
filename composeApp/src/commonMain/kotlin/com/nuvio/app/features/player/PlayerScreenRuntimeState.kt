@@ -235,6 +235,8 @@ internal class PlayerScreenRuntime(
             showPartyPanel || showSourcesPanel || showEpisodesPanel || showSubmitIntroModal
     var partyBehind by mutableStateOf(false)
     var partyBehindMs by mutableStateOf<Long?>(null)
+    var systemSuspended by mutableStateOf(false)
+    var systemSuspendedWasBehind = false
     var partyRateNudge: Float? = null
     var partyPreviousKey: String? = null
     var partyAppInBackground = false
