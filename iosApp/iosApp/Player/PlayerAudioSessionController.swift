@@ -6,7 +6,10 @@ final class PlayerAudioSessionController: NSObject, CXCallObserverDelegate {
     private let callObserver = CXCallObserver()
     private var isActive = false
     private var interruptionObserver: NSObjectProtocol?
+    private var spatialAudioObservers: [NSObjectProtocol] = []
+    private var spatialAudioEnabled = false
     var onConfigurationChanged: (() -> Void)?
+    var onSpatialAudioEnabled: (() -> Void)?
 
     func activate() {
         if !isActive {
@@ -22,8 +25,30 @@ final class PlayerAudioSessionController: NSObject, CXCallObserverDelegate {
                 // Restore the session, but leave the player's play/pause decision unchanged.
                 self.configure()
             }
+            let session = AVAudioSession.sharedInstance()
+            spatialAudioEnabled = Self.isSpatialAudioEnabled(session)
+            spatialAudioObservers = [
+                AVAudioSession.spatialPlaybackCapabilitiesChangedNotification,
+                AVAudioSession.routeChangeNotification
+            ].map { name in
+                NotificationCenter.default.addObserver(forName: name, object: session, queue: .main) { [weak self] _ in
+                    self?.updateSpatialAudio()
+                }
+            }
         }
         configure()
+    }
+
+    private func updateSpatialAudio() {
+        guard isActive else { return }
+        let enabled = Self.isSpatialAudioEnabled(AVAudioSession.sharedInstance())
+        guard enabled != spatialAudioEnabled else { return }
+        spatialAudioEnabled = enabled
+        if enabled { onSpatialAudioEnabled?() }
+    }
+
+    private static func isSpatialAudioEnabled(_ session: AVAudioSession) -> Bool {
+        session.currentRoute.outputs.contains { $0.isSpatialAudioEnabled }
     }
 
     func deactivate() {
@@ -33,6 +58,8 @@ final class PlayerAudioSessionController: NSObject, CXCallObserverDelegate {
             NotificationCenter.default.removeObserver(interruptionObserver)
             self.interruptionObserver = nil
         }
+        spatialAudioObservers.forEach { NotificationCenter.default.removeObserver($0) }
+        spatialAudioObservers = []
         do {
             try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
         } catch {
@@ -61,6 +88,13 @@ final class PlayerAudioSessionController: NSObject, CXCallObserverDelegate {
                 session.categoryOptions != options || session.routeSharingPolicy != policy {
                 try session.setCategory(.playback, mode: .moviePlayback, policy: policy, options: options)
             }
+            if !session.supportsMultichannelContent {
+                do {
+                    try session.setSupportsMultichannelContent(true)
+                } catch {
+                    print("[NowPlaying] Failed to enable multichannel content: \(error)")
+                }
+            }
             try session.setActive(true)
             onConfigurationChanged?()
         } catch {
@@ -72,5 +106,6 @@ final class PlayerAudioSessionController: NSObject, CXCallObserverDelegate {
         if let interruptionObserver {
             NotificationCenter.default.removeObserver(interruptionObserver)
         }
+        spatialAudioObservers.forEach { NotificationCenter.default.removeObserver($0) }
     }
 }
