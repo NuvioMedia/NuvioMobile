@@ -15,7 +15,7 @@
     <string name="action_previous">Predchádzajúce</string>
     <string name="action_remove">Odstrániť</string>
     <string name="action_reorder">Zmeniť poradie</string>
-    <string name="action_reset">Obnoviť predvolené</string>
+    <string name="action_reset">Obnoviť</string>
     <string name="action_resume">Pokračovať</string>
     <string name="action_retry">Skúsiť znova</string>
     <string name="action_save">Uložiť</string>
@@ -49,9 +49,9 @@
     <string name="addons_overview_addons">Doplnky</string>
     <string name="addons_overview_catalogs">Katalógy</string>
     <string name="addons_refresh">Obnoviť doplnok</string>
-    <string name="addons_section_add_addon">Pridať doplnok</string>
-    <string name="addons_section_installed">Nainštalované doplnky</string>
-    <string name="addons_section_overview">Prehľad</string>
+    <string name="addons_section_add_addon">PRIDAŤ DOPLNOK</string>
+    <string name="addons_section_installed">NAINŠTALOVANÉ DOPLNKY</string>
+    <string name="addons_section_overview">PREHĽAD</string>
     <string name="addons_summary_id_rules">%1$d pravidiel ID</string>
     <string name="addons_version_format">Verzia %1$s</string>
     <string name="cd_selected">Vybrané</string>
@@ -300,7 +300,7 @@
     <string name="collections_new">Nová kolekcia</string>
     <string name="collections_pinned">Pripnuté</string>
     <string name="collections_tab_all">Všetky</string>
-    <string name="collections_your_collections">Vaše kolekcie</string>
+    <string name="collections_your_collections">VAŠE KOLEKCIE</string>
     <string name="compose_about_made_with">Vytvorené s ❤️ od Tapframe a priateľov</string>
     <string name="compose_about_version_format">Verzia %1$s (%2$s)</string>
     <string name="compose_action_off">Vypnuté</string>
@@ -544,7 +544,7 @@
     <string name="settings_appearance_continue_watching_description">Nastavenia sekcie Pokračovať v sledovaní.</string>
     <string name="settings_appearance_liquid_glass">Liquid Glass</string>
     <string name="settings_appearance_liquid_glass_description">Použiť natívny panel záložiek iPhone na iOS 26 a novšom. Okamžité prepínanie profilov z panela záložiek nie je dostupné, keď je toto zapnuté.</string>
-    <string name="settings_appearance_poster_customization_description">Nastaviť šírku karty a polomer rohov.</string>
+    <string name="settings_appearance_poster_customization_description">Upraviť šírku a zaoblenie rohov kariet.</string>
     <string name="settings_appearance_section_display">ZOBRAZENIE</string>
     <string name="settings_appearance_section_home">DOMOV</string>
     <string name="settings_appearance_section_theme">TÉMA</string>
@@ -577,29 +577,29 @@
     <string name="settings_homescreen_visible">Viditeľné</string>
     <string name="settings_hide_secret">Skryť hodnotu</string>
     <string name="settings_playback_subtitle">Prehrávač, titulky a automatické prehrávanie</string>
-    <string name="settings_poster_card_radius">Polomer rohov</string>
+    <string name="settings_poster_card_radius">Zaoblenie rohov</string>
     <string name="settings_poster_card_style">ŠTÝL KARTY PLAGÁTU</string>
     <string name="settings_poster_card_width">Šírka</string>
     <string name="settings_poster_custom">Vlastné</string>
-    <string name="settings_poster_description">Nastaviť šírku karty a polomer rohov.</string>
+    <string name="settings_poster_description">Nastaviť šírku karty a zaoblenie rohov.</string>
     <string name="settings_poster_hide_labels">Skryť popisky</string>
     <string name="settings_poster_landscape_mode">Horizontálne plagáty</string>
     <string name="settings_poster_live_preview">Živý náhľad</string>
     <string name="settings_poster_option_with_value">%1$s (%2$s)</string>
-    <string name="settings_poster_preview_corner_radius">Polomer rohov: %1$ddp</string>
+    <string name="settings_poster_preview_corner_radius">Zaoblenie rohov: %1$ddp</string>
     <string name="settings_poster_preview_height">Výška: %1$ddp</string>
     <string name="settings_poster_preview_width">Šírka: %1$ddp</string>
-    <string name="settings_poster_radius_classic">Klasický</string>
-    <string name="settings_poster_radius_pill">Pilulka</string>
-    <string name="settings_poster_radius_rounded">Zaoblený</string>
-    <string name="settings_poster_radius_sharp">Ostrý</string>
-    <string name="settings_poster_radius_subtle">Jemný</string>
-    <string name="settings_poster_width_balanced">Vyvážený</string>
-    <string name="settings_poster_width_comfort">Komfortný</string>
-    <string name="settings_poster_width_compact">Kompaktný</string>
-    <string name="settings_poster_width_dense">Hustý</string>
-    <string name="settings_poster_width_large">Veľký</string>
-    <string name="settings_poster_width_standard">Štandardný</string>
+    <string name="settings_poster_radius_classic">Klasické</string>
+    <string name="settings_poster_radius_pill">Pilulkové</string>
+    <string name="settings_poster_radius_rounded">Zaoblené</string>
+    <string name="settings_poster_radius_sharp">Ostré</string>
+    <string name="settings_poster_radius_subtle">Jemné</string>
+    <string name="settings_poster_width_balanced">Vyvážené</string>
+    <string name="settings_poster_width_comfort">Komfortné</string>
+    <string name="settings_poster_width_compact">Kompaktné</string>
+    <string name="settings_poster_width_dense">Husté</string>
+    <string name="settings_poster_width_large">Veľké</string>
+    <string name="settings_poster_width_standard">Štandardné</string>
     <string name="settings_show_secret">Zobraziť hodnotu</string>
     <string name="settings_continue_watching_resume_prompt_description">Zobraziť vyskakovacie okno na pokračovanie tam, kde ste skončili, pri otvorení aplikácie po opustení prehrávača.</string>
     <string name="settings_continue_watching_resume_prompt_title">Výzva na pokračovanie pri spustení</string>
@@ -683,12 +683,12 @@
     <string name="settings_debrid_description_template_description">Ovláda metadáta zobrazené pod každým výsledkom. Nechajte prázdne, aby sa použili pôvodné podrobnosti výsledku.</string>
     <string name="settings_debrid_formatter_reset_title">Obnoviť formátovanie</string>
     <string name="settings_debrid_formatter_reset_subtitle">Obnoviť predvolené formátovanie výsledkov.</string>
-    <string name="settings_stream_badges_section">Štýl Fusion</string>
+    <string name="settings_stream_badges_section">ŠTÝL FUSION</string>
     <string name="settings_stream_size_badges_title">Odznaky veľkosti</string>
     <string name="settings_stream_size_badges_description">Zobrazovať odznaky veľkosti súboru vo výsledkoch streamov a paneloch zdrojov prehrávača.</string>
     <string name="settings_stream_addon_logo_title">Logo doplnku</string>
     <string name="settings_stream_addon_logo_description">Zobrazovať logo a názov doplnku vedľa zdrojov streamov.</string>
-    <string name="settings_stream_display_section">Zobrazenie</string>
+    <string name="settings_stream_display_section">ZOBRAZENIE</string>
     <string name="settings_stream_badge_position_title">Pozícia odznakov</string>
     <string name="settings_stream_badge_position_description">Vyberte, či sa odznaky Fusion a veľkosti zobrazia nad alebo pod kartami streamov.</string>
     <string name="settings_stream_badge_position_dialog_title">Pozícia odznaku</string>
@@ -880,7 +880,7 @@
     <string name="settings_playback_reuse_binge_group">Znovu použiť skupinu binge</string>
     <string name="settings_playback_reuse_binge_group_description">Zapamätať a znovu použiť poslednú skupinu binge naprieč reláciami (Pokračovať v sledovaní, Podrobnosti atď.).</string>
     <string name="settings_playback_preferred_audio_language">Preferovaný jazyk zvuku</string>
-    <string name="settings_playback_preferred_subtitle_language">Preferovaný jazyk</string>
+    <string name="settings_playback_preferred_subtitle_language">Preferovaný jazyk titulkov</string>
     <string name="settings_playback_presets">Predvoľby</string>
     <string name="settings_playback_regex_matches_against">Porovnáva sa s názvom/titulom/popisom/doplnkom/URL streamu. Príklad: 4K|2160p|Remux</string>
     <string name="settings_playback_regex_pattern">Vzor regex</string>
@@ -902,7 +902,7 @@
     <string name="settings_playback_reuse_last_link">Znovu použiť posledný odkaz</string>
     <string name="settings_playback_reuse_last_link_description">Automaticky prehrať posledný funkčný stream pre rovnaký film/epizódu, keď je vyrovnávacia pamäť stále platná</string>
     <string name="settings_playback_secondary_audio_language">Sekundárny jazyk zvuku</string>
-    <string name="settings_playback_secondary_subtitle_language">Sekundárny preferovaný jazyk</string>
+    <string name="settings_playback_secondary_subtitle_language">Sekundárny jazyk titulkov</string>
     <string name="settings_playback_section_decoder">DEKODÉR</string>
     <string name="settings_playback_section_next_episode">ĎALŠIA EPIZÓDA</string>
     <string name="settings_playback_section_player">PREHRÁVAČ</string>
@@ -959,7 +959,7 @@
     <string name="settings_playback_timeout_seconds">%1$ss</string>
     <string name="settings_playback_timeout_unlimited">Neobmedzene</string>
     <string name="settings_playback_tunneled_playback">Tunelované prehrávanie</string>
-    <string name="settings_playback_tunneled_playback_description">Synchronizácia zvuku/videa na hardvérovej úrovni. Môže zlepšiť prehrávanie na niektorých zariadeniach Android TV</string>
+    <string name="settings_playback_tunneled_playback_description">Synchronizácia zvuku/videa na hardvérovej úrovni. Môže zlepšiť prehrávanie na niektorých Android zariadeniach</string>
     <string name="settings_tmdb_enable_enrichment">Povoliť obohatenie TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Použiť TMDB ako zdroj metadát na vylepšenie dát doplnku</string>
     <string name="settings_tmdb_language_code_label">Kód jazyka</string>
@@ -1852,16 +1852,20 @@
     <string name="cw_airs_today">Vysiela sa dnes</string>
     <string name="cw_airs_tomorrow">Vysiela sa zajtra</string>
     <plurals name="cw_airs_in_days">
-        <item quantity="one">Vysiela sa o %d deň</item>
-        <item quantity="other">Vysiela sa o %d dní</item>
-    <item quantity="few">Vysiela sa o %d dni</item><item quantity="many">Vysiela sa o %d dní</item></plurals>
+        <item quantity="one">Vysiela sa o %1$d deň</item>
+        <item quantity="few">Vysiela sa o %1$d dni</item>
+        <item quantity="many">Vysiela sa o %1$d dní</item>
+        <item quantity="other">Vysiela sa o %1$d dní</item>
+    </plurals>
     <string name="cw_airs_date_short">%1$s</string>
     <string name="cw_airs_today_short">Dnes</string>
     <string name="cw_airs_tomorrow_short">Zajtra</string>
     <plurals name="cw_airs_in_days_short">
-        <item quantity="one">O %d deň</item>
-        <item quantity="other">O %d dní</item>
-    <item quantity="few">O %d dni</item><item quantity="many">O %d dní</item></plurals>
+        <item quantity="one">O %1$d deň</item>
+        <item quantity="few">O %1$d dni</item>
+        <item quantity="many">O %1$d dní</item>
+        <item quantity="other">O %1$d dní</item>
+    </plurals>
     <string name="cw_new_episode">Nová epizóda</string>
     <string name="cw_new_season">Nová séria</string>
     <!-- Pass 4 — platform stubs and dynamic title fallbacks -->
@@ -1942,7 +1946,7 @@
     <string name="settings_nav_bar_style_classic">Klasický</string>
     <string name="layout_catalog_type">Zobraziť typ katalógu</string>
     <string name="layout_catalog_type_sub">Zobraziť typ (Film/Seriál) vedľa názvu katalógu.</string>
-    <string name="settings_card_depth_title">Efekt hĺbky karty</string>
+    <string name="settings_card_depth_title">EFEKT HĹBKY KARTYy</string>
     <string name="settings_card_depth_description">Pridáva osvetlený horný okraj a lesk kartám s obrázkami pre jemný pocit hĺbky.</string>
     <string name="settings_card_depth_enabled">Povoliť efekt hĺbky</string>
     <string name="settings_card_depth_edge">Žiara okrajov</string>
@@ -1975,7 +1979,7 @@
     <string name="settings_card_depth_surface_trailers">Trailery</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming">Oddeliť riadok Neodvysielané</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">Presunúť neodvysielané epizódy do samostatného riadka Neodvysielané</string>
-    <string name="upcoming_section_title">Nespustené</string>
+    <string name="upcoming_section_title">Neodvysielané</string>
     <string name="settings_meta_background_mode">Režim pozadia</string>
     <string name="settings_meta_background_mode_description">Vyberte, ako sa má zobrazovať pozadie za stránkami s metadátami.</string>
     <string name="settings_meta_background_mode_normal">Normálny</string>
@@ -2048,12 +2052,12 @@
     <string name="settings_licenses_attributions_simkl_body">Aplikácia Nuvio sa pripája k službe Simkl na účely overenia účtu, zoznamov sledovania, histórie sledovania, priebehu prehrávania a scrobblovania. Údaje o sledovaní filmov, seriálov a anime poskytuje služba Simkl. Aplikácia Nuvio nie je spojená so službou Simkl ani ňou nie je podporovaná.</string>
     <string name="compose_tracking_list_picker_loading">Načítavajú sa zoznamy…</string>
     <string name="compose_tracking_list_picker_subtitle">Vyberte, kam chcete tento titul uložiť</string>
-    <string name="settings_tracking_data_sources">Zdroje</string>
+    <string name="settings_tracking_data_sources">ZDROJE</string>
     <string name="settings_tracking_features">PREFERENCIE ZDROJA</string>
     <string name="settings_tracking_viewing_discovery">Funkcie Trakt</string>
     <string name="settings_tracking_services">Účty</string>
     <string name="settings_tracking_approval_redirect">Po schválení budete automaticky presmerovaní späť.</string>
-    <string name="settings_tracking_connect_first">Najprv pripojte %1$s</string>
+    <string name="settings_tracking_connect_first">Najprv pripojte %1$s.</string>
     <string name="settings_tracking_disconnect_title">Odpojiť %1$s?</string>
     <string name="settings_tracking_disconnect_description">Týmto sa odstráni pripojenie z aplikácie Nuvio. Vaše údaje v službe %1$s zostanú nedotknuté a nedostupné zdroje knižnice alebo priebehu sa dočasne prepnú na Nuvio.</string>
     <string name="settings_trakt_disconnect_description">Týmto sa odpojí váš účet Trakt od aplikácie Nuvio.</string>
@@ -2078,7 +2082,7 @@
     <string name="settings_tracking_anime_id_mal_description">Každá séria anime získa ako hlavný identifikátor vlastné MAL ID.</string>
     <string name="settings_tracking_anime_id_kitsu">Uprednostniť Kitsu</string>
     <string name="settings_tracking_anime_id_kitsu_description">Každá séria anime získa ako hlavný identifikátor vlastné Kitsu ID.</string>
-    <string name="settings_tracking_anime_section">Funkcie Simkl</string>
+    <string name="settings_tracking_anime_section">FUNKCIE SIMKL</string>
     <string name="settings_simkl_connect">Pripojiť Simkl</string>
     <string name="settings_simkl_connected_as">Pripojené ako %1$s</string>
     <string name="settings_simkl_default_user">Používateľ Simkl</string>
@@ -2470,7 +2474,7 @@
     <string name="settings_playback_vod_cache_warning">Zápis na disk pokračuje počas prehrávania uloženého streamu. Nová veľkosť sa uplatní pri nasledujúcom spustení aplikácie.</string>
     <string name="settings_playback_exo_chapters">Zobrazovať kapitoly</string>
     <string name="settings_playback_exo_chapters_description">Načítať kapitoly zo súborov MKV, označiť ich na časovej osi a zobraziť ich v prehrávači. Po spustení prehrávania vykoná niekoľko malých požiadaviek navyše. libmpv zobrazuje kapitoly vždy.</string>
-    <string name="settings_tracking_mdblist_section">Funkcie MDBList</string>
+    <string name="settings_tracking_mdblist_section">FUNKCIE MDBLIST</string>
     <string name="settings_mdblist_library_lists">Zoznamy v knižnici</string>
     <string name="settings_mdblist_library_lists_description">Vyberte, ktoré zoznamy MDBList sa zobrazia v Knižnici a v Správe zoznamov. Zoznam sledovaných sa zobrazuje vždy.</string>
     <string name="settings_mdblist_library_lists_summary">Zobrazené %1$d z %2$d</string>
@@ -2545,5 +2549,5 @@
     <string name="subtitle_shadow_description">Oddeliť text od jasných scén.</string>
     <string name="subtitle_shadow_opacity">Priehľadnosť tieňa</string>
     <string name="subtitle_shadow_size">Veľkosť tieňa</string>
-    <string name="subtitle_reset_appearance">Obnoviť predvolený vzhľad</string>
+    <string name="subtitle_reset_appearance">OBNOVIŤ PREDVOLENÝ VZHĽAD</string>
 </resources>
