@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">Rate</string>
+    <string name="rating_your_rating">Your rating</string>
+    <string name="rating_rate_episode">Rate episode</string>
+    <string name="rating_rated">Rated %1$s/10</string>
+    <string name="rating_value">%1$s out of 10</string>
+    <string name="rating_syncs_to">Syncs to %1$s</string>
+    <string name="rating_saved">Rating saved</string>
+    <string name="rating_removed">Rating removed</string>
+    <string name="rating_failed">Couldn't update your rating on %1$s</string>
+    <string name="settings_tracking_ratings">Ratings</string>
+    <string name="settings_tracking_ratings_description">Where your ratings are saved and shown from</string>
+    <string name="settings_tracking_ratings_picker_subtitle">Rate titles from their details page. Your ratings are saved to and shown from the service you pick.</string>
+    <string name="settings_tracking_ratings_off_description">Hide the rate button.</string>
+    <string name="settings_tracking_ratings_simkl_description">Rate movies and shows. Rating a title that isn't in your Simkl lists adds it to them.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Rate movies, shows and episodes.</string>
+</resources>

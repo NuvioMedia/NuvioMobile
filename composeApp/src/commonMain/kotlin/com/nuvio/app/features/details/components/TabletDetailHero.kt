@@ -440,6 +440,8 @@ private fun TabletHeroMetaRow(meta: MetaDetails, showImdbRating: Boolean) {
         ?.toDoubleOrNull()
         ?.takeIf { it > 0.0 }
         ?.let(::formatOneDecimal)
+    val ratingMedia = remember(meta) { meta.ratingReference() }
+    val ratingState by rememberRatingState(ratingMedia)
     val itemStyle = MaterialTheme.typography.titleSmall.copy(
         fontSize = NuvioTokens.Type.bodyLg,
         fontWeight = FontWeight.Bold,
@@ -471,6 +473,13 @@ private fun TabletHeroMetaRow(meta: MetaDetails, showImdbRating: Boolean) {
                     color = ImdbYellow,
                 )
             }
+        }
+        if (ratingState.isAvailable) {
+            DetailRating(
+                media = ratingMedia,
+                title = meta.name,
+                state = ratingState,
+            )
         }
     }
 }
