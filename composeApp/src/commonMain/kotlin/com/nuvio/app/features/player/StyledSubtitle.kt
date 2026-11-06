@@ -32,15 +32,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-internal fun StyledSubtitleOverlay(text: String, style: SubtitleStyleState, modifier: Modifier = Modifier) {
+internal fun StyledSubtitleOverlay(
+    text: String,
+    style: SubtitleStyleState,
+    modifier: Modifier = Modifier,
+    liftFraction: Float = 0f,
+) {
     val fontFamily = rememberSubtitleFontFamily(style.appearance.fontId)
     if (text.isBlank()) return
     BoxWithConstraints(modifier.fillMaxSize()) {
         val scale = (maxHeight / 360.dp).coerceAtMost(1f)
+        val verticalPadding = maxHeight * (0.0533f + style.bottomOffset.coerceIn(0, 200) / 1000f)
+        val bottomPadding = maxOf(verticalPadding, maxHeight * liftFraction.coerceIn(0f, PLAYER_SUBTITLE_MAX_LIFT))
         Box(
             Modifier.fillMaxSize().padding(
-                horizontal = 16.dp * scale,
-                vertical = maxHeight * (0.0533f + style.bottomOffset.coerceIn(0, 200) / 1000f),
+                start = 16.dp * scale,
+                top = verticalPadding,
+                end = 16.dp * scale,
+                bottom = bottomPadding,
             ),
             contentAlignment = Alignment.BottomCenter,
         ) {

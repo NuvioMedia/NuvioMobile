@@ -17,9 +17,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,6 +36,7 @@ import com.nuvio.app.features.player.skip.internalSkipAction
 import com.nuvio.app.features.servers.ServerStreams
 import com.nuvio.app.features.streams.streamAddonInstanceId
 import com.nuvio.app.isIos
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
@@ -136,6 +139,53 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
     val playbackGesturesEnabled = initialLoadCompleted && errorMessage == null
 
     BindAutoSyncRuntimeEffects() // AutoSync hook
+
+    val subtitleLift = if (subtitleControlsClearance > 0f) {
+        subtitleLiftFraction(subtitleControlsClearance)
+    } else {
+        subtitleLiftFraction(if (playerControlsLocked) 0f else subtitleSkipClearance)
+    }
+    var appliedSubtitleLift by remember { mutableStateOf(0f) }
+    var pendingDropCueVersion by remember { mutableStateOf<Long?>(null) }
+    var subtitleDropTimedOut by remember { mutableStateOf(false) }
+    val subtitleCueVersion = playbackSnapshot.subtitleCueVersion
+    val subtitleCueVisible = playbackSnapshot.subtitleCueVisible
+    val bottomControlsShown = controlsVisible && !playerControlsLocked && !isInPip
+    var controlsFadeOutFinished by remember { mutableStateOf(false) }
+    LaunchedEffect(bottomControlsShown) {
+        controlsFadeOutFinished = false
+        if (!bottomControlsShown) {
+            delay(PLAYER_CONTROLS_FADE_OUT_MS)
+            controlsFadeOutFinished = true
+        }
+    }
+    val applySubtitleLiftImmediately = shouldApplySubtitleLiftImmediately(
+        paused = !playbackSnapshot.isPlaying,
+        controlsVisible = bottomControlsShown || !controlsFadeOutFinished,
+    )
+    LaunchedEffect(subtitleLift, subtitleCueVersion, subtitleCueVisible, applySubtitleLiftImmediately, subtitleDropTimedOut) {
+        val decision = nextSubtitleLift(
+            targetLift = subtitleLift,
+            appliedLift = appliedSubtitleLift,
+            cueVersion = subtitleCueVersion,
+            cueVisible = subtitleCueVisible,
+            applyImmediately = applySubtitleLiftImmediately,
+            pendingDropCueVersion = pendingDropCueVersion,
+            dropTimedOut = subtitleDropTimedOut,
+        )
+        appliedSubtitleLift = decision.appliedLift
+        pendingDropCueVersion = decision.pendingDropCueVersion
+        if (decision.pendingDropCueVersion == null) subtitleDropTimedOut = false
+    }
+    LaunchedEffect(pendingDropCueVersion) {
+        if (pendingDropCueVersion != null) {
+            delay(PLAYER_SUBTITLE_LIFT_DROP_TIMEOUT_MS)
+            subtitleDropTimedOut = true
+        }
+    }
+    LaunchedEffect(playerController, appliedSubtitleLift) {
+        playerController?.setSubtitleBottomLift(appliedSubtitleLift)
+    }
 
     Box(
         modifier = Modifier
@@ -376,6 +426,13 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
             } else null,
             onInteraction = { controlsActivityTick += 1 },
             showPlaybackControls = controlsVisible,
+            onSubtitleClearanceChanged = { clearance ->
+                subtitleControlsClearance = if (clearance <= 0f) 0f else maxOf(subtitleControlsClearance, clearance)
+            },
+            subtitleFontSizeSp = if (
+                selectedAddonSubtitleId != null ||
+                (if (serverSubtitleTracks.isEmpty()) selectedSubtitleIndex >= 0 else serverSubtitleTracks.any { it.isSelected })
+            ) subtitleStyle.fontSizeSp else 0,
             onLockToggle = {
                 if (playerControlsLocked) unlockPlayerControls() else lockPlayerControls()
             },
@@ -554,6 +611,8 @@ private fun BoxScope.RenderPlaybackOverlays(
         skipsToPostCredits = activeSkipInterval?.internalSkipAction(skipIntervals, playbackSnapshot.durationMs)?.skipsToPostCredits == true,
         skipIntervalDismissed = skipIntervalDismissed,
         controlsVisible = controlsVisible,
+        subtitleGapPx = with(LocalDensity.current) { PlayerSubtitleLiftGap.toPx() },
+        onSkipClearanceChanged = { subtitleSkipClearance = it },
         onSkipInterval = { interval ->
             interval.internalSkipAction(skipIntervals, playbackSnapshot.durationMs)?.let { action ->
                 val durationMs = playbackSnapshot.durationMs
