@@ -1530,6 +1530,11 @@
     <string name="library_source_cloud">Cloud</string>
     <string name="library_source_saved">Uložené</string>
     <string name="library_title">Knihovna</string>
+    <string name="library_status_watching">Sleduji</string>
+    <string name="library_status_plan_to_watch">Plánuji zhlédnout</string>
+    <string name="library_status_on_hold">Pozastaveno</string>
+    <string name="library_status_completed">Dokončeno</string>
+    <string name="library_status_dropped">Zrušeno</string>
     <string name="library_trakt_empty_message">Připojte se k Trakt a uložte tituly do seznamu sledovaných nebo osobních seznamů.</string>
     <string name="library_trakt_empty_title">Vaše knihovna Trakt je prázdná</string>
     <string name="library_trakt_load_failed">Knihovnu Trakt se nepodařilo načíst</string>
@@ -2287,4 +2292,6 @@
     <string name="stream_info_subtitle_source_addon">Doplněk</string>
     <string name="stream_info_subtitle_source_embedded">Vložené</string>
     <string name="stream_info_player_engine">Engine přehrávače</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Moderní renderer libmpv s kvalitnějším zpracováním.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Kompatibilní renderer pro zařízení s problémy s GPU next.</string>
 </resources>

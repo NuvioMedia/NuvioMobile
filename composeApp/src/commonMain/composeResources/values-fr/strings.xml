@@ -2549,4 +2549,6 @@
     <string name="subtitle_shadow_opacity">Opacité de l’ombre</string>
     <string name="subtitle_shadow_size">Taille de l’ombre</string>
     <string name="subtitle_reset_appearance">Réinitialiser l’apparence</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Rendu libmpv moderne avec un traitement de meilleure qualité.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Rendu de compatibilité pour les appareils rencontrant des problèmes avec GPU next.</string>
 </resources>

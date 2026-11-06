@@ -2503,4 +2503,6 @@
     <string name="subtitle_shadow_opacity">Opacidad de la sombra</string>
     <string name="subtitle_shadow_size">Tamaño de la sombra</string>
     <string name="subtitle_reset_appearance">Restablecer apariencia</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Renderer libmpv moderno con procesamiento de mayor calidad.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Renderer de compatibilidad para dispositivos con problemas con GPU next.</string>
 </resources>

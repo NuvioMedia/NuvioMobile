@@ -2431,4 +2431,6 @@
     </plurals>
     <string name="player_engine_switch_title">Váltás erre: %1$s?</string>
     <string name="player_engine_switch_message">A videó újratöltődik attól a ponttól, ahol tartasz.</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Modern libmpv renderer jobb minőségű feldolgozással.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Kompatibilitási renderer a GPU next-tel problémázó eszközökhöz.</string>
 </resources>

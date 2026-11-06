@@ -7,10 +7,21 @@ import nuvio.composeapp.generated.resources.library_status_dropped
 import nuvio.composeapp.generated.resources.library_status_on_hold
 import nuvio.composeapp.generated.resources.library_status_plan_to_watch
 import nuvio.composeapp.generated.resources.library_status_watching
+import nuvio.composeapp.generated.resources.media_anime
+import nuvio.composeapp.generated.resources.media_channels
+import nuvio.composeapp.generated.resources.media_movies
+import nuvio.composeapp.generated.resources.media_series
+import nuvio.composeapp.generated.resources.media_tv
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
 private val librarySectionTitleResources: Map<String, StringResource> = mapOf(
+    // Local library sections are grouped by media type, whose title is otherwise "Movie"/"Series".
+    "movie" to Res.string.media_movies,
+    "series" to Res.string.media_series,
+    "anime" to Res.string.media_anime,
+    "channel" to Res.string.media_channels,
+    "tv" to Res.string.media_tv,
     "simkl:status:watching" to Res.string.library_status_watching,
     "simkl:status:plantowatch" to Res.string.library_status_plan_to_watch,
     "simkl:status:hold" to Res.string.library_status_on_hold,

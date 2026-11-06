@@ -1904,6 +1904,11 @@
     <string name="library_source_cloud">Облак</string>
     <string name="library_source_saved">Запазени</string>
     <string name="library_title">Библиотека</string>
+    <string name="library_status_watching">Наблюдава се</string>
+    <string name="library_status_plan_to_watch">План за гледане</string>
+    <string name="library_status_on_hold">В режим на задържане</string>
+    <string name="library_status_completed">Завършено</string>
+    <string name="library_status_dropped">Премахнато</string>
     <string name="library_trakt_empty_message">Свържете Trakt и запазвайте заглавия в своя списък за гледане или лични списъци.</string>
     <string name="library_trakt_empty_title">Вашата Trakt библиотека е празна</string>
     <string name="library_trakt_load_failed">Trakt библиотеката не можа да се зареди</string>
@@ -2428,4 +2433,6 @@
     <string name="stream_info_subtitle_source_addon">Добавка</string>
     <string name="stream_info_subtitle_source_embedded">Вградени</string>
     <string name="stream_info_player_engine">Двигател на плейъра</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Модерен рендер libmpv с по-високо качество на обработка.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Съвместим рендер за устройства с проблеми с GPU next.</string>
 </resources>

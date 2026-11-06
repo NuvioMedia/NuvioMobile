@@ -2520,4 +2520,6 @@
     <string name="subtitle_shadow_opacity">عتامة الظل</string>
     <string name="subtitle_shadow_size">حجم الظل</string>
     <string name="subtitle_reset_appearance">إعادة ضبط المظهر</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">عارض libmpv حديث بمعالجة ذات جودة أعلى.</string>
+    <string name="player_android_libmpv_output_gpu_desc">عارض توافق للأجهزة التي تواجه مشكلات مع GPU next.</string>
 </resources>

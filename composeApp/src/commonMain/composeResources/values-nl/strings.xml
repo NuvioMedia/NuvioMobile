@@ -1819,6 +1819,11 @@
     <string name="library_source_cloud">Cloud</string>
     <string name="library_source_saved">Opgeslagen</string>
     <string name="library_title">Bibliotheek</string>
+    <string name="library_status_watching">Aan het kijken</string>
+    <string name="library_status_plan_to_watch">Van plan te kijken</string>
+    <string name="library_status_on_hold">In de wacht</string>
+    <string name="library_status_completed">Voltooid</string>
+    <string name="library_status_dropped">Gestopt</string>
     <string name="library_trakt_empty_message">Verbind Trakt en sla titels op in je kijklijst of persoonlijke lijsten.</string>
     <string name="library_trakt_empty_title">Je Trakt-bibliotheek is leeg</string>
     <string name="library_trakt_load_failed">Kon Trakt-bibliotheek niet laden</string>
@@ -2292,4 +2297,6 @@
     <string name="stream_info_subtitle_source_addon">Add-on</string>
     <string name="stream_info_subtitle_source_embedded">Ingesloten</string>
     <string name="stream_info_player_engine">Spelerengine</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Moderne libmpv-renderer met verwerking van hogere kwaliteit.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Compatibiliteitsrenderer voor apparaten met problemen met GPU next.</string>
 </resources>

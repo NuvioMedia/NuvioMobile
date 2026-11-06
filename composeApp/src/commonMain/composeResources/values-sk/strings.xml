@@ -2546,4 +2546,6 @@
     <string name="subtitle_shadow_opacity">Priehľadnosť tieňa</string>
     <string name="subtitle_shadow_size">Veľkosť tieňa</string>
     <string name="subtitle_reset_appearance">Obnoviť predvolený vzhľad</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Moderný renderer libmpv s kvalitnejším spracovaním.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Kompatibilný renderer pre zariadenia s problémami s GPU next.</string>
 </resources>

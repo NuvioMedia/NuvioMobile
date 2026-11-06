@@ -980,6 +980,14 @@
     <string name="player_skip_intro">Lewati Intro</string>
     <string name="player_skip_outro">Lewati Outro</string>
     <string name="player_skip_recap">Lewati Rekap</string>
+    <string name="player_ios_preset_native_edr_label">EDR Asli</string>
+    <string name="player_ios_preset_native_edr_desc">Terbaik untuk iPhone dan iPad yang mendukung HDR.</string>
+    <string name="player_ios_preset_sdr_tone_mapped_label">Pemetaan nada SDR</string>
+    <string name="player_ios_preset_sdr_tone_mapped_desc">Putih dan hitam lebih konsisten pada output bergaya SDR.</string>
+    <string name="player_ios_preset_compatibility_label">Kompatibilitas</string>
+    <string name="player_ios_preset_compatibility_desc">Paling dekat dengan perilaku MPV iOS versi lama.</string>
+    <string name="player_ios_preset_custom_label">Kustom</string>
+    <string name="player_ios_preset_custom_desc">Gunakan nilai lanjutan di bawah.</string>
     <string name="compose_player_no_subtitles_found">Tidak ada subtitle ditemukan</string>
     <string name="lang_afrikaans">Afrikaans</string>
     <string name="lang_albanian">Albania</string>
@@ -1366,6 +1374,11 @@
     <string name="library_source_cloud">Cloud</string>
     <string name="library_source_saved">Tersimpan</string>
     <string name="library_title">Pustaka</string>
+    <string name="library_status_watching">Sedang ditonton</string>
+    <string name="library_status_plan_to_watch">Rencana ditonton</string>
+    <string name="library_status_on_hold">Ditunda</string>
+    <string name="library_status_completed">Selesai</string>
+    <string name="library_status_dropped">Dibatalkan</string>
     <string name="library_trakt_empty_message">Hubungkan Trakt dan simpan judul ke daftar tonton atau daftar pribadi Anda.</string>
     <string name="library_trakt_empty_title">Pustaka Trakt Anda kosong</string>
     <string name="library_trakt_load_failed">Tidak dapat memuat pustaka Trakt</string>
@@ -1478,4 +1491,6 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Tertanam</string>
     <string name="stream_info_player_engine">Mesin Pemutar</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Renderer libmpv modern dengan pemrosesan berkualitas lebih tinggi.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Renderer kompatibilitas untuk perangkat yang bermasalah dengan GPU next.</string>
 </resources>

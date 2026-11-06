@@ -1506,6 +1506,11 @@
     <string name="library_source_cloud">Nuven</string>
     <string name="library_source_saved">Guardado</string>
     <string name="library_title">Biblioteca</string>
+    <string name="library_status_watching">A ver</string>
+    <string name="library_status_plan_to_watch">Planeado para ver</string>
+    <string name="library_status_on_hold">Em espera</string>
+    <string name="library_status_completed">Concluído</string>
+    <string name="library_status_dropped">Abandonado</string>
     <string name="library_trakt_empty_message">Liga o Trakt e guarda títulos na tua lista de conteúdos ou nas tuas listas pessoais.</string>
     <string name="library_trakt_empty_title">A tua biblioteca do Trakt está vazia</string>
     <string name="library_trakt_load_failed">Não foi possível carregar a biblioteca do Trakt</string>
@@ -1900,4 +1905,6 @@
     <string name="settings_mdblist_library_lists_description">Escolhe que listas do MDBList aparecem na Biblioteca e em Gerir Listas. A Watchlist aparece sempre.</string>
     <string name="settings_mdblist_library_lists_summary">%1$d de %2$d visíveis</string>
     <string name="settings_mdblist_library_lists_empty">Ainda não foram encontradas listas na tua conta MDBList. Sincroniza para as carregar.</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Renderer libmpv moderno com processamento de maior qualidade.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Renderer de compatibilidade para dispositivos com problemas com GPU next.</string>
 </resources>
