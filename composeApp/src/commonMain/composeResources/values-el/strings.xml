@@ -202,6 +202,10 @@
     <string name="compose_nav_profile">Προφίλ</string>
     <string name="compose_nav_search">Αναζήτηση</string>
     <string name="compose_player_audio_tracks">Κομμάτια ήχου</string>
+    <string name="compose_player_audio_delay">Καθυστέρηση ήχου</string>
+    <string name="compose_player_audio_amplification">Ενίσχυση</string>
+    <string name="compose_player_audio_amplification_keep">Διατήρηση για τα επόμενα βίντεο</string>
+    <string name="compose_player_center_mix">Επίπεδο Center Mix</string>
     <string name="compose_player_audio">Ήχος</string>
     <string name="compose_player_built_in">Ενσωματωμένο</string>
     <string name="compose_player_bottom_offset">Κατώτατη μετατόπιση</string>
@@ -815,6 +819,14 @@
     <string name="settings_playback_vod_cache_warning">Οι εγγραφές στον δίσκο συνεχίζονται όσο αναπαράγεται μια ροή από την προσωρινή μνήμη. Ένα νέο μέγεθος εφαρμόζεται την επόμενη φορά που θα ξεκινήσει η εφαρμογή.</string>
     <string name="settings_playback_exo_chapters">Εμφάνιση κεφαλαίων</string>
     <string name="settings_playback_exo_chapters_description">Ανάγνωση των κεφαλαίων των αρχείων MKV για σήμανσή τους στη γραμμή προόδου και εμφάνισή τους στη λίστα του προγράμματος αναπαραγωγής. Πραγματοποιεί μερικά μικρά επιπλέον αιτήματα μόλις ξεκινήσει η αναπαραγωγή. Το libmpv εμφανίζει πάντα κεφάλαια</string>
+    <string name="settings_playback_remember_audio_delay">Απομνημόνευση καθυστέρησης ήχου ανά συσκευή</string>
+    <string name="settings_playback_remember_audio_delay_description">Επαναφορά της καθυστέρησης ήχου που ορίστηκε στο πρόγραμμα αναπαραγωγής κάθε φορά που παίζει ξανά η ίδια έξοδος, όπως το ηχείο του τηλεφώνου, τα ενσύρματα ακουστικά ή κάθε συσκευή Bluetooth</string>
+    <string name="settings_playback_downmix_section">Downmix</string>
+    <string name="settings_playback_downmix">Ενεργοποίηση downmix</string>
+    <string name="settings_playback_downmix_description">Μειώνει τον πολυκάναλο ήχο στον αριθμό καναλιών παρακάτω με τον αποκωδικοποιητή FFmpeg της εφαρμογής. Απαιτεί «Προτίμηση εφαρμογής (FFmpeg)» στην προτεραιότητα αποκωδικοποιητή βίντεο. Η έξοδος Bluetooth λαμβάνει πάντα downmix 2.0.</string>
+    <string name="settings_playback_downmix_channels">Αριθμός καναλιών</string>
+    <string name="settings_playback_downmix_maintain_volume">Διατήρηση αρχικού ήχου στο downmix</string>
+    <string name="settings_playback_downmix_maintain_volume_description">Όταν είναι απενεργοποιημένο, η κανονικοποίηση downmix μπορεί να μειώσει τη συνολική ένταση.</string>
     <string name="settings_tmdb_api_key_label">Κλειδί API</string>
     <string name="settings_tmdb_api_key_override_description">Χρησιμοποιήστε το δικό σας κλειδί API TMDB ή αφήστε το κενό για να χρησιμοποιηθεί το προεπιλεγμένο.</string>
     <string name="settings_tmdb_personal_api_key">Προσωπικό κλειδί API</string>
@@ -827,7 +839,7 @@
     <string name="settings_tmdb_module_basic_info_description">Χρήση τίτλου, σύνοψης, ειδών και αξιολόγησης TMDB.</string>
     <string name="settings_tmdb_module_collections">Συλλογές</string>
     <string name="settings_tmdb_module_collections_description">Εμφάνιση ραγών σειρών και συλλογών για ταινίες όταν το TMDB τις παρέχει.</string>
-    <string name="settings_tmdb_module_credits">Ευχαριστίες</string>
+    <string name="settings_tmdb_module_credits">Συντελεστές</string>
     <string name="settings_tmdb_module_credits_description">Χρήση δημιουργών, σκηνοθετών, σεναριογράφων και φωτογραφιών καστ TMDB.</string>
     <string name="settings_tmdb_module_details">Λεπτομέρειες</string>
     <string name="settings_tmdb_module_details_description">Χρήση πληροφοριών κυκλοφορίας, διάρκειας, διαβάθμισης ηλικίας, κατάστασης, χώρας και γλώσσας TMDB.</string>
