@@ -31,6 +31,7 @@ import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -226,6 +227,29 @@ class HomeCatalogSettingsRepositoryTest {
         HomeCatalogSettingsRepository.syncCollections(collections)
 
         assertEquals(settings, HomeCatalogSettingsRepository.uiState.value)
+    }
+
+    @Test
+    fun storedPayloadWithoutWatchlistRowFieldDecodesWithRowOff() {
+        HomeCatalogSettingsStorage.savePayload("""{"hideUnreleasedContent":true,"items":[]}""")
+        HomeCatalogSettingsRepository.clearLocalState()
+
+        HomeCatalogSettingsRepository.snapshot()
+
+        assertTrue(HomeCatalogSettingsRepository.uiState.value.hideUnreleasedContent)
+        assertFalse(HomeCatalogSettingsRepository.uiState.value.showWatchlistRow)
+    }
+
+    @Test
+    fun watchlistRowSettingPersistsAndAddsNoCatalogItem() {
+        HomeCatalogSettingsRepository.syncCatalogs(listOf(addon()))
+
+        HomeCatalogSettingsRepository.setShowWatchlistRow(true)
+        HomeCatalogSettingsRepository.clearLocalState()
+        HomeCatalogSettingsRepository.snapshot()
+
+        assertTrue(HomeCatalogSettingsRepository.uiState.value.showWatchlistRow)
+        assertEquals(listOf("test:movie:popular"), HomeCatalogSettingsRepository.exportToSyncPayload().items.map { it.key })
     }
 
     private fun addon() = ManagedAddon(

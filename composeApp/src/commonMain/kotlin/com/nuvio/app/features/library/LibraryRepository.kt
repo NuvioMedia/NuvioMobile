@@ -616,6 +616,7 @@ object LibraryRepository {
                 sourceMode = sourceMode,
                 items = providerSnapshot.items,
                 sections = providerSnapshot.sections,
+                watchlistSectionType = watchlistSectionType(providerSnapshot.tabs),
                 isLoaded = providerSnapshot.hasLoaded,
                 isLoading = providerSnapshot.isLoading,
                 errorMessage = providerSnapshot.errorMessage,
@@ -733,6 +734,9 @@ internal fun localLibraryListTab(): TrackingLibraryTab =
         providerId = null,
         kind = TrackingLibraryTabKind.WATCHLIST,
     )
+
+internal fun watchlistSectionType(tabs: List<TrackingLibraryTab>): String? =
+    tabs.firstOrNull { tab -> tab.kind == TrackingLibraryTabKind.WATCHLIST }?.key
 
 internal fun libraryTabsWithLocal(providerTabs: List<TrackingLibraryTab>): List<TrackingLibraryTab> =
     listOf(localLibraryListTab()) + providerTabs
