@@ -21,6 +21,7 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.Operation
 import androidx.work.WorkManager
+import com.nuvio.app.core.network.NetworkErrorInterceptor
 import com.nuvio.app.core.storage.ProfileScopedKey
 import com.nuvio.app.features.settings.AppIconPlatform
 import io.ktor.client.HttpClient
@@ -60,6 +61,9 @@ internal actual object EpisodeReleaseNotificationPlatform {
                 requestTimeoutMillis = 15_000
                 connectTimeoutMillis = 15_000
                 socketTimeoutMillis = 15_000
+            }
+            engine {
+                addInterceptor(NetworkErrorInterceptor())
             }
         }
     }
