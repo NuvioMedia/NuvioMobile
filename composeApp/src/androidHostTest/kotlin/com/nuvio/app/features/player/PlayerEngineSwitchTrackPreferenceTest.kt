@@ -79,6 +79,25 @@ class PlayerEngineSwitchTrackPreferenceTest {
     }
 
     @Test
+    fun switchingEngineKeepsAddonSubtitlesForTheSameSource() {
+        val runtime = runtime()
+        runtime.resetIdentityStateIfNeeded()
+        runtime.resetAddonSubtitlesIfSourceChanged()
+        val fetchKey = "movie|tt1234567|opensubtitles"
+        runtime.autoFetchedAddonSubtitlesForKey = fetchKey
+
+        runtime.playbackEngineOverride = AndroidPlaybackEngine.Libmpv
+        runtime.resetIdentityStateIfNeeded()
+        runtime.resetAddonSubtitlesIfSourceChanged()
+        assertEquals(fetchKey, runtime.autoFetchedAddonSubtitlesForKey)
+
+        runtime.activeSourceUrl = "https://example.com/other.mp4"
+        runtime.resetIdentityStateIfNeeded()
+        runtime.resetAddonSubtitlesIfSourceChanged()
+        assertNull(runtime.autoFetchedAddonSubtitlesForKey)
+    }
+
+    @Test
     fun switchingEngineRestoresTheSubtitleTrackOfTheOldEngine() {
         val runtime = runtime()
         runtime.playerController = FakeController(
