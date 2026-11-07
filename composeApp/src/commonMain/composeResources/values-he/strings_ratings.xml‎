@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">דירוג</string>
+    <string name="rating_your_rating">הדירוג שלך</string>
+    <string name="rating_rate_episode">דירוג הפרק</string>
+    <string name="rating_rated">דורג %1$s/10</string>
+    <string name="rating_value">%1$s מתוך 10</string>
+    <string name="rating_syncs_to">מסונכרן אל %1$s</string>
+    <string name="rating_saved">הדירוג נשמר</string>
+    <string name="rating_removed">הדירוג הוסר</string>
+    <string name="rating_failed">לא ניתן לעדכן את הדירוג ב-%1$s</string>
+    <string name="settings_tracking_ratings">דירוגים</string>
+    <string name="settings_tracking_ratings_description">המקום שבו הדירוגים שלך נשמרים ומוצגים</string>
+    <string name="settings_tracking_ratings_picker_subtitle">דירוג כותרות מדף הפרטים שלהן. הדירוגים שלך נשמרים בשירות שנבחר ומוצגים ממנו.</string>
+    <string name="settings_tracking_ratings_off_description">הסתרת כפתור הדירוג.</string>
+    <string name="settings_tracking_ratings_simkl_description">דירוג סרטים וסדרות. דירוג כותרת שאינה ברשימות Simkl שלך מוסיף אותה אליהן.</string>
+    <string name="settings_tracking_ratings_mdblist_description">דירוג סרטים, סדרות ופרקים.</string>
+</resources>
