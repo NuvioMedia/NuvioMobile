@@ -476,12 +476,12 @@ private fun ExoPlayerSurface(
             val captioningManager = context.getSystemService(Context.CAPTIONING_SERVICE)
                 as? android.view.accessibility.CaptioningManager
             if (captioningManager != null) {
-                if (!captioningManager.isEnabled) {
+                if (!runCatching { captioningManager.isEnabled }.getOrDefault(false)) {
                     parameters = parameters.setIgnoredTextSelectionFlags(
                         parameters.build().ignoredTextSelectionFlags or C.SELECTION_FLAG_DEFAULT
                     )
                 }
-                captioningManager.locale?.let { locale ->
+                runCatching { captioningManager.locale }.getOrNull()?.let { locale ->
                     parameters = parameters.setPreferredTextLanguage(locale.isO3Language)
                 }
             }
