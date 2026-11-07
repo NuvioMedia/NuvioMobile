@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">סנכרון אוטומטי של כתוביות</string>
+    <string name="settings_playback_subtitle_auto_sync_description">סנכרון אוטומטי של כתוביות התוסף המועדפות עם תחילת ההפעלה. נדרשת שפת כתוביות מועדפת.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">חיפוש לסנכרון אוטומטי: יסודי</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">ממשיך להשוות כתוביות ורצועות מובנות אחרות כדי למצוא התאמה קרובה יותר לפני הסנכרון. מוחלות רק התאמות בטוחות.</string>
+    <string name="settings_playback_auto_sync_mode_passive">חיפוש לסנכרון אוטומטי: מהיר</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">משתמש בהתאמה החזקה הראשונה מוקדם יותר. כמו במצב יסודי, מוחלות רק התאמות בטוחות.</string>
+    <string name="settings_playback_auto_sync_tolerance">סף סנכרון אוטומטי: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">שמירה על תזמון הכתוביות המקורי כשהסנכרון היה מזיז אותו בפחות מערך זה. יש להקיש לשינוי.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">כבוי</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d אלפיות שנייה</string>
+</resources>
