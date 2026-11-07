@@ -85,6 +85,25 @@ class BackdropFocusTest {
     }
 
     @Test
+    fun figureInFrontOfPatternedWallBeatsTheWall() {
+        val w = 96
+        val h = 54
+        // Patterned wallpaper touching every border, busiest on the left.
+        val pixels = IntArray(w * h) { i ->
+            val x = i % w
+            val y = i / w
+            val period = if (x < 48) 3 else 6
+            if ((x / period + y / period) % 2 == 0) 0xFFB89880.toInt() else 0xFF9C7C68.toInt()
+        }
+        // A dark figure on the right, standing on the bottom edge.
+        for (y in 12 until h) {
+            for (x in 66 until 80) pixels[y * w + x] = 0xFF202430.toInt()
+        }
+        val profile = analyzeBackdropFocus(SampledPixels(pixels, w, h))
+        assertTrue(profile.horizontalBias(visibleFraction = 0.42f) > 0.5f)
+    }
+
+    @Test
     fun noCropMeansNoShift() {
         val profile = analyzeBackdropFocus(flatImageWithSubjectAt(subjectStartX = 70, subjectWidth = 20))
         assertEquals(0f, profile.horizontalBias(visibleFraction = 1f))

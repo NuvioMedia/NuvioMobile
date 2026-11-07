@@ -17,6 +17,7 @@ import kotlinx.coroutines.withContext
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 
@@ -114,15 +115,20 @@ internal fun downsampleArgb(pixels: IntArray, srcWidth: Int, srcHeight: Int, tar
 
 internal const val BackdropFocusSampleWidth = 96
 
-private const val SkinWeight = 0.03f
-private const val SkinCoverageCutoff = 0.15f
+private const val CoarseEdgeWeight = 0.5f
+private const val ForegroundWeight = 0.15f
+private const val SkinWeight = 0.08f
+private const val SkinCoverageCutoff = 0.2f
 
 /**
  * Cheap saliency heuristic. Each column is scored by these signals, each normalized
  * across the image before being combined:
  * - coarse edges (Sobel on a blurred image): large shapes like people and objects,
- * - fine edges: detail, with a low weight so dense textures (city, foliage) do not win,
- * - saturation,
+ *   while dense fine textures (city, foliage) average out,
+ * - foreground: how strongly a region is separated from the top, left and right image
+ *   borders (see [foregroundColumns]). Walls, sky and wallpaper connect to the borders
+ *   smoothly; people and objects standing in front of them do not. This is what tells
+ *   cast photos apart from their background,
  * - skin tones, weighted by how much of the image they cover. Colour-based skin detection
  *   is only trustworthy when skin is rare: in warm or sepia images it matches walls, sky
  *   and whole backgrounds, so the signal fades out as coverage grows.
@@ -131,10 +137,9 @@ private const val SkinCoverageCutoff = 0.15f
 internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
     val w = sample.width
     val h = sample.height
-    if (w < 3 || h < 3) return BackdropFocusProfile(FloatArray(0))
+    if (w < 4 || h < 4) return BackdropFocusProfile(FloatArray(0))
 
     val luma = FloatArray(w * h)
-    val sat = FloatArray(w * h)
     val skin = BooleanArray(w * h)
     var skinCount = 0
     for (i in 0 until w * h) {
@@ -143,9 +148,6 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
         val g = ((p shr 8) and 0xFF) / 255f
         val b = (p and 0xFF) / 255f
         luma[i] = 0.299f * r + 0.587f * g + 0.114f * b
-        val mx = max(r, max(g, b))
-        val mn = min(r, min(g, b))
-        sat[i] = if (mx <= 0f) 0f else (mx - mn) / mx
         val cb = 128f + (-0.168736f * r - 0.331264f * g + 0.5f * b) * 255f
         val cr = 128f + (0.5f * r - 0.418688f * g - 0.081312f * b) * 255f
         if (luma[i] > 0.08f && cb in 77f..127f && cr in 133f..173f) {
@@ -155,33 +157,24 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
     }
     val blurred = boxBlur(luma, w, h, radius = 2)
 
-    val fineColumns = FloatArray(w)
     val coarseColumns = FloatArray(w)
-    val satColumns = FloatArray(w)
     val skinColumns = FloatArray(w)
     for (y in 1 until h - 1) {
-        val rowFraction = y.toFloat() / (h - 1)
-        val rowWeight = when {
-            rowFraction > 0.78f -> 0.35f
-            rowFraction < 0.08f -> 0.6f
-            else -> 1f
-        }
+        val rowWeight = rowWeight(y.toFloat() / (h - 1))
         for (x in 1 until w - 1) {
             val i = y * w + x
-            fineColumns[x] += sobel(luma, w, i) * rowWeight
             coarseColumns[x] += min(1f, sobel(blurred, w, i) * 3f) * rowWeight
-            satColumns[x] += sat[i] * rowWeight
             if (skin[i]) skinColumns[x] += rowWeight
         }
     }
 
     val columns = FloatArray(w)
-    accumulateNormalized(columns, fineColumns, weight = 0.25f)
-    accumulateNormalized(columns, coarseColumns, weight = 0.5f)
-    accumulateNormalized(columns, satColumns, weight = 0.35f)
+    accumulateNormalized(columns, coarseColumns, weight = CoarseEdgeWeight)
     val skinCoverage = skinCount.toFloat() / (w * h)
     val skinReliability = max(0f, 1f - skinCoverage / SkinCoverageCutoff)
     accumulateNormalized(columns, skinColumns, weight = SkinWeight * skinCoverage * skinReliability * w)
+    val foreground = foregroundColumns(sample)
+    for (x in 0 until w) columns[x] += foreground[x] * ForegroundWeight
 
     // Light smoothing so a single noisy column does not pull the window.
     val smoothed = FloatArray(w)
@@ -200,6 +193,192 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
     val total = smoothed.sum()
     if (total > 0f) for (x in 0 until w) smoothed[x] /= total
     return BackdropFocusProfile(smoothed)
+}
+
+private fun rowWeight(rowFraction: Float): Float = when {
+    rowFraction > 0.78f -> 0.35f
+    rowFraction < 0.08f -> 0.6f
+    else -> 1f
+}
+
+/**
+ * Background-connectivity ("geodesic") saliency. The image is split into 2x2 px cells in
+ * CIELAB; each cell gets the cheapest path cost to the top, left or right border, where
+ * stepping between neighbours costs their colour difference minus the image's typical
+ * neighbour difference (so smooth gradients and fine texture are free). The bottom border
+ * is not a seed because people and objects usually stand on it. Returns per-column sums of
+ * that cost, normalized to 1.
+ */
+private fun foregroundColumns(sample: SampledPixels): FloatArray {
+    val w = sample.width
+    val h = sample.height
+    val gw = w / 2
+    val gh = h / 2
+    val out = FloatArray(w)
+    if (gw < 3 || gh < 3) return out
+    val cells = gw * gh
+
+    val lab = FloatArray(cells * 3)
+    for (gy in 0 until gh) {
+        for (gx in 0 until gw) {
+            var l = 0f
+            var a = 0f
+            var b = 0f
+            for (dy in 0..1) {
+                for (dx in 0..1) {
+                    val p = sample.pixels[(gy * 2 + dy) * w + gx * 2 + dx]
+                    val c = toLab(p)
+                    l += c[0]
+                    a += c[1]
+                    b += c[2]
+                }
+            }
+            val o = (gy * gw + gx) * 3
+            lab[o] = l / 4f
+            lab[o + 1] = a / 4f
+            lab[o + 2] = b / 4f
+        }
+    }
+
+    fun distance(i: Int, j: Int): Float {
+        val dl = lab[i * 3] - lab[j * 3]
+        val da = lab[i * 3 + 1] - lab[j * 3 + 1]
+        val db = lab[i * 3 + 2] - lab[j * 3 + 2]
+        return sqrt(dl * dl + da * da + db * db)
+    }
+
+    val neighbours = IntArray(4)
+    fun neighboursOf(i: Int): Int {
+        val x = i % gw
+        val y = i / gw
+        var n = 0
+        if (x > 0) neighbours[n++] = i - 1
+        if (x < gw - 1) neighbours[n++] = i + 1
+        if (y > 0) neighbours[n++] = i - gw
+        if (y < gh - 1) neighbours[n++] = i + gw
+        return n
+    }
+
+    var clipSum = 0f
+    for (i in 0 until cells) {
+        var best = Float.MAX_VALUE
+        val n = neighboursOf(i)
+        for (k in 0 until n) best = min(best, distance(i, neighbours[k]))
+        clipSum += best
+    }
+    val clip = clipSum / cells
+
+    // Edge costs between 4-connected neighbours: colour difference above the typical one.
+    val adjacency = IntArray(cells * 4)
+    val adjacencyCount = IntArray(cells)
+    val edgeCost = FloatArray(cells * 4)
+    for (i in 0 until cells) {
+        val n = neighboursOf(i)
+        adjacencyCount[i] = n
+        for (k in 0 until n) {
+            adjacency[i * 4 + k] = neighbours[k]
+            edgeCost[i * 4 + k] = max(0f, distance(i, neighbours[k]) - clip)
+        }
+    }
+    val dist = FloatArray(cells) { Float.MAX_VALUE }
+    for (i in 0 until cells) {
+        val x = i % gw
+        val y = i / gw
+        if (y == 0 || x == 0 || x == gw - 1) dist[i] = 0f
+    }
+    dijkstra(dist, adjacency, adjacencyCount, edgeCost)
+
+    for (gy in 0 until gh) {
+        val weight = rowWeight((gy + 0.5f) / gh)
+        for (gx in 0 until gw) {
+            val value = dist[gy * gw + gx] * weight
+            out[gx * 2] += value
+            out[gx * 2 + 1] += value
+        }
+    }
+    val total = out.sum()
+    if (total > 0f) for (x in 0 until w) out[x] /= total
+    return out
+}
+
+/** Dijkstra with a binary min-heap (lazy deletion). [dist] holds seeds (0) and is filled in place. */
+private fun dijkstra(dist: FloatArray, adjacency: IntArray, adjacencyCount: IntArray, edgeCost: FloatArray) {
+    val cells = dist.size
+    val capacity = cells * 5
+    val heapNode = IntArray(capacity)
+    val heapKey = FloatArray(capacity)
+    var size = 0
+
+    fun push(node: Int, key: Float) {
+        var i = size++
+        while (i > 0) {
+            val parent = (i - 1) / 2
+            if (heapKey[parent] <= key) break
+            heapNode[i] = heapNode[parent]
+            heapKey[i] = heapKey[parent]
+            i = parent
+        }
+        heapNode[i] = node
+        heapKey[i] = key
+    }
+
+    for (i in 0 until cells) if (dist[i] == 0f) push(i, 0f)
+    val done = BooleanArray(cells)
+    while (size > 0) {
+        val current = heapNode[0]
+        val currentDist = heapKey[0]
+        // Pop: move the last element to the root and sift it down.
+        size--
+        if (size > 0) {
+            val node = heapNode[size]
+            val key = heapKey[size]
+            var i = 0
+            while (true) {
+                val left = i * 2 + 1
+                if (left >= size) break
+                val right = left + 1
+                val child = if (right < size && heapKey[right] < heapKey[left]) right else left
+                if (heapKey[child] >= key) break
+                heapNode[i] = heapNode[child]
+                heapKey[i] = heapKey[child]
+                i = child
+            }
+            heapNode[i] = node
+            heapKey[i] = key
+        }
+        if (done[current] || currentDist > dist[current]) continue
+        done[current] = true
+        for (k in 0 until adjacencyCount[current]) {
+            val j = adjacency[current * 4 + k]
+            if (done[j]) continue
+            val candidate = currentDist + edgeCost[current * 4 + k]
+            if (candidate < dist[j]) {
+                dist[j] = candidate
+                push(j, candidate)
+            }
+        }
+    }
+}
+
+private val SrgbToLinear = FloatArray(256) { v ->
+    val c = v / 255.0
+    (if (c <= 0.04045) c / 12.92 else ((c + 0.055) / 1.055).pow(2.4)).toFloat()
+}
+
+private fun labF(t: Float): Float =
+    if (t > 0.008856f) t.toDouble().pow(1.0 / 3.0).toFloat() else 7.787f * t + 16f / 116f
+
+private fun toLab(argb: Int): FloatArray {
+    val r = SrgbToLinear[(argb shr 16) and 0xFF]
+    val g = SrgbToLinear[(argb shr 8) and 0xFF]
+    val b = SrgbToLinear[argb and 0xFF]
+    val x = (r * 0.4124f + g * 0.3576f + b * 0.1805f) / 0.95047f
+    val y = r * 0.2126f + g * 0.7152f + b * 0.0722f
+    val z = (r * 0.0193f + g * 0.1192f + b * 0.9505f) / 1.08883f
+    val fx = labF(x)
+    val fy = labF(y)
+    val fz = labF(z)
+    return floatArrayOf(116f * fy - 16f, 500f * (fx - fy), 200f * (fy - fz))
 }
 
 private fun sobel(values: FloatArray, w: Int, i: Int): Float {
