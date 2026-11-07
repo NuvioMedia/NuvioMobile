@@ -1230,7 +1230,7 @@ object WatchedRepository {
                         extraWatchedKeyGroups = compactExtraWatchedKeys(
                             providerExtraWatchedKeys[providerId].orEmpty(),
                         ),
-                        dirtyWatchedKeys = dirtyProviderKeys[providerId].orEmpty(),
+                        dirtyWatchedKeys = dirtyProviderKeys[providerId].orEmpty().toSet(),
                     )
                 },
             )
