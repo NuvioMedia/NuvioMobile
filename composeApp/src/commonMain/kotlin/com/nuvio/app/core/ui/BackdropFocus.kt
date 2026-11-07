@@ -1,7 +1,5 @@
 package com.nuvio.app.core.ui
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -80,8 +78,12 @@ internal expect fun sampleBackdropPixels(image: Image, targetWidth: Int): Sample
 internal const val BackdropFocusSampleWidth = 96
 
 /**
- * Cheap saliency heuristic: edge strength + saturation + local contrast + skin tones,
- * with the bottom area (covered by gradient, logo and buttons) down-weighted.
+ * Cheap saliency heuristic. Each column is scored by three signals, each normalized
+ * across the image before being combined:
+ * - coarse edges (Sobel on a blurred image): large shapes like people and objects,
+ * - fine edges: detail, with a low weight so dense textures (city, foliage) do not win,
+ * - saturation.
+ * The bottom area (covered by gradient, logo and buttons) and the very top are down-weighted.
  */
 internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
     val w = sample.width
@@ -90,26 +92,21 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
 
     val luma = FloatArray(w * h)
     val sat = FloatArray(w * h)
-    val skin = FloatArray(w * h)
-    var lumaSum = 0f
     for (i in 0 until w * h) {
         val p = sample.pixels[i]
         val r = ((p shr 16) and 0xFF) / 255f
         val g = ((p shr 8) and 0xFF) / 255f
         val b = (p and 0xFF) / 255f
-        val y = 0.299f * r + 0.587f * g + 0.114f * b
-        luma[i] = y
-        lumaSum += y
+        luma[i] = 0.299f * r + 0.587f * g + 0.114f * b
         val mx = max(r, max(g, b))
         val mn = min(r, min(g, b))
         sat[i] = if (mx <= 0f) 0f else (mx - mn) / mx
-        val cb = 128f + (-0.168736f * r - 0.331264f * g + 0.5f * b) * 255f
-        val cr = 128f + (0.5f * r - 0.418688f * g - 0.081312f * b) * 255f
-        skin[i] = if (y > 0.15f && cb in 77f..127f && cr in 133f..173f) 1f else 0f
     }
-    val lumaMean = lumaSum / (w * h)
+    val blurred = boxBlur(luma, w, h, radius = 2)
 
-    val columns = FloatArray(w)
+    val fineColumns = FloatArray(w)
+    val coarseColumns = FloatArray(w)
+    val satColumns = FloatArray(w)
     for (y in 1 until h - 1) {
         val rowFraction = y.toFloat() / (h - 1)
         val rowWeight = when {
@@ -119,18 +116,16 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
         }
         for (x in 1 until w - 1) {
             val i = y * w + x
-            val gx = (luma[i - w + 1] + 2 * luma[i + 1] + luma[i + w + 1]) -
-                (luma[i - w - 1] + 2 * luma[i - 1] + luma[i + w - 1])
-            val gy = (luma[i + w - 1] + 2 * luma[i + w] + luma[i + w + 1]) -
-                (luma[i - w - 1] + 2 * luma[i - w] + luma[i - w + 1])
-            val edge = min(1f, sqrt(gx * gx + gy * gy))
-            val contrast = abs(luma[i] - lumaMean)
-            val energy = edge * 1.0f + sat[i] * 0.35f + contrast * 0.4f + skin[i] * 0.6f
-            columns[x] += energy * rowWeight
+            fineColumns[x] += sobel(luma, w, i) * rowWeight
+            coarseColumns[x] += min(1f, sobel(blurred, w, i) * 3f) * rowWeight
+            satColumns[x] += sat[i] * rowWeight
         }
     }
-    columns[0] = columns[1]
-    columns[w - 1] = columns[w - 2]
+
+    val columns = FloatArray(w)
+    accumulateNormalized(columns, fineColumns, weight = 0.25f)
+    accumulateNormalized(columns, coarseColumns, weight = 0.5f)
+    accumulateNormalized(columns, satColumns, weight = 0.35f)
 
     // Light smoothing so a single noisy column does not pull the window.
     val smoothed = FloatArray(w)
@@ -149,6 +144,42 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
     val total = smoothed.sum()
     if (total > 0f) for (x in 0 until w) smoothed[x] /= total
     return BackdropFocusProfile(smoothed)
+}
+
+private fun sobel(values: FloatArray, w: Int, i: Int): Float {
+    val gx = (values[i - w + 1] + 2 * values[i + 1] + values[i + w + 1]) -
+        (values[i - w - 1] + 2 * values[i - 1] + values[i + w - 1])
+    val gy = (values[i + w - 1] + 2 * values[i + w] + values[i + w + 1]) -
+        (values[i - w - 1] + 2 * values[i - w] + values[i - w + 1])
+    return min(1f, sqrt(gx * gx + gy * gy))
+}
+
+private fun boxBlur(values: FloatArray, w: Int, h: Int, radius: Int): FloatArray {
+    val out = FloatArray(w * h)
+    for (y in 0 until h) {
+        for (x in 0 until w) {
+            var acc = 0f
+            var n = 0
+            for (yy in max(0, y - radius)..min(h - 1, y + radius)) {
+                for (xx in max(0, x - radius)..min(w - 1, x + radius)) {
+                    acc += values[yy * w + xx]
+                    n++
+                }
+            }
+            out[y * w + x] = acc / n
+        }
+    }
+    return out
+}
+
+/** Copies border columns inward, normalizes [source] to sum 1 and adds it to [target] with [weight]. */
+private fun accumulateNormalized(target: FloatArray, source: FloatArray, weight: Float) {
+    val w = source.size
+    source[0] = source[1]
+    source[w - 1] = source[w - 2]
+    val total = source.sum()
+    if (total <= 0f) return
+    for (x in 0 until w) target[x] += source[x] / total * weight
 }
 
 internal object BackdropFocusCache {
@@ -171,9 +202,8 @@ internal object BackdropFocusCache {
  * Alignment that keeps [fallback] for the vertical axis and picks a smart
  * horizontal offset when the image overflows the container horizontally.
  */
-private class FocusedBackdropAlignment(
+private data class FocusedBackdropAlignment(
     private val profile: BackdropFocusProfile,
-    private val strength: Float,
     private val fallback: Alignment,
 ) : Alignment {
     override fun align(size: IntSize, space: IntSize, layoutDirection: LayoutDirection): IntOffset {
@@ -181,9 +211,7 @@ private class FocusedBackdropAlignment(
         if (size.width <= space.width || size.width <= 0) return base
         val bias = profile.horizontalBias(space.width.toFloat() / size.width)
         val overflow = (space.width - size.width).toFloat()
-        val baseBias = if (overflow == 0f) 0f else 2f * base.x / overflow - 1f
-        val finalBias = baseBias + (bias - baseBias) * strength.coerceIn(0f, 1f)
-        val x = (overflow / 2f * (1f + finalBias)).roundToInt()
+        val x = (overflow / 2f * (1f + bias)).roundToInt()
         return IntOffset(x, base.y)
     }
 }
@@ -196,12 +224,24 @@ internal class BackdropFocusState(
     var profile by mutableStateOf(initial)
         private set
 
-    val wasCached: Boolean = initial != null
+    /**
+     * False only while a freshly loaded image is being analyzed. The image should
+     * stay hidden during that short window so it appears directly in its final framing.
+     */
+    var isResolved by mutableStateOf(initial != null || url == null)
+        private set
+
     private var pending: Image? by mutableStateOf(null)
 
     /** Call from AsyncImage onSuccess. */
     fun onImageLoaded(image: Image) {
-        if (profile == null && url != null) pending = image
+        if (isResolved) return
+        pending = image
+    }
+
+    /** Call from AsyncImage onError so the placeholder/fallback is never hidden. */
+    fun onImageFailed() {
+        isResolved = true
     }
 
     internal suspend fun process() {
@@ -217,6 +257,7 @@ internal class BackdropFocusState(
             BackdropFocusCache.put(key, result)
             profile = result
         }
+        isResolved = true
     }
 
     internal val pendingImage: Image? get() = pending
@@ -231,19 +272,13 @@ internal fun rememberBackdropFocusState(url: String?): BackdropFocusState {
     return state
 }
 
-/**
- * Returns the alignment to use for a cropped backdrop. Falls back to [fallback]
- * until the image is analyzed, then animates towards the focused framing.
- */
+/** Alignment to use for a cropped backdrop: [fallback] until analyzed, then the focused framing. */
 @Composable
 internal fun BackdropFocusState.focusedAlignment(fallback: Alignment): Alignment {
     val currentProfile = profile ?: return fallback
-    val strength = remember(currentProfile) { Animatable(if (wasCached) 1f else 0f) }
-    LaunchedEffect(currentProfile) {
-        strength.animateTo(1f, tween(durationMillis = 450))
-    }
-    val value = strength.value
-    return remember(currentProfile, value, fallback) {
-        FocusedBackdropAlignment(currentProfile, value, fallback)
-    }
+    return remember(currentProfile, fallback) { FocusedBackdropAlignment(currentProfile, fallback) }
 }
+
+/** Alpha multiplier for the backdrop: 0 while the first analysis is running, 1 otherwise. */
+internal val BackdropFocusState.revealAlpha: Float
+    get() = if (isResolved) 1f else 0f

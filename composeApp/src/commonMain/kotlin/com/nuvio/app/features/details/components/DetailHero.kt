@@ -51,6 +51,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.focusedAlignment
 import com.nuvio.app.core.ui.rememberBackdropFocusState
+import com.nuvio.app.core.ui.revealAlpha
 import com.nuvio.app.core.ui.featherArtwork
 import com.nuvio.app.core.ui.heroStretchHeight
 import com.nuvio.app.core.ui.heroStretchZoom
@@ -134,6 +135,7 @@ fun DetailHero(
                                 .height(heroHeight)
                                 .heroStretchZoom(stretchPx)
                                 .graphicsLayer {
+                                    alpha = backdropFocus.revealAlpha
                                     translationY = scrollOffset() * 0.5f
                                     scaleX = 1.08f
                                     scaleY = 1.08f
@@ -149,6 +151,7 @@ fun DetailHero(
                                     loadedBackdropImageBitmap(state.result),
                                 )
                             },
+                            onError = { backdropFocus.onImageFailed() },
                         )
                     } else {
                         Box(
