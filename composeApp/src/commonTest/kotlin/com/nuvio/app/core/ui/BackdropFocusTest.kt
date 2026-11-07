@@ -63,6 +63,28 @@ class BackdropFocusTest {
     }
 
     @Test
+    fun smallSkinAreaPullsTowardsFacesDespiteSaturatedBackground() {
+        val w = 96
+        val h = 54
+        val pixels = IntArray(w * h) { i ->
+            val x = i % w
+            val y = i / w
+            when {
+                // Saturated blue stands on the left.
+                x < 40 && y in 10 until 34 -> 0xFF2838C0.toInt()
+                else -> 0xFF505860.toInt()
+            }
+        }
+        // Two faces on the right.
+        for (y in 10 until 18) {
+            for (x in 66 until 72) pixels[y * w + x] = 0xFFE0A88C.toInt()
+            for (x in 74 until 80) pixels[y * w + x] = 0xFFD89C80.toInt()
+        }
+        val profile = analyzeBackdropFocus(SampledPixels(pixels, w, h))
+        assertTrue(profile.horizontalBias(visibleFraction = 0.42f) > 0.5f)
+    }
+
+    @Test
     fun noCropMeansNoShift() {
         val profile = analyzeBackdropFocus(flatImageWithSubjectAt(subjectStartX = 70, subjectWidth = 20))
         assertEquals(0f, profile.horizontalBias(visibleFraction = 1f))

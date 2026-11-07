@@ -3,8 +3,6 @@ package com.nuvio.app.core.ui
 import android.graphics.Bitmap
 import coil3.Image
 import coil3.toBitmap
-import kotlin.math.max
-import kotlin.math.roundToInt
 
 internal actual fun sampleBackdropPixels(image: Image, targetWidth: Int): SampledPixels? {
     val source = image.toBitmap()
@@ -14,12 +12,10 @@ internal actual fun sampleBackdropPixels(image: Image, targetWidth: Int): Sample
     } else {
         source
     }
-    val width = targetWidth.coerceAtMost(software.width)
-    val height = max(1, (software.height * width.toFloat() / software.width).roundToInt())
-    val scaled = Bitmap.createScaledBitmap(software, width, height, true)
+    val width = software.width
+    val height = software.height
     val pixels = IntArray(width * height)
-    scaled.getPixels(pixels, 0, width, 0, 0, width, height)
-    if (scaled !== software) scaled.recycle()
+    software.getPixels(pixels, 0, width, 0, 0, width, height)
     if (software !== source) software.recycle()
-    return SampledPixels(pixels, width, height)
+    return downsampleArgb(pixels, width, height, targetWidth)
 }

@@ -75,14 +75,57 @@ internal class SampledPixels(val pixels: IntArray, val width: Int, val height: I
 /** Platform hook: decode a loaded Coil image into small ARGB pixels (about [targetWidth] wide). */
 internal expect fun sampleBackdropPixels(image: Image, targetWidth: Int): SampledPixels?
 
+/**
+ * Area-average (box filter) downsampling of ARGB pixels. Platform scalers use bilinear
+ * sampling, which aliases badly at large ratios (e.g. 1280 to 96 px) and turns fine
+ * detail into noise, so every platform goes through this instead.
+ */
+internal fun downsampleArgb(pixels: IntArray, srcWidth: Int, srcHeight: Int, targetWidth: Int): SampledPixels {
+    val width = min(targetWidth, srcWidth).coerceAtLeast(1)
+    val height = max(1, (srcHeight.toLong() * width / srcWidth).toInt())
+    val out = IntArray(width * height)
+    for (ty in 0 until height) {
+        val y0 = (ty.toLong() * srcHeight / height).toInt()
+        val y1 = max(y0 + 1, ((ty + 1).toLong() * srcHeight / height).toInt())
+        for (tx in 0 until width) {
+            val x0 = (tx.toLong() * srcWidth / width).toInt()
+            val x1 = max(x0 + 1, ((tx + 1).toLong() * srcWidth / width).toInt())
+            var r = 0L
+            var g = 0L
+            var b = 0L
+            for (y in y0 until y1) {
+                val row = y * srcWidth
+                for (x in x0 until x1) {
+                    val p = pixels[row + x]
+                    r += (p shr 16) and 0xFF
+                    g += (p shr 8) and 0xFF
+                    b += p and 0xFF
+                }
+            }
+            val n = (y1 - y0).toLong() * (x1 - x0)
+            out[ty * width + tx] = (0xFF shl 24) or
+                ((r / n).toInt() shl 16) or
+                ((g / n).toInt() shl 8) or
+                (b / n).toInt()
+        }
+    }
+    return SampledPixels(out, width, height)
+}
+
 internal const val BackdropFocusSampleWidth = 96
 
+private const val SkinWeight = 0.03f
+private const val SkinCoverageCutoff = 0.15f
+
 /**
- * Cheap saliency heuristic. Each column is scored by three signals, each normalized
+ * Cheap saliency heuristic. Each column is scored by these signals, each normalized
  * across the image before being combined:
  * - coarse edges (Sobel on a blurred image): large shapes like people and objects,
  * - fine edges: detail, with a low weight so dense textures (city, foliage) do not win,
- * - saturation.
+ * - saturation,
+ * - skin tones, weighted by how much of the image they cover. Colour-based skin detection
+ *   is only trustworthy when skin is rare: in warm or sepia images it matches walls, sky
+ *   and whole backgrounds, so the signal fades out as coverage grows.
  * The bottom area (covered by gradient, logo and buttons) and the very top are down-weighted.
  */
 internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
@@ -92,6 +135,8 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
 
     val luma = FloatArray(w * h)
     val sat = FloatArray(w * h)
+    val skin = BooleanArray(w * h)
+    var skinCount = 0
     for (i in 0 until w * h) {
         val p = sample.pixels[i]
         val r = ((p shr 16) and 0xFF) / 255f
@@ -101,12 +146,19 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
         val mx = max(r, max(g, b))
         val mn = min(r, min(g, b))
         sat[i] = if (mx <= 0f) 0f else (mx - mn) / mx
+        val cb = 128f + (-0.168736f * r - 0.331264f * g + 0.5f * b) * 255f
+        val cr = 128f + (0.5f * r - 0.418688f * g - 0.081312f * b) * 255f
+        if (luma[i] > 0.08f && cb in 77f..127f && cr in 133f..173f) {
+            skin[i] = true
+            skinCount++
+        }
     }
     val blurred = boxBlur(luma, w, h, radius = 2)
 
     val fineColumns = FloatArray(w)
     val coarseColumns = FloatArray(w)
     val satColumns = FloatArray(w)
+    val skinColumns = FloatArray(w)
     for (y in 1 until h - 1) {
         val rowFraction = y.toFloat() / (h - 1)
         val rowWeight = when {
@@ -119,6 +171,7 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
             fineColumns[x] += sobel(luma, w, i) * rowWeight
             coarseColumns[x] += min(1f, sobel(blurred, w, i) * 3f) * rowWeight
             satColumns[x] += sat[i] * rowWeight
+            if (skin[i]) skinColumns[x] += rowWeight
         }
     }
 
@@ -126,6 +179,9 @@ internal fun analyzeBackdropFocus(sample: SampledPixels): BackdropFocusProfile {
     accumulateNormalized(columns, fineColumns, weight = 0.25f)
     accumulateNormalized(columns, coarseColumns, weight = 0.5f)
     accumulateNormalized(columns, satColumns, weight = 0.35f)
+    val skinCoverage = skinCount.toFloat() / (w * h)
+    val skinReliability = max(0f, 1f - skinCoverage / SkinCoverageCutoff)
+    accumulateNormalized(columns, skinColumns, weight = SkinWeight * skinCoverage * skinReliability * w)
 
     // Light smoothing so a single noisy column does not pull the window.
     val smoothed = FloatArray(w)
