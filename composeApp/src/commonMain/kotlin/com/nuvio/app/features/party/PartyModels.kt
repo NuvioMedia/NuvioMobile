@@ -75,6 +75,25 @@ data class PartyStream(
 
 internal fun isShareableStreamUrl(url: String): Boolean = SHAREABLE_URL.containsMatchIn(url)
 
+/**
+ * True when a guest must replace its current source with the host's shared HTTP source.
+ * A different stream is followed only for the same party media and when its URL is shareable.
+ */
+internal fun shouldFollowSharedPartyStream(
+    isHost: Boolean,
+    sharingEnabled: Boolean,
+    partyMediaKey: String?,
+    localMediaKey: String,
+    sharedStream: PartyStream?,
+    activeSourceUrl: String,
+): Boolean {
+    if (isHost || !sharingEnabled || partyMediaKey != localMediaKey) return false
+    val stream = sharedStream ?: return false
+    return stream.mediaKey == localMediaKey &&
+        isShareableStreamUrl(stream.url) &&
+        stream.url != activeSourceUrl
+}
+
 private val SHAREABLE_URL = Regex("^https?://(?!localhost|127\\.|0\\.0\\.0\\.0|\\[::1])[^\\s/]+", RegexOption.IGNORE_CASE)
 
 internal fun partyMediaKey(metaType: String, metaId: String, season: Int?, episode: Int?): String =
