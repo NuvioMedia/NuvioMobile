@@ -1882,6 +1882,11 @@
     <string name="library_source_cloud">کلاؤڈ</string>
     <string name="library_source_saved">محفوظ شدہ</string>
     <string name="library_title">لائبریری</string>
+    <string name="library_status_watching">دیکھ رہے ہیں</string>
+    <string name="library_status_plan_to_watch">دیکھنے کا ارادہ</string>
+    <string name="library_status_on_hold">روکا گیا</string>
+    <string name="library_status_completed">مکمل</string>
+    <string name="library_status_dropped">چھوڑ دیا</string>
     <string name="library_trakt_empty_message">Trakt کنیکٹ کریں اور عنوانات اپنی Watchlist یا ذاتی فہرستوں میں محفوظ کریں۔</string>
     <string name="library_trakt_empty_title">آپ کی Trakt لائبریری خالی ہے</string>
     <string name="library_trakt_load_failed">Trakt لائبریری لوڈ نہیں ہو سکی</string>
@@ -2365,4 +2370,6 @@
     <string name="movie_status_rumored">افواہ</string>
     <string name="movie_status_in_production">زیرِ تیاری</string>
     <string name="movie_status_post_production">بعد از تیاری</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">بہتر معیار کی پروسیسنگ کے ساتھ جدید libmpv رینڈرر۔</string>
+    <string name="player_android_libmpv_output_gpu_desc">GPU next میں مسائل رکھنے والے آلات کے لیے مطابقت پذیر رینڈرر۔</string>
 </resources>

@@ -195,7 +195,7 @@ object SimklTrackingLibraryProvider : TrackingLibraryProvider {
             tabs = simklLibraryStatusDefinitions.map { definition ->
                 TrackingLibraryTab(
                     key = definition.key,
-                    title = definition.title,
+                    title = definition.localizedTitle(),
                     providerId = TrackingProviderId.SIMKL,
                     kind = if (definition.status == SimklListStatus.PLAN_TO_WATCH) {
                         TrackingLibraryTabKind.WATCHLIST

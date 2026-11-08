@@ -813,6 +813,14 @@
     <string name="player_skip_intro">Intro überspringen</string>
     <string name="player_skip_outro">Outro überspringen</string>
     <string name="player_skip_recap">Rückblick überspringen</string>
+    <string name="player_ios_preset_native_edr_label">Natives EDR</string>
+    <string name="player_ios_preset_native_edr_desc">Am besten für HDR-fähige iPhones und iPads.</string>
+    <string name="player_ios_preset_sdr_tone_mapped_label">SDR-Tonemapping</string>
+    <string name="player_ios_preset_sdr_tone_mapped_desc">Vorhersehbarere Weiß- und Schwarztöne bei SDR-Ausgabe.</string>
+    <string name="player_ios_preset_compatibility_label">Kompatibilität</string>
+    <string name="player_ios_preset_compatibility_desc">Am nächsten am bisherigen MPV-Verhalten unter iOS.</string>
+    <string name="player_ios_preset_custom_label">Benutzerdefiniert</string>
+    <string name="player_ios_preset_custom_desc">Verwende die erweiterten Werte unten.</string>
     <string name="compose_player_no_subtitles_found">Keine Untertitel gefunden</string>
     <string name="lang_afrikaans">Afrikaans</string>
     <string name="lang_albanian">Albanisch</string>
@@ -1180,6 +1188,11 @@
     <string name="library_load_failed">Bibliothek konnte nicht geladen werden</string>
     <string name="library_other">Andere</string>
     <string name="library_title">Bibliothek</string>
+    <string name="library_status_watching">Wird angesehen</string>
+    <string name="library_status_plan_to_watch">Geplant</string>
+    <string name="library_status_on_hold">Pausiert</string>
+    <string name="library_status_completed">Abgeschlossen</string>
+    <string name="library_status_dropped">Abgebrochen</string>
     <string name="library_trakt_empty_message">Verbinde Trakt und speichere Titel in deiner Watchlist oder in persönlichen Listen.</string>
     <string name="library_trakt_empty_title">Deine Trakt-Bibliothek ist leer</string>
     <string name="library_trakt_load_failed">Trakt-Bibliothek konnte nicht geladen werden</string>
@@ -1257,4 +1270,6 @@
     <string name="stream_info_subtitle_source_addon">Addon</string>
     <string name="stream_info_subtitle_source_embedded">Eingebettet</string>
     <string name="stream_info_player_engine">Player Engine</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Moderner libmpv-Renderer mit hochwertigerer Verarbeitung.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Kompatibilitäts-Renderer für Geräte mit Problemen bei GPU next.</string>
 </resources>

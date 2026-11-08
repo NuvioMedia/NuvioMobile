@@ -55,6 +55,8 @@
     <string name="player_skip_intro">Intro-வைத் தவிர்</string>
     <string name="player_skip_outro">Outro-வைத் தவிர்</string>
     <string name="player_skip_recap">Recap-ஐத் தவிர்</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">நவீன libmpv ரெண்டரர், உயர் தர செயலாக்கத்துடன்.</string>
+    <string name="player_android_libmpv_output_gpu_desc">GPU next-இல் சிக்கல்கள் உள்ள சாதனங்களுக்கான இணக்க ரெண்டரர்.</string>
     <string name="player_auto_skip_intro_notification">Intro %1$s-க்கு தானாகத் தவிர்க்கப்பட்டது</string>
     <string name="player_auto_skip_recap_notification">Recap %1$s-க்கு தானாகத் தவிர்க்கப்பட்டது</string>
     <string name="player_auto_skip_outro_notification">Outro %1$s-க்கு தானாகத் தவிர்க்கப்பட்டது</string>

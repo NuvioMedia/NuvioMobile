@@ -2504,4 +2504,6 @@
     <string name="stream_info_subtitle_source_embedded">Ενσωματωμένο</string>
     <string name="stream_info_player_engine">Μηχανή αναπαραγωγής</string>
     <string name="stream_info_server">Διακομιστής</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Σύγχρονος renderer libmpv με επεξεργασία υψηλότερης ποιότητας.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Renderer συμβατότητας για συσκευές με προβλήματα στο GPU next.</string>
 </resources>

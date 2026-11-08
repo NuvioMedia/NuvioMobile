@@ -2549,4 +2549,6 @@
     <string name="subtitle_shadow_opacity">Độ mờ bóng</string>
     <string name="subtitle_shadow_size">Kích thước bóng</string>
     <string name="subtitle_reset_appearance">Đặt lại giao diện</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Trình kết xuất libmpv hiện đại với xử lý chất lượng cao hơn.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Trình kết xuất tương thích cho thiết bị gặp sự cố với GPU next.</string>
 </resources>

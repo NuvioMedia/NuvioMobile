@@ -2549,4 +2549,6 @@
     <string name="settings_playback_page_up_next">A seguir</string>
     <string name="compose_settings_page_layout">Layout</string>
     <string name="settings_group_you">Você</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Renderer libmpv moderno com processamento de maior qualidade.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Renderer de compatibilidade para dispositivos com problemas com GPU next.</string>
 </resources>

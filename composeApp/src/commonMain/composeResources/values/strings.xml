@@ -2549,4 +2549,6 @@
     <string name="subtitle_shadow_opacity">Shadow opacity</string>
     <string name="subtitle_shadow_size">Shadow size</string>
     <string name="subtitle_reset_appearance">Reset appearance</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Modern libmpv renderer with higher quality processing.</string>
+    <string name="player_android_libmpv_output_gpu_desc">Compatibility renderer for devices that have issues with GPU next.</string>
 </resources>

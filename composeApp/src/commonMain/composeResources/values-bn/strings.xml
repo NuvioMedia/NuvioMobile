@@ -2516,4 +2516,6 @@
     <string name="subtitle_shadow_opacity">শ্যাডো অপাসিটি</string>
     <string name="subtitle_shadow_size">শ্যাডোর আকার</string>
     <string name="subtitle_reset_appearance">অ্যাপিয়ারেন্স রিসেট করুন</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">উচ্চমানের প্রসেসিং সহ আধুনিক libmpv রেন্ডারার।</string>
+    <string name="player_android_libmpv_output_gpu_desc">GPU next-এ সমস্যা থাকা ডিভাইসের জন্য সামঞ্জস্যপূর্ণ রেন্ডারার।</string>
 </resources>

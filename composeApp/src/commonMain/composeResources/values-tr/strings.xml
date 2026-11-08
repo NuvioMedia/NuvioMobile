@@ -2544,4 +2544,6 @@ Bu özelliği tamamen kendi sorumluluğunuzda kullanırsınız. P2P istediğiniz
     <string name="subtitle_shadow_opacity">Gölge opaklığı</string>
     <string name="subtitle_shadow_size">Gölge boyutu</string>
     <string name="subtitle_reset_appearance">Görünümü sıfırla</string>
+    <string name="player_android_libmpv_output_gpu_next_desc">Daha yüksek kalitede işleme sahip modern libmpv oluşturucu.</string>
+    <string name="player_android_libmpv_output_gpu_desc">GPU next ile sorun yaşayan cihazlar için uyumluluk oluşturucu.</string>
 </resources>
