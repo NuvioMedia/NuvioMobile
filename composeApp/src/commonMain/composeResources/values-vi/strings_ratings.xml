@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">Đánh giá</string>
+    <string name="rating_your_rating">Đánh giá của bạn</string>
+    <string name="rating_rate_episode">Đánh giá tập phim</string>
+    <string name="rating_rated">Đã đánh giá %1$s/10</string>
+    <string name="rating_value">%1$s trên 10</string>
+    <string name="rating_syncs_to">Đồng bộ với %1$s</string>
+    <string name="rating_saved">Đã lưu đánh giá</string>
+    <string name="rating_removed">Đã xóa đánh giá</string>
+    <string name="rating_failed">Không thể cập nhật đánh giá của bạn trên %1$s</string>
+    <string name="settings_tracking_ratings">Điểm đánh giá</string>
+    <string name="settings_tracking_ratings_description">Nơi điểm đánh giá của bạn được lưu và hiển thị</string>
+    <string name="settings_tracking_ratings_picker_subtitle">Đánh giá các nội dung từ trang chi tiết. Điểm đánh giá sẽ được lưu và hiển thị từ dịch vụ bạn chọn.</string>
+    <string name="settings_tracking_ratings_off_description">Ẩn nút đánh giá.</string>
+    <string name="settings_tracking_ratings_simkl_description">Đánh giá phim và chương trình. Đánh giá một nội dung chưa có trong danh sách Simkl của bạn sẽ thêm nội dung đó vào danh sách.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Đánh giá phim, chương trình và tập phim.</string>
+</resources>
