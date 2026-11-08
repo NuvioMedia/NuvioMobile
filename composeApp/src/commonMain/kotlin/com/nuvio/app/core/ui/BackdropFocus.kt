@@ -58,14 +58,15 @@ internal class BackdropFocusProfile(val columns: FloatArray) {
         // Keep centered framing unless the best window is clearly better.
         if (bestSum <= centerSum * CenterPreferenceRatio) return 0f
 
-        val bias = (2f * bestStart / maxStart - 1f) * BiasDamping
+        // Use the best window as is: scaling the bias towards the center slides the crop
+        // edge into subjects standing near the image border.
+        val bias = 2f * bestStart / maxStart - 1f
         return if (abs(bias) < BiasDeadZone) 0f else bias.coerceIn(-1f, 1f)
     }
 
     private companion object {
         const val MinCropFraction = 0.97f
         const val CenterPreferenceRatio = 1.12f
-        const val BiasDamping = 0.9f
         const val BiasDeadZone = 0.12f
     }
 }
