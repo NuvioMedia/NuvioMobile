@@ -1093,7 +1093,7 @@
     <string name="settings_playback_enable_libass_description">Expérimental&#160;: rendu ASS/SSA avancé (styles, positionnement, animations)</string>
     <string name="settings_playback_external_player">Lecteur externe</string>
     <string name="settings_playback_external_player_app">Application de lecteur externe</string>
-    <string name="settings_playback_external_player_description_android">Ouvre les nouvelles lectures avec l’app vidéo par défaut d’Android ou le sélecteur système.</string>
+    <string name="settings_playback_external_player_description_android">Ouvre les nouvelles lectures avec l’application vidéo par défaut d’Android ou le sélecteur système.</string>
     <string name="settings_playback_external_player_description_ios">Ouvre les nouvelles lectures avec le lecteur installé sélectionné.</string>
     <string name="settings_playback_external_player_forward_subtitles">Transmettre les sous-titres au lecteur externe</string>
     <string name="settings_playback_external_player_forward_subtitles_description">Récupère les sous-titres d’addons dans votre langue préférée et les transmet au lecteur externe.</string>
@@ -2053,7 +2053,7 @@
     <string name="player_video_settings_deband">Deband</string>
     <string name="player_video_settings_deband_desc">Réduit le banding des couleurs au prix d’une légère baisse de performances.</string>
     <string name="player_video_settings_interpolation">Interpolation d’images</string>
-    <string name="player_video_settings_interpolation_desc">Lisse le mouvement quand mpv peut utiliser la synchro d’affichage proprement.</string>
+    <string name="player_video_settings_interpolation_desc">Lisse le mouvement quand mpv peut utiliser la synchronisation d’affichage proprement.</string>
     <string name="player_video_settings_brightness">Luminosité</string>
     <string name="player_video_settings_contrast">Contraste</string>
     <string name="player_video_settings_saturation">Saturation</string>
