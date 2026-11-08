@@ -28,6 +28,8 @@ actual object PlayerSettingsStorage {
     private const val holdToSpeedEnabledKey = "hold_to_speed_enabled"
     private const val holdToSpeedValueKey = "hold_to_speed_value"
     private const val touchGesturesEnabledKey = "touch_gestures_enabled"
+    private const val horizontalTouchGesturesEnabledKey = "horizontal_touch_gestures_enabled"
+    private const val verticalTouchGesturesEnabledKey = "vertical_touch_gestures_enabled"
     private const val externalPlayerEnabledKey = "external_player_enabled"
     private const val externalPlayerForwardSubtitlesKey = "external_player_forward_subtitles"
     private const val externalPlayerSendSkipSegmentsKey = "external_player_send_skip_segments"
@@ -125,6 +127,8 @@ actual object PlayerSettingsStorage {
         holdToSpeedEnabledKey,
         holdToSpeedValueKey,
         touchGesturesEnabledKey,
+        horizontalTouchGesturesEnabledKey,
+        verticalTouchGesturesEnabledKey,
         externalPlayerEnabledKey,
         externalPlayerForwardSubtitlesKey,
         externalPlayerSendSkipSegmentsKey,
@@ -346,6 +350,18 @@ actual object PlayerSettingsStorage {
 
     actual fun saveTouchGesturesEnabled(enabled: Boolean) {
         saveBoolean(touchGesturesEnabledKey, enabled)
+    }
+
+    actual fun loadHorizontalTouchGesturesEnabled(): Boolean? = loadBoolean(horizontalTouchGesturesEnabledKey)
+
+    actual fun saveHorizontalTouchGesturesEnabled(enabled: Boolean) {
+        saveBoolean(horizontalTouchGesturesEnabledKey, enabled)
+    }
+
+    actual fun loadVerticalTouchGesturesEnabled(): Boolean? = loadBoolean(verticalTouchGesturesEnabledKey)
+
+    actual fun saveVerticalTouchGesturesEnabled(enabled: Boolean) {
+        saveBoolean(verticalTouchGesturesEnabledKey, enabled)
     }
 
     actual fun loadExternalPlayerEnabled(): Boolean? {
@@ -1234,6 +1250,8 @@ actual object PlayerSettingsStorage {
         loadHoldToSpeedEnabled()?.let { put(holdToSpeedEnabledKey, encodeSyncBoolean(it)) }
         loadHoldToSpeedValue()?.let { put(holdToSpeedValueKey, encodeSyncFloat(it)) }
         loadTouchGesturesEnabled()?.let { put(touchGesturesEnabledKey, encodeSyncBoolean(it)) }
+        loadHorizontalTouchGesturesEnabled()?.let { put(horizontalTouchGesturesEnabledKey, encodeSyncBoolean(it)) }
+        loadVerticalTouchGesturesEnabled()?.let { put(verticalTouchGesturesEnabledKey, encodeSyncBoolean(it)) }
         loadExternalPlayerEnabled()?.let { put(externalPlayerEnabledKey, encodeSyncBoolean(it)) }
         loadExternalPlayerForwardSubtitles()?.let { put(externalPlayerForwardSubtitlesKey, encodeSyncBoolean(it)) }
         loadExternalPlayerId()?.let { put(externalPlayerIdKey, encodeSyncString(it)) }
@@ -1327,6 +1345,8 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncBoolean(holdToSpeedEnabledKey)?.let(::saveHoldToSpeedEnabled)
         payload.decodeSyncFloat(holdToSpeedValueKey)?.let(::saveHoldToSpeedValue)
         payload.decodeSyncBoolean(touchGesturesEnabledKey)?.let(::saveTouchGesturesEnabled)
+        payload.decodeSyncBoolean(horizontalTouchGesturesEnabledKey)?.let(::saveHorizontalTouchGesturesEnabled)
+        payload.decodeSyncBoolean(verticalTouchGesturesEnabledKey)?.let(::saveVerticalTouchGesturesEnabled)
         payload.decodeSyncBoolean(externalPlayerEnabledKey)?.let(::saveExternalPlayerEnabled)
         payload.decodeSyncBoolean(externalPlayerForwardSubtitlesKey)?.let(::saveExternalPlayerForwardSubtitles)
         payload.decodeSyncString(externalPlayerIdKey)?.let(::saveExternalPlayerId)

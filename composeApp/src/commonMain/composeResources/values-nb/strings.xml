@@ -1916,8 +1916,6 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_playback_timeout_instant">Umiddelbart</string>
     <string name="settings_playback_timeout_seconds">%1$ss</string>
     <string name="settings_playback_timeout_unlimited">Ubegrenset</string>
-    <string name="settings_playback_touch_gestures">Berøringsgester</string>
-    <string name="settings_playback_touch_gestures_description">Tillat sveip og dobbelttrykk på avspillerflaten for å spole, justere lysstyrke eller justere volum.</string>
     <string name="settings_playback_tunneled_playback">Tunneled avspilling</string>
     <string name="settings_playback_tunneled_playback_description">Maskinvarenivå lyd/video-synk. Kan forbedre avspilling på noen Android TV-enheter.</string>
     <string name="settings_poster_card_radius">Hjørneradius</string>

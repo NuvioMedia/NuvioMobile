@@ -5,8 +5,6 @@
     <string name="settings_playback_hold_speed">அழுத்திப் பிடிக்கும் வேகம்</string>
     <string name="settings_playback_hold_to_speed">வேகப்படுத்த அழுத்திப் பிடி</string>
     <string name="settings_playback_hold_to_speed_description">பிளேயர் திரையில் எங்கும் நீண்ட நேரம் அழுத்திப் பிடித்து பிளேபேக் வேகத்தைத் தற்காலிகமாக அதிகரிக்கவும்.</string>
-    <string name="settings_playback_touch_gestures">தொடு சைகைகள்</string>
-    <string name="settings_playback_touch_gestures_description">பிளேயர் திரையில் swipe மற்றும் இருமுறை தட்டுவதன் மூலம் நேரத்தை நகர்த்தவும், பிரகாசம் அல்லது ஒலி அளவைச் சரிசெய்யவும் அனுமதிக்கவும்.</string>
     <string name="settings_playback_invalid_regex_pattern">தவறான regex வடிவம்</string>
     <string name="settings_playback_last_link_cache_duration">கடைசி இணைப்பின் cache காலம்</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - HEVC மாற்று</string>

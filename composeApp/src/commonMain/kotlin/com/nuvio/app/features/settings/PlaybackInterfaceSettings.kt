@@ -76,12 +76,21 @@ internal fun PlaybackInterfaceSettings(
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
-                    title = stringResource(Res.string.settings_playback_touch_gestures),
-                    description = stringResource(Res.string.settings_playback_touch_gestures_description),
-                    checked = settings.touchGesturesEnabled,
+                    title = stringResource(Res.string.settings_playback_horizontal_touch_gestures),
+                    description = stringResource(Res.string.settings_playback_horizontal_touch_gestures_description),
+                    checked = settings.horizontalTouchGesturesEnabled,
                     enabled = !settings.externalPlayerEnabled,
                     isTablet = isTablet,
-                    onCheckedChange = PlayerSettingsRepository::setTouchGesturesEnabled,
+                    onCheckedChange = PlayerSettingsRepository::setHorizontalTouchGesturesEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_playback_vertical_touch_gestures),
+                    description = stringResource(Res.string.settings_playback_vertical_touch_gestures_description),
+                    checked = settings.verticalTouchGesturesEnabled,
+                    enabled = !settings.externalPlayerEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = PlayerSettingsRepository::setVerticalTouchGesturesEnabled,
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(

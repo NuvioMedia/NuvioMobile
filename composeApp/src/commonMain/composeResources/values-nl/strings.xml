@@ -1049,8 +1049,6 @@
     <string name="settings_playback_hold_speed">Snelheid bij ingedrukt houden</string>
     <string name="settings_playback_hold_to_speed">Ingedrukt houden voor snelheid</string>
     <string name="settings_playback_hold_to_speed_description">Houd overal op het spelervlak lang ingedrukt om de afspeelsnelheid tijdelijk te verhogen.</string>
-    <string name="settings_playback_touch_gestures">Aanraakgebaren</string>
-    <string name="settings_playback_touch_gestures_description">Sta vegen en dubbeltikken op het spelervlak toe om te spoelen, helderheid aan te passen of volume aan te passen.</string>
     <string name="settings_playback_invalid_regex_pattern">Ongeldig regex-patroon</string>
     <string name="settings_playback_last_link_cache_duration">Duur van cache voor laatste link</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - HEVC-fallback</string>

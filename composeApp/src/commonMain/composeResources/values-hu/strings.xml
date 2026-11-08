@@ -1465,8 +1465,6 @@
     <string name="settings_playback_player_preference_internal">Belső</string>
     <string name="settings_playback_player_preference_external">Külső</string>
     <string name="settings_playback_player_preference_description">Válaszd ki, melyik lejátszó kezelje az új lejátszásokat.</string>
-    <string name="settings_playback_touch_gestures">Érintési gesztusok</string>
-    <string name="settings_playback_touch_gestures_description">Csúsztatások és dupla koppintások engedélyezése a lejátszó felületén a tekeréshez, valamint a fényerő vagy a hangerő beállításához.</string>
     <string name="settings_playback_option_original">Eredeti nyelv</string>
     <string name="settings_playback_option_original_hint">A TMDB adatbővítés engedélyezése szükséges hozzá</string>
     <string name="settings_playback_addon_subtitle_startup_all">Összes bővítmény felirat</string>

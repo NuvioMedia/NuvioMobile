@@ -1107,8 +1107,6 @@
     <string name="settings_playback_hold_speed">Vitesse au maintien</string>
     <string name="settings_playback_hold_to_speed">Maintenir pour accélérer</string>
     <string name="settings_playback_hold_to_speed_description">Appuyez longuement n’importe où sur la surface du lecteur pour accélérer temporairement la lecture.</string>
-    <string name="settings_playback_touch_gestures">Gestes tactiles</string>
-    <string name="settings_playback_touch_gestures_description">Autorise les balayages et les doubles appuis sur la surface du lecteur pour avancer ou reculer, ajuster la luminosité ou le volume.</string>
     <string name="settings_playback_invalid_regex_pattern">Motif regex invalide</string>
     <string name="settings_playback_last_link_cache_duration">Durée du cache du dernier lien</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 – Repli HEVC</string>
