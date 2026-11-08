@@ -67,14 +67,12 @@ internal fun PlaybackSubtitleSettings(
                     isTablet = isTablet,
                     onClick = { showSecondarySubtitleDialog = true },
                 )
-                if (!isIos) {
-                    SettingsGroupDivider(isTablet = isTablet)
-                    AutoSyncPlaybackSettingsRows(
-                        isTablet = isTablet,
-                        enabled = !settings.externalPlayerEnabled,
-                        preferredSubtitleLanguage = settings.preferredSubtitleLanguage,
-                    )
-                }
+                SettingsGroupDivider(isTablet = isTablet)
+                AutoSyncPlaybackSettingsRows(
+                    isTablet = isTablet,
+                    enabled = !settings.externalPlayerEnabled,
+                    preferredSubtitleLanguage = settings.preferredSubtitleLanguage,
+                )
                 SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
                     title = stringResource(Res.string.settings_playback_subtitle_strip_sdh),
