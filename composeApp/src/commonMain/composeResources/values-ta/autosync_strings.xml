@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_playback_subtitle_auto_sync">வசன வரிகளைத் தானாக ஒத்திசை</string>
-    <string name="settings_playback_subtitle_auto_sync_description">பிளேபேக் தொடங்கும்போது விருப்பமான துணைநிரல் வசன வரியைத் தானாக ஒத்திசைக்கவும். விருப்பமான வசன மொழி தேவை.</string>
+    <string name="settings_playback_subtitle_auto_sync_description">தேர்ந்தெடுத்த துணைநிரல் வசன வரியை வீடியோவில் உட்பொதிந்த வசன வரிகளின் நேரத்துடன் பொருத்தவும்.</string>
     <string name="settings_playback_auto_sync_mode_aggressive">தானியங்கி ஒத்திசைவு தேடல்: முழுமையானது</string>
     <string name="settings_playback_auto_sync_mode_aggressive_description">ஒத்திசைப்பதற்கு முன், சிறந்த பொருத்தத்தைக் கண்டறிய பிற வசன வரிகளையும் உட்பொதிக்கப்பட்ட டிராக்குகளையும் தொடர்ந்து ஒப்பிடும். நம்பகமான பொருத்தங்கள் மட்டுமே பயன்படுத்தப்படும்.</string>
     <string name="settings_playback_auto_sync_mode_passive">தானியங்கி ஒத்திசைவு தேடல்: விரைவானது</string>
