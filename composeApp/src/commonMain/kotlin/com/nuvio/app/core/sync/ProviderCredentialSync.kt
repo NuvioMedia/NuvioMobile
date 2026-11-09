@@ -120,6 +120,27 @@ object ProviderCredentialSync {
         }
     }
 
+    suspend fun pushCurrentProfileToRemote(): Boolean = syncMutex.withLock {
+        ensureRepositoriesLoaded()
+        val profileId = ProfileRepository.activeProfileId
+        val credentialScope = currentScope(profileId) ?: return@withLock false
+        try {
+            val snapshot = currentSnapshot(profileId)
+            requireCurrentScope(credentialScope)
+            pushSnapshot(snapshot)
+            synchronized(stateLock) {
+                observedSnapshots[profileId] = snapshot
+                baselineSnapshots[credentialScope] = snapshot
+            }
+            true
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            log.e(error) { "Failed to flush provider credentials for profile $profileId" }
+            false
+        }
+    }
+
     private suspend fun pushSnapshot(snapshot: ProviderCredentialSnapshot) {
         SupabaseProvider.client.postgrest.rpc(
             function = "sync_push_provider_credentials",
