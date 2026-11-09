@@ -1776,6 +1776,7 @@
     <string name="auth_account_deletion_failed">Account deletion failed</string>
     <string name="auth_sign_in_failed">Sign-in failed</string>
     <string name="auth_sign_out_failed">Sign-out failed</string>
+    <string name="auth_notice_signed_out">You have been signed out of Nuvio. Please sign in again.</string>
     <string name="auth_sign_up_failed">Sign-up failed</string>
     <string name="catalog_load_failed">Unable to load catalog items.</string>
     <string name="continue_watching_up_next">Next Up</string>
