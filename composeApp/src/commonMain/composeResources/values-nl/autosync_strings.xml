@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Ondertitels automatisch synchroniseren</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Stem de timing van de gekozen ondertitels uit de add-on af op die van de ondertitels in de video.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Automatische synchronisatie: grondig zoeken</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Vergelijk langer met andere ondertitels en ingebouwde sporen om een betere overeenkomst te vinden. Synchroniseer alleen bij een betrouwbare overeenkomst.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Automatische synchronisatie: snel zoeken</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Gebruik sneller de eerste goede overeenkomst. Net als bij grondig zoeken wordt alleen gesynchroniseerd bij een betrouwbare overeenkomst.</string>
+    <string name="settings_playback_auto_sync_tolerance">Marge voor automatische synchronisatie: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Behoud de oorspronkelijke timing als de verschuiving binnen deze marge valt. Tik om de marge te wijzigen.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Uit</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>
