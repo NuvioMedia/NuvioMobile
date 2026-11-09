@@ -49,6 +49,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.graphics.graphicsLayer
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.focusedAlignment
+import com.nuvio.app.core.ui.rememberBackdropFocusState
+import com.nuvio.app.core.ui.revealAlpha
 import com.nuvio.app.core.ui.featherArtwork
 import com.nuvio.app.core.ui.heroStretchHeight
 import com.nuvio.app.core.ui.heroStretchZoom
@@ -122,6 +125,7 @@ fun DetailHero(
                 ) {
                     val imageUrl = meta.background ?: meta.poster
                     if (imageUrl != null) {
+                        val backdropFocus = rememberBackdropFocusState(imageUrl)
                         AsyncImage(
                             model = imageUrl,
                             contentDescription = meta.name,
@@ -131,18 +135,23 @@ fun DetailHero(
                                 .height(heroHeight)
                                 .heroStretchZoom(stretchPx)
                                 .graphicsLayer {
+                                    alpha = backdropFocus.revealAlpha
                                     translationY = scrollOffset() * 0.5f
                                     scaleX = 1.08f
                                     scaleY = 1.08f
                                 },
-                            alignment = if (isTablet) Alignment.TopCenter else Alignment.Center,
+                            alignment = backdropFocus.focusedAlignment(
+                                if (isTablet) Alignment.TopCenter else Alignment.Center,
+                            ),
                             contentScale = ContentScale.Crop,
                             onSuccess = { state ->
+                                backdropFocus.onImageLoaded(state.result.image)
                                 onBackdropLoaded(
                                     state.painter,
                                     loadedBackdropImageBitmap(state.result),
                                 )
                             },
+                            onError = { backdropFocus.onImageFailed() },
                         )
                     } else {
                         Box(
