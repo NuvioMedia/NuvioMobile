@@ -28,6 +28,7 @@ class MdbListEpisodeMappingTest {
         assertEquals(EpisodeMappingEntry(1, 35), mapping.toTmdb(9, 9, videoId = "tt1:2:11"))
         assertEquals(EpisodeMappingEntry(1, 24), mapping.toTmdb(1, 24))
         assertSame(mapping, service.cached("tt1"))
+        assertSame(mapping, service.remapped.value["tt1"])
     }
 
     @Test
@@ -47,6 +48,7 @@ class MdbListEpisodeMappingTest {
         val reference = episodeReference(2, 1)
         assertSame(reference, service.toMdbListNumbering(reference, MdbListProgressProjection.Empty))
         assertFalse(assertNotNull(service.cached("tt1")).remaps)
+        assertTrue(service.remapped.value.isEmpty())
         assertTrue(tmdb.seasonRequests.isEmpty())
     }
 
@@ -75,6 +77,27 @@ class MdbListEpisodeMappingTest {
         assertFalse(watchedItemKey("series", "tt1", 1, 35) in keys)
         val seed = progress.snapshot().entries.single()
         assertEquals(2 to 11, seed.seasonNumber to seed.episodeNumber)
+    }
+
+    @Test
+    fun `remapped lists are built once per mapping change`() = runTest {
+        val h = MdbListSyncTestHarness(backgroundScope)
+        h.seed(h.snapshot().copy(watched = listOf(mdbListTestEpisode(1, 35))))
+        h.repository.ensureLoaded()
+        val mappings = mdbListTestEpisodeMappings(backgroundScope, addonSeasons = listOf(24, 23), tmdbSeasons = listOf(47))
+        val progress = progressProvider(h, mappings)
+        val watched = MdbListWatchedSyncAdapter(h.repository, MdbListHistoryService(h.http.api, h.repository), mappings, h.http.store, h.activeProfile)
+        val entriesBefore = progress.snapshot().entries
+        assertSame(entriesBefore, progress.snapshot().entries)
+        assertSame(watched.pullExtraWatchedKeys(1), watched.pullExtraWatchedKeys(1))
+
+        progress.refreshEpisodeProgress("tt1", forceRefresh = false)
+
+        val entriesAfter = progress.snapshot().entries
+        assertEquals(2 to 11, entriesAfter.single().let { it.seasonNumber to it.episodeNumber })
+        assertSame(entriesAfter, progress.snapshot().entries)
+        assertSame(watched.pull(1, 100), watched.pull(1, 100))
+        assertSame(watched.pullExtraWatchedKeys(1), watched.pullExtraWatchedKeys(1))
     }
 
     @Test

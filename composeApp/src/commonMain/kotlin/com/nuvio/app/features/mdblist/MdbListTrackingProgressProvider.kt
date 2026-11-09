@@ -18,8 +18,9 @@ class MdbListTrackingProgressProvider(
     private val ensureAccountLoaded: () -> Unit,
 ) : TrackingProgressProvider {
     override val providerId = TrackingProviderId.MDBLIST
-    override val changes = combine(sync.state, auth.state, activeProfile, episodeMappings.resolved) { _, _, _, _ -> Unit }
+    override val changes = combine(sync.state, auth.state, activeProfile, episodeMappings.remapped) { _, _, _, _ -> Unit }
     override val ownsCompletedHistoryProjection = true
+    private val snapshotEntries = MdbListRemapCache<List<WatchProgressEntry>>()
     override fun showIdSiblings() = sync.currentProjection().showIdSiblings
 
     override fun ensureLoaded() = ensureAccountLoaded()
@@ -40,9 +41,12 @@ class MdbListTrackingProgressProvider(
             projection.progress.filter { it.seasonNumber != null }.map(WatchProgressEntry::parentMetaId),
             projection,
         )
+        val mappings = episodeMappings.remapped.value
         return TrackingProgressSnapshot(
-            entries = (projection.progress + projection.nextUpSeeds).map { entry ->
-                episodeMappings.cached(entry.parentMetaId)?.let(entry::inAddonNumbering) ?: entry
+            entries = snapshotEntries.get(projection, mappings) {
+                (projection.progress + projection.nextUpSeeds).map { entry ->
+                    mappings[entry.parentMetaId]?.let(entry::inAddonNumbering) ?: entry
+                }
             },
             hiddenContentIds = projection.hiddenContentIds,
             hasLoadedRemoteProgress = state?.hasLoaded == true,

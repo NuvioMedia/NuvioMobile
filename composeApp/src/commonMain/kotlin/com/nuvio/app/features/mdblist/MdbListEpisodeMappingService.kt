@@ -47,12 +47,12 @@ class MdbListEpisodeMappingService internal constructor(
 ) {
     private val log = Logger.withTag("MdbListEpMap")
     private val mutableResolved = MutableStateFlow<Map<String, MdbListEpisodeMapping>>(emptyMap())
+    private val mutableRemapped = MutableStateFlow<Map<String, MdbListEpisodeMapping>>(emptyMap())
     private val prefetched = MutableStateFlow<Set<String>>(emptySet())
     private val inFlightMutex = Mutex()
     private val inFlight = mutableMapOf<String, CompletableDeferred<MdbListEpisodeMapping?>>()
 
-    /** Every resolved mapping, keyed by the show's content ids. */
-    internal val resolved: StateFlow<Map<String, MdbListEpisodeMapping>> = mutableResolved.asStateFlow()
+    internal val remapped: StateFlow<Map<String, MdbListEpisodeMapping>> = mutableRemapped.asStateFlow()
 
     /** The mapping for [contentId] when it was already resolved, without touching the network. */
     internal fun cached(contentId: String): MdbListEpisodeMapping? = mutableResolved.value[contentId.trim()]
@@ -125,13 +125,16 @@ class MdbListEpisodeMappingService internal constructor(
     ): MdbListEpisodeMapping {
         val ids = projection.showIdSiblings[contentId].orEmpty() + contentId
         if (ids.any { mutableResolved.value[it] !== mapping }) {
-            mutableResolved.update { current -> current + ids.associateWith { mapping } }
+            val added = ids.associateWith { mapping }
+            mutableResolved.update { current -> current + added }
+            if (mapping.remaps) mutableRemapped.update { current -> current + added }
         }
         return mapping
     }
 
     internal fun clear() {
         mutableResolved.value = emptyMap()
+        mutableRemapped.value = emptyMap()
         prefetched.value = emptySet()
     }
 

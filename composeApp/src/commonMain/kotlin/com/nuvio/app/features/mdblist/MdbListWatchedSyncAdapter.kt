@@ -20,7 +20,9 @@ class MdbListWatchedSyncAdapter(
     private val activeProfile: StateFlow<Int>,
 ) : TrackingWatchedProvider {
     override val providerId = TrackingProviderId.MDBLIST
-    private val changes = combine(sync.state, auth.state, activeProfile, episodeMappings.resolved) { _, _, _, _ -> Unit }
+    private val watchedItems = MdbListRemapCache<List<WatchedItem>>()
+    private val watchedKeys = MdbListRemapCache<Set<String>>()
+    private val changes = combine(sync.state, auth.state, activeProfile, episodeMappings.remapped) { _, _, _, _ -> Unit }
 
     // Episodes of shows with a known mapping are listed in the addon's numbering. A newly resolved
     // mapping changes the extra keys, which makes the watched repository pull the items again.
@@ -30,17 +32,27 @@ class MdbListWatchedSyncAdapter(
         if (sync.currentScope() != scope) throw CancellationException("MDBList account changed")
         val state = sync.state.value
         if (!state.hasLoaded && state.error != null) throw MdbListApiException(code = "sync_unavailable")
-        return sync.currentProjection().watchedItems(episodeMappings::cached)
+        val projection = sync.currentProjection()
+        val mappings = episodeMappings.remapped.value
+        if (mappings.isEmpty()) return projection.watchedItems
+        return watchedItems.get(projection, mappings) { projection.watchedItems(mappings::get) }
     }
 
     override suspend fun pullExtraWatchedKeys(profileId: Int): Set<String> {
         scope(profileId)
-        return sync.currentProjection().watchedKeys(episodeMappings::cached)
+        return currentWatchedKeys()
     }
 
     override fun observeExtraWatchedKeys(profileId: Int) = combine(changes, activeProfile) { _, active ->
-        if (profileId == active) sync.currentProjection().watchedKeys(episodeMappings::cached) else emptySet()
+        if (profileId == active) currentWatchedKeys() else emptySet()
     }.distinctUntilChanged()
+
+    private fun currentWatchedKeys(): Set<String> {
+        val projection = sync.currentProjection()
+        val mappings = episodeMappings.remapped.value
+        if (mappings.isEmpty()) return projection.watchedKeys
+        return watchedKeys.get(projection, mappings) { projection.watchedKeys(mappings::get) }
+    }
 
     override suspend fun push(profileId: Int, items: Collection<WatchedItem>) {
         val scope = scope(profileId)
