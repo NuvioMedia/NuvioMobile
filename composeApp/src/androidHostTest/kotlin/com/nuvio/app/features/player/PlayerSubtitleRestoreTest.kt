@@ -230,7 +230,11 @@ class PlayerSubtitleRestoreTest {
         ),
     ).apply {
         scope = this@PlayerSubtitleRestoreTest.scope
-        playerSettingsUiState = PlayerSettingsUiState(preferredSubtitleLanguage = "en")
+        // No audio tracks here, so forced subtitles would hold back the automatic pick.
+        playerSettingsUiState = PlayerSettingsUiState(
+            preferredSubtitleLanguage = "en",
+            subtitleStyle = SubtitleStyleState(useForcedSubtitles = false),
+        )
         addonSubtitles = listOf(episodeOneSubtitle)
         playerController = RecordingController()
         resetIdentityStateIfNeeded()

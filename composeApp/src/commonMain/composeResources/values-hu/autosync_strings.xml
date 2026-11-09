@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_playback_subtitle_auto_sync">Felirat automatikus szinkronizálása</string>
-    <string name="settings_playback_subtitle_auto_sync_description">Az elsődleges kiegészítõ-felirat automatikus szinkronizálása a lejátszás indításakor. Elsődleges feliratnyelv beállítása szükséges hozzá.</string>
+    <string name="settings_playback_subtitle_auto_sync_description">A bővítményből kiválasztott feliratot a videó beágyazott feliratához időzíti.</string>
     <string name="settings_playback_auto_sync_mode_aggressive">Auto szinkron keresés: Alapos</string>
     <string name="settings_playback_auto_sync_mode_aggressive_description">Szinkronizálás előtt további feliratokat és beágyazott sávokat vet össze, hogy pontosabb egyezést találjon. A rendszer csak akkor alkalmazza az eredményt, ha az egyezés megbízhatónak tekinthető.</string>
     <string name="settings_playback_auto_sync_mode_passive">Auto szinkron keresés: Gyors</string>

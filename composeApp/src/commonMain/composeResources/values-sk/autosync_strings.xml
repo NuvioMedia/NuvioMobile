@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_playback_subtitle_auto_sync">Automaticky synchronizovať titulky</string>
-    <string name="settings_playback_subtitle_auto_sync_description">Pri spustení prehrávania automaticky synchronizovať preferované titulky z doplnku. Vyžaduje nastavený preferovaný jazyk titulkov.</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Prispôsobiť časovanie vybraných titulkov z doplnku podľa titulkov vložených vo videu.</string>
     <string name="settings_playback_auto_sync_mode_aggressive">Hľadanie pre auto. synchronizáciu: Dôkladné</string>
     <string name="settings_playback_auto_sync_mode_aggressive_description">Pred synchronizáciou pokračovať v porovnávaní ostatných titulkov a vložených stôp pre presnejšiu zhodu. Použijú sa iba dostatočne spoľahlivé zhody.</string>
     <string name="settings_playback_auto_sync_mode_passive">Hľadanie pre auto. synchronizáciu: Rýchle</string>
