@@ -1776,6 +1776,7 @@
     <string name="auth_account_deletion_failed">Xóa tài khoản thất bại</string>
     <string name="auth_sign_in_failed">Đăng nhập thất bại</string>
     <string name="auth_sign_out_failed">Đăng xuất thất bại</string>
+    <string name="auth_notice_signed_out">Bạn đã đăng xuất khỏi Nuvio. Vui lòng đăng nhập lại.</string>
     <string name="auth_sign_up_failed">Đăng ký thất bại</string>
     <string name="catalog_load_failed">Không thể tải các mục danh mục.</string>
     <string name="continue_watching_up_next">Tiếp theo</string>
