@@ -363,6 +363,8 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
             return@LaunchedEffect
         }
         if (trackPreferenceRestoreApplied && preferredAudioSelectionApplied && preferredSubtitleSelectionApplied) {
+            // Addon subtitles usually arrive after the first selection pass; one of them may rank higher.
+            if (addonSubtitles.isNotEmpty() && !isLoadingAddonSubtitles) refreshTracks()
             return@LaunchedEffect
         }
 
