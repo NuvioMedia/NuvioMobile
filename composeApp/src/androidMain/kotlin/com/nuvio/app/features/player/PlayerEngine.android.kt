@@ -367,7 +367,8 @@ private fun ExoPlayerSurface(
                 loopback = loopbackSource,
             )
         ) {
-            upstream
+            // upstream ends in a DefaultDataSource, which opens the data: init segment this may add.
+            if (mimeType == MimeTypes.APPLICATION_M3U8) HlsParameterSetInitDataSource.Factory(upstream) else upstream
         } else {
             VodCache.wrap(
                 context = context,
