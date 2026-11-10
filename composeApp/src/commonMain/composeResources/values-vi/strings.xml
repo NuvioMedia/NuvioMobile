@@ -1803,6 +1803,11 @@
     <string name="notifications_test_send_failed">Không thể gửi thông báo kiểm tra</string>
     <string name="notifications_test_sent_for">Đã gửi thông báo kiểm tra cho %1$s</string>
     <string name="player_unable_to_play_stream">Không thể phát luồng này</string>
+    <string name="player_error_stream_expired">Liên kết luồng đã hết hạn. Vui lòng thử một nguồn khác.</string>
+    <string name="player_error_stream_removed">Liên kết luồng đã hết hạn hoặc bị xóa. Vui lòng thử một nguồn khác.</string>
+    <string name="player_error_stream_rate_limited">Quá nhiều yêu cầu đến nguồn phát. Vui lòng thử lại sau.</string>
+    <string name="player_error_stream_unavailable">Máy chủ nguồn phát không khả dụng. Vui lòng thử một nguồn khác</string>
+    <string name="player_error_stream_blocked">Nguồn phát bị chặn hoặc bị hạn chế. Vui lòng thử một nguồn khác.</string>
     <string name="player_engine_unavailable_rebuild">Lõi trình phát MPV không có sẵn. Vui lòng biên dịch lại ứng dụng</string>
     <string name="profile_pin_changed_requires_refresh">Mã PIN hồ sơ này đã thay đổi. Vui lòng kết nối Internet để cập nhật mã PIN mới nhất trên thiết bị này</string>
     <string name="profile_pin_clear_failed">Không thể xóa mã PIN. Vui lòng thử lại</string>

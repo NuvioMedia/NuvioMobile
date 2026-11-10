@@ -1417,7 +1417,7 @@ private fun LibmpvPlayerSurface(
                 }
             }
         }
-        val recentErrorLogs = ArrayDeque<String>()
+        val errorLog = MpvErrorLog()
         val observer = object : MPV.EventObserver {
             override fun eventProperty(property: String) {
                 if (property == "sub-text" || property == "sid") view.updateStyledSubtitle()
@@ -1462,7 +1462,7 @@ private fun LibmpvPlayerSurface(
             override fun event(eventId: Int, data: MPVNode) {
                 when (eventId) {
                     MPV.mpvEvent.MPV_EVENT_START_FILE -> {
-                        synchronized(recentErrorLogs) { recentErrorLogs.clear() }
+                        errorLog.clear()
                         Log.i(
                             PLAYER_DIAGNOSTIC_TAG,
                             "mpv_event=START_FILE attempt=${playbackDiagnostics.attempt} " +
@@ -1516,12 +1516,13 @@ private fun LibmpvPlayerSurface(
                                     "mpv_error attempt=${playbackDiagnostics.attempt} " +
                                         "fileError=${diagnosticPlayerMessage(fileError)}",
                                 )
-                                val details = synchronized(recentErrorLogs) { recentErrorLogs.toList() } +
-                                    listOfNotNull(fileError?.trim()?.takeIf { it.isNotEmpty() })
+                                val explanation = errorLog.httpStatus()
+                                    ?.let(::httpStatusExplanation)
+                                    ?.let { getString(it) }
                                 latestOnError.value(
-                                    details.distinct().joinToString("\n").ifEmpty {
-                                        getString(Res.string.player_unable_to_play_stream)
-                                    },
+                                    listOfNotNull(explanation, errorLog.message(fileError))
+                                        .joinToString("\n\n")
+                                        .ifEmpty { getString(Res.string.player_unable_to_play_stream) },
                                 )
                             }
                         }
@@ -1536,13 +1537,7 @@ private fun LibmpvPlayerSurface(
                     "mpv_log level=$level prefix=${diagnosticPlayerMessage(prefix)} " +
                         "message=${diagnosticPlayerMessage(text)}",
                 )
-                val line = text.trim()
-                if (level <= MPV_LOG_LEVEL_ERROR && line.isNotEmpty() && "://" !in line) {
-                    synchronized(recentErrorLogs) {
-                        recentErrorLogs.addLast("[$prefix] ${line.take(160)}")
-                        while (recentErrorLogs.size > 3) recentErrorLogs.removeFirst()
-                    }
-                }
+                errorLog.onLog(prefix, isError = level <= MPV_LOG_LEVEL_ERROR, text = text)
             }
         }
         view.mpv.addObserver(observer)
@@ -1726,6 +1721,8 @@ private class NuvioLibmpvView(
             mpv.setOptionString("vf", "format=yuv420p")
         }
         mpv.setOptionString("msg-level", "all=warn")
+        // Android has no youtube-dl, so mpv's fallback to it can only fail and bury the real error.
+        mpv.setOptionString("ytdl", "no").logIfMpvError("ytdl")
         mpv.setOptionString("tls-verify", "yes")
         mpv.setOptionString("tls-ca-file", "${context.filesDir.path}/cacert.pem")
         mpv.setOptionString("demuxer-max-bytes", "${libmpvCacheBytes()}").logIfMpvError("demuxer-max-bytes")

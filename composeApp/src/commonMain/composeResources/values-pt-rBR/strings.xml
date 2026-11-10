@@ -1801,6 +1801,11 @@
     <string name="notifications_test_send_failed">Falha ao enviar notificação de teste.</string>
     <string name="notifications_test_sent_for">Notificação de teste enviada para %1$s.</string>
     <string name="player_unable_to_play_stream">Não foi possível reproduzir esta stream.</string>
+    <string name="player_error_stream_expired">O link expirou. Tente outra fonte.</string>
+    <string name="player_error_stream_removed">O link expirou ou foi removido. Tente outra fonte.</string>
+    <string name="player_error_stream_rate_limited">Muitos acessos simultâneos a esta fonte. Aguarde um instante e tente novamente.</string>
+    <string name="player_error_stream_unavailable">Servidor indisponível. Tente outra fonte.</string>
+    <string name="player_error_stream_blocked">A fonte de vídeo está bloqueada ou restrita. Tente outra opção.</string>
     <string name="player_engine_unavailable_rebuild">O mecanismo do player MPV não está disponível. Recompile o app.</string>
     <string name="profile_pin_changed_requires_refresh">O PIN deste perfil mudou. Conecte-se uma vez para atualizar o bloqueio neste dispositivo.</string>
     <string name="profile_pin_clear_failed">Não foi possível remover o bloqueio por PIN. Tente novamente.</string>
