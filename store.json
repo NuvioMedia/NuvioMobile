@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "0.6.11",
+          "buildVersion": "154",
+          "date": "2026-11-10T01:28:12Z",
+          "localizedDescription": "- 9c2d0902 fix(mdblist): reuse progress and watched lists until a remap changes them @tapframe  \r\n- daa966d3 fix(auth): stay signed in when session refresh fails @tapframe  \r\n- [fix(player): center opening overlay backdrop on tall screens (#2585)](https://github.com/NuvioMedia/NuvioMobile/pull/2585) @yvngjoon  \r\n- f004557c fix(player): show mpv error details on the error screen @tapframe  \r\n- [fix(autosync): allow AutoSync without a preferred language, enable forced subs and AutoSync by default (#2578)](https://github.com/NuvioMedia/NuvioMobile/pull/2578) @skoruppa  \r\n- [feat(hero): smart horizontal framing for cropped backdrops (#2538)](https://github.com/NuvioMedia/NuvioMobile/pull/2538) @skoruppa  \r\n- [Add and update Bulgarian strings in strings.xml (#2576)](https://github.com/NuvioMedia/NuvioMobile/pull/2576) @viiktr  \r\n- [i18n: harmonize French wording with Nuvio TV (#2575)](https://github.com/NuvioMedia/NuvioMobile/pull/2575) @SK-Gits  \r\n- [fix(autosync): search further when a restored subtitle does not fit (#2537)](https://github.com/NuvioMedia/NuvioMobile/pull/2537) @skoruppa  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.11-beta/nuvio-0.6.11-full-release.ipa",
+          "size": 69784598,
+          "sha256": "0e59c501c8d7161a3123d9527a6f2c8c520195b46ef90881827665b95b769a24",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.6.10",
           "buildVersion": "153",
           "date": "2026-11-08T08:36:48Z",
