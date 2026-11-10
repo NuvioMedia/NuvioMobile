@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import androidx.media3.common.MimeTypes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -133,4 +134,19 @@ internal object MatroskaChapterLoader {
         if (offset == 0) return null
         return if (offset == length) buffer else buffer.copyOf(offset)
     }
+}
+
+/**
+ * Whether ExoPlayer should read the file's chapters: for the chapter UI or for skip intro, and only
+ * for Matroska/WebM (or before the container is known), as in NuvioTV.
+ */
+internal fun shouldReadExoChapters(
+    chaptersEnabled: Boolean,
+    skipIntroEnabled: Boolean,
+    containerMimeType: String?,
+): Boolean {
+    if (!chaptersEnabled && !skipIntroEnabled) return false
+    return containerMimeType == null ||
+        containerMimeType == MimeTypes.VIDEO_MATROSKA ||
+        containerMimeType == MimeTypes.VIDEO_WEBM
 }

@@ -990,9 +990,17 @@ private fun ExoPlayerSurface(
                     exoPlayer.play()
                 }
 
-                // Media3's Matroska extractor skips chapters; read them from the file, if allowed.
+                // Media3's Matroska extractor skips chapters, so they are read from the file, as in
+                // NuvioTV: when the chapter UI or skip intro needs them, and only for Matroska/WebM,
+                // which spares MP4 and HLS the extra request.
                 override suspend fun getChapters(): List<PlayerChapter> {
-                    if (!PlayerSettingsRepository.uiState.value.androidExoChaptersEnabled) return emptyList()
+                    val settings = PlayerSettingsRepository.uiState.value
+                    val read = shouldReadExoChapters(
+                        chaptersEnabled = settings.androidExoChaptersEnabled,
+                        skipIntroEnabled = settings.skipIntroEnabled,
+                        containerMimeType = exoPlayer.videoFormat?.containerMimeType,
+                    )
+                    if (!read) return emptyList()
                     return MatroskaChapterLoader.load(latestChapterSourceUrl.value, latestChapterSourceHeaders.value)
                 }
 
