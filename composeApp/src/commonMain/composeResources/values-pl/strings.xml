@@ -1973,7 +1973,7 @@
     <string name="settings_playback_external_player_send_skip_segments">Wysyłaj znaczniki intro i outro</string>
     <string name="settings_playback_external_player_send_skip_segments_description">Przekaż rozwiązane znaczniki pomijania intro i outro do zewnętrznego odtwarzacza w celu automatycznego pomijania. Działa tylko w odtwarzaczach, które to obsługują; inne odtwarzacze to ignorują.</string>
     <string name="settings_playback_engine">Silnik odtwarzania</string>
-    <string name="settings_playback_engine_auto_description">Użyj najpierw ExoPlayera i przejdź na libmpv, jeśli odtwarzanie się nie powiedzie.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer dla filmów i seriali · MPV dla anime</string>
     <string name="settings_playback_engine_exoplayer_description">Użyj ExoPlayera i dekoderów Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Użyj libmpv do odtwarzania na Androidzie.</string>
     <string name="settings_playback_libmpv_video_output">Renderer libmpv</string>

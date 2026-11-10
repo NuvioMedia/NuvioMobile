@@ -1103,7 +1103,7 @@
     <string name="settings_playback_secondary_subtitle_language">Secundaire voorkeurstaal</string>
     <string name="settings_playback_section_decoder">DECODER</string>
     <string name="settings_playback_engine">Afspeelengine</string>
-    <string name="settings_playback_engine_auto_description">Gebruik eerst ExoPlayer en val terug op libmpv als het afspelen mislukt.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer voor films en series · MPV voor anime</string>
     <string name="settings_playback_engine_exoplayer_description">Gebruik ExoPlayer en Android Media3-decoders.</string>
     <string name="settings_playback_engine_libmpv_description">Gebruik libmpv voor Android-weergave.</string>
     <string name="settings_playback_libmpv_video_output">Libmpv-renderer</string>

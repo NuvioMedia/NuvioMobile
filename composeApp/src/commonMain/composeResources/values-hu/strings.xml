@@ -1479,7 +1479,7 @@
     <string name="settings_playback_reuse_binge_group">Sorozatnézési csoport újrafelhasználása</string>
     <string name="settings_playback_reuse_binge_group_description">Megjegyzi és újra felhasználja az utolsó sorozatnézési csoportot a munkamenetek között (Nézés folytatása, Részletek stb.).</string>
     <string name="settings_playback_engine">Lejátszómotor</string>
-    <string name="settings_playback_engine_auto_description">Elsőként az ExoPlayer-t használja, majd ha a lejátszás meghiúsul, visszavált a libmpv-re.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer filmekhez és sorozatokhoz · MPV animékhez</string>
     <string name="settings_playback_engine_exoplayer_description">Az ExoPlayer és az Android Media3 dekóderek használata.</string>
     <string name="settings_playback_engine_libmpv_description">A libmpv használata az Androidos lejátszáshoz.</string>
     <string name="settings_playback_libmpv_video_output">libmpv megjelenítő</string>

@@ -1172,7 +1172,7 @@
     <string name="settings_playback_secondary_subtitle_language">Ngôn ngữ ưu tiên thứ hai</string>
     <string name="settings_playback_section_decoder">BỘ GIẢI MÃ</string>
     <string name="settings_playback_engine">Lõi trình phát</string>
-    <string name="settings_playback_engine_auto_description">Dùng ExoPlayer trước và chuyển sang libmpv nếu phát lại thất bại</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer cho Phim &amp; Chương trình TV · MPV cho Anime</string>
     <string name="settings_playback_engine_exoplayer_description">Dùng ExoPlayer với bộ giải mã Android Media3</string>
     <string name="settings_playback_engine_libmpv_description">Dùng libmpv để phát lại trên Android</string>
     <string name="settings_playback_auto_switch_engine_on_error">Tự động chuyển lõi trình phát khi phát lại lỗi</string>

@@ -1172,7 +1172,7 @@
     <string name="settings_playback_secondary_subtitle_language">第2優先言語</string>
     <string name="settings_playback_section_decoder">デコーダー</string>
     <string name="settings_playback_engine">再生エンジン</string>
-    <string name="settings_playback_engine_auto_description">ExoPlayerを優先し、再生に失敗した場合はlibmpvにフォールバックします。</string>
+    <string name="settings_playback_engine_auto_description">映画やドラマにはExoPlayer・アニメにはMPV</string>
     <string name="settings_playback_engine_exoplayer_description">ExoPlayerとAndroid Media3デコーダーを使用します。</string>
     <string name="settings_playback_engine_libmpv_description">Android再生にlibmpvを使用します。</string>
     <string name="settings_playback_auto_switch_engine_on_error">再生エラー時にエンジンを自動切り替え</string>

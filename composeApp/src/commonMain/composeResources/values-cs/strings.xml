@@ -920,7 +920,7 @@
     <string name="settings_playback_secondary_subtitle_language">Sekundární preferovaný jazyk</string>
     <string name="settings_playback_section_decoder">DEKODÉR</string>
     <string name="settings_playback_engine">Modul přehrávání</string>
-    <string name="settings_playback_engine_auto_description">Použije nejprve ExoPlayer a při selhání přehrávání přejde k libmpv.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer pro filmy a seriály · MPV pro anime</string>
     <string name="settings_playback_engine_exoplayer_description">Použije ExoPlayer a dekodéry Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Použije libmpv pro přehrávání v systému Android.</string>
     <string name="settings_playback_libmpv_video_output">Renderer pro libmpv</string>

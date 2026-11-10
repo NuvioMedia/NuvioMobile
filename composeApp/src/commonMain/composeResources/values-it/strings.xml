@@ -1598,7 +1598,7 @@
   <string name="settings_playback_option_original">Lingua originale</string>
   <string name="settings_playback_option_original_hint">Richiede che l’arricchimento TMDB sia abilitato</string>
   <string name="settings_playback_engine">Motore di riproduzione</string>
-  <string name="settings_playback_engine_auto_description">Usa prima ExoPlayer e passa a libmpv se la riproduzione non riesce.</string>
+  <string name="settings_playback_engine_auto_description">ExoPlayer per Film e Serie TV · MPV per gli Anime</string>
   <string name="settings_playback_engine_exoplayer_description">Usa ExoPlayer e i decoder Android Media3.</string>
   <string name="settings_playback_engine_libmpv_description">Usa libmpv per la riproduzione su Android.</string>
   <string name="settings_playback_libmpv_video_output">Renderer libmpv</string>

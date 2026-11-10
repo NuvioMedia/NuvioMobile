@@ -1903,7 +1903,7 @@
     <string name="settings_playback_option_original">Pôvodný jazyk</string>
     <string name="settings_playback_option_original_hint">Vyžaduje zapnuté obohacovanie TMDB</string>
     <string name="settings_playback_engine">Prehrávací engine</string>
-    <string name="settings_playback_engine_auto_description">Najprv použiť ExoPlayer a pri zlyhaní prehrávania prejsť na libmpv.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer pre filmy a seriály · MPV pre anime</string>
     <string name="settings_playback_engine_exoplayer_description">Použiť ExoPlayer a dekodéry Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Použiť libmpv na prehrávanie v Androide.</string>
     <string name="settings_playback_libmpv_video_output">Renderer libmpv</string>
