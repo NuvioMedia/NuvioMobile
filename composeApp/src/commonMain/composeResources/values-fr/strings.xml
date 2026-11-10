@@ -1269,7 +1269,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d Mo</string>
     <string name="settings_playback_vod_cache_warning">Les écritures sur le disque se poursuivent pendant la lecture d’un flux mis en cache. Une nouvelle taille s’applique au prochain démarrage de l’application.</string>
     <string name="settings_playback_exo_chapters">Afficher les chapitres</string>
-    <string name="settings_playback_exo_chapters_description">Lire les chapitres des fichiers MKV pour les repérer sur la barre de progression et les lister dans le lecteur. Effectue quelques petites requêtes supplémentaires une fois la lecture démarrée. libmpv affiche toujours les chapitres</string>
+    <string name="settings_playback_exo_chapters_description">Lire les chapitres des fichiers MKV pour les repérer sur la barre de progression et les lister dans le lecteur. Effectue quelques petites requêtes supplémentaires une fois la lecture démarrée.</string>
     <string name="settings_playback_remember_audio_delay">Mémoriser le délai audio par appareil</string>
     <string name="settings_playback_remember_audio_delay_description">Rétablir le délai audio réglé dans le lecteur chaque fois que la même sortie est de nouveau utilisée, comme le haut-parleur du téléphone, un casque filaire ou chaque appareil Bluetooth</string>
     <string name="settings_playback_downmix_section">Downmix</string>

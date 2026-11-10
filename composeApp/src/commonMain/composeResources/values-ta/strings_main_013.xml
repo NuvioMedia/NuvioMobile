@@ -67,7 +67,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Cache செய்யப்பட்ட ஸ்ட்ரீம் இயங்கும்போதும் வட்டில் எழுதப்படும். புதிய அளவு அடுத்த முறை பயன்பாடு தொடங்கும்போது அமலாகும்.</string>
     <string name="settings_playback_exo_chapters">அத்தியாயங்களைக் காட்டு</string>
-    <string name="settings_playback_exo_chapters_description">MKV கோப்புகளின் அத்தியாயங்களைப் படித்து முன்னேற்றப் பட்டியில் குறிக்கவும், பிளேயரில் பட்டியலிடவும். பிளேபேக் தொடங்கியதும் சில சிறிய கூடுதல் கோரிக்கைகள் அனுப்பப்படும். libmpv எப்போதும் அத்தியாயங்களைக் காட்டும்</string>
+    <string name="settings_playback_exo_chapters_description">MKV கோப்புகளின் அத்தியாயங்களைப் படித்து முன்னேற்றப் பட்டியில் குறிக்கவும், பிளேயரில் பட்டியலிடவும். பிளேபேக் தொடங்கியதும் சில சிறிய கூடுதல் கோரிக்கைகள் அனுப்பப்படும்.</string>
     <string name="settings_tmdb_api_key_label">API விசை</string>
     <string name="settings_tmdb_api_key_override_description">உங்கள் சொந்த TMDB API விசையைப் பயன்படுத்தவும் அல்லது இயல்புநிலையைப் பயன்படுத்த காலியாக விடவும்.</string>
     <string name="settings_tmdb_personal_api_key">தனிப்பட்ட API விசை</string>

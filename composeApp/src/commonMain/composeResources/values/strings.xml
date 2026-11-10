@@ -1269,7 +1269,9 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Disk writes continue while a cached stream plays. A new size applies the next time the app starts.</string>
     <string name="settings_playback_exo_chapters">Show Chapters</string>
-    <string name="settings_playback_exo_chapters_description">Read the chapters of MKV files to mark them on the progress bar and list them in the player. Makes a few small extra requests once playback starts. libmpv always shows chapters</string>
+    <string name="settings_playback_exo_chapters_description">Read the chapters of MKV files to mark them on the progress bar and list them in the player. Makes a few small extra requests once playback starts.</string>
+    <string name="settings_playback_chapter_title">Show Chapter Title</string>
+    <string name="settings_playback_chapter_title_description">Show the name of the current chapter, such as &quot;Part A&quot;, in the player.</string>
     <string name="settings_playback_remember_audio_delay">Remember Audio Delay per Device</string>
     <string name="settings_playback_remember_audio_delay_description">Restore the audio delay set in the player whenever the same output plays again, such as the phone speaker, wired headphones or each Bluetooth device</string>
     <string name="settings_playback_downmix_section">Downmix</string>

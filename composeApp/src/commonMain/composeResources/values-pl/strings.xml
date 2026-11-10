@@ -2380,7 +2380,9 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Podczas odtwarzania strumienia z pamięci podręcznej dane są nadal zapisywane na dysku. Nowy rozmiar zacznie obowiązywać przy następnym uruchomieniu aplikacji.</string>
     <string name="settings_playback_exo_chapters">Pokazuj rozdziały</string>
-    <string name="settings_playback_exo_chapters_description">Odczytuj rozdziały plików MKV, aby oznaczać je na pasku postępu i wyświetlać w odtwarzaczu. Po rozpoczęciu odtwarzania wysyła kilka małych dodatkowych żądań. libmpv zawsze pokazuje rozdziały</string>
+    <string name="settings_playback_exo_chapters_description">Odczytuj rozdziały plików MKV, aby oznaczać je na pasku postępu i wyświetlać w odtwarzaczu. Po rozpoczęciu odtwarzania wysyła kilka małych dodatkowych żądań.</string>
+    <string name="settings_playback_chapter_title">Pokaż tytuł rozdziału</string>
+    <string name="settings_playback_chapter_title_description">Pokazuj nazwę bieżącego rozdziału, np. „Part A”, w odtwarzaczu.</string>
     <string name="settings_tmdb_api_key_label">Klucz API</string>
     <string name="settings_tmdb_api_key_override_description">Użyj własnego klucza API TMDB lub pozostaw puste, aby użyć domyślnego.</string>
     <string name="settings_tmdb_personal_api_key">Osobisty klucz API</string>

@@ -1263,7 +1263,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Se seguirá escribiendo en el disco mientras se reproduce una transmisión almacenada en caché. El nuevo tamaño se aplicará la próxima vez que se inicie la aplicación.</string>
     <string name="settings_playback_exo_chapters">Mostrar capítulos</string>
-    <string name="settings_playback_exo_chapters_description">Lee los capítulos de los archivos MKV para marcarlos en la barra de progreso y mostrarlos en una lista dentro del reproductor. Hace unas pocas peticiones extra al empezar a reproducir. libmpv siempre muestra los capítulos</string>
+    <string name="settings_playback_exo_chapters_description">Lee los capítulos de los archivos MKV para marcarlos en la barra de progreso y mostrarlos en una lista dentro del reproductor. Hace unas pocas peticiones extra al empezar a reproducir.</string>
     <string name="settings_tmdb_api_key_label">Clave de API</string>
     <string name="settings_tmdb_api_key_override_description">Usa tu propia clave de API de TMDB, o déjala en blanco para usar la predeterminada.</string>
     <string name="settings_tmdb_personal_api_key">Clave de API personal</string>

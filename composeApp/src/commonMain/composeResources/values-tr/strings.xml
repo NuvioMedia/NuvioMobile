@@ -2369,7 +2369,7 @@ Bu özelliği tamamen kendi sorumluluğunuzda kullanırsınız. P2P istediğiniz
     <string name="settings_playback_subtitle_strip_sdh">SDH Altyazılarını Temizle</string>
     <string name="settings_playback_subtitle_strip_sdh_description">Metin altyazılarından ses açıklamalarını ve konuşmacı etiketlerini gizleyin.</string>
     <string name="settings_playback_exo_chapters">Sahneleri Göster</string>
-    <string name="settings_playback_exo_chapters_description">MKV dosyalarının sahnelerini okuyarak ilerleme çubuğunda işaretler ve oynatıcıda listeler. Oynatma başladığında birkaç küçük ek istek yapar. libmpv sahneleri her zaman gösterir.</string>
+    <string name="settings_playback_exo_chapters_description">MKV dosyalarının sahnelerini okuyarak ilerleme çubuğunda işaretler ve oynatıcıda listeler. Oynatma başladığında birkaç küçük ek istek yapar.</string>
     <string name="settings_tmdb_api_key_label">API anahtarı</string>
     <string name="settings_tmdb_api_key_override_description">Kendi TMDB API anahtarınızı kullanın veya varsayılanı kullanmak için boş bırakın.</string>
     <string name="settings_tmdb_personal_api_key">Kişisel API anahtarı</string>
