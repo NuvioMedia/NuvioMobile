@@ -712,7 +712,7 @@ private fun ExoPlayerSurface(
                 latestOnError.value(null)
                 return
             }
-            latestOnError.value(error.localizedMessage ?: runBlocking { getString(Res.string.player_unable_to_play_stream) })
+            latestOnError.value(runBlocking { error.toDisplayMessage() })
         }
 
         val listener = object : Player.Listener {
@@ -1516,13 +1516,26 @@ private fun LibmpvPlayerSurface(
                                     "mpv_error attempt=${playbackDiagnostics.attempt} " +
                                         "fileError=${diagnosticPlayerMessage(fileError)}",
                                 )
-                                val explanation = errorLog.httpStatus()
-                                    ?.let(::httpStatusExplanation)
-                                    ?.let { getString(it) }
+                                val logLine = errorLog.logLine()
+                                val httpCode = mpvHttpStatusCode(logLine)
+                                val codecContext = if (httpCode == null) {
+                                    runCatching { mpvCodecContextLine(view.mpv, logLine.orEmpty()) }.getOrNull()
+                                } else {
+                                    null
+                                }
                                 latestOnError.value(
-                                    listOfNotNull(explanation, errorLog.message(fileError))
-                                        .joinToString("\n\n")
-                                        .ifEmpty { getString(Res.string.player_unable_to_play_stream) },
+                                    mpvErrorMessage(
+                                        fileError = fileError,
+                                        logLine = logLine,
+                                        codecContext = codecContext,
+                                        fallback = getString(Res.string.player_unable_to_play_stream),
+                                        httpExplanation = httpCode?.let { httpStatusExplanationText(it) }.orEmpty(),
+                                        statusExplanation = if (httpCode == null) {
+                                            mpvNonHttpExplanationText(fileError, logLine)
+                                        } else {
+                                            ""
+                                        },
+                                    ),
                                 )
                             }
                         }
@@ -1537,7 +1550,7 @@ private fun LibmpvPlayerSurface(
                     "mpv_log level=$level prefix=${diagnosticPlayerMessage(prefix)} " +
                         "message=${diagnosticPlayerMessage(text)}",
                 )
-                errorLog.onLog(prefix, isError = level <= MPV_LOG_LEVEL_ERROR, text = text)
+                errorLog.onLog(prefix, level, text)
             }
         }
         view.mpv.addObserver(observer)
@@ -3094,8 +3107,6 @@ private fun isLoopbackPlaybackSource(value: String): Boolean = runCatching {
         else -> false
     }
 }.getOrDefault(false)
-
-private const val MPV_LOG_LEVEL_ERROR = 20
 
 private fun diagnosticPlayerMessage(value: String?): String =
     value?.replace('\n', ' ')?.replace('\r', ' ')?.take(160) ?: "none"

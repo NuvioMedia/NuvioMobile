@@ -1274,6 +1274,8 @@
     <string name="player_error_stream_rate_limited">Terlalu banyak permintaan ke sumber stream. Tunggu sebentar dan coba lagi.</string>
     <string name="player_error_stream_unavailable">Server stream saat ini tidak tersedia. Coba sumber lain.</string>
     <string name="player_error_stream_blocked">Sumber stream diblokir atau dibatasi. Coba sumber lain.</string>
+    <string name="player_error_source_invalid_content">Error sumber: Sumber stream menghasilkan konten tidak valid atau tidak dapat diputar. Tautan mungkin telah kedaluwarsa atau server menghasilkan halaman error, bukan video.\n\nCoba sumber lain. [%1$s]</string>
+    <string name="player_error_unsupported_format">Stream ini menggunakan format yang mungkin tidak didukung perangkat Anda. Coba sumber lain. [%1$s]</string>
     <string name="profile_pin_changed_requires_refresh">PIN profil ini berubah. Hubungkan sekali untuk menyegarkan kunci di perangkat ini.</string>
     <string name="profile_pin_clear_failed">Tidak dapat menghapus kunci PIN. Coba lagi.</string>
     <string name="profile_pin_clear_requires_internet">Hubungkan ke internet untuk menghapus kunci PIN.</string>

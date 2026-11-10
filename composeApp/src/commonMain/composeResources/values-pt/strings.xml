@@ -1376,6 +1376,8 @@
     <string name="player_error_stream_rate_limited">Muitos pedidos enviados para a fonte do stream. Aguarda um momento e tenta novamente.</string>
     <string name="player_error_stream_unavailable">O servidor do stream está indisponível de momento. Tenta uma fonte diferente.</string>
     <string name="player_error_stream_blocked">A fonte do stream está bloqueada ou restrita. Tenta uma fonte diferente.</string>
+    <string name="player_error_source_invalid_content">Erro de fonte: A fonte do stream devolveu conteúdo inválido ou não reproduzível. O link pode ter expirado ou o servidor devolveu uma página de erro em vez do vídeo.\n\nTenta uma fonte diferente. [%1$s]</string>
+    <string name="player_error_unsupported_format">Este stream utiliza um formato que o teu dispositivo pode não suportar. Tenta uma fonte diferente. [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">O motor do leitor MPV não está disponível. Recompila a app.</string>
     <string name="profile_pin_changed_requires_refresh">O PIN deste perfil foi alterado. Liga-te à internet uma vez para atualizar o bloqueio neste dispositivo.</string>
     <string name="profile_pin_clear_failed">Não foi possível remover o bloqueio por PIN. Tenta novamente.</string>

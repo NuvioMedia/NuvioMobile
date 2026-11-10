@@ -1090,6 +1090,8 @@
     <string name="player_error_stream_rate_limited">Too many requests to the stream source. Wait a moment and try again.</string>
     <string name="player_error_stream_unavailable">The stream server is currently unavailable. Try a different source.</string>
     <string name="player_error_stream_blocked">The stream source is blocked or restricted. Try a different source.</string>
+    <string name="player_error_source_invalid_content">Source error: The stream source returned invalid or unplayable content. The link may have expired or the server returned an error page instead of video.\n\nTry a different source. [%1$s]</string>
+    <string name="player_error_unsupported_format">This stream uses a format your device may not support. Try a different source. [%1$s]</string>
     <string name="profile_pin_changed_requires_refresh">Diese Profil-PIN wurde geändert. Verbinde dich einmal, um die Sperre auf diesem Gerät zu aktualisieren.</string>
     <string name="profile_pin_clear_failed">PIN-Sperre konnte nicht entfernt werden. Versuche es erneut.</string>
     <string name="profile_pin_clear_requires_internet">Verbinde dich mit dem Internet, um die PIN-Sperre zu entfernen.</string>

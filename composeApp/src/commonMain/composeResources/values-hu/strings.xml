@@ -1206,6 +1206,8 @@
     <string name="player_error_stream_rate_limited">Túl sok kérés a stream forráshoz. Várj egy pillanatot, és próbáld újra.</string>
     <string name="player_error_stream_unavailable">A stream szerver jelenleg nem elérhető. Próbálj meg egy másik forrást.</string>
     <string name="player_error_stream_blocked">A stream forrás blokkolva van vagy korlátozott. Próbálj meg egy másik forrást.</string>
+    <string name="player_error_source_invalid_content">Forráshiba: A stream forrás érvénytelen vagy lejátszhatatlan tartalmat adott vissza. Lehet, hogy a link lejárt, vagy a szerver hibaoldalt adott vissza videó helyett.\n\nPróbálj meg egy másik forrást. [%1$s]</string>
+    <string name="player_error_unsupported_format">Ez a stream olyan formátumot használ, amelyet a készüléked nem biztos, hogy támogat. Próbálj meg egy másik forrást. [%1$s]</string>
     <string name="profile_pin_changed_requires_refresh">A profil PIN-kódja megváltozott. Csatlakozz az internetre a zárolás frissítéséhez ezen az eszközön.</string>
     <string name="profile_pin_clear_failed">Nem sikerült eltávolítani a PIN-kódos zárolást. Próbáld újra.</string>
     <string name="profile_pin_clear_requires_internet">Csatlakozz az internetre a PIN-kódos zárolás eltávolításához.</string>

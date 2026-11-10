@@ -778,4 +778,6 @@
     <string name="player_error_stream_rate_limited">יותר מדי בקשות למקור. כדאי להמתין רגע ולנסות שוב.</string>
     <string name="player_error_stream_unavailable">שרת המקור אינו זמין כרגע. כדאי לנסות מקור אחר.</string>
     <string name="player_error_stream_blocked">המקור חסום או מוגבל. כדאי לנסות מקור אחר.</string>
+    <string name="player_error_source_invalid_content">שגיאת מקור: המקור החזיר תוכן לא תקין או שלא ניתן להפעיל. ייתכן שפג תוקף הקישור, או שהשרת החזיר דף שגיאה במקום וידאו.\n\nכדאי לנסות מקור אחר. [%1$s]</string>
+    <string name="player_error_unsupported_format">המקור הזה משתמש בפורמט שייתכן שהמכשיר אינו תומך בו. כדאי לנסות מקור אחר. [%1$s]</string>
 </resources>

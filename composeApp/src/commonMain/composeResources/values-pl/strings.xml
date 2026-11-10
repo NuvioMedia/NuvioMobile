@@ -1317,6 +1317,8 @@
     <string name="player_error_stream_rate_limited">Zbyt wiele żądań do źródła streamu. Poczekaj chwilę i spróbuj ponownie.</string>
     <string name="player_error_stream_unavailable">Serwer streamu jest obecnie niedostępny. Spróbuj innego źródła.</string>
     <string name="player_error_stream_blocked">Źródło streamu jest zablokowane lub ograniczone. Spróbuj innego źródła.</string>
+    <string name="player_error_source_invalid_content">Błąd źródła: Źródło streamu zwróciło nieprawidłową lub nieodtwarzalną zawartość. Link mógł wygasnąć lub serwer zwrócił stronę błędu zamiast wideo.\n\nSpróbuj innego źródła. [%1$s]</string>
+    <string name="player_error_unsupported_format">Ten stream używa formatu, którego Twoje urządzenie może nie obsługiwać. Spróbuj innego źródła. [%1$s]</string>
     <string name="profile_pin_changed_requires_refresh">PIN tego profilu został zmieniony. Połącz się raz, aby odświeżyć blokadę na tym urządzeniu.</string>
     <string name="profile_pin_clear_failed">Nie można usunąć blokady PIN. Spróbuj ponownie.</string>
     <string name="profile_pin_clear_requires_internet">Połącz się z internetem, aby usunąć blokadę PIN.</string>

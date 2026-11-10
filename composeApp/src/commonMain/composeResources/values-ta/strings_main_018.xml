@@ -98,6 +98,8 @@
     <string name="player_error_stream_rate_limited">ஸ்ட்ரீம் மூலத்திற்கு மிக அதிக கோரிக்கைகள் அனுப்பப்பட்டுள்ளன. சிறிது நேரம் காத்திருந்து மீண்டும் முயற்சிக்கவும்.</string>
     <string name="player_error_stream_unavailable">ஸ்ட்ரீம் சேவையகம் தற்போது கிடைக்கவில்லை. வேறு மூலத்தை முயற்சிக்கவும்.</string>
     <string name="player_error_stream_blocked">ஸ்ட்ரீம் மூலம் தடுக்கப்பட்டுள்ளது அல்லது கட்டுப்படுத்தப்பட்டுள்ளது. வேறு மூலத்தை முயற்சிக்கவும்.</string>
+    <string name="player_error_source_invalid_content">மூலப் பிழை: ஸ்ட்ரீம் மூலம் தவறான அல்லது இயக்க முடியாத உள்ளடக்கத்தை வழங்கியது. இணைப்பு காலாவதியானிருக்கலாம் அல்லது சேவையகம் காணொளிக்கு பதிலாக பிழைப் பக்கத்தை வழங்கியிருக்கலாம்.\n\nவேறு மூலத்தை முயற்சிக்கவும். [%1$s]</string>
+    <string name="player_error_unsupported_format">இந்த ஸ்ட்ரீம் உங்கள் சாதனம் ஆதரிக்காத வடிவத்தை பயன்படுத்துகிறது. வேறு மூலத்தை முயற்சிக்கவும். [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">MPV பிளேயர் இயந்திரம் கிடைக்கவில்லை. பயன்பாட்டை மீண்டும் build செய்யவும்.</string>
     <string name="profile_pin_changed_requires_refresh">இந்தச் சுயவிவர PIN மாற்றப்பட்டது. இந்தச் சாதனத்தில் பூட்டை புதுப்பிக்க ஒருமுறை இணைக்கவும்.</string>
     <string name="profile_pin_clear_failed">PIN பூட்டை அகற்ற முடியவில்லை. மீண்டும் முயற்சிக்கவும்.</string>

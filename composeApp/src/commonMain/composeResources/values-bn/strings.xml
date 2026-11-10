@@ -1727,6 +1727,8 @@
     <string name="player_error_stream_rate_limited">স্ট্রীম সোর্সে অনেক বেশি রিকোয়েস্ট। কিছুক্ষণ অপেক্ষা করে আবার ট্রাই করুন।</string>
     <string name="player_error_stream_unavailable">স্ট্রীম সার্ভার বর্তমানে আনঅ্যাভেইলেবল। অন্য একটি সোর্স ট্রাই করুন।</string>
     <string name="player_error_stream_blocked">স্ট্রীম সোর্সটি ব্লক বা রেস্ট্রিক্ট করা আছে। অন্য একটি সোর্স ট্রাই করুন।</string>
+    <string name="player_error_source_invalid_content">সোর্স এরর: স্ট্রীম সোর্সটি ইনভ্যালিড বা আনপ্লেয়েবল কনটেন্ট রিটার্ন করেছে। লিংকটির মেয়াদ হয়তো শেষ অথবা সার্ভার ভিডিওর বদলে একটি এরর পেইজ রিটার্ন করেছে।\n\nঅন্য একটি সোর্স ট্রাই করুন। [%1$s]</string>
+    <string name="player_error_unsupported_format">এই স্ট্রীমটি এমন একটি ফরম্যাট ব্যবহার করে যা আপনার ডিভাইস সাপোর্ট নাও করতে পারে। অন্য একটি সোর্স ট্রাই করুন। [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">MPV প্লেয়ার ইঞ্জিন উপলব্ধ নেই। অনুগ্রহ করে অ্যাপটি পুনরায় বিল্ড করুন।</string>
     <string name="profile_pin_changed_requires_refresh">এই প্রোফাইল পিন পরিবর্তন করা হয়েছে। এই ডিভাইসে লক রিফ্রেশ করতে একবার সংযোগ করুন।</string>
     <string name="profile_pin_clear_failed">পিন লক সরানো যায়নি। আবার চেষ্টা করুন।</string>
