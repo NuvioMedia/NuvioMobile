@@ -1275,7 +1275,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string> 
     <string name="settings_playback_vod_cache_warning">Записването на диска продължава, докато се възпроизвежда кеширан поток. Новият размер ще влезе в сила при следващото стартиране на приложението.</string> 
     <string name="settings_playback_exo_chapters">Показване на глави</string> 
-    <string name="settings_playback_exo_chapters_description">Разчита главите в MKV файловете, за да ги отбележи върху лентата за напредък и да ги покаже в списък в плейъра. Извършва няколко допълнителни заявки при стартиране на възпроизвеждането.</string>
+    <string name="settings_playback_exo_chapters_description">Разчита главите в MKV файловете, за да ги отбележи върху лентата за напредък и да ги покаже в списък в плейъра.</string>
     <string name="settings_playback_remember_audio_delay">Запомняне на аудиозакъснението за всяко устройство</string>
     <string name="settings_playback_remember_audio_delay_description">Възстановява аудиозакъснението, зададено в плейъра, всеки път, когато се възпроизвежда същият изход, като например високоговорителя на телефона, кабелните слушалки или всяко Bluetooth устройство</string>
     <string name="settings_playback_downmix_section">Даунмикс</string>

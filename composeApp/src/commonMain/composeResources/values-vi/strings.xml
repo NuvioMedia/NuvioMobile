@@ -1269,7 +1269,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Ghi đĩa vẫn tiếp tục khi phát luồng đã đệm. Dung lượng mới sẽ áp dụng từ lần khởi động ứng dụng tiếp theo.</string>
     <string name="settings_playback_exo_chapters">Hiển thị chương</string>
-    <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng. Thực hiện thêm một vài yêu cầu nhỏ khi bắt đầu phát lại.</string>
+    <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng.</string>
     <string name="settings_playback_remember_audio_delay">Ghi nhớ độ trễ âm thanh cho từng thiết bị</string>
     <string name="settings_playback_remember_audio_delay_description">Khôi phục độ trễ âm thanh đã đặt trong trình phát mỗi khi cùng đầu ra được sử dụng lại, ví dụ như loa điện thoại, tai nghe có dây hoặc từng thiết bị Bluetooth</string>
     <string name="settings_playback_downmix_section">Hạ kênh âm thanh</string>

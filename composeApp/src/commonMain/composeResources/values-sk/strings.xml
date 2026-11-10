@@ -2469,7 +2469,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Zápis na disk pokračuje počas prehrávania uloženého streamu. Nová veľkosť sa uplatní pri nasledujúcom spustení aplikácie.</string>
     <string name="settings_playback_exo_chapters">Zobrazovať kapitoly</string>
-    <string name="settings_playback_exo_chapters_description">Načítať kapitoly zo súborov MKV, označiť ich na časovej osi a zobraziť ich v prehrávači. Po spustení prehrávania vykoná niekoľko malých požiadaviek navyše.</string>
+    <string name="settings_playback_exo_chapters_description">Načítať kapitoly zo súborov MKV, označiť ich na časovej osi a zobraziť ich v prehrávači.</string>
     <string name="settings_tracking_mdblist_section">Funkcie MDBList</string>
     <string name="settings_mdblist_library_lists">Zoznamy v knižnici</string>
     <string name="settings_mdblist_library_lists_description">Vyberte, ktoré zoznamy MDBList sa zobrazia v Knižnici a v Správe zoznamov. Zoznam sledovaných sa zobrazuje vždy.</string>

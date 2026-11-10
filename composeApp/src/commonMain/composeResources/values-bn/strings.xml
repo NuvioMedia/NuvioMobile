@@ -2448,7 +2448,7 @@
     <string name="settings_playback_auto_switch_engine_on_error">প্লেব্যাক ত্রুটিতে ইঞ্জিন অটো-সুইচ করুন</string>
     <string name="settings_playback_auto_switch_engine_on_error_description">যে ইঞ্জিনই নির্বাচিত থাকুক না কেন, প্লেব্যাক ব্যর্থ হলে অন্য প্লেব্যাক ইঞ্জিনে সুইচ করুন।</string>
     <string name="settings_playback_exo_chapters">চ্যাপ্টার দেখান</string>
-    <string name="settings_playback_exo_chapters_description">প্রোগ্রেস বারে চিহ্নিত করতে এবং প্লেয়ারে তালিকাভুক্ত করতে MKV ফাইলের চ্যাপ্টারগুলো পড়ুন। প্লেব্যাক শুরু হলে কয়েকটি অতিরিক্ত রিকোয়েস্ট পাঠায়।</string>
+    <string name="settings_playback_exo_chapters_description">প্রোগ্রেস বারে চিহ্নিত করতে এবং প্লেয়ারে তালিকাভুক্ত করতে MKV ফাইলের চ্যাপ্টারগুলো পড়ুন।</string>
     <string name="settings_playback_remember_audio_delay">ডিভাইস প্রতি অডিও বিলম্ব মনে রাখুন</string>
     <string name="settings_playback_remember_audio_delay_description">ফোন স্পিকার, তারযুক্ত হেডফোন বা প্রতিটি Bluetooth ডিভাইসের মতো একই আউটপুট পুনরায় প্লে হলে প্লেয়ারে সেট করা অডিও বিলম্ব পুনরুদ্ধার করুন</string>
     <string name="settings_playback_downmix_section">ডাউনমিক্স</string>

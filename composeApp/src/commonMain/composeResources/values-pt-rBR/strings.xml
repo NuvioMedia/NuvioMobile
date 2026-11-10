@@ -1270,7 +1270,7 @@
     <string name="settings_tmdb_api_key_override_description">Use sua própria chave de API do TMDB ou deixe em branco para usar a padrão.</string>
     <string name="settings_tmdb_personal_api_key">Chave de API pessoal</string>
     <string name="settings_playback_exo_chapters">Mostrar Capítulos</string>
-    <string name="settings_playback_exo_chapters_description">Lê os capítulos dos arquivos MKV para marcá-los na barra de progresso e listá-los no player. Faz algumas pequenas requisições extras quando a reprodução começa.</string>
+    <string name="settings_playback_exo_chapters_description">Lê os capítulos dos arquivos MKV para marcá-los na barra de progresso e listá-los no player.</string>
     <string name="settings_playback_remember_audio_delay">Lembrar Atraso do Áudio por Dispositivo</string>
     <string name="settings_playback_remember_audio_delay_description">Restaura o atraso do áudio definido no player sempre que a mesma saída tocar de novo, como o alto-falante do celular, fones com fio ou cada dispositivo Bluetooth</string>
     <string name="settings_playback_downmix_section">Downmix</string>

@@ -1269,7 +1269,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">キャッシュされたストリームの再生中もディスクへの書き込みが続きます。新しいサイズは次回のアプリ起動時に反映されます。</string>
     <string name="settings_playback_exo_chapters">チャプターを表示</string>
-    <string name="settings_playback_exo_chapters_description">MKVファイルのチャプターを読み取り、プログレスバーに表示してプレーヤー内に一覧表示します。再生開始後に小さな追加リクエストを数回行います。</string>
+    <string name="settings_playback_exo_chapters_description">MKVファイルのチャプターを読み取り、プログレスバーに表示してプレーヤー内に一覧表示します。</string>
     <string name="settings_playback_remember_audio_delay">デバイスごとに音声ディレイを記憶</string>
     <string name="settings_playback_remember_audio_delay_description">スマートフォンのスピーカー、有線ヘッドホン、各Bluetoothデバイスなど、同じ出力で再生するたびに、プレーヤーで設定した音声ディレイを復元します</string>
     <string name="settings_playback_downmix_section">ダウンミックス</string>

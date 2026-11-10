@@ -1264,7 +1264,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d ميغابايت</string>
     <string name="settings_playback_vod_cache_warning">تستمر عمليات الكتابة على القرص أثناء تشغيل بث مخزّن مؤقتًا. يُطبَّق الحجم الجديد عند تشغيل التطبيق في المرة التالية.</string>
     <string name="settings_playback_exo_chapters">إظهار الفصول</string>
-    <string name="settings_playback_exo_chapters_description">قراءة فصول ملفات MKV لتمييزها على شريط التقدم وعرضها في المشغل. يُرسل بضعة طلبات إضافية صغيرة عند بدء التشغيل.</string>
+    <string name="settings_playback_exo_chapters_description">قراءة فصول ملفات MKV لتمييزها على شريط التقدم وعرضها في المشغل.</string>
     <string name="settings_tmdb_api_key_label">مفتاح API</string>
     <string name="settings_tmdb_api_key_override_description">استخدم مفتاح TMDB API الخاص بك، أو اتركه فارغًا لاستخدام المفتاح الافتراضي.</string>
     <string name="settings_tmdb_personal_api_key">مفتاح API الشخصي</string>

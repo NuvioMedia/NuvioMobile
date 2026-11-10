@@ -818,7 +818,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Οι εγγραφές στον δίσκο συνεχίζονται όσο αναπαράγεται μια ροή από την προσωρινή μνήμη. Ένα νέο μέγεθος εφαρμόζεται την επόμενη φορά που θα ξεκινήσει η εφαρμογή.</string>
     <string name="settings_playback_exo_chapters">Εμφάνιση κεφαλαίων</string>
-    <string name="settings_playback_exo_chapters_description">Ανάγνωση των κεφαλαίων των αρχείων MKV για σήμανσή τους στη γραμμή προόδου και εμφάνισή τους στη λίστα του προγράμματος αναπαραγωγής. Πραγματοποιεί μερικά μικρά επιπλέον αιτήματα μόλις ξεκινήσει η αναπαραγωγή.</string>
+    <string name="settings_playback_exo_chapters_description">Ανάγνωση των κεφαλαίων των αρχείων MKV για σήμανσή τους στη γραμμή προόδου και εμφάνισή τους στη λίστα του προγράμματος αναπαραγωγής.</string>
     <string name="settings_playback_remember_audio_delay">Απομνημόνευση καθυστέρησης ήχου ανά συσκευή</string>
     <string name="settings_playback_remember_audio_delay_description">Επαναφορά της καθυστέρησης ήχου που ορίστηκε στο πρόγραμμα αναπαραγωγής κάθε φορά που παίζει ξανά η ίδια έξοδος, όπως το ηχείο του τηλεφώνου, τα ενσύρματα ακουστικά ή κάθε συσκευή Bluetooth</string>
     <string name="settings_playback_downmix_section">Downmix</string>
