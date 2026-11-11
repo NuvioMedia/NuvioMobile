@@ -916,6 +916,12 @@
     <string name="settings_playback_stream_selection_mode_regex_description">Automatycznie wybierz strumień pasujący do wzorca regex.</string>
     <string name="settings_playback_stream_timeout">Limit czasu strumienia</string>
     <string name="settings_playback_stream_timeout_description">Jak długo czekać na strumienie przed automatycznym wyborem.</string>
+    <string name="settings_playback_fallback_next_source">Przejdź do kolejnego pasującego źródła przy błędzie</string>
+    <string name="settings_playback_fallback_next_source_description">Jeśli automatycznie wybrane źródło zgłosi błąd lub nie uruchomi się na czas, po cichu spróbuj kolejnych pasujących źródeł.</string>
+    <string name="settings_playback_fallback_max_sources">Źródła do sprawdzenia przy błędzie</string>
+    <string name="settings_playback_fallback_startup_timeout">Czas na uruchomienie źródła</string>
+    <string name="settings_playback_fallback_next_source_blocked_by_engine_switch">Wyłącz automatyczną zmianę silnika po błędzie odtwarzania, aby tego użyć.</string>
+    <string name="player_error_source_startup_timeout">Źródło nie uruchomiło się w ciągu %1$d sekund.</string>
     <string name="settings_playback_threshold_minutes">Minuty przed końcem</string>
     <string name="settings_playback_threshold_mode">Tryb progu</string>
     <string name="settings_playback_threshold_mode_minutes_before_end">Minuty przed końcem</string>
@@ -2363,6 +2369,7 @@
     <string name="settings_mdb_show_on_hero_description">Pokazuj oceny MDBList w sekcji Hero na ekranie głównym</string>
     <string name="settings_playback_auto_switch_engine_on_error">Automatycznie zmieniaj silnik po błędzie odtwarzania</string>
     <string name="settings_playback_auto_switch_engine_on_error_description">Przełącz na drugi silnik, gdy odtwarzanie się nie powiedzie, niezależnie od wybranego silnika.</string>
+    <string name="settings_playback_auto_switch_engine_blocked_by_fallback">Wyłącz przechodzenie do kolejnego pasującego źródła, aby tego użyć.</string>
     <string name="settings_playback_exo_native_memory">Pamięć natywna ExoPlayer</string>
     <string name="settings_playback_exo_native_memory_description">Trzymaj bufory odtwarzania w pamięci natywnej zamiast na stercie Javy, aby duże pliki mogły buforować się dalej bez obciążania pamięci.</string>
     <string name="settings_playback_exo_native_memory_unsupported">To urządzenie nie obsługuje natywnej pamięci odtwarzania.</string>

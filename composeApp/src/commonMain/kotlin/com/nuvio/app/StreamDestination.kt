@@ -389,6 +389,7 @@ internal fun StreamDestination(
                     ),
                 ),
                 sourceFromLinkCache = true,
+                sourceAutoSelected = true,
             )
             if (playerSettings.externalPlayerEnabled) {
                 openExternalPlayback(playerLaunch)
@@ -560,6 +561,7 @@ internal fun StreamDestination(
             contentLanguage = resolveLaunchContentLanguage(),
             sourceFilename = stream.behaviorHints.filename,
             stream = stream,
+            sourceAutoSelected = true,
         )
         if (playerSettings.externalPlayerEnabled && stream.serverTarget == null) {
             openExternalPlayback(playerLaunch)
