@@ -78,6 +78,7 @@ internal fun PlayerDestination(
         launchId = route.launchId,
         sourceFilename = launch.sourceFilename,
         stream = launch.stream,
+        sourceFromLinkCache = launch.sourceFromLinkCache,
         onBack = onBack,
         onOpenInExternalPlayer = { request ->
             val playerLaunch = PlayerLaunch(

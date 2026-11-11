@@ -223,6 +223,8 @@ internal class PlayerScreenRuntime(
     var pendingP2pSwitch by mutableStateOf<PendingPlayerP2pSwitch?>(null)
     var credentialRefreshJob by mutableStateOf<Job?>(null)
     var credentialRefreshAttemptedSourceUrl by mutableStateOf<String?>(null)
+    /** URL opened from the reuse-last-link cache; it is refreshed after a playback error even without a token. */
+    var linkCacheSourceUrl: String? = args.sourceUrl.takeIf { args.sourceFromLinkCache && it.isNotBlank() }
 
     var showAudioModal by mutableStateOf(false)
     var showSubtitleModal by mutableStateOf(false)
