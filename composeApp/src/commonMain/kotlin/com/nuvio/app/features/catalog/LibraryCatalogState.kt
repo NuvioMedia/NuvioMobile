@@ -3,6 +3,8 @@ package com.nuvio.app.features.catalog
 import com.nuvio.app.features.library.LibraryUiState
 import com.nuvio.app.features.library.LibraryProviderOrders
 import com.nuvio.app.features.library.LibrarySortOption
+import com.nuvio.app.features.library.LibrarySourceMode
+import com.nuvio.app.features.library.LOCAL_LIBRARY_LIST_KEY
 import com.nuvio.app.features.library.librarySorter
 import com.nuvio.app.features.library.observeLibraryProviderOrders
 import com.nuvio.app.features.library.sortLibraryItems
@@ -38,7 +40,11 @@ private suspend fun LibraryUiState.libraryCatalogState(
     target: CatalogTarget.Library,
     orders: LibraryProviderOrders,
 ): CatalogUiState {
-    val items = sections.firstOrNull { it.type == target.sectionType }?.items.orEmpty()
+    val items = if (sourceMode == LibrarySourceMode.LOCAL && target.sectionType == LOCAL_LIBRARY_LIST_KEY) {
+        this.items
+    } else {
+        sections.firstOrNull { it.type == target.sectionType }?.items.orEmpty()
+    }
     return CatalogUiState(
         items = sortLibraryItems(
             items = items,

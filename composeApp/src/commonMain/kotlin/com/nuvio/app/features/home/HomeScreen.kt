@@ -102,6 +102,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
@@ -883,6 +884,11 @@ fun HomeScreen(
         onFirstCatalogRendered?.invoke()
     }
 
+    val watchlistTitle = stringResource(Res.string.trakt_watchlist)
+    val watchlistSection by remember(homeSettingsUiState.showWatchlistRow, watchlistTitle) {
+        if (homeSettingsUiState.showWatchlistRow) homeWatchlistSections(watchlistTitle) else flowOf(null)
+    }.collectAsStateWithLifecycle(initialValue = null)
+
     val visibleCollections = remember(collections) {
         collections.filter { it.folders.isNotEmpty() }
     }
@@ -993,6 +999,28 @@ fun HomeScreen(
             topPadding = if (showHeroSlot) 0.dp else null,
             listState = homeListState,
         ) {
+            val homeWatchlistRow: LazyListScope.() -> Unit = {
+                watchlistSection?.let { section ->
+                    item(key = section.key, contentType = "catalog") {
+                        HomeCatalogRowSection(
+                            section = section,
+                            entries = section.items.take(HOME_CATALOG_PREVIEW_LIMIT),
+                            modifier = Modifier.padding(bottom = 12.dp),
+                            sectionPadding = homeSectionPadding,
+                            onViewAllClick = if (section.canOpenCatalog(HOME_CATALOG_PREVIEW_LIMIT)) {
+                                onCatalogClick?.let { { it(section) } }
+                            } else {
+                                null
+                            },
+                            watchedKeys = watchedUiState.watchedKeys,
+                            fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                            onPosterClick = onPosterClick,
+                            onPosterLongClick = onPosterLongClick,
+                        )
+                    }
+                }
+            }
+
             if (showHeroSlot) {
                 item(key = "home_hero", contentType = "hero") {
                     Crossfade(
@@ -1045,6 +1073,7 @@ fun HomeScreen(
                         onItemLongPress = onContinueWatchingLongPress,
                         disintegrationRequest = continueWatchingDisintegrationRequest,
                     )
+                    homeWatchlistRow()
                     items(
                         count = 3,
                         key = { "home_skeleton_$it" },
@@ -1070,6 +1099,7 @@ fun HomeScreen(
                         onItemLongPress = onContinueWatchingLongPress,
                         disintegrationRequest = continueWatchingDisintegrationRequest,
                     )
+                    homeWatchlistRow()
                     item(key = "home_empty", contentType = "empty") {
                         when {
                             networkStatusUiState.isOfflineLike && addonManifestErrorMessage != null -> {
@@ -1109,7 +1139,7 @@ fun HomeScreen(
 
                 homeUiState.sections.isEmpty() && homeUiState.heroItems.isEmpty() &&
                     (!continueWatchingPreferences.isVisible || !hasContinueWatchingRows) &&
-                    !hasRenderableCollectionRows -> {
+                    !hasRenderableCollectionRows && watchlistSection == null -> {
                     item(key = "home_empty", contentType = "empty") {
                         val loadFailed = !homeUiState.errorMessage.isNullOrBlank()
                         if (networkStatusUiState.isOfflineLike && loadFailed) {
@@ -1161,6 +1191,7 @@ fun HomeScreen(
                         onItemLongPress = onContinueWatchingLongPress,
                         disintegrationRequest = continueWatchingDisintegrationRequest,
                     )
+                    homeWatchlistRow()
 
                     keyedEnabledHomeItems.forEach { keyedSettingsItem ->
                         val settingsItem = keyedSettingsItem.value
