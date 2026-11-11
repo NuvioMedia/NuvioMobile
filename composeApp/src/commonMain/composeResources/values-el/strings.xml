@@ -1327,6 +1327,13 @@
     <string name="notifications_test_send_failed">Αποτυχία αποστολής δοκιμαστικής ειδοποίησης.</string>
     <string name="notifications_test_sent_for">Η δοκιμαστική ειδοποίηση στάλθηκε για %1$s.</string>
     <string name="player_unable_to_play_stream">Αδυναμία αναπαραγωγής αυτής της ροής.</string>
+    <string name="player_error_stream_expired">Ο σύνδεσμος ροής έληξε. Δοκιμάστε διαφορετική πηγή.</string>
+    <string name="player_error_stream_removed">Ο σύνδεσμος ροής έληξε ή αφαιρέθηκε. Δοκιμάστε διαφορετική πηγή.</string>
+    <string name="player_error_stream_rate_limited">Πάρα πολλά αιτήματα προς την πηγή ροής. Περιμένετε λίγο και δοκιμάστε ξανά.</string>
+    <string name="player_error_stream_unavailable">Ο διακομιστής ροής δεν είναι διαθέσιμος αυτή τη στιγμή. Δοκιμάστε διαφορετική πηγή.</string>
+    <string name="player_error_stream_blocked">Η πηγή ροής είναι αποκλεισμένη ή περιορισμένη. Δοκιμάστε διαφορετική πηγή.</string>
+    <string name="player_error_source_invalid_content">Σφάλμα πηγής: Η πηγή ροής επέστρεψε μη έγκυρο ή μη αναπαραγώγιμο περιεχόμενο. Ο σύνδεσμος μπορεί να έληξε ή ο διακομιστής επέστρεψε σελίδα σφάλματος αντί για βίντεο.\n\nΔοκιμάστε διαφορετική πηγή. [%1$s]</string>
+    <string name="player_error_unsupported_format">Αυτή η ροή χρησιμοποιεί μορφή που η συσκευή σας μπορεί να μην υποστηρίζει. Δοκιμάστε διαφορετική πηγή. [%1$s]</string>
     <string name="profile_pin_changed_requires_refresh">Το PIN αυτού του προφίλ άλλαξε. Συνδεθείτε μια φορά για να ανανεώσετε το κλείδωμα σε αυτήν τη συσκευή.</string>
     <string name="profile_pin_clear_failed">Αδυναμία αφαίρεσης κλειδώματος PIN. Δοκιμάστε ξανά.</string>
     <string name="profile_pin_clear_requires_internet">Συνδεθείτε στο διαδίκτυο για να αφαιρέσετε το κλείδωμα PIN.</string>

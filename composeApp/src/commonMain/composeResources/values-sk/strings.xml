@@ -1357,6 +1357,13 @@
     <string name="notifications_test_send_failed">Nepodarilo sa odoslať testovacie oznámenie.</string>
     <string name="notifications_test_sent_for">Testovacie oznámenie odoslané pre %1$s.</string>
     <string name="player_unable_to_play_stream">Nepodarilo sa prehrať tento stream.</string>
+    <string name="player_error_stream_expired">Odkaz na stream vypršal. Skúste iný zdroj.</string>
+    <string name="player_error_stream_removed">Odkaz na stream vypršal alebo bol odstránený. Skúste iný zdroj.</string>
+    <string name="player_error_stream_rate_limited">Príliš veľa požiadaviek na zdroj streamu. Počkajte chvíľu a skúste to znova.</string>
+    <string name="player_error_stream_unavailable">Server streamu je momentálne nedostupný. Skúste iný zdroj.</string>
+    <string name="player_error_stream_blocked">Zdroj streamu je zablokovaný alebo obmedzený. Skúste iný zdroj.</string>
+    <string name="player_error_source_invalid_content">Chyba zdroja: Zdroj streamu vrátil neplatný alebo neprehrateľný obsah. Odkaz mohol vypršať alebo server vrátil chybovú stránku namiesto videa.\n\nSkúste iný zdroj. [%1$s]</string>
+    <string name="player_error_unsupported_format">Tento stream používa formát, ktorý vaše zariadenie nemusí podporovať. Skúste iný zdroj. [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">Engine prehrávača MPV nie je dostupný. Prosím, znovu zostavte aplikáciu.</string>
     <string name="profile_pin_changed_requires_refresh">PIN tohto profilu sa zmenil. Pripojte sa raz, aby ste obnovili zámok na tomto zariadení.</string>
     <string name="profile_pin_clear_failed">Nepodarilo sa odstrániť zámok PIN. Skúste znova.</string>

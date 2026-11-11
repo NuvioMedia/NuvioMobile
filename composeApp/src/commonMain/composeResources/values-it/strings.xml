@@ -983,6 +983,13 @@
   <string name="notifications_test_send_failed">Impossibile inviare la notifica di test.</string>
   <string name="notifications_test_sent_for">Notifica di test inviata per %1$s.</string>
   <string name="player_unable_to_play_stream">Impossibile riprodurre questo flusso.</string>
+  <string name="player_error_stream_expired">Il link dello streaming è scaduto. Prova una sorgente diversa.</string>
+  <string name="player_error_stream_removed">Il link dello streaming è scaduto o è stato rimosso. Prova una sorgente diversa.</string>
+  <string name="player_error_stream_rate_limited">Troppe richieste alla sorgente streaming. Attendi un momento e riprova.</string>
+  <string name="player_error_stream_unavailable">Il server dello streaming non è attualmente disponibile. Prova una sorgente diversa.</string>
+  <string name="player_error_stream_blocked">La sorgente streaming è bloccata o limitata. Prova una sorgente diversa.</string>
+  <string name="player_error_source_invalid_content">Errore sorgente: La sorgente streaming ha restituito contenuti non validi o non riproducibili. Il link potrebbe essere scaduto o il server ha restituito una pagina di errore.\n\nProva una sorgente diversa. [%1$s]</string>
+  <string name="player_error_unsupported_format">Questo streaming utilizza un formato che il tuo dispositivo potrebbe non supportare. Prova una sorgente diversa. [%1$s]</string>
   <string name="profile_pin_changed_requires_refresh">Il PIN di questo profilo è cambiato. Connettiti per aggiornare il blocco su questo dispositivo.</string>
   <string name="profile_pin_clear_failed">Impossibile rimuovere il blocco PIN. Riprova.</string>
   <string name="profile_pin_clear_requires_internet">Connettiti a Internet per rimuovere il blocco PIN.</string>
