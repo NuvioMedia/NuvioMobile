@@ -1957,6 +1957,7 @@
     <string name="library_filter_all_types">All types</string>
     <string name="library_filter_list">Select list</string>
     <string name="library_filter_sort">Sort library</string>
+    <string name="library_filter_hide_watched">Hide watched</string>
     <string name="library_filter_type">Select type</string>
     <string name="library_layout_show_horizontal">Show horizontal shelves</string>
     <string name="library_layout_show_vertical">Show vertical grid</string>
