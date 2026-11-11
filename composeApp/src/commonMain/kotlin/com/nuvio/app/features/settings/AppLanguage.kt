@@ -29,6 +29,7 @@ import nuvio.composeapp.generated.resources.lang_urdu
 import nuvio.composeapp.generated.resources.lang_norwegian
 import nuvio.composeapp.generated.resources.lang_japanese
 import nuvio.composeapp.generated.resources.lang_vietnamese
+import nuvio.composeapp.generated.resources.lang_persian
 import nuvio.composeapp.generated.resources.settings_appearance_app_language_device
 import org.jetbrains.compose.resources.StringResource
 
@@ -51,6 +52,7 @@ enum class AppLanguage(
     HUNGARIAN("hu", Res.string.lang_hungarian),
     INDONESIAN("id", Res.string.lang_indonesian),
     ITALIAN("it", Res.string.lang_italian),
+    PERSIAN("fa", Res.string.lang_persian),
     POLISH("pl", Res.string.lang_polish),
     PORTUGUESE_BRAZIL("pt-BR", Res.string.lang_portuguese_brazil),
     PORTUGUESE("pt", Res.string.lang_portuguese_portugal),
@@ -68,7 +70,7 @@ enum class AppLanguage(
 
     fun isRightToLeft(): Boolean {
         val languageCode = if (this == DEVICE) DeviceLanguagePreferences.preferredLanguageCodes().firstOrNull() else code
-        return languageCode?.substringBefore('-') in setOf(ARABIC.code, HEBREW.code, URDU.code)
+        return languageCode?.substringBefore('-') in setOf(ARABIC.code, HEBREW.code, URDU.code, PERSIAN.code)
     }
 
     companion object {
