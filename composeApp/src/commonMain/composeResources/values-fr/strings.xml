@@ -1776,6 +1776,7 @@
     <string name="auth_account_deletion_failed">Impossible de supprimer le compte</string>
     <string name="auth_sign_in_failed">Échec de la connexion</string>
     <string name="auth_sign_out_failed">Échec de la déconnexion</string>
+    <string name="auth_notice_signed_out">Vous avez été déconnecté de Nuvio. Veuillez vous reconnecter.</string>
     <string name="auth_sign_up_failed">Échec de l’inscription</string>
     <string name="catalog_load_failed">Impossible de charger les éléments du catalogue.</string>
     <string name="continue_watching_up_next">Épisode suivant</string>
