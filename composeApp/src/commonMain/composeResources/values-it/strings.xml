@@ -1605,7 +1605,7 @@
   <string name="settings_playback_option_original">Lingua originale</string>
   <string name="settings_playback_option_original_hint">Richiede che l’arricchimento TMDB sia abilitato</string>
   <string name="settings_playback_engine">Motore di riproduzione</string>
-  <string name="settings_playback_engine_auto_description">Usa prima ExoPlayer e passa a libmpv se la riproduzione non riesce.</string>
+  <string name="settings_playback_engine_auto_description">ExoPlayer per Film e Serie TV · MPV per gli Anime</string>
   <string name="settings_playback_engine_exoplayer_description">Usa ExoPlayer e i decoder Android Media3.</string>
   <string name="settings_playback_engine_libmpv_description">Usa libmpv per la riproduzione su Android.</string>
   <string name="settings_playback_libmpv_video_output">Renderer libmpv</string>
@@ -2465,7 +2465,7 @@
     <string name="settings_playback_auto_switch_engine_on_error">Cambio automatico del motore in caso di errore di riproduzione</string>
     <string name="settings_playback_auto_switch_engine_on_error_description">Passa all'altro motore di riproduzione quando la riproduzione non riesce, indipendentemente dal motore selezionato.</string>
     <string name="settings_playback_exo_chapters">Mostra capitoli</string>
-    <string name="settings_playback_exo_chapters_description">Legge i capitoli dei file MKV per contrassegnarli sulla barra di avanzamento e mostrarli nel player. Effettua alcune piccole richieste aggiuntive all'avvio della riproduzione. libmpv mostra sempre i capitoli</string>
+    <string name="settings_playback_exo_chapters_description">Legge i capitoli dei file MKV per contrassegnarli sulla barra di avanzamento e mostrarli nel player.</string>
     <string name="player_engine_switching_automatic_message">Riproduzione non riuscita: passaggio a %1$s...</string>
     <string name="settings_group_you">Tu</string>
     <string name="settings_group_look">Aspetto</string>

@@ -1141,7 +1141,6 @@
     <string name="settings_playback_secondary_subtitle_language">ثانوی پسندیدہ زبان</string>
     <string name="settings_playback_section_decoder">Decoder</string>
     <string name="settings_playback_engine">پلے بیک انجن</string>
-    <string name="settings_playback_engine_auto_description">پہلے ExoPlayer استعمال کریں، اور playback ناکام ہونے پر libmpv استعمال کریں۔</string>
     <string name="settings_playback_engine_exoplayer_description">ExoPlayer اور Android Media3 decoders استعمال کریں۔</string>
     <string name="settings_playback_engine_libmpv_description">Android playback کے لیے libmpv استعمال کریں۔</string>
     <string name="settings_playback_libmpv_video_output">libmpv Renderer</string>

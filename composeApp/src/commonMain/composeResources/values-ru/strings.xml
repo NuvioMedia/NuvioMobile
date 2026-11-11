@@ -1103,7 +1103,7 @@
     <string name="settings_playback_secondary_subtitle_language">Дополнительный предпочтительный язык</string>
     <string name="settings_playback_section_decoder">ДЕКОДЕР</string>
     <string name="settings_playback_engine">Механизм воспроизведения</string>
-    <string name="settings_playback_engine_auto_description">Сначала используйте ExoPlayer и вернитесь к libmpv, если воспроизведение не удастся.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer для фильмов и сериалов · MPV для аниме</string>
     <string name="settings_playback_engine_exoplayer_description">Используйте декодеры ExoPlayer и Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Используйте libmpv для воспроизведения Android.</string>
     <string name="settings_playback_libmpv_video_output">libmpv Рендерер</string>

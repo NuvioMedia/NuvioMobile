@@ -1156,7 +1156,7 @@
     <string name="settings_playback_secondary_subtitle_language">Sekundarni željeni jezik</string>
     <string name="settings_playback_section_decoder">DEKODER</string>
     <string name="settings_playback_engine">Pogon reprodukcije</string>
-    <string name="settings_playback_engine_auto_description">Prvo koristi ExoPlayer i prijeđi na libmpv ako reprodukcija ne uspije.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer za filmove i serije · MPV za anime</string>
     <string name="settings_playback_engine_exoplayer_description">Koristi ExoPlayer i Android Media3 dekodere.</string>
     <string name="settings_playback_engine_libmpv_description">Koristi libmpv za reprodukciju na Androidu.</string>
     <string name="settings_playback_libmpv_video_output">libmpv renderer</string>

@@ -966,7 +966,7 @@
     <string name="settings_playback_tunneled_playback">Reprodução em túnel</string>
     <string name="settings_playback_tunneled_playback_description">Sincronização de áudio/vídeo ao nível do hardware. Pode melhorar a reprodução em alguns dispositivos Android TV</string>
     <string name="settings_playback_exo_chapters">Mostrar capítulos</string>
-    <string name="settings_playback_exo_chapters_description">Lê os capítulos dos ficheiros MKV para os marcar na barra de progresso e listar no player. Faz alguns pedidos pequenos extra quando a reprodução começa. O libmpv mostra sempre os capítulos</string>
+    <string name="settings_playback_exo_chapters_description">Lê os capítulos dos ficheiros MKV para os marcar na barra de progresso e listar no player.</string>
     <string name="settings_playback_remember_audio_delay">Memorizar o atraso do áudio por dispositivo</string>
     <string name="settings_playback_remember_audio_delay_description">Repõe o atraso do áudio definido no player sempre que a mesma saída volta a tocar, como o altifalante do telemóvel, auscultadores com fio ou cada dispositivo Bluetooth</string>
     <string name="settings_playback_downmix_section">Downmix</string>

@@ -1172,7 +1172,7 @@
     <string name="settings_playback_secondary_subtitle_language">Ngôn ngữ ưu tiên thứ hai</string>
     <string name="settings_playback_section_decoder">BỘ GIẢI MÃ</string>
     <string name="settings_playback_engine">Lõi trình phát</string>
-    <string name="settings_playback_engine_auto_description">Dùng ExoPlayer trước và chuyển sang libmpv nếu phát lại thất bại</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer cho Phim &amp; Chương trình TV · MPV cho Anime</string>
     <string name="settings_playback_engine_exoplayer_description">Dùng ExoPlayer với bộ giải mã Android Media3</string>
     <string name="settings_playback_engine_libmpv_description">Dùng libmpv để phát lại trên Android</string>
     <string name="settings_playback_auto_switch_engine_on_error">Tự động chuyển lõi trình phát khi phát lại lỗi</string>
@@ -1269,7 +1269,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Ghi đĩa vẫn tiếp tục khi phát luồng đã đệm. Dung lượng mới sẽ áp dụng từ lần khởi động ứng dụng tiếp theo.</string>
     <string name="settings_playback_exo_chapters">Hiển thị chương</string>
-    <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng. Thực hiện thêm một vài yêu cầu nhỏ khi bắt đầu phát lại. libmpv luôn hiển thị các chương.</string>
+    <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng.</string>
     <string name="settings_playback_remember_audio_delay">Ghi nhớ độ trễ âm thanh cho từng thiết bị</string>
     <string name="settings_playback_remember_audio_delay_description">Khôi phục độ trễ âm thanh đã đặt trong trình phát mỗi khi cùng đầu ra được sử dụng lại, ví dụ như loa điện thoại, tai nghe có dây hoặc từng thiết bị Bluetooth</string>
     <string name="settings_playback_downmix_section">Hạ kênh âm thanh</string>

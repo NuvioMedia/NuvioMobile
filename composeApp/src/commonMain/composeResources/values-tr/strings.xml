@@ -1010,7 +1010,7 @@
     <string name="settings_playback_secondary_subtitle_language">İkinci altyazı dili</string>
     <string name="settings_playback_section_decoder">ÇÖZÜCÜ</string>
     <string name="settings_playback_engine">Oynatma Motoru</string>
-    <string name="settings_playback_engine_auto_description">Önce ExoPlayer'ı kullanır, oynatma başarısız olursa libmpv'ye geçer.</string>
+    <string name="settings_playback_engine_auto_description">Filmler ve Diziler için ExoPlayer · Anime için MPV</string>
     <string name="settings_playback_engine_exoplayer_description">ExoPlayer ve Android Media3 kod çözücülerini kullanır.</string>
     <string name="settings_playback_engine_libmpv_description">Android oynatma için libmpv'yi kullanır.</string>
     <string name="settings_playback_libmpv_video_output">libmpv İşleyici</string>
@@ -2376,7 +2376,7 @@ Bu özelliği tamamen kendi sorumluluğunuzda kullanırsınız. P2P istediğiniz
     <string name="settings_playback_subtitle_strip_sdh">SDH Altyazılarını Temizle</string>
     <string name="settings_playback_subtitle_strip_sdh_description">Metin altyazılarından ses açıklamalarını ve konuşmacı etiketlerini gizleyin.</string>
     <string name="settings_playback_exo_chapters">Sahneleri Göster</string>
-    <string name="settings_playback_exo_chapters_description">MKV dosyalarının sahnelerini okuyarak ilerleme çubuğunda işaretler ve oynatıcıda listeler. Oynatma başladığında birkaç küçük ek istek yapar. libmpv sahneleri her zaman gösterir.</string>
+    <string name="settings_playback_exo_chapters_description">MKV dosyalarının sahnelerini okuyarak ilerleme çubuğunda işaretler ve oynatıcıda listeler.</string>
     <string name="settings_tmdb_api_key_label">API anahtarı</string>
     <string name="settings_tmdb_api_key_override_description">Kendi TMDB API anahtarınızı kullanın veya varsayılanı kullanmak için boş bırakın.</string>
     <string name="settings_tmdb_personal_api_key">Kişisel API anahtarı</string>

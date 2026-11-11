@@ -19,6 +19,7 @@ import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -195,13 +196,18 @@ internal fun PlayerTimeline(
     }
 }
 
-/** The name of the chapter at [positionMs], or "Chapter N" when the file gives it none. */
+/**
+ * The name of the chapter at [positionMs], or "Chapter N" when the file gives it none. Hidden when
+ * "Show Chapter Title" is off.
+ */
 @Composable
 internal fun PlayerChapterTitle(
     chapters: List<PlayerChapter>,
     positionMs: Long,
     modifier: Modifier = Modifier,
 ) {
+    val settings by PlayerSettingsRepository.uiState.collectAsState()
+    if (!settings.chapterTitleEnabled) return
     val index = PlayerChapters.indexAt(chapters, positionMs)
     if (index < 0) return
     Text(

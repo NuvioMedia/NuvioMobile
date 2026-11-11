@@ -215,6 +215,9 @@ actual fun PlatformPlayerSurface(
             override suspend fun getMediaInfo(): PlayerMediaInfo =
                 mpvMediaInfo { name -> bridge.getProperty(name).ifBlank { null } }
 
+            override suspend fun getChapters(): List<PlayerChapter> =
+                mpvChapters { name -> bridge.getProperty(name).ifBlank { null } }
+
             override fun selectSubtitleTrack(index: Int) {
                 if (index < 0) {
                     bridge.selectSubtitleTrack(-1) // disable
