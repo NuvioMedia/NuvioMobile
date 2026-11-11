@@ -292,6 +292,8 @@ internal data class PlaybackKey(
 
 data class PlayerPlaybackSnapshot(
     val isLoading: Boolean = true,
+    /** The engine is still opening the source and has not read its tracks yet. */
+    val isOpening: Boolean = isLoading,
     val isPlaying: Boolean = false,
     val isEnded: Boolean = false,
     val durationMs: Long = 0L,
