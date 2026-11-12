@@ -1270,6 +1270,8 @@
     <string name="settings_playback_vod_cache_warning">Ghi đĩa vẫn tiếp tục khi phát luồng đã đệm. Dung lượng mới sẽ áp dụng từ lần khởi động ứng dụng tiếp theo.</string>
     <string name="settings_playback_exo_chapters">Hiển thị chương</string>
     <string name="settings_playback_exo_chapters_description">Đọc các chương của tệp MKV để đánh dấu trên thanh tiến trình và chuyển đổi qua lại giữa chúng.</string>
+    <string name="settings_playback_chapter_title">Hiển thị tên chương</string>
+    <string name="settings_playback_chapter_title_description">Hiển thị tên chương hiện tại phía trên thanh tiến trình.</string>
     <string name="settings_playback_remember_audio_delay">Ghi nhớ độ trễ âm thanh cho từng thiết bị</string>
     <string name="settings_playback_remember_audio_delay_description">Khôi phục độ trễ âm thanh đã đặt trong trình phát mỗi khi cùng đầu ra được sử dụng lại, ví dụ như loa điện thoại, tai nghe có dây hoặc từng thiết bị Bluetooth</string>
     <string name="settings_playback_downmix_section">Hạ kênh âm thanh</string>
@@ -2109,7 +2111,7 @@
     <string name="settings_debrid_template_original_format">Định dạng gốc</string>
     <string name="settings_debrid_release_groups_hint">Nhập mỗi nhóm trên một dòng</string>
     <!-- Debrid sort profiles -->
-    <string name="settings_debrid_sort_original">Thứ tự ban đầu</string>
+    <string name="settings_debrid_sort_original">Thứ tự gốc</string>
     <string name="settings_debrid_sort_best_quality">Chất lượng cao nhất trước</string>
     <string name="settings_debrid_sort_largest">Lớn nhất trước</string>
     <string name="settings_debrid_sort_smallest">Nhỏ nhất trước</string>
@@ -2539,7 +2541,7 @@
     <string name="subtitle_appearance">Giao diện</string>
     <string name="subtitle_preview">Xem trước</string>
     <string name="subtitle_preview_text">Mọi câu chuyện đều bắt đầu từ một chút tò mò.</string>
-    <string name="subtitle_appearance_hint">Áp dụng cho phụ đề văn bản. Phụ đề ASS có kiểu định dạng và phụ đề hình ảnh vẫn giữ nguyên giao diện ban đầu.</string>
+    <string name="subtitle_appearance_hint">Áp dụng cho phụ đề văn bản. Phụ đề ASS có kiểu định dạng và phụ đề hình ảnh vẫn giữ nguyên giao diện gốc.</string>
     <string name="subtitle_font">Phông chữ</string>
     <string name="subtitle_font_default">Mặc định</string>
     <string name="subtitle_font_sans">Kiểu chữ không chân</string>
