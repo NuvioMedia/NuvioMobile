@@ -104,7 +104,7 @@ object StreamAutoPlaySelector {
 
         val targetBingeGroup = preferredBingeGroup?.trim().orEmpty()
         val bingeGroupCandidates = if (preferBingeGroupInSelection && targetBingeGroup.isNotEmpty()) {
-            candidateStreams.filter { stream -> stream.behaviorHints.bingeGroup == targetBingeGroup }
+            candidateStreams.filter { stream -> stream.effectiveBingeGroup == targetBingeGroup }
         } else {
             emptyList()
         }
@@ -127,7 +127,7 @@ object StreamAutoPlaySelector {
         }
         val preferredStream = if (preferBingeGroupInSelection && targetBingeGroup.isNotEmpty()) {
             candidateStreams.firstOrNull { stream ->
-                stream.behaviorHints.bingeGroup == targetBingeGroup &&
+                stream.effectiveBingeGroup == targetBingeGroup &&
                     stream.isAutoPlayable(debridEnabled, activeResolverProviderId)
             }
         } else {

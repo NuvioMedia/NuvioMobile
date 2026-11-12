@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.streams.effectiveBingeGroup
 import androidx.compose.animation.AnimatedVisibility
 import com.nuvio.app.features.party.OwnSeek
 import com.nuvio.app.features.party.PartyMember
@@ -182,7 +183,7 @@ internal fun PlayerScreenRuntime.currentPartyStream(): PartyStream? {
         addonLogo = stream.addonLogo,
         filename = activeSourceFilename ?: stream.behaviorHints.filename,
         videoSize = stream.behaviorHints.videoSize,
-        bingeGroup = stream.behaviorHints.bingeGroup,
+        bingeGroup = stream.effectiveBingeGroup,
         streamType = activeStreamType,
         badges = stream.badges,
     )

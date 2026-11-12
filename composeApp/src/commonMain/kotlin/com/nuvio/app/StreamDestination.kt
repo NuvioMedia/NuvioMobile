@@ -1,5 +1,6 @@
 package com.nuvio.app
 
+import com.nuvio.app.features.streams.effectiveBingeGroup
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -207,7 +208,7 @@ internal fun StreamDestination(
                 infoHash = infoHash,
                 fileIdx = stream.p2pFileIdx,
                 sources = stream.sources,
-                bingeGroup = stream.behaviorHints.bingeGroup,
+                bingeGroup = stream.effectiveBingeGroup,
                 contentLanguage = resolveLaunchContentLanguage(),
                 addonLogo = stream.addonLogo,
                 streamDescription = stream.streamSubtitle,
@@ -229,7 +230,7 @@ internal fun StreamDestination(
             episodeThumbnail = launch.episodeThumbnail,
             streamTitle = stream.streamLabel,
             streamSubtitle = stream.streamSubtitle,
-            bingeGroup = stream.behaviorHints.bingeGroup,
+            bingeGroup = stream.effectiveBingeGroup,
             pauseDescription = pauseDescription,
             providerName = stream.addonName,
             providerAddonId = stream.addonId,
@@ -523,7 +524,7 @@ internal fun StreamDestination(
                 videoSize = stream.behaviorHints.videoSize,
                 infoHash = stream.p2pInfoHash,
                 fileIdx = stream.p2pFileIdx,
-                bingeGroup = stream.behaviorHints.bingeGroup,
+                bingeGroup = stream.effectiveBingeGroup,
                 streamType = stream.streamType,
                 contentLanguage = resolveLaunchContentLanguage(),
                 addonLogo = stream.addonLogo,
@@ -547,7 +548,7 @@ internal fun StreamDestination(
             episodeThumbnail = launch.episodeThumbnail,
             streamTitle = stream.streamLabel,
             streamSubtitle = stream.streamSubtitle,
-            bingeGroup = stream.behaviorHints.bingeGroup,
+            bingeGroup = stream.effectiveBingeGroup,
             pauseDescription = pauseDescription,
             providerName = stream.addonName,
             providerAddonId = stream.addonId,
@@ -726,7 +727,7 @@ internal fun StreamDestination(
                 videoSize = stream.behaviorHints.videoSize,
                 infoHash = stream.p2pInfoHash,
                 fileIdx = stream.p2pFileIdx,
-                bingeGroup = stream.behaviorHints.bingeGroup,
+                bingeGroup = stream.effectiveBingeGroup,
                 streamType = stream.streamType,
                 contentLanguage = resolveLaunchContentLanguage(),
                 addonLogo = stream.addonLogo,
@@ -750,7 +751,7 @@ internal fun StreamDestination(
             episodeThumbnail = launch.episodeThumbnail,
             streamTitle = stream.streamLabel,
             streamSubtitle = stream.streamSubtitle,
-            bingeGroup = stream.behaviorHints.bingeGroup,
+            bingeGroup = stream.effectiveBingeGroup,
             pauseDescription = pauseDescription,
             providerName = stream.addonName,
             providerAddonId = stream.addonId,

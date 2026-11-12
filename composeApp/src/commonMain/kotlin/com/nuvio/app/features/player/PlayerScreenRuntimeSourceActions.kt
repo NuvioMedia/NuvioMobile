@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.streams.effectiveBingeGroup
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.debrid.DirectDebridPlayableResult
 import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
@@ -209,7 +210,7 @@ internal fun PlayerScreenRuntime.saveP2pStreamForReuse(
         infoHash = infoHash,
         fileIdx = stream.p2pFileIdx,
         sources = stream.sources,
-        bingeGroup = stream.behaviorHints.bingeGroup,
+        bingeGroup = stream.effectiveBingeGroup,
         addonLogo = stream.addonLogo,
         streamDescription = stream.streamSubtitle,
     )
@@ -248,7 +249,7 @@ internal fun PlayerScreenRuntime.switchToP2pSourceStream(stream: StreamItem) {
     activeProviderName = stream.addonName
     activeProviderAddonId = stream.addonId
     activeStream = stream
-    currentStreamBingeGroup = stream.behaviorHints.bingeGroup
+    currentStreamBingeGroup = stream.effectiveBingeGroup
     activeSubtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints)
     currentStreamFilename = stream.behaviorHints.filename
     currentStreamInfoHash = stream.infoHash
@@ -354,7 +355,7 @@ internal fun PlayerScreenRuntime.switchToSource(
     activeProviderName = stream.addonName
     activeProviderAddonId = stream.addonId
     activeStream = stream
-    currentStreamBingeGroup = stream.behaviorHints.bingeGroup
+    currentStreamBingeGroup = stream.effectiveBingeGroup
     activeSubtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints, url)
     currentStreamFilename = stream.behaviorHints.filename
     currentStreamInfoHash = stream.infoHash
@@ -608,7 +609,7 @@ private fun PlayerScreenRuntime.applyEpisodeStreamMetadata(
     activeProviderName = stream.addonName
     activeProviderAddonId = stream.addonId
     activeStream = stream
-    currentStreamBingeGroup = stream.behaviorHints.bingeGroup
+    currentStreamBingeGroup = stream.effectiveBingeGroup
     currentStreamFilename = stream.behaviorHints.filename
     currentStreamInfoHash = stream.infoHash
     activeSeasonNumber = episode.season
@@ -650,7 +651,7 @@ internal fun PlayerScreenRuntime.saveDirectStreamForReuse(
         videoSize = stream.behaviorHints.videoSize,
         infoHash = stream.p2pInfoHash,
         fileIdx = stream.p2pFileIdx,
-        bingeGroup = stream.behaviorHints.bingeGroup,
+        bingeGroup = stream.effectiveBingeGroup,
         streamType = stream.streamType,
         contentLanguage = contentLanguage,
         addonLogo = stream.addonLogo,
