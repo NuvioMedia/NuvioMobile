@@ -566,6 +566,8 @@ object WatchProgressRepository {
 
         return nuvioPullMutex.withLock {
             try {
+                // Progress saved while offline could not be uploaded then; do it now.
+                pushDirtyProgress(profileId = profileId, operationGeneration = operationGeneration)
                 if (force) {
                     pullNuvioSnapshotFromServer(
                         profileId = profileId,
@@ -1461,6 +1463,33 @@ object WatchProgressRepository {
         return storedEntries.resolveIdentityForUpsert(entry)
     }
 
+    /**
+     * Uploads entries whose upload failed when they were saved (typically because the device was
+     * offline). They stay marked as changed locally until an upload succeeds, so this is safe to
+     * call on every sync; a failure only leaves them for the next one.
+     */
+    private suspend fun pushDirtyProgress(profileId: Int, operationGeneration: Long) {
+        if (activeSource.providerId != null) return
+        val pending = synchronized(entriesLock) {
+            dirtyProgressKeys.mapNotNull { key -> entriesByProgressKey[key] }
+        }.filterNot { ServerItemRef.isServerId(it.parentMetaId) }
+        if (pending.isEmpty()) return
+        try {
+            pending.chunked(DIRTY_PUSH_BATCH_SIZE).forEach { batch ->
+                syncAdapter.push(profileId = profileId, entries = batch)
+                recordSuccessfulPush(
+                    profileId = profileId,
+                    operationGeneration = operationGeneration,
+                    entries = batch,
+                )
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            log.w { "Could not upload pending watch progress yet: ${error.message}" }
+        }
+    }
+
     private fun pushScrobbleToServer(entry: WatchProgressEntry, profileId: Int) {
         if (ServerItemRef.isServerId(entry.parentMetaId)) return
         val operationGeneration = profileGeneration.takeIf { profileId == currentProfileId }
@@ -1830,3 +1859,5 @@ internal fun projectWatchProgressUiState(
     hasLoadedRemoteProgress =
         providerSnapshot?.hasLoadedRemoteProgress ?: hasLoadedNuvioRemoteProgress,
 )
+
+private const val DIRTY_PUSH_BATCH_SIZE = 50

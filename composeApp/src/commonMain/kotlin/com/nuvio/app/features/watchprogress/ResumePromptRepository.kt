@@ -21,6 +21,16 @@ object ResumePromptRepository {
         ResumePromptStorage.saveLastPlayerVideoId(null)
     }
 
+    /**
+     * Brings a prompt that is already showing up to date with the latest progress, for example
+     * after a sync brought in newer progress from another device. Returns null when the item is
+     * no longer resumable (finished elsewhere), meaning the prompt should go away.
+     */
+    fun refresh(item: ContinueWatchingItem): ContinueWatchingItem? {
+        val entry = WatchProgressRepository.progressForVideo(item.videoId) ?: return item
+        return if (entry.isResumable) entry.toContinueWatchingItem() else null
+    }
+
     suspend fun consumeResumePrompt(): ContinueWatchingItem? {
         val wasInPlayer = ResumePromptStorage.loadWasInPlayer()
         if (!wasInPlayer) return null
