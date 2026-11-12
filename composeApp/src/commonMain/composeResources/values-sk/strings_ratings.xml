@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">Hodnotiť</string>
+    <string name="rating_your_rating">Vaše hodnotenie</string>
+    <string name="rating_rate_episode">Hodnotiť epizódu</string>
+    <string name="rating_rated">Ohodnotené %1$s/10</string>
+    <string name="rating_value">%1$s z 10</string>
+    <string name="rating_syncs_to">Synchronizuje sa s %1$s</string>
+    <string name="rating_saved">Hodnotenie uložené</string>
+    <string name="rating_removed">Hodnotenie odstránené</string>
+    <string name="rating_failed">Nepodarilo sa aktualizovať vaše hodnotenie v %1$s</string>
+    <string name="settings_tracking_ratings">Hodnotenia</string>
+    <string name="settings_tracking_ratings_description">Kde sa vaše hodnotenia ukladajú a odkiaľ sa zobrazujú</string>
+    <string name="settings_tracking_ratings_picker_subtitle">Hodnoťte tituly priamo z ich detailov. Vaše hodnotenia sa ukladajú do služby, ktorú si vyberiete, a z nej sa aj zobrazujú.</string>
+    <string name="settings_tracking_ratings_off_description">Skryť tlačidlo hodnotenia.</string>
+    <string name="settings_tracking_ratings_simkl_description">Hodnoťte filmy a seriály. Ak ohodnotíte titul, ktorý nie je vo vašich zoznamoch Simkl, automaticky sa do nich pridá.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Hodnoťte filmy, seriály a epizódy.</string>
+</resources>
