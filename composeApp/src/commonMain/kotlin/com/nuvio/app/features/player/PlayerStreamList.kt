@@ -6,14 +6,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -56,6 +61,14 @@ internal fun PlayerStreamList(
     }.collectAsStateWithLifecycle()
     val streams = streamsUiState.allStreams
     val visibleGroups = streamsUiState.filteredGroups
+    val listState = rememberLazyListState()
+    var userScrolledList by remember { mutableStateOf(false) }
+    var scrolledToCurrent by remember { mutableStateOf(false) }
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) userScrolledList = true
+        }
+    }
 
     when {
         streams.isEmpty() && streamsUiState.isAnyLoading -> {
@@ -90,9 +103,17 @@ internal fun PlayerStreamList(
             val currentStreamIndex = remember(streams, currentStream) {
                 streams.currentPlayerStreamIndex(currentStream)
             }
+            // The list opens on the stream playing now. Results keep arriving, so it may show up
+            // after others; it is scrolled to then, unless the user has scrolled already.
+            LaunchedEffect(currentStreamIndex) {
+                if (currentStreamIndex < 0 || scrolledToCurrent || userScrolledList) return@LaunchedEffect
+                scrolledToCurrent = true
+                listState.scrollToItem(currentStreamIndex)
+            }
             val formatStreamSize = rememberStreamSizeLabelFormat()
             CompositionLocalProvider(LocalStreamSizeLabelFormat provides formatStreamSize) {
             LazyColumn(
+                state = listState,
                 modifier = modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = contentPadding,
