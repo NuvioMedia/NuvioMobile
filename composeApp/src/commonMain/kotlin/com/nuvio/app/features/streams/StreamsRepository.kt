@@ -7,7 +7,6 @@ import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.debrid.DirectDebridStreamPreparer
 import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DebridStreamPresentation
-import com.nuvio.app.features.debrid.LocalDebridAvailabilityService
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.plugins.PluginRepository
@@ -256,7 +255,6 @@ object StreamsRepository {
 
             val installedAddonNames = installedAddonOrder.toSet()
             val installedAddonIds = streamAddons.map { it.addonId }.toSet()
-            val debridAvailabilityJobs = mutableListOf<Job>()
             var autoSelectTriggered = false
             var timeoutElapsed = false
             fun evaluateAutoPlay(bingeGroupOnly: Boolean = false): StreamAutoPlayEvaluation =
@@ -383,37 +381,6 @@ object StreamsRepository {
                 updateAutoPlayAfterStreamsChanged()
             }
 
-            fun publishAddonGroupAfterCacheCheck(group: AddonStreamGroup) {
-                if (group.addonId !in installedAddonIds || group.streams.isEmpty()) {
-                    publishAddonGroup(presentStreamGroup(group))
-                    return
-                }
-
-                val eligibleGroupIds = setOf(group.addonId)
-                val shouldWaitForCacheCheck = LocalDebridAvailabilityService.hasPendingCacheCheck(
-                    groups = listOf(group),
-                    eligibleGroupIds = eligibleGroupIds,
-                )
-                if (!shouldWaitForCacheCheck) {
-                    publishAddonGroup(presentStreamGroup(group))
-                    return
-                }
-
-                val checkingGroup = LocalDebridAvailabilityService.markChecking(
-                    groups = listOf(group),
-                    eligibleGroupIds = eligibleGroupIds,
-                ).firstOrNull() ?: group
-
-                val availabilityJob = launch {
-                    val availabilityGroup = LocalDebridAvailabilityService.annotateCachedAvailability(
-                        groups = listOf(checkingGroup),
-                        eligibleGroupIds = eligibleGroupIds,
-                    ).firstOrNull() ?: checkingGroup
-                    publishAddonGroup(presentStreamGroup(availabilityGroup))
-                }
-                debridAvailabilityJobs += availabilityJob
-            }
-
             updateAutoPlayAfterStreamsChanged()
 
             val timeoutJob = if (isDirectAutoPlayFlow) {
@@ -465,7 +432,7 @@ object StreamsRepository {
                 when (completion) {
                     is StreamLoadCompletion.Addon -> {
                         val result = completion.group
-                        publishAddonGroupAfterCacheCheck(result)
+                        publishAddonGroup(presentStreamGroup(result))
                     }
 
                     is StreamLoadCompletion.PluginScraper -> {
@@ -517,10 +484,6 @@ object StreamsRepository {
 
             // A search dropped before it finished leaves its remaining sources without a result.
             _uiState.update { it.withoutPendingGroups() }
-
-            for (availabilityJob in debridAvailabilityJobs) {
-                availabilityJob.join()
-            }
 
             launch {
                 DirectDebridStreamPreparer.prepare(

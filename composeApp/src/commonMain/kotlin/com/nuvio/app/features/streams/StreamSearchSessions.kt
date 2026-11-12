@@ -3,6 +3,7 @@ package com.nuvio.app.features.streams
 import co.touchlab.kermit.Logger
 import com.nuvio.app.features.addons.buildAddonResourceUrl
 import com.nuvio.app.features.addons.fetchAddonResponseText
+import com.nuvio.app.features.debrid.LocalDebridAvailabilityService
 import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.plugins.pluginContentId
 import com.nuvio.app.features.servers.ServerStreamSource
@@ -46,11 +47,13 @@ internal class StreamSearchTargets(
     val streamAddons: List<InstalledStreamAddonTarget>,
     val serverSources: List<ServerStreamSource>,
     val pluginProviderGroups: List<PluginProviderGroup>,
+    /** The debrid account streams are checked with, as the checked streams are kept with the search. */
+    val debridConfiguration: String = LocalDebridAvailabilityService.cacheCheckConfiguration(),
 ) {
     val totalTasks: Int
         get() = streamAddons.size + serverSources.size + pluginProviderGroups.sumOf { it.scrapers.size }
 
-    /** Changes whenever the set of queried sources changes, so a search for an older setup is not reused. */
+    /** Changes whenever the queried sources or the debrid account change, so a search for an older setup is not reused. */
     val sourceConfiguration: String
         get() = buildList {
             streamAddons.forEach { add("addon:${it.addonId}") }
@@ -58,6 +61,7 @@ internal class StreamSearchTargets(
             pluginProviderGroups.forEach { group ->
                 add("plugin:${group.addonId}:${group.scrapers.joinToString(",") { it.id }}")
             }
+            add("debrid:$debridConfiguration")
         }.joinToString("|")
 }
 
@@ -255,7 +259,7 @@ private fun CoroutineScope.launchStreamSearchTasks(
                     AddonStreamGroup(addon.addonName, addon.addonId, emptyList(), isLoading = false, error = error.message)
                 },
             )
-            onCompletion(StreamLoadCompletion.Addon(group))
+            onCompletion(StreamLoadCompletion.Addon(group.withDebridAvailability()))
         }
     }
 
@@ -304,6 +308,21 @@ private fun CoroutineScope.launchStreamSearchTasks(
             }
         }
     }
+}
+
+/**
+ * Checks which torrents of an installed addon are cached with the debrid service, once per search
+ * as on TV, so every screen joining the search gets the checked streams instead of asking again.
+ * A failed check leaves the streams unchecked rather than ending the whole search.
+ */
+private suspend fun AddonStreamGroup.withDebridAvailability(): AddonStreamGroup {
+    if (streams.isEmpty()) return this
+    val eligibleGroupIds = setOf(addonId)
+    if (!LocalDebridAvailabilityService.hasPendingCacheCheck(listOf(this), eligibleGroupIds)) return this
+    val checking = LocalDebridAvailabilityService.markChecking(listOf(this), eligibleGroupIds).firstOrNull() ?: this
+    return runCatchingUnlessCancelled {
+        LocalDebridAvailabilityService.annotateCachedAvailability(listOf(checking), eligibleGroupIds).firstOrNull()
+    }.getOrNull() ?: this
 }
 
 /** Ends the loading state of sources a dropped search never reported. */

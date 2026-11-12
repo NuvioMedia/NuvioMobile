@@ -89,6 +89,13 @@ object LocalDebridAvailabilityService {
         }
     }
 
+    /**
+     * Identifies the account used for cache checks, without the raw key, so a source search
+     * checked with another account or none is not reused.
+     */
+    fun cacheCheckConfiguration(): String =
+        cacheCheckAccount()?.let { account -> "${account.provider.id}:${account.apiKey.hashCode()}" } ?: "none"
+
     suspend fun isCached(hash: String): Boolean? {
         val account = cacheCheckAccount() ?: return null
         return LocalDebridService.isCached(account, hash)
