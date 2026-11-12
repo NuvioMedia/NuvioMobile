@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
@@ -711,8 +712,19 @@ internal fun StreamList(
         StreamBadgeSettingsRepository.uiState
     }.collectAsStateWithLifecycle()
 
+    val listState = rememberLazyListState()
+    // As on TV, picking another addon filter starts at the top of its results. Only a change of
+    // filter does it, so the position kept when coming back from the player stays.
+    var shownFilter by remember { mutableStateOf(uiState.selectedFilter) }
+    LaunchedEffect(uiState.selectedFilter) {
+        if (uiState.selectedFilter == shownFilter) return@LaunchedEffect
+        shownFilter = uiState.selectedFilter
+        listState.scrollToItem(0)
+    }
+
     CompositionLocalProvider(LocalStreamSizeLabelFormat provides formatStreamSize) {
     LazyColumn(
+        state = listState,
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(
             horizontal = 12.dp,

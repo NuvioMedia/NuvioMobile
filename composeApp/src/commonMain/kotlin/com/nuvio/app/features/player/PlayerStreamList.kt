@@ -69,6 +69,14 @@ internal fun PlayerStreamList(
             if (interaction is DragInteraction.Start) userScrolledList = true
         }
     }
+    // As on TV, picking another addon filter starts at the top of its results.
+    var shownFilter by remember { mutableStateOf(streamsUiState.selectedFilter) }
+    LaunchedEffect(streamsUiState.selectedFilter) {
+        if (streamsUiState.selectedFilter == shownFilter) return@LaunchedEffect
+        shownFilter = streamsUiState.selectedFilter
+        scrolledToCurrent = true
+        listState.scrollToItem(0)
+    }
 
     when {
         streams.isEmpty() && streamsUiState.isAnyLoading -> {
