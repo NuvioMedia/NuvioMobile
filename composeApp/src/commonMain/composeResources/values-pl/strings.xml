@@ -607,6 +607,14 @@
     <string name="settings_continue_watching_sort_mode_streaming_desc">Wydane najpierw, nadchodzące na końcu</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming">Oddzielny rząd Nadchodzące</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">Przenieś niewydane odcinki do oddzielnego rzędu Nadchodzące</string>
+    <string name="settings_continue_watching_click_action_title">Po wybraniu</string>
+    <string name="settings_continue_watching_click_action_description">Co otwiera się po wybraniu elementu Kontynuuj oglądanie</string>
+    <string name="settings_continue_watching_click_action_stream">Otwórz strumień</string>
+    <string name="settings_continue_watching_click_action_stream_desc">Wybierz źródło lub wznów odtwarzanie</string>
+    <string name="settings_continue_watching_click_action_details">Otwórz szczegóły</string>
+    <string name="settings_continue_watching_click_action_details_desc">Otwórz stronę szczegółów tytułu</string>
+    <string name="settings_continue_watching_click_action_details_upcoming">Szczegóły tylko dla nadchodzących</string>
+    <string name="settings_continue_watching_click_action_details_upcoming_desc">Szczegóły dla odcinków, które jeszcze nie wyszły, strumień dla pozostałych</string>
     <string name="upcoming_section_title">Nadchodzące</string>
     <string name="settings_continue_watching_section_card_style">STYL KARTY</string>
     <string name="settings_continue_watching_section_on_launch">PRZY URUCHOMIENIU</string>
