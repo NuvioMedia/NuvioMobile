@@ -1,4 +1,7 @@
 [versions]
+androidx-benchmark = "1.5.0"
+androidx-uiautomator = "2.3.0"
+androidx-testRunner = "1.7.0"
 agp = "9.2.0"
 android-compileSdk = "37"
 android-compileSdkMinor = "1"
@@ -36,6 +39,9 @@ sentry = "8.47.0"
 sentryGradle = "6.14.0"
 
 [libraries]
+androidx-benchmark-macro-junit4 = { module = "androidx.benchmark:benchmark-macro-junit4", version.ref = "androidx-benchmark" }
+androidx-uiautomator = { module = "androidx.test.uiautomator:uiautomator", version.ref = "androidx-uiautomator" }
+androidx-testRunner = { module = "androidx.test:runner", version.ref = "androidx-testRunner" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlin-testJunit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 junit = { module = "junit:junit", version.ref = "junit" }
@@ -97,6 +103,8 @@ desugar-jdk-libs = { module = "com.android.tools:desugar_jdk_libs", version.ref 
 sentry-android = { module = "io.sentry:sentry-android", version.ref = "sentry" }
 
 [plugins]
+androidTest = { id = "com.android.test", version.ref = "agp" }
+androidxBaselineProfile = { id = "androidx.baselineprofile", version.ref = "androidx-benchmark" }
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
 androidKotlinMultiplatformLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
