@@ -1235,7 +1235,7 @@
     <string name="settings_playback_stream_timeout">Thời gian chờ khi chọn luồng</string>
     <string name="settings_playback_stream_timeout_description">Thời gian chờ các tiện ích trước khi chọn luồng</string>
     <string name="settings_playback_fallback_next_source">Chuyển sang nguồn phát khớp tiếp theo khi lỗi</string>
-    <string name="settings_playback_fallback_next_source_description">Nếu nguồn phát được tự động chọn bị lỗi hoặc không khởi chạy đúng thời gian, thử ngầm các nguồn phù hợp tiếp theo.</string>
+    <string name="settings_playback_fallback_next_source_description">Nếu nguồn phát tự động chọn bị lỗi hoặc không khởi chạy đúng thời gian, thử các nguồn phát khớp tiếp theo.</string>
     <string name="settings_playback_fallback_max_sources">Nguồn phát sẽ thử khi lỗi</string>
     <string name="settings_playback_fallback_startup_timeout">Thời gian chờ khởi chạy nguồn phát</string>
     <string name="settings_playback_fallback_next_source_blocked_by_engine_switch">Tắt tự động chuyển lõi trình phát khi phát lại lỗi để sử dụng tùy chọn này.</string>
