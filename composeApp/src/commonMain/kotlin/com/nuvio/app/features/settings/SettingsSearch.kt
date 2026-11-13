@@ -727,6 +727,7 @@ internal fun settingsSearchEntries(
             PlaybackSearchRow("up-next", stringResource(Res.string.settings_continue_watching_up_next_title), stringResource(Res.string.settings_continue_watching_up_next_description)),
             PlaybackSearchRow("unaired-next-up", stringResource(Res.string.settings_continue_watching_show_unaired_next_up_title), stringResource(Res.string.settings_continue_watching_show_unaired_next_up_description)),
             PlaybackSearchRow("blur-next-up", stringResource(Res.string.settings_continue_watching_blur_next_up_title), stringResource(Res.string.settings_continue_watching_blur_next_up_description)),
+            PlaybackSearchRow("click-action", stringResource(Res.string.settings_continue_watching_click_action_title), stringResource(Res.string.settings_continue_watching_click_action_description)),
         ),
     )
     addContinueWatchingRows(

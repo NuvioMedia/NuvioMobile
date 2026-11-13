@@ -68,6 +68,7 @@ import com.nuvio.app.features.watched.resolveWatchedBadgesBulk
 import com.nuvio.app.features.watched.watchedItemKey
 import com.nuvio.app.features.watchprogress.CachedInProgressItem
 import com.nuvio.app.features.watchprogress.CachedNextUpItem
+import com.nuvio.app.features.watchprogress.ContinueWatchingClickAction
 import com.nuvio.app.features.watchprogress.ContinueWatchingEnrichmentCache
 import com.nuvio.app.features.watchprogress.CurrentDateProvider
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
@@ -1654,10 +1655,7 @@ internal fun splitUpcomingItems(
         return items to emptyList()
     }
 
-    val (upcoming, main) = items.partition { item ->
-        item.isNextUp && parseReleaseDateToEpochMs(item.released)
-            ?.let { releaseEpochMs -> releaseEpochMs > nowEpochMs } == true
-    }
+    val (upcoming, main) = items.partition { item -> item.isUpcoming(nowEpochMs) }
     val sortedUpcoming = upcoming.sortedWith { first, second ->
         val firstRelease = parseReleaseDateToEpochMs(first.released)
         val secondRelease = parseReleaseDateToEpochMs(second.released)
@@ -1669,6 +1667,19 @@ internal fun splitUpcomingItems(
         }
     }
     return main to sortedUpcoming
+}
+
+internal fun ContinueWatchingItem.isUpcoming(nowEpochMs: Long = WatchProgressClock.nowEpochMs()): Boolean =
+    isNextUp && parseReleaseDateToEpochMs(released)
+        ?.let { releaseEpochMs -> releaseEpochMs > nowEpochMs } == true
+
+internal fun ContinueWatchingClickAction.opensDetails(
+    item: ContinueWatchingItem,
+    nowEpochMs: Long = WatchProgressClock.nowEpochMs(),
+): Boolean = when (this) {
+    ContinueWatchingClickAction.STREAM -> false
+    ContinueWatchingClickAction.DETAILS -> true
+    ContinueWatchingClickAction.DETAILS_FOR_UPCOMING -> item.isUpcoming(nowEpochMs)
 }
 
 private fun applyStreamingStyleSort(

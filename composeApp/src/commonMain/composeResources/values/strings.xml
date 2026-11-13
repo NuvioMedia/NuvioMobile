@@ -825,6 +825,14 @@
     <string name="settings_continue_watching_sort_mode_streaming_desc">Released items first, upcoming at the end</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming">Separate Upcoming Row</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">Move unaired episodes to a separate Upcoming row</string>
+    <string name="settings_continue_watching_click_action_title">On Select</string>
+    <string name="settings_continue_watching_click_action_description">What opens when you select a Continue Watching item</string>
+    <string name="settings_continue_watching_click_action_stream">Open Stream</string>
+    <string name="settings_continue_watching_click_action_stream_desc">Pick a source or resume playback</string>
+    <string name="settings_continue_watching_click_action_details">Open Details</string>
+    <string name="settings_continue_watching_click_action_details_desc">Open the details page of the title</string>
+    <string name="settings_continue_watching_click_action_details_upcoming">Details for Upcoming Only</string>
+    <string name="settings_continue_watching_click_action_details_upcoming_desc">Open details for episodes that have not aired yet, the stream for the rest</string>
     <string name="upcoming_section_title">Upcoming</string>
     <string name="settings_continue_watching_section_card_style">POSTER CARD STYLE</string>
     <string name="settings_continue_watching_section_on_launch">ON LAUNCH</string>

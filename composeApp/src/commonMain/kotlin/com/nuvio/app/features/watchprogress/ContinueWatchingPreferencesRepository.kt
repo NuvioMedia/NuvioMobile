@@ -24,6 +24,8 @@ private data class StoredContinueWatchingPreferences(
     val showResumePromptOnLaunch: Boolean = true,
     @SerialName("sort_mode")
     val sortMode: ContinueWatchingSortMode = ContinueWatchingSortMode.DEFAULT,
+    @SerialName("click_action")
+    val clickAction: ContinueWatchingClickAction = ContinueWatchingClickAction.STREAM,
 )
 
 object ContinueWatchingPreferencesRepository {
@@ -100,6 +102,7 @@ object ContinueWatchingPreferencesRepository {
                 dismissedNextUpKeys = stored.dismissedNextUpKeys,
                 showResumePromptOnLaunch = stored.showResumePromptOnLaunch,
                 sortMode = stored.sortMode,
+                clickAction = stored.clickAction,
             )
         } else {
             ContinueWatchingPreferencesUiState()
@@ -165,6 +168,13 @@ object ContinueWatchingPreferencesRepository {
         persist()
     }
 
+    fun setClickAction(action: ContinueWatchingClickAction) {
+        ensureLoaded()
+        if (_uiState.value.clickAction == action) return
+        _uiState.value = _uiState.value.copy(clickAction = action)
+        persist()
+    }
+
     fun removeDismissedNextUpKeysForContent(contentId: String) {
         ensureLoaded()
         val normalizedContentId = contentId.trim()
@@ -191,6 +201,7 @@ object ContinueWatchingPreferencesRepository {
                     dismissedNextUpKeys = _uiState.value.dismissedNextUpKeys,
                     showResumePromptOnLaunch = _uiState.value.showResumePromptOnLaunch,
                     sortMode = _uiState.value.sortMode,
+                    clickAction = _uiState.value.clickAction,
                 ),
             ),
         )
