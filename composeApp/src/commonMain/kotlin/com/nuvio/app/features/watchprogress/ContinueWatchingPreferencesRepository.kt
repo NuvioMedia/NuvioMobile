@@ -70,10 +70,7 @@ object ContinueWatchingPreferencesRepository {
             useEpisodeThumbnails = useEpisodeThumbnails,
             showUnairedNextUp = showUnairedNextUp,
             blurNextUp = blurNextUp,
-            dismissedNextUpKeys = dismissedNextUpKeys
-                .map(String::trim)
-                .filter(String::isNotBlank)
-                .toSet(),
+            dismissedNextUpKeys = normalizeDismissedNextUpKeys(dismissedNextUpKeys),
         )
         persist()
     }
@@ -99,7 +96,7 @@ object ContinueWatchingPreferencesRepository {
                 useEpisodeThumbnails = stored.useEpisodeThumbnails,
                 showUnairedNextUp = stored.showUnairedNextUp,
                 blurNextUp = stored.blurNextUp,
-                dismissedNextUpKeys = stored.dismissedNextUpKeys,
+                dismissedNextUpKeys = normalizeDismissedNextUpKeys(stored.dismissedNextUpKeys),
                 showResumePromptOnLaunch = stored.showResumePromptOnLaunch,
                 sortMode = stored.sortMode,
                 clickAction = stored.clickAction,
@@ -147,7 +144,7 @@ object ContinueWatchingPreferencesRepository {
 
     fun addDismissedNextUpKey(key: String) {
         ensureLoaded()
-        val normalizedKey = key.trim()
+        val normalizedKey = key.trim().substringBefore("|")
         if (normalizedKey.isBlank()) return
         val current = _uiState.value.dismissedNextUpKeys
         if (normalizedKey in current) return
@@ -187,6 +184,11 @@ object ContinueWatchingPreferencesRepository {
         _uiState.value = _uiState.value.copy(dismissedNextUpKeys = filtered)
         persist()
     }
+
+    private fun normalizeDismissedNextUpKeys(keys: Set<String>): Set<String> =
+        keys.map { it.trim().substringBefore("|") }
+            .filter(String::isNotBlank)
+            .toSet()
 
     private fun persist() {
         ContinueWatchingPreferencesStorage.savePayload(

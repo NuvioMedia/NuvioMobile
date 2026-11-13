@@ -961,6 +961,26 @@ class HomeScreenTest {
         assertEquals(HomeNextUpCandidateMetadataOutcome.Dismissed, decision.outcome)
     }
 
+    @Test
+    fun `dismissed next up stays hidden after its seed episode changes`() {
+        val laterEpisode = continueWatchingItem(
+            videoId = "show:1:4",
+            subtitle = "S1E4 • Later",
+            seasonNumber = 1,
+            episodeNumber = 4,
+            seedSeasonNumber = 1,
+            seedEpisodeNumber = 3,
+        )
+
+        val decision = classifyHomeNextUpCandidateMetadata(
+            freshItem = laterEpisode,
+            cachedFallbackItem = null,
+            dismissedNextUpKeys = setOf(nextUpDismissKey("show", 1, 1)),
+        )
+
+        assertEquals(HomeNextUpCandidateMetadataOutcome.Dismissed, decision.outcome)
+    }
+
     private fun progressEntry(
         videoId: String,
         title: String,
