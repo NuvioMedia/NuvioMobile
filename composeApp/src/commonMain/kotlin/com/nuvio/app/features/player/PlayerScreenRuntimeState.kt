@@ -223,6 +223,13 @@ internal class PlayerScreenRuntime(
     var pendingP2pSwitch by mutableStateOf<PendingPlayerP2pSwitch?>(null)
     var credentialRefreshJob by mutableStateOf<Job?>(null)
     var credentialRefreshAttemptedSourceUrl by mutableStateOf<String?>(null)
+    /** URL opened from the reuse-last-link cache; it is refreshed after a playback error even without a token. */
+    var linkCacheSourceUrl: String? = args.sourceUrl.takeIf { args.sourceFromLinkCache && it.isNotBlank() }
+    /** URL picked by auto source selection; only this source falls back to the next match on failure. */
+    var autoSelectedSourceUrl: String? = args.sourceUrl.takeIf { args.sourceAutoSelected && it.isNotBlank() }
+    var sourceFallbackAttempts = 0
+    val sourceFallbackTriedKeys = mutableSetOf<String>()
+    var sourceFallbackJob: Job? = null
 
     var showAudioModal by mutableStateOf(false)
     var showSubtitleModal by mutableStateOf(false)

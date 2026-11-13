@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">Beoordelen</string>
+    <string name="rating_your_rating">Je beoordeling</string>
+    <string name="rating_rate_episode">Aflevering beoordelen</string>
+    <string name="rating_rated">Beoordeeld met %1$s/10</string>
+    <string name="rating_value">%1$s uit 10</string>
+    <string name="rating_syncs_to">Synchroniseert met %1$s</string>
+    <string name="rating_saved">Beoordeling opgeslagen</string>
+    <string name="rating_removed">Beoordeling verwijderd</string>
+    <string name="rating_failed">Je beoordeling kon niet worden bijgewerkt op %1$s</string>
+    <string name="settings_tracking_ratings">Beoordelingen</string>
+    <string name="settings_tracking_ratings_description">Kies bij welke dienst je beoordelingen worden opgeslagen en opgehaald</string>
+    <string name="settings_tracking_ratings_picker_subtitle">Beoordeel titels op hun detailpagina. Je beoordelingen worden opgeslagen bij en opgehaald van de dienst die je kiest.</string>
+    <string name="settings_tracking_ratings_off_description">Verberg de knop om te beoordelen.</string>
+    <string name="settings_tracking_ratings_simkl_description">Beoordeel films en series. Als je een titel beoordeelt die nog niet in je Simkl-lijsten staat, wordt die eraan toegevoegd.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Beoordeel films, series en afleveringen.</string>
+</resources>

@@ -1010,7 +1010,7 @@
     <string name="settings_playback_secondary_subtitle_language">İkinci altyazı dili</string>
     <string name="settings_playback_section_decoder">ÇÖZÜCÜ</string>
     <string name="settings_playback_engine">Oynatma Motoru</string>
-    <string name="settings_playback_engine_auto_description">Önce ExoPlayer'ı kullanır, oynatma başarısız olursa libmpv'ye geçer.</string>
+    <string name="settings_playback_engine_auto_description">Filmler ve Diziler için ExoPlayer · Anime için MPV</string>
     <string name="settings_playback_engine_exoplayer_description">ExoPlayer ve Android Media3 kod çözücülerini kullanır.</string>
     <string name="settings_playback_engine_libmpv_description">Android oynatma için libmpv'yi kullanır.</string>
     <string name="settings_playback_libmpv_video_output">libmpv İşleyici</string>
@@ -1567,6 +1567,13 @@
     <string name="notifications_test_send_failed">Test bildirimi gönderilemedi.</string>
     <string name="notifications_test_sent_for">%1$s için test bildirimi gönderildi.</string>
     <string name="player_unable_to_play_stream">Bu yayın oynatılamıyor.</string>
+    <string name="player_error_stream_expired">Yayın bağlantısının süresi doldu. Farklı bir kaynak deneyin.</string>
+    <string name="player_error_stream_removed">Yayın bağlantısının süresi doldu veya kaldırıldı. Farklı bir kaynak deneyin.</string>
+    <string name="player_error_stream_rate_limited">Yayın kaynağına çok fazla istek yapıldı. Biraz bekleyip tekrar deneyin.</string>
+    <string name="player_error_stream_unavailable">Yayın sunucusu şu an kullanılamıyor. Farklı bir kaynak deneyin.</string>
+    <string name="player_error_stream_blocked">Yayın kaynağı engellendi veya kısıtlandı. Farklı bir kaynak deneyin.</string>
+    <string name="player_error_source_invalid_content">Kaynak hatası: Yayın kaynağı geçersiz veya oynatılamaz içerik döndürdü. Bağlantının süresi dolmuş olabilir veya sunucu video yerine hata sayfası döndürmüş olabilir.\n\nFarklı bir kaynak deneyin. [%1$s]</string>
+    <string name="player_error_unsupported_format">Bu yayın cihazınızın desteklemeyebileceği bir format kullanıyor. Farklı bir kaynak deneyin. [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">MPV oynatıcı motoru mevcut değil. Lütfen uygulamayı yeniden derleyin.</string>
     <string name="profile_pin_changed_requires_refresh">Bu profilin PIN'i değişti. Bu cihazdaki kilidi yenilemek için bir kez bağlan.</string>
     <string name="profile_pin_clear_failed">PIN kilidi kaldırılamadı. Tekrar dene.</string>
@@ -2369,7 +2376,7 @@ Bu özelliği tamamen kendi sorumluluğunuzda kullanırsınız. P2P istediğiniz
     <string name="settings_playback_subtitle_strip_sdh">SDH Altyazılarını Temizle</string>
     <string name="settings_playback_subtitle_strip_sdh_description">Metin altyazılarından ses açıklamalarını ve konuşmacı etiketlerini gizleyin.</string>
     <string name="settings_playback_exo_chapters">Sahneleri Göster</string>
-    <string name="settings_playback_exo_chapters_description">MKV dosyalarının sahnelerini okuyarak ilerleme çubuğunda işaretler ve oynatıcıda listeler. Oynatma başladığında birkaç küçük ek istek yapar. libmpv sahneleri her zaman gösterir.</string>
+    <string name="settings_playback_exo_chapters_description">MKV dosyalarının sahnelerini okuyarak ilerleme çubuğunda işaretler ve oynatıcıda listeler.</string>
     <string name="settings_tmdb_api_key_label">API anahtarı</string>
     <string name="settings_tmdb_api_key_override_description">Kendi TMDB API anahtarınızı kullanın veya varsayılanı kullanmak için boş bırakın.</string>
     <string name="settings_tmdb_personal_api_key">Kişisel API anahtarı</string>

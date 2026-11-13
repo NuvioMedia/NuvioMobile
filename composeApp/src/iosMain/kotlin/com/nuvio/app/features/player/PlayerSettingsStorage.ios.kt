@@ -52,10 +52,14 @@ actual object PlayerSettingsStorage {
     private const val streamReuseLastLinkCacheHoursKey = "stream_reuse_last_link_cache_hours"
     private const val androidPlaybackEngineKey = "android_playback_engine"
     private const val autoSwitchPlaybackEngineOnErrorKey = "auto_switch_playback_engine_on_error"
+    private const val streamAutoPlayFallbackOnFailureKey = "stream_auto_play_fallback_on_failure"
+    private const val streamAutoPlayFallbackMaxSourcesKey = "stream_auto_play_fallback_max_sources"
+    private const val streamAutoPlayFallbackStartupTimeoutSecondsKey = "stream_auto_play_fallback_startup_timeout_seconds"
     private const val androidLibmpvVideoOutputKey = "android_libmpv_video_output"
     private const val androidLibmpvHardwareDecodingEnabledKey = "android_libmpv_hardware_decoding_enabled"
     private const val androidLibmpvYuv420pEnabledKey = "android_libmpv_yuv420p_enabled"
     private const val androidExoChaptersEnabledKey = "android_exo_chapters_enabled"
+    private const val chapterTitleEnabledKey = "chapter_title_enabled"
     private const val rememberAudioDelayPerDeviceKey = "remember_audio_delay_per_device"
     private const val persistAudioAmplificationKey = "persist_audio_amplification"
     private const val audioAmplificationDbKey = "audio_amplification_db"
@@ -149,10 +153,14 @@ actual object PlayerSettingsStorage {
         streamReuseLastLinkCacheHoursKey,
         androidPlaybackEngineKey,
         autoSwitchPlaybackEngineOnErrorKey,
+        streamAutoPlayFallbackOnFailureKey,
+        streamAutoPlayFallbackMaxSourcesKey,
+        streamAutoPlayFallbackStartupTimeoutSecondsKey,
         androidLibmpvVideoOutputKey,
         androidLibmpvHardwareDecodingEnabledKey,
         androidLibmpvYuv420pEnabledKey,
         androidExoChaptersEnabledKey,
+        chapterTitleEnabledKey,
         rememberAudioDelayPerDeviceKey,
         persistAudioAmplificationKey,
         audioAmplificationDbKey,
@@ -608,6 +616,43 @@ actual object PlayerSettingsStorage {
         saveBoolean(autoSwitchPlaybackEngineOnErrorKey, enabled)
     }
 
+    actual fun loadStreamAutoPlayFallbackOnFailure(): Boolean? = loadBoolean(streamAutoPlayFallbackOnFailureKey)
+
+    actual fun saveStreamAutoPlayFallbackOnFailure(enabled: Boolean) {
+        saveBoolean(streamAutoPlayFallbackOnFailureKey, enabled)
+    }
+
+    actual fun loadStreamAutoPlayFallbackMaxSources(): Int? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(streamAutoPlayFallbackMaxSourcesKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.integerForKey(key).toInt()
+        } else {
+            null
+        }
+    }
+
+    actual fun saveStreamAutoPlayFallbackMaxSources(count: Int) {
+        NSUserDefaults.standardUserDefaults.setInteger(count.toLong(), forKey = ProfileScopedKey.of(streamAutoPlayFallbackMaxSourcesKey))
+    }
+
+    actual fun loadStreamAutoPlayFallbackStartupTimeoutSeconds(): Int? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(streamAutoPlayFallbackStartupTimeoutSecondsKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.integerForKey(key).toInt()
+        } else {
+            null
+        }
+    }
+
+    actual fun saveStreamAutoPlayFallbackStartupTimeoutSeconds(seconds: Int) {
+        NSUserDefaults.standardUserDefaults.setInteger(
+            seconds.toLong(),
+            forKey = ProfileScopedKey.of(streamAutoPlayFallbackStartupTimeoutSecondsKey),
+        )
+    }
+
     actual fun loadAndroidLibmpvVideoOutput(): String? =
         NSUserDefaults.standardUserDefaults.stringForKey(ProfileScopedKey.of(androidLibmpvVideoOutputKey))
 
@@ -655,6 +700,20 @@ actual object PlayerSettingsStorage {
 
     actual fun saveAndroidExoChaptersEnabled(enabled: Boolean) {
         NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(androidExoChaptersEnabledKey))
+    }
+
+    actual fun loadChapterTitleEnabled(): Boolean? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        val key = ProfileScopedKey.of(chapterTitleEnabledKey)
+        return if (defaults.objectForKey(key) != null) {
+            defaults.boolForKey(key)
+        } else {
+            null
+        }
+    }
+
+    actual fun saveChapterTitleEnabled(enabled: Boolean) {
+        NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(chapterTitleEnabledKey))
     }
 
     actual fun loadRememberAudioDelayPerDevice(): Boolean? {
@@ -1259,12 +1318,22 @@ actual object PlayerSettingsStorage {
         loadAutoSwitchPlaybackEngineOnError()?.let {
             put(autoSwitchPlaybackEngineOnErrorKey, encodeSyncBoolean(it))
         }
+        loadStreamAutoPlayFallbackOnFailure()?.let {
+            put(streamAutoPlayFallbackOnFailureKey, encodeSyncBoolean(it))
+        }
+        loadStreamAutoPlayFallbackMaxSources()?.let {
+            put(streamAutoPlayFallbackMaxSourcesKey, encodeSyncInt(it))
+        }
+        loadStreamAutoPlayFallbackStartupTimeoutSeconds()?.let {
+            put(streamAutoPlayFallbackStartupTimeoutSecondsKey, encodeSyncInt(it))
+        }
         loadAndroidLibmpvVideoOutput()?.let { put(androidLibmpvVideoOutputKey, encodeSyncString(it)) }
         loadAndroidLibmpvHardwareDecodingEnabled()?.let {
             put(androidLibmpvHardwareDecodingEnabledKey, encodeSyncBoolean(it))
         }
         loadAndroidLibmpvYuv420pEnabled()?.let { put(androidLibmpvYuv420pEnabledKey, encodeSyncBoolean(it)) }
         loadAndroidExoChaptersEnabled()?.let { put(androidExoChaptersEnabledKey, encodeSyncBoolean(it)) }
+        loadChapterTitleEnabled()?.let { put(chapterTitleEnabledKey, encodeSyncBoolean(it)) }
         loadRememberAudioDelayPerDevice()?.let { put(rememberAudioDelayPerDeviceKey, encodeSyncBoolean(it)) }
         loadPersistAudioAmplification()?.let { put(persistAudioAmplificationKey, encodeSyncBoolean(it)) }
         loadAudioAmplificationDb()?.let { put(audioAmplificationDbKey, encodeSyncInt(it)) }
@@ -1350,11 +1419,16 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncInt(streamReuseLastLinkCacheHoursKey)?.let(::saveStreamReuseLastLinkCacheHours)
         payload.decodeSyncString(androidPlaybackEngineKey)?.let(::saveAndroidPlaybackEngine)
         payload.decodeSyncBoolean(autoSwitchPlaybackEngineOnErrorKey)?.let(::saveAutoSwitchPlaybackEngineOnError)
+        payload.decodeSyncBoolean(streamAutoPlayFallbackOnFailureKey)?.let(::saveStreamAutoPlayFallbackOnFailure)
+        payload.decodeSyncInt(streamAutoPlayFallbackMaxSourcesKey)?.let(::saveStreamAutoPlayFallbackMaxSources)
+        payload.decodeSyncInt(streamAutoPlayFallbackStartupTimeoutSecondsKey)
+            ?.let(::saveStreamAutoPlayFallbackStartupTimeoutSeconds)
         payload.decodeSyncString(androidLibmpvVideoOutputKey)?.let(::saveAndroidLibmpvVideoOutput)
         payload.decodeSyncBoolean(androidLibmpvHardwareDecodingEnabledKey)
             ?.let(::saveAndroidLibmpvHardwareDecodingEnabled)
         payload.decodeSyncBoolean(androidLibmpvYuv420pEnabledKey)?.let(::saveAndroidLibmpvYuv420pEnabled)
         payload.decodeSyncBoolean(androidExoChaptersEnabledKey)?.let(::saveAndroidExoChaptersEnabled)
+        payload.decodeSyncBoolean(chapterTitleEnabledKey)?.let(::saveChapterTitleEnabled)
         payload.decodeSyncBoolean(rememberAudioDelayPerDeviceKey)?.let(::saveRememberAudioDelayPerDevice)
         payload.decodeSyncBoolean(persistAudioAmplificationKey)?.let(::savePersistAudioAmplification)
         payload.decodeSyncInt(audioAmplificationDbKey)?.let(::saveAudioAmplificationDb)

@@ -601,6 +601,8 @@ internal fun settingsSearchEntries(
                 stringResource(Res.string.settings_playback_touch_gestures_description),
             ),
             PlaybackSearchRow("hold-speed", stringResource(Res.string.settings_playback_hold_speed)),
+            PlaybackSearchRow("exo-chapters", stringResource(Res.string.settings_playback_exo_chapters), stringResource(Res.string.settings_playback_exo_chapters_description)),
+            PlaybackSearchRow("chapter-title", stringResource(Res.string.settings_playback_chapter_title), stringResource(Res.string.settings_playback_chapter_title_description)),
         ),
     )
     addPlaybackRows(
@@ -661,7 +663,6 @@ internal fun settingsSearchEntries(
                 PlaybackSearchRow("exo-native-memory", stringResource(Res.string.settings_playback_exo_native_memory), stringResource(Res.string.settings_playback_exo_native_memory_description), page = SettingsPage.PlaybackBuffer),
                 PlaybackSearchRow("custom-buffers", stringResource(Res.string.settings_playback_buffer_custom), stringResource(Res.string.settings_playback_buffer_custom_description), page = SettingsPage.PlaybackBuffer),
                 PlaybackSearchRow("vod-cache", stringResource(Res.string.settings_playback_vod_cache), stringResource(Res.string.settings_playback_vod_cache_description), page = SettingsPage.PlaybackBuffer),
-                PlaybackSearchRow("exo-chapters", stringResource(Res.string.settings_playback_exo_chapters), stringResource(Res.string.settings_playback_exo_chapters_description), page = SettingsPage.PlaybackInterface),
                 PlaybackSearchRow("remember-audio-delay", stringResource(Res.string.settings_playback_remember_audio_delay), stringResource(Res.string.settings_playback_remember_audio_delay_description), page = SettingsPage.PlaybackAudio),
                 PlaybackSearchRow("downmix", stringResource(Res.string.settings_playback_downmix), stringResource(Res.string.settings_playback_downmix_description), page = SettingsPage.PlaybackAudio),
             ),
@@ -726,6 +727,7 @@ internal fun settingsSearchEntries(
             PlaybackSearchRow("up-next", stringResource(Res.string.settings_continue_watching_up_next_title), stringResource(Res.string.settings_continue_watching_up_next_description)),
             PlaybackSearchRow("unaired-next-up", stringResource(Res.string.settings_continue_watching_show_unaired_next_up_title), stringResource(Res.string.settings_continue_watching_show_unaired_next_up_description)),
             PlaybackSearchRow("blur-next-up", stringResource(Res.string.settings_continue_watching_blur_next_up_title), stringResource(Res.string.settings_continue_watching_blur_next_up_description)),
+            PlaybackSearchRow("click-action", stringResource(Res.string.settings_continue_watching_click_action_title), stringResource(Res.string.settings_continue_watching_click_action_description)),
         ),
     )
     addContinueWatchingRows(

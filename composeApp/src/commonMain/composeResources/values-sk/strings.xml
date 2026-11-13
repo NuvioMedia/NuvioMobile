@@ -15,7 +15,7 @@
     <string name="action_previous">Predchádzajúce</string>
     <string name="action_remove">Odstrániť</string>
     <string name="action_reorder">Zmeniť poradie</string>
-    <string name="action_reset">Obnoviť predvolené</string>
+    <string name="action_reset">Obnoviť</string>
     <string name="action_resume">Pokračovať</string>
     <string name="action_retry">Skúsiť znova</string>
     <string name="action_save">Uložiť</string>
@@ -959,7 +959,7 @@
     <string name="settings_playback_timeout_seconds">%1$ss</string>
     <string name="settings_playback_timeout_unlimited">Neobmedzene</string>
     <string name="settings_playback_tunneled_playback">Tunelované prehrávanie</string>
-    <string name="settings_playback_tunneled_playback_description">Synchronizácia zvuku/videa na hardvérovej úrovni. Môže zlepšiť prehrávanie na niektorých zariadeniach Android TV</string>
+    <string name="settings_playback_tunneled_playback_description">Synchronizácia zvuku/videa na hardvérovej úrovni. Môže zlepšiť prehrávanie na niektorých zariadeniach Android.</string>
     <string name="settings_tmdb_enable_enrichment">Povoliť obohatenie TMDB</string>
     <string name="settings_tmdb_enable_enrichment_description">Použiť TMDB ako zdroj metadát na vylepšenie dát doplnku</string>
     <string name="settings_tmdb_language_code_label">Kód jazyka</string>
@@ -1357,6 +1357,13 @@
     <string name="notifications_test_send_failed">Nepodarilo sa odoslať testovacie oznámenie.</string>
     <string name="notifications_test_sent_for">Testovacie oznámenie odoslané pre %1$s.</string>
     <string name="player_unable_to_play_stream">Nepodarilo sa prehrať tento stream.</string>
+    <string name="player_error_stream_expired">Odkaz na stream vypršal. Skúste iný zdroj.</string>
+    <string name="player_error_stream_removed">Odkaz na stream vypršal alebo bol odstránený. Skúste iný zdroj.</string>
+    <string name="player_error_stream_rate_limited">Príliš veľa požiadaviek na zdroj streamu. Počkajte chvíľu a skúste to znova.</string>
+    <string name="player_error_stream_unavailable">Server streamu je momentálne nedostupný. Skúste iný zdroj.</string>
+    <string name="player_error_stream_blocked">Zdroj streamu je zablokovaný alebo obmedzený. Skúste iný zdroj.</string>
+    <string name="player_error_source_invalid_content">Chyba zdroja: Zdroj streamu vrátil neplatný alebo neprehrateľný obsah. Odkaz mohol vypršať alebo server vrátil chybovú stránku namiesto videa.\n\nSkúste iný zdroj. [%1$s]</string>
+    <string name="player_error_unsupported_format">Tento stream používa formát, ktorý vaše zariadenie nemusí podporovať. Skúste iný zdroj. [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">Engine prehrávača MPV nie je dostupný. Prosím, znovu zostavte aplikáciu.</string>
     <string name="profile_pin_changed_requires_refresh">PIN tohto profilu sa zmenil. Pripojte sa raz, aby ste obnovili zámok na tomto zariadení.</string>
     <string name="profile_pin_clear_failed">Nepodarilo sa odstrániť zámok PIN. Skúste znova.</string>
@@ -1852,16 +1859,20 @@
     <string name="cw_airs_today">Vysiela sa dnes</string>
     <string name="cw_airs_tomorrow">Vysiela sa zajtra</string>
     <plurals name="cw_airs_in_days">
-        <item quantity="one">Vysiela sa o %d deň</item>
-        <item quantity="other">Vysiela sa o %d dní</item>
-    <item quantity="few">Vysiela sa o %d dni</item><item quantity="many">Vysiela sa o %d dní</item></plurals>
+        <item quantity="one">Vysiela sa o %1$d deň</item>
+        <item quantity="few">Vysiela sa o %1$d dni</item>
+        <item quantity="many">Vysiela sa o %1$d dní</item>
+        <item quantity="other">Vysiela sa o %1$d dní</item>
+    </plurals>
     <string name="cw_airs_date_short">%1$s</string>
     <string name="cw_airs_today_short">Dnes</string>
     <string name="cw_airs_tomorrow_short">Zajtra</string>
     <plurals name="cw_airs_in_days_short">
-        <item quantity="one">O %d deň</item>
-        <item quantity="other">O %d dní</item>
-    <item quantity="few">O %d dni</item><item quantity="many">O %d dní</item></plurals>
+        <item quantity="one">O %1$d deň</item>
+        <item quantity="few">O %1$d dni</item>
+        <item quantity="many">O %1$d dní</item>
+        <item quantity="other">O %1$d dní</item>
+    </plurals>
     <string name="cw_new_episode">Nová epizóda</string>
     <string name="cw_new_season">Nová séria</string>
     <!-- Pass 4 — platform stubs and dynamic title fallbacks -->
@@ -1903,7 +1914,7 @@
     <string name="settings_playback_option_original">Pôvodný jazyk</string>
     <string name="settings_playback_option_original_hint">Vyžaduje zapnuté obohacovanie TMDB</string>
     <string name="settings_playback_engine">Prehrávací engine</string>
-    <string name="settings_playback_engine_auto_description">Najprv použiť ExoPlayer a pri zlyhaní prehrávania prejsť na libmpv.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer pre filmy a seriály · MPV pre anime</string>
     <string name="settings_playback_engine_exoplayer_description">Použiť ExoPlayer a dekodéry Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Použiť libmpv na prehrávanie v Androide.</string>
     <string name="settings_playback_libmpv_video_output">Renderer libmpv</string>
@@ -2469,7 +2480,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">Zápis na disk pokračuje počas prehrávania uloženého streamu. Nová veľkosť sa uplatní pri nasledujúcom spustení aplikácie.</string>
     <string name="settings_playback_exo_chapters">Zobrazovať kapitoly</string>
-    <string name="settings_playback_exo_chapters_description">Načítať kapitoly zo súborov MKV, označiť ich na časovej osi a zobraziť ich v prehrávači. Po spustení prehrávania vykoná niekoľko malých požiadaviek navyše. libmpv zobrazuje kapitoly vždy.</string>
+    <string name="settings_playback_exo_chapters_description">Načítať kapitoly zo súborov MKV, označiť ich na časovej osi a zobraziť ich v prehrávači.</string>
     <string name="settings_tracking_mdblist_section">Funkcie MDBList</string>
     <string name="settings_mdblist_library_lists">Zoznamy v knižnici</string>
     <string name="settings_mdblist_library_lists_description">Vyberte, ktoré zoznamy MDBList sa zobrazia v Knižnici a v Správe zoznamov. Zoznam sledovaných sa zobrazuje vždy.</string>
@@ -2546,4 +2557,20 @@
     <string name="subtitle_shadow_opacity">Priehľadnosť tieňa</string>
     <string name="subtitle_shadow_size">Veľkosť tieňa</string>
     <string name="subtitle_reset_appearance">Obnoviť predvolený vzhľad</string>
+
+    <string name="compose_player_audio_delay">Odozva zvuku</string>
+    <string name="compose_player_audio_amplification">Zosilnenie</string>
+    <string name="compose_player_audio_amplification_keep">Ponechať pre ďalšie videá</string>
+    <string name="compose_player_center_mix">Úroveň zmiešania stredového kanála</string>
+    <string name="settings_playback_chapter_title">Zobrazovať názov kapitoly</string>
+    <string name="settings_playback_chapter_title_description">Zobrazovať názov aktuálnej kapitoly nad časovou osou.</string>
+    <string name="settings_playback_remember_audio_delay">Zapamätať si odozvu zvuku pre každé zariadenie</string>
+    <string name="settings_playback_remember_audio_delay_description">Obnoviť odozvu zvuku nastavenú v prehrávači pri každom prehrávaní cez rovnaký výstup, napríklad reproduktor telefónu, káblové slúchadlá alebo jednotlivé Bluetooth zariadenia</string>
+    <string name="settings_playback_downmix_section">Downmix</string>
+    <string name="settings_playback_downmix">Povoliť downmix</string>
+    <string name="settings_playback_downmix_description">Zmieša priestorový zvuk na nižší počet kanálov uvedený nižšie pomocou FFmpeg dekodéra aplikácie. Vyžaduje prioritu dekodéra videa „Preferovať dekodéry aplikácie (FFmpeg)“. Bluetooth výstup vždy dostane downmix na 2.0.</string>
+    <string name="settings_playback_downmix_channels">Počet kanálov</string>
+    <string name="settings_playback_downmix_maintain_volume">Zachovať pôvodnú hlasitosť pri downmixovaní</string>
+    <string name="settings_playback_downmix_maintain_volume_description">Keď je možnosť vypnutá, normalizácia downmixu môže znížiť celkovú hlasitosť.</string>
+    <string name="auth_notice_signed_out">Boli ste odhlásení z Nuvio. Prihláste sa znova.</string>
 </resources>

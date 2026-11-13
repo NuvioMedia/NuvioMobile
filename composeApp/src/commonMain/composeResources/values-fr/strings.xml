@@ -1269,7 +1269,9 @@
     <string name="settings_playback_vod_cache_size_value">%1$d Mo</string>
     <string name="settings_playback_vod_cache_warning">Les écritures sur le disque se poursuivent pendant la lecture d’un flux mis en cache. Une nouvelle taille s’applique au prochain démarrage de l’application.</string>
     <string name="settings_playback_exo_chapters">Afficher les chapitres</string>
-    <string name="settings_playback_exo_chapters_description">Lire les chapitres des fichiers MKV pour les repérer sur la barre de progression et les lister dans le lecteur. Effectue quelques petites requêtes supplémentaires une fois la lecture démarrée. libmpv affiche toujours les chapitres</string>
+    <string name="settings_playback_exo_chapters_description">Lire les chapitres des fichiers MKV pour les repérer sur la barre de progression et les lister dans le lecteur.</string>
+    <string name="settings_playback_chapter_title">Afficher le titre du chapitre</string>
+    <string name="settings_playback_chapter_title_description">Afficher le nom du chapitre en cours au-dessus de la barre de progression.</string>
     <string name="settings_playback_remember_audio_delay">Mémoriser le délai audio par appareil</string>
     <string name="settings_playback_remember_audio_delay_description">Rétablir le délai audio réglé dans le lecteur chaque fois que la même sortie est de nouveau utilisée, comme le haut-parleur du téléphone, un casque filaire ou chaque appareil Bluetooth</string>
     <string name="settings_playback_downmix_section">Downmix</string>
@@ -1776,6 +1778,7 @@
     <string name="auth_account_deletion_failed">Impossible de supprimer le compte</string>
     <string name="auth_sign_in_failed">Échec de la connexion</string>
     <string name="auth_sign_out_failed">Échec de la déconnexion</string>
+    <string name="auth_notice_signed_out">Vous avez été déconnecté de Nuvio. Veuillez vous reconnecter.</string>
     <string name="auth_sign_up_failed">Échec de l’inscription</string>
     <string name="catalog_load_failed">Impossible de charger les éléments du catalogue.</string>
     <string name="continue_watching_up_next">Épisode suivant</string>
@@ -1803,6 +1806,13 @@
     <string name="notifications_test_send_failed">Impossible d’envoyer une notification de test.</string>
     <string name="notifications_test_sent_for">Notification de test envoyée pour %1$s.</string>
     <string name="player_unable_to_play_stream">Impossible de lire ce flux.</string>
+    <string name="player_error_stream_expired">Le lien du flux a expiré. Essayez une autre source.</string>
+    <string name="player_error_stream_removed">Le lien du flux a expiré ou a été supprimé. Essayez une autre source.</string>
+    <string name="player_error_stream_rate_limited">Trop de requêtes vers la source du flux. Patientez un instant, puis réessayez.</string>
+    <string name="player_error_stream_unavailable">Le serveur du flux est actuellement indisponible. Essayez une autre source.</string>
+    <string name="player_error_stream_blocked">La source du flux est bloquée ou restreinte. Essayez une autre source.</string>
+    <string name="player_error_source_invalid_content">Erreur de source&#160;: la source du flux a renvoyé un contenu invalide ou illisible. Le lien a peut-être expiré, ou le serveur a renvoyé une page d’erreur au lieu de la vidéo.\n\nEssayez une autre source. [%1$s]</string>
+    <string name="player_error_unsupported_format">Ce flux utilise un format que votre appareil ne prend peut-être pas en charge. Essayez une autre source. [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">Moteur de lecture MPV indisponible. Veuillez reconstruire l’application.</string>
     <string name="profile_pin_changed_requires_refresh">Le code PIN de ce profil a changé. Connectez-vous une fois pour mettre à jour le verrouillage sur cet appareil.</string>
     <string name="profile_pin_clear_failed">Impossible de supprimer le verrouillage PIN. Réessayez.</string>

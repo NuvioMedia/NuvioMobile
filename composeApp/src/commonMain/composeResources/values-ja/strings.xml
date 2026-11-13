@@ -1172,7 +1172,7 @@
     <string name="settings_playback_secondary_subtitle_language">第2優先言語</string>
     <string name="settings_playback_section_decoder">デコーダー</string>
     <string name="settings_playback_engine">再生エンジン</string>
-    <string name="settings_playback_engine_auto_description">ExoPlayerを優先し、再生に失敗した場合はlibmpvにフォールバックします。</string>
+    <string name="settings_playback_engine_auto_description">映画やドラマにはExoPlayer・アニメにはMPV</string>
     <string name="settings_playback_engine_exoplayer_description">ExoPlayerとAndroid Media3デコーダーを使用します。</string>
     <string name="settings_playback_engine_libmpv_description">Android再生にlibmpvを使用します。</string>
     <string name="settings_playback_auto_switch_engine_on_error">再生エラー時にエンジンを自動切り替え</string>
@@ -1269,7 +1269,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d MB</string>
     <string name="settings_playback_vod_cache_warning">キャッシュされたストリームの再生中もディスクへの書き込みが続きます。新しいサイズは次回のアプリ起動時に反映されます。</string>
     <string name="settings_playback_exo_chapters">チャプターを表示</string>
-    <string name="settings_playback_exo_chapters_description">MKVファイルのチャプターを読み取り、プログレスバーに表示してプレーヤー内に一覧表示します。再生開始後に小さな追加リクエストを数回行います。libmpvでは常にチャプターが表示されます</string>
+    <string name="settings_playback_exo_chapters_description">MKVファイルのチャプターを読み取り、プログレスバーに表示してプレーヤー内に一覧表示します。</string>
     <string name="settings_playback_remember_audio_delay">デバイスごとに音声ディレイを記憶</string>
     <string name="settings_playback_remember_audio_delay_description">スマートフォンのスピーカー、有線ヘッドホン、各Bluetoothデバイスなど、同じ出力で再生するたびに、プレーヤーで設定した音声ディレイを復元します</string>
     <string name="settings_playback_downmix_section">ダウンミックス</string>
@@ -1803,6 +1803,13 @@
     <string name="notifications_test_send_failed">テスト通知の送信に失敗しました。</string>
     <string name="notifications_test_sent_for">%1$s のテスト通知を送信しました。</string>
     <string name="player_unable_to_play_stream">このストリームを再生できません。</string>
+    <string name="player_error_stream_expired">ストリームリンクの有効期限が切れました。別のソースを試してください。</string>
+    <string name="player_error_stream_removed">ストリームリンクの有効期限が切れたか削除されました。別のソースを試してください。</string>
+    <string name="player_error_stream_rate_limited">ストリームソースへのリクエストが多すぎます。しばらく待ってから再試行してください。</string>
+    <string name="player_error_stream_unavailable">ストリームサーバーが現在利用できません。別のソースを試してください。</string>
+    <string name="player_error_stream_blocked">ストリームソースがブロックまたは制限されています。別のソースを試してください。</string>
+    <string name="player_error_source_invalid_content">ソースエラー: ストリームソースが無効または再生不可能なコンテンツを返しました。リンクの有効期限が切れたか、サーバーがビデオの代わりにエラーページを返した可能性があります。\n\n別のソースを試してください。[%1$s]</string>
+    <string name="player_error_unsupported_format">このストリームはお使いのデバイスがサポートしていない形式を使用しています。別のソースを試してください。[%1$s]</string>
     <string name="player_engine_unavailable_rebuild">MPVプレーヤーエンジンが利用できません。アプリを再ビルドしてください。</string>
     <string name="profile_pin_changed_requires_refresh">このプロフィールのPINが変更されました。このデバイスのロックを更新するには一度接続してください。</string>
     <string name="profile_pin_clear_failed">PINロックを解除できませんでした。再試行してください。</string>

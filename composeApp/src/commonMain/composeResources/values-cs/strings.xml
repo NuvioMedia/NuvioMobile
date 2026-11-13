@@ -920,7 +920,7 @@
     <string name="settings_playback_secondary_subtitle_language">Sekundární preferovaný jazyk</string>
     <string name="settings_playback_section_decoder">DEKODÉR</string>
     <string name="settings_playback_engine">Modul přehrávání</string>
-    <string name="settings_playback_engine_auto_description">Použije nejprve ExoPlayer a při selhání přehrávání přejde k libmpv.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer pro filmy a seriály · MPV pro anime</string>
     <string name="settings_playback_engine_exoplayer_description">Použije ExoPlayer a dekodéry Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Použije libmpv pro přehrávání v systému Android.</string>
     <string name="settings_playback_libmpv_video_output">Renderer pro libmpv</string>
@@ -1383,6 +1383,13 @@
     <string name="notifications_test_send_failed">Odeslání zkušebního oznámení selhalo.</string>
     <string name="notifications_test_sent_for">Zkušební oznámení odesláno pro %1$s.</string>
     <string name="player_unable_to_play_stream">Tento stream se nepodařilo přehrát.</string>
+    <string name="player_error_stream_expired">Platnost odkazu na stream vypršela. Zkuste jiný zdroj.</string>
+    <string name="player_error_stream_removed">Platnost odkazu na stream vypršela nebo byl odstraněn. Zkuste jiný zdroj.</string>
+    <string name="player_error_stream_rate_limited">Příliš mnoho požadavků na zdroj streamu. Chvíli počkejte a zkuste to znovu.</string>
+    <string name="player_error_stream_unavailable">Server streamu je momentálně nedostupný. Zkuste jiný zdroj.</string>
+    <string name="player_error_stream_blocked">Zdroj streamu je blokovaný nebo omezený. Zkuste jiný zdroj.</string>
+    <string name="player_error_source_invalid_content">Chyba zdroje: Zdroj streamu vrátil neplatný nebo nepřehratelný obsah. Platnost odkazu mohla vypršet, nebo server vrátil chybovou stránku místo videa.\n\nZkuste jiný zdroj. [%1$s]</string>
+    <string name="player_error_unsupported_format">Tento stream používá formát, který vaše zařízení možná nepodporuje. Zkuste jiný zdroj. [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">Modul přehrávače MPV není k dispozici. Prosím sestavte aplikaci znovu.</string>
     <string name="profile_pin_changed_requires_refresh">PIN k tomuto profilu se změnil. Pro aktualizaci zámku na tomto zařízení se jednou připojte.</string>
     <string name="profile_pin_clear_failed">PIN zámek se nepodařilo odstranit. Zkuste to znovu.</string>
