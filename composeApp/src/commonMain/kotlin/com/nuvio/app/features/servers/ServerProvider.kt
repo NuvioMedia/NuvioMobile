@@ -2,6 +2,7 @@ package com.nuvio.app.features.servers
 
 import com.nuvio.app.features.servers.emby.EmbyProvider
 import com.nuvio.app.features.servers.jellyfin.JellyfinProvider
+import com.nuvio.app.features.servers.silo.SiloProvider
 import com.nuvio.app.features.tracking.TrackingExternalIds
 
 enum class ServerCapability {
@@ -38,6 +39,24 @@ interface ServerProvider {
     suspend fun report(session: ServerSession, playback: ServerPlaybackSession, event: ServerPlaybackEvent) = Unit
 
     suspend fun signOut(session: ServerSession) = Unit
+
+    /** True when [session]'s token runs out soon and is better renewed before the next request. */
+    fun renewalDue(session: ServerSession): Boolean = false
+
+    /**
+     * A renewed token for [session], ahead of time when [failure] is null, or null when renewing would not help.
+     * Throws [ServerFailure.AUTH_REQUIRED] once the server has ended the sign-in.
+     */
+    suspend fun renewToken(session: ServerSession, failure: ServerException?): String? = null
+
+    /** The copy of [token] uploaded to the Nuvio account. */
+    fun tokenForAccount(token: String): String = token
+
+    /** True when the device's [local] token should stay although the account holds [fromAccount]. */
+    fun keepsLocalToken(local: String, fromAccount: String): Boolean = false
+
+    /** False when a renewal from [previous] to [renewed] doesn't need uploading to the account. */
+    fun renewalChangesAccount(previous: String, renewed: String): Boolean = true
 
     suspend fun collectionPage(
         session: ServerSession,
@@ -102,7 +121,7 @@ fun ServerProvider.supports(capability: ServerCapability): Boolean = capability 
 private fun unsupported(): Nothing = throw ServerException(ServerFailure.UNSUPPORTED)
 
 internal object ServerProviders {
-    internal val registered: MutableList<ServerProvider> = mutableListOf(JellyfinProvider(), EmbyProvider())
+    internal val registered: MutableList<ServerProvider> = mutableListOf(JellyfinProvider(), EmbyProvider(), SiloProvider())
 
     fun forId(id: String?): ServerProvider? = registered.firstOrNull { it.id == id }
 }

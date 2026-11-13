@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.builtins.ListSerializer
@@ -50,6 +52,7 @@ object ServerRepository {
     private val tokens = mutableMapOf<String, String>()
     private var syncState = ServerSyncState()
     private var localVersion = 0L
+    private val renewals = mutableMapOf<String, Mutex>()
     private val _localChanges = MutableSharedFlow<Int>(extraBufferCapacity = 8)
     val localChanges: SharedFlow<Int> = _localChanges.asSharedFlow()
 
@@ -114,7 +117,14 @@ object ServerRepository {
         val session = session(connectionId) ?: throw ServerException(ServerFailure.AUTH_REQUIRED)
         val provider = provider(session.connection) ?: throw ServerException(ServerFailure.UNSUPPORTED)
         return try {
-            block(provider, session).also {
+            val current = if (provider.renewalDue(session)) renewedAhead(provider, session) else session
+            try {
+                block(provider, current)
+            } catch (error: ServerException) {
+                if (error.failure != ServerFailure.AUTH_REQUIRED) throw error
+                val renewed = renewed(provider, current, error) ?: throw error
+                block(provider, renewed)
+            }.also {
                 if (startedGeneration != generation) throw CancellationException("Server scope changed")
                 setFailure(connectionId, null)
             }
@@ -128,11 +138,54 @@ object ServerRepository {
         }
     }
 
-    suspend fun connect(provider: ServerProvider, address: String, username: String, password: String): ServerConnection {
+    /** Renews ahead of time; the current token is kept when the server can't be asked right now. */
+    private suspend fun renewedAhead(provider: ServerProvider, session: ServerSession): ServerSession = try {
+        renewed(provider, session, failure = null) ?: session
+    } catch (error: ServerException) {
+        if (error.failure == ServerFailure.AUTH_REQUIRED) throw error
+        session
+    }
+
+    /** One renewal at a time per connection: a call that waited gets the token the first one saved. */
+    private suspend fun renewed(provider: ServerProvider, session: ServerSession, failure: ServerException?): ServerSession? {
+        val connectionId = session.connection.id
+        val mutex = synchronized(lock) { renewals.getOrPut(connectionId) { Mutex() } }
+        return mutex.withLock {
+            val latest = session(connectionId) ?: return@withLock null
+            if (latest.token != session.token) return@withLock latest
+            val profileId = loadedProfileId ?: return@withLock null
+            val token = provider.renewToken(latest, failure) ?: return@withLock null
+            if (!replaceToken(profileId, latest.connection, latest.token, token)) return@withLock null
+            ServerSession(latest.connection, token)
+        }
+    }
+
+    /** Saves [token] only while [profileId] is loaded and the connection still holds [previous]. */
+    private fun replaceToken(profileId: Int, connection: ServerConnection, previous: String, token: String): Boolean {
+        val saved = synchronized(lock) {
+            val current = tokens[connection.credentialRef] ?: readCredential(connection.credentialRef)
+            if (loadedProfileId != profileId || current != previous) return false
+            runCatching { ServerStorage.write(credentialKey(connection.credentialRef), token) }.isSuccess
+                .also { if (it) tokens[connection.credentialRef] = token }
+        }
+        if (!saved) return false
+        if (provider(connection)?.renewalChangesAccount(previous, token) != false) {
+            syncState = syncState.copy(pendingPush = true)
+            localVersion++
+            persistSyncState()
+            _localChanges.tryEmit(profileId)
+        }
+        return true
+    }
+
+    suspend fun connect(provider: ServerProvider, address: String, username: String, password: String): ServerConnection =
+        connect(provider) { provider.signIn(address, username, password) }
+
+    suspend fun connect(provider: ServerProvider, signIn: suspend () -> ServerSignIn): ServerConnection {
         ensureLoaded()
         val startedGeneration = generation
         val profileId = loadedProfileId ?: ProfileRepository.activeProfileId
-        val signIn = provider.signIn(address, username, password)
+        val signIn = signIn()
         val existing = _uiState.value.connections.firstOrNull {
             it.providerId == provider.id &&
                 it.remoteServerId == signIn.serverId &&
@@ -223,7 +276,10 @@ object ServerRepository {
             profileId = profileId,
             version = localVersion,
             servers = _uiState.value.connections.mapNotNull { connection ->
-                token(connection.credentialRef)?.let(connection::toSynced)
+                token(connection.credentialRef)
+                    ?.let { token -> provider(connection)?.tokenForAccount(token) ?: token }
+                    ?.takeIf { it.length <= MAX_ACCOUNT_TOKEN_LENGTH }
+                    ?.let(connection::toSynced)
             },
             pendingPush = syncState.pendingPush,
             syncedKeys = syncState.syncedKeys?.toSet(),
@@ -241,8 +297,10 @@ object ServerRepository {
             val credentialRef = local?.credentialRef ?: newId("k")
             val id = local?.id ?: server.id.takeUnless { id -> current.any { it.id == id } || id in usedIds } ?: newId("c")
             usedIds += id
-            if (token(credentialRef) != server.token) {
-                writeCredential(credentialRef, server.token)
+            val localToken = local?.let { token(credentialRef) }
+            val chosen = localToken?.takeIf { provider(local)?.keepsLocalToken(it, server.token) == true } ?: server.token
+            if (token(credentialRef) != chosen) {
+                writeCredential(credentialRef, chosen)
                 local?.let { setFailure(it.id, null) }
                 changed = true
             }
@@ -352,6 +410,8 @@ object ServerRepository {
         val selection = previous.associate { it.id to it.selected }
         return current.map { library -> library.copy(selected = selection[library.id] ?: true) }
     }
+
+    private const val MAX_ACCOUNT_TOKEN_LENGTH = 1024
 
     private fun connectionsKey(profileId: Int) = "profile.$profileId.connections"
 
