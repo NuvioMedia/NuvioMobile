@@ -1177,6 +1177,7 @@
     <string name="settings_playback_engine_libmpv_description">Dùng libmpv để phát lại trên Android</string>
     <string name="settings_playback_auto_switch_engine_on_error">Tự động chuyển lõi trình phát khi phát lại lỗi</string>
     <string name="settings_playback_auto_switch_engine_on_error_description">Chuyển sang lõi trình phát khác khi phát lại thất bại, bất kể lõi trình phát nào đang được chọn.</string>
+    <string name="settings_playback_auto_switch_engine_blocked_by_fallback">Tắt chuyển sang nguồn phát khớp tiếp theo để dùng tính năng này.</string>
     <string name="settings_playback_libmpv_video_output">Trình kết xuất libmpv</string>
     <string name="settings_playback_libmpv_video_output_dialog">Trình kết xuất libmpv</string>
     <string name="settings_playback_libmpv_hardware_decoding">Giải mã phần cứng libmpv</string>
@@ -1233,6 +1234,12 @@
     <string name="settings_playback_stream_selection_mode_regex_description">Phát nguồn đầu tiên có văn bản khớp với mẫu biểu thức chính quy.</string>
     <string name="settings_playback_stream_timeout">Thời gian chờ khi chọn luồng</string>
     <string name="settings_playback_stream_timeout_description">Thời gian chờ các tiện ích trước khi chọn luồng</string>
+    <string name="settings_playback_fallback_next_source">Chuyển sang nguồn phát khớp tiếp theo khi lỗi</string>
+    <string name="settings_playback_fallback_next_source_description">Nếu nguồn phát được tự động chọn bị lỗi hoặc không khởi chạy đúng thời gian, thử ngầm các nguồn phù hợp tiếp theo.</string>
+    <string name="settings_playback_fallback_max_sources">Nguồn phát sẽ thử khi lỗi</string>
+    <string name="settings_playback_fallback_startup_timeout">Thời gian chờ khởi chạy nguồn phát</string>
+    <string name="settings_playback_fallback_next_source_blocked_by_engine_switch">Tắt tự động chuyển lõi trình phát khi phát lại lỗi để sử dụng tùy chọn này.</string>
+    <string name="player_error_source_startup_timeout">Nguồn phát đã không khởi chạy trong vòng %1$d giây.</string>
     <string name="settings_playback_threshold_minutes">Ngưỡng phút</string>
     <string name="settings_playback_threshold_mode">Chế độ Ngưỡng tập tiếp theo</string>
     <string name="settings_playback_threshold_mode_minutes_before_end">Số phút trước khi kết thúc</string>
