@@ -161,6 +161,8 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
                     event.key == Key.Spacebar -> togglePlayback()
                     event.key == Key.DirectionLeft && playbackGesturesEnabled -> seekBy(-10_000L)
                     event.key == Key.DirectionRight && playbackGesturesEnabled -> seekBy(10_000L)
+                    event.key == Key.DirectionUp -> changeVolumeBy(PlayerKeyVolumeStep)
+                    event.key == Key.DirectionDown -> changeVolumeBy(-PlayerKeyVolumeStep)
                     else -> return@onKeyEvent false
                 }
                 true
