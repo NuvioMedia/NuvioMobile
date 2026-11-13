@@ -6,6 +6,7 @@ import nuvio.composeapp.generated.resources.servers_error_forbidden
 import nuvio.composeapp.generated.resources.servers_failure_auth
 import nuvio.composeapp.generated.resources.servers_failure_incomplete
 import nuvio.composeapp.generated.resources.servers_failure_not_found
+import nuvio.composeapp.generated.resources.servers_failure_remote_playback
 import nuvio.composeapp.generated.resources.servers_failure_unreachable
 import nuvio.composeapp.generated.resources.servers_failure_unsupported
 import nuvio.composeapp.generated.resources.servers_play_method_direct_play
@@ -30,6 +31,7 @@ internal fun ServerFailure.message(): StringResource = when (this) {
     ServerFailure.INCOMPLETE -> Res.string.servers_failure_incomplete
     ServerFailure.FORBIDDEN -> Res.string.servers_error_forbidden
     ServerFailure.UNSUPPORTED -> Res.string.servers_failure_unsupported
+    ServerFailure.REMOTE_PLAYBACK_BLOCKED -> Res.string.servers_failure_remote_playback
     ServerFailure.FAILED -> Res.string.servers_error_failed
 }
 

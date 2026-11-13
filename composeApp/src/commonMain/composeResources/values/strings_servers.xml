@@ -1,7 +1,7 @@
 <resources>
     <string name="compose_settings_page_media_servers">Media servers</string>
     <string name="compose_settings_page_media_server">Server</string>
-    <string name="settings_content_discovery_media_servers_description">Connect Jellyfin or Emby to browse and play your own library.</string>
+    <string name="settings_content_discovery_media_servers_description">Connect Jellyfin, Emby or Plex to browse and play your own library.</string>
     <string name="servers_section_connected">SERVERS</string>
     <string name="servers_section_add">ADD SERVER</string>
     <string name="servers_empty">No servers connected yet.</string>
@@ -59,4 +59,37 @@
     <string name="servers_resume_row">Continue watching</string>
     <string name="servers_failure_unsupported">The server doesn't support this item.</string>
     <string name="servers_failure_incomplete">Still checking this server's library. Try again in a moment.</string>
+    <string name="servers_failure_remote_playback">Plex only allows playback from this server away from its home network with Plex Pass or a Remote Watch Pass.</string>
+    <string name="plex_add_description">Sign in with your Plex account.</string>
+    <string name="plex_sign_in_subtitle">Sign in on plex.tv. Your Plex password is never entered in Nuvio.</string>
+    <string name="plex_continue">Continue with Plex</string>
+    <string name="plex_browser_waiting">Finish signing in on plex.tv, then come back here.</string>
+    <string name="plex_use_code">Sign in on another device</string>
+    <string name="plex_use_browser">Sign in on this device</string>
+    <string name="plex_code_starting">Getting ready…</string>
+    <string name="plex_code_instructions">On another device, open %1$s, sign in to Plex and enter this code.</string>
+    <string name="plex_code_waiting">Waiting for the code to be entered…</string>
+    <string name="plex_code_copied">Code copied</string>
+    <string name="plex_code_expired">This sign-in has expired.</string>
+    <string name="plex_new_code">Start again</string>
+    <string name="plex_servers_title">Choose a server</string>
+    <string name="plex_servers_subtitle">Signed in to Plex as %1$s.</string>
+    <string name="plex_servers_finding">Finding your servers…</string>
+    <string name="plex_servers_checking">Checking how each server can be reached…</string>
+    <string name="plex_servers_none">No Plex Media Server is available to this account.</string>
+    <string name="plex_server_owned">Your server</string>
+    <string name="plex_server_shared">Shared with you</string>
+    <string name="plex_reach_local">Home network</string>
+    <string name="plex_reach_remote">Internet</string>
+    <string name="plex_reach_relay_detail">Plex Relay limits video quality</string>
+    <string name="plex_reach_offline_detail">Not reachable from this device</string>
+    <string name="plex_users_title">Choose a Plex Home user</string>
+    <string name="plex_users_subtitle">Who is watching on %1$s?</string>
+    <string name="plex_user_admin">Admin</string>
+    <string name="plex_user_managed">Managed user</string>
+    <string name="plex_user_pin">PIN</string>
+    <string name="plex_pin_title">PIN for %1$s</string>
+    <string name="plex_pin_hint">PIN</string>
+    <string name="plex_pin_wrong">Wrong PIN. Try again.</string>
+    <string name="plex_signing_in">Signing in…</string>
 </resources>
