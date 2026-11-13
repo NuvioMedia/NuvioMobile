@@ -300,6 +300,8 @@ final class MPVPlayerViewController: UIViewController {
     private var pendingLoadRetryWorkItem: DispatchWorkItem?
     private var mpv: OpaquePointer?
     private var cachedNowPlayingMetadata: CachedNowPlayingMetadata?
+    private var wasPlayingBeforeInterruption = false
+    private var pausedByOutputLoss = false
     private lazy var nowPlayingController = PlayerNowPlayingController(owner: self)
     private lazy var audioSessionController: PlayerAudioSessionController = {
         let controller = PlayerAudioSessionController()
@@ -307,6 +309,25 @@ final class MPVPlayerViewController: UIViewController {
             guard let self, self.mpv != nil else { return }
             self.publishCachedNowPlayingInfoIfNeeded()
             self.syncNowPlayingPlaybackState(isPlaying: self.isPlayerPlaying)
+        }
+        controller.onInterruptionBegan = { [weak self] in
+            guard let self else { return }
+            self.wasPlayingBeforeInterruption = self.isPlayerPlaying
+            guard self.wasPlayingBeforeInterruption else { return }
+            self.requestSystemSuspend()
+        }
+        controller.onResumeRecommended = { [weak self] in
+            guard let self, self.wasPlayingBeforeInterruption, !self.pausedByOutputLoss else { return }
+            self.wasPlayingBeforeInterruption = false
+            self.pausedByOutputLoss = false
+            self.requestSystemResume()
+        }
+        controller.onOutputUnavailable = { [weak self] in
+            guard let self else { return }
+            self.pausedByOutputLoss = true
+            guard self.isPlayerPlaying else { return }
+            self.requestSystemSuspend()
+            self.pictureInPictureController?.updatePlaybackState()
         }
         return controller
     }()
@@ -719,6 +740,19 @@ final class MPVPlayerViewController: UIViewController {
         if playing { playPlayback() } else { pausePlayback() }
     }
 
+    /// System-level pause (output removed or interruption): suspend locally, never publish.
+    func requestSystemSuspend() {
+        if systemControlHandler?.handleSystemPause() == true { return }
+        pausePlayback()
+    }
+
+    /// System-level resume after a suspension: local only, never a party command.
+    func requestSystemResume() {
+        guard !isPlayerPlaying else { return }
+        if systemControlHandler?.handleSystemResume() == true { return }
+        playPlayback()
+    }
+
     func requestSystemSeekTo(_ positionMs: Int64) {
         if systemControlHandler?.handleSeekTo(positionMs: positionMs) == true { return }
         seekToMs(positionMs)
@@ -731,6 +765,7 @@ final class MPVPlayerViewController: UIViewController {
 
     func playPlayback() {
         guard mpv != nil else { return }
+        pausedByOutputLoss = false
         publishNowPlayingForPlaybackSession()
         setFlag("pause", false)
         isPlayerPlaying = true

@@ -202,7 +202,7 @@ internal fun PlayerScreenRuntime.publishPartyPlayback(
     positionMs: Long = currentPlaybackPositionMs(),
     rate: Float = partyBaseRate(),
 ) {
-    if (!isPartySynced) return
+    if (!isPartySynced || systemSuspended) return
     PartyRepository.publishPlayback(paused = !shouldPlay, positionMs = positionMs, rate = rate)
 }
 
@@ -217,6 +217,45 @@ private fun PlayerScreenRuntime.applyPartyPaused(paused: Boolean, force: Boolean
     if (!force && shouldPlay == !paused) return
     shouldPlay = !paused
     if (paused) playerController?.pause() else playerController?.play()
+}
+
+/**
+ * Ends a system suspension locally: rejoins a running room without publishing.
+ * Returns false when the room is paused, so the normal play command applies.
+ */
+internal fun PlayerScreenRuntime.resumeSuspendedPlayback(
+    playback: PartyPlayback? = PartyRepository.playback.value,
+): Boolean {
+    systemSuspended = false
+    val wasBehind = systemSuspendedWasBehind
+    systemSuspendedWasBehind = false
+    if (wasBehind) {
+        // A member who was already behind stays behind; only the interruption is cleared.
+        shouldPlay = true
+        playerController?.play()
+        return true
+    }
+    if (playback == null || playback.paused) {
+        partyBehind = false
+        return false
+    }
+    partyBehind = false
+    shouldPlay = true
+    playerController?.setPlaybackSpeed(playback.rate)
+    playerController?.seekTo(
+        PartySync.expectedPositionMs(playback, PartyRepository.nowMs(), playbackSnapshot.durationMs)
+    )
+    playerController?.play()
+    return true
+}
+
+/** Local pause for a system event (output loss or interruption); never publishes to the party. */
+internal fun PlayerScreenRuntime.suspendLocally() {
+    systemSuspendedWasBehind = partyBehind
+    systemSuspended = true
+    partyBehind = true
+    shouldPlay = false
+    playerController?.pause()
 }
 
 private fun PlayerScreenRuntime.handlePartyMediaChange(media: PartyMedia) {
@@ -260,6 +299,23 @@ internal fun PlayerScreenRuntime.BindPartyEffects() {
                 return true
             }
 
+            override fun handleSystemPause(): Boolean {
+                if (!isPartySynced) return false
+                suspendLocally()
+                return true
+            }
+
+            override fun handleSystemResume(): Boolean {
+                if (!isPartySynced) return false
+                if (systemSuspended) {
+                    resumeSuspendedPlayback()
+                } else {
+                    shouldPlay = true
+                    playerController?.play()
+                }
+                return true
+            }
+
             override fun handleSeekTo(positionMs: Long): Boolean {
                 if (!isPartySynced) return false
                 val targetMs = if (isPartyControlLocked) ownSeekTarget(positionMs) else positionMs
@@ -286,6 +342,8 @@ internal fun PlayerScreenRuntime.BindPartyEffects() {
 
     LaunchedEffect(key) {
         partyBehind = false
+        systemSuspended = false
+        systemSuspendedWasBehind = false
         val previous = partyPreviousKey
         partyPreviousKey = key
         val party = PartyRepository.state.value.party ?: return@LaunchedEffect
@@ -308,6 +366,9 @@ internal fun PlayerScreenRuntime.BindPartyEffects() {
 
     LaunchedEffect(partyId) {
         if (partyId == null) {
+            partyBehind = false
+            systemSuspended = false
+            systemSuspendedWasBehind = false
             clearPartyNudge()
             return@LaunchedEffect
         }
@@ -377,7 +438,7 @@ internal fun PlayerScreenRuntime.BindPartyEffects() {
             }
             publishedInitial = true
             if (!initialLoadCompleted) continue
-            if (partyBehind && party.canControl) partyBehind = false
+            if (partyBehind && party.canControl && !systemSuspended) partyBehind = false
             if (partyBehind) {
                 clearPartyNudge(playback)
                 mismatchSince = null
