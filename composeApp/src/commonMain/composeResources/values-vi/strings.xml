@@ -1649,7 +1649,7 @@
     <string name="person_load_failed">Không thể tải chi tiết của %1$s</string>
     <string name="person_popular">Phổ biến</string>
     <string name="person_something_wrong">Đã xảy ra lỗi</string>
-    <string name="person_upcoming">Sắp phát sóng</string>
+    <string name="person_upcoming">Sắp ra mắt</string>
     <string name="pin_backspace">Xóa ký tự trước</string>
     <string name="pin_cancel">Huỷ</string>
     <string name="pin_enter">Nhập mã PIN</string>
