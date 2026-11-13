@@ -16,6 +16,7 @@ internal actual object PlayerTrackPreferenceStorage {
     private const val audioLanguageKey = "audio_language"
     private const val audioNameKey = "audio_name"
     private const val audioTrackIdKey = "audio_track_id"
+    private const val sourceStreamLanguageKey = "source_stream_language"
     private const val subtitleIsForcedKey = "subtitle_is_forced"
     private const val subtitleDelayMsKey = "subtitle_delay_ms"
     private const val audioDelayMsKey = "audio_delay_ms"
@@ -39,6 +40,7 @@ internal actual object PlayerTrackPreferenceStorage {
             audioLanguage = loadString(audioLanguageKey, id),
             audioName = loadString(audioNameKey, id),
             audioTrackId = loadString(audioTrackIdKey, id),
+            sourceStreamLanguage = loadString(sourceStreamLanguageKey, id),
             subtitleIsForced = loadBoolean(subtitleIsForcedKey, id),
         )
         return preference.takeIf {
@@ -53,6 +55,7 @@ internal actual object PlayerTrackPreferenceStorage {
                 it.audioLanguage,
                 it.audioName,
                 it.audioTrackId,
+                it.sourceStreamLanguage,
             ).any { value -> !value.isNullOrBlank() } || it.subtitleIsForced != null
         }
     }
@@ -70,6 +73,7 @@ internal actual object PlayerTrackPreferenceStorage {
             putOptionalString(audioLanguageKey, id, preference.audioLanguage)
             putOptionalString(audioNameKey, id, preference.audioName)
             putOptionalString(audioTrackIdKey, id, preference.audioTrackId)
+            putOptionalString(sourceStreamLanguageKey, id, preference.sourceStreamLanguage)
             putOptionalBoolean(subtitleIsForcedKey, id, preference.subtitleIsForced)
         }?.apply()
     }

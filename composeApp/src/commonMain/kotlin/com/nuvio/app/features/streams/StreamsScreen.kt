@@ -35,6 +35,9 @@ import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.SearchOff
 import androidx.compose.material3.Icon
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -86,6 +89,8 @@ import com.nuvio.app.features.debrid.DirectDebridPlayableResult
 import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
 import com.nuvio.app.features.debrid.toastMessage
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.player.PlayerTrackPreferenceStorage
+import com.nuvio.app.features.player.PersistedPlayerTrackPreference
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.WatchProgressEntry
 import com.nuvio.app.features.watched.WatchedRepository
@@ -164,6 +169,10 @@ fun StreamsScreen(
     val streamLinkCopiedText = stringResource(Res.string.streams_link_copied)
     val noDirectStreamLinkText = stringResource(Res.string.streams_no_direct_link)
     var streamActionsTarget by remember(videoId) { mutableStateOf<StreamItem?>(null) }
+    var showLanguageMenu by remember(parentMetaId) { mutableStateOf(false) }
+    var sourceLanguage by remember(parentMetaId) {
+        mutableStateOf(PlayerTrackPreferenceStorage.load(parentMetaId)?.sourceStreamLanguage ?: "")
+    }
     val downloadScope = rememberCoroutineScope()
     var preferredFilterApplied by remember(videoId) { mutableStateOf(false) }
     val episodeProgress = watchProgressUiState.progressForVideo(
@@ -300,6 +309,24 @@ fun StreamsScreen(
                 containerColor = MaterialTheme.colorScheme.background.copy(alpha = 0.45f),
                 contentColor = MaterialTheme.colorScheme.onBackground,
             )
+            if (playerSettings.perTitleStreamLanguageEnabled && parentMetaType.equals("series", true)) {
+                Box {
+                    TextButton(onClick = { showLanguageMenu = true }) {
+                        Text("Language: ${sourceLanguage.ifBlank { "Any" }}")
+                    }
+                    DropdownMenu(expanded = showLanguageMenu, onDismissRequest = { showLanguageMenu = false }) {
+                        listOf("" to "Any", "en" to "English", "es" to "Spanish", "la" to "Latino", "fr" to "French", "de" to "German", "it" to "Italian", "pt" to "Portuguese", "ja" to "Japanese", "ko" to "Korean", "zh" to "Chinese", "hi" to "Hindi").forEach { (code, label) ->
+                            DropdownMenuItem(text = { Text(label) }, onClick = {
+                                val current = PlayerTrackPreferenceStorage.load(parentMetaId) ?: PersistedPlayerTrackPreference()
+                                PlayerTrackPreferenceStorage.save(parentMetaId, current.copy(sourceStreamLanguage = code.takeIf(String::isNotBlank)))
+                                sourceLanguage = code
+                                showLanguageMenu = false
+                                reloadStreams()
+                            })
+                        }
+                    }
+                }
+            }
         }
 
 
