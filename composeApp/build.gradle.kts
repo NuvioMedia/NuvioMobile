@@ -559,3 +559,11 @@ configurations.all {
     exclude(group = "androidx.media3", module = "media3-datasource-okhttp")
     exclude(group = "androidx.media3", module = "media3-extractor")
 }
+
+composeCompiler {
+    stabilityConfigurationFiles.add(project.layout.projectDirectory.file("compose_stability_config.conf"))
+    if (providers.gradleProperty("composeCompilerReports").orNull == "true") {
+        metricsDestination = layout.buildDirectory.dir("compose_metrics")
+        reportsDestination = layout.buildDirectory.dir("compose_reports")
+    }
+}
