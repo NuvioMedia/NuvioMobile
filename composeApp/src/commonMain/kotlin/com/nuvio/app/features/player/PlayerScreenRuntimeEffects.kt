@@ -157,6 +157,16 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         PlayerStreamsRepository.clearEpisodeStreams()
         resetAddonSubtitlesIfSourceChanged()
         WatchProgressRepository.ensureLoaded()
+
+        // A source that does not finish loading within the configured time counts as failed when
+        // falling back to the next source. It has an effect only where that fallback applies.
+        val startupTimeoutSeconds = playerSettingsUiState.streamAutoPlayFallbackStartupTimeoutSeconds
+        delay(startupTimeoutSeconds * 1_000L)
+        if (!initialLoadCompleted && errorMessage == null) {
+            tryFallbackToNextSourceAfterError(
+                getString(Res.string.player_error_source_startup_timeout, startupTimeoutSeconds),
+            )
+        }
     }
 
     LaunchedEffect(
@@ -924,7 +934,6 @@ internal fun PlayerScreenRuntime.tryRefreshExpiredLinkAfterError(message: String
     linkCacheSourceUrl = null
     removeFailedStreamFromCache()
 
-    val savedPositionMs = playbackSnapshot.positionMs.coerceAtLeast(0L)
     val expectedProviderAddonId = activeProviderAddonId
     val expectedProviderName = activeProviderName
     val expectedStreamTitle = activeStreamTitle
@@ -975,8 +984,7 @@ internal fun PlayerScreenRuntime.tryRefreshExpiredLinkAfterError(message: String
 
             val candidate = refreshedStream
             if (candidate == null) {
-                errorMessage = message
-                controlsVisible = !playerControlsLocked
+                showErrorUnlessSourceFallback(message)
                 return@launch
             }
             // Debrid links are always requested anew; a prepared or in-memory one may be the expired link.
@@ -991,43 +999,18 @@ internal fun PlayerScreenRuntime.tryRefreshExpiredLinkAfterError(message: String
             ) {
                 is DirectDebridPlayableResult.Success -> resolved.stream
                 else -> {
-                    errorMessage = message
-                    controlsVisible = !playerControlsLocked
+                    showErrorUnlessSourceFallback(message)
                     return@launch
                 }
             }
 
             val refreshedUrl = stream.playableDirectUrl
             if (refreshedUrl.isNullOrBlank() || refreshedUrl == failedUrl) {
-                errorMessage = message
-                controlsVisible = !playerControlsLocked
+                showErrorUnlessSourceFallback(message)
                 return@launch
             }
 
-            if (playerSettingsUiState.streamReuseLastLinkEnabled) {
-                saveDirectStreamForReuse(stream, refreshedUrl, currentVideoId, season, episode)
-            }
-            flushWatchProgress()
-            stopActiveP2pStream()
-            activeSourceUrl = refreshedUrl
-            activeSourceAudioUrl = null
-            activeSourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request)
-            activeSourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response)
-            activeStreamType = stream.streamType
-            activeStreamTitle = stream.streamLabel
-            activeStreamSubtitle = stream.streamSubtitle
-            activeStreamFilename = streamPlaybackFilename(stream, refreshedUrl)
-            activeProviderName = stream.addonName
-            activeProviderAddonId = stream.addonId
-            activeStream = stream
-            currentStreamBingeGroup = stream.behaviorHints.bingeGroup
-            activeSubtitleExtras = SubtitleRequestExtras.from(stream.behaviorHints, refreshedUrl)
-            currentStreamFilename = stream.behaviorHints.filename
-            currentStreamInfoHash = stream.infoHash
-            activeInitialPositionMs = savedPositionMs
-            activeInitialProgressFraction = null
-            showSourcesPanel = false
-            controlsVisible = true
+            playReplacementSource(stream, refreshedUrl, currentVideoId)
         } finally {
             PlayerStreamsRepository.stopSourcesLoading()
         }

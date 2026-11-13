@@ -1177,6 +1177,7 @@
     <string name="settings_playback_engine_libmpv_description">Use libmpv for Android playback.</string>
     <string name="settings_playback_auto_switch_engine_on_error">Auto-switch engine on playback error</string>
     <string name="settings_playback_auto_switch_engine_on_error_description">Switch to the other playback engine when playback fails, no matter which engine is selected.</string>
+    <string name="settings_playback_auto_switch_engine_blocked_by_fallback">Turn off fallback to next matching source to use this.</string>
     <string name="settings_playback_libmpv_video_output">libmpv Renderer</string>
     <string name="settings_playback_libmpv_video_output_dialog">libmpv Renderer</string>
     <string name="settings_playback_libmpv_hardware_decoding">libmpv Hardware Decoding</string>
@@ -1233,6 +1234,12 @@
     <string name="settings_playback_stream_selection_mode_regex_description">Play first source whose text matches your regex pattern.</string>
     <string name="settings_playback_stream_timeout">Stream Selection Timeout</string>
     <string name="settings_playback_stream_timeout_description">Wait time for addons before selecting.</string>
+    <string name="settings_playback_fallback_next_source">Fallback to next matching source on failure</string>
+    <string name="settings_playback_fallback_next_source_description">If the auto-selected source fails or does not start in time, quietly try the next matching sources.</string>
+    <string name="settings_playback_fallback_max_sources">Sources to try on failure</string>
+    <string name="settings_playback_fallback_startup_timeout">Time for a source to start</string>
+    <string name="settings_playback_fallback_next_source_blocked_by_engine_switch">Turn off auto-switch engine on playback error to use this.</string>
+    <string name="player_error_source_startup_timeout">The source did not start within %1$d seconds.</string>
     <string name="settings_playback_threshold_minutes">Threshold Minutes</string>
     <string name="settings_playback_threshold_mode">Next Episode Threshold Mode</string>
     <string name="settings_playback_threshold_mode_minutes_before_end">Minutes before end</string>
