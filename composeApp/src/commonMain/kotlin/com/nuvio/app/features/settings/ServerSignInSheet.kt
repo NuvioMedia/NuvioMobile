@@ -45,6 +45,7 @@ import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerProvider
 import com.nuvio.app.features.servers.ServerRepository
 import com.nuvio.app.features.servers.plex.PlexProvider
+import com.nuvio.app.features.servers.silo.SiloProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
@@ -78,9 +79,16 @@ internal fun ServerSignInSheet(
     onConnected: (ServerConnection) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    if (request.provider is PlexProvider) {
-        PlexSignInSheet(provider = request.provider, onConnected = onConnected, onDismiss = onDismiss)
-        return
+    when (val provider = request.provider) {
+        is PlexProvider -> {
+            PlexSignInSheet(provider = provider, onConnected = onConnected, onDismiss = onDismiss)
+            return
+        }
+        is SiloProvider -> {
+            SiloSignInSheet(provider = provider, address = request.address, onConnected = onConnected, onDismiss = onDismiss)
+            return
+        }
+        else -> Unit
     }
     val tokens = MaterialTheme.nuvio
     val scope = rememberCoroutineScope()
