@@ -4,6 +4,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,6 +20,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -134,6 +142,10 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
     val videoModifier = if (fold != null) Modifier.fillMaxWidth().height(fold.top) else Modifier.fillMaxSize()
     val panelModifier = if (fold != null) Modifier.fillMaxSize().padding(top = fold.bottom) else Modifier.fillMaxSize()
     val playbackGesturesEnabled = initialLoadCompleted && errorMessage == null
+    val keyFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(keyFocusRequester) {
+        keyFocusRequester.requestFocus()
+    }
 
     BindAutoSyncRuntimeEffects() // AutoSync hook
 
@@ -143,6 +155,20 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
             .padding(end = partyPanelInset)
             .clipToBounds()
             .onSizeChanged { layoutSize = it }
+            .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown || playerControlsLocked) return@onKeyEvent false
+                when {
+                    event.key == Key.Spacebar -> togglePlayback()
+                    event.key == Key.DirectionLeft && playbackGesturesEnabled -> seekBy(-10_000L)
+                    event.key == Key.DirectionRight && playbackGesturesEnabled -> seekBy(10_000L)
+                    event.key == Key.DirectionUp -> changeVolumeBy(PlayerKeyVolumeStep)
+                    event.key == Key.DirectionDown -> changeVolumeBy(-PlayerKeyVolumeStep)
+                    else -> return@onKeyEvent false
+                }
+                true
+            }
+            .focusRequester(keyFocusRequester)
+            .focusable()
             .playerSurfaceTapGestures(
                 layoutSize = layoutSize,
                 playbackGesturesEnabled = playbackGesturesEnabled,

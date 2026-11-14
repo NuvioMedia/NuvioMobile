@@ -156,6 +156,14 @@ internal fun PlayerScreenRuntime.showVolumeFeedback(level: PlayerAudioLevel) {
     )
 }
 
+internal const val PlayerKeyVolumeStep = 1f / 15f
+
+internal fun PlayerScreenRuntime.changeVolumeBy(delta: Float) {
+    val controller = gestureController ?: return
+    val current = controller.currentVolume()?.fraction ?: return
+    controller.setVolume(current + delta)?.let(::showVolumeFeedback)
+}
+
 internal fun PlayerScreenRuntime.togglePlayback() {
     if (isPartyControlLocked) {
         toggleOwnPlayback()
