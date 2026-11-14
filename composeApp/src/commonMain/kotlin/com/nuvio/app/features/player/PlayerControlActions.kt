@@ -40,6 +40,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -64,40 +67,46 @@ internal fun PlayerToolbar(
     modifier: Modifier = Modifier,
     onPartyClick: (() -> Unit)? = null,
     partyActive: Boolean = false,
+    onActionsPositioned: (Rect) -> Unit = {},
     onSwitchEngineClick: (() -> Unit)? = null,
 ) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Spacer(Modifier.weight(1f))
-        if (onSwitchEngineClick != null) {
+        Row(
+            modifier = Modifier.onGloballyPositioned { onActionsPositioned(it.boundsInRoot()) },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (onSwitchEngineClick != null) {
+                PlayerAction(
+                    description = stringResource(Res.string.cd_switch_player_engine),
+                    icon = Icons.Rounded.SwapHoriz,
+                    onClick = onSwitchEngineClick,
+                )
+            }
+            if (onPartyClick != null) {
+                PlayerAction(
+                    description = stringResource(Res.string.party_title),
+                    icon = Icons.Rounded.Groups,
+                    onClick = onPartyClick,
+                    tint = if (partyActive) MaterialTheme.colorScheme.primary else Color.White,
+                )
+            }
             PlayerAction(
-                description = stringResource(Res.string.cd_switch_player_engine),
-                icon = Icons.Rounded.SwapHoriz,
-                onClick = onSwitchEngineClick,
+                description = stringResource(
+                    if (isLocked) Res.string.compose_player_unlock_controls else Res.string.compose_player_lock_controls,
+                ),
+                icon = if (isLocked) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
+                onClick = onLockToggle,
+            )
+            NuvioBackButton(
+                onClick = onBack,
+                containerColor = Color.Transparent,
+                contentColor = Color.White,
+                buttonSize = 48.dp,
+                iconSize = 24.dp,
+                contentDescription = stringResource(Res.string.compose_player_close),
             )
         }
-        if (onPartyClick != null) {
-            PlayerAction(
-                description = stringResource(Res.string.party_title),
-                icon = Icons.Rounded.Groups,
-                onClick = onPartyClick,
-                tint = if (partyActive) MaterialTheme.colorScheme.primary else Color.White,
-            )
-        }
-        PlayerAction(
-            description = stringResource(
-                if (isLocked) Res.string.compose_player_unlock_controls else Res.string.compose_player_lock_controls,
-            ),
-            icon = if (isLocked) Icons.Rounded.LockOpen else Icons.Rounded.Lock,
-            onClick = onLockToggle,
-        )
-        NuvioBackButton(
-            onClick = onBack,
-            containerColor = Color.Transparent,
-            contentColor = Color.White,
-            buttonSize = 48.dp,
-            iconSize = 24.dp,
-            contentDescription = stringResource(Res.string.compose_player_close),
-        )
     }
 }
 

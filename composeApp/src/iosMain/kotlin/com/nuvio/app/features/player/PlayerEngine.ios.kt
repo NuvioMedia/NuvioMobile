@@ -75,6 +75,7 @@ actual fun PlatformPlayerSurface(
     val latestPlayerSettings = rememberUpdatedState(playerSettings)
     var subtitleText by remember(sourceUrl) { mutableStateOf("") }
     var subtitleStyle by remember { mutableStateOf(SubtitleStyleState.DEFAULT) }
+    var subtitleLiftFraction by remember { mutableStateOf(0f) }
 
     val bridge = remember {
         NuvioPlayerBridgeFactory.create()
@@ -284,7 +285,15 @@ actual fun PlatformPlayerSurface(
                 bridge.setSubtitleDelayMs(delayMs.coerceIn(SUBTITLE_DELAY_MIN_MS, SUBTITLE_DELAY_MAX_MS))
             }
 
+            private var lastSubtitleStyle: SubtitleStyleState? = null
+
+            override fun setSubtitleBottomLift(fraction: Float) {
+                subtitleLiftFraction = fraction
+                lastSubtitleStyle?.let { applySubtitleStyle(it) }
+            }
+
             override fun applySubtitleStyle(style: SubtitleStyleState) {
+                lastSubtitleStyle = style
                 subtitleStyle = style
                 bridge.applySubtitleStyle(
                     textColor = style.textColor.toMpvColorString(),
@@ -293,7 +302,7 @@ actual fun PlatformPlayerSurface(
                     outlineSize = if (style.outlineEnabled) style.outlineWidth.toFloat() else 0f,
                     bold = style.bold,
                     fontSize = style.toMpvSubtitleFontSize(),
-                    subPos = style.toMpvSubtitlePosition(),
+                    subPos = mpvSubtitlePositionWithLift(style.toMpvSubtitlePosition(), subtitleLiftFraction),
                     stripSdh = style.stripSdh,
                     styledOverlay = style.usesStyledOverlay,
                 )
@@ -372,7 +381,14 @@ actual fun PlatformPlayerSurface(
     // Polling for snapshots
     LaunchedEffect(bridge) {
         var lastReportedError: String? = null
+        var lastSubtitleText: String? = null
+        var subtitleCueVersion = 0L
         while (isActive) {
+            val subtitleText = bridge.getProperty("sub-text")
+            if (subtitleText != lastSubtitleText) {
+                lastSubtitleText = subtitleText
+                subtitleCueVersion += 1
+            }
             val snapshot = PlayerPlaybackSnapshot(
                 isLoading = bridge.getIsLoading(),
                 isPlaying = bridge.getIsPlaying(),
@@ -381,6 +397,8 @@ actual fun PlatformPlayerSurface(
                 positionMs = bridge.getPositionMs(),
                 bufferedPositionMs = bridge.getBufferedMs(),
                 playbackSpeed = bridge.getPlaybackSpeed(),
+                subtitleCueVersion = subtitleCueVersion,
+                subtitleCueVisible = subtitleText.isNotBlank(),
             )
             latestOnSnapshot.value(snapshot)
             val errorMessage = bridge.getErrorMessage().ifBlank { null }
@@ -426,7 +444,7 @@ actual fun PlatformPlayerSurface(
             },
             interactive = false,
         )
-        StyledSubtitleOverlay(subtitleText, subtitleStyle)
+        StyledSubtitleOverlay(subtitleText, subtitleStyle, liftFraction = subtitleLiftFraction)
         
         if (useNativeController) {
             var isPlayingLocal by remember { mutableStateOf(playWhenReady) }
