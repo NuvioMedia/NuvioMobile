@@ -117,6 +117,7 @@ object WatchedRepository {
         val sourceOperation: WatchedSourceOperation,
     )
 
+    private const val DIRTY_PUSH_BATCH_SIZE = 100
     private const val watchedItemsPageSize = 900
     private const val watchedItemsDeltaPageSize = 900
     private const val watchedDeltaOperationUpsert = "upsert"
@@ -393,6 +394,10 @@ object WatchedRepository {
             }
         }
         return try {
+            // Marks made while offline could not be uploaded then; do it now.
+            if (effectiveSource.providerId == null) {
+                pushDirtyNuvioWatched(profileId = profileId, operationGeneration = operation.profileGeneration)
+            }
             effectiveSource.providerId?.let { providerId ->
                 val provider = TrackingProviderRegistry.watchedProvider(providerId)
                     ?: run {
@@ -421,6 +426,28 @@ object WatchedRepository {
         } catch (error: Throwable) {
             log.e(error) { "Failed to refresh watched items from $effectiveSource" }
             false
+        }
+    }
+
+    /** Uploads watched marks whose upload failed when they were made (typically while offline). */
+    private suspend fun pushDirtyNuvioWatched(profileId: Int, operationGeneration: Long) {
+        val pending = itemsStore.read { nuvioItems, _, dirtyNuvioKeys, _ ->
+            dirtyNuvioKeys.mapNotNull { key -> nuvioItems[key] }
+        }.filterNot(ServerWatched::isServerItem)
+        if (pending.isEmpty()) return
+        try {
+            pending.chunked(DIRTY_PUSH_BATCH_SIZE).forEach { batch ->
+                syncAdapter.push(profileId = profileId, items = batch)
+                recordSuccessfulPush(
+                    profileId = profileId,
+                    operationGeneration = operationGeneration,
+                    items = batch,
+                )
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            log.w { "Could not upload pending watched marks yet: ${error.message}" }
         }
     }
 

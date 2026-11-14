@@ -188,7 +188,9 @@ import dev.chrisbanes.haze.rememberHazeState
 import com.nuvio.app.features.servers.ServerRepository
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
@@ -706,8 +708,22 @@ internal fun MainAppContent(
         if (resumePromptItem != null) return@LaunchedEffect
         if (currentRoute is StreamRoute || currentRoute is PlayerRoute || currentRoute is PartyRoute) return@LaunchedEffect
         if (continueWatchingPreferencesUiState.showResumePromptOnLaunch) {
+            // Give the account's latest progress a moment to arrive, so the prompt shows where
+            // playback really stopped, also when it continued on another device.
+            kotlinx.coroutines.withTimeoutOrNull(4_000L) {
+                WatchProgressRepository.uiState.first { it.hasLoadedRemoteProgress }
+            }
             resumePromptItem = ResumePromptRepository.consumeResumePrompt()
         }
+    }
+
+    // While the prompt is showing, follow newer progress from sync instead of keeping stale data.
+    LaunchedEffect(resumePromptItem?.videoId) {
+        val videoId = resumePromptItem?.videoId ?: return@LaunchedEffect
+        WatchProgressRepository.uiState
+            .map { state -> state.entries.filter { it.videoId == videoId }.maxByOrNull { it.lastUpdatedEpochMs } }
+            .distinctUntilChanged()
+            .collect { resumePromptItem = resumePromptItem?.let(ResumePromptRepository::refresh) }
     }
 
     LaunchedEffect(currentRoute) {
