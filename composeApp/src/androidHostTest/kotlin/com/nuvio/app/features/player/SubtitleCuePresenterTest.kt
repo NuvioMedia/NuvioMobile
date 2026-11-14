@@ -7,7 +7,9 @@ import android.graphics.Bitmap
 import android.graphics.Typeface
 import android.text.SpannableString
 import android.text.Spanned
+import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontStyle
 import androidx.media3.common.text.Cue
 import org.junit.runner.RunWith
@@ -66,5 +68,23 @@ class SubtitleCuePresenterTest {
         assertEquals("Sign", presenter.cues.top.text)
         assertEquals("Italic line", presenter.cues.bottom.text)
         assertEquals(FontStyle.Italic, presenter.cues.bottom.spanStyles.single().item.fontStyle)
+    }
+
+    @Test
+    fun cueColorsAndSrtAlignmentReachTheOverlay() {
+        val presenter = SubtitleCuePresenter { SubtitleStyleState(appearance = SubtitleAppearance(shadowEnabled = true)) }
+        val colored = SpannableString("Yellow").apply {
+            setSpan(ForegroundColorSpan(android.graphics.Color.YELLOW), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        val topLeft = Cue.Builder().setText(colored)
+            .setLine(0.08f, Cue.LINE_TYPE_FRACTION).setLineAnchor(Cue.ANCHOR_TYPE_START)
+            .setPosition(0.08f).setPositionAnchor(Cue.ANCHOR_TYPE_START).build()
+
+        presenter.present(listOf(topLeft))
+
+        val block = presenter.cues.blocks.single()
+        assertEquals(SubtitleVerticalPosition.TOP, block.vertical)
+        assertEquals(SubtitleHorizontalPosition.START, block.horizontal)
+        assertEquals(Color.Yellow, block.text.spanStyles.single().item.color)
     }
 }
