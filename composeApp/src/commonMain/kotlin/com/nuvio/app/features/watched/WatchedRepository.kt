@@ -969,10 +969,10 @@ object WatchedRepository {
         }
         if (shouldMarkSeriesWatched) {
             if (!hasSeriesWatchedMarker) {
-                markWatched(seriesWatchedItem)
+                markWatched(items = listOf(seriesWatchedItem), trackerHistorySync = WatchedTrackerHistorySync.Mirror)
             }
         } else if (hasSeriesWatchedMarker) {
-            unmarkWatched(seriesWatchedItem)
+            unmarkWatched(items = listOf(seriesWatchedItem), syncRemote = true)
         }
     }
 
