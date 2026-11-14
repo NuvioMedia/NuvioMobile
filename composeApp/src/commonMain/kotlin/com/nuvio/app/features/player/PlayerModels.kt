@@ -249,7 +249,7 @@ enum class IosAudioOutputMode(
     val mpvValue: String,
     val label: String,
 ) {
-    Auto("audiounit", "Auto"),
+    Auto("auto", "Auto"),
     AvFoundation("avfoundation", "AVFoundation"),
     AudioUnit("audiounit", "AudioUnit");
 
