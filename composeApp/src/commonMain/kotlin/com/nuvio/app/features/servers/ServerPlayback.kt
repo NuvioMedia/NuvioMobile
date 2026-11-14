@@ -84,7 +84,9 @@ internal object ServerPlayback {
         val current = url?.let { synchronized(lock) { active[it] } } ?: return null
         val state = try {
             withTimeoutOrNull(RESUME_TIMEOUT_MS) {
-                current.provider.details(current.session, current.playback.target.item.itemId).userStates.firstOrNull()
+                ServerRepository.callForPlayback(current.session) { provider, session ->
+                    provider.details(session, current.playback.target.item.itemId)
+                }.userStates.firstOrNull()
             }
         } catch (error: CancellationException) {
             throw error
@@ -135,7 +137,9 @@ internal object ServerPlayback {
             audioStreamIndex = audioStreamIndex,
             subtitleStreamIndex = subtitleStreamIndex,
         )
-        val playback = runCatching { current.provider.preparePlayback(current.session, request) }
+        val playback = runCatching {
+            ServerRepository.callForPlayback(current.session) { provider, session -> provider.preparePlayback(session, request) }
+        }
             .onFailure { if (it is CancellationException) throw it }
             .onFailure { log.w { "Playback restart for ${current.label} failed: ${it.serverFailure()} (${it.message})" } }
             .getOrNull()
@@ -192,7 +196,9 @@ internal object ServerPlayback {
                         lastControlSequence = queued.sequence
                     }
                     try {
-                        val sent = withTimeoutOrNull(REPORT_TIMEOUT_MS) { provider.report(session, playback, event) }
+                        val sent = withTimeoutOrNull(REPORT_TIMEOUT_MS) {
+                            ServerRepository.callForPlayback(session) { server, current -> server.report(current, playback, event) }
+                        }
                         when {
                             sent == null -> log.w { "Playback report ${event.type} for $label timed out" }
                             event.type != ServerPlaybackEventType.PROGRESS -> {

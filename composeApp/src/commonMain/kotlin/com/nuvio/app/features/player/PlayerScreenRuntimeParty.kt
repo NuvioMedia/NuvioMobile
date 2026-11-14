@@ -170,6 +170,8 @@ internal fun PlayerScreenRuntime.currentPartyMedia(): PartyMedia = PartyMedia(
 internal fun PlayerScreenRuntime.currentPartyStream(): PartyStream? {
     val stream = activeStream ?: return null
     if (!isShareableStreamUrl(activeSourceUrl) || activeSourceAudioUrl != null) return null
+    // A media server stream that signs in through its headers would hand the server token to every member.
+    if (stream.serverTarget != null && activeSourceHeaders.isNotEmpty()) return null
     return PartyStream(
         mediaKey = partyKey,
         url = activeSourceUrl,

@@ -25,6 +25,7 @@ import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerProvider
 import com.nuvio.app.features.servers.ServerProviders
 import com.nuvio.app.features.servers.ServerRepository
+import com.nuvio.app.features.servers.silo.SiloProvider
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.emby_logo
 import nuvio.composeapp.generated.resources.jellyfin_logo
@@ -32,6 +33,8 @@ import nuvio.composeapp.generated.resources.servers_add_description
 import nuvio.composeapp.generated.resources.servers_empty
 import nuvio.composeapp.generated.resources.servers_section_add
 import nuvio.composeapp.generated.resources.servers_section_connected
+import nuvio.composeapp.generated.resources.silo_add_description
+import nuvio.composeapp.generated.resources.silo_logo
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
@@ -86,7 +89,7 @@ internal fun LazyListScope.mediaServersSettingsContent(
                     if (index > 0) SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = provider.displayName,
-                        description = stringResource(Res.string.servers_add_description, provider.displayName),
+                        description = provider.addDescription(),
                         icon = Icons.Rounded.Add,
                         iconPainter = provider.logo(),
                         isTablet = isTablet,
@@ -117,6 +120,13 @@ private fun ServerConnection.statusText(failure: ServerFailure?): String =
 private fun ServerProvider.logo(): Painter? = when (id) {
     "jellyfin" -> painterResource(Res.drawable.jellyfin_logo)
     "emby" -> painterResource(Res.drawable.emby_logo)
+    SiloProvider.ID -> painterResource(Res.drawable.silo_logo)
     else -> null
+}
+
+@Composable
+private fun ServerProvider.addDescription(): String = when (id) {
+    SiloProvider.ID -> stringResource(Res.string.silo_add_description)
+    else -> stringResource(Res.string.servers_add_description, displayName)
 }
 

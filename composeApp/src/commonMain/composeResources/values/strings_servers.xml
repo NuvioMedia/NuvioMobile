@@ -1,7 +1,7 @@
 <resources>
     <string name="compose_settings_page_media_servers">Media servers</string>
     <string name="compose_settings_page_media_server">Server</string>
-    <string name="settings_content_discovery_media_servers_description">Connect Jellyfin or Emby to browse and play your own library.</string>
+    <string name="settings_content_discovery_media_servers_description">Connect Jellyfin, Emby or Silo to browse and play your own library.</string>
     <string name="servers_section_connected">SERVERS</string>
     <string name="servers_section_add">ADD SERVER</string>
     <string name="servers_empty">No servers connected yet.</string>
@@ -59,4 +59,32 @@
     <string name="servers_resume_row">Continue watching</string>
     <string name="servers_failure_unsupported">The server doesn't support this item.</string>
     <string name="servers_failure_incomplete">Still checking this server's library. Try again in a moment.</string>
+    <string name="silo_add_description">Sign in with your Silo account.</string>
+    <string name="silo_address_subtitle">Enter the address you open Silo at in a browser.</string>
+    <string name="silo_address_hint">https://silo.example.com</string>
+    <string name="silo_finding">Looking for Silo…</string>
+    <string name="silo_code_subtitle">Approve this device on %1$s.</string>
+    <string name="silo_approve_in_browser">Approve in browser</string>
+    <string name="silo_code_starting">Getting a code…</string>
+    <string name="silo_code_instructions">Or on another device signed in to Silo, open %1$s and enter this code.</string>
+    <string name="silo_code_waiting">Waiting for approval…</string>
+    <string name="silo_code_copied">Code copied</string>
+    <string name="silo_code_expired">This code has expired.</string>
+    <string name="silo_code_denied">This sign-in was declined.</string>
+    <string name="silo_code_unavailable">This server doesn't offer sign-in with a code.</string>
+    <string name="silo_new_code">New code</string>
+    <string name="silo_use_password">Use password</string>
+    <string name="silo_use_code">Use a code</string>
+    <string name="silo_password_subtitle">Sign in with your %1$s account.</string>
+    <string name="silo_profiles_title">Who's watching?</string>
+    <string name="silo_profile_kids">Kids</string>
+    <string name="silo_profile_pin">PIN</string>
+    <string name="silo_pin_title">PIN for %1$s</string>
+    <string name="silo_pin_hint">PIN</string>
+    <string name="silo_pin_wrong">Wrong PIN. Try again.</string>
+    <string name="silo_signing_in">Signing in…</string>
+    <string name="silo_error_not_silo">No Silo server answered at this address.</string>
+    <string name="silo_error_temporary_password">Change your temporary password in Silo's web app first, then sign in again.</string>
+    <string name="silo_error_password_off">This server has password sign-in turned off. Use a code instead.</string>
+    <string name="silo_error_too_many_tries">Too many attempts. Wait a moment and try again.</string>
 </resources>

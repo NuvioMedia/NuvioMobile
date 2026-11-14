@@ -44,6 +44,7 @@ import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerProvider
 import com.nuvio.app.features.servers.ServerRepository
+import com.nuvio.app.features.servers.silo.SiloProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
@@ -76,6 +77,10 @@ internal fun ServerSignInSheet(
     onConnected: (ServerConnection) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    if (request.provider is SiloProvider) {
+        SiloSignInSheet(provider = request.provider, address = request.address, onConnected = onConnected, onDismiss = onDismiss)
+        return
+    }
     val tokens = MaterialTheme.nuvio
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -221,7 +226,7 @@ internal fun ServerSignInSheet(
 }
 
 @Composable
-private fun SheetHeader(title: String, subtitle: String) {
+internal fun SheetHeader(title: String, subtitle: String) {
     val tokens = MaterialTheme.nuvio
     Text(
         text = title,
@@ -240,7 +245,7 @@ private fun SheetHeader(title: String, subtitle: String) {
 }
 
 @Composable
-private fun sheetFieldColors(): TextFieldColors {
+internal fun sheetFieldColors(): TextFieldColors {
     val colors = MaterialTheme.nuvio.colors
     return OutlinedTextFieldDefaults.colors(
         focusedBorderColor = colors.borderFocus,
