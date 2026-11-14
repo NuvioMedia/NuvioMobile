@@ -825,6 +825,14 @@
     <string name="settings_continue_watching_sort_mode_streaming_desc">Éléments sortis d’abord, éléments à venir à la fin</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming">Rangée «&#160;À venir&#160;» séparée</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">Déplacer les épisodes non diffusés dans une rangée «&#160;À venir&#160;» distincte</string>
+    <string name="settings_continue_watching_click_action_title">À la sélection</string>
+    <string name="settings_continue_watching_click_action_description">Ce qui s’ouvre lorsque vous sélectionnez un élément de Continuer à regarder</string>
+    <string name="settings_continue_watching_click_action_stream">Ouvrir les flux</string>
+    <string name="settings_continue_watching_click_action_stream_desc">Choisir une source ou reprendre la lecture</string>
+    <string name="settings_continue_watching_click_action_details">Ouvrir les détails</string>
+    <string name="settings_continue_watching_click_action_details_desc">Ouvrir la page de détail du titre</string>
+    <string name="settings_continue_watching_click_action_details_upcoming">Détails pour les épisodes à venir uniquement</string>
+    <string name="settings_continue_watching_click_action_details_upcoming_desc">Ouvrir les détails des épisodes pas encore diffusés, et les flux pour les autres</string>
     <string name="upcoming_section_title">À venir</string>
     <string name="settings_continue_watching_section_card_style">STYLE DE CARTE D’AFFICHE</string>
     <string name="settings_continue_watching_section_on_launch">AU DÉMARRAGE</string>
@@ -1177,6 +1185,7 @@
     <string name="settings_playback_engine_libmpv_description">Utiliser libmpv pour la lecture Android.</string>
     <string name="settings_playback_auto_switch_engine_on_error">Changer automatiquement de moteur en cas d’erreur de lecture</string>
     <string name="settings_playback_auto_switch_engine_on_error_description">Passer à l’autre moteur de lecture lorsque la lecture échoue, quel que soit le moteur sélectionné.</string>
+    <string name="settings_playback_auto_switch_engine_blocked_by_fallback">Désactivez le repli vers la source correspondante suivante pour l’utiliser.</string>
     <string name="settings_playback_libmpv_video_output">Moteur de rendu libmpv</string>
     <string name="settings_playback_libmpv_video_output_dialog">Moteur de rendu libmpv</string>
     <string name="settings_playback_libmpv_hardware_decoding">Décodage matériel libmpv</string>
@@ -1233,6 +1242,12 @@
     <string name="settings_playback_stream_selection_mode_regex_description">Lire la première source dont le texte correspond à votre motif regex.</string>
     <string name="settings_playback_stream_timeout">Délai de sélection du flux</string>
     <string name="settings_playback_stream_timeout_description">Temps d’attente des addons avant la sélection.</string>
+    <string name="settings_playback_fallback_next_source">Repli vers la source correspondante suivante en cas d’échec</string>
+    <string name="settings_playback_fallback_next_source_description">Si la source sélectionnée automatiquement échoue ou ne démarre pas à temps, essayer discrètement les sources correspondantes suivantes.</string>
+    <string name="settings_playback_fallback_max_sources">Sources à essayer en cas d’échec</string>
+    <string name="settings_playback_fallback_startup_timeout">Délai de démarrage d’une source</string>
+    <string name="settings_playback_fallback_next_source_blocked_by_engine_switch">Désactivez le changement automatique de moteur en cas d’erreur de lecture pour l’utiliser.</string>
+    <string name="player_error_source_startup_timeout">La source n’a pas démarré dans un délai de %1$d secondes.</string>
     <string name="settings_playback_threshold_minutes">Minutes du seuil</string>
     <string name="settings_playback_threshold_mode">Mode du seuil de l’épisode suivant</string>
     <string name="settings_playback_threshold_mode_minutes_before_end">Minutes avant la fin</string>
@@ -1635,8 +1650,8 @@
     <string name="network_error_request_failed_http">La requête a échoué avec HTTP %1$d</string>
     <string name="network_no_internet_connection">Pas de connexion Internet</string>
     <string name="person_age">(%1$d ans)</string>
-    <string name="person_born">Né(e) le %1$s%2$s</string>
-    <string name="person_died">Décédé(e) le %1$s</string>
+    <string name="person_born">Naissance&#160;: %1$s%2$s</string>
+    <string name="person_died">Décès&#160;: %1$s</string>
     <string name="person_known_for">Connu(e) pour&#160;: %1$s</string>
     <string name="person_latest">Récent</string>
     <string name="person_load_failed">Impossible de charger les détails de %1$s</string>
