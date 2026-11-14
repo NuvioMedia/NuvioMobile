@@ -94,6 +94,7 @@ internal fun AddonsSettingsPageContent(
     var formMessage by rememberSaveable { mutableStateOf<String?>(null) }
     var installModalState by remember { mutableStateOf<AddonInstallModalState?>(null) }
     var addonPendingDeletionUrl by rememberSaveable { mutableStateOf<String?>(null) }
+    val pendingInstallRequest by AddonRepository.pendingInstallRequest.collectAsStateWithLifecycle()
     val enterAddonUrlMessage = stringResource(Res.string.addons_error_enter_url)
     val usePersonalMediaCopy = AppFeaturePolicy.personalMediaAddonCopyEnabled
 
@@ -200,6 +201,33 @@ internal fun AddonsSettingsPageContent(
                 addonPendingDeletionUrl = null
             },
             onDismiss = { addonPendingDeletionUrl = null },
+        )
+    }
+
+    val pendingDeepLinkInstall = pendingInstallRequest
+    if (pendingDeepLinkInstall != null) {
+        NuvioStatusModal(
+            title = stringResource(Res.string.addons_deeplink_install_title),
+            message = stringResource(
+                Res.string.addons_deeplink_install_message,
+                pendingDeepLinkInstall.origin,
+                pendingDeepLinkInstall.manifestUrl,
+            ),
+            isVisible = true,
+            confirmText = stringResource(Res.string.addons_install_button),
+            dismissText = stringResource(Res.string.action_cancel),
+            onConfirm = {
+                AddonRepository.clearPendingAddonInstall()
+                installModalState = AddonInstallModalState.Checking
+                coroutineScope.launch {
+                    val result = AddonRepository.addAddon(pendingDeepLinkInstall.manifestUrl)
+                    installModalState = when (result) {
+                        is AddAddonResult.Success -> AddonInstallModalState.Success(result.manifest.name)
+                        is AddAddonResult.Error -> AddonInstallModalState.Error(result.message)
+                    }
+                }
+            },
+            onDismiss = { AddonRepository.clearPendingAddonInstall() },
         )
     }
 

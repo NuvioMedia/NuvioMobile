@@ -85,7 +85,6 @@ import com.nuvio.app.core.ui.isLiquidGlassNativeTabBarSupported
 import com.nuvio.app.core.ui.localizedContinueWatchingSubtitle
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.platformExitApp
-import com.nuvio.app.features.addons.AddAddonResult
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.addons.isWaitingForFirstEnabledManifest
@@ -743,19 +742,10 @@ internal fun MainAppContent(
                         navController.navigate(AddonsSettingsRoute(addonsSettingsTitle)) {
                             launchSingleTop = true
                         }
-                        NuvioToastController.show(getString(Res.string.addons_modal_checking_title))
                         AddonRepository.initialize()
-                        when (val result = AddonRepository.addAddon(deepLink.manifestUrl)) {
-                            is AddAddonResult.Success -> {
-                                NuvioToastController.show(
-                                    getString(Res.string.addons_modal_success_message, result.manifest.name),
-                                )
-                            }
-
-                            is AddAddonResult.Error -> {
-                                NuvioToastController.show(result.message)
-                            }
-                        }
+                        // A link is not consent: queue the install and let the addon screen ask
+                        // the user before anything is persisted or synced.
+                        AddonRepository.requestAddonInstall(deepLink.manifestUrl)
                         AppDeepLinkRepository.markConsumed(deepLink)
                     }
 
