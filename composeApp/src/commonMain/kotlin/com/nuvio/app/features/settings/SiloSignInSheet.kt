@@ -115,10 +115,15 @@ internal fun SiloSignInSheet(
     val state by flow.state.collectAsStateWithLifecycle()
 
     LaunchedEffect(flow) { flow.start() }
-    DisposableEffect(flow) { onDispose { flow.close() } }
+    DisposableEffect(flow) { onDispose { flow.stop() } }
 
     NuvioModalBottomSheet(
-        onDismissRequest = { if (!state.busy) onDismiss() },
+        onDismissRequest = {
+            if (!state.busy) {
+                flow.close()
+                onDismiss()
+            }
+        },
         sheetState = sheetState,
     ) {
         Column(

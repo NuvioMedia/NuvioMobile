@@ -142,7 +142,38 @@ class ServerTokenRenewalTest {
             token = "device-token",
         )
 
-        assertTrue(assertNotNull(ServerRepository.syncSnapshot(ProfileRepository.activeProfileId)).servers.isEmpty())
+        val snapshot = assertNotNull(ServerRepository.syncSnapshot(ProfileRepository.activeProfileId))
+        assertTrue(snapshot.servers.isEmpty())
+
+        assertTrue(ServerRepository.applySync(snapshot, emptyList(), emptySet()))
+        assertEquals(listOf(CONNECTION), ServerRepository.uiState.value.connections.map { it.id })
+        assertEquals("device-token", ServerRepository.session(CONNECTION)?.token)
+    }
+
+    @Test
+    fun aPlayingReportOutlastsAServerListChange() = runTest {
+        install(RenewingProvider())
+        val started = assertNotNull(ServerRepository.session(CONNECTION))
+        ServerRepository.remove(CONNECTION)
+
+        val token = ServerRepository.callForPlayback(started) { _, session -> session.token }
+
+        assertEquals("token-1", token)
+    }
+
+    @Test
+    fun aPlayingReportRenewsOnceAfterAnExpiredToken() = runTest {
+        install(RenewingProvider())
+        val started = assertNotNull(ServerRepository.session(CONNECTION))
+        var calls = 0
+
+        val token = ServerRepository.callForPlayback(started) { _, session ->
+            if (calls++ == 0) throw ServerException(ServerFailure.AUTH_REQUIRED)
+            session.token
+        }
+
+        assertEquals(2, calls)
+        assertEquals("token-2", token)
     }
 
     @Test
