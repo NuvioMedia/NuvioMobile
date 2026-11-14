@@ -30,6 +30,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -109,6 +112,7 @@ fun HomeHeroSection(
     showImdbRating: Boolean = true,
     showMdbListRatings: Boolean = false,
     onItemClick: ((MetaPreview) -> Unit)? = null,
+    onPlayTrailer: ((MetaPreview) -> Unit)? = null,
 ) {
     if (items.isEmpty()) return
 
@@ -323,23 +327,48 @@ fun HomeHeroSection(
                         }
                     }
 
-                    if (!layout.isTablet) {
+                    if (!layout.isTablet || onPlayTrailer != null) {
                         Spacer(modifier = Modifier.height(14.dp))
-                        Surface(
-                            modifier = Modifier
-                                .clickable(enabled = onItemClick != null) {
-                                    onItemClick?.invoke(currentItem)
-                                },
-                            color = MaterialTheme.colorScheme.onBackground,
-                            contentColor = MaterialTheme.colorScheme.background,
-                            shape = RoundedCornerShape(40.dp),
-                        ) {
-                            Text(
-                                text = stringResource(Res.string.home_view_details),
-                                modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                            )
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            if (!layout.isTablet) {
+                                Surface(
+                                    modifier = Modifier
+                                        .clickable(enabled = onItemClick != null) {
+                                            onItemClick?.invoke(currentItem)
+                                        },
+                                    color = MaterialTheme.colorScheme.onBackground,
+                                    contentColor = MaterialTheme.colorScheme.background,
+                                    shape = RoundedCornerShape(40.dp),
+                                ) {
+                                    Text(
+                                        text = stringResource(Res.string.home_view_details),
+                                        modifier = Modifier.padding(horizontal = 28.dp, vertical = 12.dp),
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                            if (onPlayTrailer != null) {
+                                Surface(
+                                    modifier = Modifier.clickable { onPlayTrailer(currentItem) },
+                                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.9f),
+                                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    shape = RoundedCornerShape(40.dp),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Icon(imageVector = Icons.Default.PlayArrow, contentDescription = null)
+                                        Text(
+                                            text = stringResource(Res.string.generic_trailer),
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
 

@@ -122,6 +122,7 @@ fun HomeScreen(
     scrollToTopRequests: Flow<Unit> = emptyFlow(),
     onCatalogClick: ((HomeCatalogSection) -> Unit)? = null,
     onPosterClick: ((MetaPreview) -> Unit)? = null,
+    onPlayHeroTrailer: ((MetaPreview) -> Unit)? = null,
     onPosterLongClick: ((MetaPreview) -> Unit)? = null,
     onContinueWatchingClick: ((ContinueWatchingItem) -> Unit)? = null,
     onContinueWatchingLongPress: ((ContinueWatchingItem) -> Unit)? = null,
@@ -1019,6 +1020,7 @@ fun HomeScreen(
                                 showImdbRating = homeHeroState.showImdbRating,
                                 showMdbListRatings = homeHeroState.showMdbListRatings,
                                 onItemClick = onPosterClick,
+                                onPlayTrailer = onPlayHeroTrailer,
                             )
 
                             else -> HomeHeroReservedSpace(
