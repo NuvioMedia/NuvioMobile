@@ -825,6 +825,14 @@
     <string name="settings_continue_watching_sort_mode_streaming_desc">Mục đã phát hành trước, sắp phát sóng ở sau cùng</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming">Tách hàng Sắp phát sóng</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">Chuyển các tập chưa phát sóng vào hàng Sắp phát sóng riêng biệt.</string>
+    <string name="settings_continue_watching_click_action_title">Khi chọn</string>
+    <string name="settings_continue_watching_click_action_description">Mở gì khi bạn chọn một mục trong danh sách Tiếp tục xem</string>
+    <string name="settings_continue_watching_click_action_stream">Mở luồng phát</string>
+    <string name="settings_continue_watching_click_action_stream_desc">Chọn một nguồn hoặc tiếp tục phát</string>
+    <string name="settings_continue_watching_click_action_details">Mở Chi tiết</string>
+    <string name="settings_continue_watching_click_action_details_desc">Mở trang chi tiết của nội dung</string>
+    <string name="settings_continue_watching_click_action_details_upcoming">Chỉ chi tiết cho mục Sắp phát sóng</string>
+    <string name="settings_continue_watching_click_action_details_upcoming_desc">Mở chi tiết cho tập chưa phát sóng, mở luồng phát cho các tập còn lại.</string>
     <string name="upcoming_section_title">Sắp phát sóng</string>
     <string name="settings_continue_watching_section_card_style">KIỂU THẺ POSTER</string>
     <string name="settings_continue_watching_section_on_launch">KHI KHỞI ĐỘNG</string>
@@ -2551,9 +2559,9 @@
     <string name="subtitle_appearance_hint">Áp dụng cho phụ đề văn bản. Phụ đề ASS có kiểu định dạng và phụ đề hình ảnh vẫn giữ nguyên giao diện gốc.</string>
     <string name="subtitle_font">Phông chữ</string>
     <string name="subtitle_font_default">Mặc định</string>
-    <string name="subtitle_font_sans">Kiểu chữ không chân</string>
-    <string name="subtitle_font_serif">Kiểu chữ có chân</string>
-    <string name="subtitle_font_mono">Kiểu chữ đơn cách</string>
+    <string name="subtitle_font_sans">Không chân</string>
+    <string name="subtitle_font_serif">Có chân</string>
+    <string name="subtitle_font_mono">Đơn cách</string>
     <string name="subtitle_font_import">Nhập phông chữ</string>
     <string name="subtitle_font_import_hint">Chọn tệp .ttf hoặc .otf có dung lượng tối đa 10 MB. Phông chữ đã nhập chỉ được lưu trên thiết bị này.</string>
     <string name="subtitle_font_import_error">Không thể nhập phông chữ này. Chọn tệp .ttf hoặc .otf hợp lệ có dung lượng dưới 10 MB.</string>
