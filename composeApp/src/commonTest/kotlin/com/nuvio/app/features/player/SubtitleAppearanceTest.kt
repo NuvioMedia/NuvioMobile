@@ -15,6 +15,13 @@ class SubtitleAppearanceTest {
     }
 
     @Test
+    fun customOutlineWidthUsesStyledOverlay() {
+        assertTrue(SubtitleStyleState(outlineWidth = 4).usesStyledOverlay)
+        assertFalse(SubtitleStyleState(outlineWidth = 4, outlineEnabled = false).usesStyledOverlay)
+        assertFalse(SubtitleStyleState(outlineWidth = SUBTITLE_OUTLINE_WIDTH_DEFAULT).usesStyledOverlay)
+    }
+
+    @Test
     fun syncedValuesAreBoundedAndCannotReferenceFiles() {
         val style = decodeSubtitleAppearance("""{"fontId":"../../font.ttf","backgroundRadius":999,"shadowOpacity":-1,"shadowSize":999}""")
         assertEquals("default", style.fontId)
