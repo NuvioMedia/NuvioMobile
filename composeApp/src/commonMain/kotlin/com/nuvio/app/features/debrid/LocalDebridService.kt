@@ -31,16 +31,7 @@ internal object LocalDebridService {
     ): Map<String, LocalDebridCachedItem>? =
         try {
             val response = TorboxApiClient.checkCached(apiKey = apiKey, hashes = hashes)
-            if (!response.isSuccessful || response.body?.success == false) {
-                null
-            } else {
-                response.body?.data.orEmpty().mapKeys { it.key.lowercase() }.mapValues { (_, value) ->
-                    LocalDebridCachedItem(
-                        name = value.name,
-                        size = value.size,
-                    )
-                }
-            }
+            torboxCachedItems(response)
         } catch (error: Exception) {
             if (error is CancellationException) throw error
             null
@@ -79,4 +70,20 @@ internal object LocalDebridService {
 private fun kotlinx.serialization.json.JsonElement?.asLongOrNull(): Long? {
     val primitive = this as? JsonPrimitive ?: return null
     return primitive.longOrNull ?: primitive.content.toLongOrNull()
+}
+
+internal fun torboxCachedItems(
+    response: DebridApiResponse<TorboxEnvelopeDto<Map<String, TorboxCachedItemDto>>>,
+): Map<String, LocalDebridCachedItem>? {
+    if (!response.isSuccessful) return null
+    val body = response.body ?: return null
+    if (body.success != true) return null
+    val data = body.data ?: return null
+
+    return data.mapKeys { it.key.lowercase() }.mapValues { (_, value) ->
+        LocalDebridCachedItem(
+            name = value.name,
+            size = value.size,
+        )
+    }
 }
