@@ -21,6 +21,7 @@ interface PlayerEngineController {
     fun clearExternalSubtitle()
     fun clearExternalSubtitleAndSelect(trackIndex: Int)
     fun applySubtitleStyle(style: SubtitleStyleState) {}
+    fun setSubtitleBottomLift(fraction: Float) {}
     fun applySubtitlePreferences(
         preferredLanguage: String,
         secondaryPreferredLanguage: String? = null,
