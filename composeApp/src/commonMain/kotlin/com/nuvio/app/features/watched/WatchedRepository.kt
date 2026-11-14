@@ -4,6 +4,9 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.tracking.ensureTrackingProvidersRegistered
+import com.nuvio.app.features.addons.AddonEventDispatcher
+import com.nuvio.app.features.addons.AddonLibraryAction
+import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.profiles.ProfileRepository
@@ -758,7 +761,9 @@ object WatchedRepository {
         items.filter { it.isEpisode }.map { it.id }.distinct().forEach {
             ContinueWatchingPreferencesRepository.removeDismissedNextUpKeysForContent(it)
         }
+        val changedItems = items.filterNot { isWatched(it.id, it.type, it.season, it.episode) }
         markWatched(items = items, trackerHistorySync = WatchedTrackerHistorySync.Mirror)
+        emitAddonWatchedEvents(changedItems, AddonLibraryAction.WATCHED)
     }
 
     internal fun markWatchedFromPlaybackCompletion(item: WatchedItem, syncRemote: Boolean = true) {
@@ -838,7 +843,31 @@ object WatchedRepository {
     }
 
     fun unmarkWatched(items: Collection<WatchedItem>) {
+        val changedItems = items.filter { isWatched(it.id, it.type, it.season, it.episode) }
         unmarkWatched(items = items, syncRemote = true)
+        emitAddonWatchedEvents(changedItems, AddonLibraryAction.UNWATCHED)
+    }
+
+    private fun emitAddonWatchedEvents(items: Collection<WatchedItem>, action: AddonLibraryAction) {
+        items.groupBy { it.type to it.id }.forEach { (key, groupItems) ->
+            val (type, id) = key
+            if (groupItems.any { !it.isEpisode }) {
+                AddonEventDispatcher.library(type = type, id = id, action = action)
+            } else {
+                AddonEventDispatcher.libraryVideos(
+                    type = type,
+                    id = id,
+                    action = action,
+                    videoIds = groupItems.map { item ->
+                        item.videoId?.takeIf(String::isNotBlank) ?: buildPlaybackVideoId(
+                            parentMetaId = item.id,
+                            seasonNumber = item.season,
+                            episodeNumber = item.episode,
+                        )
+                    },
+                )
+            }
+        }
     }
 
     private fun unmarkWatched(items: Collection<WatchedItem>, syncRemote: Boolean) {

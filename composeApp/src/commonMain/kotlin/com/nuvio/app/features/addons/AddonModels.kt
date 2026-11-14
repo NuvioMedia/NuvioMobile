@@ -32,6 +32,14 @@ fun AddonManifest.supportsResource(name: String, type: String, id: String): Bool
             (resource.idPrefixes.isEmpty() || resource.idPrefixes.any { id.startsWith(it) })
     }
 
+internal const val ADDON_PLAYER_RESOURCE = "player"
+internal const val ADDON_LIBRARY_RESOURCE = "library"
+
+val AddonManifest.isTrackingAddon: Boolean
+    get() = resources.any { resource ->
+        resource.name == ADDON_PLAYER_RESOURCE || resource.name == ADDON_LIBRARY_RESOURCE
+    }
+
 data class AddonCatalog(
     val type: String,
     val id: String,
@@ -110,5 +118,6 @@ internal fun List<ManagedAddon>.firstEnabledManifestError(): String? =
 
 sealed interface AddAddonResult {
     data class Success(val manifest: AddonManifest) : AddAddonResult
+    data class TrackingConsentRequired(val manifest: AddonManifest) : AddAddonResult
     data class Error(val message: String) : AddAddonResult
 }
