@@ -128,11 +128,14 @@ object ServerRepository {
         }
     }
 
-    suspend fun connect(provider: ServerProvider, address: String, username: String, password: String): ServerConnection {
+    suspend fun connect(provider: ServerProvider, address: String, username: String, password: String): ServerConnection =
+        connect(provider) { provider.signIn(address, username, password) }
+
+    suspend fun connect(provider: ServerProvider, signIn: suspend () -> ServerSignIn): ServerConnection {
         ensureLoaded()
         val startedGeneration = generation
         val profileId = loadedProfileId ?: ProfileRepository.activeProfileId
-        val signIn = provider.signIn(address, username, password)
+        val signIn = signIn()
         val existing = _uiState.value.connections.firstOrNull {
             it.providerId == provider.id &&
                 it.remoteServerId == signIn.serverId &&
