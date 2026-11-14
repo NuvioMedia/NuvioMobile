@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">همگام‌سازی خودکار زیرنویس</string>
+    <string name="settings_playback_subtitle_auto_sync_description">زیرنویس انتخاب‌شده از افزونه را با زمان‌بندی زیرنویس‌های داخل ویدیو هماهنگ می‌کند.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">جستجوی همگام‌سازی خودکار: کامل</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">قبل از همگام‌سازی، زیرنویس‌ها و ترک‌های داخلی دیگر را برای تطابق بهتر مقایسه می‌کند. فقط تطابق‌های مطمئن اعمال می‌شوند.</string>
+    <string name="settings_playback_auto_sync_mode_passive">جستجوی همگام‌سازی خودکار: سریع</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">از اولین تطابق قوی زودتر استفاده می‌کند. مثل حالت کامل، فقط تطابق‌های مطمئن اعمال می‌شوند.</string>
+    <string name="settings_playback_auto_sync_tolerance">تحمل همگام‌سازی خودکار: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">اگر جابه‌جایی زمان زیرنویس بیشتر از این مقدار نباشد، زمان اصلی حفظ می‌شود. برای تغییر ضربه بزنید.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">خاموش</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d میلی‌ثانیه</string>
+</resources>
