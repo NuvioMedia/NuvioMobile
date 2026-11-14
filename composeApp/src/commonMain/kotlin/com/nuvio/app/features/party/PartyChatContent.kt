@@ -77,6 +77,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -214,7 +215,7 @@ private fun MessageList(
 }
 
 @Composable
-private fun MessageRow(
+internal fun MessageRow(
     row: PartyChatRow,
     members: List<PartyMember>,
     bubbleWidth: Dp,
@@ -247,7 +248,7 @@ private fun MessageRow(
                 modifier = Modifier
                     .padding(start = AVATAR_SIZE + AVATAR_GAP, bottom = 4.dp)
                     .widthIn(max = bubbleWidth),
-                style = MaterialTheme.typography.labelMedium,
+                style = MaterialTheme.typography.labelMedium.copy(textDirection = TextDirection.Content),
                 color = tokens.colors.textSecondary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
@@ -302,7 +303,7 @@ private fun Bubble(
             .clip(shape)
             .background(if (message.mine) tokens.colors.accent else tokens.colors.surfaceCard)
             .padding(horizontal = 14.dp, vertical = 9.dp),
-        style = MaterialTheme.typography.bodyMedium,
+        style = MaterialTheme.typography.bodyMedium.copy(textDirection = TextDirection.Content),
         color = if (message.mine) tokens.colors.onAccent else tokens.colors.textPrimary,
     )
 }
@@ -379,7 +380,10 @@ private fun Composer() {
                 }
             },
             modifier = Modifier.weight(1f),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(color = tokens.colors.textPrimary),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = tokens.colors.textPrimary,
+                textDirection = TextDirection.Content,
+            ),
             cursorBrush = SolidColor(tokens.colors.accent),
             keyboardOptions = KeyboardOptions(
                 capitalization = KeyboardCapitalization.Sentences,
