@@ -30,6 +30,7 @@ import com.nuvio.app.features.servers.verifiedTitleMatches
 import com.nuvio.app.features.streams.StreamSubtitle
 import io.ktor.client.HttpClient
 import io.ktor.http.HttpMethod
+import kotlin.concurrent.Volatile
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.async
@@ -409,8 +410,11 @@ internal class PlexProvider(
             else -> "playing"
         }
         val sessionHeader = mapOf(SESSION_HEADER to playSession)
+        // A play that never got going has no position worth keeping; a stop at 0 would clear the resume point.
+        val sendsTimeline = event.type != ServerPlaybackEventType.STOP || play.playing
+        if (event.type != ServerPlaybackEventType.STOP) play.playing = true
         try {
-            client.execute(
+            if (sendsTimeline) client.execute(
                 HttpMethod.Get,
                 session.connection.address,
                 TIMELINE_PATH,
@@ -534,7 +538,10 @@ internal class PlexProvider(
         val durationMs: Long,
         val transcoded: Boolean,
         val preparedAtMs: Long,
-    )
+    ) {
+        @Volatile
+        var playing = false
+    }
 
     internal companion object {
         const val ID = "plex"

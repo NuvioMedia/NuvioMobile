@@ -262,7 +262,7 @@ internal class PlexSignInFlow(
     private companion object {
         const val POLL_MS = 2_000L
         const val POLL_BACKOFF_MAX_MS = 15_000L
-        const val CODE_RENEW_FOR_MS = 30 * 60_000L
+        const val CODE_RENEW_FOR_MS = 10 * 60_000L
     }
 }
 

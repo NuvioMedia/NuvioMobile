@@ -153,8 +153,9 @@ internal class PlexAccountClient(
     }
 
     /**
-     * Tries every address of [server] at once and keeps the best one that answers as that server: the home network
-     * first, then the internet, then Plex Relay. Unencrypted addresses are only used on the home network.
+     * Tries every address of [server] at once and keeps the best one that answers as that server: the internet address
+     * first, since a phone takes it out of the house, then the home network, then Plex Relay. Unencrypted addresses are
+     * only used on the home network.
      */
     suspend fun reach(server: PlexServer, machineId: suspend (String) -> String?): PlexServer {
         val candidates = server.addresses.filter { it.uri.startsWith("https://", ignoreCase = true) || it.local }
@@ -162,7 +163,7 @@ internal class PlexAccountClient(
             candidates.map { address ->
                 async {
                     val answer = try {
-                        withTimeoutOrNull(REACH_TIMEOUT_MS) { probes.withPermit { machineId(address.uri) } }
+                        probes.withPermit { withTimeoutOrNull(REACH_TIMEOUT_MS) { machineId(address.uri) } }
                     } catch (_: ServerException) {
                         null
                     }
@@ -182,8 +183,8 @@ internal class PlexAccountClient(
 
     private fun rank(address: PlexAddress): Int = when {
         address.relay -> 2
-        address.local -> 0
-        else -> 1
+        address.local -> 1
+        else -> 0
     }
 
     private suspend fun <T> send(

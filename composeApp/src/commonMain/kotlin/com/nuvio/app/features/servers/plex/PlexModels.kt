@@ -50,7 +50,7 @@ class PlexServer(
     val accessToken: String,
     val addresses: List<PlexAddress>,
     val reach: PlexReach = PlexReach.OFFLINE,
-    /** The best address that answered: home network first, then internet, then Plex Relay. */
+    /** The best address that answered: internet first, then home network, then Plex Relay. */
     val address: String? = null
 ) {
     fun reached(reach: PlexReach, address: String?) =

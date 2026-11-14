@@ -302,6 +302,7 @@ class PlexProviderTest {
                 subtitleStreamIndex = 102,
             ),
         )
+        plex.report(session, playback, ServerPlaybackEvent(ServerPlaybackEventType.START, positionMs = 60_000L, isPaused = false))
         plex.report(session, playback, ServerPlaybackEvent(ServerPlaybackEventType.STOP, positionMs = 120_000L, isPaused = true))
 
         assertEquals(ServerPlayMethod.TRANSCODE, playback.playMethod)
@@ -311,13 +312,36 @@ class PlexProviderTest {
         val choice = http.requests("/library/parts/5").single()
         assertEquals(HttpMethod.Put, choice.method)
         assertEquals("102", choice.url.parameters["subtitleStreamID"])
-        val timeline = http.requests("/:/timeline").single().url
+        val timeline = http.requests("/:/timeline").last().url
+        assertEquals(listOf("playing", "stopped"), http.requests("/:/timeline").map { it.url.parameters["state"] })
         assertEquals("stopped", timeline.parameters["state"])
         assertEquals("120000", timeline.parameters["time"])
         assertEquals(
             playback.playSessionId,
             http.requests("/video/:/transcode/universal/stop").single().url.parameters["session"],
         )
+    }
+
+    @Test
+    fun aPlayThatNeverStartedLeavesTheResumePointAlone() = runTest {
+        val (plex, http) = provider { request ->
+            when (request.url.encodedPath) {
+                "/video/:/transcode/universal/decision" ->
+                    ok("""{"MediaContainer":{"generalDecisionCode":1001,"transcodeDecisionText":"Video is transcoding"}}""")
+                "/library/parts/5" -> ok("")
+                "/:/timeline", "/video/:/transcode/universal/stop" -> ok("")
+                else -> ok(movieItem)
+            }
+        }
+        val playback = plex.preparePlayback(
+            session,
+            request.copy(capabilities = ServerPlayerCapabilities(directPlayAll = true, allowDirectPlay = false)),
+        )
+
+        plex.report(session, playback, ServerPlaybackEvent(ServerPlaybackEventType.STOP, positionMs = 0L, isPaused = true))
+
+        assertTrue(http.requests("/:/timeline").isEmpty())
+        assertEquals(1, http.requests("/video/:/transcode/universal/stop").size)
     }
 
     @Test

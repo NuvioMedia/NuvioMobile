@@ -3,6 +3,7 @@ package com.nuvio.app.features.servers.plex
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HttpMethod
 import io.ktor.http.Url
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -136,16 +137,16 @@ class PlexAccountClientTest {
     )
 
     @Test
-    fun prefersTheHomeNetworkThenTheInternetThenRelay() = runTest {
+    fun prefersTheInternetThenTheHomeNetworkThenRelay() = runTest {
         val (plex, _) = account { error("No request expected") }
 
-        val home = plex.reach(server) { "m1" }
-        val away = plex.reach(server) { address -> "m1".takeUnless { "192.168" in address } }
+        val both = plex.reach(server) { "m1" }
+        val homeOnly = plex.reach(server) { address -> "m1".takeIf { "192.168" in address } }
         val relay = plex.reach(server) { address -> "m1".takeIf { "relay" in address } }
         val offline = plex.reach(server) { "another-server" }
 
-        assertEquals(PlexReach.LOCAL to "http://192.168.1.20:32400", home.reach to home.address)
-        assertEquals(PlexReach.REMOTE to "https://203-0-113-5.abc.plex.direct:32400", away.reach to away.address)
+        assertEquals(PlexReach.REMOTE to "https://203-0-113-5.abc.plex.direct:32400", both.reach to both.address)
+        assertEquals(PlexReach.LOCAL to "http://192.168.1.20:32400", homeOnly.reach to homeOnly.address)
         assertEquals(PlexReach.RELAY, relay.reach)
         assertEquals(PlexReach.OFFLINE to null, offline.reach to offline.address)
     }
@@ -161,5 +162,24 @@ class PlexAccountClientTest {
         }
 
         assertTrue("http://203.0.113.5:32400" !in tried)
+    }
+
+    @Test
+    fun deadAddressesDoNotUseUpTheTimeOfTheOthers() = runTest {
+        val (plex, _) = account { error("No request expected") }
+        val crowded = PlexServer(
+            machineId = "m1",
+            name = "Home",
+            owned = true,
+            accessToken = "token",
+            addresses = List(8) { PlexAddress("https://10-0-0-$it.abc.plex.direct:32400", local = true, relay = false) } +
+                PlexAddress("https://203-0-113-5.abc.plex.direct:32400", local = false, relay = false),
+        )
+
+        val reached = plex.reach(crowded) { address ->
+            if ("10-0-0" in address) awaitCancellation() else "m1"
+        }
+
+        assertEquals("https://203-0-113-5.abc.plex.direct:32400", reached.address)
     }
 }
