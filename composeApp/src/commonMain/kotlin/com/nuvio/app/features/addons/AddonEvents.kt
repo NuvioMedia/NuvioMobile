@@ -8,7 +8,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
@@ -37,14 +36,20 @@ object AddonEventDispatcher {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val log = Logger.withTag("AddonEvents")
     private val events = Channel<AddonEvent>(Channel.UNLIMITED)
+    private val addonQueues = mutableMapOf<String, Channel<AddonDelivery>>()
 
     init {
         scope.launch {
             for (event in events) {
-                deliver(event)
+                route(event)
             }
         }
     }
+
+    fun hasEnabledAddonFor(resource: String): Boolean =
+        AddonRepository.uiState.value.addons.any { addon ->
+            addon.isActive && addon.manifest?.resources?.any { it.name == resource } == true
+        }
 
     fun player(
         target: AddonPlayerEventTarget,
@@ -83,21 +88,17 @@ object AddonEventDispatcher {
         action: AddonLibraryAction,
         videoIds: Collection<String>,
     ) {
-        videoIds
-            .filter(String::isNotBlank)
-            .distinct()
-            .chunked(LIBRARY_EVENT_VIDEOS_COUNT)
-            .forEach { chunk ->
-                dispatch(
-                    resource = ADDON_LIBRARY_RESOURCE,
-                    type = type,
-                    id = id,
-                    extra = listOf(
-                        "action" to action.wireValue,
-                        "videoId" to chunk.joinToString(","),
-                    ),
-                )
-            }
+        libraryVideoIdChunks(videoIds).forEach { chunk ->
+            dispatch(
+                resource = ADDON_LIBRARY_RESOURCE,
+                type = type,
+                id = id,
+                extra = listOf(
+                    "action" to action.wireValue,
+                    "videoId" to chunk.joinToString(","),
+                ),
+            )
+        }
     }
 
     private fun dispatch(
@@ -110,52 +111,80 @@ object AddonEventDispatcher {
         events.trySend(AddonEvent(resource, type, id, extra))
     }
 
-    private suspend fun deliver(event: AddonEvent) {
-        val manifests = AddonRepository.uiState.value.addons
+    private fun route(event: AddonEvent) {
+        AddonRepository.uiState.value.addons
             .asSequence()
             .filter(ManagedAddon::isActive)
             .mapNotNull(ManagedAddon::manifest)
             .filter { manifest -> manifest.supportsResource(event.resource, event.type, event.id) }
             .distinctBy(AddonManifest::transportUrl)
-            .toList()
-        if (manifests.isEmpty()) return
+            .forEach { manifest ->
+                val url = buildAddonEventUrl(manifest.transportUrl, event.resource, event.type, event.id, event.extra)
+                queueFor(manifest.transportUrl).trySend(AddonDelivery(manifest.id, event.resource, url))
+            }
+    }
 
-        val extraSegment = event.extra.joinToString("&") { (name, value) ->
-            "${name.encodeAddonPathSegment()}=${value.encodeAddonPathSegment()}"
-        }
-        coroutineScope {
-            manifests.forEach { manifest ->
-                val url = buildAddonResourceUrl(
-                    manifestUrl = manifest.transportUrl,
-                    resource = event.resource,
-                    type = event.type,
-                    id = event.id,
-                    extraPathSegment = extraSegment,
-                )
-                launch {
-                    try {
-                        withTimeout(EVENT_TIMEOUT_MS) {
-                            httpGetTextWithHeaders(
-                                url = url,
-                                headers = mapOf("Cache-Control" to "no-cache"),
-                            )
-                        }
-                    } catch (error: TimeoutCancellationException) {
-                        log.w(error) { "${manifest.id} ${event.resource} event timed out" }
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (error: Throwable) {
-                        log.w(error) { "${manifest.id} ${event.resource} event failed" }
+    private fun queueFor(transportUrl: String): Channel<AddonDelivery> =
+        addonQueues.getOrPut(transportUrl) {
+            Channel<AddonDelivery>(Channel.UNLIMITED).also { queue ->
+                scope.launch {
+                    for (delivery in queue) {
+                        send(delivery)
                     }
                 }
             }
         }
+
+    private suspend fun send(delivery: AddonDelivery) {
+        try {
+            withTimeout(EVENT_TIMEOUT_MS) {
+                httpGetTextWithHeaders(
+                    url = delivery.url,
+                    headers = mapOf("Cache-Control" to "no-cache"),
+                )
+            }
+        } catch (error: TimeoutCancellationException) {
+            log.w(error) { "${delivery.addonId} ${delivery.resource} event timed out" }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            log.w(error) { "${delivery.addonId} ${delivery.resource} event failed" }
+        }
     }
 }
+
+internal fun libraryVideoIdChunks(videoIds: Collection<String>): List<List<String>> =
+    videoIds
+        .filter(String::isNotBlank)
+        .distinct()
+        .chunked(LIBRARY_EVENT_VIDEOS_COUNT)
+
+internal fun buildAddonEventUrl(
+    manifestUrl: String,
+    resource: String,
+    type: String,
+    id: String,
+    extra: List<Pair<String, String>>,
+): String =
+    buildAddonResourceUrl(
+        manifestUrl = manifestUrl,
+        resource = resource,
+        type = type,
+        id = id,
+        extraPathSegment = extra.joinToString("&") { (name, value) ->
+            "${name.encodeAddonPathSegment()}=${value.encodeAddonPathSegment()}"
+        },
+    )
 
 private data class AddonEvent(
     val resource: String,
     val type: String,
     val id: String,
     val extra: List<Pair<String, String>>,
+)
+
+private data class AddonDelivery(
+    val addonId: String,
+    val resource: String,
+    val url: String,
 )

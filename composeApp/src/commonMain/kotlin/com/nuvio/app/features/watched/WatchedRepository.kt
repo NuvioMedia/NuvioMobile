@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.tracking.ensureTrackingProvidersRegistered
+import com.nuvio.app.features.addons.ADDON_LIBRARY_RESOURCE
 import com.nuvio.app.features.addons.AddonEventDispatcher
 import com.nuvio.app.features.addons.AddonLibraryAction
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
@@ -761,7 +762,11 @@ object WatchedRepository {
         items.filter { it.isEpisode }.map { it.id }.distinct().forEach {
             ContinueWatchingPreferencesRepository.removeDismissedNextUpKeysForContent(it)
         }
-        val changedItems = items.filterNot { isWatched(it.id, it.type, it.season, it.episode) }
+        val changedItems = if (AddonEventDispatcher.hasEnabledAddonFor(ADDON_LIBRARY_RESOURCE)) {
+            items.filterNot { isWatched(it.id, it.type, it.season, it.episode) }
+        } else {
+            emptyList()
+        }
         markWatched(items = items, trackerHistorySync = WatchedTrackerHistorySync.Mirror)
         emitAddonWatchedEvents(changedItems, AddonLibraryAction.WATCHED)
     }
@@ -843,7 +848,11 @@ object WatchedRepository {
     }
 
     fun unmarkWatched(items: Collection<WatchedItem>) {
-        val changedItems = items.filter { isWatched(it.id, it.type, it.season, it.episode) }
+        val changedItems = if (AddonEventDispatcher.hasEnabledAddonFor(ADDON_LIBRARY_RESOURCE)) {
+            items.filter { isWatched(it.id, it.type, it.season, it.episode) }
+        } else {
+            emptyList()
+        }
         unmarkWatched(items = items, syncRemote = true)
         emitAddonWatchedEvents(changedItems, AddonLibraryAction.UNWATCHED)
     }

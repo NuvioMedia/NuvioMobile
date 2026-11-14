@@ -4,6 +4,7 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.tracking.ensureTrackingProvidersRegistered
+import com.nuvio.app.features.addons.ADDON_LIBRARY_RESOURCE
 import com.nuvio.app.features.addons.AddonEventDispatcher
 import com.nuvio.app.features.addons.AddonLibraryAction
 import com.nuvio.app.features.library.sync.LibrarySyncAdapter
@@ -369,7 +370,7 @@ object LibraryRepository {
 
     fun remove(id: String) {
         ensureLoaded()
-        val removedType = savedItem(id)?.type
+        val removedType = if (AddonEventDispatcher.hasEnabledAddonFor(ADDON_LIBRARY_RESOURCE)) savedItem(id)?.type else null
         val result = localState.removeById(id)
         if (result.affectedCount > 0) {
             removedType?.let { type ->
@@ -466,6 +467,7 @@ object LibraryRepository {
     }
 
     private inline fun <T> withAddonLibraryEvent(id: String, type: String, mutation: () -> T): T {
+        if (!AddonEventDispatcher.hasEnabledAddonFor(ADDON_LIBRARY_RESOURCE)) return mutation()
         val wasSaved = isSaved(id, type)
         val result = mutation()
         val isSavedNow = isSaved(id, type)
