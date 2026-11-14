@@ -4,6 +4,11 @@ package com.nuvio.app.features.player
 
 import android.app.Application
 import android.graphics.Bitmap
+import android.graphics.Typeface
+import android.text.SpannableString
+import android.text.Spanned
+import android.text.style.StyleSpan
+import androidx.compose.ui.text.font.FontStyle
 import androidx.media3.common.text.Cue
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -23,14 +28,14 @@ class SubtitleCuePresenterTest {
         assertEquals(cues, presenter.present(cues))
         style = style.copy(appearance = SubtitleAppearance(fontId = "serif"))
         assertTrue(presenter.refresh().isEmpty())
-        assertEquals("First caption", presenter.text)
+        assertEquals("First caption", presenter.cues.bottom.text)
         style = SubtitleStyleState.DEFAULT
         assertEquals(cues, presenter.refresh())
-        assertEquals("", presenter.text)
+        assertTrue(presenter.cues.isEmpty)
         style = style.copy(appearance = SubtitleAppearance(shadowEnabled = true))
         presenter.refresh()
         presenter.present(emptyList())
-        assertEquals("", presenter.text)
+        assertTrue(presenter.cues.isEmpty)
     }
 
     @Test
@@ -42,8 +47,24 @@ class SubtitleCuePresenterTest {
             .setLine(0.5f, Cue.LINE_TYPE_FRACTION).setLineAnchor(Cue.ANCHOR_TYPE_MIDDLE)
             .setSize(0.2f).setBitmapHeight(0.1f).build()
         assertEquals(listOf(bitmap), presenter.present(listOf(text, bitmap)))
-        assertEquals("Caption", presenter.text)
+        assertEquals("Caption", presenter.cues.bottom.text)
         assertEquals(listOf(text), presenter.present(listOf(text), canStyle = false))
-        assertEquals("", presenter.text)
+        assertTrue(presenter.cues.isEmpty)
+    }
+
+    @Test
+    fun topPositionedCuesAndItalicSpansReachTheOverlay() {
+        val presenter = SubtitleCuePresenter { SubtitleStyleState(appearance = SubtitleAppearance(shadowEnabled = true)) }
+        val italic = SpannableString("Italic line").apply {
+            setSpan(StyleSpan(Typeface.ITALIC), 0, length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }
+        val caption = Cue.Builder().setText(italic).build()
+        val sign = Cue.Builder().setText("Sign").setLine(0.08f, Cue.LINE_TYPE_FRACTION).build()
+
+        presenter.present(listOf(caption, sign))
+
+        assertEquals("Sign", presenter.cues.top.text)
+        assertEquals("Italic line", presenter.cues.bottom.text)
+        assertEquals(FontStyle.Italic, presenter.cues.bottom.spanStyles.single().item.fontStyle)
     }
 }

@@ -1018,7 +1018,7 @@ final class MPVPlayerViewController: UIViewController {
             setStringProperty("sub-visibility", styled ? "no" : "yes")
             styledSubtitleVisible = styled
         }
-        let text = styled ? (getString("sub-text") ?? "") : ""
+        let text = styled ? (getString("sub-text/ass") ?? getString("sub-text") ?? "") : ""
         if text != lastSubtitleText {
             lastSubtitleText = text
             subtitleTextHandler?.onTextChanged(text: text)

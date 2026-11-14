@@ -31,20 +31,35 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
+private const val TOP_SUBTITLE_INSET_FRACTION = 0.08f
+
 @Composable
-internal fun StyledSubtitleOverlay(text: String, style: SubtitleStyleState, modifier: Modifier = Modifier) {
+internal fun StyledSubtitleOverlay(cues: StyledSubtitleCues, style: SubtitleStyleState, modifier: Modifier = Modifier) {
     val fontFamily = rememberSubtitleFontFamily(style.appearance.fontId)
-    if (text.isBlank()) return
+    if (cues.isEmpty) return
     BoxWithConstraints(modifier.fillMaxSize()) {
         val scale = (maxHeight / 360.dp).coerceAtMost(1f)
-        Box(
-            Modifier.fillMaxSize().padding(
-                horizontal = 16.dp * scale,
-                vertical = maxHeight * (0.0533f + style.bottomOffset.coerceIn(0, 200) / 1000f),
-            ),
-            contentAlignment = Alignment.BottomCenter,
-        ) {
-            StyledSubtitleText(text, style, scale = scale, fontFamily = fontFamily)
+        if (cues.top.isNotBlank()) {
+            Box(
+                Modifier.fillMaxSize().padding(
+                    horizontal = 16.dp * scale,
+                    vertical = maxHeight * TOP_SUBTITLE_INSET_FRACTION,
+                ),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                StyledSubtitleText(cues.top, style, scale = scale, fontFamily = fontFamily)
+            }
+        }
+        if (cues.bottom.isNotBlank()) {
+            Box(
+                Modifier.fillMaxSize().padding(
+                    horizontal = 16.dp * scale,
+                    vertical = maxHeight * (0.0533f + style.bottomOffset.coerceIn(0, 200) / 1000f),
+                ),
+                contentAlignment = Alignment.BottomCenter,
+            ) {
+                StyledSubtitleText(cues.bottom, style, scale = scale, fontFamily = fontFamily)
+            }
         }
     }
 }
@@ -57,6 +72,17 @@ internal fun StyledSubtitleText(
     scale: Float = 1f,
     fontFamily: FontFamily = rememberSubtitleFontFamily(style.appearance.fontId),
 ) {
+    StyledSubtitleText(AnnotatedString(text), style, modifier, scale, fontFamily)
+}
+
+@Composable
+internal fun StyledSubtitleText(
+    text: AnnotatedString,
+    style: SubtitleStyleState,
+    modifier: Modifier = Modifier,
+    scale: Float = 1f,
+    fontFamily: FontFamily = rememberSubtitleFontFamily(style.appearance.fontId),
+) {
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
     BoxWithConstraints(modifier) {
@@ -64,7 +90,7 @@ internal fun StyledSubtitleText(
         val paddingY = with(density) { (4.dp * scale).toPx() }
         val maxTextWidth = (constraints.maxWidth - paddingX * 2).toInt().coerceAtLeast(1)
         val layout = measurer.measure(
-            text = AnnotatedString(text),
+            text = text,
             style = TextStyle(
                 fontFamily = fontFamily,
                 fontSize = (style.fontSizeSp * scale).sp,
@@ -79,7 +105,7 @@ internal fun StyledSubtitleText(
         val outline = with(density) { (style.outlineWidth.dp * scale).toPx() }
         val shadowSize = with(density) { (style.appearance.shadowSize.dp * scale).toPx() }
         Canvas(
-            Modifier.fillMaxWidth().height(textHeight).semantics { this.text = AnnotatedString(text) },
+            Modifier.fillMaxWidth().height(textHeight).semantics { this.text = text },
         ) {
             val boxWidth = layout.size.width + paddingX * 2
             val left = (size.width - boxWidth) / 2f
