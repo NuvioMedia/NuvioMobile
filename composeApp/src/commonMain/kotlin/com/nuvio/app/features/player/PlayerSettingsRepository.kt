@@ -41,7 +41,8 @@ data class PlayerSettingsUiState(
     val resizeMode: PlayerResizeMode = PlayerResizeMode.Fit,
     val holdToSpeedEnabled: Boolean = true,
     val holdToSpeedValue: Float = 2f,
-    val touchGesturesEnabled: Boolean = true,
+    val horizontalTouchGesturesEnabled: Boolean = true,
+    val verticalTouchGesturesEnabled: Boolean = true,
     val externalPlayerEnabled: Boolean = false,
     val externalPlayerForwardSubtitles: Boolean = false,
     val externalPlayerSendSkipSegments: Boolean = false,
@@ -156,7 +157,8 @@ object PlayerSettingsRepository {
     private var resizeMode = PlayerResizeMode.Fit
     private var holdToSpeedEnabled = true
     private var holdToSpeedValue = 2f
-    private var touchGesturesEnabled = true
+    private var horizontalTouchGesturesEnabled = true
+    private var verticalTouchGesturesEnabled = true
     private var externalPlayerEnabled = false
     private var externalPlayerForwardSubtitles = false
     private var externalPlayerSendSkipSegments = false
@@ -258,7 +260,8 @@ object PlayerSettingsRepository {
         resizeMode = PlayerResizeMode.Fit
         holdToSpeedEnabled = true
         holdToSpeedValue = 2f
-        touchGesturesEnabled = true
+        horizontalTouchGesturesEnabled = true
+        verticalTouchGesturesEnabled = true
         externalPlayerEnabled = false
         externalPlayerForwardSubtitles = false
         externalPlayerSendSkipSegments = false
@@ -356,7 +359,12 @@ object PlayerSettingsRepository {
             ?: PlayerResizeMode.Fit
         holdToSpeedEnabled = PlayerSettingsStorage.loadHoldToSpeedEnabled() ?: true
         holdToSpeedValue = PlayerSettingsStorage.loadHoldToSpeedValue() ?: 2f
-        touchGesturesEnabled = PlayerSettingsStorage.loadTouchGesturesEnabled() ?: true
+        // Migrate the former single Touch Gestures toggle: until a new setting is saved, it inherits the old value.
+        val legacyTouchGesturesEnabled = PlayerSettingsStorage.loadTouchGesturesEnabled() ?: true
+        horizontalTouchGesturesEnabled =
+            PlayerSettingsStorage.loadHorizontalTouchGesturesEnabled() ?: legacyTouchGesturesEnabled
+        verticalTouchGesturesEnabled =
+            PlayerSettingsStorage.loadVerticalTouchGesturesEnabled() ?: legacyTouchGesturesEnabled
         externalPlayerEnabled = PlayerSettingsStorage.loadExternalPlayerEnabled() ?: false
         externalPlayerForwardSubtitles = PlayerSettingsStorage.loadExternalPlayerForwardSubtitles() ?: false
         externalPlayerSendSkipSegments = PlayerSettingsStorage.loadExternalPlayerSendSkipSegments() ?: false
@@ -595,12 +603,20 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveHoldToSpeedValue(normalized)
     }
 
-    fun setTouchGesturesEnabled(enabled: Boolean) {
+    fun setHorizontalTouchGesturesEnabled(enabled: Boolean) {
         ensureLoaded()
-        if (touchGesturesEnabled == enabled) return
-        touchGesturesEnabled = enabled
+        if (horizontalTouchGesturesEnabled == enabled) return
+        horizontalTouchGesturesEnabled = enabled
         publish()
-        PlayerSettingsStorage.saveTouchGesturesEnabled(enabled)
+        PlayerSettingsStorage.saveHorizontalTouchGesturesEnabled(enabled)
+    }
+
+    fun setVerticalTouchGesturesEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (verticalTouchGesturesEnabled == enabled) return
+        verticalTouchGesturesEnabled = enabled
+        publish()
+        PlayerSettingsStorage.saveVerticalTouchGesturesEnabled(enabled)
     }
 
     fun setExternalPlayerEnabled(enabled: Boolean) {
@@ -1377,7 +1393,8 @@ object PlayerSettingsRepository {
             resizeMode = resizeMode,
             holdToSpeedEnabled = holdToSpeedEnabled,
             holdToSpeedValue = holdToSpeedValue,
-            touchGesturesEnabled = touchGesturesEnabled,
+            horizontalTouchGesturesEnabled = horizontalTouchGesturesEnabled,
+            verticalTouchGesturesEnabled = verticalTouchGesturesEnabled,
             externalPlayerEnabled = externalPlayerEnabled,
             externalPlayerForwardSubtitles = externalPlayerForwardSubtitles,
             externalPlayerSendSkipSegments = externalPlayerSendSkipSegments,

@@ -1087,8 +1087,6 @@
     <string name="settings_playback_hold_speed">Hold Speed</string>
     <string name="settings_playback_hold_to_speed">Hold کرکے رفتار بڑھائیں</string>
     <string name="settings_playback_hold_to_speed_description">Playback speed عارضی طور پر بڑھانے کے لیے player پر کہیں بھی long-press کریں۔</string>
-    <string name="settings_playback_touch_gestures">ٹچ اشارے</string>
-    <string name="settings_playback_touch_gestures_description">Seek، brightness یا volume تبدیل کرنے کے لیے player پر swipe اور double-tap کی اجازت دیں۔</string>
     <string name="settings_playback_invalid_regex_pattern">غلط Regex Pattern</string>
     <string name="settings_playback_last_link_cache_duration">آخری Link کی Cache مدت</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - HEVC Fallback</string>

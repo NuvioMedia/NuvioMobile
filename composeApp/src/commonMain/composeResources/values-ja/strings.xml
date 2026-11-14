@@ -1107,8 +1107,6 @@
     <string name="settings_playback_hold_speed">長押し速度</string>
     <string name="settings_playback_hold_to_speed">長押しで速度変更</string>
     <string name="settings_playback_hold_to_speed_description">プレーヤー画面のどこかを長押しすると、一時的に再生速度を上げます。</string>
-    <string name="settings_playback_touch_gestures">タッチジェスチャー</string>
-    <string name="settings_playback_touch_gestures_description">プレーヤー画面でのスワイプやダブルタップによるシーク・明るさ・音量調整を許可します。</string>
     <string name="settings_playback_invalid_regex_pattern">無効な正規表現パターン</string>
     <string name="settings_playback_last_link_cache_duration">最終リンクキャッシュ期間</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - HEVCフォールバック</string>

@@ -1107,8 +1107,6 @@
     <string name="settings_playback_hold_speed">Tốc độ khi giữ</string>
     <string name="settings_playback_hold_to_speed">Giữ để tăng tốc</string>
     <string name="settings_playback_hold_to_speed_description">Nhấn giữ bất kỳ đâu trên trình phát để tạm thời tăng tốc độ phát lại</string>
-    <string name="settings_playback_touch_gestures">Cử chỉ chạm</string>
-    <string name="settings_playback_touch_gestures_description">Cho phép vuốt và chạm hai lần để tua, chỉnh độ sáng hoặc chỉnh âm lượng</string>
     <string name="settings_playback_invalid_regex_pattern">Mẫu biểu thức chính quy không hợp lệ</string>
     <string name="settings_playback_last_link_cache_duration">Thời gian lưu bộ nhớ đệm liên kết cuối</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 → HEVC</string>

@@ -1828,8 +1828,6 @@
     <string name="settings_playback_ios_target_transfer">Docelowy transfer</string>
     <string name="settings_playback_ios_target_transfer_dialog">Docelowy transfer</string>
     <string name="settings_playback_ios_video_output">WYJŚCIE WIDEO iOS</string>
-    <string name="settings_playback_touch_gestures">Gesty dotykowe</string>
-    <string name="settings_playback_touch_gestures_description">Pozwól na przesunięcia i podwójne dotknięcia na powierzchni odtwarzacza do przewijania, regulacji jasności lub głośności.</string>
     <string name="settings_stream_badge_enter_url">Wprowadź URL JSON badge.</string>
     <string name="settings_stream_badge_import_failed">Import badge nie powiódł się.</string>
     <string name="settings_stream_badge_import_limit">Możesz zaimportować do %1$d URL badge.</string>

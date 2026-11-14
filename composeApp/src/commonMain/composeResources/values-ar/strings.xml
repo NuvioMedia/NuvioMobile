@@ -1102,8 +1102,6 @@
     <string name="settings_playback_hold_speed">سرعة الضغط المطوّل</string>
     <string name="settings_playback_hold_to_speed">الضغط المطوّل للتسريع</string>
     <string name="settings_playback_hold_to_speed_description">اضغط مطولًا في أي مكان على سطح المشغّل لزيادة سرعة التشغيل مؤقتًا.</string>
-    <string name="settings_playback_touch_gestures">إيماءات اللمس</string>
-    <string name="settings_playback_touch_gestures_description">السماح بالسحب والنقر المزدوج على سطح المشغّل للتقديم أو الترجيع وضبط السطوع أو مستوى الصوت.</string>
     <string name="settings_playback_invalid_regex_pattern">نمط Regex غير صالح</string>
     <string name="settings_playback_last_link_cache_duration">فترة حفظ الرابط</string>
     <string name="settings_playback_map_dv7_to_hevc">تحويل DV7 إلى HEVC</string>

@@ -2285,8 +2285,6 @@
     <string name="settings_playback_subtitle_use_forced">Χρήση αναγκαστικών υποτίτλων</string>
     <string name="settings_playback_subtitle_use_forced_description">Προτίμηση αναγκαστικών υποτίτλων όταν ταιριάζουν με τις ρυθμίσεις γλώσσας υποτίτλων σας.</string>
     <string name="settings_playback_subtitle_vertical_offset">Κατακόρυφη μετατόπιση</string>
-    <string name="settings_playback_touch_gestures">Χειρονομίες αφής</string>
-    <string name="settings_playback_touch_gestures_description">Επιτρέψτε σαρώσεις και διπλά πατήματα στην επιφάνεια αναπαραγωγής για αναζήτηση, ρύθμιση φωτεινότητας ή ρύθμιση έντασης.</string>
     <string name="settings_search_empty">Δεν βρέθηκαν ρυθμίσεις.</string>
     <string name="settings_search_placeholder">Αναζήτηση ρυθμίσεων...</string>
     <string name="settings_search_results_section">ΑΠΟΤΕΛΕΣΜΑΤΑ</string>

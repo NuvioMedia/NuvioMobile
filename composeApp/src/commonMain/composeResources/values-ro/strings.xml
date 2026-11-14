@@ -892,8 +892,6 @@
     <string name="settings_playback_hold_speed">Viteză la menținere</string>
     <string name="settings_playback_hold_to_speed">Menține pentru viteză crescută</string>
     <string name="settings_playback_hold_to_speed_description">Apasă lung oriunde pe suprafața playerului pentru a mări temporar viteza de redare.</string>
-    <string name="settings_playback_touch_gestures">Gesturi tactile</string>
-    <string name="settings_playback_touch_gestures_description">Permite glisări și atingeri duble pe suprafața playerului pentru a derula, a ajusta luminozitatea sau a modifica volumul.</string>
     <string name="settings_playback_invalid_regex_pattern">Model regex nevalid</string>
     <string name="settings_playback_last_link_cache_duration">Durata cache-ului pentru ultimul link</string>
     <string name="settings_playback_map_dv7_to_hevc">Fallback DV7 - HEVC</string>

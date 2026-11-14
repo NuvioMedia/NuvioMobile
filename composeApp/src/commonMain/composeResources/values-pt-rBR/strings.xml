@@ -1107,8 +1107,6 @@
     <string name="settings_playback_hold_speed">Segurar para Velocidade</string>
     <string name="settings_playback_hold_to_speed">Segurar para Acelerar</string>
     <string name="settings_playback_hold_to_speed_description">Pressione e segure em qualquer lugar na superfície do player para aumentar temporariamente a velocidade de reprodução.</string>
-    <string name="settings_playback_touch_gestures">Gestos táteis</string>
-    <string name="settings_playback_touch_gestures_description">Permite deslizar e tocar duas vezes na área do player para avançar/retroceder, ajustar o brilho ou ajustar o volume.</string>
     <string name="settings_playback_invalid_regex_pattern">Padrão regex inválido</string>
     <string name="settings_playback_last_link_cache_duration">Duração do Cache do Último Link</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - Alternativa HEVC</string>
