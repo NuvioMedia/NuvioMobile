@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.streams.effectiveBingeGroup
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
 import com.nuvio.app.core.network.NetworkCondition
 import com.nuvio.app.core.network.NetworkStatusRepository
@@ -1070,7 +1071,7 @@ internal fun findCredentialRefreshCandidate(
             }
             if (stream.streamLabel == expectedStreamTitle) score += 40
             if (!expectedFilename.isNullOrBlank() && stream.behaviorHints.filename == expectedFilename) score += 30
-            if (!expectedBingeGroup.isNullOrBlank() && stream.behaviorHints.bingeGroup == expectedBingeGroup) {
+            if (!expectedBingeGroup.isNullOrBlank() && stream.effectiveBingeGroup == expectedBingeGroup) {
                 score += 20
             }
             if (stream.playableDirectUrl?.hasLikelyExpiringPlaybackCredentials() == true) score += 5
