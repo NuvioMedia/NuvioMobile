@@ -258,7 +258,7 @@ private fun delivery(containers: List<String>, video: List<String>, audio: List<
             put("font_attachments", false)
         })
         put("features", strings(if (direct) emptyList() else listOf("hls")))
-        put("auth_header_refresh", true)
+        put("auth_header_refresh", false)
         put(
             "validated_claims",
             strings(if (direct) listOf("client_managed_dynamic_range_v1", "client_selected_audio_track_v1") else emptyList())

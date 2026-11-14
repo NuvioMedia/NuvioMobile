@@ -336,13 +336,18 @@ internal class SiloSignInFlow(
         onConnected(connection)
     }
 
-    /** Leaves the flow: an unused code is withdrawn and a sign-in that wasn't saved is ended on the server. */
+    /** The user left: an unused code is withdrawn and a sign-in that wasn't saved is ended on the server. */
     fun close() {
+        withdrawCode()
+        stop()
+    }
+
+    /** The sheet went away without the user leaving (the screen was rebuilt): a waiting code stays saved for next time. */
+    fun stop() {
         job?.cancel()
         codeJob?.cancel()
         job = null
         codeJob = null
-        withdrawCode()
         abandon()
     }
 

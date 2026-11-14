@@ -722,8 +722,13 @@ internal class SiloProvider(
             when (event.type) {
                 ServerPlaybackEventType.START -> Unit
                 ServerPlaybackEventType.STOP -> {
+                    try {
+                        stopWithRetries(session, path, siloStopBody(state.installationId, randomId(), state.nextSequence(), position))
+                    } catch (error: ServerException) {
+                        if (error.failure != ServerFailure.AUTH_REQUIRED) synchronized(lock) { plays.remove(sessionId) }
+                        throw error
+                    }
                     synchronized(lock) { plays.remove(sessionId) }
-                    stopWithRetries(session, path, siloStopBody(state.installationId, randomId(), state.nextSequence(), position))
                 }
                 else -> sendPlayback<Unit>(
                     session,
@@ -828,7 +833,7 @@ internal class SiloProvider(
 
     /** A new token pair, unless the server ended the sign-in or wants a PIN profile checked again: renewing can't fix those. */
     override suspend fun renewToken(session: ServerSession, failure: ServerException?): String? {
-        if (failure != null && (failure.siloCode == PROFILE_VERIFICATION || failure.siloCode == "authentication_required")) {
+        if (failure?.siloCode == PROFILE_VERIFICATION) {
             return null
         }
         val credential = credentialOrNull(session.token) ?: return null
@@ -1023,7 +1028,7 @@ internal class SiloProvider(
         const val VALIDATION_FAILED = "validation_failed"
         const val PASSWORD_CHANGE_REQUIRED = "password_change_required"
         const val NOT_SILO = "not_silo"
-        val SIGNED_OUT = setOf(400, 401, 403, 422)
+        val SIGNED_OUT = setOf(400, 401, 403)
 
         fun libraryKind(type: String): ServerMediaKind? = when (type.trim().lowercase()) {
             "movies", "movie" -> ServerMediaKind.MOVIE

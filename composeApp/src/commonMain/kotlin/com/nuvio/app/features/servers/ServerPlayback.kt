@@ -84,7 +84,7 @@ internal object ServerPlayback {
         val current = url?.let { synchronized(lock) { active[it] } } ?: return null
         val state = try {
             withTimeoutOrNull(RESUME_TIMEOUT_MS) {
-                ServerRepository.call(current.connectionId) { provider, session ->
+                ServerRepository.callForPlayback(current.session) { provider, session ->
                     provider.details(session, current.playback.target.item.itemId)
                 }.userStates.firstOrNull()
             }
@@ -138,7 +138,7 @@ internal object ServerPlayback {
             subtitleStreamIndex = subtitleStreamIndex,
         )
         val playback = runCatching {
-            ServerRepository.call(current.connectionId) { provider, session -> provider.preparePlayback(session, request) }
+            ServerRepository.callForPlayback(current.session) { provider, session -> provider.preparePlayback(session, request) }
         }
             .onFailure { if (it is CancellationException) throw it }
             .onFailure { log.w { "Playback restart for ${current.label} failed: ${it.serverFailure()} (${it.message})" } }
@@ -165,7 +165,6 @@ internal object ServerPlayback {
         val playback: ServerPlaybackSession,
     ) {
         val label = "${provider.id} item ${playback.target.item.itemId}"
-        val connectionId: String = session.connection.id
         // Control events (start, pause, resume, stop) must never be lost, so they keep an
         // unbounded queue. Progress reports are only position updates: they use a bounded queue
         // that drops the oldest report when the server cannot keep up with the network.
@@ -198,7 +197,7 @@ internal object ServerPlayback {
                     }
                     try {
                         val sent = withTimeoutOrNull(REPORT_TIMEOUT_MS) {
-                            ServerRepository.call(connectionId) { server, current -> server.report(current, playback, event) }
+                            ServerRepository.callForPlayback(session) { server, current -> server.report(current, playback, event) }
                         }
                         when {
                             sent == null -> log.w { "Playback report ${event.type} for $label timed out" }

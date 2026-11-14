@@ -23,6 +23,7 @@ import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HttpMethod
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -381,6 +382,41 @@ class SiloProviderTest {
         assertEquals("pin-token", renewed.profileToken)
         assertEquals(clock + 28_800_000L, renewed.accessExpiresAtMs)
         assertTrue(http.requests.single().text.contains("refresh-1"))
+    }
+
+    @Test
+    fun aStopThatMeetsAnExpiredTokenIsSentAgain() = runTest {
+        var stops = 0
+        val (silo, http) = provider { request ->
+            if (request.method == HttpMethod.Delete && stops++ == 0) problem(401, "authentication_required") else playbackRoute(request)
+        }
+        val playback = silo.preparePlayback(session(), request)
+        val stop = ServerPlaybackEvent(ServerPlaybackEventType.STOP, 20_000L, isPaused = true)
+
+        val error = runCatching { silo.report(session(), playback, stop) }.exceptionOrNull() as ServerException
+        silo.report(session(), playback, stop)
+
+        assertEquals(ServerFailure.AUTH_REQUIRED, error.failure)
+        assertEquals(2, http.requests("/api/v2/playback/s1").count { it.method == HttpMethod.Delete })
+    }
+
+    @Test
+    fun anyAuthAnswerIsWorthOneRenewal() = runTest {
+        val (silo, http) = provider { request ->
+            if (request.url.encodedPath.endsWith("/auth/refresh")) {
+                ok("""{"access_token":"access-2","refresh_token":"refresh-2","expires_in":3600}""")
+            } else {
+                problem(401, "authentication_required")
+            }
+        }
+        val failure = runCatching { silo.libraries(session()) }.exceptionOrNull() as ServerException
+
+        val renewed = silo.renewToken(session(), failure)
+
+        assertEquals(ServerFailure.AUTH_REQUIRED, failure.failure)
+
+        assertNotNull(renewed)
+        assertEquals(1, http.requests.count { it.url.encodedPath.endsWith("/auth/refresh") })
     }
 
     @Test

@@ -138,6 +138,26 @@ object ServerRepository {
         }
     }
 
+    /**
+     * For a play already running: renews like [call], but carries on when the server list changes, uses [started]
+     * when its connection is gone, and leaves the connection's failure state alone.
+     */
+    suspend fun <T> callForPlayback(
+        started: ServerSession,
+        block: suspend (ServerProvider, ServerSession) -> T,
+    ): T {
+        val session = session(started.connection.id) ?: started
+        val provider = provider(session.connection) ?: throw ServerException(ServerFailure.UNSUPPORTED)
+        val current = if (provider.renewalDue(session)) renewedAhead(provider, session) else session
+        return try {
+            block(provider, current)
+        } catch (error: ServerException) {
+            if (error.failure != ServerFailure.AUTH_REQUIRED) throw error
+            val renewed = renewed(provider, current, error) ?: throw error
+            block(provider, renewed)
+        }
+    }
+
     /** Renews ahead of time; the current token is kept when the server can't be asked right now. */
     private suspend fun renewedAhead(provider: ServerProvider, session: ServerSession): ServerSession = try {
         renewed(provider, session, failure = null) ?: session
@@ -292,7 +312,7 @@ object ServerRepository {
         val currentByKey = current.associateBy { serverKey(it.providerId, it.remoteServerId, it.remoteUserId) }
         val usedIds = mutableSetOf<String>()
         var changed = false
-        val connections = servers.map { server ->
+        val merged = servers.map { server ->
             val local = currentByKey[server.key]
             val credentialRef = local?.credentialRef ?: newId("k")
             val id = local?.id ?: server.id.takeUnless { id -> current.any { it.id == id } || id in usedIds } ?: newId("c")
@@ -306,6 +326,12 @@ object ServerRepository {
             }
             server.toConnection(id, credentialRef)
         }
+        val offered = snapshot.servers.mapTo(mutableSetOf()) { it.key }
+        val deviceOnly = current.filter {
+            it.id !in usedIds && serverKey(it.providerId, it.remoteServerId, it.remoteUserId) !in offered
+        }
+        usedIds += deviceOnly.map { it.id }
+        val connections = merged + deviceOnly
         current.filter { it.id !in usedIds }.forEach { removed ->
             deleteCredential(removed.credentialRef)
             setFailure(removed.id, null)
