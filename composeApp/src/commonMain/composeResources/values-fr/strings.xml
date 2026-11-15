@@ -467,10 +467,10 @@
     <string name="compose_player_resize_fit">Ajuster</string>
     <string name="compose_player_resize_zoom">Zoom</string>
     <string name="compose_player_seek_back_10">Reculer de 10 secondes</string>
-    <string name="compose_player_seek_delta_backward">-%1$ds</string>
-    <string name="compose_player_seek_delta_forward">+%1$ds</string>
-    <string name="compose_player_seek_feedback_backward">-%1$ds</string>
-    <string name="compose_player_seek_feedback_forward">+%1$ds</string>
+    <string name="compose_player_seek_delta_backward">-%1$d s</string>
+    <string name="compose_player_seek_delta_forward">+%1$d s</string>
+    <string name="compose_player_seek_feedback_backward">-%1$d s</string>
+    <string name="compose_player_seek_feedback_forward">+%1$d s</string>
     <string name="compose_player_seek_forward_10">Avancer de 10 secondes</string>
     <string name="compose_player_sources">Sources</string>
     <string name="compose_player_style">Style</string>
@@ -1256,7 +1256,7 @@
     <string name="settings_playback_threshold_percentage_description">Valeur de repli en l’absence de repère d’outro.</string>
     <string name="settings_playback_threshold_percentage_value">%1$s&#160;%</string>
     <string name="settings_playback_timeout_instant">Instantané</string>
-    <string name="settings_playback_timeout_seconds">%1$ss</string>
+    <string name="settings_playback_timeout_seconds">%1$s s</string>
     <string name="settings_playback_timeout_unlimited">Illimité</string>
     <string name="settings_playback_tunneled_playback">Lecture tunnelisée</string>
     <string name="settings_playback_tunneled_playback_description">Synchronisation audio/vidéo au niveau matériel. Peut améliorer la lecture sur certains appareils Android TV</string>
@@ -1475,7 +1475,7 @@
     <string name="custom_theme_preview_accent">Votre couleur d’accentuation</string>
     <string name="player_next_episode">Épisode suivant</string>
     <string name="player_next_episode_finding_source">Recherche de la source…</string>
-    <string name="player_next_episode_playing_via_countdown">Lecture via %1$s dans %2$ds…</string>
+    <string name="player_next_episode_playing_via_countdown">Lecture via %1$s dans %2$d s…</string>
     <string name="player_next_episode_thumbnail">Miniature de l’épisode suivant</string>
     <string name="player_next_episode_unaired">Non diffusé</string>
     <string name="player_skip">Passer</string>
@@ -1664,7 +1664,7 @@
     <string name="pin_enter_for">Saisir le code PIN pour %1$s</string>
     <string name="pin_forgot">Code PIN oublié&#160;?</string>
     <string name="pin_incorrect">Code PIN incorrect</string>
-    <string name="pin_locked_try_again">Bloqué. Réessayez dans %1$ds</string>
+    <string name="pin_locked_try_again">Bloqué. Réessayez dans %1$d s</string>
     <string name="profile_avatar_options_pending">Les options d’avatar apparaîtront ici une fois le catalogue chargé.</string>
     <string name="profile_avatar_selected">Avatar&#160;: %1$s</string>
     <string name="profile_avatar_url_invalid">Saisissez une URL d’image http:// ou https:// valide.</string>
