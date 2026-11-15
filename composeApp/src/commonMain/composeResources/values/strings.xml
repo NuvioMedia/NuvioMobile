@@ -58,6 +58,8 @@
     <string name="addons_empty_title">No addons installed yet.</string>
     <string name="addons_error_enter_url">Enter an addon URL.</string>
     <string name="addons_input_placeholder">Addon URL</string>
+    <string name="addons_deeplink_install_message">An external link is asking to install an addon from %1$s. Addons supply catalogs, metadata and streams, so only continue if you trust this source. Manifest: %2$s</string>
+    <string name="addons_deeplink_install_title">Add this addon?</string>
     <string name="addons_install_button">Install Addon</string>
     <string name="addons_loading_manifest_details">Loading manifest details...</string>
     <string name="addons_modal_checking_message">Validating the manifest URL and loading addon details before install.</string>

@@ -30,6 +30,13 @@ import kotlinx.serialization.json.put
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 
+data class PendingAddonInstall(
+    val manifestUrl: String,
+) {
+    val origin: String
+        get() = manifestUrl.substringAfter("://", manifestUrl).substringBefore("/")
+}
+
 @Serializable
 private data class AddonRow(
     val url: String,
@@ -54,6 +61,9 @@ object AddonRepository {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
     private val _uiState = MutableStateFlow(AddonsUiState())
     val uiState: StateFlow<AddonsUiState> = _uiState.asStateFlow()
+
+    private val _pendingInstallRequest = MutableStateFlow<PendingAddonInstall?>(null)
+    val pendingInstallRequest: StateFlow<PendingAddonInstall?> = _pendingInstallRequest.asStateFlow()
 
     private var initialized = false
     private var currentProfileId: Int = 1
@@ -208,6 +218,23 @@ object AddonRepository {
         persist()
         pushToServer()
         return AddAddonResult.Success(manifest)
+    }
+
+    /**
+     * Queues an install that arrived from an untrusted channel (deep link, OS URI event or launch
+     * argument) instead of performing it. Only an explicit user accept in the addon screen may call
+     * [addAddon], so a link alone can never add a content source.
+     */
+    fun requestAddonInstall(rawUrl: String) {
+        val manifestUrl = runCatching { normalizeManifestUrl(rawUrl) }
+            .getOrElse { rawUrl.trim() }
+        if (manifestUrl.isBlank()) return
+        log.i { "requestAddonInstall() - queued manifestUrl=$manifestUrl" }
+        _pendingInstallRequest.value = PendingAddonInstall(manifestUrl = manifestUrl)
+    }
+
+    fun clearPendingAddonInstall() {
+        _pendingInstallRequest.value = null
     }
 
     fun removeAddon(manifestUrl: String) {
