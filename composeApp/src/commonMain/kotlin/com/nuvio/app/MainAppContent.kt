@@ -759,6 +759,10 @@ internal fun MainAppContent(
                                 )
                             }
 
+                            is AddAddonResult.TrackingConsentRequired -> {
+                                AddonRepository.requestTrackingConsent(result.manifest)
+                            }
+
                             is AddAddonResult.Error -> {
                                 NuvioToastController.show(result.message)
                             }
