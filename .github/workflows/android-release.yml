@@ -62,8 +62,8 @@ jobs:
             echo "Releases must be dispatched from a branch, not ${RELEASE_REF_TYPE}." >&2
             exit 1
           fi
-          if [[ "${RELEASE_BRANCH}" != "${DEFAULT_BRANCH}" ]]; then
-            echo "Releases must be dispatched from the default branch (${DEFAULT_BRANCH})." >&2
+          if [[ "${RELEASE_BRANCH}" != "${DEFAULT_BRANCH}" && "${RELEASE_BRANCH}" != "main" ]]; then
+            echo "Releases must be dispatched from main or the default branch (${DEFAULT_BRANCH})." >&2
             exit 1
           fi
 
