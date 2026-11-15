@@ -30,7 +30,7 @@ class SubtitleCuePresenterTest {
         assertEquals(cues, presenter.present(cues))
         style = style.copy(appearance = SubtitleAppearance(fontId = "serif"))
         assertTrue(presenter.refresh().isEmpty())
-        assertEquals("First caption", presenter.cues.bottom.text)
+        assertEquals("First caption", presenter.cues.bottomText.text)
         style = SubtitleStyleState.DEFAULT
         assertEquals(cues, presenter.refresh())
         assertTrue(presenter.cues.isEmpty)
@@ -49,7 +49,7 @@ class SubtitleCuePresenterTest {
             .setLine(0.5f, Cue.LINE_TYPE_FRACTION).setLineAnchor(Cue.ANCHOR_TYPE_MIDDLE)
             .setSize(0.2f).setBitmapHeight(0.1f).build()
         assertEquals(listOf(bitmap), presenter.present(listOf(text, bitmap)))
-        assertEquals("Caption", presenter.cues.bottom.text)
+        assertEquals("Caption", presenter.cues.bottomText.text)
         assertEquals(listOf(text), presenter.present(listOf(text), canStyle = false))
         assertTrue(presenter.cues.isEmpty)
     }
@@ -65,9 +65,9 @@ class SubtitleCuePresenterTest {
 
         presenter.present(listOf(caption, sign))
 
-        assertEquals("Sign", presenter.cues.top.text)
-        assertEquals("Italic line", presenter.cues.bottom.text)
-        assertEquals(FontStyle.Italic, presenter.cues.bottom.spanStyles.single().item.fontStyle)
+        assertEquals("Sign", presenter.cues.topText.text)
+        assertEquals("Italic line", presenter.cues.bottomText.text)
+        assertEquals(FontStyle.Italic, presenter.cues.bottomText.spanStyles.single().item.fontStyle)
     }
 
     @Test
@@ -86,5 +86,17 @@ class SubtitleCuePresenterTest {
         assertEquals(SubtitleVerticalPosition.TOP, block.vertical)
         assertEquals(SubtitleHorizontalPosition.START, block.horizontal)
         assertEquals(Color.Yellow, block.text.spanStyles.single().item.color)
+    }
+
+    @Test
+    fun lineNumberCuesUseTheTopForNonNegativeLines() {
+        val presenter = SubtitleCuePresenter { SubtitleStyleState(appearance = SubtitleAppearance(shadowEnabled = true)) }
+        val top = Cue.Builder().setText("Top row").setLine(0f, Cue.LINE_TYPE_NUMBER).build()
+        val bottom = Cue.Builder().setText("Bottom row").setLine(-1f, Cue.LINE_TYPE_NUMBER).build()
+
+        presenter.present(listOf(top, bottom))
+
+        assertEquals("Top row", presenter.cues.topText.text)
+        assertEquals("Bottom row", presenter.cues.bottomText.text)
     }
 }

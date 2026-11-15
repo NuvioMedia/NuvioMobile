@@ -16,12 +16,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.Fill
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -120,9 +120,11 @@ internal fun StyledSubtitleText(
             textDirection = TextDirection.ContentOrLtr,
         )
         val textConstraints = Constraints(maxWidth = maxTextWidth)
-        val layout = measurer.measure(text = text, style = textStyle, constraints = textConstraints)
+        val textAlpha = style.textColor.alpha
+        val fillText = text.mapColors { subtitleFileColor(it, textAlpha) }
+        val layout = measurer.measure(text = fillText, style = textStyle, constraints = textConstraints)
         val outlineLayout = if (text.spanStyles.any { it.item.color.isSpecified }) {
-            measurer.measure(text = text.withoutColors(), style = textStyle, constraints = textConstraints)
+            measurer.measure(text = text.mapColors { Color.Unspecified }, style = textStyle, constraints = textConstraints)
         } else {
             layout
         }
@@ -130,7 +132,7 @@ internal fun StyledSubtitleText(
         val lineRight = (0 until layout.lineCount).maxOfOrNull { layout.getLineRight(it) } ?: 0f
         val textHeight = with(density) { (layout.size.height + paddingY * 2).toDp() }
         val radius = with(density) { (style.appearance.backgroundRadius.dp * scale).toPx() }
-        val outline = with(density) { (style.outlineWidth.dp * scale).toPx() }
+        val outline = with(density) { (style.outlineWidth.dp * scale).toPx() } / 2f
         val shadowSize = with(density) { (style.appearance.shadowSize.dp * scale).toPx() }
         Canvas(
             Modifier.fillMaxWidth().height(textHeight).semantics { this.text = text },
@@ -173,9 +175,17 @@ internal fun StyledSubtitleText(
     }
 }
 
-private fun AnnotatedString.withoutColors(): AnnotatedString = buildAnnotatedString {
-    append(this@withoutColors.text)
-    this@withoutColors.spanStyles.forEach { range ->
-        addStyle(range.item.copy(color = Color.Unspecified), range.start, range.end)
+internal fun subtitleFileColor(color: Color, textAlpha: Float): Color =
+    color.copy(alpha = color.alpha * textAlpha)
+
+private fun AnnotatedString.mapColors(transform: (Color) -> Color): AnnotatedString = buildAnnotatedString {
+    append(this@mapColors.text)
+    this@mapColors.spanStyles.forEach { range ->
+        val color = range.item.color
+        addStyle(
+            if (color.isSpecified) range.item.copy(color = transform(color)) else range.item,
+            range.start,
+            range.end,
+        )
     }
 }

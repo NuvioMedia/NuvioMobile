@@ -50,7 +50,10 @@ internal class SubtitleCuePresenter(private val style: () -> SubtitleStyleState)
 }
 
 private fun Cue.verticalPosition(): SubtitleVerticalPosition = when {
-    line == Cue.DIMEN_UNSET || lineType != Cue.LINE_TYPE_FRACTION -> SubtitleVerticalPosition.BOTTOM
+    line == Cue.DIMEN_UNSET -> SubtitleVerticalPosition.BOTTOM
+    lineType == Cue.LINE_TYPE_NUMBER ->
+        if (line >= 0f) SubtitleVerticalPosition.TOP else SubtitleVerticalPosition.BOTTOM
+    lineType != Cue.LINE_TYPE_FRACTION -> SubtitleVerticalPosition.BOTTOM
     line < 1f / 3f -> SubtitleVerticalPosition.TOP
     line <= 2f / 3f -> SubtitleVerticalPosition.MIDDLE
     else -> SubtitleVerticalPosition.BOTTOM
