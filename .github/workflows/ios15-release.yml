@@ -72,6 +72,7 @@ jobs:
       - name: Check Swift syntax and iOS 15 API availability before expensive Kotlin compilation
         run: |
           python3 scripts/check-ios15-availability.py
+          test -x scripts/build-ios-ipa.sh
           bash -n scripts/build-ios-ipa.sh
           find iosApp -name '*.swift' -print0 | xargs -0 xcrun swiftc -frontend -parse
 
