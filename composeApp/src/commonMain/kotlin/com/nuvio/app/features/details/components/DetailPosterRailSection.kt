@@ -44,6 +44,9 @@ fun DetailPosterRailSection(
     headerHorizontalPadding: Dp = 0.dp,
     horizontalScrollPadding: Dp = 0.dp,
     sourceLabel: String? = null,
+    itemSubtitle: ((MetaPreview) -> String?)? = null,
+    landscapeOverride: Boolean? = null,
+    waitForBackdrop: Boolean = true,
     onPosterClick: ((MetaPreview) -> Unit)? = null,
     onPosterLongClick: ((MetaPreview) -> Unit)? = null,
 ) {
@@ -65,13 +68,13 @@ fun DetailPosterRailSection(
             rowModifier = Modifier.nuvioHorizontalScrollBleed(horizontalScrollPadding),
             key = { item -> item.stableKey() },
         ) { item ->
-            val landscape = posterCardStyle.catalogLandscapeModeEnabled || item.posterShape == PosterShape.Landscape
+            val landscape = landscapeOverride ?: (posterCardStyle.catalogLandscapeModeEnabled || item.posterShape == PosterShape.Landscape)
             val localizedBackdrop = rememberDetailBackdrop(
                 item = item,
                 language = tmdbSettings.language,
                 enabled = landscape && (item.id.startsWith("tmdb:") || tmdbSettings.enabled && tmdbSettings.useArtwork),
             )
-            if (localizedBackdrop.isLoading) {
+            if (localizedBackdrop.isLoading && waitForBackdrop) {
                 SkeletonPoster(
                     modifier = Modifier.width(landscapePosterWidth(posterCardStyle.widthDp)),
                     aspectRatio = PosterLandscapeAspectRatio,
@@ -83,18 +86,34 @@ fun DetailPosterRailSection(
                 val cardItem = remember(item, localizedBackdrop.url) {
                     localizedBackdrop.url?.let { item.copy(banner = it) } ?: item
                 }
-                HomePosterCard(
-                    item = cardItem,
-                    useLandscapeBackdropMode = landscape,
-                    showLandscapeOverlay = false,
-                    isWatched = WatchingState.isPosterWatched(
-                        watchedKeys = watchedKeys,
-                        item = item,
-                        fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
-                    ),
-                    onClick = onPosterClick?.let { { it(item) } },
-                    onLongClick = onPosterLongClick?.let { { it(item) } },
-                )
+                Column {
+                    HomePosterCard(
+                        item = cardItem,
+                        useLandscapeBackdropMode = landscape,
+                        landscapeOverride = landscapeOverride,
+                        showLandscapeOverlay = false,
+                        isWatched = WatchingState.isPosterWatched(
+                            watchedKeys = watchedKeys,
+                            item = item,
+                            fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+                        ),
+                        onClick = onPosterClick?.let { { it(item) } },
+                        onLongClick = onPosterLongClick?.let { { it(item) } },
+                    )
+                    itemSubtitle?.invoke(item)?.let { subtitle ->
+                        Text(
+                            text = subtitle,
+                            modifier = Modifier.width(
+                                if (landscape) landscapePosterWidth(posterCardStyle.widthDp)
+                                else posterCardStyle.widthDp.dp,
+                            ).padding(top = 4.dp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
         }
 
