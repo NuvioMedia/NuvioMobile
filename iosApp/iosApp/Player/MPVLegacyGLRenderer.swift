@@ -183,15 +183,34 @@ final class MPVLegacyGLRenderer: UIView {
             h: pixelHeight,
             internal_format: 0
         )
+        // OpenGL and the UIKit CAEAGLLayer use opposite framebuffer Y
+        // orientations on this device. The render API requires an explicit
+        // flip parameter (the official mpv GL example also passes 1).
+        // This affects video AND embedded subtitle orientation without
+        // changing input video rotation or moving UIKit views.
+        var flipY: CInt = 1
+        var framebufferDepth: CInt = 8
         let result = withUnsafeMutablePointer(to: &fbo) { fboPointer in
-            var args = [
-                mpv_render_param(
-                    type: MPV_RENDER_PARAM_OPENGL_FBO,
-                    data: UnsafeMutableRawPointer(fboPointer)
-                ),
-                mpv_render_param(type: MPV_RENDER_PARAM_INVALID, data: nil)
-            ]
-            return mpv_render_context_render(renderer, &args)
+            withUnsafeMutablePointer(to: &flipY) { flipPointer in
+                withUnsafeMutablePointer(to: &framebufferDepth) { depthPointer in
+                    var args = [
+                        mpv_render_param(
+                            type: MPV_RENDER_PARAM_OPENGL_FBO,
+                            data: UnsafeMutableRawPointer(fboPointer)
+                        ),
+                        mpv_render_param(
+                            type: MPV_RENDER_PARAM_FLIP_Y,
+                            data: UnsafeMutableRawPointer(flipPointer)
+                        ),
+                        mpv_render_param(
+                            type: MPV_RENDER_PARAM_DEPTH,
+                            data: UnsafeMutableRawPointer(depthPointer)
+                        ),
+                        mpv_render_param(type: MPV_RENDER_PARAM_INVALID, data: nil)
+                    ]
+                    return mpv_render_context_render(renderer, &args)
+                }
+            }
         }
         if result >= 0 {
             glBindRenderbuffer(GLenum(GL_RENDERBUFFER), colorbuffer)
