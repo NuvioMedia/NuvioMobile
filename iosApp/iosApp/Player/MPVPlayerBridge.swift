@@ -578,16 +578,23 @@ final class MPVPlayerViewController: UIViewController {
         checkError(mpv_request_log_messages(mpv, "warn"))
 
         if usesSoftwareRenderer {
-            // Prefer OpenGL ES + VideoToolbox for full-resolution playback.
-            // If EAGL or libmpv GL support is missing, fall back to the
-            // known-working SW renderer with VideoToolbox copy decoding.
+            // Use VideoToolbox's copy-back decoder on iOS 15. The upstream
+            // MPVKit v0.41.0 binary has not verified zero-copy
+            // CVOpenGLESTextureCache interop; that can corrupt NV12/chroma
+            // plane colors. Copy-back still uses hardware video DECODE, and
+            // OpenGL ES still handles the display, at full drawable size.
             checkError(mpv_set_option_string(mpv, "vo", "libmpv"))
-            checkError(mpv_set_option_string(mpv, "hwdec",
-                legacyGLView != nil ? "videotoolbox" : "videotoolbox-copy"))
+            checkError(mpv_set_option_string(mpv, "hwdec", "videotoolbox-copy"))
             if legacyGLView != nil {
                 checkError(mpv_set_option_string(mpv, "gpu-api", "opengl"))
                 checkError(mpv_set_option_string(mpv, "opengl-es", "yes"))
             }
+            // The EAGL framebuffer is 8-bit SDR RGBA, not an HDR/P3
+            // swapchain. Explicitly tone-map HDR video into sRGB/BT.709
+            // rather than letting mpv infer HDR output from the source.
+            checkError(mpv_set_option_string(mpv, "target-prim", "bt.709"))
+            checkError(mpv_set_option_string(mpv, "target-trc", "srgb"))
+            checkError(mpv_set_option_string(mpv, "tone-mapping", "mobius"))
         } else {
             var layerPointer = Int64(Int(bitPattern: Unmanaged.passUnretained(metalLayer).toOpaque()))
             checkError(mpv_set_option(mpv, "wid", MPV_FORMAT_INT64, &layerPointer))
@@ -880,13 +887,16 @@ final class MPVPlayerViewController: UIViewController {
         saturation: Int,
         gamma: Int
     ) {
-        // Respect the selected iOS 15 internal render API. Saved settings
-        // must not force Vulkan on this path. VideoToolbox is supported by
-        // mpv's OpenGL ES renderer; the SW fallback uses copy decoding.
+        // Prevent saved video-output preferences from overriding iOS 15's
+        // known-good 8-bit SDR color target and copy-back decoder.
+        // In particular, direct VideoToolbox-to-GLES texture interop may
+        // produce distorted chroma with the pinned MPVKit binary.
         if usesSoftwareRenderer {
             if mpv != nil {
-                setStringProperty("hwdec",
-                    legacyGLActive ? "videotoolbox" : "videotoolbox-copy")
+                setStringProperty("hwdec", "videotoolbox-copy")
+                setStringProperty("target-prim", "bt.709")
+                setStringProperty("target-trc", "srgb")
+                setStringProperty("tone-mapping", "mobius")
             }
             return
         }
