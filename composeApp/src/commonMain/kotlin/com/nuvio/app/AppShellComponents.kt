@@ -108,6 +108,7 @@ internal data class AppTabActions(
     val onCheckForUpdatesClick: (() -> Unit)? = null,
     val onTestUpdateBannerClick: (() -> Unit)? = null,
     val onCollectionsSettingsClick: () -> Unit = {},
+    val onWatchPartySettingsClick: () -> Unit = {},
     val onFolderClick: ((collectionId: String, folderId: String) -> Unit)? = null,
     val onRequestedSettingsPageConsumed: () -> Unit = {},
     val onInitialHomeContentRendered: () -> Unit = {},
@@ -166,6 +167,9 @@ internal fun AppTabHost(
                     onSectionViewAllClick = actions.onLibrarySectionViewAllClick,
                     onCloudFilePlay = actions.onCloudFilePlay,
                     onConnectCloudClick = actions.onConnectCloudClick,
+                    onCatalogClick = actions.onCatalogClick,
+                    onPreviewClick = actions.onPosterClick,
+                    onPreviewLongClick = actions.onPosterLongClick,
                     onDownloadsClick = actions.onDownloadsClick,
                     disintegrationRequest = state.libraryDisintegrationRequest,
                 )
@@ -192,6 +196,7 @@ internal fun AppTabHost(
                     onCheckForUpdatesClick = actions.onCheckForUpdatesClick,
                     onTestUpdateBannerClick = actions.onTestUpdateBannerClick,
                     onCollectionsClick = actions.onCollectionsSettingsClick,
+                    onWatchPartyClick = actions.onWatchPartySettingsClick,
                 )
             }
         }

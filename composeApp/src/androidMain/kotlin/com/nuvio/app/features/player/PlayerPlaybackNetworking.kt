@@ -6,6 +6,7 @@ import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import com.nuvio.app.core.diagnostics.SentryNetworkBreadcrumbInterceptor
 import com.nuvio.app.core.network.IPv4FirstDns
+import com.nuvio.app.core.network.NetworkErrorInterceptor
 import okhttp3.OkHttpClient
 import java.net.HttpURLConnection
 import java.net.URL
@@ -54,6 +55,7 @@ internal object PlayerPlaybackNetworking {
             .followRedirects(true)
             .followSslRedirects(true)
             .retryOnConnectionFailure(true)
+            .addInterceptor(NetworkErrorInterceptor())
             .addInterceptor(SentryNetworkBreadcrumbInterceptor())
             .build()
     }

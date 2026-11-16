@@ -142,6 +142,7 @@ class MdbListSyncEngineTest {
         var activities = MdbListActivities(mapOf("watched_at" to null, "journal_at" to null), TIME)
         var watched = emptyList<MdbListWatchedRecord>()
         var journal = MdbListPage<MdbListJournalRecord>(emptyList())
+        var ratings = emptyList<MdbListRatingRecord>()
         var failPlayback = false
 
         override suspend fun activities() = activities.also { calls += "activities" }
@@ -153,6 +154,7 @@ class MdbListSyncEngineTest {
             return emptyList()
         }
         override suspend fun dropped() = emptyList<MdbListDroppedRecord>().also { calls += "dropped" }
+        override suspend fun ratings() = ratings.also { calls += "ratings" }
     }
 
     private fun movie(id: Long = 1) = MdbListWatchedRecord(

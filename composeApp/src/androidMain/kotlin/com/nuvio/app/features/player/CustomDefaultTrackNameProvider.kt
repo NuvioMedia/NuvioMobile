@@ -13,10 +13,7 @@ class CustomDefaultTrackNameProvider(resources: Resources) : DefaultTrackNamePro
         var trackName = super.getTrackName(format)
 
         if (format.sampleMimeType != null) {
-            var sampleFormat = formatNameFromMime(format.sampleMimeType)
-            if (sampleFormat == null) {
-                sampleFormat = formatNameFromMime(format.codecs)
-            }
+            var sampleFormat = resolveCodecName(format.sampleMimeType, format.codecs)
             if (sampleFormat == null) {
                 sampleFormat = format.sampleMimeType
             }
@@ -35,6 +32,19 @@ class CustomDefaultTrackNameProvider(resources: Resources) : DefaultTrackNamePro
     }
 
     companion object {
+        /**
+         * Resolve a human-readable codec name from a MIME type, falling back to
+         * [MimeTypes.getVideoMediaMimeType] / [MimeTypes.getMediaMimeType] when
+         * the raw codecs string (e.g. `hvc1.2.4.L153.B0`) doesn't match directly.
+         */
+        fun resolveCodecName(mimeType: String?, codecs: String?): String? {
+            formatNameFromMime(mimeType)?.let { return it }
+            if (codecs == null) return null
+            MimeTypes.getVideoMediaMimeType(codecs)?.let { formatNameFromMime(it) }?.let { return it }
+            MimeTypes.getMediaMimeType(codecs)?.let { formatNameFromMime(it) }?.let { return it }
+            return null
+        }
+
         fun formatNameFromMime(mimeType: String?): String? {
             if (mimeType == null) return null
 
@@ -42,6 +52,7 @@ class CustomDefaultTrackNameProvider(resources: Resources) : DefaultTrackNamePro
                 MimeTypes.AUDIO_DTS -> "DTS"
                 MimeTypes.AUDIO_DTS_HD -> "DTS-HD"
                 MimeTypes.AUDIO_DTS_EXPRESS -> "DTS Express"
+                MimeTypes.AUDIO_DTS_X -> "DTS:X"
                 MimeTypes.AUDIO_TRUEHD -> "TrueHD"
                 MimeTypes.AUDIO_AC3 -> "AC-3"
                 MimeTypes.AUDIO_E_AC3 -> "E-AC-3"

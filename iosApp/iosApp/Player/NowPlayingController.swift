@@ -14,6 +14,7 @@ final class PlayerNowPlayingController {
         var positionMs: Int64 = 0
         var durationMs: Int64 = 0
         var playbackSpeed: Float = 1.0
+        var sampledAt: TimeInterval = ProcessInfo.processInfo.systemUptime
     }
 
     private struct RemoteCommandTarget {
@@ -24,6 +25,7 @@ final class PlayerNowPlayingController {
     private weak var owner: MPVPlayerViewController?
     private var metadata = Metadata()
     private var playbackState = PlaybackState()
+    private var publishedPlaybackState = PlaybackState()
     private var currentArtworkImage: UIImage?
     private var currentArtworkURL: String?
     private var artworkTask: URLSessionDataTask?
@@ -51,7 +53,6 @@ final class PlayerNowPlayingController {
         if metadata.title == normalizedTitle,
            metadata.subtitle == normalizedSubtitle,
            currentArtworkURL == normalizedArtworkUrl {
-            applyNowPlayingInfo()
             return
         }
 
@@ -101,7 +102,8 @@ final class PlayerNowPlayingController {
         positionMs: Int64,
         durationMs: Int64,
         isPlaying: Bool,
-        playbackSpeed: Float
+        playbackSpeed: Float,
+        force: Bool = false
     ) {
         let nextState = PlaybackState(
             isPlaying: isPlaying,
@@ -109,15 +111,16 @@ final class PlayerNowPlayingController {
             durationMs: max(0, durationMs),
             playbackSpeed: playbackSpeed > 0 ? playbackSpeed : 1.0
         )
-        let positionChanged = abs(nextState.positionMs - playbackState.positionMs) >= 1_000
-        guard playbackState.isPlaying != nextState.isPlaying ||
+        let elapsedMs = (nextState.sampledAt - publishedPlaybackState.sampledAt) * 1000
+        let expectedPositionMs = Double(publishedPlaybackState.positionMs) +
+            (publishedPlaybackState.isPlaying ? elapsedMs * Double(publishedPlaybackState.playbackSpeed) : 0)
+        let positionJumped = abs(Double(nextState.positionMs) - expectedPositionMs) >= 1_000
+        let shouldPublish = force || playbackState.isPlaying != nextState.isPlaying ||
             playbackState.durationMs != nextState.durationMs ||
             playbackState.playbackSpeed != nextState.playbackSpeed ||
-            positionChanged else {
-            return
-        }
-
+            positionJumped
         playbackState = nextState
+        guard shouldPublish else { return }
         applyNowPlayingInfo()
     }
 
@@ -128,6 +131,7 @@ final class PlayerNowPlayingController {
         currentArtworkURL = nil
         metadata = Metadata()
         playbackState = PlaybackState()
+        publishedPlaybackState = PlaybackState()
         DispatchQueue.main.async {
             MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         }
@@ -161,6 +165,8 @@ final class PlayerNowPlayingController {
             }
 
             MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+            self.publishedPlaybackState = self.playbackState
+            self.publishedPlaybackState.sampledAt = ProcessInfo.processInfo.systemUptime
         }
 
         if Thread.isMainThread {
@@ -187,7 +193,7 @@ final class PlayerNowPlayingController {
             RemoteCommandTarget(
                 command: center.playCommand,
                 token: center.playCommand.addTarget { [weak self] _ in
-                    DispatchQueue.main.async { self?.owner?.playPlayback() }
+                    DispatchQueue.main.async { self?.owner?.requestSystemPlaying(true) }
                     return .success
                 }
             )
@@ -196,7 +202,7 @@ final class PlayerNowPlayingController {
             RemoteCommandTarget(
                 command: center.pauseCommand,
                 token: center.pauseCommand.addTarget { [weak self] _ in
-                    DispatchQueue.main.async { self?.owner?.pausePlayback() }
+                    DispatchQueue.main.async { self?.owner?.requestSystemPlaying(false) }
                     return .success
                 }
             )
@@ -207,11 +213,7 @@ final class PlayerNowPlayingController {
                 token: center.togglePlayPauseCommand.addTarget { [weak self] _ in
                     DispatchQueue.main.async {
                         guard let owner = self?.owner else { return }
-                        if owner.isPlayerPlaying {
-                            owner.pausePlayback()
-                        } else {
-                            owner.playPlayback()
-                        }
+                        owner.requestSystemPlaying(!owner.isPlayerPlaying)
                     }
                     return .success
                 }
@@ -223,7 +225,7 @@ final class PlayerNowPlayingController {
                 token: center.skipForwardCommand.addTarget { [weak self] event in
                     guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
                     DispatchQueue.main.async {
-                        self?.owner?.seekByMs(Int64(event.interval * 1000.0), exact: true)
+                        self?.owner?.requestSystemSeekBy(Int64(event.interval * 1000.0), exact: true)
                     }
                     return .success
                 }
@@ -235,7 +237,7 @@ final class PlayerNowPlayingController {
                 token: center.skipBackwardCommand.addTarget { [weak self] event in
                     guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
                     DispatchQueue.main.async {
-                        self?.owner?.seekByMs(-Int64(event.interval * 1000.0), exact: true)
+                        self?.owner?.requestSystemSeekBy(-Int64(event.interval * 1000.0), exact: true)
                     }
                     return .success
                 }
@@ -247,7 +249,7 @@ final class PlayerNowPlayingController {
                 token: center.changePlaybackPositionCommand.addTarget { [weak self] event in
                     guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
                     DispatchQueue.main.async {
-                        self?.owner?.seekToMs(Int64(event.positionTime * 1000.0))
+                        self?.owner?.requestSystemSeekTo(Int64(event.positionTime * 1000.0))
                     }
                     return .success
                 }

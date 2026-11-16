@@ -45,11 +45,11 @@ class PlayerNextEpisodeTransitionTest {
             searching.value = false
             countdown.value = 3
         }
-        compose.onNodeWithText("Playing via Source in 3…").assertIsDisplayed()
+        compose.onNodeWithText("Playing via Source in 3s…").assertIsDisplayed()
         compose.runOnIdle { countdown.value = 2 }
-        compose.onNodeWithText("Playing via Source in 2…").assertIsDisplayed()
+        compose.onNodeWithText("Playing via Source in 2s…").assertIsDisplayed()
         compose.runOnIdle { countdown.value = 1 }
-        compose.onNodeWithText("Playing via Source in 1…").assertIsDisplayed()
+        compose.onNodeWithText("Playing via Source in 1s…").assertIsDisplayed()
 
         compose.runOnIdle { countdown.value = null }
         compose.onNodeWithText("Next Episode").assertDoesNotExist()

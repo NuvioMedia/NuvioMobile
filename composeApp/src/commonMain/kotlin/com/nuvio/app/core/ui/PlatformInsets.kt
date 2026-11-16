@@ -17,6 +17,9 @@ internal expect fun nuvioBottomNavigationBarInsets(): WindowInsets
 @Composable
 internal expect fun platformPhysicalTopInset(): Dp
 
+@Composable
+internal expect fun ResizeForKeyboard()
+
 internal val LocalNuvioBottomNavigationOverlayPadding = staticCompositionLocalOf { 0.dp }
 
 internal val LocalBottomInsetsConsumed = staticCompositionLocalOf { false }

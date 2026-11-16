@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -30,7 +31,30 @@ object SubtitleRepository {
 
     private var activeFetchJob: Job? = null
 
-    fun fetchAddonSubtitles(type: String, videoId: String) {
+    fun fetchAddonSubtitles(
+        type: String,
+        videoId: String,
+        extras: SubtitleRequestExtras? = null,
+    ) {
+        activeFetchJob?.cancel()
+        _loadingProgress.value = null
+        activeFetchJob = scope.launch {
+            executeSubtitleFetch(type, videoId, extras)
+        }
+    }
+
+    /**
+     * Like [fetchAddonSubtitles], but first computes the OpenSubtitles video hash
+     * when the stream extras do not already contain one.
+     */
+    fun fetchAddonSubtitlesWithHashComputation(
+        type: String,
+        videoId: String,
+        extras: SubtitleRequestExtras?,
+        sourceUrl: String,
+        sourceHeaders: Map<String, String>,
+        onExtrasUpdated: (SubtitleRequestExtras) -> Unit,
+    ) {
         activeFetchJob?.cancel()
         _loadingProgress.value = null
         activeFetchJob = scope.launch {
@@ -38,24 +62,24 @@ object SubtitleRepository {
             _error.value = null
             _addonSubtitles.value = emptyList()
 
-            val requests = addonSubtitleRequests(type, videoId)
-            if (requests.isEmpty()) {
-                _isLoading.value = false
-                return@launch
+            val enrichedExtras = try {
+                val hashResult = computeVideoHash(sourceUrl, sourceHeaders)
+                if (hashResult != null) {
+                    val (hash, fileSize) = hashResult
+                    val updated = (extras ?: SubtitleRequestExtras()).copy(
+                        videoHash = hash,
+                        videoSize = extras?.videoSize ?: fileSize,
+                    )
+                    onExtrasUpdated(updated)
+                    updated
+                } else extras
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                extras
             }
 
-            _loadingProgress.value = SubtitleLoadingProgress(total = requests.size)
-            loadAddonSubtitles(requests) { request, subtitles ->
-                _addonSubtitles.update { it + subtitles }
-                _loadingProgress.update { progress ->
-                    progress?.copy(completed = progress.completed + 1, addonName = request.addonName)
-                }
-            }
-
-            if (_addonSubtitles.value.isEmpty()) {
-                _error.value = getString(Res.string.compose_player_no_subtitles_found)
-            }
-            _isLoading.value = false
+            executeSubtitleLoad(type, videoId, enrichedExtras)
         }
     }
 
@@ -65,6 +89,42 @@ object SubtitleRepository {
         _addonSubtitles.value = emptyList()
         _isLoading.value = false
         _error.value = null
+    }
+
+    private suspend fun executeSubtitleFetch(
+        type: String,
+        videoId: String,
+        extras: SubtitleRequestExtras?,
+    ) {
+        _isLoading.value = true
+        _error.value = null
+        _addonSubtitles.value = emptyList()
+        executeSubtitleLoad(type, videoId, extras)
+    }
+
+    private suspend fun executeSubtitleLoad(
+        type: String,
+        videoId: String,
+        extras: SubtitleRequestExtras?,
+    ) {
+        val requests = addonSubtitleRequests(type, videoId, extras)
+        if (requests.isEmpty()) {
+            _isLoading.value = false
+            return
+        }
+
+        _loadingProgress.value = SubtitleLoadingProgress(total = requests.size)
+        loadAddonSubtitles(requests) { request, subtitles ->
+            _addonSubtitles.update { it + subtitles }
+            _loadingProgress.update { progress ->
+                progress?.copy(completed = progress.completed + 1, addonName = request.addonName)
+            }
+        }
+
+        if (_addonSubtitles.value.isEmpty()) {
+            _error.value = getString(Res.string.compose_player_no_subtitles_found)
+        }
+        _isLoading.value = false
     }
 }
 

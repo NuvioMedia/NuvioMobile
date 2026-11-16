@@ -245,4 +245,43 @@ class StreamParserTest {
 
         assertEquals(null, streams.single().streamType)
     }
+
+    @Test
+    fun `parse keeps a stream whose only source is ytId`() {
+        val stream = StreamParser.parse(
+            payload = """{"streams":[{"ytId":"dQw4w9WgXcQ","name":"YouTube"}]}""",
+            addonName = "Addon",
+            addonId = "addon.id",
+        ).single()
+
+        assertEquals("dQw4w9WgXcQ", stream.ytId)
+        assertEquals("dQw4w9WgXcQ", stream.youTubeIdToResolve)
+        assertEquals("YouTube", stream.name)
+        assertEquals(null, stream.url)
+        assertTrue(stream.isSelectableForPlayback(debridEnabled = false))
+    }
+
+    @Test
+    fun `parse trims ytId and drops a blank one`() {
+        val streams = StreamParser.parse(
+            payload = """{"streams":[{"ytId":"  dQw4w9WgXcQ "},{"ytId":"   "},{"ytId":""}]}""",
+            addonName = "Addon",
+            addonId = "addon.id",
+        )
+
+        assertEquals(listOf("dQw4w9WgXcQ"), streams.map { it.ytId })
+    }
+
+    @Test
+    fun `parse keeps ytId alongside a url without resolving it`() {
+        val stream = StreamParser.parse(
+            payload = """{"streams":[{"url":"https://example.com/video.mp4","ytId":"dQw4w9WgXcQ"}]}""",
+            addonName = "Addon",
+            addonId = "addon.id",
+        ).single()
+
+        assertEquals("dQw4w9WgXcQ", stream.ytId)
+        assertEquals(null, stream.youTubeIdToResolve)
+        assertEquals("https://example.com/video.mp4", stream.playableDirectUrl)
+    }
 }

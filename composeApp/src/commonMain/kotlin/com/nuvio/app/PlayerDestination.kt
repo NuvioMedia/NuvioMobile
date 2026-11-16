@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import com.nuvio.app.core.ui.NuvioToastController
+import com.nuvio.app.features.party.PartyMedia
 import com.nuvio.app.features.player.ExternalPlayerIntentResult
 import com.nuvio.app.features.player.ExternalPlayerPlatform
 import com.nuvio.app.features.player.PlayerLaunch
@@ -26,6 +27,7 @@ internal fun PlayerDestination(
     onExternalPlayerLaunch: (PlayerLaunch) -> Unit,
     launchExternalPlayer: (ExternalPlayerIntentResult.Success) -> Boolean,
     openExternalStreamUrl: (String) -> Boolean,
+    onOpenPartyMedia: (PartyMedia) -> Unit,
 ) {
     val onBack = rememberGuardedPopBackStack(navController, route)
     val launch = remember(route.launchId) { PlayerLaunchStore.get(route.launchId) }
@@ -72,6 +74,12 @@ internal fun PlayerDestination(
         initialPositionMs = launch.initialPositionMs,
         initialProgressFraction = launch.initialProgressFraction,
         contentLanguage = launch.contentLanguage,
+        subtitleExtras = launch.subtitleExtras,
+        launchId = route.launchId,
+        sourceFilename = launch.sourceFilename,
+        stream = launch.stream,
+        sourceFromLinkCache = launch.sourceFromLinkCache,
+        sourceAutoSelected = launch.sourceAutoSelected,
         onBack = onBack,
         onOpenInExternalPlayer = { request ->
             val playerLaunch = PlayerLaunch(
@@ -97,6 +105,7 @@ internal fun PlayerDestination(
                 parentMetaId = launch.parentMetaId,
                 parentMetaType = launch.parentMetaType,
                 initialPositionMs = request.resumePositionMs,
+                subtitleExtras = launch.subtitleExtras,
             )
             onExternalPlayerLaunch(playerLaunch)
             val intentResult = ExternalPlayerPlatform.buildIntent(
@@ -123,6 +132,7 @@ internal fun PlayerDestination(
         onOpenExternalUrl = { url ->
             openExternalStreamUrl(url)
         },
+        onOpenPartyMedia = onOpenPartyMedia,
         modifier = Modifier.fillMaxSize(),
     )
 }

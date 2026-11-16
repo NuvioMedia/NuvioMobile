@@ -4,15 +4,21 @@ import co.touchlab.kermit.Logger
 import com.nuvio.app.core.auth.AuthRepository
 import com.nuvio.app.core.auth.AuthState
 import com.nuvio.app.core.tracking.ensureTrackingProvidersRegistered
+import com.nuvio.app.features.addons.ADDON_LIBRARY_RESOURCE
+import com.nuvio.app.features.addons.AddonEventDispatcher
+import com.nuvio.app.features.addons.AddonLibraryAction
+import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaVideo
 import com.nuvio.app.features.profiles.ProfileRepository
+import com.nuvio.app.features.servers.ServerWatched
 import com.nuvio.app.features.tracking.TrackingProviderId
 import com.nuvio.app.features.tracking.TrackingProviderRegistry
 import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tracking.WatchProgressSource
 import com.nuvio.app.features.tracking.effectiveWatchProgressSource
 import com.nuvio.app.features.tracking.providerId
+import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watching.sync.SupabaseWatchedSyncAdapter
 import com.nuvio.app.features.watching.sync.WatchedDeltaEvent
 import com.nuvio.app.features.watching.sync.WatchedSyncAdapter
@@ -753,7 +759,16 @@ object WatchedRepository {
     }
 
     fun markWatched(items: Collection<WatchedItem>) {
+        items.filter { it.isEpisode }.map { it.id }.distinct().forEach {
+            ContinueWatchingPreferencesRepository.removeDismissedNextUpKeysForContent(it)
+        }
+        val changedItems = if (AddonEventDispatcher.hasEnabledAddonFor(ADDON_LIBRARY_RESOURCE)) {
+            items.filterNot { isWatched(it.id, it.type, it.season, it.episode) }
+        } else {
+            emptyList()
+        }
         markWatched(items = items, trackerHistorySync = WatchedTrackerHistorySync.Mirror)
+        emitAddonWatchedEvents(changedItems, AddonLibraryAction.WATCHED)
     }
 
     internal fun markWatchedFromPlaybackCompletion(item: WatchedItem, syncRemote: Boolean = true) {
@@ -762,6 +777,14 @@ object WatchedRepository {
             trackerHistorySync = WatchedTrackerHistorySync.Skip,
             syncRemote = syncRemote,
         )
+    }
+
+    internal fun markWatchedLocally(items: Collection<WatchedItem>) {
+        markWatched(items = items, trackerHistorySync = WatchedTrackerHistorySync.Skip, syncRemote = false)
+    }
+
+    internal fun unmarkWatchedLocally(items: Collection<WatchedItem>) {
+        unmarkWatched(items = items, syncRemote = false)
     }
 
     private fun markWatched(
@@ -825,6 +848,38 @@ object WatchedRepository {
     }
 
     fun unmarkWatched(items: Collection<WatchedItem>) {
+        val changedItems = if (AddonEventDispatcher.hasEnabledAddonFor(ADDON_LIBRARY_RESOURCE)) {
+            items.filter { isWatched(it.id, it.type, it.season, it.episode) }
+        } else {
+            emptyList()
+        }
+        unmarkWatched(items = items, syncRemote = true)
+        emitAddonWatchedEvents(changedItems, AddonLibraryAction.UNWATCHED)
+    }
+
+    private fun emitAddonWatchedEvents(items: Collection<WatchedItem>, action: AddonLibraryAction) {
+        items.groupBy { it.type to it.id }.forEach { (key, groupItems) ->
+            val (type, id) = key
+            if (groupItems.any { !it.isEpisode }) {
+                AddonEventDispatcher.library(type = type, id = id, action = action)
+            } else {
+                AddonEventDispatcher.libraryVideos(
+                    type = type,
+                    id = id,
+                    action = action,
+                    videoIds = groupItems.map { item ->
+                        item.videoId?.takeIf(String::isNotBlank) ?: buildPlaybackVideoId(
+                            parentMetaId = item.id,
+                            seasonNumber = item.season,
+                            episodeNumber = item.episode,
+                        )
+                    },
+                )
+            }
+        }
+    }
+
+    private fun unmarkWatched(items: Collection<WatchedItem>, syncRemote: Boolean) {
         ensureLoaded()
         if (items.isEmpty()) return
         val source = activeSource
@@ -866,13 +921,13 @@ object WatchedRepository {
         if (removedItems.isNotEmpty()) {
             publish()
             persist()
-            pushDeleteToServer(items = removedItems, source = source)
+            if (syncRemote) pushDeleteToServer(items = removedItems, source = source)
         } else if (source.providerId != null) {
             if (removedExtraKeys) {
                 publish()
                 persist()
             }
-            pushDeleteToServer(items = items.toList(), source = source)
+            if (syncRemote) pushDeleteToServer(items = items.toList(), source = source)
         }
     }
 
@@ -923,10 +978,10 @@ object WatchedRepository {
         }
         if (shouldMarkSeriesWatched) {
             if (!hasSeriesWatchedMarker) {
-                markWatched(seriesWatchedItem)
+                markWatched(items = listOf(seriesWatchedItem), trackerHistorySync = WatchedTrackerHistorySync.Mirror)
             }
         } else if (hasSeriesWatchedMarker) {
-            unmarkWatched(seriesWatchedItem)
+            unmarkWatched(items = listOf(seriesWatchedItem), syncRemote = true)
         }
     }
 
@@ -1034,6 +1089,7 @@ object WatchedRepository {
     ) {
         val profileId = currentProfileId
         val operationGeneration = profileGeneration
+        if (trackerHistorySync == WatchedTrackerHistorySync.Mirror) ServerWatched.mirror(items, played = true)
         accountScopeSnapshot().launch {
             runCatching {
                 if (items.isEmpty()) return@runCatching
@@ -1061,6 +1117,7 @@ object WatchedRepository {
         source: WatchProgressSource,
     ) {
         val profileId = currentProfileId
+        ServerWatched.mirror(items, played = false)
         accountScopeSnapshot().launch {
             runCatching {
                 if (items.isEmpty()) return@runCatching
@@ -1211,7 +1268,7 @@ object WatchedRepository {
                         extraWatchedKeyGroups = compactExtraWatchedKeys(
                             providerExtraWatchedKeys[providerId].orEmpty(),
                         ),
-                        dirtyWatchedKeys = dirtyProviderKeys[providerId].orEmpty(),
+                        dirtyWatchedKeys = dirtyProviderKeys[providerId].orEmpty().toSet(),
                     )
                 },
             )
@@ -1261,6 +1318,9 @@ object WatchedRepository {
         trackerHistorySync: WatchedTrackerHistorySync,
         source: WatchProgressSource,
     ): WatchedPushOutcome {
+        val (serverItems, items) = items.partition(ServerWatched::isServerItem)
+        if (trackerHistorySync == WatchedTrackerHistorySync.Mirror) ServerWatched.apply(serverItems, played = true)
+        if (items.isEmpty()) return WatchedPushOutcome(nuvioSyncSucceeded = true)
         var nuvioSyncSucceeded = false
         val succeededTrackerProviderIds = linkedSetOf<TrackingProviderId>()
         if (source.providerId == null) {
@@ -1297,6 +1357,9 @@ object WatchedRepository {
         items: Collection<WatchedItem>,
         source: WatchProgressSource,
     ) {
+        val (serverItems, items) = items.partition(ServerWatched::isServerItem)
+        ServerWatched.apply(serverItems, played = false)
+        if (items.isEmpty()) return
         if (source.providerId == null) {
             try {
                 syncAdapter.delete(profileId = profileId, items = items)

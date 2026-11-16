@@ -56,6 +56,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,7 +94,7 @@ fun NuvioScreen(
             top = topPadding ?: tokens.spacing.screenTop + statusBarTop + nuvioPlatformExtraTopPadding,
             end = horizontalPadding,
             bottom = nuvioSafeBottomPadding(tokens.spacing.screenBottom),
-        ),
+        ).withVerticalBar(),
         verticalArrangement = Arrangement.spacedBy(tokens.spacing.listGap),
         content = content,
     )
@@ -174,6 +175,7 @@ fun NuvioScreenHeader(
             verticalAlignment = Alignment.Bottom,
         ) {
             Row(
+                modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
             ) {
@@ -188,13 +190,16 @@ fun NuvioScreenHeader(
                 }
                 AnimatedContent(
                     targetState = title,
+                    modifier = Modifier.weight(1f),
                     transitionSpec = { fadeIn() togetherWith fadeOut() },
                     label = "screen_header_title",
                 ) { currentTitle ->
                     Text(
                         text = currentTitle,
+                        modifier = Modifier.fillMaxWidth(),
                         style = MaterialTheme.typography.displayLarge,
                         color = tokens.colors.textPrimary,
+                        textAlign = TextAlign.Start,
                     )
                 }
             }
@@ -338,6 +343,8 @@ fun NuvioInputField(
     onValueChange: (String) -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
+    shape: Shape = MaterialTheme.nuvio.shapes.compactCard,
+    textStyle: TextStyle = MaterialTheme.typography.bodyLarge,
     trailingContent: (@Composable (() -> Unit))? = null,
 ) {
     val tokens = MaterialTheme.nuvio
@@ -346,7 +353,7 @@ fun NuvioInputField(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         singleLine = true,
-        shape = RoundedCornerShape(NuvioTokens.Radius.lg),
+        shape = shape,
         placeholder = {
             Text(
                 text = placeholder,
@@ -354,7 +361,7 @@ fun NuvioInputField(
                 style = MaterialTheme.typography.bodyLarge,
             )
         },
-        textStyle = MaterialTheme.typography.bodyLarge.copy(color = tokens.colors.textPrimary),
+        textStyle = textStyle.copy(color = tokens.colors.textPrimary),
         trailingIcon = trailingContent,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = tokens.colors.borderFocus,

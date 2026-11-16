@@ -29,6 +29,7 @@ object MdbListSettingsRepository {
     private var useLetterboxd = true
     private var useAudience = true
     private var useMal = true
+    private var showOnHero = false
 
     fun ensureLoaded() {
         MdbListTracker.ensureLoaded()
@@ -61,6 +62,14 @@ object MdbListSettingsRepository {
         publish()
         MdbListSettingsStorage.saveApiKey(normalized)
         MdbListMetadataService.clearCache()
+    }
+
+    fun setShowOnHero(value: Boolean) {
+        ensureLoaded()
+        if (showOnHero == value) return
+        showOnHero = value
+        publish()
+        MdbListSettingsStorage.saveShowOnHero(value)
     }
 
     fun setProviderEnabled(providerId: String, value: Boolean) {
@@ -115,6 +124,7 @@ object MdbListSettingsRepository {
         useLetterboxd = MdbListSettingsStorage.loadUseLetterboxd() ?: true
         useAudience = MdbListSettingsStorage.loadUseAudience() ?: true
         useMal = MdbListSettingsStorage.loadUseMal() ?: true
+        showOnHero = MdbListSettingsStorage.loadShowOnHero() ?: false
         publish()
     }
 
@@ -130,6 +140,7 @@ object MdbListSettingsRepository {
             useLetterboxd = useLetterboxd,
             useAudience = useAudience,
             useMal = useMal,
+            showOnHero = showOnHero,
         )
     }
 }

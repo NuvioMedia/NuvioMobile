@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -68,91 +69,100 @@ fun PinEntryDialog(
     DialogSurface(
         onDismissRequest = onDismiss,
     ) {
-        Text(
-            text = stringResource(Res.string.pin_enter),
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-        )
-        Text(
-            text = profileName,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            repeat(4) { index ->
-                PinDot(filled = index < pin.length, hasError = error != null)
-            }
-        }
-
-        AnimatedVisibility(
-            visible = error != null,
-            enter = expandVertically() + fadeIn(),
-            exit = shrinkVertically() + fadeOut(),
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = error.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 12.dp),
+                text = stringResource(Res.string.pin_enter),
+                style = MaterialTheme.typography.headlineLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                fontWeight = FontWeight.Bold,
             )
-        }
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = profileName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
 
+            Spacer(modifier = Modifier.height(28.dp))
 
-        PinKeypad(
-            onDigit = { digit ->
-                if (pin.length < 4 && !isVerifying) {
-                    error = null
-                    pin += digit
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                    if (pin.length == 4) {
-                        isVerifying = true
-                        scope.launch {
-                            val result = onVerify(pin)
-                            if (result.unlocked) {
-                                onVerified?.invoke(pin)
-                            } else {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                error = result.message ?: if (result.retryAfterSeconds > 0) {
-                                    getString(
-                                        Res.string.pin_locked_try_again,
-                                        result.retryAfterSeconds,
-                                    )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                repeat(4) { index ->
+                    PinDot(filled = index < pin.length, hasError = error != null)
+                }
+            }
+
+            AnimatedVisibility(
+                visible = error != null,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut(),
+            ) {
+                Text(
+                    text = error.orEmpty(),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+            }
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            PinKeypad(
+                onDigit = { digit ->
+                    if (pin.length < 4 && !isVerifying) {
+                        error = null
+                        pin += digit
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                        if (pin.length == 4) {
+                            isVerifying = true
+                            scope.launch {
+                                val result = onVerify(pin)
+                                if (result.unlocked) {
+                                    onVerified?.invoke(pin)
                                 } else {
-                                    getString(Res.string.pin_incorrect)
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    error = result.message ?: if (result.retryAfterSeconds > 0) {
+                                        getString(
+                                            Res.string.pin_locked_try_again,
+                                            result.retryAfterSeconds,
+                                        )
+                                    } else {
+                                        getString(Res.string.pin_incorrect)
+                                    }
+                                    pin = ""
                                 }
-                                pin = ""
+                                isVerifying = false
                             }
-                            isVerifying = false
                         }
                     }
-                }
-            },
-            onBackspace = {
-                if (pin.isNotEmpty() && !isVerifying) {
-                    pin = pin.dropLast(1)
-                    error = null
-                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                }
-            },
-        )
-
-        if (onForgotPin != null) {
-            Text(
-                text = stringResource(Res.string.pin_forgot),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Medium,
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .clickable(onClick = onForgotPin)
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                },
+                onBackspace = {
+                    if (pin.isNotEmpty() && !isVerifying) {
+                        pin = pin.dropLast(1)
+                        error = null
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    }
+                },
             )
+
+            if (onForgotPin != null) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = stringResource(Res.string.pin_forgot),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onForgotPin)
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                )
+            }
         }
     }
 }

@@ -36,10 +36,13 @@ class MdbListLibraryService(
             authorization.isAuthenticated && state.scope == authorization.scope && state.scope.profileId == profileId
         }
     }.distinctUntilChanged().onEach { refreshAsync() }
-    private val projection = snapshots.map { MdbListLibraryProjection(it ?: MdbListLibrarySnapshot()) }
+    private val projection = snapshots.map { MdbListLibraryProjection(it?.visible() ?: MdbListLibrarySnapshot()) }
+
+    /** Every list that can be hidden, with whether it is shown in the library, for MDBList settings. */
+    val listOptions = snapshots.map { it?.listOptions().orEmpty() }.distinctUntilChanged()
 
     val items = projection.map { it.entries }.onStart { refreshAsync() }.distinctUntilChanged()
-    val tabs = snapshots.map { it?.tabs().orEmpty() }.onStart { refreshAsync() }.distinctUntilChanged()
+    val tabs = snapshots.map { it?.visibleTabs().orEmpty() }.onStart { refreshAsync() }.distinctUntilChanged()
     val isRefreshing = combine(loadState, auth.state, activeProfileId) { state, authorization, profileId ->
         state.refreshing && state.scope == authorization.scope && authorization.isAuthenticated && state.scope.profileId == profileId
     }.distinctUntilChanged()
@@ -50,11 +53,12 @@ class MdbListLibraryService(
         val scope = runCatching { sync.currentScope() }.getOrNull() ?: return TrackingLibrarySnapshot()
         val library = sync.currentSnapshot()?.library
         val status = loadState.value.takeIf { it.scope == scope }
-        val entries = MdbListLibraryProjection(library ?: MdbListLibrarySnapshot()).entries
+        val entries = MdbListLibraryProjection(library?.visible() ?: MdbListLibrarySnapshot()).entries
+        val tabs = library?.visibleTabs().orEmpty()
         return TrackingLibrarySnapshot(
             items = entries,
-            tabs = library?.tabs().orEmpty(),
-            sections = library?.tabs().orEmpty().mapNotNull { tab ->
+            tabs = tabs,
+            sections = tabs.mapNotNull { tab ->
                 entries.filter { tab.key in it.listKeys }.takeIf { it.isNotEmpty() }
                     ?.let { LibrarySection(tab.key, tab.title, it) }
             },
@@ -67,7 +71,7 @@ class MdbListLibraryService(
     fun find(contentId: String, contentType: String? = null): LibraryItem? {
         if (runCatching { sync.currentScope() }.isFailure) return null
         val snapshot = sync.currentSnapshot()?.library ?: return null
-        return MdbListLibraryProjection(snapshot).find(contentId, contentType)
+        return MdbListLibraryProjection(snapshot.visible()).find(contentId, contentType)
     }
 
     fun observeMembership(id: String, type: String) = projection.map { it.membership(id, type) }.distinctUntilChanged()
@@ -80,7 +84,7 @@ class MdbListLibraryService(
         if (sync.currentScope() != scope) throw CancellationException("MDBList account changed")
         val library = sync.currentSnapshot()?.library ?: throw loadState.value.error ?: MdbListDecodingException()
         val target = runCatching { input.mdbListLibraryItem() }.getOrNull()
-        return library.tabs().associate { tab ->
+        return library.visibleTabs().associate { tab ->
             tab.key to library.itemsByList[tab.key].orEmpty().any { item ->
                 target?.matches(item) == true || item.type == mdbListLibraryType(input.type) && input.id in item.media.ids.aliases()
             }
@@ -91,6 +95,44 @@ class MdbListLibraryService(
         val scope = sync.currentScope()
         refresh(TrackingRefreshIntent.AUTOMATIC)
         writer.applyMembershipChanges(scope, input, changes)
+    }
+
+    suspend fun setListVisible(key: String, visible: Boolean) {
+        val scope = sync.currentScope()
+        sync.mutate(scope) { previous ->
+            val library = previous.library ?: throw MdbListDecodingException()
+            require(library.listOptions().any { it.key == key }) { "This list is no longer available" }
+            if ((key !in library.hiddenListKeys) == visible) return@mutate previous to Unit
+            val updated = if (visible) {
+                // Hidden lists are not synced, so load the items before showing the list again.
+                library.copy(
+                    hiddenListKeys = library.hiddenListKeys - key,
+                    itemsByList = library.itemsByList + (key to MdbListLibraryRemote(api, scope).items(key))
+                )
+            } else {
+                library.copy(
+                    hiddenListKeys = library.hiddenListKeys + key,
+                    itemsByList = library.itemsByList - key,
+                    addedOrders = library.addedOrders - key
+                )
+            }
+            previous.copy(library = updated) to Unit
+        }
+    }
+
+    /** Runs [setListVisible] on the service scope so leaving the settings screen does not cancel it. */
+    fun setListVisibleAsync(key: String, visible: Boolean, onResult: (Throwable?) -> Unit) {
+        coroutineScope.launch {
+            val error = try {
+                setListVisible(key, visible)
+                null
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                error
+            }
+            onResult(error)
+        }
     }
 
     suspend fun refresh(intent: TrackingRefreshIntent) {
@@ -106,7 +148,8 @@ class MdbListLibraryService(
                 if (!shouldRefresh(scope, intent)) return@runIfNeeded
                 loadState.value = LibraryLoadState(scope, refreshing = true, attemptedAt = now())
                 sync.mutate(scope) { previous ->
-                    val library = MdbListLibraryRemote(api, scope).synchronize(previous.library, previous.accountId, now())
+                    val library = MdbListLibraryRemote(api, scope).synchronize(previous.library, previous.accountId, now(),
+                        reloadItems = intent == TrackingRefreshIntent.USER_INITIATED)
                     previous.copy(library = library) to Unit
                 }
                 loadState.value = LibraryLoadState(scope)

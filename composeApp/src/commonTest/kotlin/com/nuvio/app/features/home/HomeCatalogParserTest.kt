@@ -102,4 +102,41 @@ class HomeCatalogParserTest {
         assertEquals("https://img/landscape-2.jpg", withoutBackground.landscapePoster)
         assertEquals("https://img/landscape-2.jpg", withoutBackground.banner)
     }
+
+    @Test
+    fun `parse catalog response reads runtime and status`() {
+        val result = HomeCatalogParser.parseCatalogResponse(
+            payload = """
+                {
+                  "metas": [
+                    { "id": "tt1", "type": "series", "name": "One", "runtime": "52 min", "status": " Continuing " },
+                    { "id": "tt2", "type": "movie", "name": "Two", "runtime": 109, "status": "" }
+                  ]
+                }
+            """.trimIndent(),
+        )
+
+        val (series, movie) = result.items
+        assertEquals("52 min", series.runtime)
+        assertEquals("Continuing", series.status)
+        assertEquals("109", movie.runtime)
+        assertEquals(null, movie.status)
+    }
+
+    @Test
+    fun `parse catalog response ignores non text values`() {
+        val result = HomeCatalogParser.parseCatalogResponse(
+            payload = """
+                {
+                  "metas": [
+                    { "id": "tt1", "type": "movie", "name": "One", "runtime": { "minutes": 90 }, "status": ["Released"] }
+                  ]
+                }
+            """.trimIndent(),
+        )
+
+        val item = result.items.single()
+        assertEquals(null, item.runtime)
+        assertEquals(null, item.status)
+    }
 }

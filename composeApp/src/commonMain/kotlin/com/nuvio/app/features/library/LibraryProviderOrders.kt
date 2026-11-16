@@ -24,12 +24,16 @@ internal fun observeLibraryProviderOrders(
     listKeys: List<String>,
     sortOption: LibrarySortOption,
 ): Flow<LibraryProviderOrders> {
-    if (sorter == null || listKeys.isEmpty() ||
-        sortOption !in listOf(LibrarySortOption.ADDED_ASC, LibrarySortOption.ADDED_DESC)) {
-        return flowOf(LibraryProviderOrders())
+    if (sorter == null || listKeys.isEmpty()) return flowOf(LibraryProviderOrders())
+    val observe: (String) -> Flow<List<String>?> = when (sortOption) {
+        LibrarySortOption.ADDED_DESC, LibrarySortOption.ADDED_ASC ->
+            { key -> sorter.observeAddedOrder(key, sortOption == LibrarySortOption.ADDED_DESC) }
+        LibrarySortOption.RELEASED_DESC, LibrarySortOption.RELEASED_ASC ->
+            { key -> sorter.observeReleaseOrder(key, sortOption == LibrarySortOption.RELEASED_DESC) }
+        else -> return flowOf(LibraryProviderOrders())
     }
     return combine(listKeys.distinct().map { key ->
-        sorter.observeAddedOrder(key, sortOption == LibrarySortOption.ADDED_DESC).map { keys ->
+        observe(key).map { keys ->
             key to keys?.withIndex()?.associate { (index, item) -> item to index }
         }.onStart { emit(key to null) }
     }) { orders ->
