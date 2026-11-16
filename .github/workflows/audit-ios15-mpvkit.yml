@@ -33,7 +33,7 @@ jobs:
             unzip -q "$work/$name/archive.zip" -d "$work/$name/unzipped"
             echo "Artifact layout:"
             unzip -Z -1 "$work/$name/archive.zip" | head -n 12 || true
-            file="$(find "$work/$name/unzipped" -type f \( -iname '*.a' -o -name 'Libmpv' \) -print -quit)"
+            file="$(find "$work/$name/unzipped" -type f -path '*/ios-arm64/*' \( -iname '*.a' -o -name 'Libmpv' \) -print -quit)"
             if [[ -z "$file" ]]; then
               echo "::error::Missing iOS arm64 libmpv in $name"
               exit 1
