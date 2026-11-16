@@ -1,4 +1,4 @@
-<?xml version='1.0' encoding='utf-8'?>
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="theme_gold">ذهبي</string>
     <string name="theme_jade">يشمي</string>
@@ -642,6 +642,7 @@
     <string name="downloads_status_failed">فشل</string>
     <string name="downloads_status_paused">متوقف مؤقتًا • %1$s</string>
     <string name="episodes_cd_watched">تمت المشاهدة</string>
+    <string name="episodes_unavailable">غير متاح</string>
     <string name="episodes_season">الموسم %1$d</string>
     <string name="episodes_specials">الحلقات الخاصة</string>
     <string name="floating_prompt_continue_where_left_off">متابعة من حيث توقفت</string>
@@ -1263,7 +1264,7 @@
     <string name="settings_playback_vod_cache_size_value">%1$d ميغابايت</string>
     <string name="settings_playback_vod_cache_warning">تستمر عمليات الكتابة على القرص أثناء تشغيل بث مخزّن مؤقتًا. يُطبَّق الحجم الجديد عند تشغيل التطبيق في المرة التالية.</string>
     <string name="settings_playback_exo_chapters">إظهار الفصول</string>
-    <string name="settings_playback_exo_chapters_description">قراءة فصول ملفات MKV لتمييزها على شريط التقدم وعرضها في المشغل. يُرسل بضعة طلبات إضافية صغيرة عند بدء التشغيل. يعرض libmpv الفصول دائمًا</string>
+    <string name="settings_playback_exo_chapters_description">قراءة فصول ملفات MKV لتمييزها على شريط التقدم وعرضها في المشغل.</string>
     <string name="settings_tmdb_api_key_label">مفتاح API</string>
     <string name="settings_tmdb_api_key_override_description">استخدم مفتاح TMDB API الخاص بك، أو اتركه فارغًا لاستخدام المفتاح الافتراضي.</string>
     <string name="settings_tmdb_personal_api_key">مفتاح API الشخصي</string>
@@ -1793,6 +1794,13 @@
     <string name="notifications_test_send_failed">فشل إرسال إشعار تجريبي.</string>
     <string name="notifications_test_sent_for">تم إرسال إشعار تجريبي لـ %1$s.</string>
     <string name="player_unable_to_play_stream">تعذر تشغيل مصدر البث هذا.</string>
+    <string name="player_error_stream_expired">انتهت صلاحية رابط البث. يرجى اختيار مصدر آخر.</string>
+    <string name="player_error_stream_removed">رابط البث منتهي الصلاحية أو تم حذفه. يرجى اختيار مصدر آخر.</string>
+    <string name="player_error_stream_rate_limited">طلبات كثيرة جداً لمصدر البث. انتظر لحظة ثم حاول مجدداً.</string>
+    <string name="player_error_stream_unavailable">خادم البث غير متوفر حالياً. يرجى اختيار مصدر آخر.</string>
+    <string name="player_error_stream_blocked">مصدر البث محجوب أو مقيد. يرجى اختيار مصدر آخر.</string>
+    <string name="player_error_source_invalid_content">خطأ في المصدر: أرجع مصدر البث محتوى غير صالح أو غير قابل للتشغيل. قد يكون الرابط قد انتهت صلاحيته أو أرجع الخادم صفحة خطأ بدلاً من الفيديو.\n\nيرجى اختيار مصدر آخر. [%1$s]</string>
+    <string name="player_error_unsupported_format">يستخدم هذا البث تنسيقاً قد لا يدعمه جهازك. يرجى اختيار مصدر آخر. [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">محرك تشغيل MPV غير متاح. يُرجى إعادة بناء التطبيق.</string>
     <string name="profile_pin_changed_requires_refresh">تم تغيير رمز PIN لهذا الملف الشخصي. اتصل بالإنترنت مرة واحدة لتحديث القفل على هذا الجهاز.</string>
     <string name="profile_pin_clear_failed">تعذر إزالة قفل PIN. حاول مرة أخرى.</string>
@@ -2468,4 +2476,55 @@
     <string name="stream_info_subtitle_source_embedded">مدمج</string>
     <string name="stream_info_player_engine">المشغل</string>
     <string name="stream_info_server">الخادم</string>
+    <string name="settings_group_you">أنت</string>
+    <string name="settings_group_look">المظهر</string>
+    <string name="settings_group_watch">الوسائط</string>
+    <string name="settings_group_services">الخدمات</string>
+    <string name="settings_group_system">النظام</string>
+    <string name="compose_settings_page_layout">التخطيط</string>
+    <string name="compose_settings_root_layout_description">الصفحة الرئيسية والبطاقات والتفاصيل ومصادر البث والتنقل</string>
+    <string name="compose_settings_root_about_description">معلومات التطبيق والتحديثات والإقرارات</string>
+    <string name="settings_playback_page_player">المشغل</string>
+    <string name="settings_playback_page_player_description">المشغل الافتراضي ومحرك التشغيل</string>
+    <string name="settings_playback_page_stream_selection">اختيار مصدر البث</string>
+    <string name="settings_playback_page_stream_selection_description">اختيار مصادر البث تلقائيًا أو إعادة استخدام آخر رابط</string>
+    <string name="settings_playback_page_up_next">التالي</string>
+    <string name="settings_playback_page_up_next_description">التشغيل التلقائي للحلقة التالية ووقت إظهار التنبيه</string>
+    <string name="settings_playback_page_skip">تخطي المقاطع</string>
+    <string name="settings_playback_page_skip_description">تخطي المقدمات والملخصات والشارات الختامية</string>
+    <string name="settings_playback_page_interface">واجهة المشغل</string>
+    <string name="settings_playback_page_interface_description">عناصر التحكم والتراكبات وإيماءات اللمس والضغط المطول لتسريع التشغيل</string>
+    <string name="settings_playback_page_audio">الصوت</string>
+    <string name="settings_playback_page_audio_description">اللغات المفضلة وإخراج الصوت</string>
+    <string name="settings_playback_page_subtitles">الترجمة</string>
+    <string name="settings_playback_page_subtitles_description">اللغات والنمط والعرض</string>
+    <string name="settings_playback_page_video">الفيديو</string>
+    <string name="settings_playback_page_video_description">فك الترميز وإخراج الفيديو وHDR</string>
+    <string name="settings_playback_page_buffer">المخزن المؤقت وذاكرة التخزين المؤقت</string>
+    <string name="settings_playback_page_buffer_description">الذاكرة والتخزين المؤقت ومخزن القرص المؤقت</string>
+    <string name="settings_playback_page_p2p">البث عبر P2P</string>
+    <string name="settings_playback_page_p2p_description">تشغيل التورنت والملف التعريفي وذاكرة التخزين المؤقت</string>
+    <string name="settings_appearance_description">السمات وأيقونة التطبيق واللغة</string>
+    <string name="settings_appearance_title">المظهر</string>
+    <string name="subtitle_appearance">المظهر</string>
+    <string name="subtitle_preview">معاينة</string>
+    <string name="subtitle_preview_text">كل قصة تبدأ بقليل من الفضول.</string>
+    <string name="subtitle_appearance_hint">يُطبق على الترجمات النصية. تحتفظ ترجمات ASS المنسقة والترجمات المصوّرة بمظهرها الأصلي.</string>
+    <string name="subtitle_font">الخط</string>
+    <string name="subtitle_font_default">الافتراضي</string>
+    <string name="subtitle_font_sans">بدون زخرفة</string>
+    <string name="subtitle_font_serif">مزخرف</string>
+    <string name="subtitle_font_mono">أحادي المسافة</string>
+    <string name="subtitle_font_import">استيراد خط</string>
+    <string name="subtitle_font_import_hint">اختر ملف ‎.ttf أو ‎.otf بحجم لا يتجاوز 10 ميغابايت. تبقى الخطوط المستوردة على هذا الجهاز.</string>
+    <string name="subtitle_font_import_error">تعذّر استيراد هذا الخط. اختر ملف ‎.ttf أو ‎.otf صالحًا بحجم أقل من 10 ميغابايت.</string>
+    <string name="subtitle_font_missing">الخط غير متاح على هذا الجهاز. جارٍ استخدام الخط الافتراضي.</string>
+    <string name="subtitle_font_remove">إزالة %1$s</string>
+    <string name="subtitle_background_opacity">عتامة الخلفية</string>
+    <string name="subtitle_background_roundness">استدارة الزوايا</string>
+    <string name="subtitle_shadow">ظل النص</string>
+    <string name="subtitle_shadow_description">افصل النص عن المشاهد الساطعة.</string>
+    <string name="subtitle_shadow_opacity">عتامة الظل</string>
+    <string name="subtitle_shadow_size">حجم الظل</string>
+    <string name="subtitle_reset_appearance">إعادة ضبط المظهر</string>
 </resources>

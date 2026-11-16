@@ -31,6 +31,7 @@ class PlayerSurfaceGesturesTest {
     val compose = createComposeRule()
 
     private val playbackReady = mutableStateOf(false)
+    private var backGestureEdgePx = 0f
     private val controlsLocked = mutableStateOf(false)
     private var taps = 0
     private var doubleTaps = 0
@@ -73,6 +74,7 @@ class PlayerSurfaceGesturesTest {
                         layoutSize = IntSize(320, 180),
                         playbackGesturesEnabled = playbackReady.value,
                         sideGestureSystemEdgeExclusionPx = 0f,
+                        horizontalSeekSystemEdgeExclusionPx = backGestureEdgePx,
                         playerControlsLockedState = locked,
                         touchGesturesEnabledState = rememberUpdatedState(true),
                         isHoldToSpeedGestureActiveState = rememberUpdatedState(false),
@@ -173,5 +175,49 @@ class PlayerSurfaceGesturesTest {
         }
         surface.performTouchInput { up() }
         compose.runOnIdle { assertEquals(0, seekCommits) }
+    }
+
+    @Test
+    fun gestureNavigationEdgesLeaveHorizontalSwipesToTheSystemBackGesture() {
+        playbackReady.value = true
+        backGestureEdgePx = 40f
+        setContent()
+        val surface = compose.onNodeWithTag("surface")
+        surface.performTouchInput { swipe(Offset(width - 2f, centerY), Offset(width * 0.5f, centerY)) }
+        surface.performTouchInput { swipe(Offset(2f, centerY), Offset(width * 0.5f, centerY)) }
+        compose.runOnIdle {
+            assertEquals(0, seekPreviews)
+            assertEquals(0, seekCommits)
+        }
+        surface.performTouchInput { swipe(center, Offset(width * 0.85f, centerY)) }
+        compose.runOnIdle { assertEquals(1, seekCommits) }
+    }
+
+    @Test
+    fun slowEdgeSwipeDoesNotActivateHoldToSpeed() {
+        playbackReady.value = true
+        backGestureEdgePx = 40f
+        setContent()
+        compose.onNodeWithTag("surface").performTouchInput {
+            down(Offset(width - 2f, centerY))
+            repeat(10) { step ->
+                moveTo(Offset(width - 2f - (step + 1) * 4f, centerY))
+                advanceEventTime(100)
+            }
+            up()
+        }
+        compose.runOnIdle {
+            assertEquals(0, speedBoosts)
+            assertEquals(0, seekCommits)
+        }
+    }
+
+    @Test
+    fun stillFingerHoldStillActivatesHoldToSpeed() {
+        playbackReady.value = true
+        backGestureEdgePx = 40f
+        setContent()
+        compose.onNodeWithTag("surface").performTouchInput { longClick(Offset(width - 2f, centerY)) }
+        compose.runOnIdle { assertEquals(1, speedBoosts) }
     }
 }

@@ -1156,7 +1156,7 @@
     <string name="settings_playback_secondary_subtitle_language">Sekundarni željeni jezik</string>
     <string name="settings_playback_section_decoder">DEKODER</string>
     <string name="settings_playback_engine">Pogon reprodukcije</string>
-    <string name="settings_playback_engine_auto_description">Prvo koristi ExoPlayer i prijeđi na libmpv ako reprodukcija ne uspije.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer za filmove i serije · MPV za anime</string>
     <string name="settings_playback_engine_exoplayer_description">Koristi ExoPlayer i Android Media3 dekodere.</string>
     <string name="settings_playback_engine_libmpv_description">Koristi libmpv za reprodukciju na Androidu.</string>
     <string name="settings_playback_libmpv_video_output">libmpv renderer</string>
@@ -1776,6 +1776,13 @@
     <string name="notifications_test_send_failed">Slanje probne obavijesti nije uspjelo.</string>
     <string name="notifications_test_sent_for">Probna obavijest poslana za %1$s.</string>
     <string name="player_unable_to_play_stream">Nije moguće reproducirati ovaj stream.</string>
+    <string name="player_error_stream_expired">Poveznica streama je istekla. Isprobaj drugi izvor.</string>
+    <string name="player_error_stream_removed">Poveznica streama je istekla ili je uklonjena. Isprobaj drugi izvor.</string>
+    <string name="player_error_stream_rate_limited">Previše zahtjeva prema izvoru streama. Pričekaj trenutak i pokušaj ponovno.</string>
+    <string name="player_error_stream_unavailable">Poslužitelj streama trenutno nije dostupan. Isprobaj drugi izvor.</string>
+    <string name="player_error_stream_blocked">Izvor streama je blokiran ili ograničen. Isprobaj drugi izvor.</string>
+    <string name="player_error_source_invalid_content">Pogreška izvora: izvor streama vratio je neispravan sadržaj ili sadržaj koji se ne može reproducirati. Poveznica je možda istekla ili je poslužitelj umjesto videa vratio stranicu s pogreškom.\n\nIsprobaj drugi izvor. [%1$s]</string>
+    <string name="player_error_unsupported_format">Ovaj stream koristi format koji tvoj uređaj možda ne podržava. Isprobaj drugi izvor. [%1$s]</string>
     <string name="player_engine_unavailable_rebuild">MPV pogon reproduktora nije dostupan. Ponovno izgradite aplikaciju.</string>
     <string name="profile_pin_changed_requires_refresh">PIN ovog profila je promijenjen. Povežite se s internetom jednom radi osvježavanja zaključavanja na ovom uređaju.</string>
     <string name="profile_pin_clear_failed">Uklanjanje zaključavanja PIN-om nije uspjelo. Pokušajte ponovno.</string>

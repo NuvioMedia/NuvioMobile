@@ -8,10 +8,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.features.player.AndroidPlaybackEngine
 import com.nuvio.app.features.player.AudioLanguageOption
+import com.nuvio.app.features.player.AudioOutputChannels
 import com.nuvio.app.features.player.AvailableLanguageOptions
 import com.nuvio.app.features.player.IosAudioOutputMode
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.player.effectiveDownmixEnabled
 import com.nuvio.app.features.player.languageLabelForCode
 import com.nuvio.app.isIos
 import nuvio.composeapp.generated.resources.*
@@ -26,6 +29,7 @@ internal fun PlaybackAudioSettings(
     var showPreferredAudioDialog by remember { mutableStateOf(false) }
     var showSecondaryAudioDialog by remember { mutableStateOf(false) }
     var showIosAudioOutputDialog by remember { mutableStateOf(false) }
+    var showDownmixChannelsDialog by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(if (isTablet) 18.dp else 12.dp)) {
         SettingsSection(
             title = stringResource(Res.string.settings_playback_page_audio),
@@ -52,6 +56,58 @@ internal fun PlaybackAudioSettings(
                     isTablet = isTablet,
                     onClick = { showSecondaryAudioDialog = true },
                 )
+                if (!isIos) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_remember_audio_delay),
+                        description = stringResource(Res.string.settings_playback_remember_audio_delay_description),
+                        checked = settings.rememberAudioDelayPerDevice,
+                        enabled = !settings.externalPlayerEnabled,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setRememberAudioDelayPerDevice,
+                    )
+                }
+            }
+        }
+
+        if (!isIos) {
+            // The downmix runs in the app's FFmpeg decoder, which ExoPlayer only prefers with that decoder priority.
+            val downmixAvailable = !settings.externalPlayerEnabled &&
+                settings.androidPlaybackEngine != AndroidPlaybackEngine.Libmpv &&
+                settings.decoderPriority == 2
+            SettingsSection(
+                title = stringResource(Res.string.settings_playback_downmix_section),
+                isTablet = isTablet,
+            ) {
+                SettingsGroup(isTablet = isTablet) {
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_downmix),
+                        description = stringResource(Res.string.settings_playback_downmix_description),
+                        checked = settings.effectiveDownmixEnabled,
+                        enabled = downmixAvailable,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setDownmixEnabled,
+                    )
+                    if (settings.effectiveDownmixEnabled) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsNavigationRow(
+                            title = stringResource(Res.string.settings_playback_downmix_channels),
+                            description = settings.audioOutputChannels.settingValue,
+                            enabled = downmixAvailable,
+                            isTablet = isTablet,
+                            onClick = { showDownmixChannelsDialog = true },
+                        )
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsSwitchRow(
+                            title = stringResource(Res.string.settings_playback_downmix_maintain_volume),
+                            description = stringResource(Res.string.settings_playback_downmix_maintain_volume_description),
+                            checked = settings.maintainOriginalAudioOnDownmix,
+                            enabled = downmixAvailable,
+                            isTablet = isTablet,
+                            onCheckedChange = PlayerSettingsRepository::setMaintainOriginalAudioOnDownmix,
+                        )
+                    }
+                }
             }
         }
 
@@ -70,6 +126,20 @@ internal fun PlaybackAudioSettings(
                 }
             }
         }
+    }
+
+    if (showDownmixChannelsDialog) {
+        SettingsChoiceDialog(
+            title = stringResource(Res.string.settings_playback_downmix_channels),
+            options = AudioOutputChannels.entries,
+            selected = settings.audioOutputChannels,
+            label = { it.settingValue },
+            onSelect = {
+                PlayerSettingsRepository.setAudioOutputChannels(it)
+                showDownmixChannelsDialog = false
+            },
+            onDismiss = { showDownmixChannelsDialog = false },
+        )
     }
 
     if (showPreferredAudioDialog) {

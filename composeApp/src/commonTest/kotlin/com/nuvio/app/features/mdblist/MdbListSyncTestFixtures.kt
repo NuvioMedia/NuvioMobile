@@ -39,6 +39,7 @@ internal class MdbListTestSyncRemote : MdbListSyncRemote {
     var watched = emptyList<MdbListWatchedRecord>()
     var playback = emptyList<MdbListPlayback>()
     var dropped = emptyList<MdbListDroppedRecord>()
+    var ratings = emptyList<MdbListRatingRecord>()
     var error: Exception? = null
 
     override suspend fun activities(): MdbListActivities {
@@ -50,6 +51,7 @@ internal class MdbListTestSyncRemote : MdbListSyncRemote {
     override suspend fun watched() = watched.also { calls += "watched" }
     override suspend fun playback() = playback.also { calls += "playback" }
     override suspend fun dropped() = dropped.also { calls += "dropped" }
+    override suspend fun ratings() = ratings.also { calls += "ratings" }
     override suspend fun journal(since: String) = MdbListPage<MdbListJournalRecord>(emptyList()).also { calls += "journal" }
 }
 

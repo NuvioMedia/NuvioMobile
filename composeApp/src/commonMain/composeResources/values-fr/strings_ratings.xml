@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">Noter</string>
+    <string name="rating_your_rating">Votre note</string>
+    <string name="rating_rate_episode">Noter l’épisode</string>
+    <string name="rating_rated">Noté %1$s/10</string>
+    <string name="rating_value">%1$s sur 10</string>
+    <string name="rating_syncs_to">Synchronisé avec %1$s</string>
+    <string name="rating_saved">Note enregistrée</string>
+    <string name="rating_removed">Note supprimée</string>
+    <string name="rating_failed">Impossible de mettre à jour votre note sur %1$s</string>
+    <string name="settings_tracking_ratings">Notes</string>
+    <string name="settings_tracking_ratings_description">Où vos notes sont enregistrées et affichées</string>
+    <string name="settings_tracking_ratings_picker_subtitle">Notez les titres depuis leur page de détail. Vos notes sont enregistrées dans le service que vous choisissez et affichées depuis celui-ci.</string>
+    <string name="settings_tracking_ratings_off_description">Masquer le bouton Noter.</string>
+    <string name="settings_tracking_ratings_simkl_description">Noter des films et des séries. Noter un titre absent de vos listes Simkl l’y ajoute.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Noter des films, des séries et des épisodes.</string>
+</resources>

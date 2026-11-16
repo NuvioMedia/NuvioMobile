@@ -2338,7 +2338,7 @@
     <string name="collections_editor_trakt_list_title_format">Trakt 列表 %1$s</string>
     <string name="external_player_android_system">Android 系统播放器</string>
     <string name="p2p_consent_title">P2P 流</string>
-    <string name="p2p_consent_body">此流使用点对点 (P2P) 技术。启用 P2P 即表示您知悉并同意：\\n\\n\\u2022 您的 IP 地址将对网络中的其他对等节点可见\\n\\u2022 您对所访问的内容负全部责任\\n\\u2022 您确认在您的司法管辖区内拥有流式传输此内容的合法权利\\n\\u2022 Nuvio 不托管、分发或控制任何 P2P 内容\\n\\u2022 Nuvio 对您因使用 P2P 流而产生的任何法律后果不承担任何责任\\n\\n您完全自行承担使用此功能的风险。P2P 可随时在设置中禁用。</string>
+    <string name="p2p_consent_body">此流使用点对点 (P2P) 技术。启用 P2P 即表示您知悉并同意：\n\n• 您的 IP 地址将对网络中的其他对等节点可见\n• 您对所访问的内容负全部责任\n• 您确认在您的司法管辖区内拥有流式传输此内容的合法权利\n• Nuvio 不托管、分发或控制任何 P2P 内容\n• Nuvio 对您因使用 P2P 流而产生的任何法律后果不承担任何责任\n\n您完全自行承担使用此功能的风险。P2P 可随时在设置中禁用。</string>
     <string name="p2p_consent_enable">启用 P2P</string>
     <string name="p2p_consent_cancel">取消</string>
     <string name="p2p_error_unknown">未知的种子错误</string>

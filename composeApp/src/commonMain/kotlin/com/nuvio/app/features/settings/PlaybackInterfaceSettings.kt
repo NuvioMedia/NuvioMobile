@@ -15,10 +15,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.nuvio.app.features.player.AndroidPlaybackEngine
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.player.formatPlaybackSpeedLabel
-import com.nuvio.app.isIos
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.features.player.PlayerSettingsUiState
@@ -101,17 +99,25 @@ internal fun PlaybackInterfaceSettings(
                         onClick = { showHoldToSpeedValueDialog = true },
                     )
                 }
-                if (!isIos) {
-                    SettingsGroupDivider(isTablet = isTablet)
-                    SettingsSwitchRow(
-                        title = stringResource(Res.string.settings_playback_exo_chapters),
-                        description = stringResource(Res.string.settings_playback_exo_chapters_description),
-                        checked = settings.androidExoChaptersEnabled,
-                        enabled = !settings.externalPlayerEnabled && settings.androidPlaybackEngine != AndroidPlaybackEngine.Libmpv,
-                        isTablet = isTablet,
-                        onCheckedChange = PlayerSettingsRepository::setAndroidExoChaptersEnabled,
-                    )
-                }
+                // Chapters work on every engine: ExoPlayer and libmpv on Android, mpv on iOS.
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_playback_exo_chapters),
+                    description = stringResource(Res.string.settings_playback_exo_chapters_description),
+                    checked = settings.androidExoChaptersEnabled,
+                    enabled = !settings.externalPlayerEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = PlayerSettingsRepository::setAndroidExoChaptersEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.settings_playback_chapter_title),
+                    description = stringResource(Res.string.settings_playback_chapter_title_description),
+                    checked = settings.chapterTitleEnabled,
+                    enabled = !settings.externalPlayerEnabled && settings.androidExoChaptersEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = PlayerSettingsRepository::setChapterTitleEnabled,
+                )
             }
         }
     }

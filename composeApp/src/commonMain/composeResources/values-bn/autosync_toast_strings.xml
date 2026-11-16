@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="autosync_toast_no_fit">সিঙ্ক ব্যর্থ হয়েছে: এই সাবটাইটেলগুলো ভিডিওর এই ভার্সনের সাথে মেলে না।</string>
+    <string name="autosync_label_synced">অটো-সিঙ্ক হয়েছে</string>
+</resources>

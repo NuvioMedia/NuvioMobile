@@ -37,6 +37,7 @@ internal class SidecarSubtitleController(
     private val scope: CoroutineScope,
     private val getPlayer: () -> Player?,
     private val getSubtitleDelayMs: () -> Int = { 0 },
+    private val getAudioDelayUs: () -> Long = { 0L },
     private val presentCues: (List<Cue>) -> List<Cue> = { it },
 ) {
     private var sidecarSubtitleJob: Job? = null
@@ -192,7 +193,8 @@ internal class SidecarSubtitleController(
         if (cues.isEmpty() || activeSidecarSubtitleKey == null) return
         val player = getPlayer() ?: return
         val delayUs = getSubtitleDelayMs().toLong() * 1_000L
-        val positionUs = (player.currentPosition.coerceAtLeast(0L) * 1_000L - delayUs).coerceAtLeast(0L)
+        val positionUs = (player.currentPosition.coerceAtLeast(0L) * 1_000L + getAudioDelayUs() - delayUs)
+            .coerceAtLeast(0L)
         // Null means "the active cue set did not change": nothing to allocate, nothing to post.
         val active = activeSidecarCuesOrNull(cues, positionUs) ?: return
         val currentKey = activeSidecarSubtitleKey ?: return

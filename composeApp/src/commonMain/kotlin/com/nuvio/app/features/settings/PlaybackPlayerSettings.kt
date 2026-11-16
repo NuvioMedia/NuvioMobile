@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.nuvio.app.features.player.AndroidPlaybackEngine
 import com.nuvio.app.features.player.ExternalPlayerApp
 import com.nuvio.app.features.player.ExternalPlayerPlatform
+import com.nuvio.app.features.player.streamAutoPlayFallbackActive
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.isIos
 import nuvio.composeapp.generated.resources.*
@@ -101,11 +102,21 @@ internal fun PlaybackPlayerSettings(
                         onClick = { showPlaybackEngineDialog = true },
                     )
                     SettingsGroupDivider(isTablet = isTablet)
+                    // Excludes falling back to the next source: both react to the same failure. Only the
+                    // switch that is off is locked, so both stay reachable if both ended up on.
+                    val blockedBySourceFallback = settings.streamAutoPlayFallbackActive &&
+                        !settings.autoSwitchPlaybackEngineOnError
                     SettingsSwitchRow(
                         title = stringResource(Res.string.settings_playback_auto_switch_engine_on_error),
-                        description = stringResource(Res.string.settings_playback_auto_switch_engine_on_error_description),
+                        description = stringResource(
+                            if (blockedBySourceFallback) {
+                                Res.string.settings_playback_auto_switch_engine_blocked_by_fallback
+                            } else {
+                                Res.string.settings_playback_auto_switch_engine_on_error_description
+                            },
+                        ),
                         checked = settings.autoSwitchPlaybackEngineOnError,
-                        enabled = !settings.externalPlayerEnabled,
+                        enabled = !settings.externalPlayerEnabled && !blockedBySourceFallback,
                         isTablet = isTablet,
                         onCheckedChange = PlayerSettingsRepository::setAutoSwitchPlaybackEngineOnError,
                     )

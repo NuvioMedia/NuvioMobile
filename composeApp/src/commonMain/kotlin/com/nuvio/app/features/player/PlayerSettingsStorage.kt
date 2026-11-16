@@ -13,6 +13,12 @@ internal expect object PlayerSettingsStorage {
     fun saveShowLoadingOverlay(enabled: Boolean)
     fun loadAutoSwitchPlaybackEngineOnError(): Boolean?
     fun saveAutoSwitchPlaybackEngineOnError(enabled: Boolean)
+    fun loadStreamAutoPlayFallbackOnFailure(): Boolean?
+    fun saveStreamAutoPlayFallbackOnFailure(enabled: Boolean)
+    fun loadStreamAutoPlayFallbackMaxSources(): Int?
+    fun saveStreamAutoPlayFallbackMaxSources(count: Int)
+    fun loadStreamAutoPlayFallbackStartupTimeoutSeconds(): Int?
+    fun saveStreamAutoPlayFallbackStartupTimeoutSeconds(seconds: Int)
     fun loadShowPlayerLoadingStatus(): Boolean?
     fun saveShowPlayerLoadingStatus(enabled: Boolean)
     fun loadPauseOverlayEnabled(): Boolean?
@@ -79,8 +85,24 @@ internal expect object PlayerSettingsStorage {
     fun saveAndroidLibmpvHardwareDecodingEnabled(enabled: Boolean)
     fun loadAndroidLibmpvYuv420pEnabled(): Boolean?
     fun loadAndroidExoChaptersEnabled(): Boolean?
+    fun loadChapterTitleEnabled(): Boolean?
     fun saveAndroidLibmpvYuv420pEnabled(enabled: Boolean)
     fun saveAndroidExoChaptersEnabled(enabled: Boolean)
+    fun saveChapterTitleEnabled(enabled: Boolean)
+    fun loadRememberAudioDelayPerDevice(): Boolean?
+    fun saveRememberAudioDelayPerDevice(enabled: Boolean)
+    fun loadPersistAudioAmplification(): Boolean?
+    fun savePersistAudioAmplification(enabled: Boolean)
+    fun loadAudioAmplificationDb(): Int?
+    fun saveAudioAmplificationDb(db: Int)
+    fun loadDownmixEnabled(): Boolean?
+    fun saveDownmixEnabled(enabled: Boolean)
+    fun loadAudioOutputChannels(): String?
+    fun saveAudioOutputChannels(value: String)
+    fun loadMaintainOriginalAudioOnDownmix(): Boolean?
+    fun saveMaintainOriginalAudioOnDownmix(enabled: Boolean)
+    fun loadCenterMixLevelDb(): Int?
+    fun saveCenterMixLevelDb(db: Int)
     fun loadDecoderPriority(): Int?
     fun saveDecoderPriority(priority: Int)
     fun loadMapDV7ToHevc(): Boolean?

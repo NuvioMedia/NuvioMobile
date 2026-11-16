@@ -1,7 +1,9 @@
 package com.nuvio.app.features.mdblist
 
+import com.nuvio.app.features.tracking.TrackingProviderId
 import com.nuvio.app.features.tracking.TrackingRefreshGate
 import com.nuvio.app.features.tracking.TrackingRefreshIntent
+import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -27,6 +29,9 @@ class MdbListSyncRepository(
     private val coroutineScope: CoroutineScope,
     private val now: () -> Long = { kotlin.time.Clock.System.now().toEpochMilliseconds() },
     private val dispatcher: CoroutineDispatcher = Dispatchers.Default,
+    private val ratingsEnabled: () -> Boolean = {
+        TrackingSettingsRepository.uiState.value.ratingSource == TrackingProviderId.MDBLIST
+    },
     private val remote: (MdbListAuthScope) -> MdbListSyncRemote = { MdbListHttpSyncRemote(api, it) }
 ) {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
@@ -81,7 +86,7 @@ class MdbListSyncRepository(
                     if (auth.state.value.user?.id == null) api.refreshUser(scope)
                     val snapshot = loadCurrent() ?: return@withLock
                     mutableState.value = mutableState.value.copy(isLoading = true, error = null, attemptedAtEpochMs = attemptedAt)
-                    val result = MdbListSyncEngine(remote(scope), now).synchronize(snapshot)
+                    val result = MdbListSyncEngine(remote(scope), now).synchronize(snapshot, ratingsEnabled())
                     commit(scope, result)
                     mutableState.value = mutableState.value.copy(attemptedAtEpochMs = attemptedAt)
                 } catch (error: CancellationException) {

@@ -6,6 +6,7 @@ interface MdbListSyncRemote {
     suspend fun journal(since: String): MdbListPage<MdbListJournalRecord>
     suspend fun playback(): List<MdbListPlayback>
     suspend fun dropped(): List<MdbListDroppedRecord>
+    suspend fun ratings(): List<MdbListRatingRecord>
 }
 
 class MdbListHttpSyncRemote(
@@ -28,6 +29,9 @@ class MdbListHttpSyncRemote(
     override suspend fun dropped(): List<MdbListDroppedRecord> =
         pages("/sync/dropped") { decodeMdbListDropped(it, seasons = false) }.items +
             pages("/sync/seasons/dropped") { decodeMdbListDropped(it, seasons = true) }.items
+
+    override suspend fun ratings(): List<MdbListRatingRecord> =
+        pages("/sync/ratings", decode = ::decodeMdbListUserRatings).items
 
     private suspend fun <T> pages(
         path: String,

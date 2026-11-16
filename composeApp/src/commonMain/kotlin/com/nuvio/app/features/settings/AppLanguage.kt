@@ -7,6 +7,7 @@ import nuvio.composeapp.generated.resources.lang_bengali
 import nuvio.composeapp.generated.resources.lang_bulgarian
 import nuvio.composeapp.generated.resources.lang_croatian
 import nuvio.composeapp.generated.resources.lang_czech
+import nuvio.composeapp.generated.resources.lang_dutch
 import nuvio.composeapp.generated.resources.lang_english
 import nuvio.composeapp.generated.resources.lang_french
 import nuvio.composeapp.generated.resources.lang_german
@@ -23,9 +24,9 @@ import nuvio.composeapp.generated.resources.lang_russian
 import nuvio.composeapp.generated.resources.lang_slovak
 import nuvio.composeapp.generated.resources.lang_spanish
 import nuvio.composeapp.generated.resources.lang_turkish
+import nuvio.composeapp.generated.resources.lang_tamil
 import nuvio.composeapp.generated.resources.lang_urdu
 import nuvio.composeapp.generated.resources.lang_norwegian
-import nuvio.composeapp.generated.resources.lang_dutch
 import nuvio.composeapp.generated.resources.lang_japanese
 import nuvio.composeapp.generated.resources.lang_vietnamese
 import nuvio.composeapp.generated.resources.lang_chinese
@@ -42,6 +43,7 @@ enum class AppLanguage(
     BULGARIAN("bg", Res.string.lang_bulgarian),
     CROATIAN("hr", Res.string.lang_croatian),
     CZECH("cs", Res.string.lang_czech),
+    DUTCH("nl", Res.string.lang_dutch),
     ENGLISH("en", Res.string.lang_english),
     FRENCH("fr", Res.string.lang_french),
     GERMAN("de", Res.string.lang_german),
@@ -57,10 +59,10 @@ enum class AppLanguage(
     RUSSIAN("ru", Res.string.lang_russian),
     SLOVAK("sk", Res.string.lang_slovak),
     SPANISH("es", Res.string.lang_spanish),
+    TAMIL("ta", Res.string.lang_tamil),
     TURKISH("tr", Res.string.lang_turkish),
     URDU("ur", Res.string.lang_urdu),
     NORWEGIAN("nb", Res.string.lang_norwegian),
-    DUTCH("nl", Res.string.lang_dutch),
     JAPANESE("ja", Res.string.lang_japanese),
     VIETNAMESE("vi", Res.string.lang_vietnamese),
     CHINESE("zh", Res.string.lang_chinese),
