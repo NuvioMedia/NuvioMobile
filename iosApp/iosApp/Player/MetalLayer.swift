@@ -80,6 +80,9 @@ class MetalLayer: CAMetalLayer {
         }
     }
 
+    // EDR content is only supported on iOS 16+. On iOS 15 this
+    // subclass inherits CAMetalLayer's supported behavior unchanged.
+    @available(iOS 16.0, *)
     override var wantsExtendedDynamicRangeContent: Bool {
         get { return super.wantsExtendedDynamicRangeContent }
         set {
