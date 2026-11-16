@@ -396,12 +396,11 @@ final class MPVPlayerViewController: UIViewController {
 
             // iOS 15 GPU path: libmpv OpenGL ES render API + EAGL, rather
             // than the Vulkan/MoltenVK CAMetalLayer integration that crashed.
-            if let glView = MPVLegacyGLRenderer(frame: view.bounds) {
-                glView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-                glView.isHidden = true
-                view.addSubview(glView)
-                legacyGLView = glView
-            }
+            let glView = MPVLegacyGLRenderer(frame: view.bounds)
+            glView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            glView.isHidden = true
+            view.addSubview(glView)
+            legacyGLView = glView
         }
         layoutMetalLayer()
 
