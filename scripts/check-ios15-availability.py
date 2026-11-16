@@ -65,6 +65,17 @@ if 'officialNuvioPublishableKey = "sb_publishable_' not in gradle_build:
     errors.append("Official Nuvio Cloud public client key fallback is missing")
 if "python3 scripts/verify-nuvio-auth-config.py" not in release_workflow:
     errors.append("Login configuration verification must precede native compilation")
+# The iOS 15 player must never construct the unverified MPV/MoltenVK renderer.
+bridge_source = (root / "iosApp/iosApp/Player/MPVPlayerBridge.swift").read_text()
+legacy_source = (root / "iosApp/iosApp/Player/LegacyAVPlayerBridge.swift").read_text()
+if "if #available(iOS 16.0, *)" not in bridge_source.split("enum NuvioPlayerRegistration")[-1]:
+    errors.append("Player registration must use an iOS 16 availability check")
+if "LegacyAVPlayerBridgeCreator()" not in bridge_source:
+    errors.append("iOS 15 fallback must register the native AVPlayer bridge")
+if "final class LegacyAVPlayerBridgeImpl: NSObject, NuvioPlayerBridge" not in legacy_source:
+    errors.append("The iOS 15 AVPlayer bridge must implement NuvioPlayerBridge")
+if "mpv_create(" in legacy_source or "MetalLayer(" in legacy_source:
+    errors.append("The legacy player must not touch the MPV/Metal renderer")
 if errors:
     raise SystemExit("iOS 15 compatibility preflight failed:\n- " + "\n- ".join(errors))
 print("iOS 15 compatibility preflight passed (full Xcode build still required)")

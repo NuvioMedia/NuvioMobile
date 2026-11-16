@@ -159,7 +159,7 @@ jobs:
             exit 1
           fi
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${staging}/app.plist")"
-          if [[ "${version}" != '1.1.0-beta.3' ]]; then
+          if [[ "${version}" != '1.1.0-beta.4' ]]; then
             echo "Unexpected version: ${version}" >&2
             exit 1
           fi
@@ -181,7 +181,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-1.1.0-beta.3-ios15-debug-unsigned-ipa
+          name: nuvio-1.1.0-beta.4-ios15-debug-unsigned-ipa
           path: ${{ steps.verify.outputs.ipa_path }}
           if-no-files-found: error
           retention-days: 14
@@ -202,4 +202,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Nuvio ${VERSION} (iOS 15+ experimental Debug)" \
             --prerelease \
-            --notes "Experimental unsigned iOS 15+ compatibility IPA. Fixed missing Nuvio Cloud login configuration using NuvioMedia's official documented public backend URL and client publishable key when no custom backend is set. A CI preflight verifies a non-empty valid HTTPS backend and client key before the full build. Both Xcode app and Kotlin framework use Debug due to memory limits; this is not an optimized production release. Includes iOS 15 Compose navigation and a basic Downloads shortcut widget; Live Activity integration excluded. Sign before installing. Login and playback still need real-device verification."
+            --notes "Experimental unsigned iOS 15+ compatibility IPA. Fixes a suspected playback-crash path by selecting AVFoundation AVPlayer on iOS 15 instead of constructing the MPV/MoltenVK video renderer; iOS 16+ continues to use MPV. On iOS 15 MP4/HLS and other AVFoundation-supported formats should play, but unsupported MKV/codecs, external subtitle injection and separate-audio streams may require an external player. Official Nuvio Cloud login defaults remain enabled. Both Xcode and Kotlin compile Debug due to runner memory limits; this is not a production-optimized build. A true device crash log is still needed to identify the original crash root cause, and actual playback must be tested on iOS 15."

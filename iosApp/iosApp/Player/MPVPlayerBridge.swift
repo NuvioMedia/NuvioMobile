@@ -1530,6 +1530,12 @@ final class MPVPlayerBridgeCreator: NSObject, NuvioPlayerBridgeCreator {
 
 enum NuvioPlayerRegistration {
     static func register() {
-        NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
+        if #available(iOS 16.0, *) {
+            NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
+        } else {
+            // Skip MPV's MoltenVK/Metal player path on iOS 15. AVPlayer
+            // supports common MP4/HLS media without touching that renderer.
+            NuvioPlayerBridgeFactory.shared.registerFactory(creator: LegacyAVPlayerBridgeCreator())
+        }
     }
 }
