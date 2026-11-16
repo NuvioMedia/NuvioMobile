@@ -147,6 +147,12 @@ if 'if (!isLegacyIosVideoOutput)' not in modal_source:
     errors.append("Unsupported iOS 15 compute peak/interpolation controls must be hidden")
 if 'constrainIos15VideoOutput()' not in (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text():
     errors.append("Saved newer-iOS EDR settings must be constrained on iOS 15")
+stream_info_source = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/StreamInfoOverlay.kt").read_text()
+if not all(label in stream_info_source for label in (
+    '"Source HDR metadata"', '"Source bit depth"', '"Display output"',
+    '"8-bit SDR (HDR tone-mapped)"'
+)):
+    errors.append("Stream Info must expose HDR input metadata and the real SDR output mode")
 settings_source = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text()
 if 'safeLegacyPlayback && externalPlayerId != null' in settings_source:
     errors.append("Never auto-enable an external player on iOS 15")
