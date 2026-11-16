@@ -52,7 +52,7 @@ if '*-full-debug.ipa' not in release_workflow or 'full-${configuration_slug}.ipa
     errors.append("IPA filename and CI validation must agree on Debug output")
 if 'IOS_CONFIGURATION: Debug' not in release_workflow:
     errors.append("CI must build the iOS app in Debug to select the Debug Kotlin linker")
-if 'configuration\" != \"${kotlin_framework_build_type}' not in build_script:
+if 'if [[ "${configuration}" != "${kotlin_framework_build_type}" ]]; then' not in build_script:
     errors.append("IPA builder must reject mismatched Xcode/Kotlin configuration")
 if "IOS_KOTLIN_FRAMEWORK_BUILD_TYPE: Debug" not in release_workflow:
     errors.append("7 GB iOS 15 runner must use the Debug Kotlin/Native framework")
