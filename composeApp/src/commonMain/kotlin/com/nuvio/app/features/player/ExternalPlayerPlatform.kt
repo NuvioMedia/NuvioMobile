@@ -58,7 +58,6 @@ sealed interface ExternalPlayerIntentResult {
 }
 
 internal expect object ExternalPlayerPlatform {
-    fun needsLegacyPlaybackWorkaround(): Boolean
     fun defaultPlayerId(): String?
     fun availablePlayers(): List<ExternalPlayerApp>
     fun open(

@@ -21,8 +21,6 @@ internal actual object ExternalPlayerPlatform {
         appContext = context.applicationContext
     }
 
-    actual fun needsLegacyPlaybackWorkaround(): Boolean = false
-
     actual fun defaultPlayerId(): String? = AndroidSystemPlayerId
 
     actual fun availablePlayers(): List<ExternalPlayerApp> =

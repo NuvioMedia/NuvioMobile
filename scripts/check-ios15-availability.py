@@ -65,26 +65,39 @@ if 'officialNuvioPublishableKey = "sb_publishable_' not in gradle_build:
     errors.append("Official Nuvio Cloud public client key fallback is missing")
 if "python3 scripts/verify-nuvio-auth-config.py" not in release_workflow:
     errors.append("Login configuration verification must precede native compilation")
-# iOS 15 must never instantiate the unverified libmpv/MoltenVK renderer.
-registry = (root / "iosApp/iosApp/Player/MPVPlayerBridge.swift").read_text().split("enum NuvioPlayerRegistration")[-1]
-if "if #available(iOS 16.0, *)" not in registry:
-    errors.append("The MPV player must be selected only for iOS 16+")
-if "LegacyAVPlayerBridgeCreator()" not in registry:
-    errors.append("iOS 15 needs the non-crashing AVPlayer fallback")
-common_ext = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/ExternalPlayerPlatform.kt").read_text()
-ios_ext = (root / "composeApp/src/iosMain/kotlin/com/nuvio/app/features/player/ExternalPlayerPlatform.ios.kt").read_text()
-android_ext = (root / "composeApp/src/androidMain/kotlin/com/nuvio/app/features/player/ExternalPlayerPlatform.android.kt").read_text()
-settings_repo = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text()
-if not all("needsLegacyPlaybackWorkaround()" in x for x in (common_ext, ios_ext, android_ext, settings_repo)):
-    errors.append("Legacy player preference must have expect/actual implementations")
-if 'listOf("vlc", "outplayer", "infuse", "vidhub")' not in ios_ext:
-    errors.append("Installed VLC must be preferred on iOS 15")
-if "safeLegacyPlayback && externalPlayerId != null" not in settings_repo:
-    errors.append("Installed external player must be auto-enabled on iOS 15")
-if "https://github.com/mpvkit/MPVKit.git" not in (root / ".gitmodules").read_text():
-    errors.append("The tested upstream MPVKit submodule must remain pinned")
-if "Verify pinned upstream MPVKit supporting iOS 15" not in release_workflow:
-    errors.append("CI must keep validating the pinned MPVKit dependency")
+# iOS 15: libmpv MUST use software rendering, not GPU/Vulkan or AVPlayer.
+player_source = (root / "iosApp/iosApp/Player/MPVPlayerBridge.swift").read_text()
+software_source = (root / "iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift").read_text()
+player_registry = player_source.split("enum NuvioPlayerRegistration")[-1]
+if "MPVPlayerBridgeCreator()" not in player_registry:
+    errors.append("iOS 15 playback must use internal libmpv")
+if "LegacyAVPlayerBridgeCreator()" in player_registry:
+    errors.append("Do not replace internal libmpv with AVPlayer")
+if 'mpv_set_option_string(mpv, "vo", "libmpv")' not in player_source:
+    errors.append("iOS 15 must use libmpv's embedded render output")
+if 'mpv_set_option_string(mpv, "hwdec", "no")' not in player_source:
+    errors.append("iOS 15 software renderer must not try GPU VideoToolbox interop")
+if "private lazy var metalLayer = MetalLayer()" not in player_source:
+    errors.append("iOS 15 must not instantiate a Metal layer before checking availability")
+if "if usesSoftwareRenderer {" not in player_source or "MPVSoftwareVideoRenderer(imageView:" not in player_source:
+    errors.append("iOS 15 needs the internal software renderer")
+if not (player_source.find("softwareRenderer?.stop()") < player_source.find("mpv_terminate_destroy(ctx)")):
+    errors.append("Software context must be destroyed before the mpv core")
+if "mpv_render_context_create(" not in software_source or "mpv_render_context_render(" not in software_source:
+    errors.append("Software video rendering must use the libmpv render API")
+if "MPV_RENDER_PARAM_SW_POINTER" not in software_source:
+    errors.append("Software renderer needs an aligned output surface")
+if "MPV_RENDER_PARAM_API_TYPE" not in software_source:
+    errors.append("Software renderer must select its API type")
+if "MPV_RENDER_PARAM_API_TYPE" not in software_source:
+    errors.append("Software renderer needs the SW API declaration")
+if "MPV_RENDER_PARAM_SW_STRIDE" not in software_source:
+    errors.append("Software renderer must specify pixel stride")
+settings_source = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text()
+if 'safeLegacyPlayback && externalPlayerId != null' in settings_source:
+    errors.append("Never auto-enable an external player on iOS 15")
+if "Typechecking libmpv software video output" not in (root / "scripts/preflight-ios15-swift.sh").read_text():
+    errors.append("CI must typecheck the iOS 15 software renderer before Kotlin compilation")
 
 if errors:
     raise SystemExit("iOS 15 compatibility preflight failed:\n- " + "\n- ".join(errors))

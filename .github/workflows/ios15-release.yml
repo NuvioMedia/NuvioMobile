@@ -174,7 +174,7 @@ jobs:
             exit 1
           fi
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${staging}/app.plist")"
-          if [[ "${version}" != '1.1.0-beta.6' ]]; then
+          if [[ "${version}" != '1.1.0-beta.7' ]]; then
             echo "Unexpected version: ${version}" >&2
             exit 1
           fi
@@ -187,8 +187,8 @@ jobs:
             echo "- SHA-256: $(shasum -a 256 "${ipa}" | awk '{print $1}')"
             echo "- Xcode app: Debug (experimental, unoptimized)"
             echo "- Kotlin/Native framework: Debug (unoptimized)"
-            echo "- iOS 15: installed VLC/other external player by default, AVPlayer fallback"
-            echo "- iOS 16+: internal MPVKit playback"
+            echo "- iOS 15: internal libmpv software video renderer (no Metal/Vulkan)"
+            echo "- iOS 16+: internal libmpv GPU video renderer"
             echo "- Nuvio login backend configuration: verified before build"
             echo "- Signing: unsigned (use a compatible sideloading signer)"
           } >> "${GITHUB_STEP_SUMMARY}"
@@ -198,7 +198,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-1.1.0-beta.6-ios15-debug-unsigned-ipa
+          name: nuvio-1.1.0-beta.7-ios15-debug-unsigned-ipa
           path: ${{ steps.verify.outputs.ipa_path }}
           if-no-files-found: error
           retention-days: 14
@@ -219,4 +219,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Nuvio ${VERSION} (iOS 15+ experimental Debug)" \
             --prerelease \
-            --notes "Experimental unsigned iOS 15+ IPA. Fixes reproducible libmpv playback crash on iOS 15 by automatically selecting an installed compatible external player (VLC preferred) while retaining native AVPlayer for MP4/HLS when no external player is installed. On iOS 16+, libmpv remains the internal player. Both the custom and official MPVKit iOS binaries targeted iOS 14 but crashed at runtime on iOS 15; further native MPV investigation needs device logs. VLC is compatible with iOS 13+; newer Outplayer releases require iOS 17. Unusual addon HTTP headers may not work in an external player. Nuvio Cloud login remains supported. The unsigned app/Kotlin framework uses Debug mode. Install VLC, sign this IPA, and test playback on iOS 15.3."
+            --notes "Experimental iOS 15+ unsigned IPA. Keeps ALL video playback internal to Nuvio using libmpv. On iOS 15, libmpv's software render API replaces the crash-prone Vulkan/MoltenVK/Metal video output: MKV and other FFmpeg-supported media still decode inside Nuvio with audio/subtitle support. Native GPU rendering remains unchanged for iOS 16+. Software output is CPU-heavy and limited to 768x432 pixels and up to 24 FPS on iOS 15; some high-bitrate streams may stutter or exhaust memory. Nuvio no longer automatically selects an external player. Login and addon support remain available. Both Xcode and Kotlin are built in Debug mode. This is a crash-avoidance implementation, not proven on an actual iOS 15 device. Sign the IPA before installing and test playback on iOS 15.3."

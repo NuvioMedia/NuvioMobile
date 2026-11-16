@@ -2,7 +2,6 @@ package com.nuvio.app.features.player
 
 import platform.Foundation.NSURL
 import platform.UIKit.UIApplication
-import platform.UIKit.UIDevice
 
 private data class IosExternalPlayerSpec(
     val id: String,
@@ -57,16 +56,7 @@ private val iosExternalPlayerSpecs = listOf(
 )
 
 internal actual object ExternalPlayerPlatform {
-    actual fun needsLegacyPlaybackWorkaround(): Boolean =
-        (UIDevice.currentDevice.systemVersion.substringBefore('.').toIntOrNull() ?: 99) < 16
-
-    actual fun defaultPlayerId(): String? {
-        if (!needsLegacyPlaybackWorkaround()) return null
-        // VLC supports iOS 13+; the current Outplayer release needs iOS 17.
-        // Older installed Outplayer versions may still be usable.
-        val installed = availablePlayers().map { it.id }.toSet()
-        return listOf("vlc", "outplayer", "infuse", "vidhub").firstOrNull { it in installed }
-    }
+    actual fun defaultPlayerId(): String? = null
 
     actual fun availablePlayers(): List<ExternalPlayerApp> =
         iosExternalPlayerSpecs

@@ -80,6 +80,8 @@ final class MPVSoftwareVideoRenderer {
     /// This method runs only on renderQueue, never the UI thread.
     private func drawFrame(force: Bool) {
         guard !stopped, let context else { return }
+        // Drain mpv's frame-notification state on the renderer queue.
+        _ = mpv_render_context_update(context)
         let now = ProcessInfo.processInfo.systemUptime
         if !force && now - lastPresentUptime < (1.0 / 24.0) { return }
 

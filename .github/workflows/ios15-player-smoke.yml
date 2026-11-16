@@ -7,6 +7,7 @@ on:
     paths:
       - .github/workflows/ios15-player-smoke.yml
       - iosApp/iosApp/Player/LegacyAVPlayerBridge.swift
+      - iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift
       - iosApp/iosApp/Player/PlayerAudioSessionController.swift
   workflow_dispatch:
 
@@ -52,3 +53,19 @@ jobs:
             iosApp/iosApp/Player/PlayerAudioSessionController.swift \
             iosApp/iosApp/Player/LegacyAVPlayerBridge.swift
           echo "The native iOS 15 AVPlayer fallback typechecks successfully."
+      - name: Verify internal libmpv software renderer on iOS 15
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdk="$(xcrun --sdk iphoneos --show-sdk-path)"
+          temp="$(mktemp -d)"
+          trap 'rm -rf "$temp"' EXIT
+          curl --fail --location --retry 3 --silent --show-error --max-time 240 \
+            --output "$temp/libmpv.zip" \
+            https://github.com/mpvkit/MPVKit/releases/download/0.41.0/Libmpv.xcframework.zip
+          unzip -q "$temp/libmpv.zip" -d "$temp/framework"
+          xcrun swiftc -target arm64-apple-ios15.0 -sdk "$sdk" \
+            -F "$temp/framework/Libmpv.xcframework/ios-arm64" \
+            -parse-as-library -typecheck \
+            iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift
+          echo "The internal libmpv iOS 15 software renderer typechecks."

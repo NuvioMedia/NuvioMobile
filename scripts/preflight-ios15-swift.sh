@@ -65,4 +65,18 @@ xcrun swiftc -target arm64-apple-ios15.0 -sdk "${sdk}" \
   iosApp/iosApp/Player/PlayerAudioSessionController.swift \
   iosApp/iosApp/Player/LegacyAVPlayerBridge.swift
 
+# Download the exact binary release used by the pinned upstream MPVKit
+# package and typecheck the SW render API without compiling Kotlin/Native.
+echo "Typechecking libmpv software video output for iOS 15 ..."
+curl --fail --location --retry 3 --silent --show-error --max-time 240 \
+  --output "${scratch}/Libmpv.zip" \
+  https://github.com/mpvkit/MPVKit/releases/download/0.41.0/Libmpv.xcframework.zip
+unzip -q "${scratch}/Libmpv.zip" -d "${scratch}/mpv"
+xcrun swiftc \
+  -target arm64-apple-ios15.0 \
+  -sdk "${sdk}" \
+  -F "${scratch}/mpv/Libmpv.xcframework/ios-arm64" \
+  -parse-as-library -typecheck \
+  iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift
+
 echo "Standalone iOS 15 Swift API checks passed."
