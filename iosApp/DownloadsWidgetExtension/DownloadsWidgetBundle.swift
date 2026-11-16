@@ -5,13 +5,12 @@ import WidgetKit
 // working WidgetKit extension that opens the app's Downloads page.
 @main
 struct DownloadsWidgetBundle: WidgetBundle {
-    @WidgetBundleBuilder
+    // WidgetBundleBuilder does not support availability conditionals.
+    // The compatibility release registers a static Downloads shortcut
+    // on all supported versions (iOS 15+). Live Activity source is kept,
+    // but requires a separate iOS 16.1+ widget bundle build to register.
     var body: some Widget {
-        if #available(iOSApplicationExtension 16.1, *) {
-            DownloadsLiveActivityWidget()
-        } else {
-            DownloadsShortcutWidget()
-        }
+        DownloadsShortcutWidget()
     }
 }
 
