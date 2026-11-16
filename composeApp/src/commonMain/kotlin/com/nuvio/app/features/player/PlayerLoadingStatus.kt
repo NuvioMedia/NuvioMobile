@@ -14,23 +14,27 @@ import nuvio.composeapp.generated.resources.player_loading_subtitles_addon
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
 
+/**
+ * The player start-up steps, as NuvioTV shows them: the engine is created, then it opens the
+ * source and reads its tracks, then it buffers until it can play.
+ */
 internal fun playerLoadingStatusResource(
     showStatus: Boolean,
     controllerReady: Boolean,
-    buffering: Boolean,
+    snapshot: PlayerPlaybackSnapshot,
 ): StringResource? = when {
     !showStatus -> null
     !controllerReady -> Res.string.player_loading_building
-    buffering -> Res.string.player_loading_buffering
-    else -> Res.string.player_loading_starting
+    snapshot.isLoading && snapshot.isOpening -> Res.string.player_loading_starting
+    else -> Res.string.player_loading_buffering
 }
 
 @Composable
 internal fun playerLoadingStatusMessage(
     showStatus: Boolean,
     controllerReady: Boolean,
-    buffering: Boolean,
-): String? = playerLoadingStatusResource(showStatus, controllerReady, buffering)
+    snapshot: PlayerPlaybackSnapshot,
+): String? = playerLoadingStatusResource(showStatus, controllerReady, snapshot)
     ?.let { stringResource(it) }
 
 @Composable

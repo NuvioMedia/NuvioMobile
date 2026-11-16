@@ -283,6 +283,8 @@ internal fun PlayerScreenRuntime.switchToP2pEpisodeStream(
     )
     externalSubtitles = stream.externalSubtitles
     activeSourceUrl = p2pSentinelUrl(infoHash, stream.p2pFileIdx)
+    // A torrent is never an auto-selected source here, so the episode has nothing to fall back from.
+    restartSourceFallback(activeSourceUrl, autoSelection = null)
     activeSourceAudioUrl = null
     activeSourceHeaders = emptyMap()
     activeSourceResponseHeaders = emptyMap()
@@ -365,16 +367,30 @@ internal fun PlayerScreenRuntime.switchToSource(
     PlayerStreamsRepository.pauseSearchForPlayback()
 }
 
+/**
+ * @param autoSelection non-null when auto source selection picked [stream]: the sources it tried
+ * before it, so the fallback to the next matching source goes on from them.
+ */
 internal fun PlayerScreenRuntime.switchToEpisodeStream(
     stream: StreamItem,
     episode: MetaVideo,
     serverResumeMs: Long? = null,
     saveForReuse: Boolean = true,
+    autoSelection: PlayerSourceFallbackTried? = null,
 ) {
-    if (prepareServerForPlayer(stream) { switchToEpisodeStream(it, episode, serverResumeMs = newerServerResumeMs(it, episode)) }) return
+    if (
+        prepareServerForPlayer(stream) {
+            switchToEpisodeStream(
+                it,
+                episode,
+                serverResumeMs = newerServerResumeMs(it, episode),
+                autoSelection = autoSelection,
+            )
+        }
+    ) return
     if (
         resolveYouTubeForPlayer(stream) { resolved ->
-            switchToEpisodeStream(resolved, episode, saveForReuse = false)
+            switchToEpisodeStream(resolved, episode, saveForReuse = false, autoSelection = autoSelection)
         }
     ) return
     if (
@@ -382,7 +398,7 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
             stream = stream,
             season = episode.season,
             episode = episode.episode,
-            onResolved = { resolvedStream -> switchToEpisodeStream(resolvedStream, episode) },
+            onResolved = { resolvedStream -> switchToEpisodeStream(resolvedStream, episode, autoSelection = autoSelection) },
             onStale = {
                 PlayerStreamsRepository.loadEpisodeStreams(
                     type = contentType ?: parentMetaType,
@@ -410,6 +426,7 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     }
     externalSubtitles = stream.externalSubtitles
     activeSourceUrl = url
+    restartSourceFallback(url, autoSelection)
     activeSourceAudioUrl = null
     activeSourceHeaders = sanitizePlaybackHeaders(stream.behaviorHints.proxyHeaders?.request)
     activeSourceResponseHeaders = sanitizePlaybackResponseHeaders(stream.behaviorHints.proxyHeaders?.response)
@@ -445,6 +462,7 @@ internal fun PlayerScreenRuntime.switchToDownloadedEpisode(downloadItem: Downloa
 
     externalSubtitles = DownloadSubtitles.localSubtitles(localFileUri)
     activeSourceUrl = localFileUri
+    restartSourceFallback(activeSourceUrl, autoSelection = null)
     activeSourceAudioUrl = null
     activeSourceHeaders = emptyMap()
     activeSourceResponseHeaders = emptyMap()
@@ -500,8 +518,9 @@ internal fun PlayerScreenRuntime.playNextEpisode(automatic: Boolean = false) {
         onDownloadedEpisodeSelected = { item, episode ->
             if (isCurrentRequest()) switchToDownloadedEpisode(item, episode)
         },
-        onEpisodeStreamSelected = { stream, episode ->
-            if (isCurrentRequest()) switchToEpisodeStream(stream, episode)
+        onEpisodeStreamSelected = { stream, episode, tried ->
+            // Auto source selection picked it, whether or not the user asked for the episode.
+            if (isCurrentRequest()) switchToEpisodeStream(stream, episode, autoSelection = tried)
         },
         onManualSelectionRequired = { nextVideo ->
             if (isCurrentRequest()) {

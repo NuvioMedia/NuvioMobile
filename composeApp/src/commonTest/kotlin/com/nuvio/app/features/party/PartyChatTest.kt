@@ -55,12 +55,14 @@ class PartyChatTest {
 
     @Test
     fun confirmedOwnMessageReplacesPendingAndKeepsItsKey() {
-        val current = listOf(sent(1), pending("localAAAA0001"))
-        val confirmed = sent(2, memberId = "a", mine = true, clientId = "localAAAA0001")
+        val body = "الحلقه 1125 من انمي one piece صدرت بالفعل"
+        val current = listOf(sent(1), pending("localAAAA0001").copy(body = body))
+        val confirmed = sent(2, memberId = "a", mine = true, clientId = "localAAAA0001").copy(body = body)
         val result = mergePartyChat(current, listOf(confirmed), replaceOlder = false, limit = 200)
         assertEquals(listOf("id:1", "localAAAA0001"), result.messages.map { it.key })
         assertEquals(2L, result.messages.last().id)
         assertEquals(PartyChatStatus.Sent, result.messages.last().status)
+        assertEquals(body, result.messages.last().body)
         assertTrue(result.added.isEmpty())
     }
 

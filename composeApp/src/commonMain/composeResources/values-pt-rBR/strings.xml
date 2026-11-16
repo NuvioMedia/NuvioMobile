@@ -1250,7 +1250,7 @@
     <string name="settings_playback_threshold_mode">Critério para próximo episódio</string>
     <string name="settings_playback_threshold_mode_minutes_before_end">Minutos antes do fim</string>
     <string name="settings_playback_threshold_mode_percentage">Porcentagem</string>
-    <string name="settings_playback_threshold_percentage">Percentual antes do fim</string>
+    <string name="settings_playback_threshold_percentage">Percentual assistido</string>
     <string name="settings_playback_threshold_percentage_description">Usado quando não houver uma marcação de encerramento.</string>
     <string name="settings_playback_threshold_percentage_value">%1$s%</string>
     <string name="settings_playback_timeout_instant">Instantâneo</string>
