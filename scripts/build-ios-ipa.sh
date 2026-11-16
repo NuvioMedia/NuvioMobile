@@ -97,6 +97,16 @@ if [[ " ${widget_architectures} " != *" arm64 "* ]]; then
     exit 1
 fi
 
+# An iOS 15-compatible IPA must carry a matching minimum OS version for
+# both the host app and its embedded widget extension.
+app_minimum_os="$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "${app_path}/Info.plist")"
+widget_minimum_os="$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "${widget_path}/Info.plist")"
+if [[ "${app_minimum_os}" != "15.0" || "${widget_minimum_os}" != "15.0" ]]; then
+    echo "Expected iOS 15.0 minimum for app and widget; got app=${app_minimum_os}, widget=${widget_minimum_os}" >&2
+    exit 1
+fi
+echo "Verified iOS 15.0 minimum deployment target for both bundles."
+
 mkdir -p "${output_directory}"
 output_directory="$(cd "${output_directory}" && pwd -P)"
 package_root="$(mktemp -d "${TMPDIR:-/tmp}/nuvio-ios-ipa.XXXXXX")"
