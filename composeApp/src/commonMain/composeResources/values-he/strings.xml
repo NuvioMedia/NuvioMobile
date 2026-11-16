@@ -924,7 +924,7 @@
     <string name="settings_stream_badge_urls_search_description">ניהול כתובות URL מיובאות של JSON לתגי מקור בסגנון Fusion.</string>
     <string name="settings_stream_badge_import_failed">.ייבוא התג נכשל</string>
     <string name="settings_stream_badge_enter_url">.יש להזין כתובת URL של JSON לתג</string>
-    <string name="settings_stream_badge_url_scheme_invalid">".כתובת ה-URL של התג חייבת להתחיל ב-http:// או https://</string>
+    <string name="settings_stream_badge_url_scheme_invalid">כתובת ה-URL של התג חייבת להתחיל ב-http:// או https://.</string>
     <string name="settings_stream_badge_import_limit">ניתן לייבא עד %1$d כתובות URL של תגים.</string>
     <string name="settings_fusion_badges_summary">%1$d/%2$d כתובות, %3$d תגי Fusion פעילים</string>
     <string name="settings_fusion_badges_empty">לא יובאו כתובות תג Fusion.</string>

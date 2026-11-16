@@ -20,6 +20,26 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "1.0.0",
+          "buildVersion": "157",
+          "date": "2026-11-15T18:28:31Z",
+          "localizedDescription": "# Nuvio 1.0.0\r\n\r\nThank you to everyone who has contributed to the project, tested the betas, and supported us along the way.\r\n\r\n> [!NOTE]\r\n> On Android, choose **Stable** in **Settings → About → Update channel** for fewer updates and a more stable build. Choose **Beta** for frequent updates, with possible breaking changes. If you were already on a beta build, you stay on **Beta** until you switch.\r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/1.0.0/nuvio-1.0.0-full-release.ipa",
+          "size": 69922744,
+          "sha256": "d16afb96819d29477cad322c5f04c10769785023222d095fafd95ff8f54146b9",
+          "minOSVersion": "16.1"
+        },
+        {
+          "version": "0.6.13",
+          "buildVersion": "156",
+          "date": "2026-11-15T09:36:16Z",
+          "localizedDescription": "- [i18n: add French strings and align birth and death wording (#2664)](https://github.com/NuvioMedia/NuvioMobile/pull/2664) @SK-Gits  \r\n- [i18n(vi): update latest Vietnamese strings (#2622)](https://github.com/NuvioMedia/NuvioMobile/pull/2622) @blueocean2308  \r\n- [perf: smoother cold start and home on Android (#2652)](https://github.com/NuvioMedia/NuvioMobile/pull/2652) @skoruppa  \r\n- [fix(home): show hero only after its source catalogs load (#2651)](https://github.com/NuvioMedia/NuvioMobile/pull/2651) @skoruppa  \r\n- [feat(player): basic keyboard support (#2633)](https://github.com/NuvioMedia/NuvioMobile/pull/2633) @skoruppa  \r\n- [fix(cw): dismiss a next up show by its content id, as on TV (#2632)](https://github.com/NuvioMedia/NuvioMobile/pull/2632) @skoruppa  \r\n- [feat(cw): choose what selecting a Continue Watching item opens (#2630)](https://github.com/NuvioMedia/NuvioMobile/pull/2630) @skoruppa  \r\n- [Translation improvements and adjustments for Slovak language (#2625)](https://github.com/NuvioMedia/NuvioMobile/pull/2625) @mmsw91  \r\n- [i18n: add French strings for chapter title setting (#2621)](https://github.com/NuvioMedia/NuvioMobile/pull/2621) @SK-Gits  \r\n- [feat(player): fall back to the next matching source on failure (#2612)](https://github.com/NuvioMedia/NuvioMobile/pull/2612) @skoruppa  \r\n- [fix(player): show each start-up step on the loading screen, like NuvioTV (#2611)](https://github.com/NuvioMedia/NuvioMobile/pull/2611) @skoruppa  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/0.6.13-beta/nuvio-0.6.13-full-release.ipa",
+          "size": 69922480,
+          "sha256": "e1e5608c40224cb8840b2afa61998d2e6c3b42556c7754138918b22b51bc31fa",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "0.6.12",
           "buildVersion": "155",
           "date": "2026-11-12T00:37:11Z",

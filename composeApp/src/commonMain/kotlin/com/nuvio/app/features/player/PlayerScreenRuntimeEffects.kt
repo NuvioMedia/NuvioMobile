@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.nuvio.app.features.addons.AddonPlayerAction
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.p2p.P2pStreamRequest
@@ -564,6 +565,10 @@ private fun PlayerScreenRuntime.BindPlayerUiVisibilityEffects() {
         if (previousIsPlaying && !playbackSnapshot.isPlaying && !playbackSnapshot.isLoading) {
             pendingSeekScrobbleRestart = false
             flushWatchProgress(TrackingScrobbleAction.PAUSE)
+        }
+
+        if (!previousIsPlaying && playbackSnapshot.isPlaying) {
+            emitAddonPlayerEvent(AddonPlayerAction.START)
         }
 
         if (playbackSnapshot.isPlaying && pendingSeekScrobbleRestart) {
