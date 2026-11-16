@@ -1534,8 +1534,12 @@ final class MPVPlayerBridgeCreator: NSObject, NuvioPlayerBridgeCreator {
 
 enum NuvioPlayerRegistration {
     static func register() {
-        // The iOS 15 branch now uses official upstream MPVKit v0.41.0.
-        // That binary declares a minimum iOS 14 deployment target.
-        NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
+        if #available(iOS 16.0, *) {
+            NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
+        } else {
+            // MPV init crashes on iOS 15, even with official upstream libmpv.
+            // Default to VLC handoff; use AVPlayer if VLC is not installed.
+            NuvioPlayerBridgeFactory.shared.registerFactory(creator: LegacyAVPlayerBridgeCreator())
+        }
     }
 }

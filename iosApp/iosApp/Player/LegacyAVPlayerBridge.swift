@@ -234,8 +234,12 @@ final class LegacyAVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
 
     func getErrorMessage() -> String {
         if let lastError { return lastError }
-        if let error = player.currentItem?.error { return error.localizedDescription }
-        if let error = player.error { return error.localizedDescription }
+        if let error = player.currentItem?.error {
+            return "This iOS 15 player cannot open the stream. For MKV or unsupported codecs, install VLC and enable External Player in Nuvio's settings. Details: \(error.localizedDescription)"
+        }
+        if let error = player.error {
+            return "Playback failed. Install VLC for broader iOS 15 streaming support. Details: \(error.localizedDescription)"
+        }
         return ""
     }
 

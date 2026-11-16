@@ -65,19 +65,26 @@ if 'officialNuvioPublishableKey = "sb_publishable_' not in gradle_build:
     errors.append("Official Nuvio Cloud public client key fallback is missing")
 if "python3 scripts/verify-nuvio-auth-config.py" not in release_workflow:
     errors.append("Login configuration verification must precede native compilation")
-# Pin official libmpv instead of the limited iOS 15 AVPlayer fallback.
-player_source = (root / "iosApp/iosApp/Player/MPVPlayerBridge.swift").read_text()
-registry = player_source.split("enum NuvioPlayerRegistration")[-1]
-if "NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())" not in registry:
-    errors.append("libmpv must be registered on iOS 15")
-if "LegacyAVPlayerBridgeCreator()" in registry:
-    errors.append("AVPlayer must not replace libmpv in this build")
-if "if #available(iOS 16.0, *) {\n            let pip" not in player_source:
-    errors.append("Nuvio custom PiP is untested on iOS 15; guard its setup")
+# iOS 15 must never instantiate the unverified libmpv/MoltenVK renderer.
+registry = (root / "iosApp/iosApp/Player/MPVPlayerBridge.swift").read_text().split("enum NuvioPlayerRegistration")[-1]
+if "if #available(iOS 16.0, *)" not in registry:
+    errors.append("The MPV player must be selected only for iOS 16+")
+if "LegacyAVPlayerBridgeCreator()" not in registry:
+    errors.append("iOS 15 needs the non-crashing AVPlayer fallback")
+common_ext = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/ExternalPlayerPlatform.kt").read_text()
+ios_ext = (root / "composeApp/src/iosMain/kotlin/com/nuvio/app/features/player/ExternalPlayerPlatform.ios.kt").read_text()
+android_ext = (root / "composeApp/src/androidMain/kotlin/com/nuvio/app/features/player/ExternalPlayerPlatform.android.kt").read_text()
+settings_repo = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text()
+if not all("needsLegacyPlaybackWorkaround()" in x for x in (common_ext, ios_ext, android_ext, settings_repo)):
+    errors.append("Legacy player preference must have expect/actual implementations")
+if 'listOf("vlc", "outplayer", "infuse", "vidhub")' not in ios_ext:
+    errors.append("Installed VLC must be preferred on iOS 15")
+if "safeLegacyPlayback && externalPlayerId != null" not in settings_repo:
+    errors.append("Installed external player must be auto-enabled on iOS 15")
 if "https://github.com/mpvkit/MPVKit.git" not in (root / ".gitmodules").read_text():
-    errors.append("Use official MPVKit instead of Nuvio's customized libmpv")
+    errors.append("The tested upstream MPVKit submodule must remain pinned")
 if "Verify pinned upstream MPVKit supporting iOS 15" not in release_workflow:
-    errors.append("Pin the iOS 15 MPVKit commit in CI")
+    errors.append("CI must keep validating the pinned MPVKit dependency")
 
 if errors:
     raise SystemExit("iOS 15 compatibility preflight failed:\n- " + "\n- ".join(errors))

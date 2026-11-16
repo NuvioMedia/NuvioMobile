@@ -44,4 +44,25 @@ xcrun swiftc \
   "${scratch}/PlayerPictureInPictureControllerStub.swift" \
   iosApp/iosApp/Player/MetalLayer.swift
 
+# Typecheck the safe AVPlayer bridge against the iOS 15 SDK.
+cat > "${scratch}/ComposeAppStub.swift" <<'SWIFT'
+import Foundation
+public protocol NuvioPlayerBridge {}
+public protocol NuvioPlayerBridgeCreator {
+    func createBridge() -> any NuvioPlayerBridge
+}
+public class PlayerSystemControlHandler {}
+public class SubtitleTextHandler {}
+SWIFT
+xcrun swiftc -target arm64-apple-ios15.0 -sdk "${sdk}" -parse-as-library \
+  -emit-module -module-name ComposeApp \
+  -emit-module-path "${scratch}/ComposeApp.swiftmodule" \
+  "${scratch}/ComposeAppStub.swift"
+echo "Typechecking native AVPlayer fallback for iOS 15 ..."
+xcrun swiftc -target arm64-apple-ios15.0 -sdk "${sdk}" \
+  -I "${scratch}" -parse-as-library -typecheck \
+  -module-name NuvioLegacyPlayerPreflight \
+  iosApp/iosApp/Player/PlayerAudioSessionController.swift \
+  iosApp/iosApp/Player/LegacyAVPlayerBridge.swift
+
 echo "Standalone iOS 15 Swift API checks passed."

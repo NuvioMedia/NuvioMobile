@@ -357,11 +357,21 @@ object PlayerSettingsRepository {
         holdToSpeedEnabled = PlayerSettingsStorage.loadHoldToSpeedEnabled() ?: true
         holdToSpeedValue = PlayerSettingsStorage.loadHoldToSpeedValue() ?: 2f
         touchGesturesEnabled = PlayerSettingsStorage.loadTouchGesturesEnabled() ?: true
-        externalPlayerEnabled = PlayerSettingsStorage.loadExternalPlayerEnabled() ?: false
+        // Avoid iOS 15 native libmpv/MoltenVK crashes. Open installed VLC
+        // first; AVPlayer remains the safe fallback when none is installed.
+        val safeLegacyPlayback = ExternalPlayerPlatform.needsLegacyPlaybackWorkaround()
+        val installedExternalPlayers = ExternalPlayerPlatform.availablePlayers()
+        val storedPlayerId = PlayerSettingsStorage.loadExternalPlayerId()
+        val compatiblePlayerId = ExternalPlayerPlatform.defaultPlayerId()
+        externalPlayerId = if (
+            safeLegacyPlayback && storedPlayerId != null &&
+            installedExternalPlayers.none { it.id == storedPlayerId }
+        ) compatiblePlayerId else storedPlayerId ?: compatiblePlayerId
+        externalPlayerEnabled =
+            (PlayerSettingsStorage.loadExternalPlayerEnabled() ?: false) ||
+            (safeLegacyPlayback && externalPlayerId != null)
         externalPlayerForwardSubtitles = PlayerSettingsStorage.loadExternalPlayerForwardSubtitles() ?: false
         externalPlayerSendSkipSegments = PlayerSettingsStorage.loadExternalPlayerSendSkipSegments() ?: false
-        externalPlayerId = PlayerSettingsStorage.loadExternalPlayerId()
-            ?: ExternalPlayerPlatform.defaultPlayerId()
         preferredAudioLanguage =
             normalizeLanguageCode(PlayerSettingsStorage.loadPreferredAudioLanguage())
                 ?: AudioLanguageOption.DEVICE

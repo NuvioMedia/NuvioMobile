@@ -174,7 +174,7 @@ jobs:
             exit 1
           fi
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${staging}/app.plist")"
-          if [[ "${version}" != '1.1.0-beta.5' ]]; then
+          if [[ "${version}" != '1.1.0-beta.6' ]]; then
             echo "Unexpected version: ${version}" >&2
             exit 1
           fi
@@ -187,7 +187,8 @@ jobs:
             echo "- SHA-256: $(shasum -a 256 "${ipa}" | awk '{print $1}')"
             echo "- Xcode app: Debug (experimental, unoptimized)"
             echo "- Kotlin/Native framework: Debug (unoptimized)"
-            echo "- MPVKit: official upstream v0.41.0 (iOS 14+ binary)"
+            echo "- iOS 15: installed VLC/other external player by default, AVPlayer fallback"
+            echo "- iOS 16+: internal MPVKit playback"
             echo "- Nuvio login backend configuration: verified before build"
             echo "- Signing: unsigned (use a compatible sideloading signer)"
           } >> "${GITHUB_STEP_SUMMARY}"
@@ -197,7 +198,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-1.1.0-beta.5-ios15-debug-unsigned-ipa
+          name: nuvio-1.1.0-beta.6-ios15-debug-unsigned-ipa
           path: ${{ steps.verify.outputs.ipa_path }}
           if-no-files-found: error
           retention-days: 14
@@ -218,4 +219,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Nuvio ${VERSION} (iOS 15+ experimental Debug)" \
             --prerelease \
-            --notes "Experimental unsigned iOS 15+ libmpv IPA. Uses the official upstream MPVKit v0.41.0 pinned to 613c0ccc3acf70e136aaff880a9b5fe8fdfaf5b8, instead of Nuvio's customized libmpv binary. Both iOS arm64 libraries target iOS 14, so this is a compatibility test rather than a confirmed crash fix. Restores FFmpeg/libmpv support for a wider range of formats including MKV and advanced subtitles. Nuvio-specific picture-in-picture integration is disabled on iOS 15. This is an unoptimized Debug build, not a production release. Sign the IPA before installing and test playback on an actual iOS 15.3 iPhone. A crash report is needed if MPV still fails."
+            --notes "Experimental unsigned iOS 15+ IPA. Fixes reproducible libmpv playback crash on iOS 15 by automatically selecting an installed compatible external player (VLC preferred) while retaining native AVPlayer for MP4/HLS when no external player is installed. On iOS 16+, libmpv remains the internal player. Both the custom and official MPVKit iOS binaries targeted iOS 14 but crashed at runtime on iOS 15; further native MPV investigation needs device logs. VLC is compatible with iOS 13+; newer Outplayer releases require iOS 17. Unusual addon HTTP headers may not work in an external player. Nuvio Cloud login remains supported. The unsigned app/Kotlin framework uses Debug mode. Install VLC, sign this IPA, and test playback on iOS 15.3."
