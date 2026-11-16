@@ -308,6 +308,19 @@ fun runtimeConfigValue(key: String, fallback: String = ""): String =
         ?: providers.environmentVariable(key).orNull?.trim()?.takeIf { it.isNotBlank() }
         ?: fallback
 
+// NuvioMedia/self-host publicly documents these CLIENT values in .env.example.
+// This is a publishable client key, never a service-role or private API key.
+// Official sign-in works even when no local.properties exists in GitHub CI.
+val officialNuvioBackendUrl = "https://api.nuvio.tv"
+val officialNuvioPublishableKey = "sb_publishable_1Clq8rlTVACkdcZuqr6_AD__xUUC_EN"
+val configuredSupabaseUrl = runtimeConfigValue("NUVIO_SUPABASE_URL")
+val configuredSupabaseAnonKey = runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY")
+require(configuredSupabaseUrl.isBlank() == configuredSupabaseAnonKey.isBlank()) {
+    "Set both NUVIO_SUPABASE_URL and NUVIO_SUPABASE_ANON_KEY, or omit both to use official Nuvio Cloud."
+}
+val resolvedSupabaseUrl = configuredSupabaseUrl.ifBlank { officialNuvioBackendUrl }
+val resolvedSupabaseAnonKey = configuredSupabaseAnonKey.ifBlank { officialNuvioPublishableKey }
+
 fun runtimeConfigBoolean(key: String, default: Boolean): Boolean =
     when (runtimeConfigValue(key).lowercase()) {
         "1", "true", "yes", "y", "on" -> true
@@ -326,8 +339,8 @@ val generateRuntimeConfigs = tasks.register<GenerateRuntimeConfigsTask>("generat
     }
     appVersionName.set(releaseAppVersionName)
     appVersionCode.set(releaseAppVersionCode)
-    supabaseUrl.set(runtimeConfigValue("NUVIO_SUPABASE_URL"))
-    supabaseAnonKey.set(runtimeConfigValue("NUVIO_SUPABASE_ANON_KEY"))
+    supabaseUrl.set(resolvedSupabaseUrl)
+    supabaseAnonKey.set(resolvedSupabaseAnonKey)
     supabaseFallbackUrl.set(runtimeConfigValue("NUVIO_SUPABASE_FALLBACK_URL"))
     sentryDsn.set(runtimeConfigValue("SENTRY_DSN"))
     tmdbApiKey.set(runtimeConfigValue("TMDB_API_KEY"))

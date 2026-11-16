@@ -10,6 +10,7 @@ on:
       - composeApp/**
       - scripts/build-ios-ipa.sh
       - scripts/check-ios15-availability.py
+      - scripts/verify-nuvio-auth-config.py
       - scripts/preflight-ios15-swift.sh
       - scripts/prepare-ios-dependencies.sh
   workflow_dispatch:
@@ -98,6 +99,11 @@ jobs:
           EOF
           tail -n 4 "${HOME}/.gradle/gradle.properties"
 
+      - name: Validate embedded Nuvio login configuration
+        run: |
+          ./gradlew :composeApp:generateRuntimeConfigs --no-daemon --quiet
+          python3 scripts/verify-nuvio-auth-config.py
+
       - name: Prepare iOS native dependencies
         run: ./scripts/prepare-ios-dependencies.sh
 
@@ -153,7 +159,7 @@ jobs:
             exit 1
           fi
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${staging}/app.plist")"
-          if [[ "${version}" != '1.1.0-beta.2' ]]; then
+          if [[ "${version}" != '1.1.0-beta.3' ]]; then
             echo "Unexpected version: ${version}" >&2
             exit 1
           fi
@@ -166,6 +172,7 @@ jobs:
             echo "- SHA-256: $(shasum -a 256 "${ipa}" | awk '{print $1}')"
             echo "- Xcode app: Debug (experimental, unoptimized)"
             echo "- Kotlin/Native framework: Debug (unoptimized)"
+            echo "- Nuvio login backend configuration: verified before build"
             echo "- Signing: unsigned (use a compatible sideloading signer)"
           } >> "${GITHUB_STEP_SUMMARY}"
           echo "ipa_path=${ipa}" >> "${GITHUB_OUTPUT}"
@@ -174,7 +181,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-1.1.0-beta.2-ios15-debug-unsigned-ipa
+          name: nuvio-1.1.0-beta.3-ios15-debug-unsigned-ipa
           path: ${{ steps.verify.outputs.ipa_path }}
           if-no-files-found: error
           retention-days: 14
@@ -195,4 +202,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Nuvio ${VERSION} (iOS 15+ experimental Debug)" \
             --prerelease \
-            --notes "Experimental unsigned iOS 15+ compatibility IPA. Both the Xcode app and Kotlin/Native framework were compiled in Debug configuration because the full Release Kotlin linker exceeds the memory of the standard GitHub runner. This is NOT an optimized production build. Contains iOS 15 Compose navigation and a basic Downloads shortcut widget; Live Activity widget integration is excluded. Sign the IPA before installing, and test playback and other features on an actual iOS 15 device."
+            --notes "Experimental unsigned iOS 15+ compatibility IPA. Fixed missing Nuvio Cloud login configuration using NuvioMedia's official documented public backend URL and client publishable key when no custom backend is set. A CI preflight verifies a non-empty valid HTTPS backend and client key before the full build. Both Xcode app and Kotlin framework use Debug due to memory limits; this is not an optimized production release. Includes iOS 15 Compose navigation and a basic Downloads shortcut widget; Live Activity integration excluded. Sign before installing. Login and playback still need real-device verification."

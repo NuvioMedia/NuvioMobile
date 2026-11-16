@@ -58,6 +58,13 @@ if "IOS_KOTLIN_FRAMEWORK_BUILD_TYPE: Debug" not in release_workflow:
     errors.append("7 GB iOS 15 runner must use the Debug Kotlin/Native framework")
 if "bash scripts/preflight-ios15-swift.sh" not in release_workflow:
     errors.append("CI must typecheck standalone Swift files before Kotlin compilation")
+gradle_build = (root / "composeApp/build.gradle.kts").read_text()
+if 'officialNuvioBackendUrl = "https://api.nuvio.tv"' not in gradle_build:
+    errors.append("Official Nuvio Cloud backend fallback is missing")
+if 'officialNuvioPublishableKey = "sb_publishable_' not in gradle_build:
+    errors.append("Official Nuvio Cloud public client key fallback is missing")
+if "python3 scripts/verify-nuvio-auth-config.py" not in release_workflow:
+    errors.append("Login configuration verification must precede native compilation")
 if errors:
     raise SystemExit("iOS 15 compatibility preflight failed:\n- " + "\n- ".join(errors))
 print("iOS 15 compatibility preflight passed (full Xcode build still required)")
