@@ -69,7 +69,7 @@
     <string name="plex_code_starting">Getting ready…</string>
     <string name="plex_code_instructions">On another device, open %1$s, sign in to Plex and enter this code.</string>
     <string name="plex_code_waiting">Waiting for the code to be entered…</string>
-    <string name="plex_code_copied">Code copied</string>
+    <string name="servers_code_copied">Code copied</string>
     <string name="plex_code_expired">This sign-in has expired.</string>
     <string name="plex_new_code">Start again</string>
     <string name="plex_servers_title">Choose a server</string>
@@ -87,9 +87,9 @@
     <string name="plex_users_subtitle">Who is watching on %1$s?</string>
     <string name="plex_user_admin">Admin</string>
     <string name="plex_user_managed">Managed user</string>
-    <string name="plex_user_pin">PIN</string>
-    <string name="plex_pin_title">PIN for %1$s</string>
-    <string name="plex_pin_hint">PIN</string>
-    <string name="plex_pin_wrong">Wrong PIN. Try again.</string>
-    <string name="plex_signing_in">Signing in…</string>
+    <string name="servers_has_pin">PIN</string>
+    <string name="servers_pin_title">PIN for %1$s</string>
+    <string name="servers_pin_hint">PIN</string>
+    <string name="servers_pin_wrong">Wrong PIN. Try again.</string>
+    <string name="servers_signing_in">Signing in…</string>
 </resources>
