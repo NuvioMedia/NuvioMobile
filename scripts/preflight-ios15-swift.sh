@@ -77,6 +77,7 @@ xcrun swiftc \
   -sdk "${sdk}" \
   -F "${scratch}/mpv/Libmpv.xcframework/ios-arm64" \
   -parse-as-library -typecheck \
-  iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift
+  iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift \
+  iosApp/iosApp/Player/MPVLegacyGLRenderer.swift
 
 echo "Standalone iOS 15 Swift API checks passed."

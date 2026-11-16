@@ -8,6 +8,7 @@ on:
       - .github/workflows/ios15-player-smoke.yml
       - iosApp/iosApp/Player/LegacyAVPlayerBridge.swift
       - iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift
+      - iosApp/iosApp/Player/MPVLegacyGLRenderer.swift
       - iosApp/iosApp/Player/PlayerAudioSessionController.swift
   workflow_dispatch:
 
@@ -67,5 +68,6 @@ jobs:
           xcrun swiftc -target arm64-apple-ios15.0 -sdk "$sdk" \
             -F "$temp/framework/Libmpv.xcframework/ios-arm64" \
             -parse-as-library -typecheck \
-            iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift
-          echo "The internal libmpv iOS 15 software renderer typechecks."
+            iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift \
+            iosApp/iosApp/Player/MPVLegacyGLRenderer.swift
+          echo "Both software and OpenGL ES libmpv iOS 15 renderers typecheck."

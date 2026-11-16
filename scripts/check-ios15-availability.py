@@ -67,9 +67,11 @@ if 'officialNuvioPublishableKey = "sb_publishable_' not in gradle_build:
     errors.append("Official Nuvio Cloud public client key fallback is missing")
 if "python3 scripts/verify-nuvio-auth-config.py" not in release_workflow:
     errors.append("Login configuration verification must precede native compilation")
-# iOS 15: libmpv MUST use software rendering, not GPU/Vulkan or AVPlayer.
+# iOS 15: Prefer libmpv's OpenGL ES render API (with VideoToolbox), and
+# keep the working SW renderer as fallback. Never run Vulkan/MoltenVK on 15.
 player_source = (root / "iosApp/iosApp/Player/MPVPlayerBridge.swift").read_text()
 software_source = (root / "iosApp/iosApp/Player/MPVSoftwareVideoRenderer.swift").read_text()
+gl_source = (root / "iosApp/iosApp/Player/MPVLegacyGLRenderer.swift").read_text()
 player_registry = player_source.split("enum NuvioPlayerRegistration")[-1]
 if "MPVPlayerBridgeCreator()" not in player_registry:
     errors.append("iOS 15 playback must use internal libmpv")
@@ -77,8 +79,12 @@ if "LegacyAVPlayerBridgeCreator()" in player_registry:
     errors.append("Do not replace internal libmpv with AVPlayer")
 if 'mpv_set_option_string(mpv, "vo", "libmpv")' not in player_source:
     errors.append("iOS 15 must use libmpv's embedded render output")
-if 'mpv_set_option_string(mpv, "hwdec", "no")' not in player_source:
-    errors.append("iOS 15 software renderer must not try GPU VideoToolbox interop")
+if "MPVLegacyGLRenderer(frame:" not in player_source or "glView.start(mpv: mpv)" not in player_source:
+    errors.append("iOS 15 must first attempt internal full-resolution OpenGL ES rendering")
+if '"videotoolbox-copy"' not in player_source:
+    errors.append("iOS 15 software fallback should try VideoToolbox copy decoding")
+if '"gpu-api", "opengl"' not in player_source:
+    errors.append("iOS 15 OpenGL path must not select Vulkan/MoltenVK")
 if "private lazy var metalLayer = MetalLayer()" not in player_source:
     errors.append("iOS 15 must not instantiate a Metal layer before checking availability")
 if "if usesSoftwareRenderer {" not in player_source or "MPVSoftwareVideoRenderer(imageView:" not in player_source:
@@ -95,11 +101,22 @@ if "MPV_RENDER_PARAM_API_TYPE" not in software_source:
     errors.append("Software renderer needs the SW API declaration")
 if "MPV_RENDER_PARAM_SW_STRIDE" not in software_source:
     errors.append("Software renderer must specify pixel stride")
+if not all(k in gl_source for k in (
+    "CAEAGLLayer", "EAGLContext", "mpv_render_context_create",
+    "MPV_RENDER_PARAM_OPENGL_INIT_PARAMS", "MPV_RENDER_PARAM_OPENGL_FBO",
+    "mpv_render_context_render", "mpv_render_context_report_swap"
+)):
+    errors.append("OpenGL ES renderer must attach libmpv render API and present frames")
+if not (player_source.find("legacyGLView?.stop()") <
+        player_source.find("mpv_terminate_destroy(ctx)")):
+    errors.append("OpenGL render context must close before the mpv core")
+if "MPVLegacyGLRenderer.swift" not in (root / "scripts/preflight-ios15-swift.sh").read_text():
+    errors.append("Main preflight must typecheck the OpenGL ES renderer")
 settings_source = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text()
 if 'safeLegacyPlayback && externalPlayerId != null' in settings_source:
     errors.append("Never auto-enable an external player on iOS 15")
 if "Typechecking libmpv software video output" not in (root / "scripts/preflight-ios15-swift.sh").read_text():
-    errors.append("CI must typecheck the iOS 15 software renderer before Kotlin compilation")
+    errors.append("CI must typecheck the iOS 15 libmpv renderer before Kotlin compilation")
 
 if errors:
     raise SystemExit("iOS 15 compatibility preflight failed:\n- " + "\n- ".join(errors))
