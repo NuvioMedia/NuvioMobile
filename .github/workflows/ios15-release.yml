@@ -6,6 +6,10 @@ on:
       - ios15-compatibility
     paths:
       - .github/workflows/ios15-release.yml
+      - iosApp/**
+      - composeApp/**
+      - scripts/build-ios-ipa.sh
+      - scripts/prepare-ios-dependencies.sh
   workflow_dispatch:
 
 permissions:
@@ -140,4 +144,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Nuvio ${VERSION} (iOS 15+ experimental)" \
             --prerelease \
-            --notes "Experimental iOS 15+ compatibility build. The app uses its Compose navigation fallback on iOS 15. Live Activities require iOS 16.1+; a basic Downloads widget is used on iOS 15. This unsigned IPA must be signed before installation. Verify playback and native dependencies on an iOS 15 device before relying on it."
+            --notes "Experimental iOS 15+ compatibility build. The app uses its Compose navigation fallback on iOS 15. This compatibility IPA registers a basic Downloads widget on all iOS versions; Live Activity widget integration is not bundled in this experimental build. The full-featured newer-iOS release can retain Live Activities. This unsigned IPA must be signed before installation. Verify playback and native dependencies on an iOS 15 device before relying on it."
