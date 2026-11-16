@@ -281,7 +281,15 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     private let errorStateLock = NSLock()
-    private var metalLayer = MetalLayer()
+    // On iOS 15 the Metal layer is deliberately never created. libmpv
+    // renders into a CPU pixel buffer instead of Vulkan/MoltenVK.
+    private lazy var metalLayer = MetalLayer()
+    private var softwareVideoView: UIImageView?
+    private var softwareRenderer: MPVSoftwareVideoRenderer?
+    private var usesSoftwareRenderer: Bool {
+        if #available(iOS 16.0, *) { return false }
+        return true
+    }
     var subtitleTextHandler: SubtitleTextHandler?
     private var usesStyledSubtitles = false
     private var styledSubtitleVisible = false
@@ -362,24 +370,28 @@ final class MPVPlayerViewController: UIViewController {
         view.backgroundColor = .black
         view.layer.masksToBounds = true
 
-        metalLayer.contentsGravity = .resize
-        metalLayer.contentsScale = view.window?.screen.nativeScale ?? UIScreen.main.nativeScale
-        metalLayer.framebufferOnly = true
-        metalLayer.backgroundColor = UIColor.black.cgColor
-        // Extended-dynamic-range Metal output requires iOS 16 or later.
         if #available(iOS 16.0, *) {
+            metalLayer.contentsGravity = .resize
+            metalLayer.contentsScale = view.window?.screen.nativeScale ?? UIScreen.main.nativeScale
+            metalLayer.framebufferOnly = true
+            metalLayer.backgroundColor = UIColor.black.cgColor
             metalLayer.wantsExtendedDynamicRangeContent = true
-        }
-        metalLayer.anchorPoint = CGPoint(x: 0, y: 0)
-        metalLayer.position = .zero
-        // The upstream libmpv does not include Nuvio's custom PiP frame hook.
-        // Do not create the unverified sample-buffer pipeline on iOS 15.
-        if #available(iOS 16.0, *) {
+            metalLayer.anchorPoint = CGPoint(x: 0, y: 0)
+            metalLayer.position = .zero
             let pip = PlayerPictureInPictureController(owner: self, metalLayer: metalLayer)
             pictureInPictureController = pip
             view.layer.addSublayer(pip.displayLayer)
+            view.layer.addSublayer(metalLayer)
+        } else {
+            // iOS 15: internal libmpv software output. No CAMetalLayer,
+            // MoltenVK, or GPU swapchain is constructed on this path.
+            let imageView = UIImageView(frame: view.bounds)
+            imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            imageView.backgroundColor = .black
+            imageView.contentMode = .scaleAspectFit
+            view.addSubview(imageView)
+            softwareVideoView = imageView
         }
-        view.layer.addSublayer(metalLayer)
         layoutMetalLayer()
 
         setupMpv()
@@ -507,6 +519,10 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     private func layoutMetalLayer() {
+        if usesSoftwareRenderer {
+            softwareRenderer?.resize(to: externallyManagedViewSize ?? view.bounds.size)
+            return
+        }
         let bounds = CGRect(origin: .zero, size: externallyManagedViewSize ?? view.bounds.size)
         guard bounds.width > 1, bounds.height > 1 else { return }
 
@@ -545,33 +561,59 @@ final class MPVPlayerViewController: UIViewController {
 
         checkError(mpv_request_log_messages(mpv, "warn"))
 
-        var layerPointer = Int64(Int(bitPattern: Unmanaged.passUnretained(metalLayer).toOpaque()))
-        checkError(mpv_set_option(mpv, "wid", MPV_FORMAT_INT64, &layerPointer))
-        checkError(mpv_set_option_string(mpv, "vo", "gpu-next"))
-        checkError(mpv_set_option_string(mpv, "gpu-api", "vulkan"))
-        checkError(mpv_set_option_string(mpv, "gpu-context", "moltenvk"))
-        checkError(mpv_set_option_string(mpv, "hwdec", "videotoolbox"))
-        // iOS can invalidate the VideoToolbox session (e.g. Notification Center during PiP).
-        // FFmpeg recreates it at the next frames; keep hardware decoding meanwhile.
-        checkError(mpv_set_option_string(mpv, "hwdec-software-fallback", "300"))
+        if usesSoftwareRenderer {
+            // libmpv's documented render API provides CPU video output.
+            // This intentionally bypasses iOS 15's crashing Metal renderer.
+            checkError(mpv_set_option_string(mpv, "vo", "libmpv"))
+            checkError(mpv_set_option_string(mpv, "hwdec", "no"))
+        } else {
+            var layerPointer = Int64(Int(bitPattern: Unmanaged.passUnretained(metalLayer).toOpaque()))
+            checkError(mpv_set_option(mpv, "wid", MPV_FORMAT_INT64, &layerPointer))
+            checkError(mpv_set_option_string(mpv, "vo", "gpu-next"))
+            checkError(mpv_set_option_string(mpv, "gpu-api", "vulkan"))
+            checkError(mpv_set_option_string(mpv, "gpu-context", "moltenvk"))
+            checkError(mpv_set_option_string(mpv, "hwdec", "videotoolbox"))
+            checkError(mpv_set_option_string(mpv, "hwdec-software-fallback", "300"))
+        }
         checkError(mpv_set_option_string(mpv, "ao", Self.defaultAudioOutput))
         checkError(mpv_set_option_string(mpv, "audio-channels", "auto"))
         checkError(mpv_set_option_string(mpv, "audio-fallback-to-null", "yes"))
-        checkError(mpv_set_option_string(mpv, "vulkan-swap-mode", "fifo"))
-        checkError(mpv_set_option_string(mpv, "vulkan-queue-count", "1"))
-        checkError(mpv_set_option_string(mpv, "vulkan-async-compute", "no"))
-        checkError(mpv_set_option_string(mpv, "vulkan-async-transfer", "no"))
-        checkError(mpv_set_option_string(mpv, "vulkan-disable-interop", "yes"))
+        if !usesSoftwareRenderer {
+            checkError(mpv_set_option_string(mpv, "vulkan-swap-mode", "fifo"))
+            checkError(mpv_set_option_string(mpv, "vulkan-queue-count", "1"))
+            checkError(mpv_set_option_string(mpv, "vulkan-async-compute", "no"))
+            checkError(mpv_set_option_string(mpv, "vulkan-async-transfer", "no"))
+            checkError(mpv_set_option_string(mpv, "vulkan-disable-interop", "yes"))
+        }
         checkError(mpv_set_option_string(mpv, "video-rotate", "no"))
         checkError(mpv_set_option_string(mpv, "subs-match-os-language", "yes"))
         checkError(mpv_set_option_string(mpv, "subs-fallback", "yes"))
         configureBundledSubtitleFont()
         checkError(mpv_set_option_string(mpv, "keep-open", "yes"))
-        checkError(mpv_set_option_string(mpv, "target-colorspace-hint", "yes"))
-        checkError(mpv_set_option_string(mpv, "tone-mapping", "auto"))
-        checkError(mpv_set_option_string(mpv, "hdr-compute-peak", "yes"))
+        if !usesSoftwareRenderer {
+            checkError(mpv_set_option_string(mpv, "target-colorspace-hint", "yes"))
+            checkError(mpv_set_option_string(mpv, "tone-mapping", "auto"))
+            checkError(mpv_set_option_string(mpv, "hdr-compute-peak", "yes"))
+        }
 
-        checkError(mpv_initialize(mpv))
+        let initialized = mpv_initialize(mpv)
+        guard initialized >= 0 else {
+            setPlaybackError("Could not start the libmpv playback engine.")
+            return
+        }
+        if usesSoftwareRenderer {
+            guard let mpv, let imageView = softwareVideoView else {
+                setPlaybackError("Internal iOS 15 software video view unavailable.")
+                return
+            }
+            let renderer = MPVSoftwareVideoRenderer(imageView: imageView)
+            if let error = renderer.start(mpv: mpv) {
+                setPlaybackError("libmpv software renderer unavailable: \(error)")
+                return
+            }
+            softwareRenderer = renderer
+            renderer.resize(to: view.bounds.size)
+        }
         applyAudioLanguagePreferences(preferredAudioLanguages)
 
         // Observe properties
@@ -794,7 +836,12 @@ final class MPVPlayerViewController: UIViewController {
         saturation: Int,
         gamma: Int
     ) {
-        // iOS 15 can still play video, but has no CAMetalLayer EDR toggle.
+        // The iOS 15 software renderer handles every decoded frame without
+        // VideoToolbox or GPU output. Do not re-enable hwdec from saved settings.
+        if usesSoftwareRenderer {
+            if mpv != nil { setStringProperty("hwdec", "no") }
+            return
+        }
         if #available(iOS 16.0, *) {
             metalLayer.wantsExtendedDynamicRangeContent = extendedDynamicRange
         }
@@ -1049,6 +1096,11 @@ final class MPVPlayerViewController: UIViewController {
         startupSubtitles = []
         pendingSubtitleUrl = nil
         isFileLoaded = false
+        // The render API context MUST be freed before the libmpv core.
+        softwareRenderer?.stop()
+        softwareRenderer = nil
+        softwareVideoView?.image = nil
+        softwareVideoView = nil
         nowPlayingController.invalidate()
         clearPlaybackError()
         deactivateAudioSession()
@@ -1534,12 +1586,8 @@ final class MPVPlayerBridgeCreator: NSObject, NuvioPlayerBridgeCreator {
 
 enum NuvioPlayerRegistration {
     static func register() {
-        if #available(iOS 16.0, *) {
-            NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
-        } else {
-            // MPV init crashes on iOS 15, even with official upstream libmpv.
-            // Default to VLC handoff; use AVPlayer if VLC is not installed.
-            NuvioPlayerBridgeFactory.shared.registerFactory(creator: LegacyAVPlayerBridgeCreator())
-        }
+        // Both OS ranges use internal libmpv. iOS 15 uses the libmpv
+        // software render API; iOS 16+ keeps the existing GPU output.
+        NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
     }
 }
