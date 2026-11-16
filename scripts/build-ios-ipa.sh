@@ -6,6 +6,19 @@ repository_root="$(cd "$(dirname "$0")/.." && pwd -P)"
 version_file="${repository_root}/iosApp/Configuration/Version.xcconfig"
 version="${1:-$(sed -nE 's/^[[:space:]]*MARKETING_VERSION[[:space:]]*=[[:space:]]*([^[:space:]#]+).*$/\1/p' "${version_file}" | head -n 1)}"
 configuration="${IOS_CONFIGURATION:-Release}"
+# For the experimental iOS 15 prerelease, allow a Debug Kotlin/Native
+# framework inside the Xcode Release app bundle. This avoids memory-heavy
+# release linking on the standard 7 GB Xcode 27 runner without changing
+# the standard (optimized) Xcode/Gradle build configuration.
+kotlin_framework_build_type="${IOS_KOTLIN_FRAMEWORK_BUILD_TYPE:-${configuration}}"
+case "${kotlin_framework_build_type}" in
+    Debug|Release) ;;
+    *)
+        echo "Unsupported Kotlin framework configuration: ${kotlin_framework_build_type}" >&2
+        exit 1
+        ;;
+esac
+echo "Xcode app configuration: ${configuration}; Kotlin/Native framework: ${kotlin_framework_build_type}"
 case "${configuration}" in
     Debug)
         configuration_slug="debug"
@@ -32,6 +45,7 @@ cd "${repository_root}"
 build_environment=(
     env
     NUVIO_IOS_DISTRIBUTION=full
+    KOTLIN_FRAMEWORK_BUILD_TYPE="${kotlin_framework_build_type}"
     CLANG_MODULE_CACHE_PATH="${clang_module_cache}"
     SWIFTPM_MODULECACHE_OVERRIDE="${swiftpm_module_cache}"
 )
@@ -53,6 +67,7 @@ fi
     CODE_SIGNING_ALLOWED=NO \
     CODE_SIGNING_REQUIRED=NO \
     CODE_SIGN_IDENTITY= \
+    "KOTLIN_FRAMEWORK_BUILD_TYPE=${kotlin_framework_build_type}" \
     build
 
 app_path="${derived_data}/Build/Products/${configuration}-iphoneos/Nuvio.app"
@@ -115,8 +130,14 @@ trap 'rm -rf "${package_root}"' EXIT
 mkdir -p "${package_root}/Payload"
 ditto "${app_path}" "${package_root}/Payload/Nuvio.app"
 
-ipa_path="${output_directory}/nuvio-${version}-full-${configuration_slug}.ipa"
-temporary_ipa="${package_root}/nuvio-${version}-full-${configuration_slug}.ipa"
+# Label the IPA accurately if a non-optimized Kotlin/Native framework is
+# intentionally bundled with an Xcode Release app build.
+kotlin_suffix=""
+if [[ "${configuration}" == "Release" && "${kotlin_framework_build_type}" == "Debug" ]]; then
+    kotlin_suffix="-kotlin-debug"
+fi
+ipa_path="${output_directory}/nuvio-${version}-full-${configuration_slug}${kotlin_suffix}.ipa"
+temporary_ipa="${package_root}/nuvio-${version}-full-${configuration_slug}${kotlin_suffix}.ipa"
 (
     cd "${package_root}"
     /usr/bin/zip -qry "${temporary_ipa}" Payload
