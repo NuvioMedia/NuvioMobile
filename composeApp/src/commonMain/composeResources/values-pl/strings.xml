@@ -2273,9 +2273,16 @@
     <string name="tracking_removal_impact_history_and_rating">historię oglądania i ocenę</string>
     <string name="trakt_authorization_expired_reconnect">Autoryzacja Trakt wygasła. Połącz ponownie konto Trakt.</string>
     <string name="library_filter_all_types">Wszystkie typy</string>
+    <string name="library_filter_genre">Gatunek</string>
     <string name="library_filter_list">Wybierz listę</string>
     <string name="library_filter_sort">Sortuj bibliotekę</string>
     <string name="library_filter_type">Wybierz typ</string>
+    <string name="library_filter_watched">Obejrzane</string>
+    <string name="library_filter_year">Rok</string>
+    <string name="library_type_all">Wszystkie</string>
+    <string name="library_watched_filter_all">Wszystko</string>
+    <string name="library_watched_filter_watched">Obejrzane</string>
+    <string name="library_watched_filter_unwatched">Nieobejrzane</string>
     <string name="library_layout_show_horizontal">Pokaż poziome półki</string>
     <string name="library_layout_show_vertical">Pokaż siatkę pionową</string>
     <string name="library_sort_added_asc">Najstarsze dodane</string>
