@@ -19,9 +19,13 @@ internal object AppIconRepository {
     fun ensureLoaded() {
         if (hasLoaded) return
         hasLoaded = true
-        _state.value = AppIconSettingsState(
-            selected = AppIconOption.fromPlatformName(AppIconPlatform.currentIconName()),
-        )
+        val savedKey = AppIconPlatform.loadSelectedIconKey()
+        val savedIcon = AppIconOption.entries.firstOrNull { it.key == savedKey }
+        val selected = savedIcon ?: AppIconOption.fromPlatformName(AppIconPlatform.currentIconName())
+        if (savedIcon == null && selected != AppIconOption.ORIGINAL) {
+            AppIconPlatform.saveSelectedIconKey(selected.key)
+        }
+        _state.value = AppIconSettingsState(selected = selected)
     }
 
     suspend fun select(icon: AppIconOption) {
@@ -38,6 +42,7 @@ internal object AppIconRepository {
             AppIconPlatform.activateIcon(icon.platformName)
         }.getOrDefault(false)
         _state.value = if (changed) {
+            AppIconPlatform.saveSelectedIconKey(icon.key)
             AppIconSettingsState(selected = icon)
         } else {
             current.copy(changeFailed = true)

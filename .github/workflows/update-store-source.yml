@@ -23,6 +23,7 @@ concurrency:
 jobs:
   update:
     name: Update store.json
+    if: github.event_name != 'release' || !github.event.release.prerelease
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}

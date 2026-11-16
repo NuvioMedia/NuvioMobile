@@ -175,6 +175,28 @@ internal object DebridStreamMetadata {
         resolutionRegex("360p?") to DebridStreamResolution.P360,
     )
 
+    // Words release names use for each language besides its code. Short words that are common in
+    // titles ("por", "chi", "fra") are left out so a title is not read as a language.
+    private val languageAliases = mapOf(
+        DebridStreamLanguage.EN to listOf("eng", "english"),
+        DebridStreamLanguage.HI to listOf("hin", "hindi"),
+        DebridStreamLanguage.IT to listOf("ita", "italian", "italiano"),
+        DebridStreamLanguage.ES to listOf("spa", "esp", "spanish", "espanol", "castellano"),
+        DebridStreamLanguage.FR to listOf("fre", "french", "truefrench"),
+        DebridStreamLanguage.DE to listOf("ger", "deu", "german", "deutsch"),
+        DebridStreamLanguage.PT to listOf("portuguese", "portugues"),
+        DebridStreamLanguage.PL to listOf("pol", "polish"),
+        DebridStreamLanguage.CS to listOf("cze", "czech"),
+        DebridStreamLanguage.LA to listOf("latino"),
+        DebridStreamLanguage.JA to listOf("jpn", "japanese"),
+        DebridStreamLanguage.KO to listOf("kor", "korean"),
+        DebridStreamLanguage.ZH to listOf("chinese"),
+    )
+    private val languageRegexes = DebridStreamLanguage.entries.map { language ->
+        language to languageRegex(listOf(language.code) + languageAliases[language].orEmpty())
+    }
+    private val nonAlphanumericRunRegex = Regex("[^a-z0-9]+")
+
     fun effectivePreferences(settings: DebridSettings): DebridStreamPreferences {
         val default = DebridStreamPreferences()
         if (settings.streamPreferences != default) return settings.streamPreferences.normalized()
@@ -266,7 +288,8 @@ internal object DebridStreamMetadata {
         val audioChannels = streamAudioChannels(parsed?.channels.orEmpty(), searchText)
         val encode = streamEncode(parsed?.codec, searchText)
         val languages = parsed?.languages.orEmpty().mapNotNull { languageFor(it) }.ifEmpty {
-            DebridStreamLanguage.entries.filter { searchText.hasToken(it.code) }
+            val languageText = languageSearchText(stream)
+            languageRegexes.filter { (_, regex) -> regex.containsMatchIn(languageText) }.map { it.first }
         }
         val releaseGroup = parsed?.group?.takeIf { it.isNotBlank() } ?: releaseGroupFromText(searchText)
         return DebridStreamFacts(
@@ -380,9 +403,11 @@ internal object DebridStreamMetadata {
     }
 
     private fun languageFor(value: String): DebridStreamLanguage? {
-        val normalized = value.lowercase()
+        val normalized = value.trim().lowercase()
         return DebridStreamLanguage.entries.firstOrNull {
-            normalized == it.code || normalized == it.label.lowercase()
+            normalized == it.code ||
+                normalized == it.label.lowercase() ||
+                normalized in languageAliases[it].orEmpty()
         }
     }
 
@@ -403,6 +428,9 @@ internal object DebridStreamMetadata {
 
     private fun resolutionRegex(vararg tokens: String): Regex =
         Regex("(^|[^a-z0-9])(${tokens.joinToString("|")})([^a-z0-9]|\$)")
+
+    private fun languageRegex(tokens: List<String>): Regex =
+        Regex("(^|[^a-z0-9])(${tokens.joinToString("|") { Regex.escape(it) }})([^a-z0-9]|\$)")
 
     /** The receiver must already be lowercase: every caller builds its text with lowercase(). */
     private fun String.hasToken(token: String): Boolean {
@@ -434,9 +462,20 @@ internal object DebridStreamMetadata {
             ?: stream.debridCacheStatus?.cachedSize
 
     private fun streamSearchText(stream: StreamItem): String {
+        val parsed = stream.clientResolve?.stream?.raw?.parsed
+        val parsedTexts = listOfNotNull(
+            parsed?.resolution,
+            parsed?.quality,
+            parsed?.codec,
+            parsed?.hdr?.joinToString(" "),
+            parsed?.audio?.joinToString(" "),
+        )
+        return (streamTexts(stream) + parsedTexts).joinToString(" ").lowercase()
+    }
+
+    private fun streamTexts(stream: StreamItem): List<String> {
         val resolve = stream.clientResolve
         val raw = resolve?.stream?.raw
-        val parsed = raw?.parsed
         return listOfNotNull(
             stream.name,
             stream.title,
@@ -447,12 +486,27 @@ internal object DebridStreamMetadata {
             resolve?.filename,
             raw?.torrentName,
             raw?.filename,
-            parsed?.resolution,
-            parsed?.quality,
-            parsed?.codec,
-            parsed?.hdr?.joinToString(" "),
-            parsed?.audio?.joinToString(" "),
-        ).joinToString(" ").lowercase()
+        )
+    }
+
+    // Removes the media title from each text before languages are matched, so title words
+    // ("The French Dispatch", "The Italian Job") are not read as the stream language. Only the
+    // first match per text is removed: a release name repeats the title only as a language word.
+    private fun languageSearchText(stream: StreamItem): String {
+        val resolve = stream.clientResolve
+        val titleRegexes = listOfNotNull(resolve?.stream?.raw?.parsed?.parsedTitle, resolve?.title)
+            .mapNotNull { titleRegex(it) }
+            .distinctBy { it.pattern }
+            .sortedByDescending { it.pattern.length }
+        return streamTexts(stream).joinToString(" ") { text ->
+            titleRegexes.fold(text.lowercase()) { remaining, regex -> regex.replaceFirst(remaining, " ") }
+        }
+    }
+
+    private fun titleRegex(title: String): Regex? {
+        val words = title.lowercase().split(nonAlphanumericRunRegex).filter { it.isNotEmpty() }
+        if (words.isEmpty()) return null
+        return Regex("(^|[^a-z0-9])${words.joinToString("[^a-z0-9]+")}(?=[^a-z0-9]|\$)")
     }
 }
 

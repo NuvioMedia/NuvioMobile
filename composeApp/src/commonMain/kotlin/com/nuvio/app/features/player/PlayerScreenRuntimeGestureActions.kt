@@ -69,8 +69,10 @@ internal fun PlayerScreenRuntime.lockPlayerControls() {
     showSubtitleModal = false
     showVideoSettingsModal = false
     showStreamInfo = false
+    showPartyPanel = false
     showSourcesPanel = false
     showEpisodesPanel = false
+    showChaptersPanel = false
     episodeStreamsPanelState = EpisodeStreamsPanelState()
     PlayerStreamsRepository.clearEpisodeStreams()
 }
@@ -152,6 +154,14 @@ internal fun PlayerScreenRuntime.showVolumeFeedback(level: PlayerAudioLevel) {
             level = if (level.isMuted) 0f else level.fraction.coerceIn(0f, 1f),
         ),
     )
+}
+
+internal const val PlayerKeyVolumeStep = 1f / 15f
+
+internal fun PlayerScreenRuntime.changeVolumeBy(delta: Float) {
+    val controller = gestureController ?: return
+    val current = controller.currentVolume()?.fraction ?: return
+    controller.setVolume(current + delta)?.let(::showVolumeFeedback)
 }
 
 internal fun PlayerScreenRuntime.togglePlayback() {

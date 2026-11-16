@@ -56,6 +56,10 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.material.icons.automirrored.rounded.Toc
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -115,6 +119,8 @@ internal fun PlayerControlsShell(
     onVideoSettingsClick: (() -> Unit)? = null,
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
+    chapters: List<PlayerChapter> = emptyList(),
+    onChaptersClick: (() -> Unit)? = null,
     onOpenInExternalPlayer: (() -> Unit)? = null,
     onSubmitIntroClick: (() -> Unit)? = null,
     onSwitchEngineClick: (() -> Unit)? = null,
@@ -157,6 +163,8 @@ internal fun PlayerControlsShell(
             onAudioClick = onAudioClick,
             onSourcesClick = onSourcesClick,
             onEpisodesClick = onEpisodesClick,
+            onChaptersClick = onChaptersClick,
+            chapters = chapters,
             onSpeedClick = onSpeedClick,
             onResizeModeClick = onResizeModeClick,
             onVideoSettingsClick = onVideoSettingsClick,
@@ -310,6 +318,8 @@ internal fun PlayerControlsShell(
                     onAudioClick = onAudioClick,
                     onSourcesClick = onSourcesClick,
                     onEpisodesClick = onEpisodesClick,
+                    chapters = chapters,
+                    onChaptersClick = onChaptersClick,
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
@@ -337,6 +347,7 @@ internal fun PlayerControlsShell(
                             badges = badges,
                         )
                     }
+                    PlayerChapterTitle(chapters = chapters, positionMs = displayedPositionMs)
                     PlayerTimeline(
                         snapshot = playbackSnapshot,
                         displayedPositionMs = displayedPositionMs,
@@ -345,6 +356,7 @@ internal fun PlayerControlsShell(
                             onInteraction()
                             onScrubFinished(it)
                         },
+                        chapters = chapters,
                     )
                     PlayerControlActions(
                         playbackSnapshot = playbackSnapshot,
@@ -357,6 +369,7 @@ internal fun PlayerControlsShell(
                         onAudioClick = onAudioClick,
                         onSourcesClick = onSourcesClick,
                         onEpisodesClick = onEpisodesClick,
+                        onChaptersClick = onChaptersClick,
                         onNextEpisodeClick = onNextEpisodeClick,
                         onSpeedClick = onSpeedClick,
                         onResizeModeClick = onResizeModeClick,
@@ -680,6 +693,8 @@ private fun ProgressControls(
     onAudioClick: () -> Unit,
     onSourcesClick: (() -> Unit)? = null,
     onEpisodesClick: (() -> Unit)? = null,
+    chapters: List<PlayerChapter> = emptyList(),
+    onChaptersClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val aspectRatioPainter = appIconPainter(AppIconResource.PlayerAspectRatio)
@@ -689,12 +704,18 @@ private fun ProgressControls(
     val episodesPainter = appIconPainter(AppIconResource.PlayerEpisodes)
 
     Column(modifier = modifier) {
+        PlayerChapterTitle(
+            chapters = chapters,
+            positionMs = displayedPositionMs,
+            modifier = Modifier.padding(horizontal = 14.dp),
+        )
         PlayerSeekBar(
             durationMs = playbackSnapshot.durationMs,
             displayedPositionMs = displayedPositionMs,
             metrics = metrics,
             onScrubChange = onScrubChange,
             onScrubFinished = onScrubFinished,
+            chapters = chapters,
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -734,6 +755,13 @@ private fun ProgressControls(
                         painter = audioPainter,
                         onClick = onAudioClick,
                     )
+                    if (onChaptersClick != null) {
+                        PlayerActionPillButton(
+                            label = stringResource(Res.string.compose_player_chapters),
+                            icon = Icons.AutoMirrored.Rounded.Toc,
+                            onClick = onChaptersClick,
+                        )
+                    }
                     if (onSourcesClick != null) {
                         PlayerActionPillButton(
                             label = stringResource(Res.string.compose_player_sources),
@@ -762,6 +790,7 @@ internal fun PlayerSeekBar(
     onScrubChange: (Long) -> Unit,
     onScrubFinished: (Long) -> Unit,
     modifier: Modifier = Modifier,
+    chapters: List<PlayerChapter> = emptyList(),
 ) {
     val seekDurationMs = durationMs.coerceAtLeast(1L)
     val seekDescription = stringResource(Res.string.player_seek_position)
@@ -778,7 +807,7 @@ internal fun PlayerSeekBar(
             onValueChange = { value -> onScrubChange(value.toLong()) },
             onValueChangeFinished = { onScrubFinished(displayedPositionMs.coerceIn(0L, seekDurationMs)) },
             enabled = durationMs > 0L,
-            track = { sliderState -> PlayerProgressTrack(sliderState) },
+            track = { sliderState -> PlayerProgressTrack(sliderState, chapters, durationMs) },
         )
         Row(
             modifier = Modifier
@@ -795,7 +824,11 @@ internal fun PlayerSeekBar(
 }
 
 @Composable
-private fun PlayerProgressTrack(sliderState: SliderState) {
+private fun PlayerProgressTrack(
+    sliderState: SliderState,
+    chapters: List<PlayerChapter> = emptyList(),
+    durationMs: Long = 0L,
+) {
     val palette = MaterialTheme.themePalette
     val inactiveTrackColors = SliderDefaults.colors(
         activeTrackColor = Color.Transparent,
@@ -808,7 +841,22 @@ private fun PlayerProgressTrack(sliderState: SliderState) {
         disabledInactiveTrackColor = Color.Transparent,
     )
 
-    Box {
+    Box(
+        modifier = Modifier.drawWithContent {
+            drawContent()
+            if (durationMs <= 0L) return@drawWithContent
+            val markWidth = 2.dp.toPx()
+            chapters.forEach { chapter ->
+                val fraction = chapter.startMs.toFloat() / durationMs
+                if (fraction <= 0f || fraction >= 1f) return@forEach
+                drawRect(
+                    color = Color.Black.copy(alpha = 0.6f),
+                    topLeft = Offset(size.width * fraction - markWidth / 2f, 0f),
+                    size = Size(markWidth, size.height),
+                )
+            }
+        },
+    ) {
         SliderDefaults.Track(
             sliderState = sliderState,
             colors = inactiveTrackColors,

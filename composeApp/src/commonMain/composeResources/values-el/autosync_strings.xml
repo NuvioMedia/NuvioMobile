@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_playback_subtitle_auto_sync">Αυτόματος συγχρονισμός υποτίτλων</string>
-    <string name="settings_playback_subtitle_auto_sync_description">Αυτόματος συγχρονισμός του προτιμώμενου υπότιτλου πρόσθετου κατά την έναρξη της αναπαραγωγής. Απαιτείται προτιμώμενη γλώσσα υποτίτλων.</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Αντιστοιχίστε τον επιλεγμένο υπότιτλο του πρόσθετου με τον χρονισμό των υποτίτλων που είναι ενσωματωμένοι στο βίντεο.</string>
     <string name="settings_playback_auto_sync_mode_aggressive">Αναζήτηση αυτόματου συγχρονισμού: Εξονυχιστική</string>
     <string name="settings_playback_auto_sync_mode_aggressive_description">Συνεχίζει τη σύγκριση άλλων υποτίτλων και ενσωματωμένων κομματιών για ακριβέστερη αντιστοίχιση πριν από τον συγχρονισμό. Εφαρμόζονται μόνο βέβαιες αντιστοιχίσεις.</string>
     <string name="settings_playback_auto_sync_mode_passive">Αναζήτηση αυτόματου συγχρονισμού: Γρήγορη</string>

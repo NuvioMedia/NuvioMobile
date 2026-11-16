@@ -1760,7 +1760,7 @@ Du bruker denne funksjonen helt på eget ansvar. P2P kan deaktiveres når som he
     <string name="settings_playback_enable_libass">Bruk libass for ASS/SSA-undertekster</string>
     <string name="settings_playback_enable_libass_description">Eksperimentelt: avansert ASS/SSA-rendering (stiler, plassering, animasjoner)</string>
     <string name="settings_playback_engine">Avspillingsmotor</string>
-    <string name="settings_playback_engine_auto_description">Bruk ExoPlayer først og fall tilbake til libmpv hvis avspilling mislykkes.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer for filmer og serier · MPV for anime</string>
     <string name="settings_playback_engine_exoplayer_description">Bruk ExoPlayer og Android Media3-dekodere.</string>
     <string name="settings_playback_engine_libmpv_description">Bruk libmpv for Android-avspilling.</string>
     <string name="settings_playback_external_player">Ekstern avspiller</string>

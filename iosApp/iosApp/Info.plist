@@ -26,12 +26,15 @@
 		<string>ru</string>
 		<string>sk</string>
 		<string>es</string>
+		<string>ta</string>
 		<string>tr</string>
 		<string>ur</string>
+		<string>uk</string>
 		<string>nb</string>
 		<string>nl</string>
 		<string>ja</string>
 		<string>vi</string>
+		<string>zh</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>

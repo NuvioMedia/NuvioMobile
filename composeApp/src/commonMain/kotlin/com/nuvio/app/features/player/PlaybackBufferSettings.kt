@@ -42,11 +42,12 @@ internal data class PlaybackBufferSettings(
         return copy(
             minBufferMs = minMs,
             maxBufferMs = maxMs,
-            bufferForPlaybackMs = bufferForPlaybackMs.coerceIn(MIN_START_SEC * 1_000, MAX_START_SEC * 1_000),
-            bufferForPlaybackAfterRebufferMs = bufferForPlaybackAfterRebufferMs.coerceIn(
-                MIN_START_SEC * 1_000,
-                MAX_REBUFFER_SEC * 1_000,
-            ),
+            bufferForPlaybackMs = bufferForPlaybackMs
+                .coerceIn(MIN_START_SEC * 1_000, MAX_START_SEC * 1_000)
+                .coerceAtMost(minMs),
+            bufferForPlaybackAfterRebufferMs = bufferForPlaybackAfterRebufferMs
+                .coerceIn(MIN_START_SEC * 1_000, MAX_REBUFFER_SEC * 1_000)
+                .coerceAtMost(minMs),
             backBufferDurationMs = backBufferDurationMs.coerceIn(0, MAX_BACK_SEC * 1_000),
             targetBufferSizeMb = if (nativeMemory) targetMb else targetMb,
         )

@@ -1,6 +1,6 @@
 <resources>
     <string name="settings_playback_subtitle_auto_sync">Sincronização automática de legenda</string>
-    <string name="settings_playback_subtitle_auto_sync_description">Sincroniza automaticamente a legenda preferida de add-on quando a reprodução inicia. Requer um idioma de legenda preferido.</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Ajuste a legenda do addon ao tempo das legendas do vídeo.</string>
     <string name="settings_playback_auto_sync_mode_aggressive">Busca da sincronização automática: Aprofundada</string>
     <string name="settings_playback_auto_sync_mode_aggressive_description">Continua comparando outras legendas e faixas incorporadas em busca de uma correspondência mais precisa antes de sincronizar. Apenas correspondências confiáveis são aplicadas.</string>
     <string name="settings_playback_auto_sync_mode_passive">Busca da sincronização automática: Rápida</string>

@@ -6,6 +6,8 @@ import com.nuvio.app.features.streams.StreamBadgeMatcher
 import com.nuvio.app.features.streams.StreamBadgeRules
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class PlaybackMatchTextTest {
     private val filters = StreamBadgeMatcher.compile(
@@ -59,7 +61,7 @@ class PlaybackMatchTextTest {
 
     @Test
     fun readsAtmosFromMpvAudioProfile() {
-        val info = PlayerMediaInfo(audioCodec = "TrueHD", audioProfile = "Dolby TrueHD + Dolby Atmos")
+        val info = PlayerMediaInfo(audioCodec = "TrueHD", audioProfiles = listOf("Dolby TrueHD + Dolby Atmos"))
         assertEquals(listOf("Atmos"), matchedNames(info))
     }
 
@@ -86,5 +88,113 @@ class PlaybackMatchTextTest {
     @Test
     fun showsNothingBeforePlaybackInfoLoads() {
         assertEquals(emptyList(), matchedNames(PlayerMediaInfo()))
+    }
+
+    @Test
+    fun dtsHdMaNotTriggeredByGermanLabel() {
+        // mpvMediaInfo maps the codec-profile; audioTokens checks for \b(ma|master audio)\b.
+        // "German" should not false-positive to MA.
+        val info = mpvMediaInfo { name ->
+            when (name) {
+                "current-tracks/audio/codec" -> "dts"
+                "current-tracks/audio/codec-profile" -> "DTS-HD HRA"
+                "audio-params/channel-count" -> "8"
+                else -> null
+            }
+        }
+        val text = playbackMatchText(info, listOf("ger", "German"))
+        assertFalse(text.contains("DTS-HD MA"), "DTS-HD MA should not appear for German DTS-HD HRA")
+        assertTrue(text.contains("DTS-HD"), "DTS-HD should still appear")
+    }
+
+    @Test
+    fun dtsHdMaAndDtsXBothAppear() {
+        val info = PlayerMediaInfo(
+            audioCodec = "DTS",
+            audioProfiles = listOf("DTS-HD MA", "DTS:X"),
+            audioChannels = 8,
+        )
+        val text = playbackMatchText(info, emptyList())
+        assertTrue(text.contains("DTS-HD MA"), "DTS-HD MA should appear")
+        assertTrue(text.contains("DTS:X"), "DTS:X should appear")
+    }
+
+    @Test
+    fun pcmVariantsMapToPcmViaMpv() {
+        val info = mpvMediaInfo { name ->
+            when (name) {
+                "current-tracks/audio/codec" -> "pcm_s24le"
+                else -> null
+            }
+        }
+        assertEquals("PCM", info.audioCodec)
+    }
+
+    @Test
+    fun groupExclusionSkipsFilenameLangWhenDecoderMatches() {
+        val langGroup = "Language"
+        val sourceGroup = "Source"
+        val playerFilters = StreamBadgeMatcher.compile(
+            StreamBadgeRules(
+                imports = listOf(
+                    StreamBadgeImport(
+                        sourceUrl = "https://example.com/badges.json",
+                        filters = listOf(
+                            StreamBadgeFilter(name = "English", pattern = "(?i)\\benglish\\b", imageURL = "eng.png", groupId = langGroup),
+                            StreamBadgeFilter(name = "Polish", pattern = "(?i)\\bpol\\b", imageURL = "pol.png", groupId = langGroup),
+                            StreamBadgeFilter(name = "WebDL", pattern = "(?i)\\bweb[-.]?dl\\b", imageURL = "webdl.png", groupId = sourceGroup),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val playback = "DD+ 5.1 English"
+        val filename = listOf("Movie.POL.ENG.WebDL.mkv")
+        val badges = StreamBadgeMatcher.matchedPlayerBadges(playback, filename, playerFilters).map { it.name }
+        assertTrue("English" in badges, "English should appear (decoder match)")
+        assertFalse("Polish" in badges, "Polish should NOT appear (group covered by decoder)")
+        assertTrue("WebDL" in badges, "WebDL should appear (different group)")
+    }
+
+    @Test
+    fun refineAddsAtmosFromFilenameWhenDecoderHasEac3() {
+        val decoder = "DD+ DDP EAC3 5.1"
+        val refined = refinePlaybackText(decoder, listOf("Movie.2160p.DDP5.1.Atmos.mkv"))
+        assertTrue(refined.contains("Atmos"), "Atmos should be added")
+    }
+
+    @Test
+    fun refineAddsDtsXFromFilenameWhenDecoderHasDtsHd() {
+        val decoder = "DTS DTS-HD 7.1"
+        val refined = refinePlaybackText(decoder, listOf("Movie.2160p.DTS-X.mkv"))
+        assertTrue(refined.contains("DTS:X"), "DTS:X should be added")
+    }
+
+    @Test
+    fun refineDoesNotAddAtmosWithoutMatchingBaseCodec() {
+        val decoder = "AAC 2.0"
+        val refined = refinePlaybackText(decoder, listOf("Movie.Atmos.mkv"))
+        assertFalse(refined.contains("Atmos"), "Atmos should NOT be added without EAC3/TrueHD")
+    }
+
+    @Test
+    fun orderRestoredToPackFilterOrderWithSharedImageUrl() {
+        val filters = StreamBadgeMatcher.compile(
+            StreamBadgeRules(
+                imports = listOf(
+                    StreamBadgeImport(
+                        sourceUrl = "https://example.com/badges.json",
+                        filters = listOf(
+                            StreamBadgeFilter(name = "Remux", pattern = "(?i)\\bremux\\b", imageURL = "remux.png"),
+                            StreamBadgeFilter(name = "HEVC", pattern = "(?i)\\bhevc\\b", imageURL = "hevc.png"),
+                            StreamBadgeFilter(name = "HEVC-alt", pattern = "(?i)\\bh\\.?265\\b", imageURL = "hevc.png"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val badges = StreamBadgeMatcher.matchedPlayerBadges("HEVC 2160p", listOf("Movie.Remux.mkv"), filters)
+        assertEquals("Remux", badges[0].name)
+        assertEquals("HEVC", badges[1].name)
     }
 }

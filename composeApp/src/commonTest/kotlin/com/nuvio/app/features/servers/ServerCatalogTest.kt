@@ -96,7 +96,7 @@ class ServerCatalogTest {
         )
         assertTrue(ServerCatalog.homeDefinitions().any { it.defaultTitle == "Box · Featured" && it.type == "collection" })
         assertTrue(ServerCatalog.titleLibraries().none { it.library.kind == ServerMediaKind.COLLECTION })
-        assertTrue(ServerMatcher.supports(connection, ServerMediaKind.MOVIE))
+        assertTrue(ServerMatcher.shared.supports(connection, ServerMediaKind.MOVIE))
 
         val card = MetaPreview(id = ServerItemRef(connection.id, "c-popular").encode(), type = "collection", name = "Popular")
         val target = assertNotNull(ServerCatalog.collectionTarget(card))
