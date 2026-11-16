@@ -81,8 +81,14 @@ if 'mpv_set_option_string(mpv, "vo", "libmpv")' not in player_source:
     errors.append("iOS 15 must use libmpv's embedded render output")
 if "MPVLegacyGLRenderer(frame:" not in player_source or "glView.start(mpv: mpv)" not in player_source:
     errors.append("iOS 15 must first attempt internal full-resolution OpenGL ES rendering")
-if '"videotoolbox-copy"' not in player_source:
-    errors.append("iOS 15 software fallback should try VideoToolbox copy decoding")
+if 'mpv_set_option_string(mpv, "hwdec", "videotoolbox-copy")' not in player_source:
+    errors.append("iOS 15 must use VideoToolbox copy-back decoding to avoid unverified GLES interop")
+if not all(setting in player_source for setting in (
+    'mpv_set_option_string(mpv, "target-prim", "bt.709")',
+    'mpv_set_option_string(mpv, "target-trc", "srgb")',
+    'mpv_set_option_string(mpv, "tone-mapping", "mobius")'
+)):
+    errors.append("iOS 15 needs explicit SDR color output and HDR tone mapping")
 if '"gpu-api", "opengl"' not in player_source:
     errors.append("iOS 15 OpenGL path must not select Vulkan/MoltenVK")
 if "private lazy var metalLayer = MetalLayer()" not in player_source:
@@ -107,6 +113,11 @@ if not all(k in gl_source for k in (
     "mpv_render_context_render", "mpv_render_context_report_swap"
 )):
     errors.append("OpenGL ES renderer must attach libmpv render API and present frames")
+if not all(parameter in gl_source for parameter in (
+    "MPV_RENDER_PARAM_FLIP_Y", "var flipY: CInt = 1",
+    "MPV_RENDER_PARAM_DEPTH", "var framebufferDepth: CInt = 8"
+)):
+    errors.append("iOS 15 OpenGL output needs correct Y orientation and 8-bit framebuffer depth")
 if not (player_source.find("legacyGLView?.stop()") <
         player_source.find("mpv_terminate_destroy(ctx)")):
     errors.append("OpenGL render context must close before the mpv core")

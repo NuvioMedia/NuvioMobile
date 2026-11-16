@@ -174,7 +174,7 @@ jobs:
             exit 1
           fi
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${staging}/app.plist")"
-          if [[ "${version}" != '1.1.0-beta.8' ]]; then
+          if [[ "${version}" != '1.1.0-beta.9' ]]; then
             echo "Unexpected version: ${version}" >&2
             exit 1
           fi
@@ -187,7 +187,8 @@ jobs:
             echo "- SHA-256: $(shasum -a 256 "${ipa}" | awk '{print $1}')"
             echo "- Xcode app: Debug (experimental, unoptimized)"
             echo "- Kotlin/Native framework: Debug (unoptimized)"
-            echo "- iOS 15: internal libmpv OpenGL ES + VideoToolbox, SW fallback (no Vulkan/MoltenVK)"
+            echo "- iOS 15: OpenGL ES orientation fix (Y flip=1), SDR color target and VideoToolbox-copy decoding"
+            echo "- Internal libmpv software fallback retained; no external player"
             echo "- iOS 16+: internal libmpv GPU video renderer"
             echo "- Nuvio login backend configuration: verified before build"
             echo "- Signing: unsigned (use a compatible sideloading signer)"
@@ -198,7 +199,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-1.1.0-beta.8-ios15-debug-unsigned-ipa
+          name: nuvio-1.1.0-beta.9-ios15-debug-unsigned-ipa
           path: ${{ steps.verify.outputs.ipa_path }}
           if-no-files-found: error
           retention-days: 14
@@ -219,4 +220,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Nuvio ${VERSION} (iOS 15+ experimental Debug)" \
             --prerelease \
-            --notes "Experimental unsigned iOS 15+ IPA. Addresses beta.7's laggy 768x432@24fps software output by attempting full-resolution internal OpenGL ES rendering with VideoToolbox hardware decoding on iOS 15. This bypasses the crashing Vulkan/MoltenVK/Metal path while keeping libmpv/FFmpeg for MKV, audio and subtitles inside Nuvio. If the pinned upstream MPVKit 0.41 binary cannot initialize OpenGL ES, Nuvio falls back to the proven SW renderer using VideoToolbox-copy decoding; full-resolution GPU playback on this exact iOS 15.3 device is not yet verified. iOS 16+ keeps its existing MPV GPU path. No automatic external player. Nuvio Cloud login preserved. This remains an unoptimized Debug compatibility build. Sign with Feather/ESign and test quality, playback, seeking and audio on your iPhone."
+            --notes "Experimental iOS 15+ unsigned IPA. Fixes upside-down video in beta.8 by explicitly passing MPV_RENDER_PARAM_FLIP_Y=1 to libmpv's OpenGL render API, as used in the official libmpv GL example. Also fixes likely distorted or washed-out colors by rendering to 8-bit SDR (sRGB/BT.709), applying Mobius tone mapping for HDR sources, and using VideoToolbox copy-back decoding instead of unverified zero-copy VideoToolbox-to-GLES texture interop. Preserves full-resolution OpenGL ES rendering, internal MKV/FFmpeg/audio/subtitle support and the 432p software fallback if GPU startup fails. iOS 16+ original GPU path and Nuvio Cloud login are unchanged. No automatic external player. This is an experimental unoptimized Debug IPA: sign before installing and test orientation, color accuracy and seeking on an actual iOS 15.3 iPhone."
