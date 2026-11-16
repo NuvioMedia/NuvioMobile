@@ -1495,7 +1495,7 @@ struct ContentView: View {
                     .allowsHitTesting(systemUI.pictureInPictureMessage == nil)
             }
         }
-        .persistentSystemOverlays(systemUI.isPlayerImmersive ? .hidden : .automatic)
+        .nuvioPersistentSystemOverlays(hidden: systemUI.isPlayerImmersive)
         .statusBarHidden(systemUI.isPlayerImmersive)
         .overlay {
             if let message = systemUI.pictureInPictureMessage {
@@ -1548,5 +1548,18 @@ private extension UIColor {
             blue: CGFloat(rgb & 0xFF) / 255,
             alpha: 1
         )
+    }
+}
+
+// iOS 15 uses RootComposeViewController's UIKit home-indicator handling.
+// SwiftUI's persistentSystemOverlays modifier is only available on iOS 16+.
+private extension View {
+    @ViewBuilder
+    func nuvioPersistentSystemOverlays(hidden: Bool) -> some View {
+        if #available(iOS 16.0, *) {
+            self.persistentSystemOverlays(hidden ? .hidden : .automatic)
+        } else {
+            self
+        }
     }
 }
