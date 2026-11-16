@@ -31,7 +31,9 @@ jobs:
             mkdir -p "$work/$name"
             curl --fail --location --retry 4 --retry-delay 2 --silent --show-error --max-time 240 --output "$work/$name/archive.zip" "$url"
             unzip -q "$work/$name/archive.zip" -d "$work/$name/unzipped"
-            file="$(find "$work/$name/unzipped" -path '*/ios-arm64/*.a' -name 'libmpv*.a' -print -quit)"
+            echo "Artifact layout:"
+            unzip -Z -1 "$work/$name/archive.zip" | head -n 12 || true
+            file="$(find "$work/$name/unzipped" -type f \( -iname '*.a' -o -name 'Libmpv' \) -print -quit)"
             if [[ -z "$file" ]]; then
               echo "::error::Missing iOS arm64 libmpv in $name"
               exit 1
