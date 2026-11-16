@@ -22,7 +22,9 @@ edr_calls = [
 if len(edr_calls) != 2:
     errors.append(f"Expected two player EDR assignments; found {len(edr_calls)}")
 for index in edr_calls:
-    preceding = "\n".join(player_lines[max(0, index - 3):index])
+    # The CAMetalLayer EDR assignment can sit several statements inside a
+    # single #available block. The old three-line scan rejected valid guards.
+    preceding = "\n".join(player_lines[max(0, index - 12):index])
     if "if #available(iOS 16.0, *) {" not in preceding:
         errors.append(
             f"{player.relative_to(root)}:{index + 1}: "
