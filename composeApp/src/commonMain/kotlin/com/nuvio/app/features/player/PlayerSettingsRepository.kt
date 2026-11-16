@@ -1212,7 +1212,7 @@ object PlayerSettingsRepository {
     fun setIosVideoOutputPreset(preset: IosVideoOutputPreset) {
         ensureLoaded()
         val resolved = if (isLegacyIosVideoOutput && preset == IosVideoOutputPreset.NativeEdr) {
-            IosVideoOutputPreset.SdrToneMapped
+            IosVideoOutputPreset.Compatibility
         } else {
             preset
         }
@@ -1378,8 +1378,10 @@ object PlayerSettingsRepository {
     private fun constrainIos15VideoOutput() {
         if (!isLegacyIosVideoOutput) return
         if (iosVideoOutputPreset == IosVideoOutputPreset.NativeEdr) {
-            iosVideoOutputPreset = IosVideoOutputPreset.SdrToneMapped
-            iosToneMappingMode = IosToneMappingMode.Bt2390
+            // beta.9 actually rendered saved Native EDR using Mobius SDR.
+            // Preserve that appearance rather than silently changing curves.
+            iosVideoOutputPreset = IosVideoOutputPreset.Compatibility
+            iosToneMappingMode = IosToneMappingMode.Auto
         }
         iosExtendedDynamicRangeEnabled = false
         iosTargetColorspaceHintEnabled = false

@@ -135,8 +135,14 @@ if not (player_source.find("legacyGLView?.stop()") <
 if "MPVLegacyGLRenderer.swift" not in (root / "scripts/preflight-ios15-swift.sh").read_text():
     errors.append("Main preflight must typecheck the OpenGL ES renderer")
 modal_source = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/IosVideoSettingsModal.kt").read_text()
-if 'listOf(IosVideoOutputPreset.SdrToneMapped, IosVideoOutputPreset.Compatibility)' not in modal_source:
-    errors.append("The iOS 15 menu must hide the unsupported Native EDR preset")
+if not all(value in modal_source for value in (
+    "IosVideoOutputPreset.Compatibility,",
+    "IosVideoOutputPreset.SdrToneMapped,",
+    "IosVideoOutputPreset.Custom,"
+)):
+    errors.append("iOS 15 must offer Compatibility, SDR and Custom, not Native EDR")
+if "iosVideoOutputPreset = IosVideoOutputPreset.Compatibility" not in (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text():
+    errors.append("iOS 15 should migrate old Native EDR to the previous Mobius appearance")
 if 'if (!isLegacyIosVideoOutput)' not in modal_source:
     errors.append("Unsupported iOS 15 compute peak/interpolation controls must be hidden")
 if 'constrainIos15VideoOutput()' not in (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text():

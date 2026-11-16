@@ -99,7 +99,11 @@ internal fun IosVideoSettingsModal(
                 OptionGroup(
                     title = stringResource(Res.string.player_video_settings_output_preset),
                     options = if (isLegacyIosVideoOutput) {
-                        listOf(IosVideoOutputPreset.SdrToneMapped, IosVideoOutputPreset.Compatibility)
+                        listOf(
+                            IosVideoOutputPreset.Compatibility,
+                            IosVideoOutputPreset.SdrToneMapped,
+                            IosVideoOutputPreset.Custom,
+                        )
                     } else {
                         IosVideoOutputPreset.entries
                     },
