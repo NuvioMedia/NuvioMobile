@@ -2575,4 +2575,15 @@
     <string name="settings_playback_page_up_next">A seguir</string>
     <string name="compose_settings_page_layout">Layout</string>
     <string name="settings_group_you">Você</string>
+    <string name="subtitle_outline_width">Espessura do contorno</string>
+    <string name="library_watched_filter_unwatched">Não assistidos</string>
+    <string name="library_filter_watched">Assistidos</string>
+    <string name="library_filter_year">Ano</string>
+    <string name="library_watched_filter_watched">Assistidos</string>
+    <string name="addons_tracking_consent_body">%1$s é um addon de rastreamento. O Nuvio enviará sua atividade: o que você reproduz, pausa e para, com a posição de reprodução; o que adiciona ou remove da sua biblioteca; e o que marca como assistido ou não assistido. Esses dados saem do Nuvio e são tratados pelo desenvolvedor do addon e pelo serviço ao qual ele se conecta.</string>
+    <string name="addons_tracking_consent_title">Addon de rastreamento</string>
+    <string name="library_filter_genre">Gênero</string>
+    <string name="library_type_all">Todos</string>
+    <string name="addons_tracking_consent_checkbox">Concordo em compartilhar minha atividade de reprodução e minha biblioteca com este addon</string>
+    <string name="library_watched_filter_all">Todos</string>
 </resources>
