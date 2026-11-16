@@ -108,4 +108,40 @@ class ReleaseDateDisplayTest {
         TimeZone.setDefault(TimeZone.getTimeZone("America/Los_Angeles"))
         assertEquals("January 31, 2025", formatReleaseDate("2025-02-01T01:00:00Z", true, "en-US"))
     }
+
+    @Test
+    fun formatDayFirstReleaseDateFormatsIsoDate() {
+        assertEquals("1 Feb 2025", formatDayFirstReleaseDate("2025-02-01"))
+    }
+
+    @Test
+    fun formatDayFirstReleaseDateWithoutYear() {
+        assertEquals("1 Feb", formatDayFirstReleaseDate("2025-02-01", includeYear = false))
+    }
+
+    @Test
+    fun formatDayFirstReleaseDateFormatsZonedTimestamp() {
+        assertEquals("15 Jan 2024", formatDayFirstReleaseDate("2024-01-15T12:30:00Z"))
+    }
+
+    @Test
+    fun formatDayFirstReleaseDateSingleDigitDay() {
+        assertEquals("5 Sep 2026", formatDayFirstReleaseDate("2026-09-05T00:00:00.000Z"))
+    }
+
+    @Test
+    fun formatDayFirstReleaseDateReturnsNullForInvalid() {
+        assertEquals(null, formatDayFirstReleaseDate("invalid"))
+        assertEquals(null, formatDayFirstReleaseDate("2024"))
+        assertEquals(null, formatDayFirstReleaseDate("TBA"))
+        assertEquals(null, formatDayFirstReleaseDate(""))
+        assertEquals(null, formatDayFirstReleaseDate(null))
+    }
+
+    @Test
+    fun formatReleaseDateDayFirstFallsBackToRaw() {
+        assertEquals("1 Feb 2025", formatReleaseDateDayFirst("2025-02-01"))
+        assertEquals("TBA", formatReleaseDateDayFirst("TBA"))
+        assertEquals("2024", formatReleaseDateDayFirst("2024"))
+    }
 }
