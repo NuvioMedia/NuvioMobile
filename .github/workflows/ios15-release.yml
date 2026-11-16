@@ -28,9 +28,9 @@ jobs:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
       GRADLE_OPTS: -Dfile.encoding=UTF-8
       IOS_CONFIGURATION: Release
-      KOTLIN_DAEMON_JVMARGS: -Xmx2048M
-      NUVIO_GRADLE_JVMARGS: -Xmx4608M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=768M
-      NUVIO_KOTLIN_NATIVE_JVMARGS: -Xmx4608M
+      KOTLIN_DAEMON_JVMARGS: -Xmx1536M
+      NUVIO_GRADLE_JVMARGS: -Xmx3072M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512M
+      NUVIO_KOTLIN_NATIVE_JVMARGS: -Xmx4096M
       RELEASE_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
 
     steps:
@@ -45,6 +45,10 @@ jobs:
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
+        with:
+          # This long-lived compatibility branch needs its own cache. The
+          # action defaults to read-only caching outside the default branch.
+          cache-read-only: false
 
       - name: Cache Kotlin Native
         uses: actions/cache@v5
@@ -65,6 +69,26 @@ jobs:
           printf '%s' "${RELEASE_PROPERTIES_BASE64}" | base64 --decode > local.properties
           sed -i '' -E '/^[[:space:]]*(sdk\.dir|NUVIO_RELEASE_STORE_FILE)[[:space:]]*=/d' local.properties
 
+      - name: Check Swift syntax and iOS 15 API availability before expensive Kotlin compilation
+        run: |
+          python3 scripts/check-ios15-availability.py
+          bash -n scripts/build-ios-ipa.sh
+          find iosApp -name '*.swift' -print0 | xargs -0 xcrun swiftc -frontend -parse
+
+      - name: Bound CI memory and parallelism
+        run: |
+          mkdir -p "${HOME}/.gradle"
+          # GRADLE_USER_HOME/gradle.properties takes priority over repository defaults,
+          # which currently permit 12 GiB for Gradle and 16 GiB for Kotlin/Native.
+          # Constrain both processes on the memory-limited macOS runner.
+          cat >> "${HOME}/.gradle/gradle.properties" <<'EOF'
+          org.gradle.jvmargs=-Xmx3072m -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512m
+          kotlin.native.jvmArgs=-Xmx4096m
+          kotlin.daemon.jvmargs=-Xmx1536m
+          org.gradle.workers.max=2
+          EOF
+          tail -n 4 "${HOME}/.gradle/gradle.properties"
+
       - name: Prepare iOS native dependencies
         run: ./scripts/prepare-ios-dependencies.sh
 
@@ -75,6 +99,8 @@ jobs:
               echo "::group::Build resources $(date -u '+%Y-%m-%dT%H:%M:%SZ')"
               uptime
               vm_stat
+              echo "Top processes by CPU (CPU%, RSS is KiB):"
+              ps -Ao pid,etime,%cpu,rss,command -r | head -n 12 || true
               echo "::endgroup::"
             done
           ) &

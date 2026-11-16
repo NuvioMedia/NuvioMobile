@@ -366,7 +366,10 @@ final class MPVPlayerViewController: UIViewController {
         metalLayer.contentsScale = view.window?.screen.nativeScale ?? UIScreen.main.nativeScale
         metalLayer.framebufferOnly = true
         metalLayer.backgroundColor = UIColor.black.cgColor
-        metalLayer.wantsExtendedDynamicRangeContent = true
+        // Extended-dynamic-range Metal output requires iOS 16 or later.
+        if #available(iOS 16.0, *) {
+            metalLayer.wantsExtendedDynamicRangeContent = true
+        }
         metalLayer.anchorPoint = CGPoint(x: 0, y: 0)
         metalLayer.position = .zero
         let pip = PlayerPictureInPictureController(owner: self, metalLayer: metalLayer)
@@ -787,7 +790,10 @@ final class MPVPlayerViewController: UIViewController {
         saturation: Int,
         gamma: Int
     ) {
-        metalLayer.wantsExtendedDynamicRangeContent = extendedDynamicRange
+        // iOS 15 can still play video, but has no CAMetalLayer EDR toggle.
+        if #available(iOS 16.0, *) {
+            metalLayer.wantsExtendedDynamicRangeContent = extendedDynamicRange
+        }
         guard mpv != nil else { return }
 
         setStringProperty("hwdec", hardwareDecoder)

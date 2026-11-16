@@ -43,6 +43,7 @@ if [[ -n "${NUVIO_KOTLIN_NATIVE_JVMARGS:-}" ]]; then
 fi
 "${build_environment[@]}" \
     xcodebuild \
+    -jobs 2 \
     -project iosApp/iosApp.xcodeproj \
     -scheme iosApp \
     -configuration "${configuration}" \
