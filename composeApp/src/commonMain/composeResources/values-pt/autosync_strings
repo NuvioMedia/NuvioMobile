@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Sincronização automática de legendas</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Corresponder as legendas da extensão selecionada com a sincronização das legendas incorporadas no vídeo.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Pesquisa de sincronização automática: Minuciosa</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Continuar a comparar outras legendas e faixas incorporadas para obter uma correspondência mais precisa antes de sincronizar. Apenas são aplicadas correspondências com confiança.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Pesquisa de sincronização automática: Rápida</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Utiliza a primeira correspondência forte mais cedo. Apenas são aplicadas correspondências com confiança, tal como na minuciosa.</string>
+    <string name="settings_playback_auto_sync_tolerance">Tolerância de sincronização automática: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Manter a sincronização original das legendas quando a sincronização a mover por um valor inferior ou igual a este. Toca para alterar.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Desativado</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>
