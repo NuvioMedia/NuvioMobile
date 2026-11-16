@@ -359,6 +359,8 @@ enum NuvioAppTab: String, CaseIterable, Hashable {
     }
 }
 
+// The native-tab icon helpers are only used by iOS 16+ navigation.
+@available(iOS 16.0, *)
 private enum NuvioNativeTabIcon {
     private static let legacyStaticIconSize = CGSize(width: 25, height: 25)
 
