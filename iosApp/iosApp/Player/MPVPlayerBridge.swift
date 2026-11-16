@@ -372,9 +372,13 @@ final class MPVPlayerViewController: UIViewController {
         }
         metalLayer.anchorPoint = CGPoint(x: 0, y: 0)
         metalLayer.position = .zero
-        let pip = PlayerPictureInPictureController(owner: self, metalLayer: metalLayer)
-        pictureInPictureController = pip
-        view.layer.addSublayer(pip.displayLayer)
+        // The upstream libmpv does not include Nuvio's custom PiP frame hook.
+        // Do not create the unverified sample-buffer pipeline on iOS 15.
+        if #available(iOS 16.0, *) {
+            let pip = PlayerPictureInPictureController(owner: self, metalLayer: metalLayer)
+            pictureInPictureController = pip
+            view.layer.addSublayer(pip.displayLayer)
+        }
         view.layer.addSublayer(metalLayer)
         layoutMetalLayer()
 
@@ -1530,12 +1534,8 @@ final class MPVPlayerBridgeCreator: NSObject, NuvioPlayerBridgeCreator {
 
 enum NuvioPlayerRegistration {
     static func register() {
-        if #available(iOS 16.0, *) {
-            NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
-        } else {
-            // Skip MPV's MoltenVK/Metal player path on iOS 15. AVPlayer
-            // supports common MP4/HLS media without touching that renderer.
-            NuvioPlayerBridgeFactory.shared.registerFactory(creator: LegacyAVPlayerBridgeCreator())
-        }
+        // The iOS 15 branch now uses official upstream MPVKit v0.41.0.
+        // That binary declares a minimum iOS 14 deployment target.
+        NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
     }
 }

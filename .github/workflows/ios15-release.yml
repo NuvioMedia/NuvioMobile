@@ -44,6 +44,21 @@ jobs:
       - name: Check out compatibility source
         uses: actions/checkout@v6
 
+      - name: Verify pinned upstream MPVKit supporting iOS 15
+        run: |
+          set -euo pipefail
+          git submodule update --init --depth 1 MPVKit
+          actual="$(git -C MPVKit rev-parse HEAD)"
+          test "$actual" = "613c0ccc3acf70e136aaff880a9b5fe8fdfaf5b8" || {
+            echo "::error::Unexpected MPVKit revision $actual"
+            exit 1
+          }
+          grep -Fq '.iOS(.v14)' MPVKit/Package.swift || {
+            echo "::error::Expected MPVKit 0.41.0 iOS 14+ package"
+            exit 1
+          }
+          echo "Verified MPVKit 0.41.0; library minimum iOS 14."
+
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
@@ -159,7 +174,7 @@ jobs:
             exit 1
           fi
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${staging}/app.plist")"
-          if [[ "${version}" != '1.1.0-beta.4' ]]; then
+          if [[ "${version}" != '1.1.0-beta.5' ]]; then
             echo "Unexpected version: ${version}" >&2
             exit 1
           fi
@@ -172,6 +187,7 @@ jobs:
             echo "- SHA-256: $(shasum -a 256 "${ipa}" | awk '{print $1}')"
             echo "- Xcode app: Debug (experimental, unoptimized)"
             echo "- Kotlin/Native framework: Debug (unoptimized)"
+            echo "- MPVKit: official upstream v0.41.0 (iOS 14+ binary)"
             echo "- Nuvio login backend configuration: verified before build"
             echo "- Signing: unsigned (use a compatible sideloading signer)"
           } >> "${GITHUB_STEP_SUMMARY}"
@@ -181,7 +197,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-1.1.0-beta.4-ios15-debug-unsigned-ipa
+          name: nuvio-1.1.0-beta.5-ios15-debug-unsigned-ipa
           path: ${{ steps.verify.outputs.ipa_path }}
           if-no-files-found: error
           retention-days: 14
@@ -202,4 +218,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Nuvio ${VERSION} (iOS 15+ experimental Debug)" \
             --prerelease \
-            --notes "Experimental unsigned iOS 15+ compatibility IPA. Fixes a suspected playback-crash path by selecting AVFoundation AVPlayer on iOS 15 instead of constructing the MPV/MoltenVK video renderer; iOS 16+ continues to use MPV. On iOS 15 MP4/HLS and other AVFoundation-supported formats should play, but unsupported MKV/codecs, external subtitle injection and separate-audio streams may require an external player. Official Nuvio Cloud login defaults remain enabled. Both Xcode and Kotlin compile Debug due to runner memory limits; this is not a production-optimized build. A true device crash log is still needed to identify the original crash root cause, and actual playback must be tested on iOS 15."
+            --notes "Experimental unsigned iOS 15+ libmpv IPA. Uses the official upstream MPVKit v0.41.0 pinned to 613c0ccc3acf70e136aaff880a9b5fe8fdfaf5b8, instead of Nuvio's customized libmpv binary. Both iOS arm64 libraries target iOS 14, so this is a compatibility test rather than a confirmed crash fix. Restores FFmpeg/libmpv support for a wider range of formats including MKV and advanced subtitles. Nuvio-specific picture-in-picture integration is disabled on iOS 15. This is an unoptimized Debug build, not a production release. Sign the IPA before installing and test playback on an actual iOS 15.3 iPhone. A crash report is needed if MPV still fails."
