@@ -9,6 +9,8 @@ on:
       - iosApp/**
       - composeApp/**
       - scripts/build-ios-ipa.sh
+      - scripts/check-ios15-availability.py
+      - scripts/preflight-ios15-swift.sh
       - scripts/prepare-ios-dependencies.sh
   workflow_dispatch:
 
