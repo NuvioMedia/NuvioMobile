@@ -286,6 +286,8 @@ final class MPVPlayerViewController: UIViewController {
     private lazy var metalLayer = MetalLayer()
     private var softwareVideoView: UIImageView?
     private var softwareRenderer: MPVSoftwareVideoRenderer?
+    private var legacyGLView: MPVLegacyGLRenderer?
+    private var legacyGLActive = false
     private var usesSoftwareRenderer: Bool {
         if #available(iOS 16.0, *) { return false }
         return true
@@ -383,14 +385,23 @@ final class MPVPlayerViewController: UIViewController {
             view.layer.addSublayer(pip.displayLayer)
             view.layer.addSublayer(metalLayer)
         } else {
-            // iOS 15: internal libmpv software output. No CAMetalLayer,
-            // MoltenVK, or GPU swapchain is constructed on this path.
+            // An always-available software surface lets playback continue
+            // if the bundled libmpv was compiled without OpenGL ES support.
             let imageView = UIImageView(frame: view.bounds)
             imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
             imageView.backgroundColor = .black
             imageView.contentMode = .scaleAspectFit
             view.addSubview(imageView)
             softwareVideoView = imageView
+
+            // iOS 15 GPU path: libmpv OpenGL ES render API + EAGL, rather
+            // than the Vulkan/MoltenVK CAMetalLayer integration that crashed.
+            if let glView = MPVLegacyGLRenderer(frame: view.bounds) {
+                glView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+                glView.isHidden = true
+                view.addSubview(glView)
+                legacyGLView = glView
+            }
         }
         layoutMetalLayer()
 
@@ -520,7 +531,13 @@ final class MPVPlayerViewController: UIViewController {
 
     private func layoutMetalLayer() {
         if usesSoftwareRenderer {
-            softwareRenderer?.resize(to: externallyManagedViewSize ?? view.bounds.size)
+            let size = externallyManagedViewSize ?? view.bounds.size
+            softwareRenderer?.resize(to: size)
+            if let glView = legacyGLView {
+                let rect = CGRect(origin: .zero, size: size)
+                if glView.frame != rect { glView.frame = rect }
+                glView.setNeedsLayout()
+            }
             return
         }
         let bounds = CGRect(origin: .zero, size: externallyManagedViewSize ?? view.bounds.size)
@@ -562,10 +579,16 @@ final class MPVPlayerViewController: UIViewController {
         checkError(mpv_request_log_messages(mpv, "warn"))
 
         if usesSoftwareRenderer {
-            // libmpv's documented render API provides CPU video output.
-            // This intentionally bypasses iOS 15's crashing Metal renderer.
+            // Prefer OpenGL ES + VideoToolbox for full-resolution playback.
+            // If EAGL or libmpv GL support is missing, fall back to the
+            // known-working SW renderer with VideoToolbox copy decoding.
             checkError(mpv_set_option_string(mpv, "vo", "libmpv"))
-            checkError(mpv_set_option_string(mpv, "hwdec", "no"))
+            checkError(mpv_set_option_string(mpv, "hwdec",
+                legacyGLView != nil ? "videotoolbox" : "videotoolbox-copy"))
+            if legacyGLView != nil {
+                checkError(mpv_set_option_string(mpv, "gpu-api", "opengl"))
+                checkError(mpv_set_option_string(mpv, "opengl-es", "yes"))
+            }
         } else {
             var layerPointer = Int64(Int(bitPattern: Unmanaged.passUnretained(metalLayer).toOpaque()))
             checkError(mpv_set_option(mpv, "wid", MPV_FORMAT_INT64, &layerPointer))
@@ -603,16 +626,38 @@ final class MPVPlayerViewController: UIViewController {
         }
         if usesSoftwareRenderer {
             guard let mpv, let imageView = softwareVideoView else {
-                setPlaybackError("Internal iOS 15 software video view unavailable.")
+                setPlaybackError("Internal iOS 15 video surface unavailable.")
                 return
             }
-            let renderer = MPVSoftwareVideoRenderer(imageView: imageView)
-            if let error = renderer.start(mpv: mpv) {
-                setPlaybackError("libmpv software renderer unavailable: \(error)")
-                return
+
+            // Only one render API context may be attached to a libmpv core.
+            // Attempt OpenGL ES first; on failure attach the software context.
+            if let glView = legacyGLView {
+                if let reason = glView.start(mpv: mpv) {
+                    NSLog("[Nuvio iOS 15] OpenGL unavailable; software fallback: %@", reason)
+                    glView.stop()
+                    glView.removeFromSuperview()
+                    legacyGLView = nil
+                } else {
+                    legacyGLActive = true
+                    glView.isHidden = false
+                    imageView.isHidden = true
+                    NSLog("[Nuvio iOS 15] OpenGL ES render API enabled")
+                }
             }
-            softwareRenderer = renderer
-            renderer.resize(to: view.bounds.size)
+
+            if !legacyGLActive {
+                // Still internal libmpv; VideoToolbox can decode while
+                // libmpv's SW renderer converts frames for UIImageView.
+                checkError(mpv_set_property_string(mpv, "hwdec", "videotoolbox-copy"))
+                let renderer = MPVSoftwareVideoRenderer(imageView: imageView)
+                if let error = renderer.start(mpv: mpv) {
+                    setPlaybackError("libmpv video renderer unavailable: \(error)")
+                    return
+                }
+                softwareRenderer = renderer
+                renderer.resize(to: view.bounds.size)
+            }
         }
         applyAudioLanguagePreferences(preferredAudioLanguages)
 
@@ -836,10 +881,14 @@ final class MPVPlayerViewController: UIViewController {
         saturation: Int,
         gamma: Int
     ) {
-        // The iOS 15 software renderer handles every decoded frame without
-        // VideoToolbox or GPU output. Do not re-enable hwdec from saved settings.
+        // Respect the selected iOS 15 internal render API. Saved settings
+        // must not force Vulkan on this path. VideoToolbox is supported by
+        // mpv's OpenGL ES renderer; the SW fallback uses copy decoding.
         if usesSoftwareRenderer {
-            if mpv != nil { setStringProperty("hwdec", "no") }
+            if mpv != nil {
+                setStringProperty("hwdec",
+                    legacyGLActive ? "videotoolbox" : "videotoolbox-copy")
+            }
             return
         }
         if #available(iOS 16.0, *) {
@@ -1096,7 +1145,10 @@ final class MPVPlayerViewController: UIViewController {
         startupSubtitles = []
         pendingSubtitleUrl = nil
         isFileLoaded = false
-        // The render API context MUST be freed before the libmpv core.
+        // Render API contexts MUST be freed before the libmpv core.
+        legacyGLView?.stop()
+        legacyGLView = nil
+        legacyGLActive = false
         softwareRenderer?.stop()
         softwareRenderer = nil
         softwareVideoView?.image = nil
