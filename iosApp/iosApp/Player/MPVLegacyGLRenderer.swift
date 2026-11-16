@@ -25,6 +25,9 @@ final class MPVLegacyGLRenderer: UIView {
     private var pixelHeight: GLint = 0
     private var destroyed = false
     private var needsRedraw = true
+    // Accessed on the main thread only. Avoid rebuilding expensive EAGL
+    // backing buffers during Compose's repeated layout callbacks.
+    private var lastScheduledDrawableSize: CGSize = .zero
 
     override init(frame: CGRect) {
         glContext = EAGLContext(api: .openGLES3) ?? EAGLContext(api: .openGLES2)
@@ -111,8 +114,17 @@ final class MPVLegacyGLRenderer: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        // UIKit geometry is read only on the main thread, then all GL API
-        // calls are executed on a dedicated serial renderer queue.
+        // Compose can call setNeedsLayout repeatedly without a size change.
+        // Recreating GPU backing buffers each time causes visible stutter.
+        let dimensions = CGSize(
+            width: (bounds.width * contentScaleFactor).rounded(),
+            height: (bounds.height * contentScaleFactor).rounded()
+        )
+        guard dimensions.width > 1, dimensions.height > 1,
+              dimensions != lastScheduledDrawableSize else { return }
+        lastScheduledDrawableSize = dimensions
+
+        // UIKit geometry is read on the main thread; only GL work is queued.
         renderQueue.async { [weak self] in
             self?.needsRedraw = true
             self?.recreateFramebuffer()
