@@ -59,6 +59,9 @@
     <string name="addons_error_enter_url">Nhập URL tiện ích</string>
     <string name="addons_input_placeholder">URL tiện ích</string>
     <string name="addons_install_button">Cài đặt tiện ích</string>
+    <string name="addons_tracking_consent_title">Tiện ích theo dõi</string>
+    <string name="addons_tracking_consent_body">%1$s là một tiện ích theo dõi. Nuvio sẽ gửi cho tiện ích này hoạt động của bạn: những gì bạn phát, tạm dừng và dừng kèm vị trí phát lại, nội dung bạn thêm vào hoặc xóa khỏi thư viện và nội dung bạn đánh dấu đã xem hoặc chưa xem. Dữ liệu này sẽ rời khỏi Nuvio và được xử lý bởi nhà phát triển tiện ích cùng dịch vụ mà nó kết nối.</string>
+    <string name="addons_tracking_consent_checkbox">Tôi đồng ý chia sẻ hoạt động xem và thư viện với tiện ích này</string>
     <string name="addons_loading_manifest_details">Đang tải tệp kê khai…</string>
     <string name="addons_modal_checking_message">Đang xác minh tệp kê khai và tải chi tiết tiện ích trước khi cài đặt</string>
     <string name="addons_modal_checking_title">Đang kiểm tra tiện ích</string>
@@ -1972,10 +1975,17 @@
     <string name="library_empty_message">Các nội dung đã lưu sẽ xuất hiện ở đây sau khi bạn nhấn Lưu trên màn hình chi tiết.</string>
     <string name="library_empty_title">Thư viện của bạn đang trống</string>
     <string name="library_filter_all_types">Tất cả loại</string>
+    <string name="library_filter_genre">Thể loại</string>
     <string name="library_filter_list">Chọn danh sách</string>
     <string name="library_filter_sort">Sắp xếp thư viện</string>
     <string name="library_filter_type">Chọn loại</string>
-    <string name="library_layout_show_horizontal">Hiển thị danh sách dạng hàng ngang"</string>
+    <string name="library_filter_watched">Đã xem</string>
+    <string name="library_filter_year">Năm</string>
+    <string name="library_type_all">Tất cả</string>
+    <string name="library_watched_filter_all">Tất cả</string>
+    <string name="library_watched_filter_watched">Đã xem</string>
+    <string name="library_watched_filter_unwatched">Chưa xem</string>
+    <string name="library_layout_show_horizontal">Hiển thị danh sách dạng hàng ngang</string>
     <string name="library_layout_show_vertical">Hiển thị danh sách dạng lưới dọc</string>
     <string name="library_load_failed">Không thể tải thư viện</string>
     <string name="library_other">Khác</string>
@@ -2573,5 +2583,6 @@
     <string name="subtitle_shadow_description">Tách chữ khỏi các cảnh sáng.</string>
     <string name="subtitle_shadow_opacity">Độ mờ bóng</string>
     <string name="subtitle_shadow_size">Kích thước bóng</string>
+    <string name="subtitle_outline_width">Độ rộng viền chữ</string>
     <string name="subtitle_reset_appearance">Đặt lại giao diện</string>
 </resources>
