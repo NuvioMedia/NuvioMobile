@@ -57,7 +57,7 @@ final class LegacyAVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
         let requestHeaders: [String: String]
         if let json = headersJson, let data = json.data(using: .utf8),
            let decoded = try? JSONSerialization.jsonObject(with: data) as? [String: String] {
-            requestHeaders = decoded.filter { !$0.key.caseInsensitiveCompare("Range").isOrderedSame }
+            requestHeaders = decoded.filter { $0.key.caseInsensitiveCompare("Range") != .orderedSame }
         } else {
             requestHeaders = [:]
         }
@@ -85,9 +85,9 @@ final class LegacyAVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
 
     func play() {
         shouldPlay = true
+        if hasEnded { seekTo(positionMs: 0) }
         hasEnded = false
         audioSessionController.activate()
-        if hasEnded { seekTo(positionMs: 0) }
         player.play()
         if playbackSpeed != 1.0 { player.rate = playbackSpeed }
     }
