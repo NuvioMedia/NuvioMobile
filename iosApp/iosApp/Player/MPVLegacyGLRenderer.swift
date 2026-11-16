@@ -16,7 +16,7 @@ import Darwin
 final class MPVLegacyGLRenderer: UIView {
     override class var layerClass: AnyClass { CAEAGLLayer.self }
 
-    private let glContext: EAGLContext
+    private let glContext: EAGLContext?
     private let renderQueue = DispatchQueue(label: "nuvio.ios15.mpv.gl", qos: .userInteractive)
     private var mpvRenderContext: OpaquePointer?
     private var framebuffer: GLuint = 0
@@ -26,11 +26,8 @@ final class MPVLegacyGLRenderer: UIView {
     private var destroyed = false
     private var needsRedraw = true
 
-    init?(frame: CGRect) {
-        guard let context = EAGLContext(api: .openGLES3) ?? EAGLContext(api: .openGLES2) else {
-            return nil
-        }
-        glContext = context
+    override init(frame: CGRect) {
+        glContext = EAGLContext(api: .openGLES3) ?? EAGLContext(api: .openGLES2)
         super.init(frame: frame)
         contentScaleFactor = UIScreen.main.nativeScale
         isOpaque = true
@@ -50,6 +47,10 @@ final class MPVLegacyGLRenderer: UIView {
         var error: String?
         renderQueue.sync {
             guard !destroyed else { error = "Renderer already stopped"; return }
+            guard let glContext else {
+                error = "This device has no available OpenGL ES context."
+                return
+            }
             EAGLContext.setCurrent(glContext)
 
             var glInit = mpv_opengl_init_params(
@@ -120,7 +121,7 @@ final class MPVLegacyGLRenderer: UIView {
     }
 
     private func recreateFramebuffer() {
-        guard !destroyed else { return }
+        guard !destroyed, let glContext else { return }
         EAGLContext.setCurrent(glContext)
         releaseFramebuffer()
 
@@ -155,7 +156,7 @@ final class MPVLegacyGLRenderer: UIView {
     }
 
     private func draw() {
-        guard !destroyed, let renderer = mpvRenderContext else { return }
+        guard !destroyed, let renderer = mpvRenderContext, let glContext else { return }
         EAGLContext.setCurrent(glContext)
         _ = mpv_render_context_update(renderer)
         guard framebuffer != 0, pixelWidth > 0, pixelHeight > 0, needsRedraw else { return }
@@ -208,14 +209,16 @@ final class MPVLegacyGLRenderer: UIView {
         renderQueue.sync {
             guard !destroyed else { return }
             destroyed = true
-            EAGLContext.setCurrent(glContext)
+            if let glContext { EAGLContext.setCurrent(glContext) }
             if let renderer = mpvRenderContext {
                 mpv_render_context_set_update_callback(renderer, nil, nil)
                 mpv_render_context_free(renderer)
                 mpvRenderContext = nil
             }
             releaseFramebuffer()
-            if EAGLContext.current() === glContext { EAGLContext.setCurrent(nil) }
+            if let glContext, EAGLContext.current() === glContext {
+                EAGLContext.setCurrent(nil)
+            }
         }
     }
 }
