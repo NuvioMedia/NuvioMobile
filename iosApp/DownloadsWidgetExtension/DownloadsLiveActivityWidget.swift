@@ -2,6 +2,7 @@ import ActivityKit
 import SwiftUI
 import WidgetKit
 
+@available(iOSApplicationExtension 16.1, *)
 struct DownloadsLiveActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         let status: String
