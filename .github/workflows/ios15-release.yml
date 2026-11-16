@@ -27,9 +27,10 @@ jobs:
     env:
       DEVELOPER_DIR: /Applications/Xcode_27.1.app/Contents/Developer
       GRADLE_OPTS: -Dfile.encoding=UTF-8
-      IOS_CONFIGURATION: Release
-      # Xcode still builds the app in Release configuration; only the large
-      # Kotlin/Native framework uses Debug to avoid the 7 GB runner heap OOM.
+      # Kotlin's embedAndSignAppleFrameworkForXcode selects the linker from
+      # Xcode's CONFIGURATION. Set BOTH app and framework to Debug. A Release
+      # app with KOTLIN_FRAMEWORK_BUILD_TYPE=Debug still linked Release in CI.
+      IOS_CONFIGURATION: Debug
       IOS_KOTLIN_FRAMEWORK_BUILD_TYPE: Debug
       KOTLIN_DAEMON_JVMARGS: -Xmx1536M
       NUVIO_GRADLE_JVMARGS: -Xmx3072M -Dfile.encoding=UTF-8 -XX:MaxMetaspaceSize=512M
@@ -76,7 +77,6 @@ jobs:
         run: |
           python3 scripts/check-ios15-availability.py
           test -x scripts/build-ios-ipa.sh
-          test -x scripts/build-ios-ipa.sh
           bash -n scripts/build-ios-ipa.sh
           bash -n scripts/preflight-ios15-swift.sh
           bash scripts/preflight-ios15-swift.sh
@@ -99,7 +99,7 @@ jobs:
       - name: Prepare iOS native dependencies
         run: ./scripts/prepare-ios-dependencies.sh
 
-      - name: Build unsigned iOS 15+ IPA (Release app, Debug Kotlin framework)
+      - name: Build unsigned iOS 15+ IPA (Debug app and Debug Kotlin framework)
         run: |
           (
             while sleep 60; do
@@ -113,14 +113,28 @@ jobs:
           ) &
           monitor_pid=$!
           trap 'kill "${monitor_pid}" 2>/dev/null || true' EXIT
-          ./scripts/build-ios-ipa.sh
+          set -o pipefail
+          ./scripts/build-ios-ipa.sh 2>&1 | tee "${RUNNER_TEMP}/ios15-build.log"
+          if grep -Eq '(> Task :composeApp:linkReleaseFrameworkIosArm64|> Task :composeApp:linkReleaseFrameworkIosSimulatorArm64)' "${RUNNER_TEMP}/ios15-build.log"; then
+            echo "::error::Wrong Kotlin framework type: a Release linker ran inside the iOS 15 Debug build."
+            exit 1
+          fi
+
+      - name: Upload failed-build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nuvio-ios15-failed-build-log
+          path: ${{ runner.temp }}/ios15-build.log
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Validate IPA deployment targets and version
         id: verify
         shell: bash
         run: |
           shopt -s nullglob
-          ipa_files=(build/ios-ipa/*-full-release-kotlin-debug.ipa)
+          ipa_files=(build/ios-ipa/*-full-debug.ipa)
           if [[ ${#ipa_files[@]} -ne 1 ]]; then
             echo "Expected exactly one release IPA; found ${#ipa_files[@]}" >&2
             exit 1
@@ -148,7 +162,8 @@ jobs:
             echo "- Deployment target: iOS ${app_min}"
             echo "- Widget deployment target: iOS ${widget_min}"
             echo "- SHA-256: $(shasum -a 256 "${ipa}" | awk '{print $1}')"
-            echo "- Kotlin/Native framework: Debug (unoptimized, Xcode app Release)"
+            echo "- Xcode app: Debug (experimental, unoptimized)"
+            echo "- Kotlin/Native framework: Debug (unoptimized)"
             echo "- Signing: unsigned (use a compatible sideloading signer)"
           } >> "${GITHUB_STEP_SUMMARY}"
           echo "ipa_path=${ipa}" >> "${GITHUB_OUTPUT}"
@@ -157,7 +172,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-1.1.0-beta.2-ios15-kotlin-debug-unsigned-ipa
+          name: nuvio-1.1.0-beta.2-ios15-debug-unsigned-ipa
           path: ${{ steps.verify.outputs.ipa_path }}
           if-no-files-found: error
           retention-days: 14
@@ -176,6 +191,6 @@ jobs:
           gh release create "${tag}" "${IPA_PATH}" \
             --repo "${GITHUB_REPOSITORY}" \
             --target "${GITHUB_SHA}" \
-            --title "Nuvio ${VERSION} (iOS 15+ experimental, unoptimized Kotlin)" \
+            --title "Nuvio ${VERSION} (iOS 15+ experimental Debug)" \
             --prerelease \
-            --notes "Experimental iOS 15+ compatibility build for sideloading. Xcode app configuration is Release, but Kotlin/Native framework is Debug (unoptimized) to fit the standard 7 GB Xcode 27 runner. This is not a production-performance release. Includes iOS 15 Compose navigation and a static Downloads shortcut widget; newer Live Activity widget integration is excluded. Unsigned IPA: sign it with a compatible sideloading tool. Test playback, addons and downloads on an actual iOS 15 device before relying on it."
+            --notes "Experimental unsigned iOS 15+ compatibility IPA. Both the Xcode app and Kotlin/Native framework were compiled in Debug configuration because the full Release Kotlin linker exceeds the memory of the standard GitHub runner. This is NOT an optimized production build. Contains iOS 15 Compose navigation and a basic Downloads shortcut widget; Live Activity widget integration is excluded. Sign the IPA before installing, and test playback and other features on an actual iOS 15 device."

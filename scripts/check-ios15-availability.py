@@ -41,15 +41,21 @@ project_source = project.read_text()
 if project_source.count("IPHONEOS_DEPLOYMENT_TARGET = 15.0;") != 6:
     errors.append("App, widget and test deployment targets must all be iOS 15.0")
 
-# Check the build's explicit optimization fallback and artifact convention.
+# The Kotlin integration task uses Xcode's CONFIGURATION to select Debug or
+# Release. A mismatched override was silently ignored by Gradle, causing OOM.
+# Enforce a consistent Debug compatibility build and artifact name.
 build_script = (root / "scripts/build-ios-ipa.sh").read_text()
 release_workflow = (root / ".github/workflows/ios15-release.yml").read_text()
 if 'KOTLIN_FRAMEWORK_BUILD_TYPE="${kotlin_framework_build_type}"' not in build_script:
     errors.append("IPA builder must explicitly set Kotlin framework build type")
-if '-kotlin-debug' not in build_script or '*-full-release-kotlin-debug.ipa' not in release_workflow:
-    errors.append("IPA filename and CI validation must agree on Kotlin Debug suffix")
+if '*-full-debug.ipa' not in release_workflow or 'full-${configuration_slug}.ipa' not in build_script:
+    errors.append("IPA filename and CI validation must agree on Debug output")
+if 'IOS_CONFIGURATION: Debug' not in release_workflow:
+    errors.append("CI must build the iOS app in Debug to select the Debug Kotlin linker")
+if 'configuration\" != \"${kotlin_framework_build_type}' not in build_script:
+    errors.append("IPA builder must reject mismatched Xcode/Kotlin configuration")
 if "IOS_KOTLIN_FRAMEWORK_BUILD_TYPE: Debug" not in release_workflow:
-    errors.append("7 GB iOS 15 runner must use the unoptimized Kotlin/Native framework")
+    errors.append("7 GB iOS 15 runner must use the Debug Kotlin/Native framework")
 if "bash scripts/preflight-ios15-swift.sh" not in release_workflow:
     errors.append("CI must typecheck standalone Swift files before Kotlin compilation")
 if errors:
