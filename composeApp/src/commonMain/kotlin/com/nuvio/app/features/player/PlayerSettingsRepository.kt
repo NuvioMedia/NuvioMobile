@@ -1,6 +1,7 @@
 package com.nuvio.app.features.player
 
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.isLegacyIosVideoOutput
 import com.nuvio.app.features.player.skip.AutoSkipSegmentType
 import com.nuvio.app.features.player.skip.NextEpisodeThresholdMode
 import com.nuvio.app.features.streams.StreamAutoPlayMode
@@ -527,6 +528,11 @@ object PlayerSettingsRepository {
         iosContrast = PlayerSettingsStorage.loadIosContrast() ?: 0
         iosSaturation = PlayerSettingsStorage.loadIosSaturation() ?: 0
         iosGamma = PlayerSettingsStorage.loadIosGamma() ?: 0
+        if (isLegacyIosVideoOutput) {
+            constrainIos15VideoOutput()
+            saveIosVideoOutputSettings()
+            PlayerSettingsStorage.saveIosInterpolationEnabled(false)
+        }
         publish()
     }
 
@@ -1205,8 +1211,13 @@ object PlayerSettingsRepository {
 
     fun setIosVideoOutputPreset(preset: IosVideoOutputPreset) {
         ensureLoaded()
-        iosVideoOutputPreset = preset
-        when (preset) {
+        val resolved = if (isLegacyIosVideoOutput && preset == IosVideoOutputPreset.NativeEdr) {
+            IosVideoOutputPreset.SdrToneMapped
+        } else {
+            preset
+        }
+        iosVideoOutputPreset = resolved
+        when (resolved) {
             IosVideoOutputPreset.NativeEdr -> {
                 iosExtendedDynamicRangeEnabled = true
                 iosTargetColorspaceHintEnabled = true
@@ -1233,6 +1244,7 @@ object PlayerSettingsRepository {
             }
             IosVideoOutputPreset.Custom -> Unit
         }
+        constrainIos15VideoOutput()
         publish()
         saveIosVideoOutputSettings()
     }
@@ -1356,6 +1368,25 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveIosGamma(0)
         PlayerSettingsStorage.saveIosDebandEnabled(false)
         PlayerSettingsStorage.saveIosInterpolationEnabled(false)
+    }
+
+    /**
+     * EAGL/CAEAGLLayer is an 8-bit sRGB framebuffer on iOS 15. Settings
+     * synced from a newer iPhone must not advertise EDR or enable costly
+     * frame interpolation/compute shaders on this compatibility renderer.
+     */
+    private fun constrainIos15VideoOutput() {
+        if (!isLegacyIosVideoOutput) return
+        if (iosVideoOutputPreset == IosVideoOutputPreset.NativeEdr) {
+            iosVideoOutputPreset = IosVideoOutputPreset.SdrToneMapped
+            iosToneMappingMode = IosToneMappingMode.Bt2390
+        }
+        iosExtendedDynamicRangeEnabled = false
+        iosTargetColorspaceHintEnabled = false
+        iosHdrComputePeakEnabled = false
+        iosTargetPrimaries = IosTargetPrimaries.Bt709
+        iosTargetTransfer = IosTargetTransfer.Srgb
+        iosInterpolationEnabled = false
     }
 
     private fun saveIosVideoOutputSettings() {

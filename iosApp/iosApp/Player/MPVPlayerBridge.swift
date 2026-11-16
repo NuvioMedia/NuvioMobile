@@ -887,17 +887,28 @@ final class MPVPlayerViewController: UIViewController {
         saturation: Int,
         gamma: Int
     ) {
-        // Prevent saved video-output preferences from overriding iOS 15's
-        // known-good 8-bit SDR color target and copy-back decoder.
-        // In particular, direct VideoToolbox-to-GLES texture interop may
-        // produce distorted chroma with the pinned MPVKit binary.
+        // iOS 15's EAGL backing store is 8-bit SDR even on HDR-capable
+        // phones. Respect useful picture controls, but never claim EDR.
+        // Keep the VideoToolbox copy path because direct CVOpenGLES frame
+        // interop caused distorted chroma in the earlier experimental build.
         if usesSoftwareRenderer {
-            if mpv != nil {
-                setStringProperty("hwdec", "videotoolbox-copy")
-                setStringProperty("target-prim", "bt.709")
-                setStringProperty("target-trc", "srgb")
-                setStringProperty("tone-mapping", "mobius")
-            }
+            guard mpv != nil else { return }
+            setStringProperty("hwdec", "videotoolbox-copy")
+            setStringProperty("target-prim", "bt.709")
+            setStringProperty("target-trc", "srgb")
+            setStringProperty("target-colorspace-hint", "no")
+            // Auto remains the well-tested Mobius curve on iOS 15.
+            // The other modes are explicitly selected by the user.
+            setStringProperty("tone-mapping", toneMapping == "auto" ? "mobius" : toneMapping)
+            // GLES 3 on older iPhones has limited compute-shader support;
+            // forcing peak detection and frame interpolation is expensive.
+            setStringProperty("hdr-compute-peak", "no")
+            setStringProperty("interpolation", "no")
+            setStringProperty("deband", legacyGLActive && deband ? "yes" : "no")
+            setVideoEqualizer("brightness", brightness)
+            setVideoEqualizer("contrast", contrast)
+            setVideoEqualizer("saturation", saturation)
+            setVideoEqualizer("gamma", gamma)
             return
         }
         if #available(iOS 16.0, *) {
@@ -1455,6 +1466,19 @@ final class MPVPlayerViewController: UIViewController {
                     }
                 case MPV_EVENT_FILE_LOADED:
                     DispatchQueue.main.async {
+                        if self.usesSoftwareRenderer {
+                            // Source transfer metadata distinguishes real
+                            // PQ/HLG input from ordinary SDR. Both are shown
+                            // on an SDR framebuffer on iOS 15.
+                            let transfer = self.getString("video-params/gamma") ?? "unknown"
+                            let primaries = self.getString("video-params/primaries") ?? "unknown"
+                            let isHdr = ["pq", "hlg"].contains(transfer.lowercased())
+                            NSLog(
+                                "[Nuvio iOS 15] Source video: %@; transfer=%@, primaries=%@; output=8-bit SDR/sRGB",
+                                isHdr ? "HDR (tone-mapped)" : "SDR or unidentified",
+                                transfer, primaries
+                            )
+                        }
                         self.clearPlaybackError()
                         self.isPlayerLoading = false
                         self.isFileLoaded = true

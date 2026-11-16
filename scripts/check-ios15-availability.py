@@ -91,6 +91,17 @@ if not all(setting in player_source for setting in (
     errors.append("iOS 15 needs explicit SDR color output and HDR tone mapping")
 if '"gpu-api", "opengl"' not in player_source:
     errors.append("iOS 15 OpenGL path must not select Vulkan/MoltenVK")
+for property_name in ("brightness", "contrast", "saturation", "gamma"):
+    if f'setVideoEqualizer("{property_name}", {property_name})' not in player_source:
+        errors.append(f"iOS 15 picture control {property_name} must apply to libmpv")
+if 'setStringProperty("tone-mapping", toneMapping == "auto" ? "mobius" : toneMapping)' not in player_source:
+    errors.append("iOS 15 must apply user-selected HDR-to-SDR tone mapping")
+if 'setStringProperty("deband", legacyGLActive && deband ? "yes" : "no")' not in player_source:
+    errors.append("iOS 15 GPU debanding toggle must work")
+if 'setStringProperty("hdr-compute-peak", "no")' not in player_source:
+    errors.append("iOS 15 should disable costly unverified HDR compute-shader detection")
+if 'setStringProperty("interpolation", "no")' not in player_source:
+    errors.append("iOS 15 should avoid frame interpolation stutter")
 if "private lazy var metalLayer = MetalLayer()" not in player_source:
     errors.append("iOS 15 must not instantiate a Metal layer before checking availability")
 if "if usesSoftwareRenderer {" not in player_source or "MPVSoftwareVideoRenderer(imageView:" not in player_source:
@@ -123,6 +134,13 @@ if not (player_source.find("legacyGLView?.stop()") <
     errors.append("OpenGL render context must close before the mpv core")
 if "MPVLegacyGLRenderer.swift" not in (root / "scripts/preflight-ios15-swift.sh").read_text():
     errors.append("Main preflight must typecheck the OpenGL ES renderer")
+modal_source = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/IosVideoSettingsModal.kt").read_text()
+if 'listOf(IosVideoOutputPreset.SdrToneMapped, IosVideoOutputPreset.Compatibility)' not in modal_source:
+    errors.append("The iOS 15 menu must hide the unsupported Native EDR preset")
+if 'if (!isLegacyIosVideoOutput)' not in modal_source:
+    errors.append("Unsupported iOS 15 compute peak/interpolation controls must be hidden")
+if 'constrainIos15VideoOutput()' not in (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text():
+    errors.append("Saved newer-iOS EDR settings must be constrained on iOS 15")
 settings_source = (root / "composeApp/src/commonMain/kotlin/com/nuvio/app/features/player/PlayerSettingsRepository.kt").read_text()
 if 'safeLegacyPlayback && externalPlayerId != null' in settings_source:
     errors.append("Never auto-enable an external player on iOS 15")

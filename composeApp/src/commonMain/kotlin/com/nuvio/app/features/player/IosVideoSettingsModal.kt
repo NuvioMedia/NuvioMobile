@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.nuvio.app.core.ui.Slider
+import com.nuvio.app.isLegacyIosVideoOutput
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_close
 import nuvio.composeapp.generated.resources.player_video_settings_brightness
@@ -80,6 +81,14 @@ internal fun IosVideoSettingsModal(
             }
 
             Spacer(Modifier.height(16.dp))
+            if (isLegacyIosVideoOutput) {
+                Text(
+                    text = "iOS 15 uses SDR output. HDR videos are tone-mapped to SDR; native EDR is unavailable. Picture adjustments and tone mapping work through libmpv. HDR peak detection and frame interpolation are disabled for performance.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
+            }
 
             Column(
                 modifier = Modifier
@@ -89,7 +98,11 @@ internal fun IosVideoSettingsModal(
             ) {
                 OptionGroup(
                     title = stringResource(Res.string.player_video_settings_output_preset),
-                    options = IosVideoOutputPreset.entries,
+                    options = if (isLegacyIosVideoOutput) {
+                        listOf(IosVideoOutputPreset.SdrToneMapped, IosVideoOutputPreset.Compatibility)
+                    } else {
+                        IosVideoOutputPreset.entries
+                    },
                     selected = settings.iosVideoOutputPreset,
                     label = { it.localizedLabel() },
                     description = { it.localizedDescription() },
@@ -99,15 +112,17 @@ internal fun IosVideoSettingsModal(
                     },
                 )
 
-                ToggleRow(
-                    title = stringResource(Res.string.player_video_settings_hdr_peak_detection),
-                    description = stringResource(Res.string.player_video_settings_hdr_peak_detection_desc),
-                    checked = settings.iosHdrComputePeakEnabled,
-                    onCheckedChange = {
-                        PlayerSettingsRepository.setIosHdrComputePeakEnabled(it)
-                        onSettingsChanged()
-                    },
-                )
+                if (!isLegacyIosVideoOutput) {
+                    ToggleRow(
+                        title = stringResource(Res.string.player_video_settings_hdr_peak_detection),
+                        description = stringResource(Res.string.player_video_settings_hdr_peak_detection_desc),
+                        checked = settings.iosHdrComputePeakEnabled,
+                        onCheckedChange = {
+                            PlayerSettingsRepository.setIosHdrComputePeakEnabled(it)
+                            onSettingsChanged()
+                        },
+                    )
+                }
 
                 OptionGroup(
                     title = stringResource(Res.string.player_video_settings_tone_mapping),
@@ -129,15 +144,17 @@ internal fun IosVideoSettingsModal(
                         onSettingsChanged()
                     },
                 )
-                ToggleRow(
-                    title = stringResource(Res.string.player_video_settings_interpolation),
-                    description = stringResource(Res.string.player_video_settings_interpolation_desc),
-                    checked = settings.iosInterpolationEnabled,
-                    onCheckedChange = {
-                        PlayerSettingsRepository.setIosInterpolationEnabled(it)
-                        onSettingsChanged()
-                    },
-                )
+                if (!isLegacyIosVideoOutput) {
+                    ToggleRow(
+                        title = stringResource(Res.string.player_video_settings_interpolation),
+                        description = stringResource(Res.string.player_video_settings_interpolation_desc),
+                        checked = settings.iosInterpolationEnabled,
+                        onCheckedChange = {
+                            PlayerSettingsRepository.setIosInterpolationEnabled(it)
+                            onSettingsChanged()
+                        },
+                    )
+                }
 
                 PictureSlider(
                     title = stringResource(Res.string.player_video_settings_brightness),
