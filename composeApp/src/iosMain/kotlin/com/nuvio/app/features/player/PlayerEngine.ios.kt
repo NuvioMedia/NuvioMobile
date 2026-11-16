@@ -427,7 +427,8 @@ actual fun PlatformPlayerSurface(
             },
             interactive = false,
         )
-        StyledSubtitleOverlay(subtitleText, subtitleStyle)
+        val subtitleCues = remember(subtitleText) { parseMpvSubtitleText(subtitleText) }
+        StyledSubtitleOverlay(subtitleCues, subtitleStyle)
         
         if (useNativeController) {
             var isPlayingLocal by remember { mutableStateOf(playWhenReady) }
