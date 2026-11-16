@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="party_title">Nézőparti</string>
     <string name="party_start_title">Közös mozizás</string>
@@ -14,7 +13,7 @@
     <string name="party_seats">%1$d / %2$d hely</string>
     <string name="party_host">Házigazda</string>
     <string name="party_you">Te</string>
-    <string name="party_status_ready">Műsoron</string>
+    <string name="party_status_ready">Nézi</string>
     <string name="party_status_buffering">Pufferelés</string>
     <string name="party_status_loading">Betöltés</string>
     <string name="party_status_choosing">Forrás kiválasztása</string>
@@ -23,7 +22,7 @@
     <string name="party_remove_title">%1$s eltávolítása?</string>
     <string name="party_remove_message">Nem fog tudni újból csatlakozni ehhez a partihoz.</string>
     <string name="party_leave">Kilépés a partiból</string>
-    <string name="party_end">Nézőparti leállítása</string>
+    <string name="party_end">Befejezés mindenkinek</string>
     <string name="party_end_title">Mindenkinél leállítod a Nézőpartit?</string>
     <string name="party_end_message">Minden résztvevő kapcsolata meg fog szűnni.</string>
     <string name="party_now_watching">A parti ezt nézi: %1$s</string>

@@ -23,7 +23,7 @@
     <string name="servers_catalog_metadata">Kiegészítők metaadatainak használata</string>
     <string name="servers_catalog_metadata_description">A címek a kiegészítőid részleteivel nyílnak meg és úgy szinkronizálódnak, mint bármely más katalóguscím. A lejátszási és megtekintési jelölések továbbra is elküldésre kerülnek ide: %1$s. Egyes címek nem egyezhetnek vagy nem játszhatók le, ha a kiegészítőid eltérően számozzák vagy azonosítják őket.</string>
     <string name="servers_import_watch_state">Megtekintési előrehaladás importálása</string>
-    <string name="servers_import_watch_state_description">A(z) %1$s szolgáltatásban nézett címek hozzáadása a Látottak folytatása sávhoz a megtekintési jelölésekkel együtt. A lejátszás folytatása mindenképpen innen történik: %1$s.</string>
+    <string name="servers_import_watch_state_description">A(z) %1$s szolgáltatásban nézett címek hozzáadása a Nézés folytatása sorhoz a megtekintési jelölésekkel együtt. A lejátszás folytatása mindenképpen innen történik: %1$s.</string>
     <string name="servers_sign_in_again">Bejelentkezés újra</string>
     <string name="servers_remove">Szerver eltávolítása</string>
     <string name="servers_remove_confirm_title">Eltávolítod ezt a szervert?</string>
@@ -56,7 +56,7 @@
     <string name="servers_play_method_direct_stream">Közvetlen stream (Direct stream)</string>
     <string name="servers_play_method_transcode">Átkódolás (Transcoding)</string>
     <string name="servers_watched_failed">Nem sikerült frissíteni a megtekintési állapotot a szerveren.</string>
-    <string name="servers_resume_row">Látottak folytatása</string>
+    <string name="servers_resume_row">Nézés folytatása</string>
     <string name="servers_failure_unsupported">A szerver nem támogatja ezt az elemet.</string>
     <string name="servers_failure_incomplete">A szerver könyvtárának ellenőrzése még folyamatban van. Próbáld újra egy pillanat múlva.</string>
 </resources>
