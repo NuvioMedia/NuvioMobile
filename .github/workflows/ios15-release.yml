@@ -174,7 +174,7 @@ jobs:
             exit 1
           fi
           version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "${staging}/app.plist")"
-          if [[ "${version}" != '1.1.0-beta.10' ]]; then
+          if [[ "${version}" != '1.1.0-beta.11' ]]; then
             echo "Unexpected version: ${version}" >&2
             exit 1
           fi
@@ -187,7 +187,7 @@ jobs:
             echo "- SHA-256: $(shasum -a 256 "${ipa}" | awk '{print $1}')"
             echo "- Xcode app: Debug (experimental, unoptimized)"
             echo "- Kotlin/Native framework: Debug (unoptimized)"
-            echo "- iOS 15: functional tone mapping, deband and picture sliders; no fake Native EDR"
+            echo "- iOS 15: CPU video decode + full-resolution OpenGL ES display to diagnose green tint; no native EDR"
             echo "- HDR source transfer logging; 8-bit SDR output; no costly peak detection or interpolation"
             echo "- Internal libmpv software fallback retained; no external player"
             echo "- iOS 16+: internal libmpv GPU video renderer"
@@ -200,7 +200,7 @@ jobs:
       - name: Save build artifact
         uses: actions/upload-artifact@v7
         with:
-          name: nuvio-1.1.0-beta.10-ios15-debug-unsigned-ipa
+          name: nuvio-1.1.0-beta.11-ios15-debug-unsigned-ipa
           path: ${{ steps.verify.outputs.ipa_path }}
           if-no-files-found: error
           retention-days: 14
@@ -221,4 +221,4 @@ jobs:
             --target "${GITHUB_SHA}" \
             --title "Nuvio ${VERSION} (iOS 15+ experimental Debug)" \
             --prerelease \
-            --notes "Experimental unsigned iOS 15+ IPA. Fixes the previously nonfunctional in-player video tuning: brightness, contrast, saturation, gamma and OpenGL deband now apply live to libmpv; tone-mapping choices select the real GPU curve. On iOS 15, unsupported Native EDR, compute-shader HDR peak detection and frame interpolation are hidden or disabled to avoid misleading controls and stutter. HDR PQ/HLG sources are tone-mapped to an 8-bit SDR/sRGB framebuffer; SDR sources remain SDR. Source transfer/primaries are logged on file load to aid testing. Global playback output settings now explain the iOS 15 capabilities rather than exposing unavailable EDR/decoder settings. iOS 16+ retains its original settings and rendering path. This checks code and build integration but cannot prove on-device HDR/SDR picture accuracy. No external player; unsigned Debug IPA, sign before installing."
+            --notes "Experimental unsigned iOS 15+ IPA. Tests software decoding with full-resolution OpenGL ES to isolate green tint affecting SDR and HDR video. Keeps the internal GPU rendering pipeline and picture controls. Previously fixed: brightness, contrast, saturation, gamma and OpenGL deband now apply live to libmpv; tone-mapping choices select the real GPU curve. On iOS 15, unsupported Native EDR, compute-shader HDR peak detection and frame interpolation are hidden or disabled to avoid misleading controls and stutter. HDR PQ/HLG sources are tone-mapped to an 8-bit SDR/sRGB framebuffer; SDR sources remain SDR. Source transfer/primaries are logged on file load to aid testing. Global playback output settings now explain the iOS 15 capabilities rather than exposing unavailable EDR/decoder settings. iOS 16+ retains its original settings and rendering path. This checks code and build integration but cannot prove on-device HDR/SDR picture accuracy. No external player; unsigned Debug IPA, sign before installing."
