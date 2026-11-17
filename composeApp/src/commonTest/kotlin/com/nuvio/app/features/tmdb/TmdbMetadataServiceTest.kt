@@ -268,6 +268,18 @@ class TmdbMetadataServiceTest {
     }
 
     @Test
+    fun `isTalkShowGuestAppearance skips talk show guests but keeps hosts and other series`() {
+        assertTrue(isTalkShowGuestAppearance(listOf(10767, 35), "Self - Guest"))
+        assertTrue(isTalkShowGuestAppearance(listOf(10767), "Self"))
+        assertTrue(isTalkShowGuestAppearance(listOf(10767), null))
+        assertFalse(isTalkShowGuestAppearance(listOf(10767), "Self - Host"))
+        assertFalse(isTalkShowGuestAppearance(listOf(10767), "Co-Host"))
+        assertFalse(isTalkShowGuestAppearance(listOf(18, 80), "Self"))
+        assertFalse(isTalkShowGuestAppearance(emptyList(), "Detective Ghost"))
+        assertTrue(isTalkShowGuestAppearance(listOf(10767), "Ghost"))
+    }
+
+    @Test
     fun `resolvePersonName falls back Japanese names to Romaji for non-Japanese locales`() {
         assertEquals(
             "Atsuko Tanaka",
