@@ -1,0 +1,4 @@
+<resources>
+    <string name="autosync_toast_no_fit">Sinkronisasi gagal: subtitle ini tidak cocok dengan versi video ini.</string>
+    <string name="autosync_label_synced">Tersinkron otomatis</string>
+</resources>

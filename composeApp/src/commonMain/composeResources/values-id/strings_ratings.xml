@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">Beri Rating</string>
+    <string name="rating_your_rating">Rating Anda</string>
+    <string name="rating_rate_episode">Beri rating episode</string>
+    <string name="rating_rated">Diberi rating %1$s/10</string>
+    <string name="rating_value">%1$s dari 10</string>
+    <string name="rating_syncs_to">Disinkronkan ke %1$s</string>
+    <string name="rating_saved">Rating tersimpan</string>
+    <string name="rating_removed">Rating dihapus</string>
+    <string name="rating_failed">Tidak dapat memperbarui rating Anda di %1$s</string>
+    <string name="settings_tracking_ratings">Rating</string>
+    <string name="settings_tracking_ratings_description">Tempat rating Anda disimpan dan ditampilkan</string>
+    <string name="settings_tracking_ratings_picker_subtitle">Beri rating judul dari halaman detailnya. Rating Anda disimpan dan ditampilkan dari layanan yang Anda pilih.</string>
+    <string name="settings_tracking_ratings_off_description">Sembunyikan tombol beri rating.</string>
+    <string name="settings_tracking_ratings_simkl_description">Beri rating film dan acara. Memberi rating pada judul yang belum ada di daftar Simkl akan menambahkannya.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Beri rating film, acara, dan episode.</string>
+</resources>
