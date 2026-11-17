@@ -4,6 +4,7 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.Modifier
 import com.nuvio.app.features.streams.StreamsUiState
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -16,6 +17,51 @@ class PlayerScreenRuntimeStateTest {
     @Test
     fun controlsStartHidden() {
         assertFalse(PlayerScreenRuntime(testPlayerScreenArgs()).controlsVisible)
+    }
+
+    @Test
+    fun subtitleAppearanceUpdatesWithoutAPlaybackSnapshot() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val visibleStyle = derivedStateOf { runtime.subtitleStyle }
+        assertEquals(SubtitleAppearance(), visibleStyle.value.appearance)
+        val style = runtime.subtitleStyle.copy(appearance = SubtitleAppearance(fontId = "serif", shadowEnabled = true))
+        runtime.playerSettingsUiState = runtime.playerSettingsUiState.copy(subtitleStyle = style)
+        assertEquals(style, visibleStyle.value)
+    }
+
+    @Test
+    fun endedSnapshotRetainsDurationOnlyForTheSamePlayback() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(durationMs = 30_000L))
+        runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(isLoading = false, isEnded = true))
+        assertEquals(30_000L, runtime.playbackSnapshot.durationMs)
+        assertFalse(runtime.isAtNextEpisodeThreshold())
+
+        runtime.activeSourceUrl = "https://example.com/another.mp4"
+        runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot())
+        assertEquals(0L, runtime.playbackSnapshot.durationMs)
+
+        runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(durationMs = 121_000L))
+        runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(isLoading = false, isEnded = true))
+        assertTrue(runtime.isAtNextEpisodeThreshold())
+    }
+
+    @Test
+    fun shortErrorClipsDoNotStartOrCompleteScrobbling() = runTest {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs()).apply { scope = backgroundScope }
+        runtime.updatePlaybackSnapshot(PlayerPlaybackSnapshot(
+            isLoading = false, isPlaying = true, positionMs = 29_000L, durationMs = 30_000L,
+        ))
+        runtime.emitTrackingScrobbleStart()
+        assertFalse(runtime.hasRequestedScrobbleStartForCurrentItem)
+        runtime.emitStopScrobbleForCurrentProgress()
+        assertFalse(runtime.hasSentCompletionScrobbleForCurrentItem)
+
+        runtime.hasRequestedScrobbleStartForCurrentItem = true
+        runtime.scrobbleStartRequestGeneration = 1L
+        runtime.emitTrackingScrobblePause()
+        runtime.emitTrackingScrobbleStop()
+        assertEquals(1L, runtime.scrobbleStartRequestGeneration)
     }
 
     @Test
@@ -261,7 +307,58 @@ class PlayerScreenRuntimeStateTest {
         )
     }
 
-    private fun testPlayerScreenArgs() = PlayerScreenArgs(
+    @Test
+    fun runtimeCarriesSubtitleRequestExtrasFromItsLaunch() {
+        val extras = SubtitleRequestExtras(filename = "Movie.2024.mkv", videoSize = 42L)
+        assertEquals(extras, PlayerScreenRuntime(testPlayerScreenArgs(subtitleExtras = extras)).activeSubtitleExtras)
+        assertNull(PlayerScreenRuntime(testPlayerScreenArgs()).activeSubtitleExtras)
+    }
+
+    @Test
+    fun activeSubtitleExtrasIsMutableForHashEnrichment() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs(
+            subtitleExtras = SubtitleRequestExtras(filename = "Movie.mkv", videoSize = 500L),
+        ))
+        assertEquals("Movie.mkv", runtime.activeSubtitleExtras?.filename)
+        assertNull(runtime.activeSubtitleExtras?.videoHash)
+
+        // Simulate hash computation enrichment (as done by onExtrasUpdated callback).
+        val enriched = runtime.activeSubtitleExtras!!.copy(videoHash = "0011223344556677")
+        runtime.activeSubtitleExtras = enriched
+
+        assertEquals("0011223344556677", runtime.activeSubtitleExtras?.videoHash)
+        assertEquals("Movie.mkv", runtime.activeSubtitleExtras?.filename)
+        assertEquals(500L, runtime.activeSubtitleExtras?.videoSize)
+    }
+
+    @Test
+    fun activeSubtitleExtrasCanBeResetToNull() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs(
+            subtitleExtras = SubtitleRequestExtras(filename = "Movie.mkv", videoHash = "abc"),
+        ))
+        assertEquals("abc", runtime.activeSubtitleExtras?.videoHash)
+
+        // Simulate switching to a downloaded episode (no stream extras).
+        runtime.activeSubtitleExtras = null
+        assertNull(runtime.activeSubtitleExtras)
+    }
+
+    @Test
+    fun activeSubtitleExtrasCanBeReplacedWithNewStreamExtras() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs(
+            subtitleExtras = SubtitleRequestExtras(filename = "OldFile.mkv", videoHash = "oldhash", videoSize = 100L),
+        ))
+
+        // Simulate switching to a new source with different behavior hints.
+        val newExtras = SubtitleRequestExtras(filename = "NewFile.mkv", videoSize = 999L)
+        runtime.activeSubtitleExtras = newExtras
+
+        assertEquals("NewFile.mkv", runtime.activeSubtitleExtras?.filename)
+        assertEquals(999L, runtime.activeSubtitleExtras?.videoSize)
+        assertNull(runtime.activeSubtitleExtras?.videoHash, "Old hash must not carry over")
+    }
+
+    private fun testPlayerScreenArgs(subtitleExtras: SubtitleRequestExtras? = null) = PlayerScreenArgs(
         profileId = 1,
         title = "Title",
         sourceUrl = "https://example.com/video.mp4",
@@ -296,6 +393,7 @@ class PlayerScreenRuntimeStateTest {
         torrentTrackers = emptyList(),
         initialPositionMs = 0L,
         initialProgressFraction = null,
+        subtitleExtras = subtitleExtras,
     )
 
     private fun testPlayerLaunch() = PlayerLaunch(

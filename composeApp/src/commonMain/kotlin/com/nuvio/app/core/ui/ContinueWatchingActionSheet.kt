@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.PlayArrow
@@ -35,6 +36,7 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.cw_action_go_to_details
 import nuvio.composeapp.generated.resources.cw_action_remove
 import nuvio.composeapp.generated.resources.cw_action_start_from_beginning
+import nuvio.composeapp.generated.resources.hero_mark_watched
 import nuvio.composeapp.generated.resources.play_manually
 import org.jetbrains.compose.resources.stringResource
 
@@ -48,6 +50,7 @@ fun NuvioContinueWatchingActionSheet(
     onOpenDetails: () -> Unit,
     onStartFromBeginning: (() -> Unit)? = null,
     onPlayManually: (() -> Unit)? = null,
+    onMarkWatched: (() -> Unit)? = null,
     onRemove: () -> Unit,
 ) {
     if (item == null) return
@@ -96,6 +99,13 @@ fun NuvioContinueWatchingActionSheet(
                     icon = Icons.Default.Replay,
                     title = stringResource(Res.string.cw_action_start_from_beginning),
                     onClick = { dismissAfter(onStartFromBeginning) },
+                )
+            }
+            if (onMarkWatched != null) {
+                NuvioBottomSheetActionRow(
+                    icon = Icons.Default.CheckCircle,
+                    title = stringResource(Res.string.hero_mark_watched),
+                    onClick = { dismissAfter(onMarkWatched) },
                 )
             }
             NuvioBottomSheetActionRow(

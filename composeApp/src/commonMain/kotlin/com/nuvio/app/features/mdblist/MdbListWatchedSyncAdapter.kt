@@ -1,6 +1,7 @@
 package com.nuvio.app.features.mdblist
 
 import com.nuvio.app.features.tracking.TrackingHistoryItem
+import com.nuvio.app.features.tracking.TrackingMediaReference
 import com.nuvio.app.features.tracking.TrackingProviderId
 import com.nuvio.app.features.tracking.TrackingRefreshIntent
 import com.nuvio.app.features.tracking.TrackingWatchedProvider
@@ -14,39 +15,59 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 class MdbListWatchedSyncAdapter(
     private val sync: MdbListSyncRepository,
     private val history: MdbListHistoryService,
+    private val episodeMappings: MdbListEpisodeMappingService,
     auth: MdbListAuthStore,
     private val activeProfile: StateFlow<Int>,
 ) : TrackingWatchedProvider {
     override val providerId = TrackingProviderId.MDBLIST
-    private val changes = combine(sync.state, auth.state, activeProfile) { _, _, _ -> Unit }
+    private val watchedItems = MdbListRemapCache<List<WatchedItem>>()
+    private val watchedKeys = MdbListRemapCache<Set<String>>()
+    private val changes = combine(sync.state, auth.state, activeProfile, episodeMappings.remapped) { _, _, _, _ -> Unit }
 
+    // Episodes of shows with a known mapping are listed in the addon's numbering. A newly resolved
+    // mapping changes the extra keys, which makes the watched repository pull the items again.
     override suspend fun pull(profileId: Int, pageSize: Int): List<WatchedItem> {
         val scope = scope(profileId)
         sync.refresh(TrackingRefreshIntent.AUTOMATIC)
         if (sync.currentScope() != scope) throw CancellationException("MDBList account changed")
         val state = sync.state.value
         if (!state.hasLoaded && state.error != null) throw MdbListApiException(code = "sync_unavailable")
-        return sync.currentProjection().watchedItems
+        val projection = sync.currentProjection()
+        val mappings = episodeMappings.remapped.value
+        if (mappings.isEmpty()) return projection.watchedItems
+        return watchedItems.get(projection, mappings) { projection.watchedItems(mappings::get) }
     }
 
     override suspend fun pullExtraWatchedKeys(profileId: Int): Set<String> {
         scope(profileId)
-        return sync.currentProjection().watchedKeys
+        return currentWatchedKeys()
     }
 
     override fun observeExtraWatchedKeys(profileId: Int) = combine(changes, activeProfile) { _, active ->
-        if (profileId == active) sync.currentProjection().watchedKeys else emptySet()
+        if (profileId == active) currentWatchedKeys() else emptySet()
     }.distinctUntilChanged()
 
+    private fun currentWatchedKeys(): Set<String> {
+        val projection = sync.currentProjection()
+        val mappings = episodeMappings.remapped.value
+        if (mappings.isEmpty()) return projection.watchedKeys
+        return watchedKeys.get(projection, mappings) { projection.watchedKeys(mappings::get) }
+    }
+
     override suspend fun push(profileId: Int, items: Collection<WatchedItem>) {
-        val result = history.add(scope(profileId), items.map { TrackingHistoryItem(it.reference(), it.markedAtEpochMs) })
+        val scope = scope(profileId)
+        val result = history.add(scope, items.map { TrackingHistoryItem(it.reference().inMdbListNumbering(), it.markedAtEpochMs) })
         check(result.isComplete) { "MDBList could not match ${result.notFoundCount} watched items" }
     }
 
     override suspend fun delete(profileId: Int, items: Collection<WatchedItem>) {
-        val result = history.remove(scope(profileId), items.map { it.reference() })
+        val scope = scope(profileId)
+        val result = history.remove(scope, items.map { it.reference().inMdbListNumbering() })
         check(result.isComplete) { "MDBList could not match ${result.notFoundCount} watched items" }
     }
+
+    private suspend fun TrackingMediaReference.inMdbListNumbering() =
+        episodeMappings.toMdbListNumbering(this, sync.currentProjection())
 
     private fun scope(profileId: Int) = sync.currentScope().also {
         if (it.profileId != profileId) throw CancellationException("MDBList profile changed")

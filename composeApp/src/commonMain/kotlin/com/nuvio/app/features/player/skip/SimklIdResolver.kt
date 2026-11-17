@@ -42,8 +42,8 @@ internal object SimklIdResolver {
         return "client_id=$clientId&app-name=$appName&app-version=1.0"
     }
 
-    suspend fun resolveIds(source: String, id: String): ResolvedIds? {
-        val cacheKey = "$source:$id"
+    suspend fun resolveIds(source: String, id: String, contentTypeHint: String? = null): ResolvedIds? {
+        val cacheKey = if (contentTypeHint != null) "$source:$id:$contentTypeHint" else "$source:$id"
         idsCache[cacheKey]?.let { return it }
         if (SimklConfig.CLIENT_ID.isBlank()) return null
 
@@ -51,9 +51,25 @@ internal object SimklIdResolver {
             val searchText = httpGetText("$SIMKL_API_BASE_URL/search/id?$source=$id&${commonParams()}")
             val results = json.parseToJsonElement(searchText).jsonArray
             if (results.isEmpty()) return null
-            val simklId = results[0].jsonObject["ids"]?.jsonObject?.get("simkl")?.jsonPrimitive?.long ?: return null
 
-            val type = results[0].jsonObject["type"]?.jsonPrimitive?.content ?: "anime"
+            val matchedResult = if (contentTypeHint != null) {
+                val expectedTypes = when (contentTypeHint.lowercase()) {
+                    "movie", "film" -> setOf("movie")
+                    "series", "tv", "show", "tvshow" -> setOf("show", "tv")
+                    "anime" -> setOf("anime")
+                    else -> emptySet()
+                }
+                results.firstOrNull { entry ->
+                    val t = entry.jsonObject["type"]?.jsonPrimitive?.content
+                    t != null && t in expectedTypes
+                } ?: results[0]
+            } else {
+                results[0]
+            }
+
+            val simklId = matchedResult.jsonObject["ids"]?.jsonObject?.get("simkl")?.jsonPrimitive?.long ?: return null
+
+            val type = matchedResult.jsonObject["type"]?.jsonPrimitive?.content ?: "anime"
             val mediaType = when (type) {
                 "movie" -> "movies"
                 "show" -> "tv"

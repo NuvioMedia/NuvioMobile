@@ -11,7 +11,12 @@ import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.CachePolicy
 import coil3.request.crossfade
 import coil3.svg.SvgDecoder
+import com.nuvio.app.core.network.NetworkErrorInterceptor
 import com.nuvio.app.core.poster.CustomPosterFallbackInterceptor
+import com.nuvio.app.features.servers.plex.PlexArtworkInterceptor
+import com.nuvio.app.features.servers.silo.SiloArtworkInterceptor
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.okhttp.OkHttp
 
 /**
  * Custom Application class that implements [SingletonImageLoader.Factory] to guarantee
@@ -28,9 +33,18 @@ class NuvioApplication : Application(), SingletonImageLoader.Factory {
             .memoryCachePolicy(CachePolicy.ENABLED)
             .components {
                 add(CustomPosterFallbackInterceptor())
+                add(PlexArtworkInterceptor())
+                add(SiloArtworkInterceptor())
                 add(SvgDecoder.Factory())
                 add(
                     KtorNetworkFetcherFactory(
+                        httpClient = {
+                            HttpClient(OkHttp) {
+                                engine {
+                                    addInterceptor(NetworkErrorInterceptor())
+                                }
+                            }
+                        },
                         cacheStrategy = { CacheControlCacheStrategy() },
                     ),
                 )

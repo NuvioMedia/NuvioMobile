@@ -69,6 +69,14 @@ internal enum class StreamBadgeChipSize(
         horizontalPadding = 3.dp,
         verticalPadding = 2.dp,
     ),
+    PLAYER(
+        containerHeight = 17.dp,
+        imageHeight = 13.dp,
+        minImageWidth = 28.dp,
+        maxImageWidth = 78.dp,
+        horizontalPadding = 3.dp,
+        verticalPadding = 2.dp,
+    ),
     PREVIEW(
         containerHeight = 24.dp,
         imageHeight = 18.dp,
@@ -124,14 +132,17 @@ internal fun StreamBadgeChip(
 }
 
 @Composable
-internal fun StreamBadgeImage(badge: StreamBadge) {
+internal fun StreamBadgeImage(
+    badge: StreamBadge,
+    size: StreamBadgeChipSize = StreamBadgeChipSize.STREAM,
+) {
     StreamBadgeChip(
         imageURL = badge.imageURL,
         name = badge.name,
         tagColor = badge.tagColor,
         tagStyle = badge.tagStyle,
         borderColor = badge.borderColor,
-        size = StreamBadgeChipSize.STREAM,
+        size = size,
     )
 }
 

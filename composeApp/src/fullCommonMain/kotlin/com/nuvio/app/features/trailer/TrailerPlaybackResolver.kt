@@ -7,4 +7,9 @@ actual object TrailerPlaybackResolver {
         if (youtubeUrl.isBlank()) return null
         return extractor.extractPlaybackSource(youtubeUrl)
     }
+
+    actual suspend fun resolveSingleUrlFromYouTubeUrl(youtubeUrl: String): String? {
+        if (youtubeUrl.isBlank()) return null
+        return extractor.extractSingleUrl(youtubeUrl)
+    }
 }

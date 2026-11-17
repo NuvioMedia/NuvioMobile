@@ -7,6 +7,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,6 +26,9 @@ import androidx.compose.ui.interop.UIKitViewController
 import androidx.compose.ui.platform.LocalDensity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.touchlab.kermit.Logger
+import com.nuvio.app.features.autosync.AutoSyncMpvCoordinator
+import com.nuvio.app.features.autosync.AutoSyncMpvEngineController
+import com.nuvio.app.features.autosync.IosAutoSyncMpvPlatform
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.delay
@@ -54,6 +58,7 @@ actual fun PlatformPlayerSurface(
     initialPositionMs: Long?,
     initialPositionRequestKey: String?,
     resizeMode: PlayerResizeMode,
+    playbackEngine: AndroidPlaybackEngine?,
     useNativeController: Boolean,
     onInitialPositionHandled: (key: String, handled: Boolean) -> Unit,
     onControllerReady: (PlayerEngineController) -> Unit,
@@ -68,6 +73,8 @@ actual fun PlatformPlayerSurface(
     PlayerSettingsRepository.ensureLoaded()
     val playerSettings by PlayerSettingsRepository.uiState.collectAsStateWithLifecycle()
     val latestPlayerSettings = rememberUpdatedState(playerSettings)
+    var subtitleText by remember(sourceUrl) { mutableStateOf("") }
+    var subtitleStyle by remember { mutableStateOf(SubtitleStyleState.DEFAULT) }
 
     val bridge = remember {
         NuvioPlayerBridgeFactory.create()
@@ -81,7 +88,14 @@ actual fun PlatformPlayerSurface(
     }
 
     val controller = remember(bridge) {
-        object : PlayerEngineController {
+        object : PlayerEngineController, PlayerSystemControlSource {
+            override val keepsPlaybackInBackground: Boolean
+                get() = bridge.getKeepsPlaybackInBackground()
+
+            override fun setSystemControlHandler(handler: PlayerSystemControlHandler?) {
+                bridge.setSystemControlHandler(handler)
+            }
+
             override fun play() {
                 bridge.play()
             }
@@ -198,6 +212,12 @@ actual fun PlatformPlayerSurface(
                 bridge.applyAudioLanguagePreferences(languages)
             }
 
+            override suspend fun getMediaInfo(): PlayerMediaInfo =
+                mpvMediaInfo { name -> bridge.getProperty(name).ifBlank { null } }
+
+            override suspend fun getChapters(): List<PlayerChapter> =
+                mpvChapters { name -> bridge.getProperty(name).ifBlank { null } }
+
             override fun selectSubtitleTrack(index: Int) {
                 if (index < 0) {
                     bridge.selectSubtitleTrack(-1) // disable
@@ -265,6 +285,7 @@ actual fun PlatformPlayerSurface(
             }
 
             override fun applySubtitleStyle(style: SubtitleStyleState) {
+                subtitleStyle = style
                 bridge.applySubtitleStyle(
                     textColor = style.textColor.toMpvColorString(),
                     backgroundColor = style.backgroundColor.toMpvColorString(),
@@ -274,13 +295,42 @@ actual fun PlatformPlayerSurface(
                     fontSize = style.toMpvSubtitleFontSize(),
                     subPos = style.toMpvSubtitlePosition(),
                     stripSdh = style.stripSdh,
+                    styledOverlay = style.usesStyledOverlay,
                 )
             }
         }
     }
 
-    LaunchedEffect(controller, sourceUrl, sourceAudioUrl, sourceHeaders, sourceResponseHeaders) {
-        latestOnControllerReady.value(controller)
+    // AutoSync: the original subtitle shows right away and a confident result replaces it.
+    val coroutineScope = rememberCoroutineScope()
+    val latestExternalSubtitles = rememberUpdatedState(externalSubtitles)
+    val sanitizedSourceHeaders = remember(sourceHeaders) { sanitizePlaybackHeaders(sourceHeaders) }
+    val autoSyncCoordinator = remember(sourceUrl, sanitizedSourceHeaders, coroutineScope) {
+        AutoSyncMpvCoordinator(
+            scope = coroutineScope,
+            sourceUrl = sourceUrl,
+            sourceHeaders = sanitizedSourceHeaders,
+            getSubtitleHeaders = { subtitleUrl ->
+                latestExternalSubtitles.value
+                    .firstOrNull { it.url == subtitleUrl }
+                    ?.headers
+                    .orEmpty()
+            },
+            getPreferredLanguage = { latestPlayerSettings.value.preferredSubtitleLanguage },
+            platform = IosAutoSyncMpvPlatform,
+        )
+    }
+    DisposableEffect(autoSyncCoordinator) {
+        onDispose { autoSyncCoordinator.dispose() }
+    }
+    val autoSyncController = remember(controller, autoSyncCoordinator) {
+        object :
+            AutoSyncMpvEngineController(controller, autoSyncCoordinator, bridge::replaceExternalSubtitle),
+            PlayerSystemControlSource by controller {}
+    }
+
+    LaunchedEffect(autoSyncController, sourceUrl, sourceAudioUrl, sourceHeaders, sourceResponseHeaders) {
+        latestOnControllerReady.value(autoSyncController)
     }
 
     // Load file and set initial state
@@ -325,6 +375,7 @@ actual fun PlatformPlayerSurface(
         while (isActive) {
             val snapshot = PlayerPlaybackSnapshot(
                 isLoading = bridge.getIsLoading(),
+                isOpening = bridge.getIsOpening(),
                 isPlaying = bridge.getIsPlaying(),
                 isEnded = bridge.getIsEnded(),
                 durationMs = bridge.getDurationMs(),
@@ -344,7 +395,9 @@ actual fun PlatformPlayerSurface(
 
     // Cleanup
     DisposableEffect(bridge) {
+        bridge.setSubtitleTextHandler { subtitleText = it }
         onDispose {
+            bridge.setSubtitleTextHandler(null)
             bridge.destroy()
         }
     }
@@ -374,6 +427,8 @@ actual fun PlatformPlayerSurface(
             },
             interactive = false,
         )
+        val subtitleCues = remember(subtitleText) { parseMpvSubtitleText(subtitleText) }
+        StyledSubtitleOverlay(subtitleCues, subtitleStyle)
         
         if (useNativeController) {
             var isPlayingLocal by remember { mutableStateOf(playWhenReady) }

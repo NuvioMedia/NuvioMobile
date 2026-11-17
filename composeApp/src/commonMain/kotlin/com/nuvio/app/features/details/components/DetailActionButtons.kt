@@ -18,7 +18,12 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.CheckCircleOutline
 import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -40,9 +45,17 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.ui.AppIconResource
 import com.nuvio.app.core.ui.appIconPainter
+import com.nuvio.app.core.ui.backdropControlColor
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_play
 import nuvio.composeapp.generated.resources.details_actions_menu_label
+import nuvio.composeapp.generated.resources.hero_add_to_library
+import nuvio.composeapp.generated.resources.hero_mark_unwatched
+import nuvio.composeapp.generated.resources.hero_mark_watched
+import nuvio.composeapp.generated.resources.hero_remove_from_library
+import nuvio.composeapp.generated.resources.playback_unavailable
+import nuvio.composeapp.generated.resources.random_episode_title
+import nuvio.composeapp.generated.resources.shuffle_stop
 import org.jetbrains.compose.resources.stringResource
 
 data class DetailSecondaryAction(
@@ -196,7 +209,7 @@ fun DetailActionButtons(
                     color = if (actionsExpanded) {
                         MaterialTheme.colorScheme.onBackground
                     } else {
-                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.82f)
+                        backdropControlColor(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.82f))
                     },
                     contentColor = if (actionsExpanded) {
                         MaterialTheme.colorScheme.background
@@ -231,6 +244,59 @@ fun DetailActionButtons(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+fun DetailActions(
+    playLabel: String,
+    playEnabled: Boolean,
+    isSaved: Boolean,
+    isWatched: Boolean,
+    isTablet: Boolean,
+    shuffleEnabled: Boolean,
+    onPlayClick: () -> Unit,
+    onPlayLongClick: (() -> Unit)?,
+    onShuffleClick: (() -> Unit)?,
+    onWatchedClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    onSaveLongClick: (() -> Unit)?,
+) {
+    val shuffleAction = onShuffleClick?.let { onClick ->
+        DetailSecondaryAction(
+            label = stringResource(if (shuffleEnabled) Res.string.shuffle_stop else Res.string.random_episode_title),
+            icon = Icons.Default.Shuffle,
+            isActive = shuffleEnabled,
+            onClick = onClick,
+        )
+    }
+    DetailActionButtons(
+        playLabel = if (playEnabled) playLabel else stringResource(Res.string.playback_unavailable),
+        playEnabled = playEnabled,
+        pinnedAction = shuffleAction?.takeIf { shuffleEnabled },
+        secondaryActions = buildList {
+            if (!shuffleEnabled) shuffleAction?.let(::add)
+            add(
+                DetailSecondaryAction(
+                    label = stringResource(if (isWatched) Res.string.hero_mark_unwatched else Res.string.hero_mark_watched),
+                    icon = if (isWatched) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline,
+                    isActive = isWatched,
+                    onClick = onWatchedClick,
+                ),
+            )
+            add(
+                DetailSecondaryAction(
+                    label = stringResource(if (isSaved) Res.string.hero_remove_from_library else Res.string.hero_add_to_library),
+                    icon = if (isSaved) Icons.Default.Check else Icons.Default.Add,
+                    isActive = isSaved,
+                    onClick = onSaveClick,
+                    onLongClick = onSaveLongClick,
+                ),
+            )
+        },
+        isTablet = isTablet,
+        onPlayClick = onPlayClick,
+        onPlayLongClick = onPlayLongClick,
+    )
+}
+
+@Composable
 private fun DetailIconAction(
     label: String,
     icon: ImageVector,
@@ -251,7 +317,7 @@ private fun DetailIconAction(
         color = if (active) {
             MaterialTheme.colorScheme.onBackground
         } else {
-            MaterialTheme.colorScheme.surfaceVariant
+            backdropControlColor(MaterialTheme.colorScheme.surfaceVariant)
         },
         contentColor = if (active) {
             MaterialTheme.colorScheme.background

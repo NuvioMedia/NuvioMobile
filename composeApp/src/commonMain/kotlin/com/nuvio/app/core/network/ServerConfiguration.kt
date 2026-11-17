@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.asStateFlow
 data class ServerCapabilities(
     val emailPasswordAuth: Boolean,
     val tvLogin: Boolean,
+    val watchParty: Boolean = false,
 )
 
 data class ServerConfiguration(
@@ -54,6 +55,7 @@ internal fun officialConfiguration() = ServerConfiguration(
     capabilities = ServerCapabilities(
         emailPasswordAuth = true,
         tvLogin = true,
+        watchParty = true,
     ),
     isCustom = false,
     fallbackBackendUrl = SupabaseConfig.FALLBACK_URL.trim().trimEnd('/').takeIf { it.isNotBlank() },

@@ -1,5 +1,7 @@
 package com.nuvio.app.features.player.skip
 
+import com.nuvio.app.features.watching.domain.isShortPlaceholderDuration
+
 internal data class InternalSkipAction(
     val targetMs: Long,
     val skipsToPostCredits: Boolean,
@@ -9,6 +11,7 @@ internal fun SkipInterval.internalSkipAction(
     intervals: List<SkipInterval>,
     durationMs: Long = 0L,
 ): InternalSkipAction? {
+    if (isShortPlaceholderDuration(durationMs)) return null
     val normalizedType = type.trim().lowercase()
     if (normalizedType == "post-credits") return null
     val isMovieCredits = normalizedType == "movie-credits"

@@ -6,6 +6,7 @@ import com.nuvio.app.features.library.LibrarySourceMode
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.simkl.DEFAULT_SIMKL_ANIME_ID_PREFERENCE
 import com.nuvio.app.features.simkl.SimklAnimeIdPreference
+import com.nuvio.app.features.tracking.TrackingProviderId
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -59,6 +60,7 @@ data class TraktSettingsUiState(
     val librarySourceMode: LibrarySourceMode = DEFAULT_LIBRARY_SOURCE_MODE,
     val moreLikeThisSource: MoreLikeThisSourcePreference = DEFAULT_MORE_LIKE_THIS_SOURCE,
     val simklAnimeIdPreference: SimklAnimeIdPreference = DEFAULT_SIMKL_ANIME_ID_PREFERENCE,
+    val ratingSource: TrackingProviderId? = null,
 )
 
 @Serializable
@@ -68,6 +70,7 @@ private data class StoredTraktSettings(
     val librarySourceMode: String? = null,
     val moreLikeThisSource: String? = null,
     val simklAnimeIdPreference: String? = null,
+    val ratingSource: String? = null,
 )
 
 object TraktSettingsRepository {
@@ -144,6 +147,13 @@ object TraktSettingsRepository {
         com.nuvio.app.features.simkl.SimklSyncRepository.invalidateProjections()
     }
 
+    fun setRatingSource(source: TrackingProviderId?) {
+        ensureLoaded()
+        if (_uiState.value.ratingSource == source) return
+        _uiState.value = _uiState.value.copy(ratingSource = source)
+        persist()
+    }
+
     private fun loadFromDisk() {
         hasLoaded = true
 
@@ -164,6 +174,7 @@ object TraktSettingsRepository {
                 librarySourceMode = librarySourceModeFromStorage(stored.librarySourceMode),
                 moreLikeThisSource = MoreLikeThisSourcePreference.fromStorage(stored.moreLikeThisSource),
                 simklAnimeIdPreference = SimklAnimeIdPreference.fromStorage(stored.simklAnimeIdPreference),
+                ratingSource = TrackingProviderId.fromStorage(stored.ratingSource),
             )
         } else {
             TraktSettingsUiState()
@@ -179,6 +190,7 @@ object TraktSettingsRepository {
                     librarySourceMode = state.librarySourceMode.name,
                     moreLikeThisSource = state.moreLikeThisSource.name,
                     simklAnimeIdPreference = state.simklAnimeIdPreference.name,
+                    ratingSource = state.ratingSource?.storageId,
                 ),
             ),
         )

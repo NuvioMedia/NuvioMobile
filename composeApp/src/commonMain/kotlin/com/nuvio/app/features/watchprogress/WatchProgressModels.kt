@@ -1,6 +1,7 @@
 package com.nuvio.app.features.watchprogress
 
 import com.nuvio.app.core.i18n.localizedSeasonEpisodeCode
+import com.nuvio.app.core.i18n.localizedEpisodeTitle
 import com.nuvio.app.features.cloud.CloudLibraryContentType
 import com.nuvio.app.features.cloud.cloudLibraryProviderPosterUrl
 import com.nuvio.app.features.details.MetaVideo
@@ -28,6 +29,13 @@ enum class ContinueWatchingSortMode {
     DEFAULT,
     STREAMING_STYLE,
     SPLIT_UPCOMING,
+}
+
+@Serializable
+enum class ContinueWatchingClickAction {
+    STREAM,
+    DETAILS,
+    DETAILS_FOR_UPCOMING,
 }
 
 @Serializable
@@ -243,19 +251,14 @@ data class ContinueWatchingPreferencesUiState(
     val dismissedNextUpKeys: Set<String> = emptySet(),
     val showResumePromptOnLaunch: Boolean = true,
     val sortMode: ContinueWatchingSortMode = ContinueWatchingSortMode.DEFAULT,
+    val clickAction: ContinueWatchingClickAction = ContinueWatchingClickAction.STREAM,
 )
 
 internal fun nextUpDismissKey(
     contentId: String,
     seasonNumber: Int?,
     episodeNumber: Int?,
-): String = buildString {
-    append(contentId.trim())
-    append("|")
-    append(seasonNumber ?: -1)
-    append("|")
-    append(episodeNumber ?: -1)
-}
+): String = contentId.trim()
 
 internal fun WatchProgressEntry.toContinueWatchingItem(): ContinueWatchingItem {
     val normalizedEntry = normalizedCompletion()
@@ -370,8 +373,8 @@ internal fun buildContinueWatchingEpisodeSubtitle(
     episodeTitle: String?,
 ): String {
     val episodeCode = localizedSeasonEpisodeCode(seasonNumber, episodeNumber)
-    val title = episodeTitle.orEmpty()
-    return listOfNotNull(episodeCode, title.takeIf { it.isNotBlank() }).joinToString(" • ")
+    val title = localizedEpisodeTitle(episodeTitle, episodeNumber)
+    return listOfNotNull(episodeCode, title).joinToString(" • ")
 }
 
 fun buildPlaybackVideoId(

@@ -19,6 +19,10 @@ class LibraryDisplaySettingsTest {
             LibrarySortOption.DEFAULT,
             effectiveLibrarySortOption(LibrarySortOption.DEFAULT, LibrarySourceMode.SIMKL),
         )
+        assertEquals(
+            LibrarySortOption.DEFAULT,
+            effectiveLibrarySortOption(LibrarySortOption.DEFAULT, LibrarySourceMode.MDBLIST),
+        )
 
         val input = listOf(
             item("ranked-second", savedAt = 3L, traktRank = 2),
@@ -33,6 +37,67 @@ class LibraryDisplaySettingsTest {
         assertEquals(
             listOf("unranked", "ranked-second", "ranked-first-newer", "ranked-first"),
             sortLibraryItems(input, LibrarySortOption.DEFAULT, LibrarySourceMode.LOCAL).map { it.id },
+        )
+    }
+
+    @Test
+    fun `MDBList provider order follows the saved list order rather than added dates`() {
+        val listKey = "mdblist:list:1"
+        val items = listOf(
+            item("alpha", name = "The Alpha", savedAt = 2L, releaseInfo = "2024").copy(listRanks = mapOf(listKey to 2)),
+            item("zulu", name = "Zulu", savedAt = 3L, releaseInfo = "1999").copy(listRanks = mapOf(listKey to 0)),
+            item("bravo", name = "Bravo", savedAt = 1L, releaseInfo = "2010").copy(listRanks = mapOf(listKey to 1)),
+        )
+        val expected = mapOf(
+            LibrarySortOption.DEFAULT to listOf("zulu", "bravo", "alpha"),
+            LibrarySortOption.ADDED_DESC to listOf("zulu", "alpha", "bravo"),
+            LibrarySortOption.ADDED_ASC to listOf("bravo", "alpha", "zulu"),
+            LibrarySortOption.RELEASED_DESC to listOf("alpha", "bravo", "zulu"),
+            LibrarySortOption.RELEASED_ASC to listOf("zulu", "bravo", "alpha"),
+            LibrarySortOption.TITLE_ASC to listOf("alpha", "bravo", "zulu"),
+            LibrarySortOption.TITLE_DESC to listOf("zulu", "bravo", "alpha"),
+        )
+        assertEquals(LibrarySortOption.entries.toSet(), expected.keys)
+        for ((option, ids) in expected) {
+            assertEquals(ids, sortLibraryItems(items, option, LibrarySourceMode.MDBLIST, listKey).map { it.id }, option.name)
+        }
+    }
+
+    @Test
+    fun `release year sorting keeps items without a year last in both directions`() {
+        val items = listOf(
+            item("unknown"),
+            item("old", releaseInfo = "1994"),
+            item("range", releaseInfo = "2008-2013"),
+        )
+        assertEquals(
+            listOf("range", "old", "unknown"),
+            sortLibraryItems(items, LibrarySortOption.RELEASED_DESC, LibrarySourceMode.MDBLIST).map { it.id },
+        )
+        assertEquals(
+            listOf("old", "range", "unknown"),
+            sortLibraryItems(items, LibrarySortOption.RELEASED_ASC, LibrarySourceMode.MDBLIST).map { it.id },
+        )
+    }
+
+    @Test
+    fun `release sorts are offered only for MDBList and fall back elsewhere`() {
+        val released = setOf(LibrarySortOption.RELEASED_DESC, LibrarySortOption.RELEASED_ASC)
+        assertEquals(released, availableLibrarySortOptions(LibrarySourceMode.MDBLIST).toSet() intersect released)
+        for (source in listOf(LibrarySourceMode.LOCAL, LibrarySourceMode.TRAKT, LibrarySourceMode.SIMKL)) {
+            assertEquals(emptySet(), availableLibrarySortOptions(source).toSet() intersect released)
+        }
+        assertEquals(
+            LibrarySortOption.RELEASED_ASC,
+            effectiveLibrarySortOption(LibrarySortOption.RELEASED_ASC, LibrarySourceMode.MDBLIST),
+        )
+        assertEquals(
+            LibrarySortOption.DEFAULT,
+            effectiveLibrarySortOption(LibrarySortOption.RELEASED_DESC, LibrarySourceMode.TRAKT),
+        )
+        assertEquals(
+            LibrarySortOption.ADDED_DESC,
+            effectiveLibrarySortOption(LibrarySortOption.RELEASED_DESC, LibrarySourceMode.LOCAL),
         )
     }
 
@@ -137,10 +202,83 @@ class LibraryDisplaySettingsTest {
     }
 
     @Test
+    fun `vertical projection keeps only watched or unwatched items for the watched filter`() {
+        val section = LibrarySection(
+            type = "local",
+            displayTitle = "Library",
+            items = listOf(
+                item("seen", name = "Seen"),
+                item("unseen", name = "Unseen"),
+                item("show", type = "series", name = "Show"),
+            ),
+        )
+        val watchedIds = setOf("seen", "show")
+        fun projectionFor(filter: LibraryWatchedFilter) = buildLibraryVerticalProjection(
+            sections = listOf(section),
+            sourceMode = LibrarySourceMode.LOCAL,
+            selectedSectionKey = null,
+            selectedType = null,
+            sortOption = LibrarySortOption.TITLE_ASC,
+            watchedFilter = filter,
+            isWatched = { it.id in watchedIds },
+        ).entries.map { it.item.id }
+
+        assertEquals(listOf("seen", "show", "unseen"), projectionFor(LibraryWatchedFilter.ALL))
+        assertEquals(listOf("seen", "show"), projectionFor(LibraryWatchedFilter.WATCHED))
+        assertEquals(listOf("unseen"), projectionFor(LibraryWatchedFilter.UNWATCHED))
+    }
+
+    @Test
+    fun `vertical projection filters by genre and year with faceted counts`() {
+        val section = LibrarySection(
+            type = "local",
+            displayTitle = "Library",
+            items = listOf(
+                item("a", name = "A", releaseInfo = "2020").copy(genres = listOf("Drama", "Comedy")),
+                item("b", name = "B", releaseInfo = "2020").copy(genres = listOf("Drama")),
+                item("c", name = "C", releaseInfo = "2018-2021").copy(genres = listOf("Comedy")),
+                item("d", name = "D"),
+            ),
+        )
+        fun projectionFor(genre: String?, year: String?) = buildLibraryVerticalProjection(
+            sections = listOf(section),
+            sourceMode = LibrarySourceMode.LOCAL,
+            selectedSectionKey = null,
+            selectedType = null,
+            sortOption = LibrarySortOption.TITLE_ASC,
+            selectedGenre = genre,
+            selectedYear = year,
+        )
+
+        val all = projectionFor(genre = null, year = null)
+        assertEquals(listOf("Comedy" to 2, "Drama" to 2), all.availableGenres.map { it.key to it.count })
+        assertEquals(listOf("2020" to 2, "2018" to 1), all.availableYears.map { it.key to it.count })
+
+        val comedy = projectionFor(genre = "comedy", year = null)
+        assertEquals(listOf("a", "c"), comedy.entries.map { it.item.id })
+        assertEquals(listOf("2020" to 1, "2018" to 1), comedy.availableYears.map { it.key to it.count })
+
+        assertEquals(4, all.allTypesCount)
+        assertEquals(mapOf("movie" to 2), comedy.typeCounts)
+        assertEquals(2, comedy.allTypesCount)
+
+        val drama2020 = projectionFor(genre = "Drama", year = "2020")
+        assertEquals(listOf("a", "b"), drama2020.entries.map { it.item.id })
+        assertEquals(listOf("Comedy" to 1, "Drama" to 2), drama2020.availableGenres.map { it.key to it.count })
+
+        val missing = projectionFor(genre = "Horror", year = "1999")
+        assertEquals(null, missing.selectedGenre)
+        assertEquals(null, missing.selectedYear)
+        assertEquals(listOf("a", "b", "c", "d"), missing.entries.map { it.item.id })
+    }
+
+    @Test
     fun `display settings payload round trips and invalid values fall back safely`() {
         val state = LibraryDisplaySettingsUiState(
             layoutMode = LibraryLayoutMode.VERTICAL,
             sortOption = LibrarySortOption.TITLE_DESC,
+            selectedSectionKey = "personal:1",
+            selectedType = "series",
         )
 
         assertEquals(state, decodeLibraryDisplaySettings(encodeLibraryDisplaySettings(state)))
@@ -156,11 +294,13 @@ class LibraryDisplaySettingsTest {
         name: String = id,
         savedAt: Long = 0L,
         traktRank: Int? = null,
+        releaseInfo: String? = null,
     ): LibraryItem =
         LibraryItem(
             id = id,
             type = type,
             name = name,
+            releaseInfo = releaseInfo,
             savedAtEpochMs = savedAt,
             traktRank = traktRank,
         )

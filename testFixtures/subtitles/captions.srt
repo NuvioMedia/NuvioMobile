@@ -1,0 +1,12 @@
+1
+00:00:02,000 --> 00:00:05,000
+First caption
+
+2
+00:00:08,000 --> 00:00:12,000
+A longer line that wraps with larger fonts.
+Second line with café and 日本語.
+
+3
+00:00:14,000 --> 00:00:18,000
+مرحبا بالعالم

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">வசன வரிகளைத் தானாக ஒத்திசை</string>
+    <string name="settings_playback_subtitle_auto_sync_description">தேர்ந்தெடுத்த துணைநிரல் வசன வரியை வீடியோவில் உட்பொதிந்த வசன வரிகளின் நேரத்துடன் பொருத்தவும்.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">தானியங்கி ஒத்திசைவு தேடல்: முழுமையானது</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">ஒத்திசைப்பதற்கு முன், சிறந்த பொருத்தத்தைக் கண்டறிய பிற வசன வரிகளையும் உட்பொதிக்கப்பட்ட டிராக்குகளையும் தொடர்ந்து ஒப்பிடும். நம்பகமான பொருத்தங்கள் மட்டுமே பயன்படுத்தப்படும்.</string>
+    <string name="settings_playback_auto_sync_mode_passive">தானியங்கி ஒத்திசைவு தேடல்: விரைவானது</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">முதல் வலுவான பொருத்தத்தை விரைவாகப் பயன்படுத்தும். முழுமையான தேடலைப் போலவே, நம்பகமான பொருத்தங்கள் மட்டுமே பயன்படுத்தப்படும்.</string>
+    <string name="settings_playback_auto_sync_tolerance">தானியங்கி ஒத்திசைவு சகிப்பளவு: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">ஒத்திசைப்பதால் நேரம் இந்த அளவை விடக் குறைவாக மாறினால், அசல் வசன நேரத்தைப் பாதுகாக்கவும். மாற்றத் தட்டவும்.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">முடக்கு</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d மி.வி.</string>
+</resources>

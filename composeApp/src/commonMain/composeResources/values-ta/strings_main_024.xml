@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="submit_intro_segment_type_label">பகுதி வகை</string>
+    <string name="submit_intro_start_time_label">தொடக்க நேரம் (MM:SS)</string>
+    <string name="trakt_connected_status">Trakt-உடன் இணைக்கப்பட்டது</string>
+    <string name="trakt_disconnected_status">Trakt இணைப்பு துண்டிக்கப்பட்டது</string>
+    <string name="unit_bytes_tb">TB</string>
+    <string name="updates_apk_asset_missing">வெளியீட்டில் APK கோப்பு இல்லை</string>
+    <string name="updates_download_failed_http">HTTP %1$d காரணமாக பதிவிறக்கம் தோல்வியடைந்தது</string>
+    <string name="updates_downloaded_file_missing">பதிவிறக்கிய புதுப்பிப்பு கோப்பு இல்லை.</string>
+    <string name="updates_empty_download_body">பதிவிறக்க உள்ளடக்கம் காலியாக உள்ளது</string>
+    <string name="updates_github_api_error">GitHub வெளியீடுகள் API பிழை: %1$d</string>
+    <string name="updates_no_channel_release">இதுவரை புதுப்பிப்பு வெளியிடப்படவில்லை.</string>
+    <string name="updates_channel_title">புதுப்பிப்பு சேனல்</string>
+    <string name="updates_channel_description">பெற வேண்டிய பயன்பாட்டுப் புதுப்பிப்பு வகையைத் தேர்ந்தெடுக்கவும்</string>
+    <string name="updates_channel_stable">நிலையானது</string>
+    <string name="updates_channel_beta">பீட்டா</string>
+    <string name="updates_channel_stable_description">அன்றாட பயன்பாட்டிற்காக உருவாக்கப்பட்டது.</string>
+    <string name="updates_channel_beta_description">பிழைகள் இருக்கலாம், அம்சங்களை பாதிக்கலாம் அல்லது எதிர்பாராத விதமாகச் செயல்படலாம் எனும் ஆரம்பகட்ட புதுப்பிப்புகள்.</string>
+    <string name="updates_waiting_for_stable">அடுத்த நிலையான பதிப்பு கிடைக்கும்போது பெறுவீர்கள்</string>
+    <string name="updates_release_missing_title">வெளியீட்டில் tag அல்லது பெயர் இல்லை</string>
+    <string name="cw_airs_date">%1$s ஒளிபரப்பாகும்</string>
+    <string name="cw_airs_today">இன்று ஒளிபரப்பாகும்</string>
+    <string name="cw_airs_tomorrow">நாளை ஒளிபரப்பாகும்</string>
+    <plurals name="cw_airs_in_days">
+        <item quantity="one">%1$d நாளில் ஒளிபரப்பாகும்</item>
+        <item quantity="other">%1$d நாட்களில் ஒளிபரப்பாகும்</item>
+    </plurals>
+    <string name="cw_airs_date_short">%1$s</string>
+    <string name="cw_airs_today_short">இன்று</string>
+    <string name="cw_airs_tomorrow_short">நாளை</string>
+    <plurals name="cw_airs_in_days_short">
+        <item quantity="one">%1$d நாளில்</item>
+        <item quantity="other">%1$d நாட்களில்</item>
+    </plurals>
+    <string name="cw_new_episode">புதிய எபிசோடு</string>
+    <string name="cw_new_season">புதிய சீசன்</string>
+    <string name="collections_editor_trakt_list_title_format">Trakt பட்டியல் %1$s</string>
+    <string name="external_player_android_system">Android கணினி பிளேயர்</string>
+    <string name="p2p_consent_title">P2P ஸ்ட்ரீமிங்</string>
+    <string name="p2p_consent_body">இந்த ஸ்ட்ரீம் peer-to-peer (P2P) தொழில்நுட்பத்தைப் பயன்படுத்துகிறது. P2P-ஐ இயக்குவதன் மூலம், நீங்கள் பின்வருவனவற்றை ஏற்றுக்கொள்கிறீர்கள்:
+
+• நெட்வொர்க்கில் உள்ள பிற peers-க்கு உங்கள் IP முகவரி தெரியும்
+• நீங்கள் அணுகும் உள்ளடக்கத்திற்கு நீங்கள் மட்டுமே பொறுப்பானவர்
+• உங்கள் பகுதியில் இந்த உள்ளடக்கத்தை ஸ்ட்ரீம் செய்ய சட்டப்பூர்வ உரிமை உங்களிடம் இருப்பதை உறுதிப்படுத்துகிறீர்கள்
+• Nuvio எந்த P2P உள்ளடக்கத்தையும் வழங்கவோ, விநியோகிக்கவோ அல்லது கட்டுப்படுத்தவோ இல்லை
+• P2P ஸ்ட்ரீமிங்கைப் பயன்படுத்துவதால் ஏற்படும் சட்ட விளைவுகளுக்கு Nuvio பொறுப்பேற்காது
+
+இந்த வசதியை உங்கள் சொந்த ஆபத்தில் பயன்படுத்துகிறீர்கள். அமைப்புகளில் எப்போது வேண்டுமானாலும் P2P-ஐ முடக்கலாம்.</string>
+    <string name="p2p_consent_enable">P2P-ஐ இயக்கு</string>
+    <string name="p2p_consent_cancel">ரத்து</string>
+    <string name="p2p_error_unknown">தெரியாத torrent பிழை</string>
+    <string name="settings_p2p_title">P2P ஸ்ட்ரீமிங்</string>
+    <string name="settings_playback_section_p2p">P2P ஸ்ட்ரீமிங்</string>
+    <string name="settings_p2p_subtitle">peer-to-peer (torrent) ஸ்ட்ரீம்களை அனுமதி</string>
+    <string name="settings_p2p_hide_stats_title">Torrent புள்ளிவிவரங்களை மறை</string>
+    <string name="settings_p2p_hide_stats_subtitle">ஏற்றும்போதும் இயக்கும்போதும் buffer, seeds, peers மற்றும் பதிவிறக்க வேகத்தை மறைக்கவும்</string>
+    <string name="settings_p2p_profile_title">Torrent சுயவிவரம்</string>
+    <string name="settings_p2p_profile_soft">மென்மையான</string>
+    <string name="settings_p2p_profile_balanced">சமநிலையான</string>
+    <string name="settings_p2p_profile_fast">வேகமான</string>
+    <string name="settings_p2p_profile_soft_description">பேட்டரி மற்றும் நெட்வொர்க் சுமையைக் குறைக்க peer இணைப்புகளை குறைவாகப் பயன்படுத்தும்</string>
+    <string name="settings_p2p_profile_balanced_description">தொடக்க வேகம் மற்றும் இணைப்பு நிலைத்தன்மைக்கான பரிந்துரைக்கப்பட்ட சமநிலை</string>
+    <string name="settings_p2p_profile_fast_description">கடினமான அல்லது அதிக bitrate torrent-களுக்கு அதிக peer இணைப்புகளைப் பயன்படுத்தும்</string>
+    <string name="settings_p2p_cache_size_title">Torrent cache அளவு</string>
+    <string name="settings_p2p_cache_none">நிலையான cache இல்லை</string>
+    <string name="settings_p2p_cache_2_gb">2 GB</string>
+    <string name="settings_p2p_cache_5_gb">5 GB</string>
+    <string name="settings_p2p_cache_10_gb">10 GB</string>
+    <string name="settings_p2p_clear_cache_title">Torrent cache-ஐ அழி</string>
+    <string name="settings_p2p_clear_cache_usage">%1$s தற்போது பயன்படுத்தப்படுகிறது</string>
+    <string name="settings_p2p_clear_cache_usage_pending">P2P தொடங்கிய பிறகு பயன்பாடு கணக்கிடப்படும்; cache செய்யப்பட்ட torrent தரவை அழிக்கத் தட்டவும்</string>
+    <string name="settings_p2p_clear_cache_clearing">செயலற்ற torrent தரவை அழிக்கிறது…</string>
+    <string name="settings_p2p_clear_cache_playback_active">Cache-ஐ அழிப்பதற்கு முன் P2P பிளேபேக்கை நிறுத்தவும்</string>
+    <string name="settings_p2p_clear_cache_done">%1$s செயலற்ற torrent தரவு அழிக்கப்பட்டது</string>
+    <string name="settings_p2p_clear_cache_failed">Torrent cache-ஐ அழிக்க முடியவில்லை</string>
+    <string name="player_torrent_peer_info">%1$d seeds · %2$d peers</string>
+    <string name="player_torrent_buffered_status">%1$s buffer செய்யப்பட்டது · %2$s · %3$s</string>
+    <string name="player_torrent_status">%1$s · %2$s</string>
+    <string name="player_torrent_stats">%1$d peers · %2$d seeds · %3$d%%</string>
+    <string name="player_torrent_connecting_peers">Peers-உடன் இணைக்கிறது…</string>
+    <string name="player_torrent_starting_engine">P2P இயந்திரத்தைத் தொடங்குகிறது…</string>
+    <string name="player_torrent_fetching_metadata">Torrent மெட்டாடேட்டாவைப் பெறுகிறது…</string>
+    <string name="player_torrent_preparing_stream">Torrent ஸ்ட்ரீமைத் தயாரிக்கிறது…</string>
+    <string name="player_torrent_connecting_status">%1$s · %2$s · %3$s</string>
+    <string name="player_torrent_loading_status">%1$s பதிவிறக்கப்பட்டது · %2$s · %3$s</string>
+    <string name="player_error_failed_start_torrent">Torrent-ஐத் தொடங்க முடியவில்லை: %1$s</string>
+    <string name="player_error_torrent">Torrent பிழை: %1$s</string>
+    <string name="person_detail_born">பிறந்தது</string>
+    <string name="person_detail_place_of_birth">பிறந்த இடம்</string>
+    <string name="person_detail_credits">பங்களிப்புகள்</string>
+    <string name="person_detail_biography">சுயசரிதை</string>
+    <string name="entity_browse_country">நாடு</string>
+    <string name="entity_browse_type">வகை</string>
+    <string name="entity_browse_catalogue">பட்டியல்</string>
+    <string name="entity_browse_about">பற்றி</string>
+    <string name="player_external_loading_subtitles">துணைநிரல்களிலிருந்து வசன வரிகளை ஏற்றுகிறது…</string>
+    <string name="player_external_downloading_subtitles">வசன வரிகளைப் பதிவிறக்குகிறது...</string>
+    <plurals name="entity_browse_title_count">
+        <item quantity="one">%d தலைப்பு</item>
+        <item quantity="other">%d தலைப்புகள்</item>
+    </plurals>
+    <string name="settings_playback_auto_skip_segments">தானியங்கி தவிர்ப்பு</string>
+    <string name="settings_playback_auto_skip_none">எதுவுமில்லை</string>
+    <string name="settings_playback_auto_skip_intro">Intro / தொடக்க பகுதி</string>
+    <string name="settings_playback_auto_skip_intro_description">Intro மற்றும் anime தொடக்கப் பகுதிகளைத் தானாகத் தவிர்க்கவும்.</string>
+    <string name="settings_playback_auto_skip_recap">Recap</string>
+</resources>

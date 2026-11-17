@@ -13,13 +13,13 @@ internal class MdbListLibraryProjection(snapshot: MdbListLibrarySnapshot) {
         snapshot.itemsByList.values.flatten().forEach { index.add(it.type, it.media) }
         val combined = linkedMapOf<String, LibraryItem>()
         snapshot.itemsByList.forEach { (listKey, items) ->
-            val hasRanks = items.all { it.rank != null }
             items.forEachIndexed { position, item ->
                 val media = index.resolve(item.type, item.media.ids)
                 val key = "${item.type}:${media.ids.key}"
                 val previous = combined[key]
                 val listKeys = previous?.listKeys.orEmpty() + listKey
-                val ranks = previous?.listRanks.orEmpty() + (listKey to if (hasRanks) requireNotNull(item.rank) else position)
+                // Items arrive in the list's saved MDBList order, which is the provider order.
+                val ranks = previous?.listRanks.orEmpty() + (listKey to position)
                 combined[key] = LibraryItem(
                     id = media.ids.contentId,
                     type = if (item.type == MdbListItemType.MOVIE) "movie" else "series",
