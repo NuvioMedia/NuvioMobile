@@ -25,9 +25,12 @@ import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerProvider
 import com.nuvio.app.features.servers.ServerProviders
 import com.nuvio.app.features.servers.ServerRepository
+import com.nuvio.app.features.servers.plex.PlexProvider
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.emby_logo
 import nuvio.composeapp.generated.resources.jellyfin_logo
+import nuvio.composeapp.generated.resources.plex_add_description
+import nuvio.composeapp.generated.resources.plex_logo
 import nuvio.composeapp.generated.resources.servers_add_description
 import nuvio.composeapp.generated.resources.servers_empty
 import nuvio.composeapp.generated.resources.servers_section_add
@@ -86,7 +89,7 @@ internal fun LazyListScope.mediaServersSettingsContent(
                     if (index > 0) SettingsGroupDivider(isTablet = isTablet)
                     SettingsNavigationRow(
                         title = provider.displayName,
-                        description = stringResource(Res.string.servers_add_description, provider.displayName),
+                        description = provider.addDescription(),
                         icon = Icons.Rounded.Add,
                         iconPainter = provider.logo(),
                         isTablet = isTablet,
@@ -117,6 +120,13 @@ private fun ServerConnection.statusText(failure: ServerFailure?): String =
 private fun ServerProvider.logo(): Painter? = when (id) {
     "jellyfin" -> painterResource(Res.drawable.jellyfin_logo)
     "emby" -> painterResource(Res.drawable.emby_logo)
+    PlexProvider.ID -> painterResource(Res.drawable.plex_logo)
     else -> null
+}
+
+@Composable
+private fun ServerProvider.addDescription(): String = when (id) {
+    PlexProvider.ID -> stringResource(Res.string.plex_add_description)
+    else -> stringResource(Res.string.servers_add_description, displayName)
 }
 
