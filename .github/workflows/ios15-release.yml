@@ -1,5 +1,5 @@
 name: Build and release Nuvio for iOS 15+
-# Retrigger beta.11 diagnostic IPA build after missing Actions run.
+# Trigger beta.11 iOS 15 IPA build via branch push (2026-11-16).
 
 on:
   push:
