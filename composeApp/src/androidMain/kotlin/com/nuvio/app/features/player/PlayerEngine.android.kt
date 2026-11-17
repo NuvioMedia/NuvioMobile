@@ -1722,12 +1722,34 @@ private class NuvioLibmpvView(
         private set
     private var appliedSubtitleStyle = SubtitleStyleState.DEFAULT
     private var styledSubtitleVisible = false
+    private var appliedAssOverride: String? = null
+    private var appliedAssScale = 1.0
+    private var appliedAssBold: Boolean? = null
 
     fun updateStyledSubtitle() {
         executeMpv {
-            val styled = appliedSubtitleStyle.usesStyledOverlay && SubtitleRendering.supportsTextOverlay(
-                mpv.getPropertyString("current-tracks/sub/codec").orEmpty(),
-            )
+            val codec = mpv.getPropertyString("current-tracks/sub/codec").orEmpty()
+            val style = appliedSubtitleStyle
+            val assOverride = SubtitleRendering.assOverride(codec, style.appearance.customizeAss)
+            if (appliedAssOverride != assOverride) {
+                mpv.setPropertyString("sub-ass-override", assOverride)
+                appliedAssOverride = assOverride
+            }
+            val scale = if (assOverride == "scale") style.assScale else 1.0
+            if (appliedAssScale != scale) {
+                mpv.setPropertyDouble("sub-scale", scale)
+                appliedAssScale = scale
+            }
+            val assBold = style.bold.takeIf { assOverride == "force" }
+            if (appliedAssBold != assBold) {
+                if (assBold == null) {
+                    mpv.command("change-list", "sub-ass-style-overrides", "clr", "")
+                } else {
+                    mpv.command("change-list", "sub-ass-style-overrides", "set", if (assBold) "Bold=1" else "Bold=0")
+                }
+                appliedAssBold = assBold
+            }
+            val styled = style.usesStyledOverlay && SubtitleRendering.supportsTextOverlay(codec)
             if (styled != styledSubtitleVisible) {
                 mpv.setPropertyBoolean("sub-visibility", !styled)
                 styledSubtitleVisible = styled
@@ -1738,7 +1760,6 @@ private class NuvioLibmpvView(
                 ""
             }
             val cues = parseMpvSubtitleText(text)
-            val style = appliedSubtitleStyle
             post {
                 if (!released.get()) {
                     subtitleCues = cues
@@ -2114,7 +2135,6 @@ private class NuvioLibmpvView(
             override fun applySubtitleStyle(style: SubtitleStyleState) {
                 executeMpv {
                     appliedSubtitleStyle = style
-                    mpv.setPropertyString("sub-ass-override", "no")
                     mpv.setPropertyString("sub-color", style.textColor.toMpvColor())
                     mpv.setPropertyString("sub-back-color", style.backgroundColor.toMpvColor())
                     mpv.setPropertyString("sub-outline-color", style.outlineColor.toMpvColor())
@@ -2139,6 +2159,8 @@ private class NuvioLibmpvView(
                     )
                 }
             }
+
+            override val supportsAssStyleCustomization = true
 
             override val supportsAudioDelay = true
 
