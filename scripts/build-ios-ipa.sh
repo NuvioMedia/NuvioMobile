@@ -6,6 +6,24 @@ repository_root="$(cd "$(dirname "$0")/.." && pwd -P)"
 version_file="${repository_root}/iosApp/Configuration/Version.xcconfig"
 version="${1:-$(sed -nE 's/^[[:space:]]*MARKETING_VERSION[[:space:]]*=[[:space:]]*([^[:space:]#]+).*$/\1/p' "${version_file}" | head -n 1)}"
 configuration="${IOS_CONFIGURATION:-Release}"
+# Kotlin/Native's embedAndSignAppleFrameworkForXcode selects a framework
+# using Xcode CONFIGURATION. A Release Xcode app always triggered a Release
+# Kotlin linker even when KOTLIN_FRAMEWORK_BUILD_TYPE=Debug was injected.
+# Require matching configurations to avoid another long, misleading build.
+kotlin_framework_build_type="${IOS_KOTLIN_FRAMEWORK_BUILD_TYPE:-${configuration}}"
+case "${kotlin_framework_build_type}" in
+    Debug|Release) ;;
+    *)
+        echo "Unsupported Kotlin framework configuration: ${kotlin_framework_build_type}" >&2
+        exit 1
+        ;;
+esac
+if [[ "${configuration}" != "${kotlin_framework_build_type}" ]]; then
+    echo "Xcode and Kotlin framework configurations must match: Xcode=${configuration}, Kotlin=${kotlin_framework_build_type}" >&2
+    echo "embedAndSignAppleFrameworkForXcode selects the framework linker from Xcode CONFIGURATION." >&2
+    exit 1
+fi
+echo "Xcode app configuration: ${configuration}; Kotlin/Native framework: ${kotlin_framework_build_type}"
 case "${configuration}" in
     Debug)
         configuration_slug="debug"
@@ -32,6 +50,7 @@ cd "${repository_root}"
 build_environment=(
     env
     NUVIO_IOS_DISTRIBUTION=full
+    KOTLIN_FRAMEWORK_BUILD_TYPE="${kotlin_framework_build_type}"
     CLANG_MODULE_CACHE_PATH="${clang_module_cache}"
     SWIFTPM_MODULECACHE_OVERRIDE="${swiftpm_module_cache}"
 )
@@ -43,6 +62,7 @@ if [[ -n "${NUVIO_KOTLIN_NATIVE_JVMARGS:-}" ]]; then
 fi
 "${build_environment[@]}" \
     xcodebuild \
+    -jobs 2 \
     -project iosApp/iosApp.xcodeproj \
     -scheme iosApp \
     -configuration "${configuration}" \
@@ -52,6 +72,7 @@ fi
     CODE_SIGNING_ALLOWED=NO \
     CODE_SIGNING_REQUIRED=NO \
     CODE_SIGN_IDENTITY= \
+    "KOTLIN_FRAMEWORK_BUILD_TYPE=${kotlin_framework_build_type}" \
     build
 
 app_path="${derived_data}/Build/Products/${configuration}-iphoneos/Nuvio.app"
@@ -96,6 +117,16 @@ if [[ " ${widget_architectures} " != *" arm64 "* ]]; then
     echo "Built downloads widget does not contain arm64." >&2
     exit 1
 fi
+
+# An iOS 15-compatible IPA must carry a matching minimum OS version for
+# both the host app and its embedded widget extension.
+app_minimum_os="$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "${app_path}/Info.plist")"
+widget_minimum_os="$(/usr/libexec/PlistBuddy -c 'Print :MinimumOSVersion' "${widget_path}/Info.plist")"
+if [[ "${app_minimum_os}" != "15.0" || "${widget_minimum_os}" != "15.0" ]]; then
+    echo "Expected iOS 15.0 minimum for app and widget; got app=${app_minimum_os}, widget=${widget_minimum_os}" >&2
+    exit 1
+fi
+echo "Verified iOS 15.0 minimum deployment target for both bundles."
 
 mkdir -p "${output_directory}"
 output_directory="$(cd "${output_directory}" && pwd -P)"

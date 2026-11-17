@@ -3,6 +3,9 @@ package com.nuvio.app.features.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import com.nuvio.app.core.ui.DialogButton
 import com.nuvio.app.core.ui.DialogButtons
 import com.nuvio.app.core.ui.DialogOption
@@ -23,6 +26,7 @@ import com.nuvio.app.features.player.IosTargetPrimaries
 import com.nuvio.app.features.player.IosTargetTransfer
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.isIos
+import com.nuvio.app.isLegacyIosVideoOutput
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.stringResource
@@ -105,6 +109,21 @@ internal fun PlaybackVideoSettings(
                 }
             }
         } else {
+            if (isLegacyIosVideoOutput) {
+                SettingsSection(
+                    title = stringResource(Res.string.settings_playback_ios_video_output),
+                    isTablet = isTablet,
+                ) {
+                    SettingsGroup(isTablet = isTablet) {
+                        Text(
+                            text = "iOS 15 compatibility: video is decoded with VideoToolbox copy-back and rendered to 8-bit SDR by libmpv. Native HDR/EDR, wide-gamut output and direct decoder selection are unavailable. Use the in-player Video panel for tone mapping, debanding and picture adjustments.",
+                            modifier = Modifier.padding(12.dp),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            } else {
             SettingsSection(
                 title = stringResource(Res.string.settings_playback_ios_video_output),
                 isTablet = isTablet,
@@ -147,6 +166,7 @@ internal fun PlaybackVideoSettings(
                         onClick = { showIosTargetTransferDialog = true },
                     )
                 }
+            }
             }
         }
     }

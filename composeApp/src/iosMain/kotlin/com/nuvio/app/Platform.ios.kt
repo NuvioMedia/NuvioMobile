@@ -9,5 +9,7 @@ class IOSPlatform: Platform {
 actual fun getPlatform(): Platform = IOSPlatform()
 
 internal actual val isIos: Boolean = true
+internal actual val isLegacyIosVideoOutput: Boolean =
+    (UIDevice.currentDevice.systemVersion.substringBefore('.').toIntOrNull() ?: 99) < 16
 
 internal actual val supportsPosterNavigationMotion: Boolean = false

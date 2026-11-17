@@ -1,0 +1,52 @@
+name: Audit libmpv iOS 15 compatibility
+on:
+  push:
+    branches: [ios15-compatibility]
+    paths:
+      - .github/workflows/audit-ios15-mpvkit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: xcode-27
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - name: Inspect iOS arm64 libmpv artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          work="$(mktemp -d)"
+          trap 'rm -rf "$work"' EXIT
+          urls=(
+            'current-custom|https://github.com/WhiteGiso/MPVKit/releases/download/0.41.0-n8.1.2-nuvio.5-long-form-video.2/Libmpv.xcframework.zip'
+            'official-0.41.0|https://github.com/mpvkit/MPVKit/releases/download/0.41.0/Libmpv.xcframework.zip'
+            'official-0.40.0-opengl|https://github.com/mpvkit/MPVKit/releases/download/0.40.0-opengl/Libmpv.xcframework.zip'
+          )
+          for source in "${urls[@]}"; do
+            name="${source%%|*}"
+            url="${source#*|}"
+            echo "::group::${name}"
+            mkdir -p "$work/$name"
+            curl --fail --location --retry 4 --retry-delay 2 --silent --show-error --max-time 240 --output "$work/$name/archive.zip" "$url"
+            unzip -q "$work/$name/archive.zip" -d "$work/$name/unzipped"
+            echo "Artifact layout:"
+            unzip -Z -1 "$work/$name/archive.zip" | head -n 12 || true
+            file="$(find "$work/$name/unzipped" -type f -path '*/ios-arm64/*' \( -iname '*.a' -o -name 'Libmpv' \) -print -quit)"
+            if [[ -z "$file" ]]; then
+              echo "::error::Missing iOS arm64 libmpv in $name"
+              exit 1
+            fi
+            echo "archive=$file"
+            echo "SHA256: $(shasum -a 256 "$work/$name/archive.zip" | cut -d ' ' -f 1)"
+            echo "Minimum iOS versions recorded by Mach-O object files:"
+            xcrun otool -l "$file" |
+              awk '
+                /cmd LC_BUILD_VERSION/ { build=1; old=0; next }
+                /cmd LC_VERSION_MIN_IPHONEOS/ { old=1; build=0; next }
+                build && /minos/ { print $2; build=0 }
+                old && /version/ { print $2; old=0 }
+              ' | sort | uniq -c | head -n 40
+            echo "::endgroup::"
+          done

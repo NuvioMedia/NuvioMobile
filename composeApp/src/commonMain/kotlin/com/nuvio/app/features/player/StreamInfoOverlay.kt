@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.nuvio.app.isLegacyIosVideoOutput
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.roundToInt
@@ -112,6 +113,23 @@ internal fun StreamInfoOverlay(
                             stringResource(Res.string.stream_info_bitrate),
                             mediaInfo.videoBitrate?.let(::formatBitrate),
                         )
+                    }
+                    // Both SDR and HDR content can decode on iOS 15, but its
+                    // OpenGL ES backing store always displays SDR. These are
+                    // source metadata, not a claim of calibrated HDR output.
+                    StreamInfoRow {
+                        StreamInfoItem(
+                            "Source HDR metadata",
+                            mediaInfo.hdr.takeIf { it.isNotEmpty() }?.joinToString(" / ")
+                                ?: "None detected",
+                        )
+                        StreamInfoItem(
+                            "Source bit depth",
+                            mediaInfo.bitDepth?.let { "${it}-bit" },
+                        )
+                        if (isLegacyIosVideoOutput) {
+                            StreamInfoItem("Display output", "8-bit SDR (HDR tone-mapped)")
+                        }
                     }
                 }
             }

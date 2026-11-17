@@ -281,7 +281,17 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     private let errorStateLock = NSLock()
-    private var metalLayer = MetalLayer()
+    // On iOS 15 the Metal layer is deliberately never created. libmpv
+    // renders into a CPU pixel buffer instead of Vulkan/MoltenVK.
+    private lazy var metalLayer = MetalLayer()
+    private var softwareVideoView: UIImageView?
+    private var softwareRenderer: MPVSoftwareVideoRenderer?
+    private var legacyGLView: MPVLegacyGLRenderer?
+    private var legacyGLActive = false
+    private var usesSoftwareRenderer: Bool {
+        if #available(iOS 16.0, *) { return false }
+        return true
+    }
     var subtitleTextHandler: SubtitleTextHandler?
     private var usesStyledSubtitles = false
     private var styledSubtitleVisible = false
@@ -362,17 +372,36 @@ final class MPVPlayerViewController: UIViewController {
         view.backgroundColor = .black
         view.layer.masksToBounds = true
 
-        metalLayer.contentsGravity = .resize
-        metalLayer.contentsScale = view.window?.screen.nativeScale ?? UIScreen.main.nativeScale
-        metalLayer.framebufferOnly = true
-        metalLayer.backgroundColor = UIColor.black.cgColor
-        metalLayer.wantsExtendedDynamicRangeContent = true
-        metalLayer.anchorPoint = CGPoint(x: 0, y: 0)
-        metalLayer.position = .zero
-        let pip = PlayerPictureInPictureController(owner: self, metalLayer: metalLayer)
-        pictureInPictureController = pip
-        view.layer.addSublayer(pip.displayLayer)
-        view.layer.addSublayer(metalLayer)
+        if #available(iOS 16.0, *) {
+            metalLayer.contentsGravity = .resize
+            metalLayer.contentsScale = view.window?.screen.nativeScale ?? UIScreen.main.nativeScale
+            metalLayer.framebufferOnly = true
+            metalLayer.backgroundColor = UIColor.black.cgColor
+            metalLayer.wantsExtendedDynamicRangeContent = true
+            metalLayer.anchorPoint = CGPoint(x: 0, y: 0)
+            metalLayer.position = .zero
+            let pip = PlayerPictureInPictureController(owner: self, metalLayer: metalLayer)
+            pictureInPictureController = pip
+            view.layer.addSublayer(pip.displayLayer)
+            view.layer.addSublayer(metalLayer)
+        } else {
+            // An always-available software surface lets playback continue
+            // if the bundled libmpv was compiled without OpenGL ES support.
+            let imageView = UIImageView(frame: view.bounds)
+            imageView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            imageView.backgroundColor = .black
+            imageView.contentMode = .scaleAspectFit
+            view.addSubview(imageView)
+            softwareVideoView = imageView
+
+            // iOS 15 GPU path: libmpv OpenGL ES render API + EAGL, rather
+            // than the Vulkan/MoltenVK CAMetalLayer integration that crashed.
+            let glView = MPVLegacyGLRenderer(frame: view.bounds)
+            glView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+            glView.isHidden = true
+            view.addSubview(glView)
+            legacyGLView = glView
+        }
         layoutMetalLayer()
 
         setupMpv()
@@ -500,6 +529,16 @@ final class MPVPlayerViewController: UIViewController {
     }
 
     private func layoutMetalLayer() {
+        if usesSoftwareRenderer {
+            let size = externallyManagedViewSize ?? view.bounds.size
+            softwareRenderer?.resize(to: size)
+            if let glView = legacyGLView {
+                let rect = CGRect(origin: .zero, size: size)
+                if glView.frame != rect { glView.frame = rect }
+                glView.setNeedsLayout()
+            }
+            return
+        }
         let bounds = CGRect(origin: .zero, size: externallyManagedViewSize ?? view.bounds.size)
         guard bounds.width > 1, bounds.height > 1 else { return }
 
@@ -538,33 +577,91 @@ final class MPVPlayerViewController: UIViewController {
 
         checkError(mpv_request_log_messages(mpv, "warn"))
 
-        var layerPointer = Int64(Int(bitPattern: Unmanaged.passUnretained(metalLayer).toOpaque()))
-        checkError(mpv_set_option(mpv, "wid", MPV_FORMAT_INT64, &layerPointer))
-        checkError(mpv_set_option_string(mpv, "vo", "gpu-next"))
-        checkError(mpv_set_option_string(mpv, "gpu-api", "vulkan"))
-        checkError(mpv_set_option_string(mpv, "gpu-context", "moltenvk"))
-        checkError(mpv_set_option_string(mpv, "hwdec", "videotoolbox"))
-        // iOS can invalidate the VideoToolbox session (e.g. Notification Center during PiP).
-        // FFmpeg recreates it at the next frames; keep hardware decoding meanwhile.
-        checkError(mpv_set_option_string(mpv, "hwdec-software-fallback", "300"))
+        if usesSoftwareRenderer {
+            // Diagnostic: use software video decoding to isolate the green tint seen on SDR and HDR.
+            // Keep full-resolution OpenGL ES GPU rendering; this does not restore the 432p software renderer.
+            checkError(mpv_set_option_string(mpv, "vo", "libmpv"))
+            checkError(mpv_set_option_string(mpv, "hwdec", "no"))
+            if legacyGLView != nil {
+                checkError(mpv_set_option_string(mpv, "gpu-api", "opengl"))
+                checkError(mpv_set_option_string(mpv, "opengl-es", "yes"))
+            }
+            // The EAGL framebuffer is 8-bit SDR RGBA, not an HDR/P3
+            // swapchain. Explicitly tone-map HDR video into sRGB/BT.709
+            // rather than letting mpv infer HDR output from the source.
+            checkError(mpv_set_option_string(mpv, "target-prim", "bt.709"))
+            checkError(mpv_set_option_string(mpv, "target-trc", "srgb"))
+            checkError(mpv_set_option_string(mpv, "tone-mapping", "mobius"))
+        } else {
+            var layerPointer = Int64(Int(bitPattern: Unmanaged.passUnretained(metalLayer).toOpaque()))
+            checkError(mpv_set_option(mpv, "wid", MPV_FORMAT_INT64, &layerPointer))
+            checkError(mpv_set_option_string(mpv, "vo", "gpu-next"))
+            checkError(mpv_set_option_string(mpv, "gpu-api", "vulkan"))
+            checkError(mpv_set_option_string(mpv, "gpu-context", "moltenvk"))
+            checkError(mpv_set_option_string(mpv, "hwdec", "videotoolbox"))
+            checkError(mpv_set_option_string(mpv, "hwdec-software-fallback", "300"))
+        }
         checkError(mpv_set_option_string(mpv, "ao", Self.defaultAudioOutput))
         checkError(mpv_set_option_string(mpv, "audio-channels", "auto"))
         checkError(mpv_set_option_string(mpv, "audio-fallback-to-null", "yes"))
-        checkError(mpv_set_option_string(mpv, "vulkan-swap-mode", "fifo"))
-        checkError(mpv_set_option_string(mpv, "vulkan-queue-count", "1"))
-        checkError(mpv_set_option_string(mpv, "vulkan-async-compute", "no"))
-        checkError(mpv_set_option_string(mpv, "vulkan-async-transfer", "no"))
-        checkError(mpv_set_option_string(mpv, "vulkan-disable-interop", "yes"))
+        if !usesSoftwareRenderer {
+            checkError(mpv_set_option_string(mpv, "vulkan-swap-mode", "fifo"))
+            checkError(mpv_set_option_string(mpv, "vulkan-queue-count", "1"))
+            checkError(mpv_set_option_string(mpv, "vulkan-async-compute", "no"))
+            checkError(mpv_set_option_string(mpv, "vulkan-async-transfer", "no"))
+            checkError(mpv_set_option_string(mpv, "vulkan-disable-interop", "yes"))
+        }
         checkError(mpv_set_option_string(mpv, "video-rotate", "no"))
         checkError(mpv_set_option_string(mpv, "subs-match-os-language", "yes"))
         checkError(mpv_set_option_string(mpv, "subs-fallback", "yes"))
         configureBundledSubtitleFont()
         checkError(mpv_set_option_string(mpv, "keep-open", "yes"))
-        checkError(mpv_set_option_string(mpv, "target-colorspace-hint", "yes"))
-        checkError(mpv_set_option_string(mpv, "tone-mapping", "auto"))
-        checkError(mpv_set_option_string(mpv, "hdr-compute-peak", "yes"))
+        if !usesSoftwareRenderer {
+            checkError(mpv_set_option_string(mpv, "target-colorspace-hint", "yes"))
+            checkError(mpv_set_option_string(mpv, "tone-mapping", "auto"))
+            checkError(mpv_set_option_string(mpv, "hdr-compute-peak", "yes"))
+        }
 
-        checkError(mpv_initialize(mpv))
+        let initialized = mpv_initialize(mpv)
+        guard initialized >= 0 else {
+            setPlaybackError("Could not start the libmpv playback engine.")
+            return
+        }
+        if usesSoftwareRenderer {
+            guard let mpv, let imageView = softwareVideoView else {
+                setPlaybackError("Internal iOS 15 video surface unavailable.")
+                return
+            }
+
+            // Only one render API context may be attached to a libmpv core.
+            // Attempt OpenGL ES first; on failure attach the software context.
+            if let glView = legacyGLView {
+                if let reason = glView.start(mpv: mpv) {
+                    NSLog("[Nuvio iOS 15] OpenGL unavailable; software fallback: %@", reason)
+                    glView.stop()
+                    glView.removeFromSuperview()
+                    legacyGLView = nil
+                } else {
+                    legacyGLActive = true
+                    glView.isHidden = false
+                    imageView.isHidden = true
+                    NSLog("[Nuvio iOS 15] OpenGL ES render API enabled")
+                }
+            }
+
+            if !legacyGLActive {
+                // Still internal libmpv; VideoToolbox can decode while
+                // libmpv's SW renderer converts frames for UIImageView.
+                checkError(mpv_set_property_string(mpv, "hwdec", "videotoolbox-copy"))
+                let renderer = MPVSoftwareVideoRenderer(imageView: imageView)
+                if let error = renderer.start(mpv: mpv) {
+                    setPlaybackError("libmpv video renderer unavailable: \(error)")
+                    return
+                }
+                softwareRenderer = renderer
+                renderer.resize(to: view.bounds.size)
+            }
+        }
         applyAudioLanguagePreferences(preferredAudioLanguages)
 
         // Observe properties
@@ -787,7 +884,32 @@ final class MPVPlayerViewController: UIViewController {
         saturation: Int,
         gamma: Int
     ) {
-        metalLayer.wantsExtendedDynamicRangeContent = extendedDynamicRange
+        // iOS 15's EAGL backing store is 8-bit SDR even on HDR-capable
+        // phones. Respect useful picture controls, but never claim EDR.
+        // Disable VideoToolbox copy-back for this compatibility test to isolate chroma corruption.
+        if usesSoftwareRenderer {
+            guard mpv != nil else { return }
+            setStringProperty("hwdec", "no")
+            setStringProperty("target-prim", "bt.709")
+            setStringProperty("target-trc", "srgb")
+            setStringProperty("target-colorspace-hint", "no")
+            // Auto remains the well-tested Mobius curve on iOS 15.
+            // The other modes are explicitly selected by the user.
+            setStringProperty("tone-mapping", toneMapping == "auto" ? "mobius" : toneMapping)
+            // GLES 3 on older iPhones has limited compute-shader support;
+            // forcing peak detection and frame interpolation is expensive.
+            setStringProperty("hdr-compute-peak", "no")
+            setStringProperty("interpolation", "no")
+            setStringProperty("deband", legacyGLActive && deband ? "yes" : "no")
+            setVideoEqualizer("brightness", brightness)
+            setVideoEqualizer("contrast", contrast)
+            setVideoEqualizer("saturation", saturation)
+            setVideoEqualizer("gamma", gamma)
+            return
+        }
+        if #available(iOS 16.0, *) {
+            metalLayer.wantsExtendedDynamicRangeContent = extendedDynamicRange
+        }
         guard mpv != nil else { return }
 
         setStringProperty("hwdec", hardwareDecoder)
@@ -1039,6 +1161,14 @@ final class MPVPlayerViewController: UIViewController {
         startupSubtitles = []
         pendingSubtitleUrl = nil
         isFileLoaded = false
+        // Render API contexts MUST be freed before the libmpv core.
+        legacyGLView?.stop()
+        legacyGLView = nil
+        legacyGLActive = false
+        softwareRenderer?.stop()
+        softwareRenderer = nil
+        softwareVideoView?.image = nil
+        softwareVideoView = nil
         nowPlayingController.invalidate()
         clearPlaybackError()
         deactivateAudioSession()
@@ -1332,6 +1462,19 @@ final class MPVPlayerViewController: UIViewController {
                     }
                 case MPV_EVENT_FILE_LOADED:
                     DispatchQueue.main.async {
+                        if self.usesSoftwareRenderer {
+                            // Source transfer metadata distinguishes real
+                            // PQ/HLG input from ordinary SDR. Both are shown
+                            // on an SDR framebuffer on iOS 15.
+                            let transfer = self.getString("video-params/gamma") ?? "unknown"
+                            let primaries = self.getString("video-params/primaries") ?? "unknown"
+                            let isHdr = ["pq", "hlg"].contains(transfer.lowercased())
+                            NSLog(
+                                "[Nuvio iOS 15] Source video: %@; transfer=%@, primaries=%@; output=8-bit SDR/sRGB",
+                                isHdr ? "HDR (tone-mapped)" : "SDR or unidentified",
+                                transfer, primaries
+                            )
+                        }
                         self.clearPlaybackError()
                         self.isPlayerLoading = false
                         self.isFileLoaded = true
@@ -1524,6 +1667,8 @@ final class MPVPlayerBridgeCreator: NSObject, NuvioPlayerBridgeCreator {
 
 enum NuvioPlayerRegistration {
     static func register() {
+        // Both OS ranges use internal libmpv. iOS 15 uses the libmpv
+        // software render API; iOS 16+ keeps the existing GPU output.
         NuvioPlayerBridgeFactory.shared.registerFactory(creator: MPVPlayerBridgeCreator())
     }
 }
