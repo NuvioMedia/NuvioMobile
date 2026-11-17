@@ -338,7 +338,11 @@ object TmdbMetadataService {
     ): List<MetaPreview> {
         val seen = mutableSetOf<Int>()
         return cast
-            .filter { it.mediaType == "tv" && (it.posterPath != null || it.backdropPath != null) }
+            .filter {
+                it.mediaType == "tv" &&
+                    (it.posterPath != null || it.backdropPath != null) &&
+                    !isTalkShowGuestAppearance(it.genreIds.orEmpty(), it.character)
+            }
             .sortedByDescending { it.voteAverage ?: 0.0 }
             .mapNotNull { credit ->
                 if (!seen.add(credit.id)) return@mapNotNull null
@@ -1543,6 +1547,14 @@ private fun englishCreditTitlesById(credits: TmdbPersonCombinedCreditsResponse?)
     return titles
 }
 
+private const val TMDB_TALK_GENRE_ID = 10767
+private val TALK_SHOW_HOST_CHARACTER_REGEX = Regex("\\b(co-?)?host(s|ess)?\\b", RegexOption.IGNORE_CASE)
+
+internal fun isTalkShowGuestAppearance(genreIds: List<Int>, character: String?): Boolean {
+    if (genreIds.none { it == TMDB_TALK_GENRE_ID }) return false
+    return character?.let { TALK_SHOW_HOST_CHARACTER_REGEX.containsMatchIn(it) } != true
+}
+
 internal fun containsCjkOrHangul(text: String): Boolean {
     return text.any { ch ->
         ch in '\u3040'..'\u30FF' ||  // Hiragana + Katakana
@@ -2128,6 +2140,7 @@ private data class TmdbPersonCreditCast(
     @SerialName("first_air_date") val firstAirDate: String? = null,
     @SerialName("vote_average") val voteAverage: Double? = null,
     val popularity: Double? = null,
+    @SerialName("genre_ids") val genreIds: List<Int>? = null,
 )
 
 @Serializable
