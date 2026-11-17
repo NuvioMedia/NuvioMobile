@@ -35,6 +35,7 @@
 		<string>ja</string>
 		<string>vi</string>
 		<string>zh</string>
+		<string>zh-Hant</string>
 	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
