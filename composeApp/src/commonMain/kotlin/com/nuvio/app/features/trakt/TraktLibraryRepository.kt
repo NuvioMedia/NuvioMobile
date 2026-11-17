@@ -7,6 +7,7 @@ import com.nuvio.app.features.library.LibraryItem
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -62,7 +63,9 @@ object TraktLibraryRepository {
     val uiState: StateFlow<TraktLibraryUiState> = _uiState.asStateFlow()
 
     private var hasLoaded = false
+    private val refreshJobMutex = Mutex()
     private val refreshMutex = Mutex()
+    private var refreshJob: Job? = null
     private var lastRefreshAtMs: Long = 0L
     private var lastListTabsRefreshAtMs: Long = 0L
 
@@ -132,6 +135,22 @@ object TraktLibraryRepository {
 
     private suspend fun refresh(force: Boolean) {
         ensureLoaded()
+        val job = refreshJobMutex.withLock {
+            val runningRefresh = refreshJob?.takeIf(Job::isActive)
+            if (runningRefresh != null) {
+                // Automatic callers must not queue behind an already running request: while the
+                // network is unavailable the request can stay suspended and every queued waiter
+                // would be retained, eventually exhausting the heap.
+                if (!force) return
+                runningRefresh
+            } else {
+                scope.launch { refreshOnce(force) }.also { refreshJob = it }
+            }
+        }
+        job.join()
+    }
+
+    private suspend fun refreshOnce(force: Boolean) {
         refreshMutex.withLock {
             val now = TraktPlatformClock.nowEpochMs()
             val current = _uiState.value
