@@ -30,6 +30,7 @@ internal data class SeriesGraphEpisodeRatingDto(
     @SerialName("vote_average") val voteAverage: Double? = null,
     val name: String? = null,
     val tconst: String? = null,
+    @SerialName("air_date") val airDate: String? = null,
 )
 
 @Serializable
