@@ -87,7 +87,7 @@ internal const val SUBTITLE_OUTLINE_WIDTH_DEFAULT = 2
 internal val subtitleOutlineWidthRange: IntRange = 1..5
 
 internal val subtitleFontSizeRangeSp: IntRange
-    get() = if (isIos) 6..40 else 12..40
+    get() = if (isIos) 6..40 else 12..60
 
 data class SubtitleStyleState(
     val textColor: Color = Color.White,
