@@ -50,6 +50,26 @@ class WatchProgressRulesTest {
     }
 
     @Test
+    fun `short error clips never store progress or count as completed`() {
+        for (durationMs in listOf(8_000L, 30_000L, 120_999L)) {
+            for (positionMs in listOf(1_000L, durationMs * 9 / 10, durationMs)) {
+                assertFalse(shouldStoreWatchProgress(positionMs, durationMs))
+                assertFalse(isWatchProgressComplete(positionMs, durationMs, isEnded = false))
+                assertFalse(isWatchProgressComplete(positionMs, durationMs, isEnded = true))
+            }
+            assertFalse(entry(videoId = "error", lastPositionMs = durationMs, durationMs = durationMs).normalizedCompletion().isCompleted)
+        }
+    }
+
+    @Test
+    fun `content at the minimum duration still stores and completes normally`() {
+        assertTrue(shouldStoreWatchProgress(positionMs = 1_000L, durationMs = 121_000L))
+        assertFalse(isWatchProgressComplete(positionMs = 108_899L, durationMs = 121_000L, isEnded = false))
+        assertTrue(isWatchProgressComplete(positionMs = 108_900L, durationMs = 121_000L, isEnded = false))
+        assertTrue(isWatchProgressComplete(positionMs = 121_000L, durationMs = 121_000L, isEnded = true))
+    }
+
+    @Test
     fun `completion detects watched threshold remaining time and ended state`() {
         assertTrue(isWatchProgressComplete(positionMs = 920_000L, durationMs = 1_000_000L, isEnded = false))
         assertTrue(isWatchProgressComplete(positionMs = 900_000L, durationMs = 1_000_000L, isEnded = false))

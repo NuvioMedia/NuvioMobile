@@ -41,13 +41,22 @@ expect fun ManagePlayerPictureInPicture(
 @Composable
 expect fun rememberIsInPictureInPicture(): Boolean
 
+/**
+ * Key of the output media audio plays on (speaker, wired or Bluetooth headphones…), updated when
+ * the output changes. Null while [enabled] is false or when the platform cannot tell.
+ */
 @Composable
-fun rememberPlayerGestureController(): PlayerGestureController? {
+internal expect fun rememberAudioOutputKey(enabled: Boolean): String?
+
+@Composable
+fun rememberPlayerGestureController(restoreBrightness: Boolean): PlayerGestureController? {
     val controller = rememberPlatformPlayerGestureController() ?: return null
-    DisposableEffect(controller) {
-        PlayerSettingsStorage.loadPlaybackBrightness()
-            ?.takeIf { it in 0f..1f }
-            ?.let(controller::setBrightness)
+    DisposableEffect(controller, restoreBrightness) {
+        if (restoreBrightness) {
+            PlayerSettingsStorage.loadPlaybackBrightness()
+                ?.takeIf { it in 0f..1f }
+                ?.let(controller::setBrightness)
+        }
         onDispose {}
     }
     return remember(controller) {

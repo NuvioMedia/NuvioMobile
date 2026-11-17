@@ -23,6 +23,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @RunWith(RobolectricTestRunner::class)
@@ -37,8 +38,7 @@ class ExternalPlaybackProgressTest {
     @Before
     fun initialize() {
         val context = RuntimeEnvironment.getApplication()
-        context.getSharedPreferences("nuvio_watch_progress", Context.MODE_PRIVATE).edit().clear().commit()
-        context.getSharedPreferences("nuvio_player_settings", Context.MODE_PRIVATE).edit().clear().commit()
+        clearPreferences()
         WatchProgressStorage.initialize(context)
         PlayerSettingsStorage.initialize(context)
         ExternalPlayerPlatform.initialize(context)
@@ -48,6 +48,7 @@ class ExternalPlaybackProgressTest {
     @After
     fun cleanup() {
         WatchProgressRepository.clearLocalState()
+        clearPreferences()
     }
 
     @Test
@@ -103,6 +104,26 @@ class ExternalPlaybackProgressTest {
         assertFalse(entry.isCompleted)
     }
 
+    @Test
+    fun mxPlayerCompletionWithoutPositionIsRecordedAsWatched() = runBlocking {
+        // MX Player omits "position" and "duration" when playback runs to the end.
+        val returned = Intent().apply { putExtra("end_by", "playback_completion") }
+        val result = assertNotNull(ExternalPlayerActivityContract().parseResult(Activity.RESULT_OK, returned))
+        assertFalse(result.endedByUser)
+        recordExternalPlaybackProgress(
+            ExternalPlaybackResult(result.positionMs, result.durationMs, result.endedByUser),
+            fallbackSession = session(),
+        )
+        val entry = assertNotNull(WatchProgressRepository.progressForVideo("tt123"))
+        assertTrue(entry.isCompleted)
+    }
+
+    @Test
+    fun mxPlayerCompletionWithoutPositionIsDroppedOnErrorResult() {
+        val returned = Intent().apply { putExtra("end_by", "playback_completion") }
+        assertNull(ExternalPlayerActivityContract().parseResult(Activity.RESULT_FIRST_USER, returned))
+    }
+
     private fun infuseResult(
         positionSeconds: Int,
         durationMs: Long?,
@@ -117,5 +138,12 @@ class ExternalPlaybackProgressTest {
         )))
         callbacks.handleUrl("${launch.parameters["x-success"]}?lastPlayedUrl=${source.encodeURLParameter()}&position=$positionSeconds")
         return assertNotNull(callbacks.results.value?.playbackResult())
+    }
+
+    private fun clearPreferences() {
+        val context = RuntimeEnvironment.getApplication()
+        listOf("nuvio_watch_progress", "nuvio_player_settings").forEach {
+            context.getSharedPreferences(it, Context.MODE_PRIVATE).edit().clear().commit()
+        }
     }
 }

@@ -15,18 +15,14 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -43,6 +39,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.network.ServerConfiguration
 import com.nuvio.app.core.network.ServerDiscoveryFailure
+import com.nuvio.app.core.ui.DialogButton
+import com.nuvio.app.core.ui.DialogButtons
+import com.nuvio.app.core.ui.DialogButtonStyle
+import com.nuvio.app.core.ui.DialogSurface
+import com.nuvio.app.core.ui.Menu
+import com.nuvio.app.core.ui.MenuItem
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.NuvioModalBottomSheet
 import com.nuvio.app.core.ui.NuvioTokens
@@ -107,32 +109,26 @@ internal fun ServerConnectionMenu(
                 tint = MaterialTheme.nuvio.colors.textPrimary,
             )
         }
-        DropdownMenu(
+        Menu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            containerColor = MaterialTheme.nuvio.colors.surfacePopover,
-            shape = MaterialTheme.nuvio.shapes.compactCard,
         ) {
-            DropdownMenuItem(
-                text = { Text(stringResource(Res.string.server_menu_official)) },
+            MenuItem(
+                text = stringResource(Res.string.server_menu_official),
                 enabled = activeServer.isCustom,
                 onClick = {
                     expanded = false
                     onUseOfficial()
                 },
             )
-            DropdownMenuItem(
-                text = {
-                    Text(
-                        stringResource(
-                            if (activeServer.isCustom) {
-                                Res.string.server_menu_change_custom
-                            } else {
-                                Res.string.server_menu_custom
-                            },
-                        ),
-                    )
-                },
+            MenuItem(
+                text = stringResource(
+                    if (activeServer.isCustom) {
+                        Res.string.server_menu_change_custom
+                    } else {
+                        Res.string.server_menu_custom
+                    },
+                ),
                 onClick = {
                     expanded = false
                     onConnectCustom()
@@ -257,89 +253,70 @@ internal fun ServerTrustDialog(
     onDismiss: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
-    BasicAlertDialog(onDismissRequest = { if (!isSwitching) onDismiss() }) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = tokens.colors.surfaceDialog,
-            shape = tokens.shapes.dialog,
-            tonalElevation = tokens.elevation.modal,
+    DialogSurface(
+        onDismissRequest = { if (!isSwitching) onDismiss() },
+        title = stringResource(Res.string.server_review_title),
+    ) {
+        Text(
+            text = stringResource(Res.string.server_review_description),
+            style = MaterialTheme.typography.bodyMedium,
+            color = tokens.colors.textSecondary,
+        )
+        ServerDetail(
+            label = stringResource(Res.string.server_review_verified_label),
+            value = server.backendUrl,
+        )
+        ServerDetail(
+            label = stringResource(Res.string.server_review_key_label),
+            value = stringResource(Res.string.server_review_key_discovered),
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    color = tokens.colors.warning.copy(alpha = tokens.opacity.selected),
+                    shape = RoundedCornerShape(NuvioTokens.Radius.lg),
+                )
+                .padding(NuvioTokens.Space.s14),
+            verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
         ) {
-            Column(
-                modifier = Modifier.padding(tokens.spacing.dialogPadding),
-            ) {
-                Text(
-                    text = stringResource(Res.string.server_review_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = tokens.colors.textPrimary,
-                )
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s8))
-                Text(
-                    text = stringResource(Res.string.server_review_description),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = tokens.colors.textSecondary,
-                )
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
-                ServerDetail(
-                    label = stringResource(Res.string.server_review_verified_label),
-                    value = server.backendUrl,
-                )
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s10))
-                ServerDetail(
-                    label = stringResource(Res.string.server_review_key_label),
-                    value = stringResource(Res.string.server_review_key_discovered),
-                )
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            color = tokens.colors.warning.copy(alpha = tokens.opacity.selected),
-                            shape = RoundedCornerShape(NuvioTokens.Radius.lg),
-                        )
-                        .padding(NuvioTokens.Space.s14),
-                    verticalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
-                ) {
-                    Text(
-                        text = stringResource(Res.string.server_warning_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = tokens.colors.warning,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = when {
-                            !server.isSecure && server.isPublicHost -> {
-                                stringResource(Res.string.server_warning_public_http)
-                            }
-                            !server.isSecure -> stringResource(Res.string.server_warning_http)
-                            server.isPublicHost -> stringResource(Res.string.server_warning_public)
-                            else -> stringResource(Res.string.server_warning_private)
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = tokens.colors.textSecondary,
-                    )
-                    Text(
-                        text = stringResource(Res.string.server_warning_credentials),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = tokens.colors.textSecondary,
-                    )
-                }
-                if (switchFailure != null) {
-                    Spacer(modifier = Modifier.height(NuvioTokens.Space.s10))
-                    Text(
-                        text = serverSwitchError(switchFailure),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = tokens.colors.danger,
-                    )
-                }
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s20))
-                DialogActions(
-                    confirmText = stringResource(Res.string.server_review_trust),
-                    isSwitching = isSwitching,
-                    onConfirm = onConfirm,
-                    onDismiss = onDismiss,
-                )
-            }
+            Text(
+                text = stringResource(Res.string.server_warning_title),
+                style = MaterialTheme.typography.titleSmall,
+                color = tokens.colors.warning,
+                fontWeight = FontWeight.SemiBold,
+            )
+            Text(
+                text = when {
+                    !server.isSecure && server.isPublicHost -> {
+                        stringResource(Res.string.server_warning_public_http)
+                    }
+                    !server.isSecure -> stringResource(Res.string.server_warning_http)
+                    server.isPublicHost -> stringResource(Res.string.server_warning_public)
+                    else -> stringResource(Res.string.server_warning_private)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = tokens.colors.textSecondary,
+            )
+            Text(
+                text = stringResource(Res.string.server_warning_credentials),
+                style = MaterialTheme.typography.bodySmall,
+                color = tokens.colors.textSecondary,
+            )
         }
+        if (switchFailure != null) {
+            Text(
+                text = serverSwitchError(switchFailure),
+                style = MaterialTheme.typography.bodySmall,
+                color = tokens.colors.danger,
+            )
+        }
+        DialogActions(
+            confirmText = stringResource(Res.string.server_review_trust),
+            isSwitching = isSwitching,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss,
+        )
     }
 }
 
@@ -352,42 +329,28 @@ internal fun OfficialServerDialog(
     onDismiss: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
-    BasicAlertDialog(onDismissRequest = { if (!isSwitching) onDismiss() }) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = tokens.colors.surfaceDialog,
-            shape = tokens.shapes.dialog,
-            tonalElevation = tokens.elevation.modal,
-        ) {
-            Column(modifier = Modifier.padding(tokens.spacing.dialogPadding)) {
-                Text(
-                    text = stringResource(Res.string.server_official_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = tokens.colors.textPrimary,
-                )
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s10))
-                Text(
-                    text = stringResource(Res.string.server_official_body),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = tokens.colors.textSecondary,
-                )
-                if (switchFailure != null) {
-                    Spacer(modifier = Modifier.height(NuvioTokens.Space.s10))
-                    Text(
-                        text = serverSwitchError(switchFailure),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = tokens.colors.danger,
-                    )
-                }
-                Spacer(modifier = Modifier.height(NuvioTokens.Space.s20))
-                DialogActions(
-                    confirmText = stringResource(Res.string.server_official_action),
-                    isSwitching = isSwitching,
-                    onConfirm = onConfirm,
-                    onDismiss = onDismiss,
-                )
-            }
+    DialogSurface(
+        onDismissRequest = { if (!isSwitching) onDismiss() },
+        title = stringResource(Res.string.server_official_title),
+    ) {
+        Text(
+            text = stringResource(Res.string.server_official_body),
+            style = MaterialTheme.typography.bodyMedium,
+            color = tokens.colors.textSecondary,
+        )
+        if (switchFailure != null) {
+            Text(
+                text = serverSwitchError(switchFailure),
+                style = MaterialTheme.typography.bodySmall,
+                color = tokens.colors.danger,
+            )
         }
+        DialogActions(
+            confirmText = stringResource(Res.string.server_official_action),
+            isSwitching = isSwitching,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss,
+        )
     }
 }
 
@@ -424,44 +387,18 @@ private fun DialogActions(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    val tokens = MaterialTheme.nuvio
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s10, Alignment.End),
-    ) {
-        Button(
+    DialogButtons {
+        DialogButton(
+            text = stringResource(Res.string.action_cancel),
             onClick = onDismiss,
             enabled = !isSwitching,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = tokens.colors.surfaceCard,
-                contentColor = tokens.colors.textPrimary,
-            ),
-        ) {
-            Text(stringResource(Res.string.action_cancel))
-        }
-        Button(
+        )
+        DialogButton(
+            text = if (isSwitching) stringResource(Res.string.server_switching) else confirmText,
             onClick = onConfirm,
-            enabled = !isSwitching,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = tokens.colors.accent,
-                contentColor = tokens.colors.onAccent,
-            ),
-        ) {
-            if (isSwitching) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(NuvioTokens.Space.s8),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    NuvioLoadingIndicator(
-                        modifier = Modifier.size(tokens.icons.sm),
-                        color = tokens.colors.onAccent,
-                    )
-                    Text(stringResource(Res.string.server_switching))
-                }
-            } else {
-                Text(confirmText)
-            }
-        }
+            style = DialogButtonStyle.Primary,
+            loading = isSwitching,
+        )
     }
 }
 

@@ -63,6 +63,7 @@ internal fun NavigationBarSettingsSheet(
                         NuvioBottomSheetActionRow(
                             title = stringResource(style.labelRes),
                             onClick = { onStyleSelected(style) },
+                            selected = style == selectedStyle,
                             modifier = Modifier.semantics {
                                 role = Role.RadioButton
                                 selected = style == selectedStyle

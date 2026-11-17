@@ -41,8 +41,6 @@ import nuvio.composeapp.generated.resources.settings_tmdb_module_details
 import nuvio.composeapp.generated.resources.settings_tmdb_module_details_description
 import nuvio.composeapp.generated.resources.settings_tmdb_module_episodes
 import nuvio.composeapp.generated.resources.settings_tmdb_module_episodes_description
-import nuvio.composeapp.generated.resources.settings_tmdb_module_release_dates
-import nuvio.composeapp.generated.resources.settings_tmdb_module_release_dates_description
 import nuvio.composeapp.generated.resources.settings_tmdb_module_more_like_this
 import nuvio.composeapp.generated.resources.settings_tmdb_module_more_like_this_description
 import nuvio.composeapp.generated.resources.settings_tmdb_module_networks
@@ -146,15 +144,6 @@ internal fun LazyListScope.tmdbSettingsContent(
                     checked = settings.useDetails,
                     enabled = enrichmentControlsEnabled,
                     onCheckedChange = TmdbSettingsRepository::setUseDetails,
-                )
-                SettingsGroupDivider(isTablet = isTablet)
-                TmdbToggleRow(
-                    isTablet = isTablet,
-                    title = stringResource(Res.string.settings_tmdb_module_release_dates),
-                    description = stringResource(Res.string.settings_tmdb_module_release_dates_description),
-                    checked = settings.useReleaseDates,
-                    enabled = enrichmentControlsEnabled,
-                    onCheckedChange = TmdbSettingsRepository::setUseReleaseDates,
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 TmdbToggleRow(

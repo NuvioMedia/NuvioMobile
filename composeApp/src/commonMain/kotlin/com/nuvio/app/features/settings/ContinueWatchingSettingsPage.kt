@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -13,9 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -32,11 +29,22 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.core.ui.DialogOption
+import com.nuvio.app.core.ui.DialogSurface
 import com.nuvio.app.features.home.components.ContinueWatchingStylePreview
+import com.nuvio.app.features.watchprogress.ContinueWatchingClickAction
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingSectionStyle
 import com.nuvio.app.features.watchprogress.ContinueWatchingSortMode
 import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.settings_continue_watching_click_action_description
+import nuvio.composeapp.generated.resources.settings_continue_watching_click_action_details
+import nuvio.composeapp.generated.resources.settings_continue_watching_click_action_details_desc
+import nuvio.composeapp.generated.resources.settings_continue_watching_click_action_details_upcoming
+import nuvio.composeapp.generated.resources.settings_continue_watching_click_action_details_upcoming_desc
+import nuvio.composeapp.generated.resources.settings_continue_watching_click_action_stream
+import nuvio.composeapp.generated.resources.settings_continue_watching_click_action_stream_desc
+import nuvio.composeapp.generated.resources.settings_continue_watching_click_action_title
 import nuvio.composeapp.generated.resources.settings_continue_watching_resume_prompt_description
 import nuvio.composeapp.generated.resources.settings_continue_watching_resume_prompt_title
 import nuvio.composeapp.generated.resources.settings_continue_watching_blur_next_up_description
@@ -80,6 +88,7 @@ internal fun LazyListScope.continueWatchingSettingsContent(
     blurNextUp: Boolean,
     showResumePromptOnLaunch: Boolean,
     sortMode: ContinueWatchingSortMode,
+    clickAction: ContinueWatchingClickAction,
 ) {
     item {
         SettingsSection(
@@ -110,6 +119,7 @@ internal fun LazyListScope.continueWatchingSettingsContent(
         }
     }
     item {
+        var showClickActionSheet by remember { mutableStateOf(false) }
         SettingsSection(
             title = stringResource(Res.string.settings_continue_watching_section_up_next_behavior),
             isTablet = isTablet,
@@ -150,7 +160,25 @@ internal fun LazyListScope.continueWatchingSettingsContent(
                         onCheckedChange = ContinueWatchingPreferencesRepository::setBlurNextUp,
                     )
                 }
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.settings_continue_watching_click_action_title),
+                    description = stringResource(clickAction.labelRes),
+                    isTablet = isTablet,
+                    onClick = { showClickActionSheet = true },
+                )
             }
+        }
+
+        if (showClickActionSheet) {
+            ContinueWatchingClickActionDialog(
+                currentAction = clickAction,
+                onActionSelected = { action ->
+                    ContinueWatchingPreferencesRepository.setClickAction(action)
+                    showClickActionSheet = false
+                },
+                onDismiss = { showClickActionSheet = false },
+            )
         }
     }
     item {
@@ -312,6 +340,46 @@ private val ContinueWatchingSectionStyle.descriptionRes: StringResource
         ContinueWatchingSectionStyle.Poster -> Res.string.settings_continue_watching_style_poster_description
     }
 
+private val ContinueWatchingClickAction.labelRes: StringResource
+    get() = when (this) {
+        ContinueWatchingClickAction.STREAM -> Res.string.settings_continue_watching_click_action_stream
+        ContinueWatchingClickAction.DETAILS -> Res.string.settings_continue_watching_click_action_details
+        ContinueWatchingClickAction.DETAILS_FOR_UPCOMING -> Res.string.settings_continue_watching_click_action_details_upcoming
+    }
+
+private val ContinueWatchingClickAction.descriptionRes: StringResource
+    get() = when (this) {
+        ContinueWatchingClickAction.STREAM -> Res.string.settings_continue_watching_click_action_stream_desc
+        ContinueWatchingClickAction.DETAILS -> Res.string.settings_continue_watching_click_action_details_desc
+        ContinueWatchingClickAction.DETAILS_FOR_UPCOMING -> Res.string.settings_continue_watching_click_action_details_upcoming_desc
+    }
+
+@Composable
+private fun ContinueWatchingClickActionDialog(
+    currentAction: ContinueWatchingClickAction,
+    onActionSelected: (ContinueWatchingClickAction) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = stringResource(Res.string.settings_continue_watching_click_action_title),
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            ContinueWatchingClickAction.entries.forEach { action ->
+                DialogOption(
+                    text = stringResource(action.labelRes),
+                    description = stringResource(action.descriptionRes),
+                    selected = action == currentAction,
+                    onClick = { onActionSelected(action) },
+                )
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ContinueWatchingSortModeDialog(
@@ -337,79 +405,22 @@ private fun ContinueWatchingSortModeDialog(
         ),
     )
 
-    BasicAlertDialog(
+    DialogSurface(
         onDismissRequest = onDismiss,
+        title = stringResource(Res.string.settings_continue_watching_sort_mode_title),
     ) {
-        Surface(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(20.dp),
-            color = MaterialTheme.colorScheme.surface,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = stringResource(Res.string.settings_continue_watching_sort_mode_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
+            options.forEach { (mode, titleRes, descriptionRes) ->
+                val isSelected = mode == currentMode
+                DialogOption(
+                    text = stringResource(titleRes),
+                    description = stringResource(descriptionRes),
+                    selected = isSelected,
+                    onClick = { onModeSelected(mode) },
                 )
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    options.forEach { (mode, titleRes, descriptionRes) ->
-                        val isSelected = mode == currentMode
-                        val containerColor = if (isSelected) {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
-                        } else {
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-                        }
-
-                        Surface(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { onModeSelected(mode) },
-                            shape = RoundedCornerShape(12.dp),
-                            color = containerColor,
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = stringResource(titleRes),
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                    )
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = stringResource(descriptionRes),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                }
-                                Box(
-                                    modifier = Modifier.size(24.dp),
-                                    contentAlignment = Alignment.Center,
-                                ) {
-                                    if (isSelected) {
-                                        Icon(
-                                            imageVector = Icons.Rounded.Check,
-                                            contentDescription = null,
-                                            tint = MaterialTheme.colorScheme.primary,
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     }

@@ -5,8 +5,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -23,10 +21,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
-import androidx.compose.material3.BasicAlertDialog
 import androidx.compose.material3.Button
+import com.nuvio.app.core.ui.DialogButton
+import com.nuvio.app.core.ui.DialogButtons
+import com.nuvio.app.core.ui.DialogButtonStyle
+import com.nuvio.app.core.ui.DialogSurface
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -896,7 +896,6 @@ private fun ErrorState(
 }
 
 @Composable
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 private fun CommunityDetailsDialog(
     title: String,
     subtitle: String?,
@@ -907,49 +906,29 @@ private fun CommunityDetailsDialog(
     onSecondaryAction: (() -> Unit)?,
     content: @Composable () -> Unit,
 ) {
-    BasicAlertDialog(onDismissRequest = onDismiss) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(24.dp),
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                        fontWeight = FontWeight.SemiBold,
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = title,
+        message = subtitle?.takeIf(String::isNotBlank),
+    ) {
+        content()
+
+        val hasPrimary = primaryActionLabel != null && onPrimaryAction != null
+        val hasSecondary = secondaryActionLabel != null && onSecondaryAction != null
+        if (hasPrimary || hasSecondary) {
+            DialogButtons {
+                if (secondaryActionLabel != null && onSecondaryAction != null) {
+                    DialogButton(
+                        text = secondaryActionLabel,
+                        onClick = onSecondaryAction,
                     )
-                    subtitle?.takeIf(String::isNotBlank)?.let { text ->
-                        Text(
-                            text = text,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
                 }
-
-                content()
-
-                FlowRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.End),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    if (primaryActionLabel != null && onPrimaryAction != null) {
-                        Button(onClick = onPrimaryAction) {
-                            Text(primaryActionLabel)
-                        }
-                    }
-                    if (secondaryActionLabel != null && onSecondaryAction != null) {
-                        Button(onClick = onSecondaryAction) {
-                            Text(secondaryActionLabel)
-                        }
-                    }
+                if (primaryActionLabel != null && onPrimaryAction != null) {
+                    DialogButton(
+                        text = primaryActionLabel,
+                        onClick = onPrimaryAction,
+                        style = DialogButtonStyle.Primary,
+                    )
                 }
             }
         }

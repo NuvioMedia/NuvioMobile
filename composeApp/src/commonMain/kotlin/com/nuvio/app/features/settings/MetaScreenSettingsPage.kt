@@ -27,8 +27,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Menu
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -38,6 +36,13 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.features.shuffle.EpisodeShuffleRepository
+import com.nuvio.app.core.ui.NuvioToastController
+import nuvio.composeapp.generated.resources.random_episode_title
+import nuvio.composeapp.generated.resources.layout_random_episode_sub
+import nuvio.composeapp.generated.resources.shuffle_save_failed
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -50,6 +55,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.build.TrailerPlaybackMode
+import com.nuvio.app.core.ui.Chip
 import com.nuvio.app.core.ui.NuvioActionLabel
 import com.nuvio.app.features.details.MetaEpisodeCardStyle
 import com.nuvio.app.features.details.MetaScreenBackgroundMode
@@ -128,11 +134,20 @@ internal fun LazyListScope.metaScreenSettingsContent(
             isTablet = isTablet,
         ) {
             SettingsGroup(isTablet = isTablet) {
-                MetaBackgroundModeSelector(
+                SettingsChipRow(
+                    title = stringResource(Res.string.settings_meta_background_mode),
+                    description = stringResource(Res.string.settings_meta_background_mode_description),
                     isTablet = isTablet,
-                    selectedMode = uiState.backgroundMode,
-                    onModeSelected = MetaScreenSettingsRepository::setBackgroundMode,
-                )
+                    footer = stringResource(uiState.backgroundMode.descriptionRes),
+                ) {
+                    MetaScreenBackgroundMode.entries.forEach { mode ->
+                        Chip(
+                            label = stringResource(mode.labelRes),
+                            selected = uiState.backgroundMode == mode,
+                            onClick = { MetaScreenSettingsRepository.setBackgroundMode(mode) },
+                        )
+                    }
+                }
                 if (supportsPosterNavigationMotion) {
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsSwitchRow(
@@ -163,6 +178,21 @@ internal fun LazyListScope.metaScreenSettingsContent(
                 )
                 SettingsGroupDivider(isTablet = isTablet)
                 RatingsSettings(isTablet = isTablet, uiState = uiState)
+                SettingsGroupDivider(isTablet = isTablet)
+                val shuffleProfile by remember {
+                    EpisodeShuffleRepository.ensureLoaded()
+                    EpisodeShuffleRepository.uiState
+                }.collectAsStateWithLifecycle()
+                val shuffleSaveFailed = stringResource(Res.string.shuffle_save_failed)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.random_episode_title),
+                    description = stringResource(Res.string.layout_random_episode_sub),
+                    checked = shuffleProfile.available,
+                    isTablet = isTablet,
+                    onCheckedChange = {
+                        if (!EpisodeShuffleRepository.setAvailable(it)) NuvioToastController.show(shuffleSaveFailed)
+                    },
+                )
                 SettingsGroupDivider(isTablet = isTablet)
                 MetaEpisodeCardStyleSelector(
                     isTablet = isTablet,
@@ -199,71 +229,6 @@ internal fun LazyListScope.metaScreenSettingsContent(
                 )
             }
         }
-    }
-}
-
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun MetaBackgroundModeSelector(
-    isTablet: Boolean,
-    selectedMode: MetaScreenBackgroundMode,
-    onModeSelected: (MetaScreenBackgroundMode) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(
-                horizontal = if (isTablet) 20.dp else 16.dp,
-                vertical = if (isTablet) 18.dp else 14.dp,
-            ),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(Res.string.settings_meta_background_mode),
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium,
-            )
-            Text(
-                text = stringResource(Res.string.settings_meta_background_mode_description),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-        FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            MetaScreenBackgroundMode.entries.forEach { mode ->
-                FilterChip(
-                    selected = selectedMode == mode,
-                    onClick = { onModeSelected(mode) },
-                    label = {
-                        Text(
-                            text = stringResource(mode.labelRes),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    border = FilterChipDefaults.filterChipBorder(
-                        enabled = true,
-                        selected = selectedMode == mode,
-                        borderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        selectedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f),
-                    ),
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.55f),
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                    ),
-                )
-            }
-        }
-        Text(
-            text = stringResource(selectedMode.descriptionRes),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 
@@ -433,9 +398,9 @@ private fun MetaSectionRow(
             FlowRow(
                 modifier = Modifier.padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                TabGroupChip(
+                Chip(
                     label = stringResource(Res.string.settings_meta_none),
                     selected = item.tabGroup == null,
                     onClick = { onTabGroupChange(null) },
@@ -444,7 +409,7 @@ private fun MetaSectionRow(
                     val currentCount = groupCounts[groupId] ?: 0
                     val isSelected = item.tabGroup == groupId
                     val isFull = currentCount >= 3 && !isSelected
-                    TabGroupChip(
+                    Chip(
                         label = stringResource(Res.string.settings_meta_group_label, groupId),
                         selected = isSelected,
                         enabled = !isFull,
@@ -454,30 +419,6 @@ private fun MetaSectionRow(
             }
         }
     }
-}
-
-@Composable
-private fun TabGroupChip(
-    label: String,
-    selected: Boolean,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        enabled = enabled,
-        label = {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelSmall,
-            )
-        },
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
-    )
 }
 
 private val MetaScreenBackgroundMode.labelRes: StringResource

@@ -26,14 +26,14 @@ fun watchedKey(
 fun shouldStoreProgress(
     positionMs: Long,
     durationMs: Long,
-): Boolean = positionMs >= ProgressStoreThresholdMs
+): Boolean = !isShortPlaceholderDuration(durationMs) && positionMs >= ProgressStoreThresholdMs
 
 fun isProgressComplete(
     positionMs: Long,
     durationMs: Long,
     isEnded: Boolean,
 ): Boolean {
-    if (isEnded && isShortPlaceholderDuration(durationMs)) return false
+    if (isShortPlaceholderDuration(durationMs)) return false
     if (isEnded) return true
     if (durationMs <= 0L) return false
 

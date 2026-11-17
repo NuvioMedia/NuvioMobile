@@ -55,7 +55,7 @@ internal fun TrailerPlayer(
         }
         when {
             error == null && (isLoading || source != null && state.snapshot.isLoading) -> {
-                NuvioLoadingIndicator(color = Color.White)
+                NuvioLoadingIndicator()
             }
             error != null -> Column(
                 modifier = Modifier.padding(24.dp),

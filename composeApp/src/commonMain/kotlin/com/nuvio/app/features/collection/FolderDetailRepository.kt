@@ -9,6 +9,7 @@ import com.nuvio.app.features.catalog.fetchCatalogPage
 import com.nuvio.app.features.catalog.mergeCatalogItems
 import com.nuvio.app.features.catalog.nextCatalogPaginationState
 import com.nuvio.app.features.catalog.supportsPagination
+import com.nuvio.app.core.poster.withCustomPosterUrls
 import com.nuvio.app.core.i18n.localizedMediaTypeLabel
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.HomeCatalogSection
@@ -24,6 +25,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
@@ -31,6 +33,7 @@ import nuvio.composeapp.generated.resources.collections_folder_addon_not_found
 import nuvio.composeapp.generated.resources.collections_folder_trakt_movie_list
 import nuvio.composeapp.generated.resources.collections_folder_trakt_series_list
 import nuvio.composeapp.generated.resources.collections_tab_all
+import nuvio.composeapp.generated.resources.home_catalog_default_title
 import org.jetbrains.compose.resources.getString
 
 data class FolderTab(
@@ -98,12 +101,15 @@ object FolderDetailRepository {
     private val loadJobs = mutableMapOf<Int, Job>()
     private var activeCollectionId: String? = null
     private var activeFolderId: String? = null
+    private var activeShowCatalogType: Boolean? = null
 
     fun initialize(collectionId: String, folderId: String) {
         val current = _uiState.value
+        val showCatalogType = HomeCatalogSettingsRepository.snapshot().showCatalogType
         if (
             activeCollectionId == collectionId &&
             activeFolderId == folderId &&
+            activeShowCatalogType == showCatalogType &&
             current.folder?.id == folderId &&
             current.tabs.isNotEmpty()
         ) {
@@ -113,6 +119,7 @@ object FolderDetailRepository {
         clear()
         activeCollectionId = collectionId
         activeFolderId = folderId
+        activeShowCatalogType = showCatalogType
 
         val collection = CollectionRepository.getCollection(collectionId)
         if (collection == null) {
@@ -189,12 +196,18 @@ object FolderDetailRepository {
                     val resolvedCatalog = addons.findCollectionCatalog(catalogSource)
                     val addon = resolvedCatalog?.addon
                     val catalog = resolvedCatalog?.catalog
-                    val label = catalog?.name ?: catalogSource.catalogId
                     val typeLabel = localizedMediaTypeLabel(catalogSource.type)
-                    val genreSuffix = if (catalogSource.genre != null) " · ${catalogSource.genre}" else ""
                     add(
                         FolderTab(
-                            label = "$label ($typeLabel)$genreSuffix",
+                            label = folderCatalogTabLabel(
+                                catalogName = catalog?.name ?: catalogSource.catalogId,
+                                typeLabel = typeLabel,
+                                genre = catalogSource.genre,
+                                showCatalogType = showCatalogType,
+                                withType = { name, type ->
+                                    runBlocking { getString(Res.string.home_catalog_default_title, name, type) }
+                                },
+                            ),
                             typeLabel = typeLabel,
                             source = source,
                             sourceKey = source.catalogRouteKey(),
@@ -255,6 +268,7 @@ object FolderDetailRepository {
         loadJobs.clear()
         activeCollectionId = null
         activeFolderId = null
+        activeShowCatalogType = null
         _uiState.value = FolderDetailUiState()
     }
 
@@ -276,16 +290,17 @@ object FolderDetailRepository {
     }
 
     private fun updateTab(index: Int, transform: (FolderTab) -> FolderTab) {
-        val current = _uiState.value
-        val updatedTabs = current.tabs.toMutableList()
-        if (index !in updatedTabs.indices) return
-        updatedTabs[index] = transform(updatedTabs[index])
+        _uiState.update { current ->
+            val updatedTabs = current.tabs.toMutableList()
+            if (index !in updatedTabs.indices) return@update current
+            updatedTabs[index] = transform(updatedTabs[index])
 
-        val allDone = updatedTabs.none { !it.isAllTab && it.isLoading }
-        _uiState.value = current.copy(
-            tabs = updatedTabs,
-            isLoading = !allDone,
-        )
+            val allDone = updatedTabs.none { !it.isAllTab && it.isLoading }
+            current.copy(
+                tabs = updatedTabs,
+                isLoading = !allDone,
+            )
+        }
     }
 
     private fun loadTabPage(index: Int, reset: Boolean) {
@@ -340,12 +355,16 @@ object FolderDetailRepository {
                     )
                 }.withUnreleasedFilter()
             }.onSuccess { page ->
+                val posterPattern = com.nuvio.app.core.poster.CustomPosterUrlRepository.let { repo ->
+                    repo.ensureLoaded()
+                    repo.patternForScreen(com.nuvio.app.core.poster.CustomPosterScreen.COLLECTIONS)
+                }
                 updateTab(index) { tab ->
                     val mergedItems = if (reset) {
                         page.items
                     } else {
                         mergeCatalogItems(tab.items, page.items)
-                    }
+                    }.withCustomPosterUrls(posterPattern)
                     val supportsPagination = tab.supportsPagination || page.rawItemCount >= CATALOG_PAGE_SIZE
                     val loadedNewItems = reset || mergedItems.size > tab.items.size
                     val paginationState = nextCatalogPaginationState(
@@ -490,3 +509,19 @@ private fun traktCatalogId(source: CollectionSource): String =
         TraktListSort.normalize(source.sortBy),
         TraktSortHow.normalize(source.sortHow),
     ).joinToString("_")
+
+/**
+ * A folder tab's label: the catalog name and its genre, followed by the type when "Show catalog
+ * type" is on. [withType] formats it like a home row title ("Popular · Drama - Movies"), as NuvioTV
+ * does in folders.
+ */
+internal fun folderCatalogTabLabel(
+    catalogName: String,
+    typeLabel: String,
+    genre: String?,
+    showCatalogType: Boolean,
+    withType: (name: String, type: String) -> String,
+): String {
+    val name = if (genre != null) "$catalogName · $genre" else catalogName
+    return if (showCatalogType && typeLabel.isNotBlank()) withType(name, typeLabel) else name
+}

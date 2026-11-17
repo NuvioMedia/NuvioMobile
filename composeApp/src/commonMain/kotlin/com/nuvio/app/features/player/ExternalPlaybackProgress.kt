@@ -1,5 +1,8 @@
 package com.nuvio.app.features.player
 
+import com.nuvio.app.features.addons.AddonEventDispatcher
+import com.nuvio.app.features.addons.AddonPlayerAction
+import com.nuvio.app.features.addons.AddonPlayerEventTarget
 import com.nuvio.app.features.tracking.TrackingScrobbleAction
 import com.nuvio.app.features.tracking.TrackingScrobbleCoordinator
 import com.nuvio.app.features.tracking.TrackingScrobbleEvent
@@ -35,7 +38,9 @@ internal suspend fun recordExternalPlaybackProgress(
     fallbackSession: WatchProgressPlaybackSession?,
 ) {
     val session = result.playbackSession ?: fallbackSession ?: return
-    if (result.positionMs <= 0L) return
+    // A completed playback may carry no position at all (MX Player), so only drop position-less
+    // results that were not reported as played to the end.
+    if (result.positionMs <= 0L && result.endedByUser) return
     val durationMs = result.durationMs
     if (durationMs != null && isShortPlaceholderDuration(durationMs)) return
     WatchProgressRepository.upsertPlaybackProgress(
@@ -49,6 +54,12 @@ internal suspend fun recordExternalPlaybackProgress(
         ),
     )
     if (durationMs != null && durationMs > 0L) {
+        AddonEventDispatcher.player(
+            target = AddonPlayerEventTarget(type = session.contentType, videoId = session.videoId),
+            action = AddonPlayerAction.STOP,
+            currentTimeMs = if (result.endedByUser) result.positionMs else durationMs,
+            durationMs = durationMs,
+        )
         val media = buildTrackingMediaReference(
             contentType = session.parentMetaType,
             parentMetaId = session.parentMetaId,

@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
@@ -47,6 +47,7 @@ fun NuvioDropdownChip(
     enabled: Boolean = true,
     onSelected: (NuvioDropdownOption) -> Unit,
     modifier: Modifier = Modifier,
+    fillWidth: Boolean = false,
 ) {
     val tokens = MaterialTheme.nuvio
     var isSheetVisible by remember { mutableStateOf(false) }
@@ -74,6 +75,7 @@ fun NuvioDropdownChip(
             color = if (enabled) tokens.colors.textPrimary else tokens.colors.textDisabled,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+            modifier = if (fillWidth) Modifier.weight(1f) else Modifier,
         )
         Icon(
             imageVector = Icons.Rounded.KeyboardArrowDown,
@@ -142,10 +144,11 @@ private fun NuvioDropdownOptionsSheet(
                     .fillMaxWidth()
                     .heightIn(max = tokens.breakpoints.largePhone),
             ) {
-                itemsIndexed(options) { index, option ->
+                items(options) { option ->
                     NuvioBottomSheetActionRow(
                         title = option.label,
                         onClick = { onSelected(option) },
+                        selected = option.key == selectedKey,
                         trailingContent = {
                             if (option.key == selectedKey) {
                                 Icon(
@@ -157,9 +160,6 @@ private fun NuvioDropdownOptionsSheet(
                             }
                         },
                     )
-                    if (index < options.lastIndex) {
-                        NuvioBottomSheetDivider()
-                    }
                 }
             }
         }

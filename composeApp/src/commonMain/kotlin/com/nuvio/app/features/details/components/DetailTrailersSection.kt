@@ -18,8 +18,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,7 +37,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.Menu
+import com.nuvio.app.core.ui.MenuItem
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
+import com.nuvio.app.core.ui.backdropControlColor
 import com.nuvio.app.core.ui.nuvioCardDepth
 import com.nuvio.app.core.ui.nuvioHorizontalScrollBleed
 import com.nuvio.app.core.ui.rememberPosterCardStyleUiState
@@ -105,7 +106,7 @@ fun DetailTrailersSection(
                 Box {
                     Surface(
                         shape = RoundedCornerShape(sizing.selectorRadius),
-                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                        color = backdropControlColor(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f)),
                         tonalElevation = 0.dp,
                         modifier = Modifier
                             .clip(RoundedCornerShape(sizing.selectorRadius))
@@ -137,19 +138,15 @@ fun DetailTrailersSection(
                         }
                     }
 
-                    DropdownMenu(
+                    Menu(
                         expanded = menuExpanded,
                         onDismissRequest = { menuExpanded = false },
                     ) {
                         grouped.keys.forEach { category ->
                             val count = grouped[category]?.size ?: 0
-                            DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        text = stringResource(Res.string.detail_trailer_category_count, category, count),
-                                        style = MaterialTheme.typography.bodyMedium,
-                                    )
-                                },
+                            MenuItem(
+                                text = stringResource(Res.string.detail_trailer_category_count, category, count),
+                                selected = category == selectedCategory,
                                 onClick = {
                                     selectedCategory = category
                                     menuExpanded = false

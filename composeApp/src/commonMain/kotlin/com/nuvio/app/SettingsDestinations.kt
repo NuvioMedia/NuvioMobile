@@ -11,21 +11,19 @@ import com.nuvio.app.features.collection.CollectionManagementScreen
 import com.nuvio.app.features.collection.CollectionRepository
 import com.nuvio.app.features.collection.FolderDetailRepository
 import com.nuvio.app.features.collection.FolderDetailScreen
-import com.nuvio.app.features.downloads.DownloadItem
-import com.nuvio.app.features.downloads.DownloadsScreen
 import com.nuvio.app.features.home.HomeCatalogSection
-import com.nuvio.app.features.home.MetaPreview
 import com.nuvio.app.features.settings.SettingsScreen
 import com.nuvio.app.navigation.AppRoute
 import com.nuvio.app.navigation.CollectionEditorPageRoute
 import com.nuvio.app.navigation.CollectionEditorRoute
 import com.nuvio.app.navigation.CollectionsRoute
-import com.nuvio.app.navigation.DetailRoute
-import com.nuvio.app.navigation.DownloadShowRoute
-import com.nuvio.app.navigation.DownloadsSettingsRoute
 import com.nuvio.app.navigation.FolderDetailRoute
 import com.nuvio.app.navigation.NuvioNavigator
+import com.nuvio.app.navigation.PartyRoute
 import com.nuvio.app.navigation.SettingsPageRoute
+import nuvio.composeapp.generated.resources.Res
+import nuvio.composeapp.generated.resources.party_title
+import org.jetbrains.compose.resources.stringResource
 
 @Composable
 internal fun SettingsDestination(
@@ -42,12 +40,12 @@ internal fun SettingsRootDestination(
     route: SettingsPageRoute,
     navController: NuvioNavigator,
     useNativeNavigation: Boolean,
-    downloadsTitle: String,
     collectionsTitle: String,
     onCheckForUpdates: (() -> Unit)?,
     onTestUpdateBanner: (() -> Unit)?,
 ) {
     val onBack = rememberGuardedPopBackStack(navController, route)
+    val watchPartyTitle = stringResource(Res.string.party_title)
     SettingsScreen(
         modifier = Modifier.fillMaxSize(),
         initialPageName = route.pageName,
@@ -57,48 +55,14 @@ internal fun SettingsRootDestination(
         },
         onExternalBack = onBack,
         showInternalHeader = !useNativeNavigation,
-        onDownloadsClick = {
-            navController.navigate(DownloadsSettingsRoute(downloadsTitle))
-        },
         onCollectionsClick = {
             navController.navigate(CollectionsRoute(collectionsTitle))
         },
+        onWatchPartyClick = {
+            navController.navigate(PartyRoute(title = watchPartyTitle))
+        },
         onCheckForUpdatesClick = onCheckForUpdates,
         onTestUpdateBannerClick = onTestUpdateBanner,
-    )
-}
-
-@Composable
-internal fun DownloadsDestination(
-    route: DownloadsSettingsRoute,
-    navController: NuvioNavigator,
-    useNativeNavigation: Boolean,
-    onOpenDownload: (DownloadItem) -> Unit,
-) {
-    val onBack = rememberGuardedPopBackStack(navController, route)
-    DownloadsScreen(
-        onBack = onBack,
-        onOpenDownload = onOpenDownload,
-        onNavigateToShow = if (useNativeNavigation) {
-            { showId, title -> navController.navigate(DownloadShowRoute(showId, title)) }
-        } else {
-            null
-        },
-    )
-}
-
-@Composable
-internal fun DownloadShowDestination(
-    route: DownloadShowRoute,
-    navController: NuvioNavigator,
-    onOpenDownload: (DownloadItem) -> Unit,
-) {
-    val onBack = rememberGuardedPopBackStack(navController, route)
-    DownloadsScreen(
-        onBack = onBack,
-        onOpenDownload = onOpenDownload,
-        initialShowId = route.showId,
-        onBackFromShow = onBack,
     )
 }
 
@@ -197,8 +161,6 @@ internal fun FolderDestination(
     FolderDetailScreen(
         onBack = onBack,
         onCatalogClick = onCatalogClick,
-        onPosterClick = { meta: MetaPreview ->
-            navController.navigate(DetailRoute(type = meta.type, id = meta.id, title = meta.name))
-        },
+        onPosterClick = rememberOpenMeta(navController),
     )
 }

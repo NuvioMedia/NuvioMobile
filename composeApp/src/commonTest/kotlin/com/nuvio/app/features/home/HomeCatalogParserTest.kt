@@ -71,4 +71,72 @@ class HomeCatalogParserTest {
         assertEquals("2027", result.items.single().releaseInfo)
         assertEquals("2027-05-12T00:00:00.000Z", result.items.single().rawReleaseDate)
     }
+
+    @Test
+    fun `parse catalog response reads addon landscape poster`() {
+        val result = HomeCatalogParser.parseCatalogResponse(
+            payload = """
+                {
+                  "metas": [
+                    {
+                      "id": "tt1",
+                      "type": "movie",
+                      "name": "One",
+                      "background": "https://img/background.jpg",
+                      "landscapePoster": "https://img/landscape-1.jpg"
+                    },
+                    {
+                      "id": "tt2",
+                      "type": "movie",
+                      "name": "Two",
+                      "landscapePoster": "https://img/landscape-2.jpg"
+                    }
+                  ]
+                }
+            """.trimIndent(),
+        )
+
+        val (withBackground, withoutBackground) = result.items
+        assertEquals("https://img/landscape-1.jpg", withBackground.landscapePoster)
+        assertEquals("https://img/background.jpg", withBackground.banner)
+        assertEquals("https://img/landscape-2.jpg", withoutBackground.landscapePoster)
+        assertEquals("https://img/landscape-2.jpg", withoutBackground.banner)
+    }
+
+    @Test
+    fun `parse catalog response reads runtime and status`() {
+        val result = HomeCatalogParser.parseCatalogResponse(
+            payload = """
+                {
+                  "metas": [
+                    { "id": "tt1", "type": "series", "name": "One", "runtime": "52 min", "status": " Continuing " },
+                    { "id": "tt2", "type": "movie", "name": "Two", "runtime": 109, "status": "" }
+                  ]
+                }
+            """.trimIndent(),
+        )
+
+        val (series, movie) = result.items
+        assertEquals("52 min", series.runtime)
+        assertEquals("Continuing", series.status)
+        assertEquals("109", movie.runtime)
+        assertEquals(null, movie.status)
+    }
+
+    @Test
+    fun `parse catalog response ignores non text values`() {
+        val result = HomeCatalogParser.parseCatalogResponse(
+            payload = """
+                {
+                  "metas": [
+                    { "id": "tt1", "type": "movie", "name": "One", "runtime": { "minutes": 90 }, "status": ["Released"] }
+                  ]
+                }
+            """.trimIndent(),
+        )
+
+        val item = result.items.single()
+        assertEquals(null, item.runtime)
+        assertEquals(null, item.status)
+    }
 }

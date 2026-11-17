@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="settings_playback_page_up_next">அடுத்து</string>
+    <string name="settings_playback_page_up_next_description">அடுத்த எபிசோடு தானியங்கி இயக்கம் மற்றும் அறிவிப்பைக் காட்டும் நேரம்</string>
+    <string name="settings_playback_page_skip">தவிர்க்கும் பகுதிகள்</string>
+    <string name="settings_playback_page_skip_description">Intro, recap மற்றும் credits-ஐத் தவிர்க்கவும்</string>
+    <string name="settings_playback_page_interface">பிளேயர் இடைமுகம்</string>
+    <string name="settings_playback_page_interface_description">கட்டுப்பாடுகள், overlays, தொடு சைகைகள் மற்றும் அழுத்திப் பிடித்து வேகப்படுத்துதல்</string>
+    <string name="settings_playback_page_audio">ஒலி</string>
+    <string name="settings_playback_page_audio_description">விருப்ப மொழிகள் மற்றும் ஒலி வெளியீடு</string>
+    <string name="settings_playback_page_subtitles">வசன வரிகள்</string>
+    <string name="settings_playback_page_subtitles_description">மொழிகள், பாணி மற்றும் காட்சியமைப்பு</string>
+    <string name="settings_playback_page_video">வீடியோ</string>
+    <string name="settings_playback_page_video_description">குறியாக்கம், வீடியோ வெளியீடு மற்றும் HDR</string>
+    <string name="settings_playback_page_buffer">Buffer மற்றும் cache</string>
+    <string name="settings_playback_page_buffer_description">நினைவகம், buffering மற்றும் வட்டு cache</string>
+    <string name="settings_playback_page_p2p">P2P ஸ்ட்ரீமிங்</string>
+    <string name="settings_playback_page_p2p_description">Torrent பிளேபேக், சுயவிவரம் மற்றும் cache</string>
+    <string name="settings_appearance_description">தீம்கள், பயன்பாட்டு ஐகான் மற்றும் மொழி</string>
+    <string name="settings_appearance_title">தோற்றம்</string>
+    <string name="subtitle_appearance">தோற்றம்</string>
+    <string name="subtitle_preview">முன்னோட்டம்</string>
+    <string name="subtitle_preview_text">ஒவ்வொரு கதையும் சிறிய ஆர்வத்துடன் தொடங்குகிறது.</string>
+    <string name="subtitle_appearance_hint">உரை வசன வரிகளுக்கு இது பொருந்தும். பாணியமைக்கப்பட்ட ASS மற்றும் பட வசனங்கள் அவற்றின் அசல் தோற்றத்தைத் தக்கவைக்கும்.</string>
+    <string name="subtitle_font">எழுத்துரு</string>
+    <string name="subtitle_font_default">இயல்புநிலை</string>
+    <string name="subtitle_font_sans">Sans serif</string>
+    <string name="subtitle_font_serif">Serif</string>
+    <string name="subtitle_font_mono">Monospace</string>
+    <string name="subtitle_font_import">எழுத்துருவை இறக்குமதி செய்</string>
+    <string name="subtitle_font_import_hint">10 MB வரை .ttf அல்லது .otf கோப்பைத் தேர்ந்தெடுக்கவும். இறக்குமதி செய்யப்பட்ட எழுத்துருக்கள் இந்தச் சாதனத்தில் மட்டுமே இருக்கும்.</string>
+    <string name="subtitle_font_import_error">இந்த எழுத்துருவை இறக்குமதி செய்ய முடியவில்லை. 10 MB-க்கு குறைவான சரியான .ttf அல்லது .otf கோப்பைத் தேர்ந்தெடுக்கவும்.</string>
+    <string name="subtitle_font_missing">இந்தச் சாதனத்தில் எழுத்துரு கிடைக்கவில்லை. இயல்புநிலை எழுத்துரு பயன்படுத்தப்படுகிறது.</string>
+    <string name="subtitle_font_remove">%1$s-ஐ அகற்று</string>
+    <string name="subtitle_background_opacity">பின்னணி ஒளிபுகாமை</string>
+    <string name="subtitle_background_roundness">மூலை வளைவு</string>
+    <string name="subtitle_shadow">நிழல்</string>
+    <string name="subtitle_shadow_description">பிரகாசமான காட்சிகளிலிருந்து எழுத்துகளைத் தெளிவாகப் பிரிக்கவும்.</string>
+    <string name="subtitle_shadow_opacity">நிழல் ஒளிபுகாமை</string>
+    <string name="subtitle_shadow_size">நிழல் அளவு</string>
+    <string name="subtitle_reset_appearance">தோற்றத்தை மீட்டமை</string>
+</resources>

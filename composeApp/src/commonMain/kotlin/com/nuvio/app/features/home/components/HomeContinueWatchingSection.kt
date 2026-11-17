@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import com.nuvio.app.features.shuffle.ShuffleBadge
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -72,6 +73,7 @@ import com.nuvio.app.features.watchprogress.computeAirDateBadgeText
 import kotlin.math.roundToInt
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.core.i18n.localizedEpisodeTitle
 
 private val ContinueWatchingStatusBadgeShape = RoundedCornerShape(4.dp)
 private val ContinueWatchingNewEpisodeBadgeColor = Color(0xFF1D4ED8)
@@ -257,7 +259,7 @@ internal fun ContinueWatchingItem.shouldBlurContinueWatchingArtwork(
     useEpisodeThumbnails: Boolean,
     artworkUrl: String?,
 ): Boolean {
-    if (!blurUnwatchedEpisodes || !useEpisodeThumbnails) return false
+    if (!blurUnwatchedEpisodes || !useEpisodeThumbnails || isWatched) return false
     val thumbnail = episodeThumbnail?.trim()?.takeIf { it.isNotBlank() } ?: return false
     val artwork = artworkUrl?.trim()?.takeIf { it.isNotBlank() } ?: return false
     val isUnwatched = isNextUp || progressFraction < WatchProgressCompletionPercentThreshold / 100f
@@ -702,7 +704,7 @@ private fun ContinueWatchingCard(
     } else {
         null
     }
-    val episodeTitle = item.episodeTitle?.trim()?.takeIf { it.isNotBlank() } ?: airDateText
+    val episodeTitle = localizedEpisodeTitle(item.episodeTitle, item.episodeNumber) ?: airDateText
     val badgeText = continueWatchingCardBadgeText(item = item, airDateText = airDateText)
     val backgroundColor = MaterialTheme.colorScheme.background
     val badgeBackground = continueWatchingBadgeBackground(item)
@@ -759,6 +761,7 @@ private fun ContinueWatchingCard(
                 contentScale = ContentScale.Crop,
             )
         }
+        if (item.shufflePlayback) ShuffleBadge(Modifier.align(Alignment.TopStart).padding(8.dp))
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
@@ -932,7 +935,7 @@ private fun ContinueWatchingWideCard(
         ) {
             val isCompact = layout.wideCardWidth < 350.dp
             val wideMetaLine = localizedContinueWatchingMetaLine(item)
-            val episodeTitle = item.episodeTitle?.trim()?.takeIf { it.isNotBlank() }
+            val episodeTitle = localizedEpisodeTitle(item.episodeTitle, item.episodeNumber)
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -950,6 +953,7 @@ private fun ContinueWatchingWideCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    if (item.shufflePlayback) ShuffleBadge()
                     if (item.progressFraction <= 0f && item.seasonNumber != null && item.episodeNumber != null) {
                         val todayIsoDate = CurrentDateProvider.todayIsoDate()
                         val badgeText = when {
@@ -1067,6 +1071,7 @@ private fun ContinueWatchingPosterCard(
                     contentScale = if (item.isCloudLibraryItem()) ContentScale.Fit else ContentScale.Crop,
                 )
             }
+            if (item.shufflePlayback) ShuffleBadge(Modifier.align(Alignment.TopStart).padding(8.dp))
             if (item.progressFraction <= 0f && item.seasonNumber != null && item.episodeNumber != null) {
                 Box(
                     modifier = Modifier

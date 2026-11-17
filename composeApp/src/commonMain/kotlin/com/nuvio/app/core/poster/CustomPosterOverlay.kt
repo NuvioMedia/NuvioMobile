@@ -40,7 +40,8 @@ fun MetaPreview.withCustomPosterUrl(pattern: String): MetaPreview {
     return copy(
         poster = resolvedPoster ?: poster,
         rawPosterUrl = rawPosterUrl ?: poster,
-        landscapePoster = resolvedLandscape ?: landscapePoster
+        landscapePoster = resolvedLandscape ?: landscapePoster,
+        rawLandscapePosterUrl = if (rawPosterUrl == null) landscapePoster else rawLandscapePosterUrl,
     )
 }
 
@@ -51,7 +52,7 @@ fun MetaPreview.withCustomPosterUrl(pattern: String): MetaPreview {
  */
 fun MetaPreview.reapplyCustomPosterUrl(pattern: String): MetaPreview {
     val restored = if (rawPosterUrl != null) {
-        copy(poster = rawPosterUrl, landscapePoster = null)
+        copy(poster = rawPosterUrl, landscapePoster = rawLandscapePosterUrl)
     } else {
         this
     }
@@ -77,17 +78,24 @@ fun com.nuvio.app.features.library.LibraryItem.withCustomPosterUrl(
 
     val ids = CustomPosterUrlResolver.extractIds(id, explicitImdbId = imdbId)
     val contentType = if (type.equals("tv", ignoreCase = true) || type.equals("series", ignoreCase = true)) "series" else type
+    val supportsShape = "{shape}" in pattern
 
     val resolvedPoster = CustomPosterUrlResolver.resolve(
         pattern = pattern,
         ids = ids,
         type = contentType,
         shape = "poster"
-    ) ?: return this
+    )
+    val resolvedLandscape = if (supportsShape) {
+        CustomPosterUrlResolver.resolve(pattern, ids, contentType, shape = "landscape")
+    } else null
+
+    if (resolvedPoster == null && resolvedLandscape == null) return this
 
     return copy(
-        poster = resolvedPoster,
-        rawPosterUrl = rawPosterUrl ?: poster
+        poster = resolvedPoster ?: poster,
+        rawPosterUrl = rawPosterUrl ?: poster,
+        landscapePoster = resolvedLandscape ?: landscapePoster,
     )
 }
 

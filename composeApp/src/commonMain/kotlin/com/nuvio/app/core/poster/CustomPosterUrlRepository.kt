@@ -8,6 +8,9 @@ object CustomPosterUrlRepository {
     private val _pattern = MutableStateFlow("")
     val pattern: StateFlow<String> = _pattern.asStateFlow()
 
+    private val _enabledScreens = MutableStateFlow(CustomPosterScreen.ALL)
+    val enabledScreens: StateFlow<Set<CustomPosterScreen>> = _enabledScreens.asStateFlow()
+
     private var hasLoaded = false
 
     fun ensureLoaded() {
@@ -22,6 +25,7 @@ object CustomPosterUrlRepository {
     fun clearLocalState() {
         hasLoaded = false
         _pattern.value = ""
+        _enabledScreens.value = CustomPosterScreen.ALL
     }
 
     fun setPattern(pattern: String) {
@@ -41,8 +45,29 @@ object CustomPosterUrlRepository {
         com.nuvio.app.features.home.HomeRepository.applyCurrentSettings()
     }
 
+    fun patternForScreen(screen: CustomPosterScreen): String {
+        ensureLoaded()
+        return if (screen in _enabledScreens.value) _pattern.value else ""
+    }
+
+    fun setScreenEnabled(screen: CustomPosterScreen, enabled: Boolean) {
+        ensureLoaded()
+        val current = _enabledScreens.value
+        val updated = if (enabled) current + screen else current - screen
+        if (updated == current) return
+        _enabledScreens.value = updated
+        CustomPosterUrlStorage.saveEnabledScreens(CustomPosterScreen.toKeys(updated))
+        com.nuvio.app.features.home.HomeRepository.applyCurrentSettings()
+    }
+
+    fun isScreenEnabled(screen: CustomPosterScreen): Boolean {
+        ensureLoaded()
+        return screen in _enabledScreens.value
+    }
+
     private fun loadFromDisk() {
         hasLoaded = true
         _pattern.value = CustomPosterUrlStorage.loadPattern().orEmpty().trim()
+        _enabledScreens.value = CustomPosterScreen.fromKeys(CustomPosterUrlStorage.loadEnabledScreens())
     }
 }

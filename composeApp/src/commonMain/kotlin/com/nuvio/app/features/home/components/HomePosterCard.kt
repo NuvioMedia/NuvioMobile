@@ -21,17 +21,27 @@ fun HomePosterCard(
 ) {
     val posterCardStyle = rememberPosterCardStyleUiState()
     val isLandscapeMode = useLandscapeBackdropMode || posterCardStyle.catalogLandscapeModeEnabled
+    val effectiveLandscapePoster = if (posterCardStyle.alwaysShowLandscapeClearlogo) null else item.landscapePoster
+    val imageUrl = if (isLandscapeMode) {
+        effectiveLandscapePoster ?: item.banner ?: item.poster
+    } else item.poster
+    val fallbackImageUrl = if (isLandscapeMode && !effectiveLandscapePoster.isNullOrBlank()) {
+        // Landscape custom poster -> fall back to original backdrop, then portrait
+        item.banner ?: item.rawPosterUrl
+    } else {
+        item.rawPosterUrl
+    }
 
     NuvioPosterCard(
         title = item.name,
-        imageUrl = if (isLandscapeMode) (item.landscapePoster ?: item.banner ?: item.poster) else item.poster,
+        imageUrl = imageUrl,
         modifier = modifier,
-        fallbackImageUrl = item.rawPosterUrl,
+        fallbackImageUrl = fallbackImageUrl,
         shape = if (isLandscapeMode) NuvioPosterShape.Landscape else item.posterShape.toNuvioPosterShape(),
         detailLine = if (isLandscapeMode || posterCardStyle.hideLabelsEnabled) null else item.releaseInfo?.let { formatReleaseDateForDisplay(it) },
         showTitleBelow = !posterCardStyle.hideLabelsEnabled,
-        bottomLeftLogoUrl = if (isLandscapeMode && showLandscapeOverlay) item.logo else null,
-        bottomLeftText = if (isLandscapeMode && showLandscapeOverlay && item.logo.isNullOrBlank() && !posterCardStyle.hideLabelsEnabled) item.name else null,
+        bottomLeftLogoUrl = if (isLandscapeMode && showLandscapeOverlay && effectiveLandscapePoster.isNullOrBlank()) item.logo else null,
+        bottomLeftText = if (isLandscapeMode && showLandscapeOverlay && effectiveLandscapePoster.isNullOrBlank() && item.logo.isNullOrBlank() && !posterCardStyle.hideLabelsEnabled) item.name else null,
         isWatched = isWatched,
         onClick = onClick,
         onLongClick = onLongClick,

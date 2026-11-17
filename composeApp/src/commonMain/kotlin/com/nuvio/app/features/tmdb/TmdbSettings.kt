@@ -8,7 +8,6 @@ data class TmdbSettings(
     val useArtwork: Boolean = true,
     val useBasicInfo: Boolean = true,
     val useDetails: Boolean = true,
-    val useReleaseDates: Boolean = false,
     val useCredits: Boolean = true,
     val useProductions: Boolean = true,
     val useNetworks: Boolean = true,

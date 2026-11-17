@@ -110,6 +110,32 @@ class CustomPosterOverlayTest {
         assertEquals("https://original.com/poster.jpg", result.rawPosterUrl)
     }
 
+    @Test
+    fun reapplyCustomPosterUrl_keeps_addon_landscapePoster_without_shape_placeholder() {
+        val item = MetaPreview(
+            id = "tt0137523", type = "movie", name = "Test",
+            poster = "https://original.com/poster.jpg",
+            landscapePoster = "https://addon.com/landscape.jpg",
+        )
+        val result = item.withCustomPosterUrl(rpdbPattern).reapplyCustomPosterUrl(rpdbPattern)
+        assertEquals("https://addon.com/landscape.jpg", result.landscapePoster)
+    }
+
+    @Test
+    fun reapplyCustomPosterUrl_blank_pattern_restores_addon_landscapePoster() {
+        val item = MetaPreview(
+            id = "tt0137523", type = "movie", name = "Test",
+            poster = "https://original.com/poster.jpg",
+            landscapePoster = "https://addon.com/landscape.jpg",
+        )
+        val overlaid = item.withCustomPosterUrl(shapePattern)
+        assertEquals("https://example.com/imdb/landscape/tt0137523.jpg", overlaid.landscapePoster)
+
+        val result = overlaid.reapplyCustomPosterUrl("")
+        assertEquals("https://original.com/poster.jpg", result.poster)
+        assertEquals("https://addon.com/landscape.jpg", result.landscapePoster)
+    }
+
     // -- List overlay --
 
     @Test

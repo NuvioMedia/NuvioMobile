@@ -3,6 +3,7 @@ package com.nuvio.app.features.home
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -42,12 +43,13 @@ internal object HomeCatalogParser {
                     continue
                 }
 
+                val landscapePoster = meta.string("landscapePoster")?.takeIf { it.isNotBlank() }
                 val item = MetaPreview(
                     id = id,
                     type = type,
                     name = name,
                     poster = meta.string("poster"),
-                    banner = meta.string("banner") ?: meta.string("background"),
+                    banner = meta.string("banner") ?: meta.string("background") ?: landscapePoster,
                     logo = meta.string("logo"),
                     posterShape = meta.string("posterShape").toPosterShape(),
                     description = meta.string("description"),
@@ -57,6 +59,9 @@ internal object HomeCatalogParser {
                     genres = meta.array("genres").mapNotNull { genre ->
                         genre.jsonPrimitive.contentOrNull?.takeIf { it.isNotBlank() }
                     },
+                    landscapePoster = landscapePoster,
+                    runtime = meta.string("runtime")?.trim()?.takeIf { it.isNotBlank() },
+                    status = meta.string("status")?.trim()?.takeIf { it.isNotBlank() },
                 )
                 if (seenKeys.add(item.stableKey())) {
                     add(item)
@@ -70,7 +75,7 @@ internal object HomeCatalogParser {
     }
 
     private fun JsonObject.string(name: String): String? =
-        this[name]?.jsonPrimitive?.contentOrNull
+        (this[name] as? JsonPrimitive)?.contentOrNull
 
     private fun JsonObject.array(name: String): JsonArray =
         this[name] as? JsonArray ?: JsonArray(emptyList())

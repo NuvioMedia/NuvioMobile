@@ -60,7 +60,7 @@ object NuvioTokens {
         val card = xxl
         val compactCard = lg
         val sheet = xxl
-        val dialog = xxl
+        val dialog = Space.s28
         val button = xl
         val chip = full
         val poster = lg

@@ -1,5 +1,6 @@
 package com.nuvio.app.features.downloads
 
+import com.nuvio.app.features.player.SubtitleRequestExtras
 import com.nuvio.app.features.player.addonSubtitleRequests
 import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.runBlocking
@@ -18,6 +19,9 @@ object DownloadsRepository {
     private val _uiState = MutableStateFlow(DownloadsUiState())
     val uiState: StateFlow<DownloadsUiState> = _uiState.asStateFlow()
 
+    private val _hasUnseenCompleted = MutableStateFlow(false)
+    val hasUnseenCompleted: StateFlow<Boolean> = _hasUnseenCompleted.asStateFlow()
+
     private val activeHandles = mutableMapOf<String, DownloadsTaskHandle>()
     private var hasLoaded = false
     private var nextDownloadOrdinal = 0L
@@ -31,10 +35,15 @@ object DownloadsRepository {
         loadFromDisk()
     }
 
+    fun markCompletedSeen() {
+        _hasUnseenCompleted.value = false
+    }
+
     fun clearLocalState() {
         activeHandles.values.forEach(DownloadsTaskHandle::cancel)
         activeHandles.clear()
         hasLoaded = false
+        _hasUnseenCompleted.value = false
         _uiState.value = DownloadsUiState()
         notifyLiveStatusPlatform()
     }
@@ -177,7 +186,11 @@ object DownloadsRepository {
             sourceUrl = sourceUrl,
             sourceHeaders = sanitizeRequestHeaders(stream.behaviorHints.proxyHeaders?.request),
             sourceResponseHeaders = sanitizeResponseHeaders(stream.behaviorHints.proxyHeaders?.response),
-            subtitleRequests = addonSubtitleRequests(contentType, videoId),
+            subtitleRequests = addonSubtitleRequests(
+                type = contentType,
+                videoId = videoId,
+                extras = SubtitleRequestExtras.from(stream.behaviorHints, sourceUrl),
+            ),
             sourceSubtitles = stream.externalSubtitles,
             localFileUri = null,
             fileName = fileName,
@@ -268,6 +281,7 @@ object DownloadsRepository {
     }
 
     private fun loadFromDisk() {
+        _hasUnseenCompleted.value = false
         hasLoaded = true
         val payload = DownloadsStorage.loadPayload().orEmpty().trim()
         if (payload.isEmpty()) {
@@ -385,6 +399,10 @@ object DownloadsRepository {
     }
 
     private fun publish(items: List<DownloadItem>) {
+        val previousStatuses = _uiState.value.items.associate { it.id to it.status }
+        if (items.any { it.status == DownloadStatus.Completed && previousStatuses[it.id].let { status -> status != null && status != DownloadStatus.Completed } }) {
+            _hasUnseenCompleted.value = true
+        }
         _uiState.value = DownloadsUiState(
             items = items,
         )

@@ -88,6 +88,7 @@ internal fun AddonsSettingsPageContent(
     }
 
     val uiState by AddonRepository.uiState.collectAsStateWithLifecycle()
+    val pendingTrackingConsent by AddonRepository.pendingTrackingConsent.collectAsStateWithLifecycle()
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
     var addonUrl by rememberSaveable { mutableStateOf("") }
@@ -130,6 +131,11 @@ internal fun AddonsSettingsPageContent(
                         is AddAddonResult.Success -> {
                             addonUrl = ""
                             AddonInstallModalState.Success(result.manifest.name)
+                        }
+
+                        is AddAddonResult.TrackingConsentRequired -> {
+                            AddonRepository.requestTrackingConsent(result.manifest)
+                            null
                         }
 
                         is AddAddonResult.Error -> {
@@ -192,6 +198,7 @@ internal fun AddonsSettingsPageContent(
             title = stringResource(Res.string.addons_delete_confirm_title),
             message = stringResource(Res.string.action_delete_confirm_message),
             isVisible = true,
+            destructive = true,
             confirmText = stringResource(Res.string.action_yes),
             dismissText = stringResource(Res.string.action_no),
             onConfirm = {
@@ -199,6 +206,29 @@ internal fun AddonsSettingsPageContent(
                 addonPendingDeletionUrl = null
             },
             onDismiss = { addonPendingDeletionUrl = null },
+        )
+    }
+
+    val trackingConsentManifest = pendingTrackingConsent
+    if (trackingConsentManifest != null) {
+        TrackingAddonConsentDialog(
+            manifest = trackingConsentManifest,
+            onInstall = {
+                installModalState = AddonInstallModalState.Checking
+                coroutineScope.launch {
+                    installModalState = when (val result = AddonRepository.installWithTrackingConsent(trackingConsentManifest)) {
+                        is AddAddonResult.Success -> {
+                            addonUrl = ""
+                            AddonInstallModalState.Success(result.manifest.name)
+                        }
+
+                        is AddAddonResult.TrackingConsentRequired -> null
+
+                        is AddAddonResult.Error -> AddonInstallModalState.Error(result.message)
+                    }
+                }
+            },
+            onDismiss = AddonRepository::dismissTrackingConsent,
         )
     }
 
