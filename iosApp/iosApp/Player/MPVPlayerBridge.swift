@@ -578,13 +578,10 @@ final class MPVPlayerViewController: UIViewController {
         checkError(mpv_request_log_messages(mpv, "warn"))
 
         if usesSoftwareRenderer {
-            // Use VideoToolbox's copy-back decoder on iOS 15. The upstream
-            // MPVKit v0.41.0 binary has not verified zero-copy
-            // CVOpenGLESTextureCache interop; that can corrupt NV12/chroma
-            // plane colors. Copy-back still uses hardware video DECODE, and
-            // OpenGL ES still handles the display, at full drawable size.
+            // Diagnostic: use software video decoding to isolate the green tint seen on SDR and HDR.
+            // Keep full-resolution OpenGL ES GPU rendering; this does not restore the 432p software renderer.
             checkError(mpv_set_option_string(mpv, "vo", "libmpv"))
-            checkError(mpv_set_option_string(mpv, "hwdec", "videotoolbox-copy"))
+            checkError(mpv_set_option_string(mpv, "hwdec", "no"))
             if legacyGLView != nil {
                 checkError(mpv_set_option_string(mpv, "gpu-api", "opengl"))
                 checkError(mpv_set_option_string(mpv, "opengl-es", "yes"))
@@ -889,11 +886,10 @@ final class MPVPlayerViewController: UIViewController {
     ) {
         // iOS 15's EAGL backing store is 8-bit SDR even on HDR-capable
         // phones. Respect useful picture controls, but never claim EDR.
-        // Keep the VideoToolbox copy path because direct CVOpenGLES frame
-        // interop caused distorted chroma in the earlier experimental build.
+        // Disable VideoToolbox copy-back for this compatibility test to isolate chroma corruption.
         if usesSoftwareRenderer {
             guard mpv != nil else { return }
-            setStringProperty("hwdec", "videotoolbox-copy")
+            setStringProperty("hwdec", "no")
             setStringProperty("target-prim", "bt.709")
             setStringProperty("target-trc", "srgb")
             setStringProperty("target-colorspace-hint", "no")
