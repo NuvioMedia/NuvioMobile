@@ -90,6 +90,13 @@ jobs:
             printf 'NUVIO_RELEASE_KEY_PASSWORD=nuvioauto\n'
           } >> local.properties
 
+      # The runner has 16 GB; the repo's 12 GB Gradle + 8 GB Kotlin daemon settings can get it killed in R8.
+      - name: Fit Gradle memory to the runner
+        run: |
+          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8/' gradle.properties
+          sed -i 's/^kotlin.daemon.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx3g/' gradle.properties
+          grep -E "jvmargs" gradle.properties
+
       - name: Build release APK
         run: >
           ./gradlew :androidApp:assembleFullRelease
