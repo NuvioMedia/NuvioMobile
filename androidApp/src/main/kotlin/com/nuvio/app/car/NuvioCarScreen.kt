@@ -3,10 +3,12 @@ package com.nuvio.app.car
 import android.app.ActivityOptions
 import android.app.Presentation
 import android.content.Intent
+import android.graphics.PixelFormat
 import android.graphics.PointF
 import android.graphics.Rect
 import android.hardware.display.DisplayManager
 import android.hardware.display.VirtualDisplay
+import android.media.ImageReader
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -181,9 +183,22 @@ class NuvioCarScreen(ctx: CarContext) : Screen(ctx), SurfaceCallback, CarBridge.
     }
 
     override fun onSurfaceDestroyed(container: SurfaceContainer) {
-        // Keep the display and Nuvio alive (audio keeps playing while Maps is on screen); just stop drawing.
+        // Keep the display and Nuvio alive while another app is on the car screen. A virtual display without a
+        // surface turns off, which stops the activity (and with it playback), so it draws into a small throwaway
+        // buffer instead until the car surface comes back.
         touch.cancel()
-        display?.surface = null
+        display?.surface = parkingSurface()
+    }
+
+    private var parking: ImageReader? = null
+
+    private fun parkingSurface(): android.view.Surface? {
+        val reader = parking ?: runCatching {
+            ImageReader.newInstance(PARK_W, PARK_H, PixelFormat.RGBA_8888, 2).apply {
+                setOnImageAvailableListener({ r -> r.acquireLatestImage()?.close() }, handler)
+            }
+        }.getOrNull()?.also { parking = it }
+        return reader?.surface
     }
 
     override fun onStableAreaChanged(stableArea: Rect) {
@@ -388,11 +403,15 @@ class NuvioCarScreen(ctx: CarContext) : Screen(ctx), SurfaceCallback, CarBridge.
         CarBridge.activity?.finish()
         display?.release()
         display = null
+        parking?.close()
+        parking = null
     }
 
     private companion object {
         const val TAG = "NuvioAuto"
         const val PRE_LAUNCH_MS = 250L
         const val LAUNCH_TIMEOUT_MS = 6000L
+        const val PARK_W = 320
+        const val PARK_H = 180
     }
 }
