@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "1.1.0-beta.2",
+          "buildVersion": "159",
+          "date": "2026-11-18T05:33:24Z",
+          "localizedDescription": "> [!IMPORTANT]\r\n> **Beta builds are for testing purposes and may contain bugs, regressions, or unexpected issues.** If you prefer a reliable experience, we recommend staying on the **Stable** channel.\r\n\r\n- e00392db feat(downloads): follow library custom poster setting @tapframe  \r\n- 2dcfbb9f fix(downloads): handle system back on the show page @tapframe  \r\n- ffe769fa feat(downloads): redesign downloads screen @tapframe  \r\n- [fix(cast): hide talk show guest appearances from filmography (#2704)](https://github.com/NuvioMedia/NuvioMobile/pull/2704) @skoruppa  \r\n- [fix(trakt): prevent unbounded library refresh queue (#2702)](https://github.com/NuvioMedia/NuvioMobile/pull/2702) @enricopro  \r\n- [fix(ratings): match external episode ratings to the addon's episode order (#2688)](https://github.com/NuvioMedia/NuvioMobile/pull/2688) @skoruppa  \r\n- [feat(servers): add Silo on its own API (#2659)](https://github.com/NuvioMedia/NuvioMobile/pull/2659) @ysosrs123  \r\n- [feat(servers): add Plex Media Server (#2658)](https://github.com/NuvioMedia/NuvioMobile/pull/2658) @ysosrs123  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/1.1.0-beta.2/nuvio-1.1.0-beta.2-full-release.ipa",
+          "size": 71080326,
+          "sha256": "1f10d410a35307a80e605952509f0ede6861fe2e77ab49f927f28c93df09d257",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "1.0.0",
           "buildVersion": "157",
           "date": "2026-11-15T18:28:31Z",
