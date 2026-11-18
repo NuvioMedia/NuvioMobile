@@ -4,6 +4,12 @@ on:
   release:
     types:
       - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to add to the sideload sources
+        required: true
+        type: string
   workflow_call:
     inputs:
       tag:
@@ -27,7 +33,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
-      RELEASE_VERSION: ${{ inputs.version || github.event.release.tag_name }}
+      RELEASE_VERSION: ${{ inputs.version || inputs.tag || github.event.release.tag_name }}
       RELEASE_BRANCH: ${{ github.event.repository.default_branch }}
 
     steps:
