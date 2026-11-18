@@ -568,8 +568,6 @@
   <string name="settings_playback_section_player">PLAYER</string>
   <string name="settings_playback_player_preference_internal">Interno</string>
   <string name="settings_playback_player_preference_external">Esterno</string>
-  <string name="settings_playback_touch_gestures">Gesti touch</string>
-  <string name="settings_playback_touch_gestures_description">Consenti swipe e e doppi tocchi sulla superficie del player per andare avanti o indietro, modificare la luminosità e il volume.</string>
   <string name="settings_playback_section_skip_segments">SALTA SEGMENTI</string>
   <string name="settings_playback_section_stream_auto_play">RIPRODUZIONE AUTOMATICA FLUSSO</string>
   <string name="settings_playback_section_stream_selection">SELEZIONE FLUSSO</string>

@@ -596,9 +596,14 @@ internal fun settingsSearchEntries(
                 stringResource(Res.string.settings_playback_hold_to_speed_description),
             ),
             PlaybackSearchRow(
-                "touch-gestures",
-                stringResource(Res.string.settings_playback_touch_gestures),
-                stringResource(Res.string.settings_playback_touch_gestures_description),
+                "horizontal-touch-gestures",
+                stringResource(Res.string.settings_playback_horizontal_touch_gestures),
+                stringResource(Res.string.settings_playback_horizontal_touch_gestures_description),
+            ),
+            PlaybackSearchRow(
+                "vertical-touch-gestures",
+                stringResource(Res.string.settings_playback_vertical_touch_gestures),
+                stringResource(Res.string.settings_playback_vertical_touch_gestures_description),
             ),
             PlaybackSearchRow("hold-speed", stringResource(Res.string.settings_playback_hold_speed)),
             PlaybackSearchRow("exo-chapters", stringResource(Res.string.settings_playback_exo_chapters), stringResource(Res.string.settings_playback_exo_chapters_description)),

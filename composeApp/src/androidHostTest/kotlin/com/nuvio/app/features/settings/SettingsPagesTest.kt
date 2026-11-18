@@ -148,16 +148,21 @@ class SettingsPagesTest {
             }
         }
         compose.onNodeWithText("Player interface").performScrollTo().performClick()
-        compose.onNodeWithText("Touch Gestures").performScrollTo().performClick()
-        assertFalse(PlayerSettingsRepository.uiState.value.touchGesturesEnabled)
-        assertEquals(false, PlayerSettingsStorage.loadTouchGesturesEnabled())
+        compose.onNodeWithText("Horizontal Touch Gestures").performScrollTo().performClick()
+        assertFalse(PlayerSettingsRepository.uiState.value.horizontalTouchGesturesEnabled)
+        assertTrue(PlayerSettingsRepository.uiState.value.verticalTouchGesturesEnabled)
+        assertEquals(false, PlayerSettingsStorage.loadHorizontalTouchGesturesEnabled())
+        compose.onNodeWithText("Vertical Touch Gestures").performScrollTo().performClick()
+        assertFalse(PlayerSettingsRepository.uiState.value.verticalTouchGesturesEnabled)
+        assertEquals(false, PlayerSettingsStorage.loadVerticalTouchGesturesEnabled())
         compose.onNodeWithText("Back").performScrollTo().performClick()
         compose.onNodeWithText("Audio").performScrollTo().performClick()
         compose.onNodeWithText("Preferred Audio Language").performClick()
         compose.onNodeWithText("Original language").performClick()
         assertEquals("original", PlayerSettingsRepository.uiState.value.preferredAudioLanguage)
         compose.runOnIdle { PlayerSettingsRepository.onProfileChanged() }
-        assertFalse(PlayerSettingsRepository.uiState.value.touchGesturesEnabled)
+        assertFalse(PlayerSettingsRepository.uiState.value.horizontalTouchGesturesEnabled)
+        assertFalse(PlayerSettingsRepository.uiState.value.verticalTouchGesturesEnabled)
         assertEquals("original", PlayerSettingsRepository.uiState.value.preferredAudioLanguage)
         compose.onNodeWithText("Back").performScrollTo().performClick()
         compose.onNodeWithText("Player").performScrollTo().performClick()
@@ -226,7 +231,8 @@ class SettingsPagesTest {
         compose.runOnIdle {
             assertEquals(entries.size, entries.map { it.key }.distinct().size)
             mapOf(
-                "playback-touch-gestures" to SettingsPage.PlaybackInterface,
+                "playback-horizontal-touch-gestures" to SettingsPage.PlaybackInterface,
+                "playback-vertical-touch-gestures" to SettingsPage.PlaybackInterface,
                 "playback-preferred-audio" to SettingsPage.PlaybackAudio,
                 "playback-preferred-subtitles" to SettingsPage.PlaybackSubtitles,
                 "playback-auto-switch-engine" to SettingsPage.PlaybackPlayer,

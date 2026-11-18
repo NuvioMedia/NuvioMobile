@@ -1101,8 +1101,6 @@
     <string name="settings_playback_hold_speed">Velocidad al mantener</string>
     <string name="settings_playback_hold_to_speed">Mantener para acelerar</string>
     <string name="settings_playback_hold_to_speed_description">Mantén pulsado en cualquier parte de la superficie del reproductor para aumentar temporalmente la velocidad.</string>
-    <string name="settings_playback_touch_gestures">Gestos táctiles</string>
-    <string name="settings_playback_touch_gestures_description">Permita deslizar y tocar dos veces la superficie del reproductor para buscar, ajustar el brillo o ajustar el volumen.</string>
     <string name="settings_playback_invalid_regex_pattern">Patrón regex no válido</string>
     <string name="settings_playback_last_link_cache_duration">Duración de caché del último enlace</string>
     <string name="settings_playback_map_dv7_to_hevc">Mapear DV7 a HEVC</string>

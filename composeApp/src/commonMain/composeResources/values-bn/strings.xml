@@ -1087,8 +1087,6 @@
     <string name="settings_playback_hold_speed">হোল্ড টু স্পিড</string>
     <string name="settings_playback_hold_to_speed">হোল্ড টু স্পিড</string>
     <string name="settings_playback_hold_to_speed_description">প্লেব্যাকের গতি সাময়িকভাবে বাড়ানোর জন্য প্লেয়ার স্ক্রিনের যেকোনো জায়গায় দীর্ঘক্ষণ চাপ দিন।</string>
-    <string name="settings_playback_touch_gestures">টাচ জেসচার</string>
-    <string name="settings_playback_touch_gestures_description">প্লেয়ার স্ক্রিনে সোয়াইপ ও ডাবল-ট্যাপের মাধ্যমে ফরোয়ার্ড/রিওয়াইন্ড, ব্রাইটনেস বা ভলিউম অ্যাডজাস্ট করার অনুমতি দিন।</string>
     <string name="settings_playback_invalid_regex_pattern">অবৈধ রেজেক্স প্যাটার্ন</string>
     <string name="settings_playback_last_link_cache_duration">শেষ লিঙ্ক ক্যাশে সময়কাল</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - HEVC ফলব্যাক</string>

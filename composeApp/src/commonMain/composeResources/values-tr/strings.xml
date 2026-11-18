@@ -956,8 +956,6 @@
     <string name="settings_playback_hold_speed">Basılı tutma hızı</string>
     <string name="settings_playback_hold_to_speed">Hızlandırmak için basılı tut</string>
     <string name="settings_playback_hold_to_speed_description">Oynatıcı yüzeyinde herhangi bir yere uzun basarak oynatma hızını geçici olarak artır.</string>
-    <string name="settings_playback_touch_gestures">Dokunma Hareketleri</string>
-    <string name="settings_playback_touch_gestures_description">Sarmak, parlaklığı veya sesi ayarlamak için oynatıcı yüzeyinde kaydırmalara ve çift dokunmalara izin verin.</string>
     <string name="settings_playback_invalid_regex_pattern">Geçersiz regex deseni</string>
     <string name="settings_playback_last_link_cache_duration">Son bağlantı önbellek süresi</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7'yi HEVC'ye eşle</string>

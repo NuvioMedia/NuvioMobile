@@ -50,7 +50,8 @@ internal fun Modifier.playerSurfaceDragGestures(
     sideGestureSystemEdgeExclusionPx: Float,
     horizontalSeekSystemEdgeExclusionPx: Float = 0f,
     playerControlsLockedState: State<Boolean>,
-    touchGesturesEnabledState: State<Boolean>,
+    horizontalTouchGesturesEnabledState: State<Boolean>,
+    verticalTouchGesturesEnabledState: State<Boolean>,
     isHoldToSpeedGestureActiveState: State<Boolean>,
     currentPositionMsState: State<Long>,
     currentDurationMsState: State<Long>,
@@ -75,7 +76,9 @@ internal fun Modifier.playerSurfaceDragGestures(
             if (playerControlsLockedState.value) {
                 return@awaitEachGesture
             }
-            if (!touchGesturesEnabledState.value) {
+            val horizontalGesturesEnabled = horizontalTouchGesturesEnabledState.value
+            val verticalGesturesEnabled = verticalTouchGesturesEnabledState.value
+            if (!horizontalGesturesEnabled && !verticalGesturesEnabled) {
                 return@awaitEachGesture
             }
             val controller = gestureController
@@ -93,6 +96,7 @@ internal fun Modifier.playerSurfaceDragGestures(
             val isInBackGestureEdge = backGestureEdgePx > 0f &&
                 (down.position.x <= backGestureEdgePx || down.position.x >= width - backGestureEdgePx)
             val region = when {
+                !verticalGesturesEnabled -> null
                 isInSideGestureSystemEdge -> null
                 down.position.x < width * PlayerLeftGestureBoundary -> PlayerSideGesture.Brightness
                 down.position.x > width * PlayerRightGestureBoundary -> PlayerSideGesture.Volume
@@ -133,7 +137,8 @@ internal fun Modifier.playerSurfaceDragGestures(
                         height * PlayerVerticalGestureMinHeightFraction,
                     )
                     val horizontalDominant =
-                        !holdToSpeedActive &&
+                        horizontalGesturesEnabled &&
+                            !holdToSpeedActive &&
                             !isInBackGestureEdge &&
                             abs(totalDx) > viewConfiguration.touchSlop &&
                             abs(totalDx) > abs(totalDy)

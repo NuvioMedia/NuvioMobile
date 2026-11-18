@@ -1122,8 +1122,6 @@
     <string name="settings_playback_hold_speed">Скорост при задържане</string>
     <string name="settings_playback_hold_to_speed">Задръж за скорост</string>
     <string name="settings_playback_hold_to_speed_description">Задръжте натиснато навсякъде върху плейъра, за да увеличите временно скоростта на възпроизвеждане.</string>
-    <string name="settings_playback_touch_gestures">Жестове с докосване</string>
-    <string name="settings_playback_touch_gestures_description">Позволява плъзгания и двойни докосвания върху повърхността на плейъра за превъртане, регулиране на яркостта или регулиране на силата на звука.</string>
     <string name="settings_playback_invalid_regex_pattern">Невалиден regex шаблон</string>
     <string name="settings_playback_last_link_cache_duration">Продължителност на кеша на последната връзка</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - HEVC резервен вариант</string>

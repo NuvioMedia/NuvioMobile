@@ -853,8 +853,6 @@
     <string name="settings_playback_hold_speed">Rýchlosť podržania</string>
     <string name="settings_playback_hold_to_speed">Podržať pre rýchlosť</string>
     <string name="settings_playback_hold_to_speed_description">Dlhým stlačením kdekoľvek na povrchu prehrávača dočasne zvýšite rýchlosť prehrávania.</string>
-    <string name="settings_playback_touch_gestures">Dotykové gestá</string>
-    <string name="settings_playback_touch_gestures_description">Povoliť potiahnutia a dvojité klepnutia na povrchu prehrávača na posúvanie, nastavenie jasu alebo hlasitosti.</string>
     <string name="settings_playback_invalid_regex_pattern">Neplatný vzor regex</string>
     <string name="settings_playback_last_link_cache_duration">Trvanie vyrovnávacej pamäte posledného odkazu</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - záloha HEVC</string>

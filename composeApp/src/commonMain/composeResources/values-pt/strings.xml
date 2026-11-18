@@ -858,8 +858,6 @@
     <string name="settings_playback_hold_speed">Velocidade ao manter premido</string>
     <string name="settings_playback_hold_to_speed">Manter premido para acelerar</string>
     <string name="settings_playback_hold_to_speed_description">Mantém premido em qualquer parte da superfície do leitor para aumentar temporariamente a velocidade de reprodução.</string>
-    <string name="settings_playback_touch_gestures">Gestos táteis</string>
-    <string name="settings_playback_touch_gestures_description">Permite deslizar e tocar duas vezes na área do leitor para avançar/recuar, ajustar o brilho ou ajustar o volume.</string>
     <string name="settings_playback_invalid_regex_pattern">Expressão regex inválida</string>
     <string name="settings_playback_last_link_cache_duration">Duração da cache do último link</string>
     <string name="settings_playback_map_dv7_to_hevc">Alternativa DV7 para HEVC</string>

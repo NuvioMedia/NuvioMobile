@@ -33,6 +33,8 @@ class PlayerSurfaceGesturesTest {
     private val playbackReady = mutableStateOf(false)
     private var backGestureEdgePx = 0f
     private val controlsLocked = mutableStateOf(false)
+    private val horizontalGesturesEnabled = mutableStateOf(true)
+    private val verticalGesturesEnabled = mutableStateOf(true)
     private var taps = 0
     private var doubleTaps = 0
     private var speedBoosts = 0
@@ -76,7 +78,8 @@ class PlayerSurfaceGesturesTest {
                         sideGestureSystemEdgeExclusionPx = 0f,
                         horizontalSeekSystemEdgeExclusionPx = backGestureEdgePx,
                         playerControlsLockedState = locked,
-                        touchGesturesEnabledState = rememberUpdatedState(true),
+                        horizontalTouchGesturesEnabledState = rememberUpdatedState(horizontalGesturesEnabled.value),
+                        verticalTouchGesturesEnabledState = rememberUpdatedState(verticalGesturesEnabled.value),
                         isHoldToSpeedGestureActiveState = rememberUpdatedState(false),
                         currentPositionMsState = rememberUpdatedState(30_000L),
                         currentDurationMsState = rememberUpdatedState(120_000L),
@@ -219,5 +222,72 @@ class PlayerSurfaceGesturesTest {
         setContent()
         compose.onNodeWithTag("surface").performTouchInput { longClick(Offset(width - 2f, centerY)) }
         compose.runOnIdle { assertEquals(1, speedBoosts) }
+    }
+
+    private fun swipeSeek() {
+        compose.onNodeWithTag("surface").performTouchInput { swipe(center, Offset(width * 0.85f, centerY)) }
+    }
+
+    private fun swipeSideAdjust() {
+        val surface = compose.onNodeWithTag("surface")
+        surface.performTouchInput { swipe(Offset(width * 0.1f, centerY), Offset(width * 0.1f, height * 0.1f)) }
+        surface.performTouchInput { swipe(Offset(width * 0.9f, centerY), Offset(width * 0.9f, height * 0.1f)) }
+    }
+
+    @Test
+    fun disablingHorizontalGesturesKeepsBrightnessAndVolumeSwipes() {
+        playbackReady.value = true
+        horizontalGesturesEnabled.value = false
+        setContent()
+        swipeSeek()
+        swipeSideAdjust()
+        compose.runOnIdle {
+            assertEquals(0, seekPreviews)
+            assertEquals(0, seekCommits)
+            assertTrue(sideAdjustments > 0)
+        }
+    }
+
+    @Test
+    fun disablingVerticalGesturesKeepsSwipeToSeek() {
+        playbackReady.value = true
+        verticalGesturesEnabled.value = false
+        setContent()
+        swipeSideAdjust()
+        swipeSeek()
+        compose.runOnIdle {
+            assertEquals(0, sideAdjustments)
+            assertTrue(seekPreviews > 0)
+            assertEquals(1, seekCommits)
+        }
+    }
+
+    @Test
+    fun disablingBothGesturesIgnoresAllSwipes() {
+        playbackReady.value = true
+        horizontalGesturesEnabled.value = false
+        verticalGesturesEnabled.value = false
+        setContent()
+        swipeSeek()
+        swipeSideAdjust()
+        compose.runOnIdle {
+            assertEquals(0, seekPreviews)
+            assertEquals(0, seekCommits)
+            assertEquals(0, sideAdjustments)
+        }
+    }
+
+    @Test
+    fun gestureTogglesTakeEffectWithoutRecomposingTheSurface() {
+        playbackReady.value = true
+        horizontalGesturesEnabled.value = false
+        setContent()
+        swipeSeek()
+        compose.runOnIdle {
+            assertEquals(0, seekCommits)
+            horizontalGesturesEnabled.value = true
+        }
+        swipeSeek()
+        compose.runOnIdle { assertEquals(1, seekCommits) }
     }
 }

@@ -121,7 +121,7 @@ internal fun PlayerScreenContent(args: PlayerScreenArgs) {
         runtime.scope = rememberCoroutineScope()
         runtime.hapticFeedback = LocalHapticFeedback.current
         runtime.gestureController = rememberPlayerGestureController(
-            restoreBrightness = playerSettingsUiState.touchGesturesEnabled,
+            restoreBrightness = playerSettingsUiState.verticalTouchGesturesEnabled,
         )
         runtime.playerSettingsUiState = playerSettingsUiState
         runtime.p2pSettingsUiState = p2pSettingsUiState

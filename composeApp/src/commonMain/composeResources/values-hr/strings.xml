@@ -1098,8 +1098,6 @@
     <string name="settings_playback_hold_speed">Brzina pri držanju</string>
     <string name="settings_playback_hold_to_speed">Drži za ubrzanje</string>
     <string name="settings_playback_hold_to_speed_description">Dugo pritisnite bilo gdje na zaslonu reproduktora za privremeno ubrzanje reprodukcije.</string>
-    <string name="settings_playback_touch_gestures">Geste dodirom</string>
-    <string name="settings_playback_touch_gestures_description">Dopusti poteze i dvostruke doticaje na zaslonu reproduktora za premotavanje, svjetlinu ili glasnoću.</string>
     <string name="settings_playback_invalid_regex_pattern">Nevaljani regex uzorak</string>
     <string name="settings_playback_last_link_cache_duration">Trajanje predmemorije zadnje poveznice</string>
     <string name="settings_playback_map_dv7_to_hevc">DV7 - HEVC rezervna opcija</string>
