@@ -634,19 +634,31 @@
     <string name="detail_tab_trailer">Bande-annonce</string>
     <string name="detail_trailer_category_count">%1$s (%2$d)</string>
     <string name="detail_trailers_title">Bandes-annonces</string>
-    <string name="downloads_empty_episodes">Aucun épisode terminé</string>
+    <string name="downloads_delete_message">Cela libère %1$s sur cet appareil.</string>
+    <string name="downloads_delete_title">Supprimer %1$s&#160;?</string>
+    <string name="downloads_downloading_count">%1$d en cours de téléchargement</string>
+    <string name="downloads_empty_message">Appuyez longuement sur un flux et choisissez Télécharger le fichier pour le regarder hors ligne.</string>
     <string name="downloads_empty_title">Aucun téléchargement pour le moment</string>
-    <string name="downloads_episode_count">%1$d épisode(s) téléchargé(s)</string>
     <string name="downloads_open_directory">Ouvrir le dossier des téléchargements</string>
     <string name="downloads_open_directory_failed">Impossible d’ouvrir le dossier des téléchargements</string>
+    <string name="downloads_pause_all">Tout mettre en pause</string>
+    <string name="downloads_resume_all">Tout reprendre</string>
     <string name="downloads_section_active">Actifs</string>
-    <string name="downloads_section_movies">Films</string>
-    <string name="downloads_section_shows">Séries</string>
+    <string name="downloads_section_downloaded">Téléchargés</string>
     <string name="downloads_show_downloads">Afficher les téléchargements</string>
-    <string name="downloads_status_completed">Terminé • %1$s</string>
+    <string name="downloads_speed">%1$s/s</string>
     <string name="downloads_status_downloading">Téléchargement • %1$s</string>
     <string name="downloads_status_failed">Échoué</string>
     <string name="downloads_status_paused">En pause • %1$s</string>
+    <string name="downloads_watched_count">%1$d vu(s)</string>
+    <plurals name="downloads_episodes">
+        <item quantity="one">%1$d épisode</item>
+        <item quantity="other">%1$d épisodes</item>
+    </plurals>
+    <plurals name="downloads_titles">
+        <item quantity="one">%1$d titre</item>
+        <item quantity="other">%1$d titres</item>
+    </plurals>
     <string name="episodes_cd_watched">Vu</string>
     <string name="episodes_unavailable">Indisponible</string>
     <string name="episodes_season">Saison %1$d</string>
@@ -658,7 +670,7 @@
     <string name="hero_remove_from_library">Retirer de la bibliothèque</string>
     <string name="home_view_all">Tout voir</string>
     <string name="play_manually">Regarder manuellement</string>
-    <string name="poster_logo_content_description">Logo de %1$s</string>
+    <string name="poster_logo_content_description">Logo %1$s</string>
     <string name="settings_account">Compte</string>
     <string name="settings_account_delete_account">Supprimer le compte</string>
     <string name="settings_account_delete_account_description">Cela supprimera définitivement votre compte et toutes les données associées.</string>
@@ -1801,7 +1813,7 @@
     <string name="catalog_load_failed">Impossible de charger les éléments du catalogue.</string>
     <string name="continue_watching_up_next">Épisode suivant</string>
     <string name="continue_watching_up_next_episode">Épisode suivant • S%1$d E%2$d</string>
-    <string name="detail_logo_content_description">Logo de %1$s</string>
+    <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Impossible de charger les commentaires</string>
     <string name="details_load_failed_all_addons">Impossible de charger les détails depuis aucun addon.</string>
     <string name="details_networks">Chaînes</string>
@@ -2070,7 +2082,7 @@
     <string name="trailer_no_playable_stream">Aucun flux de bande-annonce lisible trouvé.</string>
     <string name="trailer_season_label">Saison %1$d - %2$s</string>
     <string name="unit_bytes_b">o</string>
-    <string name="unit_bytes_kb">Ko</string>
+    <string name="unit_bytes_kb">ko</string>
     <string name="unit_bytes_mb">Mo</string>
     <string name="unit_bytes_gb">Go</string>
     <!-- PlayerControls a11y -->
