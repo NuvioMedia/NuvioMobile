@@ -66,6 +66,27 @@ class HomeCatalogSettingsRepositoryTest {
     }
 
     @Test
+    fun pinTopAndBottomPlacementPersistsAndControlsHomeOrder() {
+        val addons = listOf(addon(listOf("popular", "latest", "trending")))
+        HomeCatalogSettingsRepository.syncCatalogs(addons)
+        val topKey = "test:movie:latest"
+        val bottomKey = "test:movie:trending"
+        HomeCatalogSettingsRepository.setRowPlacement(topKey, HomeCatalogRowPlacement.PINNED_TOP)
+        HomeCatalogSettingsRepository.setRowPlacement(bottomKey, HomeCatalogRowPlacement.PINNED_BOTTOM)
+        assertEquals(listOf(topKey, "test:movie:popular", bottomKey), HomeCatalogSettingsRepository.uiState.value.items.map { it.key })
+        HomeCatalogSettingsRepository.clearLocalState()
+        HomeCatalogSettingsRepository.syncCatalogs(addons)
+        assertEquals(listOf(topKey, "test:movie:popular", bottomKey), HomeCatalogSettingsRepository.uiState.value.items.map { it.key })
+    }
+
+    @Test
+    fun rowPlacementIsIncludedInProfileSyncPayload() {
+        HomeCatalogSettingsRepository.syncCatalogs(listOf(addon()))
+        HomeCatalogSettingsRepository.setRowPlacement("test:movie:popular", HomeCatalogRowPlacement.PINNED_BOTTOM)
+        assertEquals(HomeCatalogRowPlacement.PINNED_BOTTOM.storageValue, HomeCatalogSettingsRepository.exportToSyncPayload().items.single().rowPlacement)
+    }
+
+    @Test
     fun unchangedCatalogsDoNotRewriteSettings() {
         val addons = listOf(addon())
         HomeCatalogSettingsRepository.syncCatalogs(addons)
@@ -228,7 +249,7 @@ class HomeCatalogSettingsRepositoryTest {
         assertEquals(settings, HomeCatalogSettingsRepository.uiState.value)
     }
 
-    private fun addon() = ManagedAddon(
+    private fun addon(catalogIds: List<String> = listOf("popular")) = ManagedAddon(
         manifestUrl = "https://example.com/manifest.json",
         manifest = AddonManifest(
             id = "test",
@@ -237,7 +258,7 @@ class HomeCatalogSettingsRepositoryTest {
             version = "1",
             resources = emptyList(),
             types = listOf("movie"),
-            catalogs = listOf(AddonCatalog(type = "movie", id = "popular", name = "Popular")),
+            catalogs = catalogIds.map { id -> AddonCatalog(type = "movie", id = id, name = id) },
             transportUrl = "https://example.com",
         ),
     )
