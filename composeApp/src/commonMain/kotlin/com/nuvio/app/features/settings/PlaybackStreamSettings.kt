@@ -31,7 +31,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.isIos
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.player.SOURCE_FALLBACK_MAX_SOURCES_RANGE
+import com.nuvio.app.features.player.SOURCE_STARTUP_TIMEOUT_SECONDS_RANGE
+import com.nuvio.app.features.player.SOURCE_STARTUP_TIMEOUT_SECONDS_STEP
 import com.nuvio.app.features.player.STREAM_AUTO_PLAY_TIMEOUT_VALUES
 import com.nuvio.app.features.plugins.PluginsUiState
 import com.nuvio.app.features.plugins.PluginRepository
@@ -107,6 +111,51 @@ internal fun PlaybackStreamSettings(
                         isTablet = isTablet,
                         onClick = { showAutoPlayRegexDialog = true },
                     )
+                }
+                if (settings.streamAutoPlayMode != StreamAutoPlayMode.MANUAL) {
+                    // Excludes the engine switch on error (Android only): both react to the same failure.
+                    // Only the switch that is off is locked, so both stay reachable if both ended up on.
+                    val blockedByEngineSwitch = !isIos && settings.autoSwitchPlaybackEngineOnError &&
+                        !settings.streamAutoPlayFallbackOnFailure
+                    SettingsGroupDivider(isTablet = isTablet)
+                    SettingsSwitchRow(
+                        title = stringResource(Res.string.settings_playback_fallback_next_source),
+                        description = stringResource(
+                            if (blockedByEngineSwitch) {
+                                Res.string.settings_playback_fallback_next_source_blocked_by_engine_switch
+                            } else {
+                                Res.string.settings_playback_fallback_next_source_description
+                            },
+                        ),
+                        checked = settings.streamAutoPlayFallbackOnFailure,
+                        enabled = !settings.externalPlayerEnabled && !blockedByEngineSwitch,
+                        isTablet = isTablet,
+                        onCheckedChange = PlayerSettingsRepository::setStreamAutoPlayFallbackOnFailure,
+                    )
+                    if (settings.streamAutoPlayFallbackOnFailure && !blockedByEngineSwitch) {
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsSliderRow(
+                            title = stringResource(Res.string.settings_playback_fallback_max_sources),
+                            value = settings.streamAutoPlayFallbackMaxSources,
+                            valueText = { count -> count.toString() },
+                            valueRange = SOURCE_FALLBACK_MAX_SOURCES_RANGE,
+                            step = 1,
+                            isTablet = isTablet,
+                            enabled = !settings.externalPlayerEnabled,
+                            onValueChange = PlayerSettingsRepository::setStreamAutoPlayFallbackMaxSources,
+                        )
+                        SettingsGroupDivider(isTablet = isTablet)
+                        SettingsSliderRow(
+                            title = stringResource(Res.string.settings_playback_fallback_startup_timeout),
+                            value = settings.streamAutoPlayFallbackStartupTimeoutSeconds,
+                            valueText = { seconds -> stringResource(Res.string.settings_playback_timeout_seconds, seconds) },
+                            valueRange = SOURCE_STARTUP_TIMEOUT_SECONDS_RANGE,
+                            step = SOURCE_STARTUP_TIMEOUT_SECONDS_STEP,
+                            isTablet = isTablet,
+                            enabled = !settings.externalPlayerEnabled,
+                            onValueChange = PlayerSettingsRepository::setStreamAutoPlayFallbackStartupTimeoutSeconds,
+                        )
+                    }
                 }
                 SettingsGroupDivider(isTablet = isTablet)
                 val timeoutSec = settings.streamAutoPlayTimeoutSeconds

@@ -88,6 +88,26 @@ class AutoSyncSubtitleTextRetimerTest {
     }
 
     @Test
+    fun assWithEmbeddedFontsBeforeEventsIsStillRetimedAsAss() {
+        val fonts = (0 until 2_000).joinToString("\n") { "M9TAT\"\"(\"\"0@*\"<@*\"9$it" }
+        val body = "[Script Info]\nTitle: Test\n\n[Fonts]\nfontname: a.ttf\n$fonts\n\n" +
+            "[Events]\nFormat: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text\n" +
+            "Dialogue: 0,0:00:01.00,0:00:02.50,Default,,0,0,0,,Line"
+        val timeline = timeline(
+            cues = listOf(AutoSyncRetimedCue(1_000L, 2_500L, 1_250L, 2_750L)),
+            interceptMs = 250.0,
+        )
+
+        val retimed = AutoSyncSubtitleTextRetimer.retime(body, timeline)
+
+        assertEquals(
+            body.replace("0:00:01.00,0:00:02.50", "0:00:01.25,0:00:02.75"),
+            retimed,
+        )
+        assertEquals(1, AutoSyncSubtitleCueParser.parse(body, sourceUrl = "https://host/sub?id=1").size)
+    }
+
+    @Test
     fun timesWithoutANearbyCueUseTheWholeFilmTransform() {
         val body = """
             1

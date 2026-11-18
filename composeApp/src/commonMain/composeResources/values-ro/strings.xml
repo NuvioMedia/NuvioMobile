@@ -946,7 +946,7 @@
     <string name="settings_playback_secondary_subtitle_language">Limba secundară preferată</string>
     <string name="settings_playback_section_decoder">DECODOR</string>
     <string name="settings_playback_engine">Motor de redare</string>
-    <string name="settings_playback_engine_auto_description">Folosește ExoPlayer mai întâi și revine la libmpv dacă redarea eșuează.</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer pentru Filme și Seriale · MPV pentru Anime</string>
     <string name="settings_playback_engine_exoplayer_description">Folosește ExoPlayer și decodoarele Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Folosește libmpv pentru redarea pe Android.</string>
     <string name="settings_playback_libmpv_video_output">Randator libmpv</string>

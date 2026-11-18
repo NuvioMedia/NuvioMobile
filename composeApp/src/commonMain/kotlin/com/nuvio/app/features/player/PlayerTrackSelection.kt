@@ -509,6 +509,16 @@ internal fun findPersistedAddonSubtitle(
     preference.addonSubtitleUrl?.takeIf { it.isNotBlank() }?.let { url ->
         subtitles.firstOrNull { it.url == url }?.let { return it }
     }
+    // URLs usually change between episodes, but an addon may keep its ids stable: when it
+    // offers several subtitles in one language, the id tells the one the user picked.
+    preference.addonSubtitleId?.takeIf { it.isNotBlank() }?.let { id ->
+        subtitles.firstOrNull { subtitle ->
+            subtitle.id == id && (
+                preference.addonSubtitleAddonName.isNullOrBlank() ||
+                    subtitle.addonName.equals(preference.addonSubtitleAddonName, ignoreCase = true)
+                )
+        }?.let { return it }
+    }
     val language = preference.subtitleLanguage?.takeIf { it.isNotBlank() } ?: return null
     val candidates = subtitles.filter { addonSubtitleMatchesLanguage(it, language) }
     val providerCandidates = preference.addonSubtitleAddonName?.takeIf { it.isNotBlank() }?.let { name ->

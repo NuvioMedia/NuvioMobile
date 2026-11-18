@@ -44,6 +44,8 @@ import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
 import com.nuvio.app.features.servers.ServerProvider
 import com.nuvio.app.features.servers.ServerRepository
+import com.nuvio.app.features.servers.plex.PlexProvider
+import com.nuvio.app.features.servers.silo.SiloProvider
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.Res
@@ -57,6 +59,7 @@ import nuvio.composeapp.generated.resources.servers_error_failed
 import nuvio.composeapp.generated.resources.servers_error_forbidden
 import nuvio.composeapp.generated.resources.servers_error_unreachable
 import nuvio.composeapp.generated.resources.servers_error_unsupported
+import nuvio.composeapp.generated.resources.servers_failure_remote_playback
 import nuvio.composeapp.generated.resources.servers_password
 import nuvio.composeapp.generated.resources.servers_sign_in_subtitle
 import nuvio.composeapp.generated.resources.servers_sign_in_title
@@ -76,6 +79,17 @@ internal fun ServerSignInSheet(
     onConnected: (ServerConnection) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    when (val provider = request.provider) {
+        is PlexProvider -> {
+            PlexSignInSheet(provider = provider, onConnected = onConnected, onDismiss = onDismiss)
+            return
+        }
+        is SiloProvider -> {
+            SiloSignInSheet(provider = provider, address = request.address, onConnected = onConnected, onDismiss = onDismiss)
+            return
+        }
+        else -> Unit
+    }
     val tokens = MaterialTheme.nuvio
     val scope = rememberCoroutineScope()
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
@@ -221,7 +235,7 @@ internal fun ServerSignInSheet(
 }
 
 @Composable
-private fun SheetHeader(title: String, subtitle: String) {
+internal fun SheetHeader(title: String, subtitle: String) {
     val tokens = MaterialTheme.nuvio
     Text(
         text = title,
@@ -240,7 +254,7 @@ private fun SheetHeader(title: String, subtitle: String) {
 }
 
 @Composable
-private fun sheetFieldColors(): TextFieldColors {
+internal fun sheetFieldColors(): TextFieldColors {
     val colors = MaterialTheme.nuvio.colors
     return OutlinedTextFieldDefaults.colors(
         focusedBorderColor = colors.borderFocus,
@@ -260,6 +274,7 @@ private fun ServerFailure.signInMessage(provider: ServerProvider): String = when
     ServerFailure.UNREACHABLE -> stringResource(Res.string.servers_error_unreachable)
     ServerFailure.UNSUPPORTED -> stringResource(Res.string.servers_error_unsupported, provider.displayName, provider.minimumVersion)
     ServerFailure.FORBIDDEN -> stringResource(Res.string.servers_error_forbidden)
+    ServerFailure.REMOTE_PLAYBACK_BLOCKED -> stringResource(Res.string.servers_failure_remote_playback)
     ServerFailure.INCOMPLETE,
     ServerFailure.FAILED -> stringResource(Res.string.servers_error_failed)
 }

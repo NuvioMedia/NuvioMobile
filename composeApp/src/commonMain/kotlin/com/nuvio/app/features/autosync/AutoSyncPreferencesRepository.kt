@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
  * Nuvio's general PlayerSettingsRepository/PlayerSettingsStorage architecture.
  */
 internal object AutoSyncPreferencesRepository {
-    private val _preferredSubtitleAutoSyncOnStart = MutableStateFlow(false)
+    private val _preferredSubtitleAutoSyncOnStart = MutableStateFlow(true)
     val preferredSubtitleAutoSyncOnStart: StateFlow<Boolean> =
         _preferredSubtitleAutoSyncOnStart.asStateFlow()
 
@@ -56,7 +56,7 @@ internal object AutoSyncPreferencesRepository {
         val profileId = ProfileRepository.activeProfileId
         if (loadedProfileId == profileId) return
 
-        _preferredSubtitleAutoSyncOnStart.value = loadPersistedValue?.invoke() ?: false
+        _preferredSubtitleAutoSyncOnStart.value = loadPersistedValue?.invoke() ?: true
         _aggressiveMode.value = loadAggressiveModePersistedValue?.invoke() ?: true
         _syncToleranceMs.value = loadSyncTolerancePersistedValue?.invoke()
             ?.takeIf { it in syncToleranceOptionsMs } ?: 0

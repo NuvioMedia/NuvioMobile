@@ -33,7 +33,7 @@ final class SubtitlePlaybackTests: XCTestCase {
             pauseDescription: nil, providerName: "Local", providerAddonId: nil, contentType: nil, videoId: nil,
             parentMetaId: "subtitle-test", parentMetaType: "movie", torrentInfoHash: nil, torrentFileIdx: nil,
             torrentFilename: nil, torrentTrackers: [], initialPositionMs: 0, initialProgressFraction: nil,
-            contentLanguage: "en", sourceFilename: nil, stream: nil
+            contentLanguage: "en", subtitleExtras: nil, sourceFilename: nil, stream: nil
         )
         let launchId = PlayerLaunchStore.shared.put(launch: launch)
         let window = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.windows.first)
@@ -136,5 +136,46 @@ private final class RecordingPlayerFactory: NSObject, NuvioPlayerBridgeCreator {
         let bridge = MPVPlayerBridgeImpl()
         self.bridge = bridge
         return bridge
+    }
+}
+
+// Regression for the add-on subtitle restored while the stream is still opening:
+// mpv can't take `sub-add` before the file is loaded, so the URL must be kept
+// and added once playback starts.
+@MainActor
+final class AddonSubtitleBeforeFileLoadTests: XCTestCase {
+    func testSubtitleUrlSetBeforeFileLoadIsAppliedWhenLoaded() async throws {
+        let bridge = MPVPlayerBridgeImpl()
+        let window = try XCTUnwrap(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.windows.first
+        )
+        let previousController = window.rootViewController
+        window.rootViewController = bridge.createPlayerViewController()
+        window.makeKeyAndVisible()
+        defer {
+            window.rootViewController = previousController
+            bridge.destroy()
+        }
+
+        let bundle = Bundle(for: Self.self)
+        let video = try XCTUnwrap(bundle.url(forResource: "video", withExtension: "mp4"))
+        let subtitles = try XCTUnwrap(bundle.url(forResource: "styled", withExtension: "ass"))
+
+        bridge.loadFile(url: video.absoluteString)
+        // Add-ons answered before the file finished loading.
+        bridge.setSubtitleUrl(url: subtitles.absoluteString)
+
+        for _ in 0..<300 {
+            if bridge.getProperty(name: "current-tracks/sub/codec") == "ass" {
+                XCTAssertEqual(bridge.getProperty(name: "sub-visibility"), "yes")
+                XCTAssertEqual(bridge.getErrorMessage(), "")
+                return
+            }
+            try await Task.sleep(nanoseconds: 50_000_000)
+        }
+        let details = ["time-pos", "duration", "sid", "current-tracks/sub/codec"]
+            .map { "\($0)=\(bridge.getProperty(name: $0))" }
+            .joined(separator: ", ")
+        XCTFail("Subtitle was never added after the file loaded: \(details)")
     }
 }

@@ -15,6 +15,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -75,6 +76,25 @@ class PlayerEngineSwitchTrackPreferenceTest {
         assertEquals(listOf(1), newEngine.audioSelections)
         assertEquals(1, runtime.selectedAudioIndex)
         assertNull(runtime.pendingEngineSwitchTrackPreference)
+    }
+
+    @Test
+    fun switchingEngineKeepsAddonSubtitlesForTheSameSource() {
+        val runtime = runtime()
+        runtime.resetIdentityStateIfNeeded()
+        runtime.resetAddonSubtitlesIfSourceChanged()
+        val fetchKey = "movie|tt1234567|opensubtitles"
+        runtime.autoFetchedAddonSubtitlesForKey = fetchKey
+
+        runtime.playbackEngineOverride = AndroidPlaybackEngine.Libmpv
+        runtime.resetIdentityStateIfNeeded()
+        runtime.resetAddonSubtitlesIfSourceChanged()
+        assertEquals(fetchKey, runtime.autoFetchedAddonSubtitlesForKey)
+
+        runtime.activeSourceUrl = "https://example.com/other.mp4"
+        runtime.resetIdentityStateIfNeeded()
+        runtime.resetAddonSubtitlesIfSourceChanged()
+        assertNull(runtime.autoFetchedAddonSubtitlesForKey)
     }
 
     @Test
@@ -299,6 +319,48 @@ class PlayerEngineSwitchTrackPreferenceTest {
     }
 
     @Test
+    fun autoFailoverRunsAtMostOnceForTheSameSource() {
+        val runtime = failoverRuntime()
+        runtime.resetIdentityStateIfNeeded()
+
+        val first = runtime.maybeFailoverPlaybackEngine(resolvedAutoEngine = AndroidPlaybackEngine.ExoPlayer)
+        val second = runtime.maybeFailoverPlaybackEngine(resolvedAutoEngine = AndroidPlaybackEngine.Libmpv)
+
+        assertTrue(first)
+        assertFalse(second)
+        assertEquals(AndroidPlaybackEngine.Libmpv, runtime.playbackEngineOverride)
+        assertTrue(runtime.engineFailoverTriggered)
+    }
+
+    @Test
+    fun engineSwitchDoesNotResetFailoverLockForTheSameSource() {
+        val runtime = failoverRuntime()
+        runtime.resetIdentityStateIfNeeded()
+
+        assertTrue(runtime.maybeFailoverPlaybackEngine(resolvedAutoEngine = AndroidPlaybackEngine.ExoPlayer))
+        runtime.resetIdentityStateIfNeeded()
+
+        assertEquals(AndroidPlaybackEngine.Libmpv, runtime.playbackEngineOverride)
+        assertTrue(runtime.engineFailoverTriggered)
+        assertFalse(runtime.maybeFailoverPlaybackEngine(resolvedAutoEngine = AndroidPlaybackEngine.Libmpv))
+    }
+
+    @Test
+    fun sourceChangeClearsFailoverLock() {
+        val runtime = failoverRuntime()
+        runtime.resetIdentityStateIfNeeded()
+        assertTrue(runtime.maybeFailoverPlaybackEngine(resolvedAutoEngine = AndroidPlaybackEngine.ExoPlayer))
+
+        runtime.activeSourceUrl = "https://example.com/other.mp4"
+        runtime.resetIdentityStateIfNeeded()
+
+        assertNull(runtime.playbackEngineOverride)
+        assertFalse(runtime.engineFailoverTriggered)
+        assertTrue(runtime.maybeFailoverPlaybackEngine(resolvedAutoEngine = AndroidPlaybackEngine.ExoPlayer))
+        assertEquals(AndroidPlaybackEngine.Libmpv, runtime.playbackEngineOverride)
+    }
+
+    @Test
     fun manualEngineSwitchAppliesTheCarriedOverSelection() {
         val runtime = runtime()
         runtime.playerController = FakeController(
@@ -322,6 +384,11 @@ class PlayerEngineSwitchTrackPreferenceTest {
         assertEquals(listOf(0), newEngine.audioSelections)
         assertEquals(0, runtime.selectedAudioIndex)
         assertNull(runtime.pendingEngineSwitchTrackPreference)
+    }
+
+    private fun failoverRuntime(): PlayerScreenRuntime = runtime().apply {
+        playerController = FakeController(playbackEngine = AndroidPlaybackEngine.ExoPlayer)
+        playerSettingsUiState = playerSettingsUiState.copy(autoSwitchPlaybackEngineOnError = true)
     }
 
     private fun runtime() = PlayerScreenRuntime(

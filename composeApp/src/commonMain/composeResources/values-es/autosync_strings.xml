@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="settings_playback_subtitle_auto_sync">Sincronizar subtítulos automáticamente</string>
-    <string name="settings_playback_subtitle_auto_sync_description">Sincroniza automáticamente el subtítulo preferido del complemento al iniciar la reproducción. Requiere un idioma de subtítulos preferido.</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Ajusta el subtítulo del complemento seleccionado a la temporización de los subtítulos integrados en el vídeo.</string>
     <string name="settings_playback_auto_sync_mode_aggressive">Búsqueda de sincronización automática: exhaustiva</string>
     <string name="settings_playback_auto_sync_mode_aggressive_description">Compara otros subtítulos y pistas integradas para encontrar una coincidencia más precisa antes de sincronizar. Solo aplica coincidencias fiables.</string>
     <string name="settings_playback_auto_sync_mode_passive">Búsqueda de sincronización automática: rápida</string>

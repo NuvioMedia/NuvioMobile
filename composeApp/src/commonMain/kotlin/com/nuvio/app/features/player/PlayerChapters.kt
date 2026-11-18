@@ -42,3 +42,18 @@ internal object PlayerChapters {
         return chapters[index - 1].startMs
     }
 }
+
+/**
+ * mpv's chapter list read through a string property getter, as the iOS bridge exposes it: the
+ * count, then each chapter's start time in seconds and its title.
+ */
+internal fun mpvChapters(property: (String) -> String?): List<PlayerChapter> {
+    val count = property("chapter-list/count")?.trim()?.toIntOrNull() ?: return emptyList()
+    return (0 until count).mapNotNull { i ->
+        val seconds = property("chapter-list/$i/time")?.trim()?.toDoubleOrNull() ?: return@mapNotNull null
+        PlayerChapter(
+            startMs = (seconds * 1000.0).toLong(),
+            title = property("chapter-list/$i/title")?.trim()?.takeIf { it.isNotBlank() },
+        )
+    }
+}

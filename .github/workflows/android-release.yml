@@ -31,6 +31,8 @@ jobs:
     outputs:
       tag: ${{ steps.release.outputs.tag }}
       version: ${{ steps.release.outputs.version }}
+      title: ${{ steps.release.outputs.title }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_PROPERTIES_BASE64: ${{ secrets.NUVIO_LOCAL_PROPERTIES_BASE64 }}
@@ -60,8 +62,8 @@ jobs:
             echo "Releases must be dispatched from a branch, not ${RELEASE_REF_TYPE}." >&2
             exit 1
           fi
-          if [[ "${RELEASE_BRANCH}" != "${DEFAULT_BRANCH}" ]]; then
-            echo "Releases must be dispatched from the default branch (${DEFAULT_BRANCH})." >&2
+          if [[ "${RELEASE_BRANCH}" != "${DEFAULT_BRANCH}" && "${RELEASE_BRANCH}" != "main" ]]; then
+            echo "Releases must be dispatched from main or the default branch (${DEFAULT_BRANCH})." >&2
             exit 1
           fi
 
@@ -76,7 +78,7 @@ jobs:
 
           unexpected_changes="$(
             git diff --name-only "${CURRENT_BUMP}..${RELEASE_COMMIT}" \
-              | grep -Ev '^(\.github/workflows/(android-release|update-store-source)\.yml|store\.json|scripts/(build-ios-ipa|generate-release-notes|prepare-ios-dependencies|release-metadata)\.sh|scripts/update-store-source\.py)$' \
+              | grep -Ev '^(\.github/workflows/(android-release|update-store-source)\.yml|store(-beta)?\.json|scripts/(build-ios-ipa|generate-release-notes|prepare-ios-dependencies|release-metadata)\.sh|scripts/update-store-source\.py)$' \
               || true
           )"
           if [[ -n "${unexpected_changes}" ]]; then
@@ -105,9 +107,11 @@ jobs:
 
       - name: Generate release notes
         env:
+          RELEASE_PRERELEASE: ${{ steps.release.outputs.prerelease }}
           PREVIOUS_BUMP: ${{ steps.release.outputs.previous_bump }}
           CURRENT_BUMP: ${{ steps.release.outputs.current_bump }}
           EXCLUDE_COMMITS: ${{ inputs.exclude_commits }}
+          RELEASE_MODE: ${{ inputs.mode }}
         run: |
           ./scripts/generate-release-notes.sh \
             --from "${PREVIOUS_BUMP}" \
@@ -117,12 +121,26 @@ jobs:
             > release-notes.md
 
           if [[ ! -s release-notes.md ]]; then
-            echo "No release-note commits were found." >&2
-            exit 1
+            if [[ "${RELEASE_MODE}" == "publish" ]]; then
+              echo "No release-note commits were found." >&2
+              exit 1
+            fi
+            printf '%s\n' 'Release notes pending. Replace this text before publishing.' > release-notes.md
+          fi
+
+          if [[ "${RELEASE_PRERELEASE}" == "true" ]]; then
+            {
+              printf '%s\n' \
+                '> [!IMPORTANT]' \
+                '> **Beta builds are for testing purposes and may contain bugs, regressions, or unexpected issues.** If you prefer a reliable experience, we recommend staying on the **Stable** channel.' \
+                ''
+              cat release-notes.md
+            } > release-notes.tmp
+            mv release-notes.tmp release-notes.md
           fi
 
           {
-            echo "## ${{ steps.release.outputs.version }} release notes"
+            echo "## ${{ steps.release.outputs.title }} release notes"
             echo
             cat release-notes.md
           } >> "${GITHUB_STEP_SUMMARY}"
@@ -275,7 +293,8 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       RELEASE_MODE: ${{ inputs.mode }}
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-      RELEASE_VERSION: ${{ needs.prepare.outputs.tag }}
+      RELEASE_TITLE: ${{ needs.prepare.outputs.title }}
+      RELEASE_PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
       RELEASE_BRANCH: ${{ github.ref_name }}
 
     steps:
@@ -297,9 +316,14 @@ jobs:
             "${RELEASE_TAG}"
             --repo "${GITHUB_REPOSITORY}"
             --target "${RELEASE_BRANCH}"
-            --title "${RELEASE_VERSION}"
+            --title "${RELEASE_TITLE}"
             --notes-file release-assets/release-notes.md
           )
+          if [[ "${RELEASE_PRERELEASE}" == "true" ]]; then
+            release_args+=(--prerelease)
+          elif [[ "${RELEASE_MODE}" == "publish" ]]; then
+            release_args+=(--latest)
+          fi
           if [[ "${RELEASE_MODE}" == "draft" ]]; then
             release_args+=(--draft)
           fi

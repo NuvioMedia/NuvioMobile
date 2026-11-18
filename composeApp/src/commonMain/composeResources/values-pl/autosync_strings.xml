@@ -1,0 +1,12 @@
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Automatyczna synchronizacja napisów</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Dopasuj napisy z dodatku do napisów osadzonych w wideo.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Wyszukiwanie synchronizacji: dokładne</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Przed synchronizacją porównuje inne napisy i ścieżki wbudowane, aby znaleźć lepsze dopasowanie. Stosowane są tylko pewne dopasowania.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Wyszukiwanie synchronizacji: szybkie</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Szybciej używa pierwszego mocnego dopasowania. Tak jak w trybie dokładnym, stosowane są tylko pewne dopasowania.</string>
+    <string name="settings_playback_auto_sync_tolerance">Tolerancja synchronizacji: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Zachowaj oryginalny czas napisów, jeśli synchronizacja przesunęłaby je nie więcej niż o tę wartość. Dotknij, aby zmienić.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Wył.</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>
