@@ -3,7 +3,7 @@ name: Nuvio Auto
 #
 # Repository secrets (Settings > Secrets and variables > Actions), all optional:
 #   NUVIO_AUTO_KEYSTORE_B64   signing key (base64 .jks), so every new build installs over the last one
-#   NUVIO_SUPABASE_URL        } Nuvio account sign-in, sync and profiles (same values as the NuvioTV fork)
+#   NUVIO_SUPABASE_URL        } Nuvio account server; defaults to Nuvio's public web client values below
 #   NUVIO_SUPABASE_ANON_KEY   }
 #   NUVIO_SUPABASE_FALLBACK_URL, TMDB_API_KEY, TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET, SIMKL_CLIENT_ID,
 #   MDBLIST_CLIENT_ID, PREMIUMIZE_CLIENT_ID, INTRODB_API_URL, IMDB_RATINGS_API_BASE_URL, IMDB_TAPFRAME_API_BASE_URL
@@ -66,8 +66,13 @@ jobs:
               echo "$name: not set"
             fi
           done
+          # No secrets: fall back to the Nuvio account server's public client values (the ones Nuvio's web
+          # client ships), so sign-in, sync and profiles work without any setup.
           if [ -z "$NUVIO_SUPABASE_URL" ] || [ -z "$NUVIO_SUPABASE_ANON_KEY" ]; then
-            echo "::warning::NUVIO_SUPABASE_URL / NUVIO_SUPABASE_ANON_KEY are not set, so this build cannot sign in to a Nuvio account or sync."
+            echo "Nuvio account server: using the public Nuvio web client values"
+            sed -i '/^NUVIO_SUPABASE_URL=/d;/^NUVIO_SUPABASE_ANON_KEY=/d' local.properties
+            printf 'NUVIO_SUPABASE_URL=%s\n' "https://api.nuvio.tv" >> local.properties
+            printf 'NUVIO_SUPABASE_ANON_KEY=%s\n' "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgxNTIxMzQ2LCJleHAiOjE5MzkyMDEzNDZ9.tmQaj682pwzehpqlgCDMnySOqiUvpgRbrE43T4VJpDI" >> local.properties
           fi
 
           keystore="$RUNNER_TEMP/nuvio-auto.jks"

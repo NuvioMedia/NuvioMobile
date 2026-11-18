@@ -1,3 +1,28 @@
+## This fork: Nuvio Auto
+
+The full Nuvio app on the **Android Auto** screen, built the way [YT Auto](https://github.com/begati/yt-auto) works.
+It installs next to the official app as `com.dave.nuvioauto` ("Nuvio Auto" on the phone, "Nuvio" in the car).
+
+**How it works.** Android Auto only gives a drawing surface to navigation apps, so `NuvioCarAppService` registers
+as one. `NuvioCarScreen` puts a private virtual display on that surface and launches the normal Nuvio activity
+(`CarNuvioActivity`) onto it: same UI, account, addons and player. Car taps, drags and flings are replayed as finger
+touches. Code: `androidApp/src/main/kotlin/com/nuvio/app/car/`.
+
+**Get the APK.** Actions > **Nuvio Auto** > latest run > download `NuvioAuto-<n>-arm64.apk`.
+Every push to `android-auto` builds one. Set the `NUVIO_AUTO_KEYSTORE_B64` secret so builds install over each other.
+
+**Install.**
+1. Install the APK with [KingInstaller](https://github.com/fcaronte/KingInstaller/releases) ("Install as King"), so
+   Android Auto treats it as a Play Store app.
+2. Android Auto settings: tap **Version** 10 times, then ⋮ > **Developer settings** > **Unknown sources**.
+3. Android Auto settings > **Customize launcher**: tick **Nuvio** (listed with the navigation apps).
+4. Open **Nuvio Auto** on the phone once and sign in. Open **Nuvio Auto Setup** for screen size and the
+   driving video lock.
+
+**In the car.** Tap to select, drag to scroll (drags start from the middle of the screen). Buttons: Back,
+Keyboard (tap Nuvio's search box first), Home, Screen size. Video is covered while the phone's GPS says you're
+moving, unless you turn that off in Setup. Only watch while parked.
+
 <div align="center">
 
   <img src="https://nuvio.tv/assets/nuvio-app-logo-wordmark.webp" alt="Nuvio" width="320" />
