@@ -575,8 +575,8 @@ internal fun HomescreenCatalogRow(
                 }
                 Text("Home placement", style = MaterialTheme.typography.labelLarge, color = tokens.colors.textMuted)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    TextButton(onClick = { onRowPlacementChange(HomeCatalogRowPlacement.NORMAL) }, enabled = item.rowPlacement != HomeCatalogRowPlacement.NORMAL) { Text("Default") }
-                    TextButton(onClick = { onRowPlacementChange(HomeCatalogRowPlacement.PINNED_TOP) }, enabled = item.rowPlacement != HomeCatalogRowPlacement.PINNED_TOP && !item.isPinnedToTop) { Text("Pin top") }
+                    TextButton(onClick = { onRowPlacementChange(HomeCatalogRowPlacement.NORMAL) }, enabled = !item.isPinnedToTop && item.rowPlacement != HomeCatalogRowPlacement.NORMAL) { Text("Default") }
+                    TextButton(onClick = { onRowPlacementChange(HomeCatalogRowPlacement.PINNED_TOP) }, enabled = !item.isPinnedToTop && item.rowPlacement != HomeCatalogRowPlacement.PINNED_TOP) { Text("Pin top") }
                     TextButton(onClick = { onRowPlacementChange(HomeCatalogRowPlacement.PINNED_BOTTOM) }, enabled = item.rowPlacement != HomeCatalogRowPlacement.PINNED_BOTTOM && !item.isPinnedToTop) { Text("Pin bottom") }
                 }
             }
