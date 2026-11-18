@@ -251,9 +251,12 @@
             </intent-filter>
         </service>
 
-        <!-- Nuvio itself, launched onto the car's virtual display. Never shown on the phone. -->
+        <!-- Nuvio itself, launched onto the car's virtual display. Never shown on the phone.
+             allowEmbedded: Android only lets activities with it onto an app-owned (untrusted) virtual display;
+             without it the launch fails with "Permission Denial: starting Intent ... launchDisplayId". -->
         <activity
             android:name="com.nuvio.app.car.CarNuvioActivity"
+            android:allowEmbedded="true"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|density|uiMode|keyboard|keyboardHidden|navigation|touchscreen"
             android:excludeFromRecents="true"
             android:exported="false"
