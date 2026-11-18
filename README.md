@@ -3,8 +3,9 @@
 The full Nuvio app on the **Android Auto** screen, built the way [YT Auto](https://github.com/begati/yt-auto) works.
 It installs next to the official app as `com.dave.nuvioauto` ("Nuvio Auto" on the phone, "Nuvio" in the car).
 
-**How it works.** Android Auto only gives a drawing surface to navigation apps, so `NuvioCarAppService` registers
-as one. `NuvioCarScreen` puts a private virtual display on that surface and launches the normal Nuvio activity
+**How it works.** Two entry points, like YT Auto: a projection service on the unofficial Android Auto SDK
+(`LegacyCarService`, real touches) and a Car App Library navigation app (`NuvioCarAppService`), since Android Auto
+only gives a drawing surface to navigation apps. Both use `CarDisplayHost`, which puts a private virtual display on the car surface and launches the normal Nuvio activity
 (`CarNuvioActivity`) onto it: same UI, account, addons and player. Car taps, drags and flings are replayed as finger
 touches. Code: `androidApp/src/main/kotlin/com/nuvio/app/car/`.
 
@@ -12,10 +13,11 @@ touches. Code: `androidApp/src/main/kotlin/com/nuvio/app/car/`.
 Every push to `android-auto` builds one. Set the `NUVIO_AUTO_KEYSTORE_B64` secret so builds install over each other.
 
 **Install.**
-1. Install the APK with [KingInstaller](https://github.com/fcaronte/KingInstaller/releases) ("Install as King"), so
-   Android Auto treats it as a Play Store app.
-2. Android Auto settings: tap **Version** 10 times, then ⋮ > **Developer settings** > **Unknown sources**.
-3. Android Auto settings > **Customize launcher**: tick **Nuvio** (listed with the navigation apps).
+1. Install the APK normally. Android Auto settings: tap **Version** 10 times, then ⋮ > **Developer settings** >
+   **Unknown sources**. Restart the phone (or force-stop Android Auto).
+2. Android Auto settings > **Customize launcher**: tick **Nuvio**.
+3. Still missing? Reinstall with [KingInstaller](https://github.com/fcaronte/KingInstaller/releases)
+   ("Install as King"), so Android Auto treats it as a Play Store app.
 4. Open **Nuvio Auto** on the phone once and sign in. Open **Nuvio Auto Setup** for screen size and the
    driving video lock.
 

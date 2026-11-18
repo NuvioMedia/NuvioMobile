@@ -45,11 +45,11 @@ class CarSetupActivity : Activity() {
 
         column.addView(text("Set up Android Auto", 19f, top = 24))
         column.addView(text(
-            "1. Install this APK with KingInstaller (\"Install as King\"), the same way you installed YT Auto. " +
-                "Android Auto hides apps that weren't installed from the Play Store.\n" +
-                "2. In Android Auto settings, tap Version 10 times, then ⋮ > Developer settings > turn on Unknown sources.\n" +
-                "3. Android Auto settings > Customize launcher: make sure Nuvio is ticked. It's listed as a navigation app.\n" +
-                "4. Sign in and set up your addons in Nuvio on the phone once. The car uses the same app and account.",
+            "1. In Android Auto settings, tap Version 10 times, then ⋮ > Developer settings > turn on Unknown sources.\n" +
+                "2. Restart the phone (or force-stop Android Auto) so it picks up new apps.\n" +
+                "3. Android Auto settings > Customize launcher: make sure Nuvio is ticked.\n" +
+                "4. Sign in and set up your addons in Nuvio on the phone once. The car uses the same app and account.\n" +
+                "If Nuvio still doesn't show up, reinstall this APK with KingInstaller (\"Install as King\").",
             15f, MUTED,
         ))
         column.addView(Button(this).apply {

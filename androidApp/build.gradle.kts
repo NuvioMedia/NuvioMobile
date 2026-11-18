@@ -133,6 +133,7 @@ android {
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "../composeApp/proguard-rules.pro",
+                "proguard-car.pro",
             )
             signingConfig = signingConfigs.getByName("release")
             ndk {
@@ -208,6 +209,9 @@ dependencies {
     // Nuvio Auto: Android Auto navigation surface (see com.nuvio.app.car).
     implementation("androidx.car.app:app:1.4.0")
     implementation(libs.androidx.activity.compose)
+    // Nuvio Auto: unofficial Android Auto SDK (projection CarActivity), taken from Fermata via YT Auto.
+    implementation(files("libs/aauto.aar"))
+    implementation("androidx.recyclerview:recyclerview:1.4.0")
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     baselineProfile(project(":baselineprofile"))
     debugImplementation(libs.compose.uiTooling)

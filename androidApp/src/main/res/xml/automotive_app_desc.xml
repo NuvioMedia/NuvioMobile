@@ -1,4 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<automotiveApp>
+<!-- Same declarations as YT Auto: "template" for the Car App Library service, "projection" and "service"
+     so Android Auto also lists the projection entry for sideloaded installs. "media" alone would hide it. -->
+<automotiveApp xmlns:tools="http://schemas.android.com/tools">
+    <uses name="media" />
     <uses name="template" />
+    <uses
+        name="service"
+        tools:ignore="InvalidUsesTagAttribute" />
+    <uses
+        name="projection"
+        tools:ignore="InvalidUsesTagAttribute" />
 </automotiveApp>
