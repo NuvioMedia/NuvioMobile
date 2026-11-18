@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Phone launcher name, so this build is easy to tell apart from the official Nuvio. -->
+    <string name="app_name">Nuvio Auto</string>
+    <!-- Name in the Android Auto launcher. -->
+    <string name="car_app_label">Nuvio</string>
+    <string name="car_setup_label">Nuvio Auto Setup</string>
+</resources>

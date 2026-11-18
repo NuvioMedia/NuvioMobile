@@ -8,6 +8,13 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
 
+    <!-- Nuvio Auto: Android Auto navigation-category app, the only kind that gets a drawing surface. -->
+    <uses-permission android:name="androidx.car.app.NAVIGATION_TEMPLATES" />
+    <uses-permission android:name="androidx.car.app.ACCESS_SURFACE" />
+    <!-- GPS speed, to hide the video while the car moves (optional, asked in Nuvio Auto setup). -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
     <application
         android:name="com.nuvio.app.NuvioApplication"
         android:allowBackup="false"
@@ -203,6 +210,51 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+        <!-- ===== Nuvio Auto (Android Auto) ===== -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+        <meta-data
+            android:name="androidx.car.app.minCarApiLevel"
+            android:value="1" />
+
+        <!-- The car's entry point: a navigation app, so Android Auto hands over a raw surface. -->
+        <service
+            android:name="com.nuvio.app.car.NuvioCarAppService"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/car_app_label">
+            <intent-filter>
+                <action android:name="androidx.car.app.CarAppService" />
+                <category android:name="androidx.car.app.category.NAVIGATION" />
+            </intent-filter>
+        </service>
+
+        <!-- Nuvio itself, launched onto the car's virtual display. Never shown on the phone. -->
+        <activity
+            android:name="com.nuvio.app.car.CarNuvioActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|density|uiMode|keyboard|keyboardHidden|navigation|touchscreen"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:resizeableActivity="true"
+            android:showWhenLocked="true"
+            android:supportsPictureInPicture="false"
+            android:taskAffinity="com.nuvio.app.car"
+            android:theme="@style/Theme.Nuvio.Splash" />
+
+        <!-- Phone-side setup: install steps, car screen size, driving lock. -->
+        <activity
+            android:name="com.nuvio.app.car.CarSetupActivity"
+            android:exported="true"
+            android:icon="@mipmap/ic_launcher"
+            android:label="@string/car_setup_label"
+            android:taskAffinity="com.nuvio.app.carsetup"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 
 </manifest>

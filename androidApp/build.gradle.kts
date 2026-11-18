@@ -67,7 +67,8 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.nuvio.app"
+        // Nuvio Auto builds pass -Pnuvio.applicationId=... so they install next to the official app.
+        applicationId = providers.gradleProperty("nuvio.applicationId").orNull ?: "com.nuvio.app"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = releaseAppVersionCode
@@ -204,6 +205,9 @@ dependencies {
     implementation(project(":composeApp"))
     implementation(libs.androidx.appcompat)
     implementation(libs.compose.runtime)
+    // Nuvio Auto: Android Auto navigation surface (see com.nuvio.app.car).
+    implementation("androidx.car.app:app:1.4.0")
+    implementation(libs.androidx.activity.compose)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
     baselineProfile(project(":baselineprofile"))
     debugImplementation(libs.compose.uiTooling)
