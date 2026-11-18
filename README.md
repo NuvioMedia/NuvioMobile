@@ -17,6 +17,7 @@
 - [Android on Google Play](https://play.google.com/store/apps/details?id=com.nuvio.app)
 - [Android APK](https://github.com/NuvioMedia/NuvioMobile/releases/latest)
 - iOS via AltStore or SideStore: add [this source URL](https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/cmp-rewrite/store.json) in the app's Sources section, then install Nuvio.
+- iOS beta builds: add [the beta source URL](https://raw.githubusercontent.com/NuvioMedia/NuvioMobile/cmp-rewrite/store-beta.json) instead to get pre-releases as well.
 
 ## Build from source
 
