@@ -147,7 +147,7 @@ private suspend fun parseAddonSubtitles(response: String, request: SubtitleAddon
                 request.addonName,
             ),
             addonName = request.addonName,
-            label = addonProvidedId?.takeIf { it != language && it != url },
+            label = obj.stringValue("label") ?: addonProvidedId?.takeIf { it != language && it != url },
         )
     }
 }
