@@ -36,6 +36,7 @@ import com.nuvio.app.core.ui.NuvioSectionLabel
 import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.NuvioTokens
+import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.core.ui.nuvioTypeScale
 import com.nuvio.app.features.watched.WatchedRepository
@@ -103,6 +104,10 @@ fun DownloadsScreen(
         }
     }
     val onOpenActions: (DownloadItem) -> Unit = { actionsItemId = it.id }
+
+    PlatformBackHandler(enabled = selectedShowId != null && onBackFromShow == null) {
+        selectedShowId = null
+    }
 
     NuvioScreen {
         stickyHeader {
