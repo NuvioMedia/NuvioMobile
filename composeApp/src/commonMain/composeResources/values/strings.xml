@@ -634,19 +634,31 @@
     <string name="detail_tab_trailer">Trailer</string>
     <string name="detail_trailer_category_count">%1$s (%2$d)</string>
     <string name="detail_trailers_title">Trailers</string>
-    <string name="downloads_empty_episodes">No completed episodes</string>
+    <string name="downloads_delete_message">This frees %1$s on this device.</string>
+    <string name="downloads_delete_title">Delete %1$s?</string>
+    <string name="downloads_downloading_count">%1$d downloading</string>
+    <string name="downloads_empty_message">Long-press a stream and choose Download file to watch it offline.</string>
     <string name="downloads_empty_title">No downloads yet</string>
-    <string name="downloads_episode_count">%1$d downloaded episode(s)</string>
     <string name="downloads_open_directory">Open downloads folder</string>
     <string name="downloads_open_directory_failed">Couldn&apos;t open downloads folder</string>
+    <string name="downloads_pause_all">Pause all</string>
+    <string name="downloads_resume_all">Resume all</string>
     <string name="downloads_section_active">Active</string>
-    <string name="downloads_section_movies">Movies</string>
-    <string name="downloads_section_shows">Shows</string>
+    <string name="downloads_section_downloaded">Downloaded</string>
     <string name="downloads_show_downloads">Show Downloads</string>
-    <string name="downloads_status_completed">Completed • %1$s</string>
+    <string name="downloads_speed">%1$s/s</string>
     <string name="downloads_status_downloading">Downloading • %1$s</string>
     <string name="downloads_status_failed">Failed</string>
     <string name="downloads_status_paused">Paused • %1$s</string>
+    <string name="downloads_watched_count">%1$d watched</string>
+    <plurals name="downloads_episodes">
+        <item quantity="one">%1$d episode</item>
+        <item quantity="other">%1$d episodes</item>
+    </plurals>
+    <plurals name="downloads_titles">
+        <item quantity="one">%1$d title</item>
+        <item quantity="other">%1$d titles</item>
+    </plurals>
     <string name="episodes_cd_watched">Watched</string>
     <string name="episodes_unavailable">Unavailable</string>
     <string name="episodes_season">Season %1$d</string>
