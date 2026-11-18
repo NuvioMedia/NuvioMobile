@@ -24,6 +24,15 @@ class CarNuvioActivity : MainActivity() {
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() = Unit
         })
+        CarLog.init(this)
+        val id = carDisplayId()
+        CarLog.d("CarNuvioActivity created on display $id")
+        if (id == android.view.Display.DEFAULT_DISPLAY) {
+            // Android ignored the car display and opened it on the phone: don't leave a second Nuvio there.
+            CarLog.d("Landed on the phone screen instead of the car; closing it")
+            finish()
+            return
+        }
         CarBridge.attach(this)
     }
 

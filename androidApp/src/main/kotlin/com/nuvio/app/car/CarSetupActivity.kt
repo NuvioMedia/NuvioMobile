@@ -24,6 +24,9 @@ class CarSetupActivity : Activity() {
 
     private lateinit var locationNote: TextView
     private lateinit var locationButton: Button
+    private lateinit var overlayNote: TextView
+    private lateinit var overlayButton: Button
+    private lateinit var logView: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,7 +48,8 @@ class CarSetupActivity : Activity() {
 
         column.addView(text("Set up Android Auto", 19f, top = 24))
         column.addView(text(
-            "1. In Android Auto settings, tap Version 10 times, then ⋮ > Developer settings > turn on Unknown sources.\n" +
+            "0. Allow \"Display over other apps\" below.\n" +
+                "1. In Android Auto settings, tap Version 10 times, then ⋮ > Developer settings > turn on Unknown sources.\n" +
                 "2. Restart the phone (or force-stop Android Auto) so it picks up new apps.\n" +
                 "3. Android Auto settings > Customize launcher: make sure Nuvio is ticked.\n" +
                 "4. Sign in and set up your addons in Nuvio on the phone once. The car uses the same app and account.\n" +
@@ -58,6 +62,23 @@ class CarSetupActivity : Activity() {
                 packageManager.getLaunchIntentForPackage(packageName)?.let(::startActivity)
             }
         })
+
+        column.addView(text("Let Nuvio open on the car screen", 19f, top = 24))
+        column.addView(text(
+            "Android blocks apps from opening screens while they're in the background, which is how Nuvio starts on " +
+                "the car. Allowing \"Display over other apps\" lifts that block. Nuvio Auto only uses it for a " +
+                "1-pixel invisible window while it starts in the car.",
+            15f, MUTED,
+        ))
+        overlayNote = text("", 14f, MUTED)
+        column.addView(overlayNote)
+        overlayButton = Button(this).apply {
+            text = "Allow display over other apps"
+            setOnClickListener {
+                startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+            }
+        }
+        column.addView(overlayButton)
 
         column.addView(text("In the car", 19f, top = 24))
         column.addView(text(
@@ -107,6 +128,31 @@ class CarSetupActivity : Activity() {
         })
         column.addView(text("Changes apply the next time Nuvio opens in the car.", 14f, MUTED))
 
+        column.addView(text("Car log", 19f, top = 24))
+        column.addView(text("What happened the last times Nuvio opened in the car. Share it if something fails.", 14f, MUTED))
+        logView = text("", 12f, MUTED).apply { setTextIsSelectable(true); typeface = android.graphics.Typeface.MONOSPACE }
+        column.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            addView(Button(this@CarSetupActivity).apply {
+                text = "Share log"
+                setOnClickListener {
+                    val body = CarLog.deviceLine() + "\n" + CarLog.read(this@CarSetupActivity)
+                    startActivity(Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, body),
+                        "Share Nuvio Auto log",
+                    ))
+                }
+            })
+            addView(Button(this@CarSetupActivity).apply {
+                text = "Clear"
+                setOnClickListener {
+                    CarLog.clear(this@CarSetupActivity)
+                    updateLog()
+                }
+            })
+        })
+        column.addView(logView)
+
         setContentView(ScrollView(this).apply {
             addView(column)
             isFillViewport = true
@@ -117,6 +163,19 @@ class CarSetupActivity : Activity() {
     override fun onResume() {
         super.onResume()
         updateLocation()
+        updateOverlay()
+        updateLog()
+    }
+
+    private fun updateOverlay() {
+        val ok = Settings.canDrawOverlays(this)
+        overlayButton.visibility = if (ok) View.GONE else View.VISIBLE
+        overlayNote.text = if (ok) "Allowed." else "Not allowed yet: Nuvio may not be able to open in the car."
+    }
+
+    private fun updateLog() {
+        val log = CarLog.read(this).trim()
+        logView.text = if (log.isEmpty()) "(empty)" else log.lines().takeLast(60).joinToString("\n")
     }
 
     private fun hasLocation() =

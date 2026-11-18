@@ -49,19 +49,26 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
     private var blocked = false
     private var launchPending = false
     private var released = false
+    private val launcher = CarLauncher(ctx)
+    private var methodQueue: ArrayDeque<CarLauncher.Method> = ArrayDeque()
+    private var currentMethod: CarLauncher.Method? = null
+    private var failReason = ""
 
     private val replayer = TouchReplayer(::deliverTouch, ::dragAnchor)
     private val driving = DrivingDetector(ctx) { refreshOverlay() }
 
     private val launchTimeout = Runnable {
         launchPending = false
+        launcher.hideOverlay()
         if (!activityOnCar()) {
-            blocked = true
-            refreshOverlay()
+            CarLog.d("No Nuvio on the car display ${LAUNCH_TIMEOUT_MS}ms after ${currentMethod}: blocked or still starting")
+            tryNextMethod("$currentMethod: no response")
         }
     }
 
     init {
+        CarLog.init(ctx)
+        CarLog.d("Car session started (${ctx.javaClass.simpleName}). ${CarLog.deviceLine()}")
         CarBridge.listener = this
     }
 
@@ -74,6 +81,7 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
         carDpi = dpi
         val scaled = CarPrefs.scaledDpi(ctx, carDpi)
         val existing = display
+        CarLog.d("Car surface ${w}x$h, car dpi $dpi, Nuvio dpi $scaled")
         if (existing == null) {
             val dm = ctx.getSystemService(DisplayManager::class.java)
             // No PUBLIC flag: private to this app, needs no permission, nothing else can appear on it.
@@ -81,6 +89,7 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
                 "NuvioAuto", w, h, scaled, surface,
                 DisplayManager.VIRTUAL_DISPLAY_FLAG_OWN_CONTENT_ONLY,
             )
+            CarLog.d("Virtual display ${display?.display?.displayId} created")
         } else {
             // Back from another app on the car screen: same display, Nuvio and playback untouched.
             existing.resize(w, h, scaled)
@@ -149,10 +158,7 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
     private fun deliverTouch(event: MotionEvent) {
         when (presentationMode) {
             Overlay.NONE -> CarBridge.activity?.injectTouch(event)
-            Overlay.BLOCKED -> if (event.actionMasked == MotionEvent.ACTION_UP) {
-                blocked = false
-                ensureNuvio()
-            }
+            Overlay.BLOCKED -> if (event.actionMasked == MotionEvent.ACTION_UP) retry()
             // Starting or driving: the cover swallows touches.
             else -> Unit
         }
@@ -173,9 +179,16 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
         if (activity != null) {
             activity.finish() // onCarActivityGone starts a new one
         } else {
-            blocked = false
-            ensureNuvio()
+            retry()
         }
+    }
+
+    /** Starts over with every launch method (tap on the error screen, Home button). */
+    private fun retry() {
+        CarLog.d("Retry requested")
+        blocked = false
+        methodQueue = ArrayDeque()
+        ensureNuvio()
     }
 
     /** Steps to the next car UI size; returns its label. */
@@ -212,22 +225,42 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
             return
         }
         CarBridge.activity?.finish() // left on an old display: replace it
+        if (methodQueue.isEmpty()) {
+            methodQueue = ArrayDeque(launcher.methods())
+            failReason = ""
+        }
+        startWith(methodQueue.removeFirst(), vd)
+    }
+
+    private fun tryNextMethod(reason: String) {
+        failReason = if (failReason.isEmpty()) reason else "$failReason; $reason"
+        val vd = display
+        if (methodQueue.isEmpty() || vd == null) {
+            CarLog.d("All launch methods failed: $failReason")
+            blocked = true
+            refreshOverlay()
+            return
+        }
+        startWith(methodQueue.removeFirst(), vd)
+    }
+
+    private fun startWith(method: CarLauncher.Method, vd: VirtualDisplay) {
+        currentMethod = method
         launchPending = true
-        refreshOverlay() // the "Starting Nuvio" presentation is the visible window that allows the launch
+        refreshOverlay() // the "Starting Nuvio" presentation is on screen during the launch
+        launcher.prepare(method)
         handler.postDelayed({
             if (released || display == null) return@postDelayed
-            val options = ActivityOptions.makeBasic().setLaunchDisplayId(vd.display.displayId)
-            val intent = Intent(ctx, CarNuvioActivity::class.java).addFlags(
-                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_MULTIPLE_TASK or Intent.FLAG_ACTIVITY_NO_ANIMATION
-            )
+            val id = vd.display.displayId
+            CarLog.d("Launching Nuvio on display $id via $method (overlay permission: ${launcher.canDrawOverlays()})")
             try {
-                ctx.applicationContext.startActivity(intent, options.toBundle())
+                launcher.launch(method, id)
                 handler.postDelayed(launchTimeout, LAUNCH_TIMEOUT_MS)
             } catch (e: Exception) {
-                Log.w(TAG, "Couldn't start Nuvio on the car display", e)
+                CarLog.d("Launch via $method rejected", e)
                 launchPending = false
-                blocked = true
-                refreshOverlay()
+                launcher.hideOverlay()
+                tryNextMethod("$method: ${e.javaClass.simpleName} ${e.message?.take(120) ?: ""}")
             }
         }, PRE_LAUNCH_MS)
     }
@@ -236,14 +269,18 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
         val vd = display ?: return
         if (activity.carDisplayId() != vd.display.displayId) return
         handler.removeCallbacks(launchTimeout)
+        CarLog.d("Nuvio is on the car display (via $currentMethod)")
         launchPending = false
         blocked = false
+        methodQueue = ArrayDeque()
+        launcher.hideOverlay()
         applyInsets()
         refreshOverlay()
     }
 
     override fun onCarActivityGone(activity: CarNuvioActivity) {
         if (released) return
+        CarLog.d("Nuvio left the car display")
         replayer.cancel()
         // Home button, a crash, or the system reclaimed it: bring Nuvio back on the car.
         handler.postDelayed({ ensureNuvio() }, 300)
@@ -309,8 +346,12 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
         }
         val (title, body) = when (mode) {
             Overlay.STARTING -> "Starting Nuvio…" to ""
-            Overlay.BLOCKED -> "Nuvio couldn't open on the car screen" to
-                "Open Nuvio Auto on your phone once, then tap here to try again."
+            Overlay.BLOCKED -> "Nuvio couldn't open on the car screen" to (
+                (if (!launcher.canDrawOverlays())
+                    "On the phone, open Nuvio Auto Setup and allow \"Display over other apps\". Then tap here."
+                else "Open Nuvio Auto on your phone, then tap here to try again.") +
+                    "\n\n" + failReason.take(300)
+                )
             Overlay.DRIVING -> "Video hidden while driving" to
                 "Audio keeps playing. The picture comes back when you stop."
             Overlay.NONE -> "" to ""
@@ -338,6 +379,8 @@ internal class CarDisplayHost(private val ctx: Context) : CarBridge.Listener {
         replayer.cancel()
         driving.stop()
         if (CarBridge.listener === this) CarBridge.listener = null
+        launcher.hideOverlay()
+        CarLog.d("Car session ended")
         dismissPresentation()
         CarBridge.activity?.finish()
         display?.release()
