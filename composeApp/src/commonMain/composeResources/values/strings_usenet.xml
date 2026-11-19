@@ -5,6 +5,8 @@
     <string name="settings_licenses_attributions_usenet_body">Streams NZB releases from your NNTP providers. Runs as a separate program on this device; its third-party notices are bundled with the app.</string>
     <string name="settings_licenses_attributions_usenet_license">GNU General Public License v3.0</string>
     <string name="settings_content_discovery_usenet_description">Search your own Newznab indexers and play NZBs with your NNTP providers</string>
+    <string name="usenet_builtin_addon_title">Built-in Usenet</string>
+    <string name="usenet_builtin_addon_desc">Results from your own NNTP providers and Newznab indexers. Move it to choose where they are listed.</string>
     <string name="usenet_builtin_enabled">Search built-in indexers</string>
     <string name="usenet_builtin_description">Find NZBs and play them directly with your providers. Credentials stay on this device, in this profile.</string>
     <string name="usenet_notice_title">Built-in Usenet</string>

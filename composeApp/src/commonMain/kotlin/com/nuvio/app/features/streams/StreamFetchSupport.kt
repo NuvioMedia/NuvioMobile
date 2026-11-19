@@ -15,6 +15,8 @@ internal data class InstalledStreamAddonTarget(
     val addonName: String,
     val addonId: String,
     val manifest: AddonManifest,
+    /** The installed addon's URL, which places built-in Usenet among the addons. */
+    val manifestUrl: String = "",
 )
 
 internal fun ManagedAddon.streamAddonInstanceId(manifestId: String): String =

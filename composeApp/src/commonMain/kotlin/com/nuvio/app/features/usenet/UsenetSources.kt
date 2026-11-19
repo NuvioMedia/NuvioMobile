@@ -105,6 +105,11 @@ data class UsenetSourceConfiguration(
     val availableFirst: Boolean = false,
     /** On: results show as each indexer answers. Off: the list shows once all answered, or after a short wait. */
     val progressiveResults: Boolean = false,
+    /**
+     * The addons listed above built-in Usenet, by URL; null keeps it after every addon. Kept here,
+     * on this device, and never in the synced addon order. See [BuiltInUsenetOrder].
+     */
+    val addonsAbove: List<String>? = null,
 ) {
     val ready: Boolean get() = enabled && providers.any { it.enabled } && indexers.any { it.enabled }
 

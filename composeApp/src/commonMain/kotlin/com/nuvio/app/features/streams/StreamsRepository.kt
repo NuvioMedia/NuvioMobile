@@ -13,7 +13,9 @@ import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.plugins.PluginsUiState
 import com.nuvio.app.features.servers.ServerStreams
+import com.nuvio.app.features.usenet.BuiltInUsenetOrder
 import com.nuvio.app.features.usenet.UsenetPlayback
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.features.usenet.UsenetStreamSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -209,6 +211,7 @@ object StreamsRepository {
                     addonName = addon.displayTitle.ifBlank { manifest.name },
                     addonId = addon.streamAddonInstanceId(manifest.id),
                     manifest = manifest,
+                    manifestUrl = addon.manifestUrl,
                 )
             }
 
@@ -235,8 +238,13 @@ object StreamsRepository {
             pluginProviderGroups = pluginProviderGroups,
             usenetSource = usenetSource,
         )
-        // Built-in Usenet is listed after the addons and counts as one for auto-play.
-        val installedAddonOrder = streamAddons.map { it.addonName } + listOfNotNull(usenetSource?.addonName)
+        // Built-in Usenet is listed where it was placed among the addons, and counts as one for auto-play.
+        val installedAddonOrder = BuiltInUsenetOrder.sourceOrder(
+            addonNames = streamAddons.map { it.addonName },
+            addonUrls = streamAddons.map { it.manifestUrl },
+            usenetName = usenetSource?.addonName,
+            addonsAbove = UsenetRepository.sources().addonsAbove,
+        )
         val initialGroups = StreamAutoPlaySelector.orderAddonStreams(streamAddons.map { addon ->
             AddonStreamGroup(
                 addonName = addon.addonName,

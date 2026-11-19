@@ -60,6 +60,7 @@ internal fun UsenetIndexer.validate() {
 internal fun UsenetSourceConfiguration.validate() {
     ranking.validate()
     require(providers.size <= 64 && indexers.size <= 20) { "Too many providers or indexers" }
+    require((addonsAbove?.size ?: 0) <= 500) { "Too many addons above built-in Usenet" }
     require(providers.map { it.id }.distinct().size == providers.size)
     require(indexers.map { it.id }.distinct().size == indexers.size)
     providers.forEach { it.validate() }
