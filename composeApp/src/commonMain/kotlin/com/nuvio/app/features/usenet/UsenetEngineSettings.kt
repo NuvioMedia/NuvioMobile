@@ -21,6 +21,10 @@ data class UsenetConfiguration(
     val searchUserAgent: String = "",
     /** Blank means [NUVIO_USER_AGENT]; independent of the search User-Agent. */
     val downloadUserAgent: String = "",
+    /** When a Usenet release fails to open or play, try the following Usenet releases. */
+    val fallbackEnabled: Boolean = false,
+    /** How many following releases automatic fallback tries for one selection. */
+    val fallbackMaxAttempts: Int = 5,
 ) {
     /** Sent by built-in indexer searches, capability checks and connection tests. */
     val searchAgent: String get() = searchUserAgent.trim().ifEmpty { NUVIO_USER_AGENT }
@@ -41,6 +45,7 @@ data class UsenetConfiguration(
             maxConsecutiveMissing = maxConsecutiveMissing.coerceIn(1, minOf(10, missing)),
             searchUserAgent = customAgent(searchUserAgent),
             downloadUserAgent = customAgent(downloadUserAgent),
+            fallbackMaxAttempts = fallbackMaxAttempts.coerceIn(1, 50),
         )
     }
 

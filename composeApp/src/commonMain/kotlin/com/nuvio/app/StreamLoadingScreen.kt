@@ -23,12 +23,14 @@ internal fun StreamLoadingScreen(
     resolvingYouTubeStream: Boolean = false,
     onBack: () -> Unit,
     preparingPlayback: Boolean = false,
+    /** Replaces the generic preparing text, such as the release automatic fallback is trying. */
+    preparingMessage: String? = null,
 ) {
     val message = when {
         !showStatus -> null
         resolvingDebridStream -> stringResource(Res.string.debrid_resolving_stream)
         resolvingYouTubeStream -> stringResource(Res.string.youtube_resolving_stream)
-        preparingPlayback -> stringResource(Res.string.player_loading_preparing)
+        preparingPlayback -> preparingMessage ?: stringResource(Res.string.player_loading_preparing)
         state.overlayMessage == stringResource(Res.string.streams_loading_subtitles) -> subtitleLoadingStatusMessage()
         state.overlayMessage != null -> state.overlayMessage
         state.autoPlayStream != null -> stringResource(Res.string.player_loading_preparing)

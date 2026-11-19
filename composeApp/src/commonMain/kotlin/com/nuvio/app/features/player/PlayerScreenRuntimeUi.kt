@@ -266,6 +266,9 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
                         if (message != null && tryRefreshExpiredLinkAfterError(message)) {
                             return@PlatformPlayerSurface
                         }
+                        if (message != null && tryNextUsenetReleaseAfterError(message)) {
+                            return@PlatformPlayerSurface
+                        }
                         if (message != null && tryFallbackToNextSourceAfterError(message)) {
                             return@PlatformPlayerSurface
                         }

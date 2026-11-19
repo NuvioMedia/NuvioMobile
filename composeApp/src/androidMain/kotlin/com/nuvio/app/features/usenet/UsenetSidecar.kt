@@ -586,8 +586,7 @@ internal class UsenetSidecar(
         private const val PREPARED_LIFETIME_MS = 120_000L
 
         /** [message] with each URL cut to its scheme and host: no path, query, key or login reaches the log. */
-        internal fun redacted(message: String): String =
-            message.replace(Regex("""(https?|nntps?)://(?:[^@\s/"]*@)?([^/\s"?]+)[^\s"]*"""), "$1://$2/…").take(240)
+        internal fun redacted(message: String): String = redactUrls(message)
 
         @Volatile var appForeground = true
 

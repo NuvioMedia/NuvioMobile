@@ -30,11 +30,22 @@ data class UsenetSearchUpdate(
     val failure: String? = null,
 )
 
+/** What a failed open says about the next attempt: another release, another provider, or nothing. */
+enum class UsenetFailureScope {
+    /** This release; other releases may play. */
+    SOURCE,
+    /** The release's provider accounts; releases read from other providers may play. */
+    PROVIDER,
+    /** The engine itself; no other release can play now. */
+    ENGINE,
+}
+
 /** Why preparing a Usenet stream failed, as the engine and the app classify it. */
 class UsenetPlaybackException(
     message: String,
     /** The engine's failure kind, such as "missing-article", when it sent one. */
     val failure: String? = null,
+    val scope: UsenetFailureScope = UsenetFailureScope.SOURCE,
 ) : Exception(message)
 
 /**

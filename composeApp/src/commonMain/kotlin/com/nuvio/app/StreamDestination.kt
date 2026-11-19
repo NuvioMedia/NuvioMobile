@@ -99,6 +99,8 @@ internal fun StreamDestination(
     var resolvingDebridStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var resolvingYouTubeStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var preparingServerStream by remember(route.launchId) { mutableStateOf(false) }
+    /** What automatic Usenet fallback is trying, shown while it prepares the next release. */
+    var usenetFallbackMessage by remember(route.launchId) { mutableStateOf<String?>(null) }
     var pendingP2pStreamOpen by remember { mutableStateOf<PendingP2pStreamOpen?>(null) }
     val shouldResolveEpisodeVideoId =
         launch.parentMetaId != null &&
@@ -651,14 +653,21 @@ internal fun StreamDestination(
             if (preparingServerStream) return
             streamRouteScope.launch {
                 preparingServerStream = true
-                val prepared = runCatching { UsenetPlayback.prepare(stream, launch.seasonNumber, launch.episodeNumber) }
-                    .onFailure { if (it is CancellationException) throw it }
-                    .getOrElse { error ->
-                        preparingServerStream = false
-                        NuvioToastController.show(UsenetPlayback.failureMessage(error))
-                        return@launch
+                // With Automatic Usenet fallback on, a release that fails gives way to the next one shown.
+                val prepared = try {
+                    val session = UsenetPlayback.fallbackSession(stream, streamsUiState.allStreams)
+                    UsenetPlayback.prepareWithFallback(session, stream, launch.seasonNumber, launch.episodeNumber) { message ->
+                        usenetFallbackMessage = message
                     }
-                preparingServerStream = false
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    NuvioToastController.show(UsenetPlayback.failureMessage(error))
+                    return@launch
+                } finally {
+                    preparingServerStream = false
+                    usenetFallbackMessage = null
+                }
                 openSelectedStream(
                     stream = prepared,
                     resolvedResumePositionMs = resolvedResumePositionMs,
@@ -950,6 +959,7 @@ internal fun StreamDestination(
                 resolvingYouTubeStream = resolvingYouTubeStream,
                 onBack = onBack,
                 preparingPlayback = preparingServerStream,
+                preparingMessage = usenetFallbackMessage,
             )
         }
     }

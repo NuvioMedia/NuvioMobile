@@ -118,6 +118,10 @@ import nuvio.composeapp.generated.resources.usenet_source_disabled
 import nuvio.composeapp.generated.resources.usenet_sources_needed
 import nuvio.composeapp.generated.resources.usenet_sources_save_error
 import nuvio.composeapp.generated.resources.usenet_throughput
+import nuvio.composeapp.generated.resources.usenet_fallback
+import nuvio.composeapp.generated.resources.usenet_fallback_description
+import nuvio.composeapp.generated.resources.usenet_fallback_max_attempts
+import nuvio.composeapp.generated.resources.usenet_fallback_max_attempts_description
 import nuvio.composeapp.generated.resources.usenet_download_user_agent
 import nuvio.composeapp.generated.resources.usenet_max_consecutive_missing
 import nuvio.composeapp.generated.resources.usenet_max_consecutive_missing_description
@@ -145,7 +149,7 @@ private val RANKING_PRESETS = StreamRankingPreset.entries.filter { it != StreamR
 /** One of the page's choice dialogs. */
 private enum class UsenetChoice {
     RANKING, LANGUAGE, SORT, MIN_RESOLUTION, MAX_SIZE, MAX_AGE, RESULTS, FETCH, PROFILE, CONNECTIONS,
-    READ_AHEAD, MISSING_ARTICLES, CONSECUTIVE_MISSING, SEARCH_AGENT, DOWNLOAD_AGENT,
+    READ_AHEAD, MISSING_ARTICLES, CONSECUTIVE_MISSING, SEARCH_AGENT, DOWNLOAD_AGENT, FALLBACK_ATTEMPTS,
 }
 
 internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean) {
@@ -284,6 +288,13 @@ internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean) {
         Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
         SettingsSection(title = stringResource(Res.string.usenet_section_playback), isTablet = isTablet) {
             SettingsGroup(isTablet = isTablet) {
+                Switch(stringResource(Res.string.usenet_fallback), stringResource(Res.string.usenet_fallback_description),
+                    engine.fallbackEnabled, isTablet) { value -> UsenetRepository.updateEngineSettings { it.copy(fallbackEnabled = value) } }
+                if (engine.fallbackEnabled) {
+                    ChoiceRow(stringResource(Res.string.usenet_fallback_max_attempts), engine.fallbackMaxAttempts.toString(), isTablet) {
+                        choice = UsenetChoice.FALLBACK_ATTEMPTS
+                    }
+                }
                 ChoiceRow(stringResource(Res.string.usenet_profile), profileLabel(engine.profile), isTablet) { choice = UsenetChoice.PROFILE }
                 ChoiceRow(stringResource(Res.string.usenet_connections), connectionsLabel(engine.maxConnections), isTablet) {
                     choice = UsenetChoice.CONNECTIONS
@@ -476,6 +487,17 @@ private fun UsenetChoiceDialog(
                 if (it == engine.maxConsecutiveMissing) stringResource(Res.string.usenet_max_consecutive_missing_description) else null
             },
             onSelect = pick { value -> UsenetRepository.updateEngineSettings { it.copy(maxConsecutiveMissing = value) } },
+            onDismiss = onDismiss,
+        )
+        UsenetChoice.FALLBACK_ATTEMPTS -> SettingsChoiceDialog(
+            title = stringResource(Res.string.usenet_fallback_max_attempts),
+            options = (1..50).toList(),
+            selected = engine.fallbackMaxAttempts,
+            label = { it.toString() },
+            description = {
+                if (it == engine.fallbackMaxAttempts) stringResource(Res.string.usenet_fallback_max_attempts_description) else null
+            },
+            onSelect = pick { value -> UsenetRepository.updateEngineSettings { it.copy(fallbackMaxAttempts = value) } },
             onDismiss = onDismiss,
         )
         UsenetChoice.SEARCH_AGENT -> UsenetUserAgentDialog(

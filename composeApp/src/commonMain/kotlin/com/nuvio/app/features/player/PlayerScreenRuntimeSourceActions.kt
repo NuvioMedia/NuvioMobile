@@ -68,18 +68,31 @@ internal fun PlayerScreenRuntime.prepareServerForPlayer(
     return true
 }
 
+/**
+ * Opens a Usenet [stream] picked in the player. With Automatic Usenet fallback on, a release that
+ * fails gives way to the next one in [shown], the list it was picked from.
+ */
 internal fun PlayerScreenRuntime.prepareUsenetForPlayer(
     stream: StreamItem,
     season: Int?,
     episode: Int?,
+    shown: List<StreamItem>,
     onPrepared: suspend (StreamItem) -> Unit,
 ): Boolean {
     if (!stream.needsUsenetPreparation) return false
     scope.launch {
-        runCatching { UsenetPlayback.prepare(stream, season, episode) }
-            .onFailure { if (it is CancellationException) throw it }
-            .onSuccess { onPrepared(it) }
-            .onFailure { NuvioToastController.show(UsenetPlayback.failureMessage(it)) }
+        val prepared = try {
+            val session = UsenetPlayback.fallbackSession(stream, shown)
+            UsenetPlayback.prepareWithFallback(session, stream, season, episode) { message ->
+                NuvioToastController.show(message)
+            }.also { usenetFallbackSession = session }
+        } catch (cancelled: CancellationException) {
+            throw cancelled
+        } catch (error: Exception) {
+            NuvioToastController.show(UsenetPlayback.failureMessage(error))
+            return@launch
+        }
+        onPrepared(prepared)
     }
     return true
 }
@@ -325,7 +338,8 @@ internal fun PlayerScreenRuntime.switchToSource(
     saveForReuse: Boolean = true,
 ) {
     // An engine link ends with its session, so it is never kept for reuse.
-    if (prepareUsenetForPlayer(stream, activeSeasonNumber, activeEpisodeNumber) { switchToSource(it, saveForReuse = false) }) return
+    val shownSources = PlayerStreamsRepository.sourceState.value.allStreams
+    if (prepareUsenetForPlayer(stream, activeSeasonNumber, activeEpisodeNumber, shownSources) { switchToSource(it, saveForReuse = false) }) return
     if (prepareServerForPlayer(stream) { switchToSource(it) }) return
     // The resolved URL expires after a few hours, so it isn't kept for reuse.
     if (resolveYouTubeForPlayer(stream) { switchToSource(it, saveForReuse = false) }) return
@@ -406,7 +420,7 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     autoSelection: PlayerSourceFallbackTried? = null,
 ) {
     if (
-        prepareUsenetForPlayer(stream, episode.season, episode.episode) { prepared ->
+        prepareUsenetForPlayer(stream, episode.season, episode.episode, PlayerStreamsRepository.episodeStreamsState.value.allStreams) { prepared ->
             switchToEpisodeStream(prepared, episode, saveForReuse = false, autoSelection = autoSelection)
         }
     ) return

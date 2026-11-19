@@ -115,7 +115,12 @@ internal actual object UsenetPlatform {
         } catch (e: CancellationException) {
             throw e
         } catch (e: UsenetPreparationException) {
-            throw UsenetPlaybackException(e.message.orEmpty(), e.failure)
+            val scope = when (e.scope) {
+                UsenetPreparationException.Scope.SOURCE -> UsenetFailureScope.SOURCE
+                UsenetPreparationException.Scope.PROVIDER -> UsenetFailureScope.PROVIDER
+                UsenetPreparationException.Scope.ENGINE -> UsenetFailureScope.ENGINE
+            }
+            throw UsenetPlaybackException(e.message.orEmpty(), e.failure, scope)
         } catch (e: Exception) {
             throw UsenetPlaybackException(e.message ?: e::class.simpleName.orEmpty())
         }

@@ -7,6 +7,7 @@ import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DirectDebridPlayableResult
 import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
 import com.nuvio.app.features.streams.StreamAutoPlaySelector
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.isIos
@@ -60,9 +61,50 @@ internal fun PlayerScreenRuntime.playReplacementSource(stream: StreamItem, url: 
 
 /** Shows [message] as the playback error unless the next matching source is tried instead. */
 internal fun PlayerScreenRuntime.showErrorUnlessSourceFallback(message: String?) {
+    if (tryNextUsenetReleaseAfterError(message)) return
     if (tryFallbackToNextSourceAfterError(message)) return
     errorMessage = message
     controlsVisible = !playerControlsLocked
+}
+
+/**
+ * When the engine gave up on the Usenet release playing now, plays the next release of its
+ * automatic Usenet fallback, from the current position. It applies to releases the user picked
+ * too, and only while Automatic Usenet fallback is on.
+ *
+ * Returns `true` when a fallback was started and the error must not be shown yet.
+ */
+internal fun PlayerScreenRuntime.tryNextUsenetReleaseAfterError(message: String?): Boolean {
+    if (usenetFallbackJob?.isActive == true) return true
+    val failedUrl = activeSourceUrl
+    if (!UsenetPlayback.failedForGood(failedUrl)) return false
+    val session = usenetFallbackSession?.takeIf { it.ownsPlayback(failedUrl) }
+        ?: UsenetPlayback.takeFallback(failedUrl)?.also { usenetFallbackSession = it }
+        ?: return false
+    if (!session.canFallbackFrom(failedUrl)) return false
+    val videoId = activeVideoId ?: return false
+    val season = activeSeasonNumber
+    val episode = activeEpisodeNumber
+    session.playbackFailed()
+    errorMessage = null
+
+    usenetFallbackJob = scope.launch {
+        val next = session.resolveNext { candidate, attempt ->
+            NuvioToastController.show(UsenetPlayback.nextReleaseMessage(attempt, session.lastFailureReason))
+            UsenetPlayback.prepare(candidate, season, episode)
+        }
+        // The user switched source or left meanwhile; that choice wins.
+        if (activeSourceUrl != failedUrl || usenetFallbackSession !== session) return@launch
+        val url = next?.playableDirectUrl
+        if (next == null || url.isNullOrBlank()) {
+            errorMessage = UsenetPlayback.exhaustedMessage(session, otherwise = message)
+            controlsVisible = !playerControlsLocked
+            return@launch
+        }
+        log.i { "Usenet release failed, falling back to the next release from ${next.addonName}" }
+        playReplacementSource(next, url, videoId)
+    }
+    return true
 }
 
 /**
