@@ -115,7 +115,7 @@ private fun SettingsPage.isEnabledByPolicy(): Boolean =
     when (this) {
         SettingsPage.SupportersContributors -> AppFeaturePolicy.supportersContributorsPageEnabled
         SettingsPage.PlaybackP2p -> P2pSettingsRepository.isVisible
-        SettingsPage.Usenet, SettingsPage.UsenetSorting -> UsenetRepository.isSupported
+        SettingsPage.Usenet, SettingsPage.UsenetSorting, SettingsPage.UsenetDiagnostics -> UsenetRepository.isSupported
         SettingsPage.PlaybackBuffer -> !isIos
         else -> true
     }
@@ -737,8 +737,10 @@ private fun MobileSettingsScreen(
                 SettingsPage.Usenet -> usenetSettingsContent(
                     isTablet = false,
                     onSortingClick = { onPageChange(SettingsPage.UsenetSorting) },
+                    onDiagnosticsClick = { onPageChange(SettingsPage.UsenetDiagnostics) },
                 )
                 SettingsPage.UsenetSorting -> usenetSortingContent(isTablet = false)
+                SettingsPage.UsenetDiagnostics -> usenetDiagnosticsContent(isTablet = false)
                 SettingsPage.Addons -> addonsSettingsContent()
                 SettingsPage.MediaServers -> mediaServersSettingsContent(
                     isTablet = false,
@@ -1145,8 +1147,10 @@ private fun TabletSettingsScreen(
                     SettingsPage.Usenet -> usenetSettingsContent(
                         isTablet = true,
                         onSortingClick = { openInlinePage(SettingsPage.UsenetSorting) },
+                        onDiagnosticsClick = { openInlinePage(SettingsPage.UsenetDiagnostics) },
                     )
                     SettingsPage.UsenetSorting -> usenetSortingContent(isTablet = true)
+                    SettingsPage.UsenetDiagnostics -> usenetDiagnosticsContent(isTablet = true)
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.MediaServers -> mediaServersSettingsContent(
                         isTablet = true,

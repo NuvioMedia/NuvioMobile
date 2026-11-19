@@ -201,6 +201,11 @@ internal enum class SettingsPage(
         category = SettingsCategory.Watch,
         parentPage = Usenet,
     ),
+    UsenetDiagnostics(
+        titleRes = Res.string.compose_settings_page_usenet_diagnostics,
+        category = SettingsCategory.Watch,
+        parentPage = Usenet,
+    ),
     Homescreen(
         titleRes = Res.string.compose_settings_page_homescreen,
         category = SettingsCategory.Look,
@@ -272,6 +277,7 @@ internal val SettingsPage.icon: ImageVector
         SettingsPage.MediaServer -> Icons.Default.Dns
         SettingsPage.Usenet -> Icons.Default.Dns
         SettingsPage.UsenetSorting -> Icons.Default.Dns
+        SettingsPage.UsenetDiagnostics -> Icons.Default.Dns
         SettingsPage.Homescreen -> Icons.Default.Dashboard
         SettingsPage.MetaScreen -> Icons.Default.Description
         SettingsPage.Integrations -> Icons.Default.Link

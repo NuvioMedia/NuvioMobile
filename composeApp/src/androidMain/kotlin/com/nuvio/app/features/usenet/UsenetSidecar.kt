@@ -99,13 +99,27 @@ internal class UsenetSidecar(
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<String, Trace>) = size > 4
     }
 
-    private class Trace {
+    private class Trace(val fast: Boolean, val fastNzb: Boolean) {
         val start = SystemClock.elapsedRealtime()
+        val recordedAt = System.currentTimeMillis()
         val marks = JSONObject()
         var engine: JSONObject = JSONObject()
         @Synchronized fun mark(name: String) {
             if (!marks.has(name)) marks.put(name, SystemClock.elapsedRealtime() - start)
         }
+        @Synchronized fun value(name: String, value: Long) {
+            if (!marks.has(name)) marks.put(name, value)
+        }
+    }
+
+    /** The player reached step [name] with the engine URL [url]; only its first time counts. */
+    fun markStartup(url: String, name: String) {
+        synchronized(traces) { traces[url] }?.mark(name)
+    }
+
+    /** A measured [value] for the startup of [url], such as how long the video decoder took to set up. */
+    fun markStartupValue(url: String, name: String, value: Long) {
+        synchronized(traces) { traces[url] }?.value(name, value)
     }
 
     private val startupReader = Executors.newCachedThreadPool { runnable ->
@@ -257,7 +271,7 @@ internal class UsenetSidecar(
 
     private suspend fun openLocked(stream: StreamItem, season: Int?, episode: Int?, profileId: Int?): StreamItem {
         val configuration = settings()
-        val trace = Trace()
+        val trace = Trace(configuration.fastMkvStartup, configuration.fastNzbFetch)
         var previousId = sessionId
         var openedId: String? = null
         return try {
@@ -396,6 +410,16 @@ internal class UsenetSidecar(
             runCatching {
                 Log.i("UsenetStartup", JSONObject().put("marksMs", trace.marks)
                     .put("engineMarksMs", engine.optJSONObject("marksMs")).toString())
+            }
+            runCatching {
+                UsenetStartupReports.save(
+                    JSONObject().put("fastMkvStartup", trace.fast)
+                        .put("fastNzbFetch", trace.fastNzb)
+                        .put("recordedAtMs", trace.recordedAt)
+                        .put("marksMs", trace.marks)
+                        .put("engine", engine)
+                        .toString(),
+                )
             }
         }
     }

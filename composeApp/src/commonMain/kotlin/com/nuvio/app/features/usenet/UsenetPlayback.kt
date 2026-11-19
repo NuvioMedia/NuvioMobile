@@ -125,6 +125,19 @@ object UsenetPlayback {
 
     private var failedForGoodUrl: String? = null
 
+    /** The player reached startup step [name], such as "prepare", with [url]; ignored for other links. */
+    fun markStartup(url: String?, name: String) {
+        if (url != null && UsenetPlatform.isEngineUrl(url)) UsenetPlatform.markStartup(url, name)
+    }
+
+    /** A measured startup [value] in milliseconds for [url], such as the video decoder setup. */
+    fun markStartupValue(url: String?, name: String, value: Long) {
+        if (url != null && UsenetPlatform.isEngineUrl(url)) UsenetPlatform.markStartupValue(url, name, value)
+    }
+
+    /** The last startup's timings as JSON, for the diagnostics page; empty until one was measured. */
+    val lastStartupReport: StateFlow<String> get() = UsenetPlatform.lastStartupReport
+
     fun onPlaybackFailure(url: String?, failure: String?) {
         if (failure != null) failedForGoodUrl = url
         UsenetPlatform.onPlaybackFailure(url, failure)

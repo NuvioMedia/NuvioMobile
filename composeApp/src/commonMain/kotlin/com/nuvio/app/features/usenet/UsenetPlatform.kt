@@ -119,6 +119,15 @@ internal expect object UsenetPlatform {
     /** The release behind the engine URL [url] showed its first frame. */
     fun onFirstFrame(url: String?)
 
+    /** The player reached startup step [name] with the engine URL [url], for the startup diagnostics. */
+    fun markStartup(url: String, name: String)
+
+    /** A measured [value] in milliseconds for the startup of the engine URL [url]. */
+    fun markStartupValue(url: String, name: String, value: Long)
+
+    /** The last startup's timings as NuvioTV's JSON report; empty until a Usenet stream showed a frame. */
+    val lastStartupReport: StateFlow<String>
+
     /** Playback of the engine URL [url] failed with the engine's [failure] kind. */
     fun onPlaybackFailure(url: String?, failure: String?)
 
@@ -128,6 +137,9 @@ internal expect object UsenetPlatform {
 
     /** [epochMs] as a short local time of day, such as 18:30. */
     fun clockTime(epochMs: Long): String
+
+    /** [epochMs] as a short local date and time with seconds. */
+    fun dateTime(epochMs: Long): String
 
     /**
      * Sorts [samples] with [profile] as real results would be, for the sorting editor; null where

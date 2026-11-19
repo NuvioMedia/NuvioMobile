@@ -54,6 +54,12 @@ internal actual object UsenetPlatform {
 
     actual fun release(url: String?) = Unit
 
+    actual fun markStartup(url: String, name: String) = Unit
+
+    actual fun markStartupValue(url: String, name: String, value: Long) = Unit
+
+    actual val lastStartupReport: StateFlow<String> = MutableStateFlow("").asStateFlow()
+
     actual fun restoredStream(nzbUrl: String, name: String, title: String?, size: Long?, publishedAt: Long?, series: Boolean): StreamItem? = null
 
     actual fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int) = Unit
@@ -71,6 +77,8 @@ internal actual object UsenetPlatform {
     actual fun onAppForegrounded() = Unit
 
     actual fun onAppBackgrounded() = Unit
+
+    actual fun dateTime(epochMs: Long): String = clockTime(epochMs)
 
     actual fun clockTime(epochMs: Long): String = ""
 }

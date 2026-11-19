@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.Lifecycle
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import com.nuvio.app.features.streams.redactedForLogs
+import com.nuvio.app.features.usenet.UsenetPlayback
 import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
@@ -625,6 +627,8 @@ private fun ExoPlayerSurface(
                 "mime=${mediaItem.localConfiguration?.mimeType ?: "auto"} " +
                 "startPositionMs=${requestedStartPositionMs ?: 0L}",
         )
+        // A Usenet engine link's startup is timed from here to its first frame.
+        UsenetPlayback.markStartup(sourceUrl, "prepare")
         exoPlayer.setPlaybackMediaItem(mediaItem, requestedStartPositionMs)
         if (!stallSession.isReopening(fallbackStartPositionMs)) {
             initialPositionRequestKey?.let { key ->
@@ -788,6 +792,7 @@ private fun ExoPlayerSurface(
                     else -> "UNKNOWN($playbackState)"
                 }
                 Log.d(TAG, "onPlaybackStateChanged: $stateName")
+                if (playbackState == Player.STATE_READY) UsenetPlayback.markStartup(sourceUrl, "player_ready")
                 Log.i(
                     PLAYER_DIAGNOSTIC_TAG,
                     "state=$stateName attempt=${playbackDiagnostics.attempt} " +
@@ -830,6 +835,8 @@ private fun ExoPlayerSurface(
                         "elapsedMs=${diagnosticElapsedSince(playbackDiagnostics.prepareStartedAtMs)} " +
                         "positionMs=${exoPlayer.currentPosition.coerceAtLeast(0L)}",
                 )
+                // The frame is on screen: a Usenet release's startup ends here, before it reports playing.
+                UsenetPlayback.onFirstFrame(sourceUrl)
             }
 
             override fun onPlaybackParametersChanged(playbackParameters: androidx.media3.common.PlaybackParameters) {
@@ -848,6 +855,7 @@ private fun ExoPlayerSurface(
 
             override fun onTracksChanged(tracks: androidx.media3.common.Tracks) {
                 Log.d(TAG, "onTracksChanged: ${tracks.groups.size} groups total")
+                if (!tracks.isEmpty) UsenetPlayback.markStartup(sourceUrl, "tracks_known")
                 exoPlayer.logCurrentTracks("onTracksChanged")
                 pendingAudioTrackSelection.firstOrNull()?.let { selection ->
                     if (tracks.groups.any { it.type == C.TRACK_TYPE_AUDIO }) {
@@ -910,10 +918,23 @@ private fun ExoPlayerSurface(
 
         }
         exoPlayer.addListener(listener)
+        val usenetStartupListener = object : AnalyticsListener {
+            override fun onVideoDecoderInitialized(
+                eventTime: AnalyticsListener.EventTime,
+                decoderName: String,
+                initializedTimestampMs: Long,
+                initializationDurationMs: Long,
+            ) {
+                UsenetPlayback.markStartup(sourceUrl, "decoder_ready")
+                UsenetPlayback.markStartupValue(sourceUrl, "decoder_init_duration", initializationDurationMs)
+            }
+        }
+        exoPlayer.addAnalyticsListener(usenetStartupListener)
         onDispose {
             PlayerPictureInPictureManager.registerPausePlaybackCallback(null)
             PlayerPictureInPictureManager.registerTogglePlaybackCallback(null)
             exoPlayer.removeListener(listener)
+            exoPlayer.removeAnalyticsListener(usenetStartupListener)
             playerViewRef?.keepScreenOn = false
             subtitleSelectionJob?.cancel()
             sidecarController.stopSidecarAddonSubtitle(clearView = true)

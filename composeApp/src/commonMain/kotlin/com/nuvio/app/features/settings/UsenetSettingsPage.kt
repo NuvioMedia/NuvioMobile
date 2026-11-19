@@ -31,7 +31,9 @@ import com.nuvio.app.features.usenet.UsenetIndexerStatus
 import com.nuvio.app.features.usenet.UsenetNoticeDialog
 import com.nuvio.app.features.usenet.UsenetPlatform
 import com.nuvio.app.features.usenet.UsenetProvider
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.features.usenet.UsenetRepository
+import com.nuvio.app.features.usenet.UsenetStartupReport
 import com.nuvio.app.features.usenet.UsenetSort
 import com.nuvio.app.features.usenet.UsenetSourceConfiguration
 import nuvio.composeapp.generated.resources.Res
@@ -118,6 +120,10 @@ import nuvio.composeapp.generated.resources.usenet_source_disabled
 import nuvio.composeapp.generated.resources.usenet_sources_needed
 import nuvio.composeapp.generated.resources.usenet_sources_save_error
 import nuvio.composeapp.generated.resources.usenet_throughput
+import nuvio.composeapp.generated.resources.usenet_section_diagnostics
+import nuvio.composeapp.generated.resources.usenet_last_startup
+import nuvio.composeapp.generated.resources.usenet_last_startup_summary
+import nuvio.composeapp.generated.resources.usenet_last_startup_none
 import nuvio.composeapp.generated.resources.usenet_ranking_custom
 import nuvio.composeapp.generated.resources.usenet_ranking_custom_desc
 import nuvio.composeapp.generated.resources.usenet_ranking_customize
@@ -160,7 +166,11 @@ private enum class UsenetChoice {
     READ_AHEAD, MISSING_ARTICLES, CONSECUTIVE_MISSING, SEARCH_AGENT, DOWNLOAD_AGENT, FALLBACK_ATTEMPTS,
 }
 
-internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean, onSortingClick: () -> Unit = {}) {
+internal fun LazyListScope.usenetSettingsContent(
+    isTablet: Boolean,
+    onSortingClick: () -> Unit = {},
+    onDiagnosticsClick: () -> Unit = {},
+) {
     item {
         val uiState by remember {
             UsenetRepository.ensureLoaded()
@@ -348,6 +358,24 @@ internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean, onSortingCli
                     description = userAgentLabel(engine.downloadUserAgent, engine.downloadAgent),
                     isTablet = isTablet,
                     onClick = { choice = UsenetChoice.DOWNLOAD_AGENT },
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
+        SettingsSection(title = stringResource(Res.string.usenet_section_diagnostics), isTablet = isTablet) {
+            SettingsGroup(isTablet = isTablet) {
+                val latestStartup by UsenetPlayback.lastStartupReport.collectAsStateWithLifecycle()
+                val startup = remember(latestStartup) { UsenetStartupReport.parse(latestStartup) }
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.usenet_last_startup),
+                    description = if (startup?.recordedAtMs != null) {
+                        stringResource(Res.string.usenet_last_startup_summary, clockTime(startup.recordedAtMs), ms(startup.totalMs))
+                    } else {
+                        stringResource(Res.string.usenet_last_startup_none)
+                    },
+                    isTablet = isTablet,
+                    onClick = onDiagnosticsClick,
                 )
             }
         }

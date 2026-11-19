@@ -38,6 +38,7 @@ internal actual object UsenetPlatform {
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
+        UsenetStartupReports.initialize(appContext)
     }
 
     private val ready: Boolean get() = ::appContext.isInitialized
@@ -55,6 +56,7 @@ internal actual object UsenetPlatform {
         sourceStorage.clear()
         indexerStateStorage.clear()
         unplayableStorage.clear()
+        UsenetStartupReports.clear()
     }
 
     actual fun loadEngineSettings(): UsenetConfiguration = if (ready) engineStorage.read() else UsenetConfiguration()
@@ -150,6 +152,16 @@ internal actual object UsenetPlatform {
         if (ready && url != null && UsenetEngineUrls.isSession(url)) sidecar.firstFrame(url)
     }
 
+    actual fun markStartup(url: String, name: String) {
+        if (ready && UsenetEngineUrls.isSession(url)) sidecar.markStartup(url, name)
+    }
+
+    actual fun markStartupValue(url: String, name: String, value: Long) {
+        if (ready && UsenetEngineUrls.isSession(url)) sidecar.markStartupValue(url, name, value)
+    }
+
+    actual val lastStartupReport: StateFlow<String> get() = UsenetStartupReports.latest
+
     actual fun onPlaybackFailure(url: String?, failure: String?) {
         if (ready && url != null && UsenetEngineUrls.isSession(url)) sidecar.playbackFailed(url, failure)
     }
@@ -170,6 +182,9 @@ internal actual object UsenetPlatform {
             .mapIndexed { index, indexer -> indexer.name.lowercase(java.util.Locale.ROOT) to index }.toMap()
         return RankingPreviewer.preview(profile, samples, mediaType, indexerOrder)
     }
+
+    actual fun dateTime(epochMs: Long): String =
+        java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.MEDIUM).format(java.util.Date(epochMs))
 
     actual fun clockTime(epochMs: Long): String =
         java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(epochMs))
