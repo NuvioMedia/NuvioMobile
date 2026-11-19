@@ -634,19 +634,31 @@
     <string name="detail_tab_trailer">Trailer</string>
     <string name="detail_trailer_category_count">%1$s (%2$d)</string>
     <string name="detail_trailers_title">Trailer</string>
-    <string name="downloads_empty_episodes">Không có tập phim đã hoàn tất nào</string>
+    <string name="downloads_delete_message">Thao tác này giải phóng %1$s trên thiết bị</string>
+    <string name="downloads_delete_title">Xóa %1$s?</string>
+    <string name="downloads_downloading_count">%1$d đang tải xuống</string>
+    <string name="downloads_empty_message">Nhấn giữ một luồng rồi chọn Tải xuống tệp để xem ngoại tuyến.</string>
     <string name="downloads_empty_title">Không có tải xuống nào</string>
-    <string name="downloads_episode_count">%1$d tập đã tải xuống</string>
     <string name="downloads_open_directory">Mở thư mục tải xuống</string>
     <string name="downloads_open_directory_failed">Không thể mở thư mục tải xuống</string>
+    <string name="downloads_pause_all">Tạm dừng tất cả</string>
+    <string name="downloads_resume_all">Tiếp tục tất cả</string>
     <string name="downloads_section_active">Đang hoạt động</string>
-    <string name="downloads_section_movies">Phim</string>
-    <string name="downloads_section_shows">Chương trình</string>
+    <string name="downloads_section_downloaded">Đã tải xuống</string>
     <string name="downloads_show_downloads">Hiển thị nội dung tải xuống</string>
-    <string name="downloads_status_completed">Đã hoàn tất • %1$s</string>
+    <string name="downloads_speed">%1$s/s</string>
     <string name="downloads_status_downloading">Đang tải • %1$s</string>
     <string name="downloads_status_failed">Thất bại</string>
     <string name="downloads_status_paused">Đã tạm dừng • %1$s</string>
+    <string name="downloads_watched_count">%1$d đã xem</string>
+    <plurals name="downloads_episodes">
+        <item quantity="one">%1$d tập</item>
+        <item quantity="other">%1$d tập</item>
+    </plurals>
+    <plurals name="downloads_titles">
+        <item quantity="one">%1$d nội dung</item>
+        <item quantity="other">%1$d nội dung</item>
+    </plurals>
     <string name="episodes_cd_watched">Đã xem</string>
     <string name="episodes_unavailable">Chưa phát sóng</string>
     <string name="episodes_season">Mùa %1$d</string>
@@ -2583,6 +2595,6 @@
     <string name="subtitle_shadow_description">Tách chữ khỏi các cảnh sáng.</string>
     <string name="subtitle_shadow_opacity">Độ mờ bóng</string>
     <string name="subtitle_shadow_size">Kích thước bóng</string>
-    <string name="subtitle_outline_width">Độ rộng viền chữ</string>
+    <string name="subtitle_outline_width">Độ rộng viền</string>
     <string name="subtitle_reset_appearance">Đặt lại giao diện</string>
 </resources>
