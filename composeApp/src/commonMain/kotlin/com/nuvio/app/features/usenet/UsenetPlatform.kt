@@ -91,6 +91,12 @@ internal expect object UsenetPlatform {
     /** Ends the engine session that plays [url], if it still owns it. */
     fun release(url: String?)
 
+    /** Opens [stream] ahead of its Play when the user turned prefetching on; [owner] is the asking screen. */
+    fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int)
+
+    /** Drops the session [owner] prefetched and nobody played. */
+    fun cancelPrefetch(owner: Any)
+
     fun isEngineUrl(url: String?): Boolean
 
     /** The release behind the engine URL [url] showed its first frame. */

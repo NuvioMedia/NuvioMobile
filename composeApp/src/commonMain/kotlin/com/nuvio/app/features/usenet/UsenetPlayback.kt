@@ -45,6 +45,21 @@ object UsenetPlayback {
 
     fun isEngineUrl(url: String?): Boolean = UsenetPlatform.isEngineUrl(url)
 
+    /**
+     * With prefetching on, opens the first Usenet release of [streams] that is not marked
+     * unavailable, so its Play starts from an open session. [owner] is the screen showing them.
+     */
+    fun prefetchFirst(owner: Any, streams: List<StreamItem>, season: Int?, episode: Int?) {
+        if (!UsenetRepository.isSupported || !UsenetRepository.engineSettings().prefetchResults) return
+        val first = streams.firstOrNull { it.needsUsenetPreparation && !isMarkedUnavailable(it) } ?: return
+        UsenetPlatform.prefetch(owner, first, season, episode, ProfileRepository.activeProfileId)
+    }
+
+    /** The screen [owner] closed or chose something else: its prefetched session is not needed. */
+    fun cancelPrefetch(owner: Any) {
+        if (UsenetRepository.isSupported) UsenetPlatform.cancelPrefetch(owner)
+    }
+
     private var firstFrameUrl: String? = null
 
     /** Playback of [url] started; each engine URL is reported once. */

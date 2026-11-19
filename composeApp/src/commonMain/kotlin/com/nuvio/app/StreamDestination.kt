@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -15,7 +16,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.nuvio
@@ -34,6 +38,7 @@ import com.nuvio.app.features.player.sanitizePlaybackHeaders
 import com.nuvio.app.features.player.sanitizePlaybackResponseHeaders
 import com.nuvio.app.features.servers.ServerPlayback
 import com.nuvio.app.features.servers.serverPlaybackMessage
+import com.nuvio.app.features.usenet.BUILT_IN_USENET_GROUP_ID
 import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
@@ -428,6 +433,30 @@ internal fun StreamDestination(
         manualSelection = launch.manualSelection,
     )
     SideEffect { onLandscapeLoadingChanged(useLandscapeLoading) }
+
+    // With prefetching on, the first Usenet release opens once per search while the list is read.
+    // Play claims that session; leaving the screen or the app drops it. Auto-play opens its own pick.
+    val usenetPrefetchOwner = remember { Any() }
+    var usenetPrefetchToken by remember { mutableStateOf<String?>(null) }
+    val screenStarted = LocalLifecycleOwner.current.lifecycle.currentStateAsState().value.isAtLeast(Lifecycle.State.STARTED)
+    val canPrefetchUsenet = screenStarted && !showLoadingScreen && !streamsUiState.isDirectAutoPlayFlow &&
+        streamsUiState.requestToken == expectedStreamsRequestToken &&
+        streamsUiState.groups.none { it.addonId == BUILT_IN_USENET_GROUP_ID && it.isLoading }
+    LaunchedEffect(canPrefetchUsenet, streamsUiState.requestToken) {
+        val token = streamsUiState.requestToken
+        if (!canPrefetchUsenet || token == null || token == usenetPrefetchToken) return@LaunchedEffect
+        usenetPrefetchToken = token
+        UsenetPlayback.prefetchFirst(usenetPrefetchOwner, streamsUiState.allStreams, launch.seasonNumber, launch.episodeNumber)
+    }
+    LaunchedEffect(screenStarted) {
+        if (!screenStarted) {
+            UsenetPlayback.cancelPrefetch(usenetPrefetchOwner)
+            usenetPrefetchToken = null
+        }
+    }
+    DisposableEffect(usenetPrefetchOwner) {
+        onDispose { UsenetPlayback.cancelPrefetch(usenetPrefetchOwner) }
+    }
     var autoPlayHandled by rememberSaveable(launch.videoId, effectiveVideoId) { mutableStateOf(false) }
     LaunchedEffect(
         streamsUiState.autoPlayStream,

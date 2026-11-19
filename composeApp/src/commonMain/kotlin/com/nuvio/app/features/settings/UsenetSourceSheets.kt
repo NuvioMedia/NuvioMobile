@@ -55,6 +55,7 @@ import com.nuvio.app.features.usenet.UsenetProvider
 import com.nuvio.app.features.usenet.UsenetProviderTestResult
 import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.features.usenet.UsenetSourceConfiguration
+import com.nuvio.app.features.usenet.isValidUserAgent
 import com.nuvio.app.features.usenet.replaceOrAdd
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
@@ -97,6 +98,11 @@ import nuvio.composeapp.generated.resources.usenet_provider_test_unreachable
 import nuvio.composeapp.generated.resources.usenet_provider_tls
 import nuvio.composeapp.generated.resources.usenet_provider_username
 import nuvio.composeapp.generated.resources.usenet_save
+import nuvio.composeapp.generated.resources.usenet_download_user_agent_description
+import nuvio.composeapp.generated.resources.usenet_search_user_agent_description
+import nuvio.composeapp.generated.resources.usenet_user_agent
+import nuvio.composeapp.generated.resources.usenet_user_agent_invalid
+import nuvio.composeapp.generated.resources.usenet_user_agent_reset
 import nuvio.composeapp.generated.resources.usenet_source_delete
 import nuvio.composeapp.generated.resources.usenet_source_enabled
 import nuvio.composeapp.generated.resources.usenet_source_name
@@ -473,6 +479,51 @@ private fun UsenetDeleteDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         DialogButtons {
             DialogButton(text = stringResource(Res.string.usenet_cancel), onClick = onDismiss)
             DialogButton(text = stringResource(Res.string.usenet_delete), onClick = onConfirm, style = DialogButtonStyle.Primary)
+        }
+    }
+}
+
+/**
+ * Edits a User-Agent, opening with the one being sent so Nuvio's own can be read. Blank, or
+ * Nuvio's own unchanged, keeps the automatic one, which follows app updates.
+ */
+@Composable
+internal fun UsenetUserAgentDialog(
+    title: String,
+    agent: String,
+    search: Boolean,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var value by remember(title) { mutableStateOf(agent) }
+    var invalid by remember(title) { mutableStateOf(false) }
+    fun save(agent: String) {
+        onSave(agent.trim())
+        onDismiss()
+    }
+    DialogSurface(
+        onDismissRequest = onDismiss,
+        title = title,
+        message = stringResource(
+            if (search) Res.string.usenet_search_user_agent_description else Res.string.usenet_download_user_agent_description,
+        ),
+    ) {
+        UsenetTextField(value = value, onValueChange = { value = it; invalid = false }, label = stringResource(Res.string.usenet_user_agent))
+        if (invalid) {
+            Text(
+                text = stringResource(Res.string.usenet_user_agent_invalid),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
+        DialogButtons {
+            DialogButton(text = stringResource(Res.string.usenet_user_agent_reset), onClick = { save("") })
+            DialogButton(text = stringResource(Res.string.usenet_cancel), onClick = onDismiss)
+            DialogButton(
+                text = stringResource(Res.string.usenet_save),
+                onClick = { if (isValidUserAgent(value.trim())) save(value) else invalid = true },
+                style = DialogButtonStyle.Primary,
+            )
         }
     }
 }

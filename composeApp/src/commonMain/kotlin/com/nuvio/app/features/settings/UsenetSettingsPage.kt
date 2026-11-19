@@ -118,6 +118,19 @@ import nuvio.composeapp.generated.resources.usenet_source_disabled
 import nuvio.composeapp.generated.resources.usenet_sources_needed
 import nuvio.composeapp.generated.resources.usenet_sources_save_error
 import nuvio.composeapp.generated.resources.usenet_throughput
+import nuvio.composeapp.generated.resources.usenet_download_user_agent
+import nuvio.composeapp.generated.resources.usenet_max_consecutive_missing
+import nuvio.composeapp.generated.resources.usenet_max_consecutive_missing_description
+import nuvio.composeapp.generated.resources.usenet_max_missing_articles
+import nuvio.composeapp.generated.resources.usenet_max_missing_articles_description
+import nuvio.composeapp.generated.resources.usenet_prefetch_results
+import nuvio.composeapp.generated.resources.usenet_prefetch_results_description
+import nuvio.composeapp.generated.resources.usenet_prewarm
+import nuvio.composeapp.generated.resources.usenet_prewarm_description
+import nuvio.composeapp.generated.resources.usenet_read_ahead
+import nuvio.composeapp.generated.resources.usenet_read_ahead_description
+import nuvio.composeapp.generated.resources.usenet_search_user_agent
+import nuvio.composeapp.generated.resources.usenet_user_agent_default
 import org.jetbrains.compose.resources.stringResource
 
 private val MIN_RESOLUTIONS = listOf(0, 480, 720, 1080, 2160)
@@ -126,10 +139,14 @@ private val MAX_AGES_DAYS = listOf(0, 30, 90, 365, 1000, 3000)
 private val RESULT_LIMITS = listOf(25, 50, 100, 200, 500, UsenetSourceConfiguration.UNLIMITED_RESULTS)
 private val FETCH_LIMITS = listOf(UsenetSourceConfiguration.AUTO_INDEXER_RESULTS) + UsenetSourceConfiguration.INDEXER_RESULT_CHOICES
 private val MAX_CONNECTIONS = listOf(0, 10, 20, 30, 50, 100)
+private val READ_AHEAD_SEGMENTS = listOf(0, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 256, 512)
 private val RANKING_PRESETS = StreamRankingPreset.entries.filter { it != StreamRankingPreset.CUSTOM }
 
 /** One of the page's choice dialogs. */
-private enum class UsenetChoice { RANKING, LANGUAGE, SORT, MIN_RESOLUTION, MAX_SIZE, MAX_AGE, RESULTS, FETCH, PROFILE, CONNECTIONS }
+private enum class UsenetChoice {
+    RANKING, LANGUAGE, SORT, MIN_RESOLUTION, MAX_SIZE, MAX_AGE, RESULTS, FETCH, PROFILE, CONNECTIONS,
+    READ_AHEAD, MISSING_ARTICLES, CONSECUTIVE_MISSING, SEARCH_AGENT, DOWNLOAD_AGENT,
+}
 
 internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean) {
     item {
@@ -271,16 +288,40 @@ internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean) {
                 ChoiceRow(stringResource(Res.string.usenet_connections), connectionsLabel(engine.maxConnections), isTablet) {
                     choice = UsenetChoice.CONNECTIONS
                 }
+                ChoiceRow(stringResource(Res.string.usenet_read_ahead), connectionsLabel(engine.readAhead), isTablet) {
+                    choice = UsenetChoice.READ_AHEAD
+                }
                 Switch(stringResource(Res.string.usenet_fast_mkv), stringResource(Res.string.usenet_fast_mkv_description),
                     engine.fastMkvStartup, isTablet) { value -> UsenetRepository.updateEngineSettings { it.copy(fastMkvStartup = value) } }
                 Switch(stringResource(Res.string.usenet_fast_nzb), stringResource(Res.string.usenet_fast_nzb_description),
                     engine.fastNzbFetch, isTablet) { value -> UsenetRepository.updateEngineSettings { it.copy(fastNzbFetch = value) } }
                 Switch(stringResource(Res.string.usenet_cache_nzb), stringResource(Res.string.usenet_cache_nzb_description),
                     engine.cacheNzb, isTablet) { value -> UsenetRepository.updateEngineSettings { it.copy(cacheNzb = value) } }
+                Switch(stringResource(Res.string.usenet_prefetch_results), stringResource(Res.string.usenet_prefetch_results_description),
+                    engine.prefetchResults, isTablet) { value -> UsenetRepository.updateEngineSettings { it.copy(prefetchResults = value) } }
+                Switch(stringResource(Res.string.usenet_prewarm), stringResource(Res.string.usenet_prewarm_description),
+                    engine.prewarmOnLaunch, isTablet) { value -> UsenetRepository.updateEngineSettings { it.copy(prewarmOnLaunch = value) } }
                 Switch(stringResource(Res.string.usenet_self_hosted), stringResource(Res.string.usenet_self_hosted_description),
                     engine.allowPrivateNetwork, isTablet) { value -> UsenetRepository.updateEngineSettings { it.copy(allowPrivateNetwork = value) } }
                 Switch(stringResource(Res.string.usenet_hole_filling), stringResource(Res.string.usenet_hole_filling_description),
-                    engine.holeFilling, isTablet, last = true) { value -> UsenetRepository.updateEngineSettings { it.copy(holeFilling = value) } }
+                    engine.holeFilling, isTablet) { value -> UsenetRepository.updateEngineSettings { it.copy(holeFilling = value) } }
+                if (engine.holeFilling) {
+                    ChoiceRow(stringResource(Res.string.usenet_max_missing_articles), engine.maxMissingArticles.toString(), isTablet) {
+                        choice = UsenetChoice.MISSING_ARTICLES
+                    }
+                    ChoiceRow(stringResource(Res.string.usenet_max_consecutive_missing), engine.maxConsecutiveMissing.toString(), isTablet) {
+                        choice = UsenetChoice.CONSECUTIVE_MISSING
+                    }
+                }
+                ChoiceRow(stringResource(Res.string.usenet_search_user_agent), userAgentLabel(engine.searchUserAgent, engine.searchAgent), isTablet) {
+                    choice = UsenetChoice.SEARCH_AGENT
+                }
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.usenet_download_user_agent),
+                    description = userAgentLabel(engine.downloadUserAgent, engine.downloadAgent),
+                    isTablet = isTablet,
+                    onClick = { choice = UsenetChoice.DOWNLOAD_AGENT },
+                )
             }
         }
 
@@ -402,6 +443,53 @@ private fun UsenetChoiceDialog(
             label = { connectionsLabel(it) },
             description = { if (it == 0) stringResource(Res.string.usenet_connections_description) else null },
             onSelect = pick { value -> UsenetRepository.updateEngineSettings { it.copy(maxConnections = value) } },
+            onDismiss = onDismiss,
+        )
+        UsenetChoice.READ_AHEAD -> SettingsChoiceDialog(
+            title = stringResource(Res.string.usenet_read_ahead),
+            options = (READ_AHEAD_SEGMENTS + engine.readAhead).distinct().sorted(),
+            selected = engine.readAhead,
+            label = { connectionsLabel(it) },
+            description = { if (it == engine.readAhead) stringResource(Res.string.usenet_read_ahead_description) else null },
+            onSelect = pick { value -> UsenetRepository.updateEngineSettings { it.copy(readAhead = value) } },
+            onDismiss = onDismiss,
+        )
+        UsenetChoice.MISSING_ARTICLES -> SettingsChoiceDialog(
+            title = stringResource(Res.string.usenet_max_missing_articles),
+            options = (1..50).toList(),
+            selected = engine.maxMissingArticles,
+            label = { it.toString() },
+            description = { if (it == engine.maxMissingArticles) stringResource(Res.string.usenet_max_missing_articles_description) else null },
+            onSelect = pick { value ->
+                UsenetRepository.updateEngineSettings {
+                    it.copy(maxMissingArticles = value, maxConsecutiveMissing = minOf(it.maxConsecutiveMissing, value))
+                }
+            },
+            onDismiss = onDismiss,
+        )
+        UsenetChoice.CONSECUTIVE_MISSING -> SettingsChoiceDialog(
+            title = stringResource(Res.string.usenet_max_consecutive_missing),
+            options = (1..minOf(10, engine.maxMissingArticles)).toList(),
+            selected = engine.maxConsecutiveMissing,
+            label = { it.toString() },
+            description = {
+                if (it == engine.maxConsecutiveMissing) stringResource(Res.string.usenet_max_consecutive_missing_description) else null
+            },
+            onSelect = pick { value -> UsenetRepository.updateEngineSettings { it.copy(maxConsecutiveMissing = value) } },
+            onDismiss = onDismiss,
+        )
+        UsenetChoice.SEARCH_AGENT -> UsenetUserAgentDialog(
+            title = stringResource(Res.string.usenet_search_user_agent),
+            agent = engine.searchAgent,
+            search = true,
+            onSave = { agent -> UsenetRepository.updateEngineSettings { it.copy(searchUserAgent = agent) } },
+            onDismiss = onDismiss,
+        )
+        UsenetChoice.DOWNLOAD_AGENT -> UsenetUserAgentDialog(
+            title = stringResource(Res.string.usenet_download_user_agent),
+            agent = engine.downloadAgent,
+            search = false,
+            onSave = { agent -> UsenetRepository.updateEngineSettings { it.copy(downloadUserAgent = agent) } },
             onDismiss = onDismiss,
         )
         null -> Unit
@@ -545,3 +633,8 @@ private fun profileLabel(profile: String): String = when (profile) {
 @Composable
 private fun connectionsLabel(value: Int): String =
     if (value == 0) stringResource(Res.string.usenet_automatic) else value.toString()
+
+/** The User-Agent being sent; Nuvio's own is marked as the default. */
+@Composable
+private fun userAgentLabel(chosen: String, sent: String): String =
+    if (chosen.isBlank()) stringResource(Res.string.usenet_user_agent_default, sent) else sent

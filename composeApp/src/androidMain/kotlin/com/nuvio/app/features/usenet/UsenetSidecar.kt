@@ -64,6 +64,30 @@ internal class UsenetSidecar(
     private var idleStop: Job? = null
     private val retiredSessions = mutableSetOf<String>() // guarded by mutex
     private var retirementJob: Job? = null
+    private val preparationGuard = Any()
+    private var preparationJob: Job? = null
+    private var preparationOwner: Any? = null
+    private var preparationKey: PreparationKey? = null
+    private var preparationGeneration: Any? = null
+    // A prefetched session waiting for its Play. Guarded by mutex; the session itself holds the
+    // parsed NZB and cached articles, so nothing is kept twice.
+    private var preparedStream: StreamItem? = null
+    private var preparedKey: PreparationKey? = null
+    private var preparedGeneration: Any? = null
+    private var preparedExpiry: Job? = null
+
+    /** What makes a prepared session the one a later Play asks for. */
+    private data class PreparationKey(
+        val nzb: String?, val servers: List<String>, val headers: Map<String, String>,
+        val fileIdx: Int?, val selector: String?, val season: Int?, val episode: Int?,
+        val configuration: UsenetConfiguration, val profileId: Int?,
+    )
+
+    private fun preparationKey(stream: StreamItem, season: Int?, episode: Int?, profileId: Int?): PreparationKey {
+        val configuration = settings()
+        return PreparationKey(stream.nzbUrl, stream.nzbServers, nzbHeaders(stream, configuration), stream.fileIdx,
+            stream.fileMustInclude, season, episode, configuration, profileId)
+    }
 
     /** The release each recent engine URL plays, so playback outcomes reach its entry. */
     private val playing = object : LinkedHashMap<String, StreamItem>(8, 0.75f, true) {
@@ -124,17 +148,100 @@ internal class UsenetSidecar(
         }
     }
 
+    /**
+     * Opens [stream] now and keeps it ready for two minutes, so its Play starts from an open
+     * session. Only one candidate may own a prepared session; [owner] is the screen asking.
+     */
+    fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int?): Job {
+        val key = preparationKey(stream, season, episode, profileId)
+        if (!key.configuration.prefetchResults) return Job().apply { complete() }
+        return synchronized(preparationGuard) {
+            if (preparationOwner === owner && preparationKey == key) return@synchronized preparationJob!!
+            preparationJob?.cancel()
+            preparationOwner = owner
+            preparationKey = key
+            val generation = Any()
+            preparationGeneration = generation
+            cleanup.launch {
+                mutex.withLock {
+                    // A session that plays is never replaced by a guess.
+                    if (!appForeground || !settings().prefetchResults || (sessionId != null && preparedStream == null)) {
+                        return@withLock
+                    }
+                    if (preparedStream != null) releaseSessionLocked()
+                    try {
+                        val resolved = openLocked(stream, season, episode, profileId)
+                        preparedStream = resolved
+                        preparedKey = key
+                        preparedGeneration = generation
+                        preparedExpiry = cleanup.launch {
+                            delay(PREPARED_LIFETIME_MS)
+                            mutex.withLock {
+                                if (preparedGeneration === generation) {
+                                    preparedExpiry = null
+                                    releaseSessionLocked()
+                                }
+                            }
+                        }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        // Optional preparation is silent; Play retries it and reports the error.
+                    }
+                }
+            }.also { preparationJob = it }
+        }
+    }
+
+    /** Drops the prepared session of [owner], or of anyone when null; a session that plays stays. */
+    fun cancelPrefetch(owner: Any? = null): Job {
+        val generation = synchronized(preparationGuard) {
+            if (owner != null && preparationOwner !== owner) return Job().apply { complete() }
+            preparationJob?.cancel()
+            preparationJob = null; preparationOwner = null; preparationKey = null
+            preparationGeneration.also { preparationGeneration = null }
+        }
+        return cleanup.launch {
+            mutex.withLock { if (generation != null && preparedGeneration === generation) releaseSessionLocked() }
+        }
+    }
+
     suspend fun resolve(stream: StreamItem, season: Int?, episode: Int?, profileId: Int?): StreamItem {
         var resolved: StreamItem? = null
         try {
             return withContext(Dispatchers.IO) {
-                mutex.withLock { openLocked(stream, season, episode, profileId) }.also { resolved = it }
+                resolveLocked(stream, season, episode, profileId).also { resolved = it }
             }
         } catch (cancelled: CancellationException) {
             // withContext can discard a successful result when its caller is cancelled during
             // dispatcher handoff. No screen can own it then.
             release(resolved?.url)
             throw cancelled
+        }
+    }
+
+    private suspend fun resolveLocked(stream: StreamItem, season: Int?, episode: Int?, profileId: Int?): StreamItem {
+        val key = preparationKey(stream, season, episode, profileId)
+        val pending = synchronized(preparationGuard) {
+            if (preparationKey != key) preparationJob?.cancel()
+            preparationJob
+        }
+        // Joined outside the session mutex, so Play shares an open that is already running.
+        pending?.join()
+        return mutex.withLock {
+            synchronized(preparationGuard) {
+                if (preparationJob === pending) {
+                    preparationJob = null; preparationOwner = null; preparationKey = null; preparationGeneration = null
+                }
+            }
+            val cached = preparedStream
+            if (cached != null && preparedKey == key && process?.let(::isRunning) == true) {
+                clearPreparedLocked()
+                cached.url?.let { url -> synchronized(traces) { traces[url] }?.mark("prepared_session_reused") }
+                return@withLock cached
+            }
+            if (preparedStream != null) releaseSessionLocked()
+            openLocked(stream, season, episode, profileId)
         }
     }
 
@@ -307,6 +414,7 @@ internal class UsenetSidecar(
     }
 
     private suspend fun releaseSessionLocked() {
+        clearPreparedLocked()
         val id = sessionId
         sessionId = null; playbackUrl = null
         try {
@@ -324,14 +432,26 @@ internal class UsenetSidecar(
     }
 
     fun onAppBackgrounded() {
+        cancelPrefetch()
         cleanup.launch { mutex.withLock { if (sessionId == null) stopLocked() } }
     }
 
-    fun settingsChanged(): Job = cleanup.launch {
-        mutex.withLock {
-            if (!settings().cacheNzb) File(context.cacheDir, NZB_CACHE_DIR).listFiles()?.forEach { it.delete() }
+    private fun clearPreparedLocked() {
+        preparedExpiry?.cancel(); preparedExpiry = null
+        preparedStream = null; preparedKey = null
+        preparedGeneration = null
+    }
+
+    fun settingsChanged(): Job {
+        // An unused prepared session was opened with the old settings; playback keeps its own.
+        val invalidation = cancelPrefetch()
+        return cleanup.launch {
+            invalidation.join()
+            mutex.withLock {
+                if (!settings().cacheNzb) File(context.cacheDir, NZB_CACHE_DIR).listFiles()?.forEach { it.delete() }
+            }
+            prewarm().join()
         }
-        prewarm().join()
     }
 
     private fun start(trace: Trace? = null) {
@@ -443,6 +563,7 @@ internal class UsenetSidecar(
     }
 
     private fun stopLocked() {
+        clearPreparedLocked()
         retirementJob?.cancel(); retirementJob = null
         retiredSessions.clear()
         idleStop?.cancel(); idleStop = null
@@ -462,6 +583,7 @@ internal class UsenetSidecar(
 
     companion object {
         const val NZB_CACHE_DIR = "usenet-nzb"
+        private const val PREPARED_LIFETIME_MS = 120_000L
 
         /** [message] with each URL cut to its scheme and host: no path, query, key or login reaches the log. */
         internal fun redacted(message: String): String =

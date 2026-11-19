@@ -125,6 +125,14 @@ internal actual object UsenetPlatform {
         if (ready) sidecar.release(url)
     }
 
+    actual fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int) {
+        if (ready) sidecar.prefetch(owner, stream, season, episode, profileId)
+    }
+
+    actual fun cancelPrefetch(owner: Any) {
+        if (ready) sidecar.cancelPrefetch(owner)
+    }
+
     actual fun isEngineUrl(url: String?): Boolean = url != null && UsenetEngineUrls.isSession(url)
 
     actual fun onFirstFrame(url: String?) {

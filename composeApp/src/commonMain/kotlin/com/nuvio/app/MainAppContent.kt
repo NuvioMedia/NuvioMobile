@@ -130,6 +130,7 @@ import com.nuvio.app.features.library.toMetaPreview
 import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.features.party.PartyEvent
 import com.nuvio.app.features.party.PartyMedia
 import com.nuvio.app.features.party.PartyRepository
@@ -692,6 +693,8 @@ internal fun MainAppContent(
     var lastExternalPlayerLaunch by remember { mutableStateOf<PlayerLaunch?>(null) }
     val activePlaybackProfileId = activeProfileIndex ?: ProfileRepository.activeProfileId
     val launchExternalPlayer = rememberExternalPlayerLauncher { result ->
+        // Back from the external player: nothing plays its Usenet session any more.
+        UsenetPlayback.release(lastExternalPlayerLaunch?.sourceUrl)
         if (result != null) {
             val fallbackSession = lastExternalPlayerLaunch?.externalPlaybackSession()
             coroutineScope.launch {
@@ -848,6 +851,9 @@ internal fun MainAppContent(
                     NuvioToastController.show(externalPlayerFailedText)
                     false
                 }
+            }.also { launched ->
+                // A Usenet session opened for a player that never started has no owner.
+                if (!launched) UsenetPlayback.release(launch.sourceUrl)
             }
         }
 

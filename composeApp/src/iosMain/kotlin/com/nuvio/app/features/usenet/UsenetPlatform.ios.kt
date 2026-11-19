@@ -54,6 +54,10 @@ internal actual object UsenetPlatform {
 
     actual fun release(url: String?) = Unit
 
+    actual fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int) = Unit
+
+    actual fun cancelPrefetch(owner: Any) = Unit
+
     actual fun isEngineUrl(url: String?): Boolean = false
 
     actual fun onFirstFrame(url: String?) = Unit
