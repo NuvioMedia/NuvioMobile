@@ -345,6 +345,19 @@ class BuiltInUsenetServiceTest {
         coVerify { client.search(tvdbOnly, match { it.tvdbId == "121361" && it.episode == 2 }, any(), any()) }
     }
 
+    @Test fun `an indexer that needs ids or a title TMDB did not give fails visibly`() = runTest {
+        val tvdbOnly = UsenetIndexer(id = "tvdb", name = "Tvdb", apiUrl = "https://tvdb.test/api")
+        val config = UsenetSourceConfiguration(enabled = true, providers = listOf(provider), indexers = listOf(tvdbOnly))
+        val client = mockk<NewznabClient>()
+        coEvery { client.capabilities(tvdbOnly) } returns NewznabCapabilities(tvParams = setOf("q", "tvdbid", "season", "ep"))
+        // TMDB answered nothing usable, as without an API key.
+        val results = BuiltInUsenetService(client, FakeMetadata(title = { UsenetTitleMetadata() }))
+            .search(config, "series", "tt10986410:3:1", null, null).toList()
+        assertEquals(listOf("Tvdb: indexer search failed. Check the API URL, key and limits."), results.mapNotNull { it.failure })
+        assertTrue(results.lastGroup().streams.isEmpty())
+        coVerify(exactly = 0) { client.search(any(), any(), any(), any()) }
+    }
+
     @Test fun `disabled configuration never contacts indexers`() = runTest {
         val client = mockk<NewznabClient>()
         val service = BuiltInUsenetService(client, FakeMetadata())

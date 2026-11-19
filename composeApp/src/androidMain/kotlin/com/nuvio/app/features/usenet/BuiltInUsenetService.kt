@@ -132,6 +132,11 @@ internal class BuiltInUsenetService(
                             val caps = client.capabilities(indexer)
                             val canSearchId = NewznabProtocol.searchUrl(indexer, request, caps) != null
                             val search = if (canSearchId) request else titleLookup.await() ?: error("Metadata unavailable")
+                            // Without the ids or title TMDB gives, such an indexer cannot be asked at all:
+                            // that is a failure to show, not a search that found nothing.
+                            if (!canSearchId && NewznabProtocol.searchUrl(indexer, search, caps) == null) {
+                                error("Metadata unavailable")
+                            }
                             val fetchLimit = config.indexerResults(indexer)
                             val found = client.search(indexer, search, caps, fetchLimit)
                                 .let { if (canSearchId && !series) confirmed(indexer, it) { titleLookup.await() } else it }
