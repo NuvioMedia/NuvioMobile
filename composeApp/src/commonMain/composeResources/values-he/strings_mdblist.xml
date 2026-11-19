@@ -1,3 +1,8 @@
+<!--
+Hebrew: Android looks for values-iw (it reports Hebrew with the legacy language code "iw"),
+while iOS and desktop look for values-he.
+Therefore, duplicate the values-he directory as values-iw. Keep both directories in the project.
+-->
 <resources>
     <string name="settings_mdb_ratings_credentials_required">יש לחבר את MDBList תחת מעקב או להזין מפתח API כדי להביא דירוגים.</string>
     <string name="settings_mdb_ratings_key_override_description">מפתח API גובר על החשבון המחובר לצורך דירוגים. יש לנקות אותו ולשמור כדי לחזור להשתמש בחשבון המחובר.</string>
