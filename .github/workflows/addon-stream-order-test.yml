@@ -38,5 +38,8 @@ jobs:
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Create empty local properties for CI
+        run: touch local.properties
+
       - name: Run common stream tests
         run: ./gradlew :composeApp:testAndroidHostTest --no-daemon --stacktrace
