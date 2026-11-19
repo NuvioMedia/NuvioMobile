@@ -40,6 +40,7 @@ import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.home.HomeCatalogSettingsItem
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
+import com.nuvio.app.features.home.HomeCatalogRowPlacement
 import com.nuvio.app.features.home.components.HomeEmptyStateCard
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_retry
@@ -326,7 +327,15 @@ private fun HomescreenCatalogList(
     ) { from, to ->
         val fromItem = items.getOrNull(from.index)
         val toItem = items.getOrNull(to.index)
-        if (fromItem?.isPinnedToTop == true || toItem?.isPinnedToTop == true) {
+        fun section(item: HomeCatalogSettingsItem?) = when {
+            item == null -> null
+            item.rowPlacement == HomeCatalogRowPlacement.PINNED_TOP || item.isPinnedToTop -> HomeCatalogRowPlacement.PINNED_TOP
+            item.rowPlacement == HomeCatalogRowPlacement.PINNED_BOTTOM -> HomeCatalogRowPlacement.PINNED_BOTTOM
+            else -> HomeCatalogRowPlacement.NORMAL
+        }
+        val fromSection = section(fromItem)
+        if (fromSection != section(toItem) || items.subList(minOf(from.index, to.index), maxOf(from.index, to.index) + 1).any { section(it) != fromSection }) {
+            onPinnedDragAttempt()
             return@rememberReorderableLazyListState
         }
         HomeCatalogSettingsRepository.moveByIndex(from.index, to.index)
@@ -362,6 +371,7 @@ private fun HomescreenCatalogList(
                                 },
                                 onTitleChange = { HomeCatalogSettingsRepository.setCustomTitle(item.key, it) },
                                 onEnabledChange = { HomeCatalogSettingsRepository.setEnabled(item.key, it) },
+                                onRowPlacementChange = { HomeCatalogSettingsRepository.setRowPlacement(item.key, it) },
                                 dragHandleScope = this@ReorderableItem,
                                 onPinnedDragAttempt = onPinnedDragAttempt,
                             )
