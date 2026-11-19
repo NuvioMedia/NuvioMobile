@@ -3,6 +3,7 @@ package com.nuvio.app
 import androidx.compose.runtime.Composable
 import com.nuvio.app.features.downloads.DownloadItem
 import com.nuvio.app.features.downloads.DownloadsScreen
+import com.nuvio.app.navigation.DetailRoute
 import com.nuvio.app.navigation.DownloadShowRoute
 import com.nuvio.app.navigation.DownloadsRoute
 import com.nuvio.app.navigation.NuvioNavigator
@@ -18,6 +19,7 @@ internal fun DownloadsDestination(
     DownloadsScreen(
         onBack = onBack,
         onOpenDownload = onOpenDownload,
+        onOpenDetails = navController::openDownloadDetails,
         onNavigateToShow = if (useNativeNavigation) {
             { showId, title -> navController.navigate(DownloadShowRoute(showId, title)) }
         } else {
@@ -36,7 +38,18 @@ internal fun DownloadShowDestination(
     DownloadsScreen(
         onBack = onBack,
         onOpenDownload = onOpenDownload,
+        onOpenDetails = navController::openDownloadDetails,
         initialShowId = route.showId,
         onBackFromShow = onBack,
+    )
+}
+
+private fun NuvioNavigator.openDownloadDetails(item: DownloadItem) {
+    navigate(
+        DetailRoute(
+            type = item.parentMetaType,
+            id = item.parentMetaId,
+            title = item.title,
+        ),
     )
 }
