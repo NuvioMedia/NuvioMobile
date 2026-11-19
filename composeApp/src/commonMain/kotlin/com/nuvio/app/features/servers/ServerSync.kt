@@ -1,5 +1,8 @@
 package com.nuvio.app.features.servers
 
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -48,6 +51,62 @@ class ServerSyncSnapshot(
     val pendingPush: Boolean,
     val syncedKeys: Set<String>?,
 )
+
+/**
+ * Server types the account backend has refused. One refused entry fails the whole upload, so these are left out for a
+ * while and the other servers keep syncing; they join in by themselves once the backend accepts them.
+ */
+internal class RefusedServerTypes(private val now: () -> Long) {
+    private val lock = SynchronizedObject()
+    private val refusedAt = mutableMapOf<String, Long>()
+
+    fun isRefused(providerId: String): Boolean = synchronized(lock) {
+        val at = refusedAt[providerId]
+        when {
+            at == null -> false
+            now() - at < RETRY_AFTER_MS -> true
+            else -> {
+                refusedAt.remove(providerId)
+                false
+            }
+        }
+    }
+
+    /** Sends [snapshot] without any refused type and returns what the backend accepted. */
+    suspend fun upload(snapshot: ServerSyncSnapshot, send: suspend (ServerSyncSnapshot) -> Unit): ServerSyncSnapshot {
+        var allowed = accepted(snapshot)
+        while (true) {
+            try {
+                send(allowed)
+                return allowed
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                val provider = refusedProvider(error)?.takeIf { id -> allowed.servers.any { it.providerId == id } }
+                    ?: throw error
+                synchronized(lock) { refusedAt[provider] = now() }
+                allowed = accepted(allowed)
+            }
+        }
+    }
+
+    private fun accepted(snapshot: ServerSyncSnapshot) = ServerSyncSnapshot(
+        profileId = snapshot.profileId,
+        version = snapshot.version,
+        servers = snapshot.servers.filterNot { isRefused(it.providerId) },
+        pendingPush = snapshot.pendingPush,
+        syncedKeys = snapshot.syncedKeys,
+    )
+
+    private fun refusedProvider(error: Throwable): String? =
+        generateSequence(error) { it.cause }
+            .firstNotNullOfOrNull { failure -> failure.message?.let(REFUSED_PROVIDER::find)?.groupValues?.get(1) }
+
+    private companion object {
+        const val RETRY_AFTER_MS = 24 * 60 * 60_000L
+        val REFUSED_PROVIDER = Regex("Unsupported media server provider: ([A-Za-z0-9_-]+)")
+    }
+}
 
 private val syncJson = Json { encodeDefaults = true }
 

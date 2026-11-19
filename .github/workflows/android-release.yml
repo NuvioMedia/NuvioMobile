@@ -78,7 +78,7 @@ jobs:
 
           unexpected_changes="$(
             git diff --name-only "${CURRENT_BUMP}..${RELEASE_COMMIT}" \
-              | grep -Ev '^(\.github/workflows/(android-release|update-store-source)\.yml|store\.json|scripts/(build-ios-ipa|generate-release-notes|prepare-ios-dependencies|release-metadata)\.sh|scripts/update-store-source\.py)$' \
+              | grep -Ev '^(\.github/workflows/(android-release|update-store-source)\.yml|store(-beta)?\.json|scripts/(build-ios-ipa|generate-release-notes|prepare-ios-dependencies|release-metadata)\.sh|scripts/update-store-source\.py)$' \
               || true
           )"
           if [[ -n "${unexpected_changes}" ]]; then
@@ -331,7 +331,7 @@ jobs:
 
   store:
     name: Update sideload source
-    if: inputs.mode == 'publish' && needs.prepare.outputs.prerelease != 'true'
+    if: inputs.mode == 'publish'
     needs:
       - prepare
       - release

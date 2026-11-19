@@ -22,7 +22,8 @@ import java.util.concurrent.Executors
 import java.util.concurrent.atomic.AtomicBoolean
 
 internal abstract class MpvSurfaceView(context: Context, private val vo: String) : FrameLayout(context) {
-    val mpv = MPV()
+    private val mpvInstance = lazy { MPV(context) }
+    val mpv by mpvInstance
     protected val mpvDispatcher = Executors.newSingleThreadExecutor { runnable ->
         Thread(runnable, "NuvioLibmpv").apply { isDaemon = true }
     }.asCoroutineDispatcher()
@@ -36,14 +37,10 @@ internal abstract class MpvSurfaceView(context: Context, private val vo: String)
     protected abstract fun observeProperties()
 
     fun initialize(configDir: String, cacheDir: String) {
-        mpv.create(context)
-        mpv.setOptionString("config", "yes")
-        mpv.setOptionString("config-dir", configDir)
-        mpv.setOptionString("gpu-shader-cache-dir", cacheDir)
-        mpv.setOptionString("icc-cache-dir", cacheDir)
+        mpv.setConfigDir(configDir)
+        mpv.setCacheDir(cacheDir)
         mpv.setOptionString("vo", vo)
         initOptions()
-        mpv.init()
         mpv.setOptionString("force-window", "no")
         mpv.setOptionString("idle", "once")
         observeProperties()
@@ -93,7 +90,7 @@ internal abstract class MpvSurfaceView(context: Context, private val vo: String)
         destroyJob = mpvScope.launch {
             try {
                 detachSurface()
-                runCatching { mpv.destroy() }.onFailure(::logFailure)
+                if (mpvInstance.isInitialized()) runCatching { mpv.close() }.onFailure(::logFailure)
             } finally {
                 mpvDispatcher.close()
             }
