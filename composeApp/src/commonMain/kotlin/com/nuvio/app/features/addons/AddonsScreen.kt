@@ -67,7 +67,6 @@ import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import sh.calvin.reorderable.ReorderableCollectionItemScope
 import sh.calvin.reorderable.ReorderableItem
-import sh.calvin.reorderable.longPressDraggableHandle
 import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
