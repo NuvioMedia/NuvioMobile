@@ -92,6 +92,7 @@ internal class CarNuvioWindow(
         decor.setViewTreeSavedStateRegistryOwner(this)
         decor.setViewTreeOnBackPressedDispatcherOwner(this)
         window!!.setBackgroundDrawableResource(android.R.color.black)
+        window!!.setLayout(-1, -1)
         val root = FrameLayout(context)
         val view = NuvioEmbeddedView.create(context, this, this)
         nuvio = view

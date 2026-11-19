@@ -34,10 +34,13 @@ internal object CarPrefs {
         prefs(ctx).edit().putBoolean("hideWhileDriving", on).apply()
     }
 
-    /** Keep Nuvio's content out from under Android Auto's buttons (the host's stable area). */
-    fun avoidCarButtons(ctx: Context): Boolean = prefs(ctx).getBoolean("avoidButtons", true)
+    /**
+     * Keep Nuvio's content out from under Android Auto's buttons (the host's stable area). Off by default:
+     * the host's stable area is very conservative and left big black borders around Nuvio.
+     */
+    fun avoidCarButtons(ctx: Context): Boolean = prefs(ctx).getBoolean("avoidButtons2", false)
 
     fun setAvoidCarButtons(ctx: Context, on: Boolean) {
-        prefs(ctx).edit().putBoolean("avoidButtons", on).apply()
+        prefs(ctx).edit().putBoolean("avoidButtons2", on).apply()
     }
 }
