@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -204,7 +205,7 @@ internal fun AddonsSettingsPageContent(
                             modifier = Modifier.shadow(elevation, RoundedCornerShape(18.dp)),
                             addon = addon,
                             dragHandleScope = this,
-                            onDragStarted = {
+                            onDragStarted = { _ ->
                                 if (draggedAddonOrder == null) {
                                     draggedAddonOrder = uiState.addons.map { it.manifestUrl }
                                 }
@@ -488,7 +489,7 @@ private fun InstalledAddonCard(
     modifier: Modifier = Modifier,
     addon: ManagedAddon,
     dragHandleScope: ReorderableCollectionItemScope,
-    onDragStarted: () -> Unit,
+    onDragStarted: (Offset) -> Unit,
     onDragStopped: () -> Unit,
     onRefreshClick: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
