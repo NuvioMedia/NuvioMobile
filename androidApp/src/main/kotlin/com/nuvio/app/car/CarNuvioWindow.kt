@@ -25,6 +25,11 @@ import androidx.lifecycle.ViewModelStore
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
+import androidx.navigationevent.DirectNavigationEventInput
+import androidx.navigationevent.NavigationEventDispatcher
+import androidx.navigationevent.NavigationEventDispatcherOwner
+import androidx.navigationevent.OnBackCompletedFallback
+import androidx.navigationevent.setViewTreeNavigationEventDispatcherOwner
 import androidx.savedstate.SavedStateRegistry
 import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
@@ -44,7 +49,7 @@ internal class CarNuvioWindow(
     display: Display,
 ) : Presentation(ctx, display, android.R.style.Theme_Black_NoTitleBar_Fullscreen),
     LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner, OnBackPressedDispatcherOwner,
-    ActivityResultRegistryOwner {
+    ActivityResultRegistryOwner, NavigationEventDispatcherOwner {
 
     private val lifecycleRegistry = LifecycleRegistry(this)
     private val store = ViewModelStore()
@@ -56,6 +61,18 @@ internal class CarNuvioWindow(
 
     // At Nuvio's root there's nothing to go back to: stay (closing would leave the car screen black).
     override val onBackPressedDispatcher = OnBackPressedDispatcher { }
+
+    /**
+     * Back handling for Nuvio's navigation (NavDisplay and BackHandler), like ComponentActivity provides.
+     * Anything it doesn't handle falls through to [onBackPressedDispatcher].
+     */
+    override val navigationEventDispatcher = NavigationEventDispatcher(
+        OnBackCompletedFallback { onBackPressedDispatcher.onBackPressed() },
+    )
+
+    private val backInput: DirectNavigationEventInput by lazy {
+        DirectNavigationEventInput().also { navigationEventDispatcher.addInput(it) }
+    }
 
     /** Pickers and external players open on the phone; Nuvio gets "cancelled" back right away. */
     override val activityResultRegistry: ActivityResultRegistry = object : ActivityResultRegistry() {
@@ -91,10 +108,11 @@ internal class CarNuvioWindow(
         decor.setViewTreeViewModelStoreOwner(this)
         decor.setViewTreeSavedStateRegistryOwner(this)
         decor.setViewTreeOnBackPressedDispatcherOwner(this)
+        decor.setViewTreeNavigationEventDispatcherOwner(this)
         window!!.setBackgroundDrawableResource(android.R.color.black)
         window!!.setLayout(-1, -1)
         val root = FrameLayout(context)
-        val view = NuvioEmbeddedView.create(context, this, this)
+        val view = NuvioEmbeddedView.create(context, this, this, this)
         nuvio = view
         root.addView(view, FrameLayout.LayoutParams(-1, -1))
         cover = FrameLayout(context).apply { visibility = View.GONE }
@@ -144,7 +162,7 @@ internal class CarNuvioWindow(
     }
 
     fun goBack() {
-        onBackPressedDispatcher.onBackPressed()
+        backInput.backCompleted()
     }
 
     fun hasFocusedField(): Boolean = currentFocus != null
