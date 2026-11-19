@@ -9,6 +9,7 @@ import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DebridStreamPresentation
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.player.PlayerTrackPreferenceStorage
 import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.plugins.PluginsUiState
@@ -356,10 +357,16 @@ object StreamsRepository {
                     groups = listOf(group),
                     rules = streamBadgeRules,
                 ).firstOrNull() ?: group
-                return DebridStreamPresentation.apply(
+                val presented = DebridStreamPresentation.apply(
                     groups = listOf(badgeGroup),
                     settings = debridSettings,
                 ).firstOrNull() ?: badgeGroup
+                val language = if (playerSettings.perTitleStreamLanguageEnabled) {
+                    parentMetaId?.let { PlayerTrackPreferenceStorage.load(it)?.sourceStreamLanguage }
+                } else null
+                return if (language.isNullOrBlank()) presented else presented.copy(
+                    streams = SourceLanguageStreamOrdering.order(presented.streams, language),
+                )
             }
 
             fun publishAddonGroup(group: AddonStreamGroup) {
