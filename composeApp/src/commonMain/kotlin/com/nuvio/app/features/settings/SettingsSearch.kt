@@ -36,6 +36,7 @@ import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.isIos
 import com.nuvio.app.supportsPosterNavigationMotion
 import nuvio.composeapp.generated.resources.*
@@ -478,6 +479,14 @@ internal fun settingsSearchEntries(
         title = stringResource(Res.string.compose_settings_page_media_servers),
         description = stringResource(Res.string.settings_content_discovery_media_servers_description),
     )
+    if (UsenetRepository.isSupported) {
+        addPage(
+            page = SettingsPage.Usenet,
+            key = "usenet",
+            title = stringResource(Res.string.compose_settings_page_usenet),
+            description = stringResource(Res.string.settings_content_discovery_usenet_description),
+        )
+    }
     if (pluginsEnabled) {
         addPage(
             page = SettingsPage.Plugins,

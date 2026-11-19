@@ -34,6 +34,7 @@ import com.nuvio.app.features.player.sanitizePlaybackHeaders
 import com.nuvio.app.features.player.sanitizePlaybackResponseHeaders
 import com.nuvio.app.features.servers.ServerPlayback
 import com.nuvio.app.features.servers.serverPlaybackMessage
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamLaunchStore
@@ -441,7 +442,17 @@ internal fun StreamDestination(
         if (autoPlayHandled) return@LaunchedEffect
         if (streamsUiState.requestToken != expectedStreamsRequestToken) return@LaunchedEffect
         val selectedStream = streamsUiState.autoPlayStream ?: return@LaunchedEffect
-        val stream = if (selectedStream.needsServerPreparation) {
+        val stream = if (selectedStream.needsUsenetPreparation) {
+            StreamsRepository.setOverlayVisible(true, getString(Res.string.usenet_opening))
+            runCatching { UsenetPlayback.prepare(selectedStream, launch.seasonNumber, launch.episodeNumber) }
+                .onFailure { if (it is CancellationException) throw it }
+                .getOrElse { error ->
+                    if (!StreamsRepository.skipAutoPlayStream(selectedStream)) {
+                        NuvioToastController.show(UsenetPlayback.failureMessage(error))
+                    }
+                    return@LaunchedEffect
+                }
+        } else if (selectedStream.needsServerPreparation) {
             StreamsRepository.setOverlayVisible(true, getString(Res.string.player_loading_preparing))
             runCatching { ServerPlayback.prepare(selectedStream) }
                 .onFailure { if (it is CancellationException) throw it }
@@ -502,7 +513,8 @@ internal fun StreamDestination(
         }
         autoPlayHandled = true
         val serverResumeMs = serverResumePositionMs(stream)
-        if (playerSettings.streamReuseLastLinkEnabled && stream.serverTarget == null) {
+        // An engine link ends with its session, so it is never kept for reuse.
+        if (playerSettings.streamReuseLastLinkEnabled && stream.serverTarget == null && !UsenetPlayback.isEngineUrl(sourceUrl)) {
             val cacheKey = StreamLinkCacheRepository.contentKey(
                 type = launch.type,
                 videoId = effectiveVideoId,
@@ -606,6 +618,30 @@ internal fun StreamDestination(
         forceInternal: Boolean,
         saveForReuse: Boolean = true,
     ) {
+        if (stream.needsUsenetPreparation) {
+            if (preparingServerStream) return
+            streamRouteScope.launch {
+                preparingServerStream = true
+                val prepared = runCatching { UsenetPlayback.prepare(stream, launch.seasonNumber, launch.episodeNumber) }
+                    .onFailure { if (it is CancellationException) throw it }
+                    .getOrElse { error ->
+                        preparingServerStream = false
+                        NuvioToastController.show(UsenetPlayback.failureMessage(error))
+                        return@launch
+                    }
+                preparingServerStream = false
+                openSelectedStream(
+                    stream = prepared,
+                    resolvedResumePositionMs = resolvedResumePositionMs,
+                    resolvedResumeProgressFraction = resolvedResumeProgressFraction,
+                    forceExternal = forceExternal,
+                    forceInternal = forceInternal,
+                    // An engine link ends with its session, so it is never kept for reuse.
+                    saveForReuse = false,
+                )
+            }
+            return
+        }
         if (stream.needsServerPreparation) {
             if (preparingServerStream) return
             streamRouteScope.launch {

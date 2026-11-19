@@ -64,6 +64,7 @@ import com.nuvio.app.features.updater.AndroidAppUpdaterPlatform
 import com.nuvio.app.core.ui.CardDepthStyleStorage
 import com.nuvio.app.core.ui.PosterCardStyleStorage
 import com.nuvio.app.core.poster.CustomPosterUrlStorage
+import com.nuvio.app.features.usenet.UsenetPlatform
 import com.nuvio.app.features.watched.WatchedStorage
 import com.nuvio.app.features.streams.StreamLinkCacheStorage
 import com.nuvio.app.features.streams.StreamBadgeSettingsStorage
@@ -105,6 +106,7 @@ open class MainActivity : AppCompatActivity() {
         PlayerTrackPreferenceStorage.initialize(applicationContext)
         P2pSettingsStorage.initialize(applicationContext)
         P2pStreamingEngine.initialize(applicationContext)
+        UsenetPlatform.initialize(applicationContext)
         ExternalPlayerPlatform.initialize(applicationContext)
         SubtitleFileCache.initialize(applicationContext)
         ProfileStorage.initialize(applicationContext)

@@ -7,6 +7,7 @@ import androidx.media3.datasource.HttpDataSource
 import androidx.media3.exoplayer.mediacodec.MediaCodecRenderer
 import androidx.media3.exoplayer.source.UnrecognizedInputFormatException
 import com.nuvio.app.core.auth.findCause
+import com.nuvio.app.features.usenet.UsenetPlayback
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.player_error_source_invalid_content
 import nuvio.composeapp.generated.resources.player_error_stream_blocked
@@ -57,7 +58,11 @@ internal suspend fun PlaybackException.toDisplayMessage(): String {
     if (responseException != null) {
         val code = responseException.responseCode
         val statusText = responseException.responseMessage?.takeIf { it.isNotBlank() }
-        val providerHint = httpStatusExplanationText(code)
+        // The Usenet engine answers a stream it gave up on with 410 Gone and names why; that is
+        // no expired link, and a release that lost its articles is remembered as unplayable.
+        val usenetFailure = UsenetPlayback.failureKind(responseException.headerFields)
+        if (usenetFailure != null) UsenetPlayback.onPlaybackFailure(responseException.dataSpec.uri.toString(), usenetFailure)
+        val providerHint = UsenetPlayback.failureExplanationText(usenetFailure) ?: httpStatusExplanationText(code)
         return buildString {
             append("HTTP $code")
             statusText?.let { append(" $it") }

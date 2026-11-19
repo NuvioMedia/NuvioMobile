@@ -2,6 +2,7 @@ package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.features.servers.ServerPlaybackTarget
+import com.nuvio.app.features.usenet.UsenetRepository
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -35,6 +36,14 @@ data class StreamItem(
     val serverTarget: ServerPlaybackTarget? = null,
     /** True when [url] was produced by Nuvio's own debrid resolver, not returned by the add-on. */
     val debridResolved: Boolean = false,
+    /** An NZB to play through the Usenet engine, from an addon or the built-in indexer search. */
+    val nzbUrl: String? = null,
+    /** The NNTP servers the engine reads [nzbUrl]'s articles from. */
+    val nzbServers: List<String> = emptyList(),
+    /** Selects the file of a multi-file NZB whose name contains this. */
+    val fileMustInclude: String? = null,
+    /** When a built-in Usenet release was posted, in epoch milliseconds, if its indexer said. */
+    val publishedAt: Long? = null,
 ) {
     val streamLabel: String
         get() = name?.takeIf { it.isNotBlank() } ?: "Stream"
@@ -58,8 +67,16 @@ data class StreamItem(
             ?.trim()
             ?.takeIf { it.isNotEmpty() && !it.isMagnetLink() && !it.isTorrentSchemeUrl() }
 
+    /** An NZB the Usenet engine opens before playback; its [url] is the engine's once prepared. */
+    val isUsenet: Boolean
+        get() = !nzbUrl.isNullOrBlank() && url.isNullOrBlank()
+
+    val needsUsenetPreparation: Boolean
+        get() = isUsenet
+
     val shouldOpenExternally: Boolean
-        get() = url.isNullOrBlank() &&
+        get() = !isUsenet &&
+            url.isNullOrBlank() &&
             infoHash.isNullOrBlank() &&
             clientResolve == null &&
             externalOpenUrl != null
@@ -95,7 +112,7 @@ data class StreamItem(
         get() = addonId.startsWith("addon:")
 
     val isTorrentStream: Boolean
-        get() = !isDirectDebridStream && (
+        get() = !isUsenet && !isDirectDebridStream && (
             !infoHash.isNullOrBlank() ||
             url.isMagnetLink() ||
             externalUrl.isMagnetLink() ||
@@ -132,7 +149,7 @@ data class StreamItem(
 
     val hasPlayableSource: Boolean
         get() = url != null || infoHash != null || externalUrl != null || clientResolve != null || ytId != null ||
-            serverTarget != null
+            serverTarget != null || isUsenet
 
     val needsServerPreparation: Boolean
         get() = serverTarget != null && playableDirectUrl == null
@@ -199,6 +216,7 @@ private fun String?.extractBtihInfoHash(): String? {
 
 fun StreamItem.isSelectableForPlayback(debridEnabled: Boolean): Boolean =
     playableDirectUrl != null ||
+        (isUsenet && UsenetRepository.isSupported) ||
         serverTarget != null ||
         shouldOpenExternally ||
         youTubeIdToResolve != null ||

@@ -33,6 +33,7 @@ import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
 import com.nuvio.app.features.tracking.TrackingProviderRegistry
 import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.features.watched.WatchedRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
@@ -176,6 +177,7 @@ object ProfileRepository {
         PlayerSettingsRepository.onProfileChanged()
         StreamBadgeSettingsRepository.onProfileChanged()
         P2pSettingsRepository.onProfileChanged()
+        UsenetRepository.onProfileChanged()
         HomeCatalogSettingsRepository.onProfileChanged()
         HomeRepository.clear()
         MetaScreenSettingsRepository.onProfileChanged()
@@ -292,6 +294,7 @@ object ProfileRepository {
             val remaining = _state.value.profiles.filter { it.profileIndex != profileIndex }
             ProfilePinCacheStorage.removePayload(profileIndex)
             ServerRepository.removeProfile(profileIndex)
+            UsenetRepository.removeProfile(profileIndex)
             _state.value = _state.value.copy(
                 profiles = remaining,
                 activeProfile = if (_state.value.activeProfile?.profileIndex == profileIndex) remaining.firstOrNull() else _state.value.activeProfile,
@@ -309,6 +312,7 @@ object ProfileRepository {
             }
             SupabaseProvider.client.postgrest.rpc("sync_delete_profile_data", params)
             ServerRepository.removeProfile(profileIndex)
+            UsenetRepository.removeProfile(profileIndex)
             pullProfiles()
         } catch (e: Throwable) {
             if (AuthRepository.signOutIfSessionInvalid(e, "Profile delete")) return

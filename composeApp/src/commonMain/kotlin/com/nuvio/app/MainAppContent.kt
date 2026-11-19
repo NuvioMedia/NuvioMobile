@@ -53,6 +53,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.nuvio.app.core.ui.LocalPosterClickAnchor
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.core.ui.collectMappedAsState
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.navigation.PosterNavigationState
 import com.nuvio.app.navigation.posterNavigationEntry
 import com.nuvio.app.core.auth.AuthRepository
@@ -665,6 +666,7 @@ internal fun MainAppContent(
             AppForegroundMonitor.events().collect { visibility ->
                 when (visibility) {
                     AppVisibility.Foreground -> {
+                        UsenetRepository.onAppForegrounded()
                         NetworkStatusRepository.requestForegroundRefresh()
                         DeviceSessionRegistration.registerIfAuthenticated()
                         MemberAccessRepository.refreshIfStale()
@@ -675,7 +677,11 @@ internal fun MainAppContent(
                             SyncManager.stopPeriodicNuvioSyncPull()
                         }
                     }
-                    AppVisibility.Background -> SyncManager.stopPeriodicNuvioSyncPull()
+                    AppVisibility.Background -> {
+                        // The engine stops unless a session plays; a player in the background keeps it.
+                        UsenetRepository.onAppBackgrounded()
+                        SyncManager.stopPeriodicNuvioSyncPull()
+                    }
                 }
             }
         } finally {

@@ -13,6 +13,8 @@ import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.plugins.PluginsUiState
 import com.nuvio.app.features.servers.ServerStreams
+import com.nuvio.app.features.usenet.UsenetPlayback
+import com.nuvio.app.features.usenet.UsenetStreamSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -172,8 +174,10 @@ object StreamsRepository {
             repositories = pluginUiState.repositories,
             groupByRepository = pluginUiState.groupStreamsByRepository,
         )
+        // Built-in sources are searched on play, so a title can play even with no addon installed.
+        val usenetSource = if (isNativeServerRequest) null else UsenetStreamSource.create(type, videoId, season, episode)
 
-        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty()) {
+        if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && usenetSource == null) {
             _uiState.value = StreamsUiState(
                 requestToken = requestToken,
                 isAnyLoading = false,
@@ -197,7 +201,7 @@ object StreamsRepository {
 
         log.d { "Found ${streamAddons.size} addons for stream type=$type id=$videoId" }
 
-        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty()) {
+        if (streamAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && usenetSource == null) {
             _uiState.value = StreamsUiState(
                 requestToken = requestToken,
                 isAnyLoading = false,
@@ -216,8 +220,10 @@ object StreamsRepository {
             streamAddons = streamAddons,
             serverSources = serverSources,
             pluginProviderGroups = pluginProviderGroups,
+            usenetSource = usenetSource,
         )
-        val installedAddonOrder = streamAddons.map { it.addonName }
+        // Built-in Usenet is listed after the addons and counts as one for auto-play.
+        val installedAddonOrder = streamAddons.map { it.addonName } + listOfNotNull(usenetSource?.addonName)
         val initialGroups = StreamAutoPlaySelector.orderAddonStreams(streamAddons.map { addon ->
             AddonStreamGroup(
                 addonName = addon.addonName,
@@ -232,7 +238,8 @@ object StreamsRepository {
                 streams = emptyList(),
                 isLoading = true,
             )
-        } + serverSources.map { it.loadingGroup() }, installedAddonOrder, preferredGroupIds)
+        } + serverSources.map { it.loadingGroup() } + listOfNotNull(usenetSource?.loadingGroup()),
+            installedAddonOrder, preferredGroupIds)
         val isInitiallyLoading = initialGroups.any { it.isLoading }
         _uiState.value = StreamsUiState(
             requestToken = requestToken,
@@ -255,6 +262,7 @@ object StreamsRepository {
 
             val installedAddonNames = installedAddonOrder.toSet()
             val installedAddonIds = streamAddons.map { it.addonId }.toSet()
+            val autoPlayAddonIds = installedAddonIds + listOfNotNull(usenetSource?.addonId)
             var autoSelectTriggered = false
             var timeoutElapsed = false
             fun evaluateAutoPlay(bingeGroupOnly: Boolean = false): StreamAutoPlayEvaluation =
@@ -344,7 +352,7 @@ object StreamsRepository {
                 if (
                     _uiState.value.groups.areAutoPlaySourcesLoaded(
                         source = playerSettings.streamAutoPlaySource,
-                        installedAddonIds = installedAddonIds,
+                        installedAddonIds = autoPlayAddonIds,
                     )
                 ) {
                     settleAutoPlay(evaluateAutoPlay())
@@ -352,10 +360,12 @@ object StreamsRepository {
             }
 
             fun presentStreamGroup(group: AddonStreamGroup): AddonStreamGroup {
+                // Results held from earlier predate releases tried since: label and arrange them again.
+                val arrangedGroup = UsenetPlayback.arrangeOutcomes(group)
                 val badgeGroup = StreamBadgePresentation.apply(
-                    groups = listOf(group),
+                    groups = listOf(arrangedGroup),
                     rules = streamBadgeRules,
-                ).firstOrNull() ?: group
+                ).firstOrNull() ?: arrangedGroup
                 return DebridStreamPresentation.apply(
                     groups = listOf(badgeGroup),
                     settings = debridSettings,

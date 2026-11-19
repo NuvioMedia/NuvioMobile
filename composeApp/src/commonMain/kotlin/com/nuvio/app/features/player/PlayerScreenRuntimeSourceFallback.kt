@@ -8,7 +8,9 @@ import com.nuvio.app.features.debrid.DirectDebridPlayableResult
 import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
 import com.nuvio.app.features.streams.StreamAutoPlaySelector
 import com.nuvio.app.features.streams.StreamItem
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.isIos
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -32,6 +34,8 @@ internal fun PlayerScreenRuntime.playReplacementSource(stream: StreamItem, url: 
     }
     flushWatchProgress()
     stopActiveP2pStream()
+    // A newer engine session has already replaced it; otherwise the source it played is left.
+    UsenetPlayback.release(activeSourceUrl)
     externalSubtitles = stream.externalSubtitles
     activeSourceUrl = url
     activeSourceAudioUrl = null
@@ -115,11 +119,20 @@ internal fun PlayerScreenRuntime.tryFallbackToNextSourceAfterError(message: Stri
                 next.playerSourceIdentityKey()?.let(sourceFallbackTriedKeys::add)
                 sourceFallbackAttempts++
 
-                val playable = when (
-                    val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(next, season, episode)
-                ) {
-                    is DirectDebridPlayableResult.Success -> resolved.stream
-                    else -> null
+                val playable = if (next.needsUsenetPreparation) {
+                    try {
+                        UsenetPlayback.prepare(next, season, episode)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        // The engine remembered a release that cannot play; the next one is tried.
+                        null
+                    }
+                } else {
+                    when (val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(next, season, episode)) {
+                        is DirectDebridPlayableResult.Success -> resolved.stream
+                        else -> null
+                    }
                 }
                 val url = playable?.playableDirectUrl
                 if (playable == null || url.isNullOrBlank() || url == failedUrl) {

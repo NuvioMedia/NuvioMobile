@@ -85,6 +85,7 @@ import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tracking.TrackingSettingsUiState
 import com.nuvio.app.features.tmdb.TmdbSettings
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesUiState
 import com.nuvio.app.navigation.LocalUseNativeNavigation
@@ -114,6 +115,7 @@ private fun SettingsPage.isEnabledByPolicy(): Boolean =
     when (this) {
         SettingsPage.SupportersContributors -> AppFeaturePolicy.supportersContributorsPageEnabled
         SettingsPage.PlaybackP2p -> P2pSettingsRepository.isVisible
+        SettingsPage.Usenet -> UsenetRepository.isSupported
         SettingsPage.PlaybackBuffer -> !isIos
         else -> true
     }
@@ -730,7 +732,9 @@ private fun MobileSettingsScreen(
                     onAddonsClick = onAddonsClick,
                     onPluginsClick = onPluginsClick,
                     onMediaServersClick = { onPageChange(SettingsPage.MediaServers) },
+                    onUsenetClick = { onPageChange(SettingsPage.Usenet) },
                 )
+                SettingsPage.Usenet -> usenetSettingsContent(isTablet = false)
                 SettingsPage.Addons -> addonsSettingsContent()
                 SettingsPage.MediaServers -> mediaServersSettingsContent(
                     isTablet = false,
@@ -1132,7 +1136,9 @@ private fun TabletSettingsScreen(
                         onAddonsClick = { openInlinePage(SettingsPage.Addons) },
                         onPluginsClick = { openInlinePage(SettingsPage.Plugins) },
                         onMediaServersClick = { openInlinePage(SettingsPage.MediaServers) },
+                        onUsenetClick = { openInlinePage(SettingsPage.Usenet) },
                     )
+                    SettingsPage.Usenet -> usenetSettingsContent(isTablet = true)
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.MediaServers -> mediaServersSettingsContent(
                         isTablet = true,

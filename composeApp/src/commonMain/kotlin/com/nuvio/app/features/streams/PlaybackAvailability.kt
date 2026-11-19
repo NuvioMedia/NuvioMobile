@@ -15,6 +15,8 @@ import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.plugins.PluginsUiState
 import com.nuvio.app.features.servers.ServerRepository
 import com.nuvio.app.features.servers.ServerStreams
+import com.nuvio.app.features.usenet.UsenetRepository
+import com.nuvio.app.features.usenet.UsenetStreamSource
 
 internal fun AddonManifest.supportsStream(type: String, videoId: String): Boolean =
     supportsResource("stream", type, videoId)
@@ -34,7 +36,9 @@ internal class PlaybackAvailability(
     fun canStream(type: String, videoId: String): Boolean =
         hasCompatiblePlaybackSource(addons, plugins, type, videoId) ||
             MetaDetailsRepository.findEmbeddedStreams(videoId).isNotEmpty() ||
-            ServerStreams.canServe(type, videoId)
+            ServerStreams.canServe(type, videoId) ||
+            // Built-in sources are searched on play, so a title can play even with no addon installed.
+            UsenetStreamSource.create(type, videoId, season = null, episode = null) != null
 
     fun canPlay(
         type: String,
@@ -84,7 +88,11 @@ internal fun rememberPlaybackAvailability(): PlaybackAvailability {
         ServerRepository.ensureLoaded()
         ServerRepository.uiState
     }.collectAsStateWithLifecycle()
-    return remember(addons, plugins, downloads, servers.revision) {
+    val usenet by remember {
+        UsenetRepository.ensureLoaded()
+        UsenetRepository.uiState
+    }.collectAsStateWithLifecycle()
+    return remember(addons, plugins, downloads, servers.revision, usenet.sources.ready) {
         PlaybackAvailability(addons.addons, plugins)
     }
 }

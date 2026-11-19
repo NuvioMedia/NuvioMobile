@@ -17,6 +17,7 @@ import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.streams.YouTubeStreamResolver
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.features.watchprogress.WatchProgressEntry
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
@@ -67,6 +68,22 @@ internal fun PlayerScreenRuntime.prepareServerForPlayer(
     return true
 }
 
+internal fun PlayerScreenRuntime.prepareUsenetForPlayer(
+    stream: StreamItem,
+    season: Int?,
+    episode: Int?,
+    onPrepared: suspend (StreamItem) -> Unit,
+): Boolean {
+    if (!stream.needsUsenetPreparation) return false
+    scope.launch {
+        runCatching { UsenetPlayback.prepare(stream, season, episode) }
+            .onFailure { if (it is CancellationException) throw it }
+            .onSuccess { onPrepared(it) }
+            .onFailure { NuvioToastController.show(UsenetPlayback.failureMessage(it)) }
+    }
+    return true
+}
+
 internal fun PlayerScreenRuntime.resolveYouTubeForPlayer(
     stream: StreamItem,
     onResolved: (StreamItem) -> Unit,
@@ -104,6 +121,8 @@ internal fun PlayerScreenRuntime.openExternalSourceUrl(stream: StreamItem): Bool
 
 internal fun StreamItem.playerSourceIdentityKey(): String? {
     serverTarget?.let { target -> return "server:${target.item.encode()}:${target.mediaSourceId.orEmpty()}" }
+    // The same release before and after the Usenet engine opened it.
+    nzbUrl?.trim()?.takeIf { it.isNotBlank() }?.let { nzb -> return "nzb:$nzb:${fileMustInclude.orEmpty()}" }
     p2pInfoHash?.trim()?.lowercase()?.takeIf { it.isNotBlank() }?.let { hash ->
         return "torrent:$hash:${p2pFileIdx ?: -1}"
     }
@@ -225,6 +244,8 @@ internal fun PlayerScreenRuntime.switchToP2pSourceStream(stream: StreamItem) {
     val currentPositionMs = playbackSnapshot.positionMs.coerceAtLeast(0L)
     flushWatchProgress()
     stopActiveP2pStream()
+    // A newer engine session has already replaced it; otherwise the source it played is left.
+    UsenetPlayback.release(activeSourceUrl)
     saveP2pStreamForReuse(
         stream = stream,
         videoId = activeVideoId,
@@ -273,6 +294,8 @@ internal fun PlayerScreenRuntime.switchToP2pEpisodeStream(
     resetEpisodePanelAndNextEpisodeState()
     flushWatchProgress()
     stopActiveP2pStream()
+    // A newer engine session has already replaced it; otherwise the source it played is left.
+    UsenetPlayback.release(activeSourceUrl)
     val epVideoId = episode.id
     val resume = resolveEpisodeResume(epVideoId, episode)
     saveP2pStreamForReuse(
@@ -301,6 +324,8 @@ internal fun PlayerScreenRuntime.switchToSource(
     stream: StreamItem,
     saveForReuse: Boolean = true,
 ) {
+    // An engine link ends with its session, so it is never kept for reuse.
+    if (prepareUsenetForPlayer(stream, activeSeasonNumber, activeEpisodeNumber) { switchToSource(it, saveForReuse = false) }) return
     if (prepareServerForPlayer(stream) { switchToSource(it) }) return
     // The resolved URL expires after a few hours, so it isn't kept for reuse.
     if (resolveYouTubeForPlayer(stream) { switchToSource(it, saveForReuse = false) }) return
@@ -338,6 +363,8 @@ internal fun PlayerScreenRuntime.switchToSource(
     val currentPositionMs = playbackSnapshot.positionMs.coerceAtLeast(0L)
     flushWatchProgress()
     stopActiveP2pStream()
+    // A newer engine session has already replaced it; otherwise the source it played is left.
+    UsenetPlayback.release(activeSourceUrl)
     val currentVideoId = activeVideoId
     if (saveForReuse && playerSettingsUiState.streamReuseLastLinkEnabled && currentVideoId != null) {
         saveDirectStreamForReuse(stream, url, currentVideoId, activeSeasonNumber, activeEpisodeNumber)
@@ -379,6 +406,11 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     autoSelection: PlayerSourceFallbackTried? = null,
 ) {
     if (
+        prepareUsenetForPlayer(stream, episode.season, episode.episode) { prepared ->
+            switchToEpisodeStream(prepared, episode, saveForReuse = false, autoSelection = autoSelection)
+        }
+    ) return
+    if (
         prepareServerForPlayer(stream) {
             switchToEpisodeStream(
                 it,
@@ -419,6 +451,8 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
     resetEpisodePanelAndNextEpisodeState()
     flushWatchProgress()
     stopActiveP2pStream()
+    // A newer engine session has already replaced it; otherwise the source it played is left.
+    UsenetPlayback.release(activeSourceUrl)
     val epVideoId = episode.id
     val resume = serverResumeMs?.let { EpisodeResume(positionMs = it, fraction = null) } ?: resolveEpisodeResume(epVideoId, episode)
     if (saveForReuse && playerSettingsUiState.streamReuseLastLinkEnabled) {
@@ -440,6 +474,8 @@ internal fun PlayerScreenRuntime.switchToDownloadedEpisode(downloadItem: Downloa
     resetEpisodePanelAndNextEpisodeState()
     flushWatchProgress()
     stopActiveP2pStream()
+    // A newer engine session has already replaced it; otherwise the source it played is left.
+    UsenetPlayback.release(activeSourceUrl)
 
     val fallbackVideoId = buildPlaybackVideoId(
         parentMetaId = parentMetaId,
@@ -648,7 +684,7 @@ internal fun PlayerScreenRuntime.saveDirectStreamForReuse(
     season: Int?,
     episode: Int?,
 ) {
-    if (stream.serverTarget != null) return
+    if (stream.serverTarget != null || UsenetPlayback.isEngineUrl(url)) return
     val cacheKey = StreamLinkCacheRepository.contentKey(
         type = contentType ?: parentMetaType,
         videoId = videoId,

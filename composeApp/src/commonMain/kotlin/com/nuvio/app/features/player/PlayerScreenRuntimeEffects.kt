@@ -41,6 +41,7 @@ import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.hasLikelyExpiringPlaybackCredentials
 import com.nuvio.app.features.tracking.TrackingScrobbleAction
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.features.watchprogress.WatchProgressRepository
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.watching.application.WatchingState
@@ -437,7 +438,11 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
 
     DisposableEffect(activeSourceUrl) {
         val effectSourceUrl = activeSourceUrl
-        onDispose { ServerPlayback.stop(effectSourceUrl) }
+        onDispose {
+            ServerPlayback.stop(effectSourceUrl)
+            // Only the session that still plays this URL is closed; a newer one keeps playing.
+            UsenetPlayback.release(effectSourceUrl)
+        }
     }
 
     DisposableEffect(playbackSession.videoId, activeSourceUrl, activeSourceAudioUrl) {

@@ -447,6 +447,8 @@ kotlin {
                 implementation(libs.coil.gif)
                 implementation("androidx.recyclerview:recyclerview:1.4.0")
                 implementation("com.squareup.okhttp3:okhttp:4.12.0")
+                // Bounded-time matching for the user-written rules of Usenet sorting profiles.
+                implementation("com.google.re2j:re2j:1.8")
                 implementation("com.google.code.gson:gson:2.11.0")
                 // libass - atlas-based subtitle rendering (from NuvioMedia/nuvio-libass)
                 implementation(files("libs/nuvio-libass-release.aar"))
@@ -482,6 +484,7 @@ kotlin {
                 implementation("androidx.compose.ui:ui-test-manifest:${libs.versions.composeMultiplatform.get()}")
                 implementation("androidx.work:work-testing:${libs.versions.androidx.work.get()}")
                 implementation("com.squareup.okhttp3:mockwebserver:5.3.2")
+                implementation("io.mockk:mockk:1.13.12")
             }
             if (androidDistribution == "full") {
                 kotlin.srcDir(project.file("src/androidFullHostTest/kotlin"))
