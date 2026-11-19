@@ -808,6 +808,7 @@
     <string name="settings_poster_width_compact">Compact</string>
     <string name="settings_poster_width_dense">Dense</string>
     <string name="settings_poster_width_large">Large</string>
+    <string name="settings_poster_width_extra_large">Extra Large</string>
     <string name="settings_poster_width_standard">Standard</string>
     <!-- Custom Poster URL -->
     <string name="settings_custom_poster_title">CUSTOM POSTER SOURCE</string>
