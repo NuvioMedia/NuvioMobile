@@ -15,8 +15,6 @@
     <!-- GPS speed, to hide the video while the car moves (optional, asked in Nuvio Auto setup). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <!-- Lets Nuvio start on the car display while the phone is in the background (Android's background-start rule). -->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <!-- Implicitly added because aauto.aar declares no minSdk; not needed. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
@@ -251,20 +249,6 @@
             </intent-filter>
         </service>
 
-        <!-- Nuvio itself, launched onto the car's virtual display. Never shown on the phone.
-             allowEmbedded: Android only lets activities with it onto an app-owned (untrusted) virtual display;
-             without it the launch fails with "Permission Denial: starting Intent ... launchDisplayId". -->
-        <activity
-            android:name="com.nuvio.app.car.CarNuvioActivity"
-            android:allowEmbedded="true"
-            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|density|uiMode|keyboard|keyboardHidden|navigation|touchscreen"
-            android:excludeFromRecents="true"
-            android:exported="false"
-            android:resizeableActivity="true"
-            android:showWhenLocked="true"
-            android:supportsPictureInPicture="false"
-            android:taskAffinity="com.nuvio.app.car"
-            android:theme="@style/Theme.Nuvio.Splash" />
 
         <!-- Phone-side setup: install steps, car screen size, driving lock. -->
         <activity

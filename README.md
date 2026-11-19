@@ -5,8 +5,9 @@ It installs next to the official app as `com.dave.nuvioauto` ("Nuvio Auto" on th
 
 **How it works.** Two entry points, like YT Auto: a projection service on the unofficial Android Auto SDK
 (`LegacyCarService`, real touches) and a Car App Library navigation app (`NuvioCarAppService`), since Android Auto
-only gives a drawing surface to navigation apps. Both use `CarDisplayHost`, which puts a private virtual display on the car surface and launches the normal Nuvio activity
-(`CarNuvioActivity`) onto it: same UI, account, addons and player. Car taps, drags and flings are replayed as finger
+only gives a drawing surface to navigation apps. Both use `CarDisplayHost`, which puts a private virtual display on the car surface and shows the whole Nuvio UI on it in a
+Presentation window (`CarNuvioWindow`), like YT Auto does with YouTube: same UI, account, addons and player.
+(Android 15+ won't start even an app's own activity on a virtual display it made, so no activity is used.) Car taps, drags and flings are replayed as finger
 touches. Code: `androidApp/src/main/kotlin/com/nuvio/app/car/`.
 
 **Get the APK.** Actions > **Nuvio Auto** > latest run > download `NuvioAuto-<n>-arm64.apk`.
