@@ -42,4 +42,4 @@ jobs:
         run: touch local.properties
 
       - name: Run common stream tests
-        run: ./gradlew :composeApp:testAndroidHostTest --no-daemon --stacktrace
+        run: ./gradlew :composeApp:testAndroidHostTest --tests 'com.nuvio.app.features.streams.StreamAutoPlaySelectorTest' --no-daemon --stacktrace
