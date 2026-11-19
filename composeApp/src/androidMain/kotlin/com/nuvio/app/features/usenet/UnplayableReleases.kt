@@ -60,10 +60,11 @@ internal data class ReleaseOutcome(val failed: Boolean = false, val played: Bool
  */
 internal class UnplayableReleases(
     private val storage: UnplayableReleaseStorage,
+    /** Bumped when a release is remembered; the app hands in one that exists before this does. */
+    private val changes: MutableStateFlow<Int> = MutableStateFlow(0),
     private val now: () -> Long = System::currentTimeMillis
 ) {
     private val json = Json { ignoreUnknownKeys = true }
-    private val changes = MutableStateFlow(0)
     /** Increments when a release is remembered, so a shown result list can be arranged again. */
     val revision: StateFlow<Int> = changes.asStateFlow()
     private var loaded: MutableMap<String, UnplayableRelease>? = null

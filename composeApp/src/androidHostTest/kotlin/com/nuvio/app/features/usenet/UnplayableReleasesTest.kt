@@ -58,6 +58,18 @@ class UnplayableReleasesTest {
         assertTrue(releases.contains("https://a.test/getnzb/1.nzb&r=key", null, null, otherProviders))
     }
 
+    @Test fun `the revision it was given counts each remembered outcome`() {
+        val revision = kotlinx.coroutines.flow.MutableStateFlow(0)
+        val watched = UnplayableReleases(MemoryStorage(), revision) { clock }
+        watched.record("https://a.test/1", "Movie.2020.1080p-GRP", 5_000_000_000, provider, "missing-article")
+        assertEquals(1, revision.value)
+        watched.recordPlayed("https://a.test/2", "Movie.2020.720p-GRP", 2_000_000_000, provider)
+        assertEquals(2, revision.value)
+        // Failures the same release would not repeat change nothing.
+        watched.record("https://a.test/3", "Movie.2020.480p-GRP", 1_000_000_000, provider, "provider-authentication")
+        assertEquals(2, revision.value)
+    }
+
     @Test fun `entries expire after 30 days`() {
         record()
         clock += 31L * 24 * 3600 * 1000

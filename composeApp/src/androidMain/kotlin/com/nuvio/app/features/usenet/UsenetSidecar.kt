@@ -235,7 +235,8 @@ internal class UsenetSidecar(
             (e as? UsenetPreparationException)?.failure?.let { unplayable.record(stream, it) }
             if (e !is CancellationException) runCatching {
                 Log.i("UsenetPrepare", "open failed source=\"${stream.name}\" release=\"${stream.title?.lineSequence()?.firstOrNull()}\" " +
-                    "kind=${(e as? UsenetPreparationException)?.failure ?: "-"} error=${e.javaClass.simpleName}")
+                    "kind=${(e as? UsenetPreparationException)?.failure ?: "-"} error=${e.javaClass.simpleName}: " +
+                    redacted(e.message.orEmpty()))
             }
             if (previousId != null && sessionId == previousId && process?.let(::isRunning) == true) {
                 openedId?.let(::retireSessionLocked)
@@ -461,6 +462,11 @@ internal class UsenetSidecar(
 
     companion object {
         const val NZB_CACHE_DIR = "usenet-nzb"
+
+        /** [message] with each URL cut to its scheme and host: no path, query, key or login reaches the log. */
+        internal fun redacted(message: String): String =
+            message.replace(Regex("""(https?|nntps?)://(?:[^@\s/"]*@)?([^/\s"?]+)[^\s"]*"""), "$1://$2/…").take(240)
+
         @Volatile var appForeground = true
 
         private fun isRunning(child: Process): Boolean =

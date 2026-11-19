@@ -3,6 +3,7 @@ package com.nuvio.app.features.usenet
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamItem
+import kotlinx.coroutines.flow.StateFlow
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.usenet_error_damaged_parts
 import nuvio.composeapp.generated.resources.usenet_error_empty_release
@@ -14,6 +15,15 @@ import org.jetbrains.compose.resources.getString
 
 /** What the stream screens and the player ask of Usenet playback. */
 object UsenetPlayback {
+    /** Increments when a release failed for good or played, so shown lists can be arranged again. */
+    val outcomeChanges: StateFlow<Int> get() = UsenetPlatform.outcomeChanges
+
+    /** [groups] with the built-in group arranged again; the same list when nothing changed. */
+    fun arrangeOutcomes(groups: List<AddonStreamGroup>): List<AddonStreamGroup> {
+        val arranged = groups.map(::arrangeOutcomes)
+        return if (arranged.indices.all { arranged[it] === groups[it] }) groups else arranged
+    }
+
     /** Labels and orders the built-in group by how its releases last went; other groups are returned as they are. */
     fun arrangeOutcomes(group: AddonStreamGroup): AddonStreamGroup {
         if (group.addonId != BUILT_IN_USENET_GROUP_ID || group.streams.isEmpty() || !UsenetRepository.isSupported) return group

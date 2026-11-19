@@ -36,6 +36,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -58,6 +59,20 @@ object PlayerStreamsRepository {
     val episodeStreamsState: StateFlow<StreamsUiState> = _episodeStreamsState.asStateFlow()
     private var episodeStreamsJob: Job? = null
     private var episodeStreamsRequestKey: String? = null
+
+    init {
+        // A release that just failed for good, or played, is relabelled and moved in both panels.
+        scope.launch {
+            UsenetPlayback.outcomeChanges.drop(1).collect {
+                for (state in listOf(_sourceState, _episodeStreamsState)) {
+                    state.update { current ->
+                        val groups = UsenetPlayback.arrangeOutcomes(current.groups)
+                        if (groups === current.groups) current else current.copy(groups = groups)
+                    }
+                }
+            }
+        }
+    }
 
     fun loadSources(
         type: String,

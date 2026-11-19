@@ -6,7 +6,9 @@ import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
@@ -26,7 +28,9 @@ internal actual object UsenetPlatform {
     private val engineStorage by lazy { UsenetEngineSettingsStorage(appContext) }
     private val indexerStateStorage by lazy { SharedPreferencesNewznabStateStorage(appContext) }
     private val unplayableStorage by lazy { SharedPreferencesUnplayableReleaseStorage(appContext) }
-    private val unplayable by lazy { UnplayableReleases(unplayableStorage) }
+    // Exists from the start, so screens can watch it before the stored list is first read.
+    private val outcomeRevision = MutableStateFlow(0)
+    private val unplayable by lazy { UnplayableReleases(unplayableStorage, outcomeRevision) }
     private val client by lazy { NewznabClient(indexerStateStorage) { UsenetRepository.engineSettings().searchAgent } }
     private val tester by lazy { NntpProviderTester() }
     private val service by lazy { BuiltInUsenetService(client, unplayable = unplayable, labels = ::localizedLabels) }
@@ -96,7 +100,7 @@ internal actual object UsenetPlatform {
             .flowOn(Dispatchers.IO)
     }
 
-    actual val outcomeChanges: StateFlow<Int> get() = unplayable.revision
+    actual val outcomeChanges: StateFlow<Int> = outcomeRevision.asStateFlow()
 
     actual fun arrangeOutcomes(groups: List<AddonStreamGroup>, availableFirst: Boolean): List<AddonStreamGroup> {
         if (!ready || groups.none { it.addonId == BUILT_IN_USENET_GROUP_ID }) return groups
