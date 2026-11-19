@@ -9,6 +9,25 @@ import kotlin.test.assertTrue
 class StreamAutoPlaySelectorTest {
 
     @Test
+    fun `orders addon stream groups by installed addon order`() {
+        val groups = listOf(
+            AddonStreamGroup("Addon B", "addon-b", emptyList()),
+            AddonStreamGroup("Plugin provider", "plugin-provider", emptyList()),
+            AddonStreamGroup("Addon A", "addon-a", emptyList()),
+        )
+
+        val ordered = StreamAutoPlaySelector.orderAddonStreams(
+            groups = groups,
+            installedOrder = listOf("Addon A", "Addon B"),
+        )
+
+        assertEquals(
+            listOf("Addon A", "Addon B", "Plugin provider"),
+            ordered.map { it.addonName },
+        )
+    }
+
+    @Test
     fun `bingeGroup-first selects matching stream before first stream mode`() {
         val first = stream(
             addonName = "AddonA",
