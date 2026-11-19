@@ -63,6 +63,13 @@ object UsenetPlayback {
     fun isEngineUrl(url: String?): Boolean = UsenetPlatform.isEngineUrl(url)
 
     /**
+     * Auto-play counts built-in Usenet among the installed addons, so Allowed addons and the
+     * installed-addons scope apply to it as to them: its name while it searches, else none.
+     */
+    fun autoPlayAddonNames(): Set<String> =
+        if (UsenetRepository.isSupported && UsenetRepository.sources().ready) setOf(BUILT_IN_USENET_GROUP_NAME) else emptySet()
+
+    /**
      * Keeps the built-in release [listed] for Reuse Last Link under [contentKey]: its NZB without
      * the indexer key, never the engine link, which ends with its session. Addon releases are not
      * kept, since their providers come from the addon.

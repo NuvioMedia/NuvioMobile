@@ -206,7 +206,8 @@ internal fun nextSourceFallbackCandidate(
     triedKeys: Set<String>,
     failedAddonId: String?,
     failedInfoHash: String?,
-    installedAddonNames: Set<String> = AddonRepository.uiState.value.addons.enabledAddons().map { it.displayTitle }.toSet(),
+    installedAddonNames: Set<String> = AddonRepository.uiState.value.addons.enabledAddons().map { it.displayTitle }.toSet() +
+        UsenetPlayback.autoPlayAddonNames(),
     debridEnabled: Boolean = DebridSettingsRepository.snapshot().canResolvePlayableLinks,
     activeResolverProviderId: String? = DebridSettingsRepository.snapshot().activeResolverProviderId,
 ): StreamItem? {
