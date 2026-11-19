@@ -118,6 +118,10 @@ import nuvio.composeapp.generated.resources.usenet_source_disabled
 import nuvio.composeapp.generated.resources.usenet_sources_needed
 import nuvio.composeapp.generated.resources.usenet_sources_save_error
 import nuvio.composeapp.generated.resources.usenet_throughput
+import nuvio.composeapp.generated.resources.usenet_ranking_custom
+import nuvio.composeapp.generated.resources.usenet_ranking_custom_desc
+import nuvio.composeapp.generated.resources.usenet_ranking_customize
+import nuvio.composeapp.generated.resources.usenet_ranking_customize_desc
 import nuvio.composeapp.generated.resources.usenet_fallback
 import nuvio.composeapp.generated.resources.usenet_fallback_description
 import nuvio.composeapp.generated.resources.usenet_fallback_max_attempts
@@ -146,13 +150,17 @@ private val MAX_CONNECTIONS = listOf(0, 10, 20, 30, 50, 100)
 private val READ_AHEAD_SEGMENTS = listOf(0, 2, 4, 8, 16, 24, 32, 48, 64, 96, 128, 256, 512)
 private val RANKING_PRESETS = StreamRankingPreset.entries.filter { it != StreamRankingPreset.CUSTOM }
 
+/** The presets to choose from: Nuvio's, and the custom profile once one was saved. */
+private fun rankingPresets(sources: UsenetSourceConfiguration): List<StreamRankingPreset> =
+    if (sources.ranking.custom != null) RANKING_PRESETS + StreamRankingPreset.CUSTOM else RANKING_PRESETS
+
 /** One of the page's choice dialogs. */
 private enum class UsenetChoice {
     RANKING, LANGUAGE, SORT, MIN_RESOLUTION, MAX_SIZE, MAX_AGE, RESULTS, FETCH, PROFILE, CONNECTIONS,
     READ_AHEAD, MISSING_ARTICLES, CONSECUTIVE_MISSING, SEARCH_AGENT, DOWNLOAD_AGENT, FALLBACK_ATTEMPTS,
 }
 
-internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean) {
+internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean, onSortingClick: () -> Unit = {}) {
     item {
         val uiState by remember {
             UsenetRepository.ensureLoaded()
@@ -249,15 +257,23 @@ internal fun LazyListScope.usenetSettingsContent(isTablet: Boolean) {
         Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
         SettingsSection(title = stringResource(Res.string.usenet_section_search), isTablet = isTablet) {
             SettingsGroup(isTablet = isTablet) {
-                val preset = sources.ranking.preset.takeIf { it in RANKING_PRESETS } ?: StreamRankingPreset.ORIGINAL
-                ChoiceRow(stringResource(Res.string.usenet_ranking_title), rankingLabel(preset), isTablet) { choice = UsenetChoice.RANKING }
-                if (preset != StreamRankingPreset.ORIGINAL) {
-                    ChoiceRow(stringResource(Res.string.usenet_ranking_language), languageLabel(sources.ranking.preferredLanguage), isTablet) {
+                val preset = sources.ranking.preset.takeIf { it in rankingPresets(sources) } ?: StreamRankingPreset.ORIGINAL
+                ChoiceRow(
+                    stringResource(Res.string.usenet_ranking_title),
+                    customRankingLabel(preset, sources),
+                    isTablet,
+                ) { choice = UsenetChoice.RANKING }
+                when (preset) {
+                    StreamRankingPreset.ORIGINAL ->
+                        ChoiceRow(stringResource(Res.string.usenet_sort_results), sortLabel(sources.sort), isTablet) { choice = UsenetChoice.SORT }
+                    // A custom profile keeps its own language priorities.
+                    StreamRankingPreset.CUSTOM -> Unit
+                    else -> ChoiceRow(stringResource(Res.string.usenet_ranking_language), languageLabel(sources.ranking.preferredLanguage), isTablet) {
                         choice = UsenetChoice.LANGUAGE
                     }
-                } else {
-                    ChoiceRow(stringResource(Res.string.usenet_sort_results), sortLabel(sources.sort), isTablet) { choice = UsenetChoice.SORT }
                 }
+                ChoiceRow(stringResource(Res.string.usenet_ranking_customize), stringResource(Res.string.usenet_ranking_customize_desc), isTablet,
+                    onClick = onSortingClick)
                 ChoiceRow(stringResource(Res.string.usenet_min_resolution), resolutionLabel(sources.minResolution), isTablet) {
                     choice = UsenetChoice.MIN_RESOLUTION
                 }
@@ -372,9 +388,9 @@ private fun UsenetChoiceDialog(
     when (choice) {
         UsenetChoice.RANKING -> SettingsChoiceDialog(
             title = stringResource(Res.string.usenet_ranking_title),
-            options = RANKING_PRESETS,
+            options = rankingPresets(sources),
             selected = sources.ranking.preset,
-            label = { rankingLabel(it) },
+            label = { customRankingLabel(it, sources) },
             description = { rankingDescription(it) },
             onSelect = pick { preset -> onSources { it.copy(ranking = it.ranking.copy(preset = preset)) } },
             onDismiss = onDismiss,
@@ -593,7 +609,15 @@ private fun rankingLabel(preset: StreamRankingPreset): String = when (preset) {
     StreamRankingPreset.BEST_QUALITY -> stringResource(Res.string.usenet_ranking_best)
     StreamRankingPreset.SMALLER_FILES -> stringResource(Res.string.usenet_ranking_smaller)
     StreamRankingPreset.HD_SDR -> stringResource(Res.string.usenet_ranking_hd_sdr)
+    StreamRankingPreset.CUSTOM -> stringResource(Res.string.usenet_ranking_custom)
     else -> stringResource(Res.string.usenet_ranking_original)
+}
+
+/** A preset's name; the custom profile reads as "Custom profile · its name". */
+@Composable
+private fun customRankingLabel(preset: StreamRankingPreset, sources: UsenetSourceConfiguration): String {
+    val name = sources.ranking.custom?.name
+    return if (preset == StreamRankingPreset.CUSTOM && !name.isNullOrBlank()) "${rankingLabel(preset)} · $name" else rankingLabel(preset)
 }
 
 @Composable
@@ -602,6 +626,7 @@ private fun rankingDescription(preset: StreamRankingPreset): String = when (pres
     StreamRankingPreset.BEST_QUALITY -> stringResource(Res.string.usenet_ranking_best_desc)
     StreamRankingPreset.SMALLER_FILES -> stringResource(Res.string.usenet_ranking_smaller_desc)
     StreamRankingPreset.HD_SDR -> stringResource(Res.string.usenet_ranking_hd_sdr_desc)
+    StreamRankingPreset.CUSTOM -> stringResource(Res.string.usenet_ranking_custom_desc)
     else -> stringResource(Res.string.usenet_ranking_original_desc)
 }
 

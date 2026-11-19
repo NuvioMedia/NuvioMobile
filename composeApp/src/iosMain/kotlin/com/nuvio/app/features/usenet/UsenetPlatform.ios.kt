@@ -58,6 +58,8 @@ internal actual object UsenetPlatform {
 
     actual fun cancelPrefetch(owner: Any) = Unit
 
+    actual fun previewRanking(profile: StreamRankingProfile, samples: List<RankingSample>, mediaType: String): RankingPreview? = null
+
     actual fun isEngineUrl(url: String?): Boolean = false
 
     actual fun onFirstFrame(url: String?) = Unit

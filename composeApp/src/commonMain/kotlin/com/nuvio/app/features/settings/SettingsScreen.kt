@@ -115,7 +115,7 @@ private fun SettingsPage.isEnabledByPolicy(): Boolean =
     when (this) {
         SettingsPage.SupportersContributors -> AppFeaturePolicy.supportersContributorsPageEnabled
         SettingsPage.PlaybackP2p -> P2pSettingsRepository.isVisible
-        SettingsPage.Usenet -> UsenetRepository.isSupported
+        SettingsPage.Usenet, SettingsPage.UsenetSorting -> UsenetRepository.isSupported
         SettingsPage.PlaybackBuffer -> !isIos
         else -> true
     }
@@ -734,7 +734,11 @@ private fun MobileSettingsScreen(
                     onMediaServersClick = { onPageChange(SettingsPage.MediaServers) },
                     onUsenetClick = { onPageChange(SettingsPage.Usenet) },
                 )
-                SettingsPage.Usenet -> usenetSettingsContent(isTablet = false)
+                SettingsPage.Usenet -> usenetSettingsContent(
+                    isTablet = false,
+                    onSortingClick = { onPageChange(SettingsPage.UsenetSorting) },
+                )
+                SettingsPage.UsenetSorting -> usenetSortingContent(isTablet = false)
                 SettingsPage.Addons -> addonsSettingsContent()
                 SettingsPage.MediaServers -> mediaServersSettingsContent(
                     isTablet = false,
@@ -1138,7 +1142,11 @@ private fun TabletSettingsScreen(
                         onMediaServersClick = { openInlinePage(SettingsPage.MediaServers) },
                         onUsenetClick = { openInlinePage(SettingsPage.Usenet) },
                     )
-                    SettingsPage.Usenet -> usenetSettingsContent(isTablet = true)
+                    SettingsPage.Usenet -> usenetSettingsContent(
+                        isTablet = true,
+                        onSortingClick = { openInlinePage(SettingsPage.UsenetSorting) },
+                    )
+                    SettingsPage.UsenetSorting -> usenetSortingContent(isTablet = true)
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.MediaServers -> mediaServersSettingsContent(
                         isTablet = true,

@@ -122,4 +122,10 @@ internal expect object UsenetPlatform {
 
     /** [epochMs] as a short local time of day, such as 18:30. */
     fun clockTime(epochMs: Long): String
+
+    /**
+     * Sorts [samples] with [profile] as real results would be, for the sorting editor; null where
+     * the sorting engine does not run. Throws [IllegalArgumentException] for an invalid profile.
+     */
+    fun previewRanking(profile: StreamRankingProfile, samples: List<RankingSample>, mediaType: String): RankingPreview?
 }

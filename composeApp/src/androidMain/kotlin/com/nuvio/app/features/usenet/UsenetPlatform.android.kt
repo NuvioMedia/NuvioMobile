@@ -158,6 +158,13 @@ internal actual object UsenetPlatform {
         if (ready) sidecar.onAppBackgrounded()
     }
 
+    actual fun previewRanking(profile: StreamRankingProfile, samples: List<RankingSample>, mediaType: String): RankingPreview? {
+        // Indexer names sort by their priority, as the indexers of real results do.
+        val indexerOrder = UsenetRepository.sources().indexers.sortedBy { it.priority }
+            .mapIndexed { index, indexer -> indexer.name.lowercase(java.util.Locale.ROOT) to index }.toMap()
+        return RankingPreviewer.preview(profile, samples, mediaType, indexerOrder)
+    }
+
     actual fun clockTime(epochMs: Long): String =
         java.text.DateFormat.getTimeInstance(java.text.DateFormat.SHORT).format(java.util.Date(epochMs))
 
