@@ -285,7 +285,7 @@ object AddonRepository {
             val addonsByUrl = current.addons.associateBy(ManagedAddon::manifestUrl)
             val reordered = buildList {
                 requestedOrder.forEach { manifestUrl ->
-                    addonsByUrl[manifestUrl]?.let(::add)
+                    addonsByUrl[manifestUrl]?.let { add(it) }
                 }
                 current.addons.forEach { addon ->
                     if (addon.manifestUrl !in requestedOrder) add(addon)
