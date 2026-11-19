@@ -125,6 +125,7 @@ import nuvio.composeapp.generated.resources.settings_poster_width_comfort
 import nuvio.composeapp.generated.resources.settings_poster_width_compact
 import nuvio.composeapp.generated.resources.settings_poster_width_dense
 import nuvio.composeapp.generated.resources.settings_poster_width_large
+import nuvio.composeapp.generated.resources.settings_poster_width_extra_large
 import nuvio.composeapp.generated.resources.settings_poster_width_standard
 import nuvio.composeapp.generated.resources.settings_custom_poster_title
 import nuvio.composeapp.generated.resources.settings_custom_poster_description
@@ -734,6 +735,7 @@ private fun PosterCardStyleControls(
         PresetOption(stringResource(Res.string.settings_poster_width_balanced), 126),
         PresetOption(stringResource(Res.string.settings_poster_width_comfort), 134),
         PresetOption(stringResource(Res.string.settings_poster_width_large), 140),
+        PresetOption(stringResource(Res.string.settings_poster_width_extra_large), 175),
     )
     val radiusOptions = listOf(
         PresetOption(stringResource(Res.string.settings_poster_radius_sharp), 0),
