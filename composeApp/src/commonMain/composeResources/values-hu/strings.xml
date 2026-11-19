@@ -634,19 +634,31 @@
     <string name="detail_tab_trailer">Előzetes</string>
     <string name="detail_trailer_category_count">%1$s (%2$d)</string>
     <string name="detail_trailers_title">Előzetesek</string>
-    <string name="downloads_empty_episodes">Nincsenek befejezett epizódok</string>
+    <string name="downloads_delete_message">Ez %1$s helyet szabadít fel ezen az eszközön.</string>
+    <string name="downloads_delete_title">Törlöd a(z) „%1$s” letöltést?</string>
+    <string name="downloads_downloading_count">%1$d letöltés folyamatban</string>
+    <string name="downloads_empty_message">Tarts nyomva egy streamet, és válaszd a Fájl letöltése lehetőséget, hogy offline is megnézhesd.</string>
     <string name="downloads_empty_title">Még nincsenek letöltések</string>
-    <string name="downloads_episode_count">%1$d letöltött epizód</string>
     <string name="downloads_open_directory">Letöltési mappa megnyitása</string>
     <string name="downloads_open_directory_failed">Nem sikerült megnyitni a letöltési mappát</string>
+    <string name="downloads_pause_all">Összes szüneteltetése</string>
+    <string name="downloads_resume_all">Összes folytatása</string>
     <string name="downloads_section_active">Aktív</string>
-    <string name="downloads_section_movies">Filmek</string>
-    <string name="downloads_section_shows">Sorozatok</string>
+    <string name="downloads_section_downloaded">Letöltött</string>
     <string name="downloads_show_downloads">Letöltések megjelenítése</string>
-    <string name="downloads_status_completed">Befejezve • %1$s</string>
+    <string name="downloads_speed">%1$s/s</string>
     <string name="downloads_status_downloading">Letöltés • %1$s</string>
     <string name="downloads_status_failed">Sikertelen</string>
     <string name="downloads_status_paused">Szüneteltetve • %1$s</string>
+    <string name="downloads_watched_count">%1$d megtekintett</string>
+    <plurals name="downloads_episodes">
+        <item quantity="one">%1$d epizód</item>
+        <item quantity="other">%1$d epizód</item>
+    </plurals>
+    <plurals name="downloads_titles">
+        <item quantity="one">%1$d cím</item>
+        <item quantity="other">%1$d cím</item>
+    </plurals>
     <string name="episodes_cd_watched">Megtekintett</string>
     <string name="episodes_unavailable">Nem érhető el</string>
     <string name="episodes_season">%1$d. évad</string>
