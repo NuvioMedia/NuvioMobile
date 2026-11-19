@@ -55,6 +55,8 @@ internal class BuiltInUsenetService(
     private val metadata: UsenetMetadataSource = TmdbUsenetMetadataSource,
     private val unplayable: UnplayableReleases? = null,
     private val labels: suspend () -> UsenetLabels = { UsenetLabels() },
+    /** Counts each indexer's searches; null in unit tests that do not look. */
+    private val stats: UsenetSourceStats? = null,
 ) {
     fun search(config: UsenetSourceConfiguration, type: String, videoId: String,
         season: Int?, episode: Int?, groupName: String = BUILT_IN_USENET_GROUP_NAME,
@@ -146,6 +148,7 @@ internal class BuiltInUsenetService(
                             )
                         } catch (e: CancellationException) { throw e }
                         catch (e: Exception) { Result.failure(e) }
+                        countSearch(indexer, if (series) ContentKind.SHOW else ContentKind.MOVIE, result)
                         results.send(indexer to result)
                     }
                 }
@@ -313,6 +316,17 @@ internal class BuiltInUsenetService(
             nzbServers = config.servers(),
             publishedAt = publishedAt.takeIf { it > 0 },
         )
+    }
+
+    /** One search of [indexer] in its statistics; its releases count for it once downloaded or played. */
+    private fun countSearch(indexer: UsenetIndexer, kind: ContentKind, result: Result<List<UsenetRelease>>) {
+        val stats = stats ?: return
+        result.onSuccess { found ->
+            stats.indexerSearch(indexer.id, kind, SearchOutcome.ANSWERED, found.size)
+            stats.remember(found.map { it.nzbUrl }, indexer.id, kind)
+        }.onFailure {
+            stats.indexerSearch(indexer.id, kind, if (it is IndexerCooldownException) SearchOutcome.PAUSED else SearchOutcome.FAILED)
+        }
     }
 
     companion object {

@@ -115,7 +115,8 @@ private fun SettingsPage.isEnabledByPolicy(): Boolean =
     when (this) {
         SettingsPage.SupportersContributors -> AppFeaturePolicy.supportersContributorsPageEnabled
         SettingsPage.PlaybackP2p -> P2pSettingsRepository.isVisible
-        SettingsPage.Usenet, SettingsPage.UsenetSorting, SettingsPage.UsenetDiagnostics -> UsenetRepository.isSupported
+        SettingsPage.Usenet, SettingsPage.UsenetSorting, SettingsPage.UsenetDiagnostics, SettingsPage.UsenetStats ->
+            UsenetRepository.isSupported
         SettingsPage.PlaybackBuffer -> !isIos
         else -> true
     }
@@ -738,9 +739,11 @@ private fun MobileSettingsScreen(
                     isTablet = false,
                     onSortingClick = { onPageChange(SettingsPage.UsenetSorting) },
                     onDiagnosticsClick = { onPageChange(SettingsPage.UsenetDiagnostics) },
+                    onStatsClick = { onPageChange(SettingsPage.UsenetStats) },
                 )
                 SettingsPage.UsenetSorting -> usenetSortingContent(isTablet = false)
                 SettingsPage.UsenetDiagnostics -> usenetDiagnosticsContent(isTablet = false)
+                SettingsPage.UsenetStats -> usenetStatsContent(isTablet = false)
                 SettingsPage.Addons -> addonsSettingsContent()
                 SettingsPage.MediaServers -> mediaServersSettingsContent(
                     isTablet = false,
@@ -1148,9 +1151,11 @@ private fun TabletSettingsScreen(
                         isTablet = true,
                         onSortingClick = { openInlinePage(SettingsPage.UsenetSorting) },
                         onDiagnosticsClick = { openInlinePage(SettingsPage.UsenetDiagnostics) },
+                        onStatsClick = { openInlinePage(SettingsPage.UsenetStats) },
                     )
                     SettingsPage.UsenetSorting -> usenetSortingContent(isTablet = true)
                     SettingsPage.UsenetDiagnostics -> usenetDiagnosticsContent(isTablet = true)
+                    SettingsPage.UsenetStats -> usenetStatsContent(isTablet = true)
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.MediaServers -> mediaServersSettingsContent(
                         isTablet = true,

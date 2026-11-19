@@ -31,10 +31,13 @@ internal actual object UsenetPlatform {
     // Exists from the start, so screens can watch it before the stored list is first read.
     private val outcomeRevision = MutableStateFlow(0)
     private val unplayable by lazy { UnplayableReleases(unplayableStorage, outcomeRevision) }
-    private val client by lazy { NewznabClient(indexerStateStorage) { UsenetRepository.engineSettings().searchAgent } }
+    private val statsStorage by lazy { SharedPreferencesUsenetStatsStorage(appContext) }
+    private val sourceStats by lazy { UsenetSourceStats(statsStorage) }
+    private val noStats = MutableStateFlow(0)
+    private val client by lazy { NewznabClient(indexerStateStorage, sourceStats) { UsenetRepository.engineSettings().searchAgent } }
     private val tester by lazy { NntpProviderTester() }
-    private val service by lazy { BuiltInUsenetService(client, unplayable = unplayable, labels = ::localizedLabels) }
-    private val sidecar by lazy { UsenetSidecar(appContext, { UsenetRepository.engineSettings() }, unplayable) }
+    private val service by lazy { BuiltInUsenetService(client, unplayable = unplayable, labels = ::localizedLabels, stats = sourceStats) }
+    private val sidecar by lazy { UsenetSidecar(appContext, { UsenetRepository.engineSettings() }, unplayable, sourceStats) }
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
@@ -45,9 +48,14 @@ internal actual object UsenetPlatform {
 
     actual val isSupported: Boolean = true
 
-    actual fun loadSources(profileId: Int): UsenetSourceConfiguration = sourceStorage.read(profileId)
+    // The statistics learn the providers' server URLs, so engine reports, which name servers by URL, count for them.
+    actual fun loadSources(profileId: Int): UsenetSourceConfiguration =
+        sourceStorage.read(profileId).also { sourceStats.knowProviders(it.providers) }
 
-    actual fun saveSources(profileId: Int, value: UsenetSourceConfiguration) = sourceStorage.update(profileId, value)
+    actual fun saveSources(profileId: Int, value: UsenetSourceConfiguration) {
+        sourceStorage.update(profileId, value)
+        sourceStats.knowProviders(value.providers)
+    }
 
     actual fun removeProfile(profileId: Int) = sourceStorage.removeProfile(profileId)
 
@@ -57,6 +65,7 @@ internal actual object UsenetPlatform {
         indexerStateStorage.clear()
         unplayableStorage.clear()
         UsenetStartupReports.clear()
+        statsStorage.clearAll()
     }
 
     actual fun loadEngineSettings(): UsenetConfiguration = if (ready) engineStorage.read() else UsenetConfiguration()
@@ -134,8 +143,14 @@ internal actual object UsenetPlatform {
 
     actual fun restoredStream(nzbUrl: String, name: String, title: String?, size: Long?, publishedAt: Long?, series: Boolean): StreamItem? {
         if (!ready) return null
-        return BuiltInUsenetService.restoredStream(nzbUrl, name, title, size, publishedAt, UsenetRepository.sources(), series)
-            ?.takeUnless(unplayable::contains)
+        val config = UsenetRepository.sources()
+        val restored = BuiltInUsenetService.restoredStream(nzbUrl, name, title, size, publishedAt, config, series)
+            ?.takeUnless(unplayable::contains) ?: return null
+        // No search lists it: its download and playback count for the indexer its link names.
+        UsenetKeptLinks.indexerOf(nzbUrl, config)?.let { indexer ->
+            sourceStats.remember(listOfNotNull(restored.nzbUrl), indexer.id, if (series) ContentKind.SHOW else ContentKind.MOVIE)
+        }
+        return restored
     }
 
     actual fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int) {
@@ -173,7 +188,47 @@ internal actual object UsenetPlatform {
 
     actual fun onAppBackgrounded() {
         UsenetSidecar.appForeground = false
-        if (ready) sidecar.onAppBackgrounded()
+        if (ready) {
+            sidecar.onAppBackgrounded()
+            // Counts held back from frequent saves are written before the app may be stopped.
+            sourceStats.flush()
+        }
+    }
+
+    actual val statsRevision: StateFlow<Int> get() = if (ready) sourceStats.revision else noStats.asStateFlow()
+
+    actual fun stats(indexers: List<UsenetIndexer>, providers: List<UsenetProvider>): UsenetStatsSnapshot {
+        if (!ready) return UsenetStatsSnapshot()
+        sourceStats.load()
+        sourceStats.flush()
+        val period = sourceStats.period.value
+        val content = sourceStats.content.value
+        return UsenetStatsSnapshot(
+            period = period,
+            content = content,
+            indexers = indexers.associate { indexer ->
+                indexer.id to IndexerStatsUi(
+                    sourceStats.indexer(indexer.id, period, content),
+                    sourceStats.indexerToday(indexer.id, content),
+                    sourceStats.indexerSince(indexer.id),
+                )
+            },
+            providers = providers.associate { provider ->
+                provider.id to ProviderStatsUi(sourceStats.provider(provider.id, period, content), sourceStats.providerSince(provider.id))
+            },
+        )
+    }
+
+    actual fun setStatsPeriod(period: StatsPeriod) {
+        if (ready) sourceStats.setPeriod(period)
+    }
+
+    actual fun setStatsContent(content: StatsContent) {
+        if (ready) sourceStats.setContent(content)
+    }
+
+    actual fun resetStats() {
+        if (ready) sourceStats.reset()
     }
 
     actual fun previewRanking(profile: StreamRankingProfile, samples: List<RankingSample>, mediaType: String): RankingPreview? {

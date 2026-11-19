@@ -50,6 +50,8 @@ internal class UsenetSidecar(
     private val context: Context,
     private val settings: () -> UsenetConfiguration,
     private val unplayable: UnplayableReleases,
+    /** Counts NZB downloads, outcomes and what each provider did; null in unit tests that do not look. */
+    private val stats: UsenetSourceStats? = null,
 ) {
     private val mutex = Mutex()
     private val cleanup = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -63,6 +65,12 @@ internal class UsenetSidecar(
     @Volatile private var playbackUrl: String? = null
     private var idleStop: Job? = null
     private val retiredSessions = mutableSetOf<String>() // guarded by mutex
+
+    /** A live session's servers, in the order its open sent them, and what it plays. */
+    private class SessionStats(val servers: List<String>, val kind: ContentKind)
+
+    /** By session id; the engine reports each session's providers when it closes. Guarded by mutex. */
+    private val sessionStats = mutableMapOf<String, SessionStats>()
     private var retirementJob: Job? = null
     private val preparationGuard = Any()
     private var preparationJob: Job? = null
@@ -347,13 +355,29 @@ internal class UsenetSidecar(
             coroutineContext.ensureActive()
             sessionId = newId
             playbackUrl = url
+            sessionStats[newId] = SessionStats(stream.nzbServers, if (episode != null) ContentKind.SHOW else ContentKind.MOVIE)
             synchronized(playing) { playing[url] = stream }
             trace.engine = result.optJSONObject("startup") ?: JSONObject()
+            // Only an NZB the engine says it fetched counts as a download from the indexer.
+            val nzbLookup = trace.engine.optJSONObject("nzbCache")?.optString("lookup")
+            if (nzbLookup == "miss" || nzbLookup == "disabled") stats?.grabbed(stream.nzbUrl)
             synchronized(traces) { traces[url] = trace }
             previousId?.let(::retireSessionLocked)
             resolved
         } catch (e: Exception) {
-            (e as? UsenetPreparationException)?.failure?.let { unplayable.record(stream, it) }
+            // Prefetches open here too, so a release found unplayable before it was chosen counts.
+            (e as? UsenetPreparationException)?.failure?.let {
+                unplayable.record(stream, it)
+                if (it in UnplayableReleases.KINDS) stats?.unavailable(stream.nzbUrl)
+            }
+            // An open the engine refused never becomes a session to close: what its providers did,
+            // such as the articles they lacked, came with the refusal.
+            (e as? UsenetPreparationException)?.providers?.let { report ->
+                runCatching {
+                    stats?.providerSession(stream.nzbServers, if (episode != null) ContentKind.SHOW else ContentKind.MOVIE,
+                        report, refused = true, failure = e.failure)
+                }
+            }
             if (e !is CancellationException) runCatching {
                 Log.i("UsenetPrepare", "open failed source=\"${stream.name}\" release=\"${stream.title?.lineSequence()?.firstOrNull()}\" " +
                     "kind=${(e as? UsenetPreparationException)?.failure ?: "-"} error=${e.javaClass.simpleName}: " +
@@ -383,7 +407,10 @@ internal class UsenetSidecar(
                         val answer = runCatching {
                             withTimeoutOrNull(2_000L) { control("/sessions/$retired", null, delete = true) }
                         }.getOrNull()
-                        if (answer != null) retiredSessions.remove(retired)
+                        if (answer != null) {
+                            retiredSessions.remove(retired)
+                            reportSessionLocked(retired, answer)
+                        }
                     }
                 }
             }
@@ -392,7 +419,10 @@ internal class UsenetSidecar(
 
     /** The release behind [url] showed its first frame: remember it, and log how the open went. */
     fun firstFrame(url: String) {
-        synchronized(playing) { playing[url] }?.let(unplayable::recordPlayed)
+        synchronized(playing) { playing[url] }?.let {
+            unplayable.recordPlayed(it)
+            stats?.played(it.nzbUrl)
+        }
         val trace = synchronized(traces) { traces.remove(url) } ?: return
         trace.mark("first_frame")
         cleanup.launch {
@@ -426,7 +456,10 @@ internal class UsenetSidecar(
 
     /** Playback of [url] failed with the engine's [failure] kind; repeatable kinds are remembered. */
     fun playbackFailed(url: String, failure: String?) {
-        synchronized(playing) { playing[url] }?.let { unplayable.record(it, failure) }
+        synchronized(playing) { playing[url] }?.let {
+            unplayable.record(it, failure)
+            if (failure in UnplayableReleases.KINDS) stats?.unavailable(it.nzbUrl)
+        }
     }
 
     /**
@@ -445,6 +478,7 @@ internal class UsenetSidecar(
             if (id != null) {
                 val answer = withTimeoutOrNull(2_000L) { control("/sessions/$id", null, delete = true) }
                 if (answer == null) { stopLocked(); return }
+                reportSessionLocked(id, answer)
             }
         } catch (_: Exception) { stopLocked(); return }
         if (!appForeground) { stopLocked(); return }
@@ -453,6 +487,12 @@ internal class UsenetSidecar(
         // Keep the initialized Go runtime and trust roots across episode changes, while dropping
         // all provider sockets, credentials and article buffers.
         idleStop = cleanup.launch { delay(30_000); mutex.withLock { if (sessionId == null) stopLocked() } }
+    }
+
+    /** Adds what a closed session's providers did, as the engine answered its close, to their statistics. */
+    private fun reportSessionLocked(id: String, answer: String) {
+        val session = sessionStats.remove(id) ?: return
+        runCatching { stats?.providerSession(session.servers, session.kind, answer) }
     }
 
     fun onAppBackgrounded() {
@@ -590,6 +630,8 @@ internal class UsenetSidecar(
         clearPreparedLocked()
         retirementJob?.cancel(); retirementJob = null
         retiredSessions.clear()
+        // A stopped engine reports nothing more for its sessions.
+        sessionStats.clear()
         idleStop?.cancel(); idleStop = null
         val child = process
         process = null; processProfile = null; endpoint = null; token = null; sessionId = null; playbackUrl = null

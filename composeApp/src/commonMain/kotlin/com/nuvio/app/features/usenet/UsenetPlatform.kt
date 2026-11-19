@@ -128,6 +128,19 @@ internal expect object UsenetPlatform {
     /** The last startup's timings as NuvioTV's JSON report; empty until a Usenet stream showed a frame. */
     val lastStartupReport: StateFlow<String>
 
+    /** Increments whenever a source statistic or a statistics filter changes. */
+    val statsRevision: StateFlow<Int>
+
+    /** The statistics of these sources for the chosen period and content. Reads storage: call it off the main thread. */
+    fun stats(indexers: List<UsenetIndexer>, providers: List<UsenetProvider>): UsenetStatsSnapshot
+
+    fun setStatsPeriod(period: StatsPeriod)
+
+    fun setStatsContent(content: StatsContent)
+
+    /** Forgets every source's counts; the chosen filters stay. */
+    fun resetStats()
+
     /** Playback of the engine URL [url] failed with the engine's [failure] kind. */
     fun onPlaybackFailure(url: String?, failure: String?)
 

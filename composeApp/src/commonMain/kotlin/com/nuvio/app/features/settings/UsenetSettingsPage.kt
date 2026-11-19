@@ -120,6 +120,8 @@ import nuvio.composeapp.generated.resources.usenet_source_disabled
 import nuvio.composeapp.generated.resources.usenet_sources_needed
 import nuvio.composeapp.generated.resources.usenet_sources_save_error
 import nuvio.composeapp.generated.resources.usenet_throughput
+import nuvio.composeapp.generated.resources.usenet_stats_title
+import nuvio.composeapp.generated.resources.usenet_stats_row_desc
 import nuvio.composeapp.generated.resources.usenet_section_diagnostics
 import nuvio.composeapp.generated.resources.usenet_last_startup
 import nuvio.composeapp.generated.resources.usenet_last_startup_summary
@@ -170,6 +172,7 @@ internal fun LazyListScope.usenetSettingsContent(
     isTablet: Boolean,
     onSortingClick: () -> Unit = {},
     onDiagnosticsClick: () -> Unit = {},
+    onStatsClick: () -> Unit = {},
 ) {
     item {
         val uiState by remember {
@@ -376,6 +379,13 @@ internal fun LazyListScope.usenetSettingsContent(
                     },
                     isTablet = isTablet,
                     onClick = onDiagnosticsClick,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsNavigationRow(
+                    title = stringResource(Res.string.usenet_stats_title),
+                    description = stringResource(Res.string.usenet_stats_row_desc),
+                    isTablet = isTablet,
+                    onClick = onStatsClick,
                 )
             }
         }

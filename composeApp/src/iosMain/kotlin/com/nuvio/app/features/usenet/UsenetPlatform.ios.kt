@@ -60,6 +60,16 @@ internal actual object UsenetPlatform {
 
     actual val lastStartupReport: StateFlow<String> = MutableStateFlow("").asStateFlow()
 
+    actual val statsRevision: StateFlow<Int> = MutableStateFlow(0).asStateFlow()
+
+    actual fun stats(indexers: List<UsenetIndexer>, providers: List<UsenetProvider>): UsenetStatsSnapshot = UsenetStatsSnapshot()
+
+    actual fun setStatsPeriod(period: StatsPeriod) = Unit
+
+    actual fun setStatsContent(content: StatsContent) = Unit
+
+    actual fun resetStats() = Unit
+
     actual fun restoredStream(nzbUrl: String, name: String, title: String?, size: Long?, publishedAt: Long?, series: Boolean): StreamItem? = null
 
     actual fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int) = Unit

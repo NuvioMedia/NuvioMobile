@@ -27,6 +27,8 @@ internal class IndexerCooldownException(val until: Long) : IllegalStateException
 
 internal class NewznabClient(
     storage: NewznabStateStorage,
+    /** Counts every request; null in unit tests that do not look. */
+    private val stats: UsenetSourceStats? = null,
     /** The User-Agent of the next request; settings can change it at any time. */
     private val agent: () -> String = { NUVIO_USER_AGENT },
 ) {
@@ -129,6 +131,7 @@ internal class NewznabClient(
         caps: NewznabCapabilities, results: Int, wholeSeason: Boolean = false): List<UsenetRelease> {
         require(results >= 0) { "Invalid fetch limit" }
         val limit = caps.limit.coerceIn(1, 100)
+        val kind = if (request.series) ContentKind.SHOW else ContentKind.MOVIE
         val releases = mutableListOf<UsenetRelease>()
         val seenUrls = hashSetOf<String>()
         val seenPages = hashSetOf<List<Byte>>()
@@ -140,7 +143,7 @@ internal class NewznabClient(
                 NewznabProtocol.searchUrl(indexer, request, caps, offset, wholeSeason) ?: break)
                 .newBuilder().setQueryParameter("limit", pageSize.toString()).build()
             val answer = try {
-                request(indexer, next) { xml ->
+                request(indexer, next, kind = kind) { xml ->
                     NewznabProtocol.releases(xml, indexer) to
                         MessageDigest.getInstance("SHA-256").digest(xml.toByteArray()).toList()
                 }
@@ -165,18 +168,23 @@ internal class NewznabClient(
     /**
      * Skips indexers in a cooldown without a request, and opens one when an
      * indexer throttles us or reports a spent quota, so later searches do not
-     * spend requests that can only fail.
+     * spend requests that can only fail. Every request sent counts in the indexer's statistics,
+     * for [kind] when it searched for one.
      */
     private suspend fun <T> request(indexer: UsenetIndexer, url: HttpUrl, ignoreCooldown: Boolean = false,
-        parse: (String) -> T): T {
+        kind: ContentKind? = null, parse: (String) -> T): T {
         val blockedUntil = states.get(indexer)?.blockedUntil ?: 0
         if (!ignoreCooldown && blockedUntil > now()) throw IndexerCooldownException(blockedUntil)
+        fun count(outcome: RequestOutcome, elapsedMs: Long = 0) = stats?.indexerRequest(indexer.id, kind, outcome, elapsedMs)
+        val started = System.nanoTime()
         val response = try { get(url) }
             catch (e: CancellationException) { throw e }
-            catch (e: IOException) { note(indexer, UsenetIndexerProblem.UNREACHABLE); throw e }
-            catch (e: Exception) { note(indexer, UsenetIndexerProblem.RESPONSE); throw e }
+            catch (e: IOException) { count(RequestOutcome.FAILED); note(indexer, UsenetIndexerProblem.UNREACHABLE); throw e }
+            catch (e: Exception) { count(RequestOutcome.FAILED); note(indexer, UsenetIndexerProblem.RESPONSE); throw e }
+        val elapsedMs = (System.nanoTime() - started) / 1_000_000
         val retryAfter = retryAfterMs(response.headers["Retry-After"])
         if (response.code == 429) {
+            count(RequestOutcome.LIMITED)
             throw cooldown(indexer, retryAfter?.coerceAtMost(MAX_THROTTLE_MS) ?: THROTTLE_MS)
         }
         return try {
@@ -193,12 +201,16 @@ internal class NewznabClient(
                 if (apiHitsLeft != null || grabsLeft != null) states.update(indexer) {
                     it.copy(problem = null, apiHitsLeft = apiHitsLeft, grabsLeft = grabsLeft, leftAt = now())
                 } else note(indexer, null)
+                count(RequestOutcome.ANSWERED, elapsedMs)
             }
         } catch (_: NewznabQuotaException) {
+            count(RequestOutcome.LIMITED)
             throw cooldown(indexer, retryAfter ?: QUOTA_MS)
         } catch (e: NewznabAuthException) {
+            count(RequestOutcome.FAILED)
             note(indexer, UsenetIndexerProblem.AUTH); throw e
         } catch (e: Exception) {
+            count(RequestOutcome.FAILED)
             note(indexer, UsenetIndexerProblem.RESPONSE); throw e
         }
     }
