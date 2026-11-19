@@ -319,6 +319,82 @@ internal fun StreamDestination(
         )
         val maxAgeMs = playerSettings.streamReuseLastLinkCacheHours * 60L * 60L * 1000L
         val cached = StreamLinkCacheRepository.getValid(cacheKey, maxAgeMs)
+        if (cached != null && !cached.nzbUrl.isNullOrBlank()) {
+            // A built-in Usenet release opens again with today's providers, unless it cannot or has
+            // failed for good since; the list then shows as usual.
+            val restored = UsenetPlayback.restoreForReuse(cached, series = !launch.type.equals("movie", ignoreCase = true))
+                ?: return@LaunchedEffect
+            reuseNavigated = true
+            preparingServerStream = true
+            // The engine opens it on the route's scope: resolving the video ID can restart this effect.
+            streamRouteScope.launch {
+                usenetFallbackMessage = getString(Res.string.usenet_opening)
+                val prepared = try {
+                    UsenetPlayback.prepare(restored, launch.seasonNumber, launch.episodeNumber)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    NuvioToastController.show(UsenetPlayback.failureMessage(error))
+                    null
+                } finally {
+                    preparingServerStream = false
+                    usenetFallbackMessage = null
+                }
+                val sourceUrl = prepared?.playableDirectUrl
+                if (prepared == null || sourceUrl == null) {
+                    StreamLinkCacheRepository.remove(cacheKey)
+                    reuseNavigated = false
+                    return@launch
+                }
+                UsenetPlayback.rememberForReuse(cacheKey, restored, resolveLaunchContentLanguage(cached.contentLanguage))
+                val playerLaunch = PlayerLaunch(
+                    profileId = launch.profileId,
+                    title = launch.title,
+                    sourceUrl = sourceUrl,
+                    sourceHeaders = emptyMap(),
+                    sourceResponseHeaders = emptyMap(),
+                    externalSubtitles = prepared.externalSubtitles,
+                    streamType = prepared.streamType,
+                    logo = launch.logo,
+                    poster = launch.poster,
+                    background = launch.background,
+                    seasonNumber = launch.seasonNumber,
+                    episodeNumber = launch.episodeNumber,
+                    episodeTitle = launch.episodeTitle,
+                    episodeThumbnail = launch.episodeThumbnail,
+                    streamTitle = prepared.streamLabel,
+                    streamSubtitle = prepared.streamSubtitle,
+                    bingeGroup = prepared.behaviorHints.bingeGroup,
+                    pauseDescription = pauseDescription,
+                    providerName = prepared.addonName,
+                    providerAddonId = prepared.addonId,
+                    contentType = launch.type,
+                    videoId = effectiveVideoId,
+                    parentMetaId = launch.parentMetaId ?: effectiveVideoId,
+                    parentMetaType = launch.parentMetaType ?: launch.type,
+                    initialPositionMs = launch.resumePositionMs ?: 0L,
+                    initialProgressFraction = launch.resumeProgressFraction,
+                    subtitleExtras = SubtitleRequestExtras.from(prepared.behaviorHints, sourceUrl),
+                    contentLanguage = resolveLaunchContentLanguage(cached.contentLanguage),
+                    sourceFilename = prepared.behaviorHints.filename,
+                    stream = prepared,
+                    sourceAutoSelected = true,
+                )
+                if (playerSettings.externalPlayerEnabled) {
+                    openExternalPlayback(playerLaunch)
+                    StreamsRepository.cancelLoading()
+                    StreamsRepository.setOverlayVisible(false)
+                    return@launch
+                }
+                StreamsRepository.clear()
+                autoPlayNavigationStarted = true
+                val launchId = PlayerLaunchStore.put(playerLaunch)
+                navController.navigate(PlayerRoute(launchId = launchId, title = playerLaunch.title)) {
+                    popUpTo<StreamRoute> { inclusive = true }
+                }
+            }
+            return@LaunchedEffect
+        }
         if (cached != null) {
             if (cached.url.isBlank() && !cached.infoHash.isNullOrBlank()) {
                 val cachedStream = StreamItem(
@@ -465,6 +541,7 @@ internal fun StreamDestination(
         streamsUiState.requestToken,
         expectedStreamsRequestToken,
         reuseHandled,
+        reuseNavigated,
         launch.manualSelection,
     ) {
         if (!reuseHandled) return@LaunchedEffect
@@ -545,6 +622,17 @@ internal fun StreamDestination(
         autoPlayHandled = true
         val serverResumeMs = serverResumePositionMs(stream)
         // An engine link ends with its session, so it is never kept for reuse.
+        if (playerSettings.streamReuseLastLinkEnabled && UsenetPlayback.isEngineUrl(sourceUrl)) {
+            // The release is kept instead, to open again with today's providers.
+            val cacheKey = StreamLinkCacheRepository.contentKey(
+                type = launch.type,
+                videoId = effectiveVideoId,
+                parentMetaId = launch.parentMetaId,
+                season = launch.seasonNumber,
+                episode = launch.episodeNumber,
+            )
+            UsenetPlayback.rememberForReuse(cacheKey, selectedStream, resolveLaunchContentLanguage())
+        }
         if (playerSettings.streamReuseLastLinkEnabled && stream.serverTarget == null && !UsenetPlayback.isEngineUrl(sourceUrl)) {
             val cacheKey = StreamLinkCacheRepository.contentKey(
                 type = launch.type,
@@ -658,6 +746,18 @@ internal fun StreamDestination(
                     val session = UsenetPlayback.fallbackSession(stream, streamsUiState.allStreams)
                     UsenetPlayback.prepareWithFallback(session, stream, launch.seasonNumber, launch.episodeNumber) { message ->
                         usenetFallbackMessage = message
+                    }.also {
+                        if (saveForReuse && playerSettings.streamReuseLastLinkEnabled) {
+                            // The release that opened, which fallback may have chosen in place of [stream].
+                            val cacheKey = StreamLinkCacheRepository.contentKey(
+                                type = launch.type,
+                                videoId = effectiveVideoId,
+                                parentMetaId = launch.parentMetaId,
+                                season = launch.seasonNumber,
+                                episode = launch.episodeNumber,
+                            )
+                            UsenetPlayback.rememberForReuse(cacheKey, session.current, resolveLaunchContentLanguage())
+                        }
                     }
                 } catch (cancelled: CancellationException) {
                     throw cancelled

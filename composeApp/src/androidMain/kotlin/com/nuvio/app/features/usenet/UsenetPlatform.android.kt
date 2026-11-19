@@ -130,6 +130,12 @@ internal actual object UsenetPlatform {
         if (ready) sidecar.release(url)
     }
 
+    actual fun restoredStream(nzbUrl: String, name: String, title: String?, size: Long?, publishedAt: Long?, series: Boolean): StreamItem? {
+        if (!ready) return null
+        return BuiltInUsenetService.restoredStream(nzbUrl, name, title, size, publishedAt, UsenetRepository.sources(), series)
+            ?.takeUnless(unplayable::contains)
+    }
+
     actual fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int) {
         if (ready) sidecar.prefetch(owner, stream, season, episode, profileId)
     }

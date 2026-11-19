@@ -342,6 +342,40 @@ internal class BuiltInUsenetService(
 
         private const val BINGE_PREFIX = "Built-in Usenet"
 
+        /**
+         * A release played before, to open again without a search. Reuse Last Link keeps the
+         * release, never the engine's session link, which ends with its session. The providers
+         * and the indexer key are today's, so no credential is kept with it, and its binge group
+         * is its upload's. Null when the sources are not ready or the link's indexer is gone.
+         */
+        fun restoredStream(
+            nzbUrl: String,
+            name: String,
+            title: String?,
+            size: Long?,
+            publishedAt: Long?,
+            config: UsenetSourceConfiguration,
+            series: Boolean,
+            groupName: String = BUILT_IN_USENET_GROUP_NAME,
+            groupId: String = BUILT_IN_USENET_GROUP_ID,
+        ): StreamItem? {
+            if (!config.ready) return null
+            val servers = config.servers().ifEmpty { return null }
+            val download = UsenetKeptLinks.withApiKeys(nzbUrl, config) ?: return null
+            return StreamItem(
+                name = name,
+                title = title,
+                description = title,
+                sourceName = groupName,
+                addonName = groupName,
+                addonId = groupId,
+                behaviorHints = StreamBehaviorHints(bingeGroup = bingeGroup(title, series), videoSize = size?.takeIf { it > 0 }),
+                nzbUrl = download,
+                nzbServers = servers,
+                publishedAt = publishedAt,
+            )
+        }
+
         private fun label(name: String, color: String) =
             StreamBadge(name = name, tagColor = color, textColor = "#FFFFFF", tagStyle = USENET_BADGE_STYLE_LABEL)
 

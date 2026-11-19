@@ -2,6 +2,8 @@ package com.nuvio.app.features.usenet
 
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.streams.AddonStreamGroup
+import com.nuvio.app.features.streams.CachedStreamLink
+import com.nuvio.app.features.streams.StreamLinkCacheRepository
 import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.StateFlow
@@ -59,6 +61,36 @@ object UsenetPlayback {
     }
 
     fun isEngineUrl(url: String?): Boolean = UsenetPlatform.isEngineUrl(url)
+
+    /**
+     * Keeps the built-in release [listed] for Reuse Last Link under [contentKey]: its NZB without
+     * the indexer key, never the engine link, which ends with its session. Addon releases are not
+     * kept, since their providers come from the addon.
+     */
+    fun rememberForReuse(contentKey: String, listed: StreamItem, contentLanguage: String?) {
+        if (!UsenetRepository.isSupported || listed.addonId != BUILT_IN_USENET_GROUP_ID) return
+        val nzbUrl = listed.nzbUrl?.takeIf { it.isNotBlank() } ?: return
+        StreamLinkCacheRepository.save(
+            contentKey = contentKey,
+            url = "",
+            streamName = listed.streamLabel,
+            addonName = listed.addonName,
+            addonId = listed.addonId,
+            videoSize = listed.behaviorHints.videoSize,
+            bingeGroup = listed.behaviorHints.bingeGroup,
+            contentLanguage = contentLanguage,
+            nzbUrl = UsenetKeptLinks.withoutApiKeys(nzbUrl, UsenetRepository.sources()),
+            releaseTitle = listed.title,
+            publishedAt = listed.publishedAt,
+        )
+    }
+
+    /** The release [cached] keeps, ready to open with today's sources; null when it cannot or failed since. */
+    fun restoreForReuse(cached: CachedStreamLink, series: Boolean): StreamItem? {
+        if (!UsenetRepository.isSupported) return null
+        val nzbUrl = cached.nzbUrl?.takeIf { it.isNotBlank() } ?: return null
+        return UsenetPlatform.restoredStream(nzbUrl, cached.streamName, cached.releaseTitle, cached.videoSize, cached.publishedAt, series)
+    }
 
     /**
      * With prefetching on, opens the first Usenet release of [streams] that is not marked

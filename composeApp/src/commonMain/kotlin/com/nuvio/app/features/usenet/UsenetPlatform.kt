@@ -102,6 +102,12 @@ internal expect object UsenetPlatform {
     /** Ends the engine session that plays [url], if it still owns it. */
     fun release(url: String?)
 
+    /**
+     * The built-in release Reuse Last Link kept, with today's providers and indexer key; null when
+     * it cannot open now or has failed for good since.
+     */
+    fun restoredStream(nzbUrl: String, name: String, title: String?, size: Long?, publishedAt: Long?, series: Boolean): StreamItem?
+
     /** Opens [stream] ahead of its Play when the user turned prefetching on; [owner] is the asking screen. */
     fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int)
 

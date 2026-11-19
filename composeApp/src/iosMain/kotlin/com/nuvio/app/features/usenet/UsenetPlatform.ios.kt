@@ -54,6 +54,8 @@ internal actual object UsenetPlatform {
 
     actual fun release(url: String?) = Unit
 
+    actual fun restoredStream(nzbUrl: String, name: String, title: String?, size: Long?, publishedAt: Long?, series: Boolean): StreamItem? = null
+
     actual fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int) = Unit
 
     actual fun cancelPrefetch(owner: Any) = Unit

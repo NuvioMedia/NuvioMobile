@@ -23,6 +23,11 @@ data class CachedStreamLink(
     val contentLanguage: String? = null,
     val addonLogo: String? = null,
     val streamDescription: String? = null,
+    /** A built-in Usenet release's NZB, kept without its indexer's API key; [url] is then blank. */
+    val nzbUrl: String? = null,
+    /** The kept release's name, which its binge group and outcome are found by. */
+    val releaseTitle: String? = null,
+    val publishedAt: Long? = null,
 )
 
 internal expect fun epochMs(): Long
@@ -64,6 +69,9 @@ object StreamLinkCacheRepository {
         contentLanguage: String? = null,
         addonLogo: String? = null,
         streamDescription: String? = null,
+        nzbUrl: String? = null,
+        releaseTitle: String? = null,
+        publishedAt: Long? = null,
     ) {
         val entry = CachedStreamLink(
             url = url,
@@ -84,6 +92,9 @@ object StreamLinkCacheRepository {
             contentLanguage = contentLanguage,
             addonLogo = addonLogo,
             streamDescription = streamDescription,
+            nzbUrl = nzbUrl,
+            releaseTitle = releaseTitle,
+            publishedAt = publishedAt,
         )
         val payload = json.encodeToString(CachedStreamLink.serializer(), entry)
         StreamLinkCacheStorage.saveEntry(hashedKey(contentKey), payload)
@@ -107,7 +118,7 @@ object StreamLinkCacheRepository {
             StreamLinkCacheStorage.removeEntry(hashedKey(contentKey))
             return null
         }
-        if (entry.url.isBlank() && entry.infoHash.isNullOrBlank()) {
+        if (entry.url.isBlank() && entry.infoHash.isNullOrBlank() && entry.nzbUrl.isNullOrBlank()) {
             StreamLinkCacheStorage.removeEntry(hashedKey(contentKey))
             return null
         }
