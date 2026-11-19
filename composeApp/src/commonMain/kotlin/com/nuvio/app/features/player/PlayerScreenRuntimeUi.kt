@@ -32,6 +32,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.ui.NuvioStatusModal
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.core.ui.LocalFold
 import com.nuvio.app.features.p2p.P2pStreamingState
@@ -368,6 +369,33 @@ private fun PlayerScreenRuntime.RenderPlayerControls(
     val partyState by PartyRepository.state.collectAsStateWithLifecycle()
     val partyActive = partyState.party != null
     val playerBadges = rememberPlayerBadges()
+    val directHttpCastSource = activeSourceUrl.startsWith("http://", true) ||
+        activeSourceUrl.startsWith("https://", true)
+    val canCastCurrentSource = directHttpCastSource &&
+        activeTorrentInfoHash == null &&
+        activeSourceAudioUrl == null &&
+        activeSourceHeaders.isEmpty() &&
+        !ServerStreams.isServerSourceId(activeProviderAddonId)
+    PlatformCastSessionEffect(
+        url = activeSourceUrl,
+        title = title,
+        positionMs = playbackSnapshot.positionMs,
+        headers = activeSourceHeaders,
+        canCast = canCastCurrentSource,
+        wasPlaying = shouldPlay,
+        onPauseLocal = {
+            shouldPlay = false
+            playerController?.pause()
+        },
+        onRestoreLocal = { positionMs, resumePlayback ->
+            playerController?.seekTo(positionMs)
+            shouldPlay = resumePlayback
+            if (resumePlayback) playerController?.play() else playerController?.pause()
+        },
+        onUnsupported = {
+            NuvioToastController.show("This source cannot be played with Google Cast.")
+        },
+    )
     LaunchedEffect(folded) {
         if (folded) {
             controlsVisible = true

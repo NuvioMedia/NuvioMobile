@@ -514,6 +514,9 @@ private fun PlayerHeader(
                             onClick = onOpenInExternalPlayer,
                         )
                     }
+                    PlatformCastAction(
+                        modifier = Modifier.size(metrics.headerIconSize + 16.dp),
+                    )
                     if (onPartyClick != null) {
                         PlayerHeaderIconButton(
                             icon = Icons.Rounded.Groups,
