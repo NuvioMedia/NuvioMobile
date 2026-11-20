@@ -479,14 +479,6 @@ internal fun settingsSearchEntries(
         title = stringResource(Res.string.compose_settings_page_media_servers),
         description = stringResource(Res.string.settings_content_discovery_media_servers_description),
     )
-    if (UsenetRepository.isSupported) {
-        addPage(
-            page = SettingsPage.Usenet,
-            key = "usenet",
-            title = stringResource(Res.string.compose_settings_page_usenet),
-            description = stringResource(Res.string.settings_content_discovery_usenet_description),
-        )
-    }
     if (pluginsEnabled) {
         addPage(
             page = SettingsPage.Plugins,
@@ -877,6 +869,14 @@ internal fun settingsSearchEntries(
         title = mdbListPage,
         description = stringResource(Res.string.settings_integrations_mdblist_description),
     )
+    if (UsenetRepository.isSupported) {
+        addPage(
+            page = SettingsPage.Usenet,
+            key = "usenet",
+            title = stringResource(Res.string.compose_settings_page_usenet),
+            description = stringResource(Res.string.settings_integrations_usenet_description),
+        )
+    }
     val tmdbModulesSection = stringResource(Res.string.settings_tmdb_section_modules)
     listOf(
         PlaybackSearchRow("tmdb-enable", stringResource(Res.string.settings_tmdb_enable_enrichment), stringResource(Res.string.settings_tmdb_enable_enrichment_description), stringResource(Res.string.settings_tmdb_section_title)),

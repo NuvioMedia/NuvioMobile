@@ -6,12 +6,10 @@ import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.features.search.SearchHistoryRepository
-import com.nuvio.app.features.usenet.UsenetRepository
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.compose_settings_page_addons
 import nuvio.composeapp.generated.resources.compose_settings_page_media_servers
 import nuvio.composeapp.generated.resources.compose_settings_page_plugins
-import nuvio.composeapp.generated.resources.compose_settings_page_usenet
 import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description
 import nuvio.composeapp.generated.resources.settings_content_discovery_addons_description_appstore
 import nuvio.composeapp.generated.resources.settings_content_discovery_media_servers_description
@@ -20,7 +18,6 @@ import nuvio.composeapp.generated.resources.settings_content_discovery_section_s
 import nuvio.composeapp.generated.resources.settings_content_discovery_section_search
 import nuvio.composeapp.generated.resources.settings_content_discovery_recent_searches
 import nuvio.composeapp.generated.resources.settings_content_discovery_recent_searches_description
-import nuvio.composeapp.generated.resources.settings_content_discovery_usenet_description
 import org.jetbrains.compose.resources.stringResource
 
 internal fun LazyListScope.contentDiscoveryContent(
@@ -29,7 +26,6 @@ internal fun LazyListScope.contentDiscoveryContent(
     onAddonsClick: () -> Unit,
     onPluginsClick: () -> Unit,
     onMediaServersClick: () -> Unit,
-    onUsenetClick: () -> Unit,
 ) {
     item {
         val recentSearchesEnabled by remember {
@@ -77,14 +73,6 @@ internal fun LazyListScope.contentDiscoveryContent(
                     isTablet = isTablet,
                     onClick = onMediaServersClick,
                 )
-                if (UsenetRepository.isSupported) {
-                    SettingsNavigationRow(
-                        title = stringResource(Res.string.compose_settings_page_usenet),
-                        description = stringResource(Res.string.settings_content_discovery_usenet_description),
-                        isTablet = isTablet,
-                        onClick = onUsenetClick,
-                    )
-                }
                 if (showPluginsEntry) {
                     SettingsNavigationRow(
                         title = stringResource(Res.string.compose_settings_page_plugins),

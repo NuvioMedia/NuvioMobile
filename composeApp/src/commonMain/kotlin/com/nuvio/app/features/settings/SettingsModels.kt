@@ -191,26 +191,6 @@ internal enum class SettingsPage(
         category = SettingsCategory.Watch,
         parentPage = MediaServers,
     ),
-    Usenet(
-        titleRes = Res.string.compose_settings_page_usenet,
-        category = SettingsCategory.Watch,
-        parentPage = ContentDiscovery,
-    ),
-    UsenetSorting(
-        titleRes = Res.string.compose_settings_page_usenet_sorting,
-        category = SettingsCategory.Watch,
-        parentPage = Usenet,
-    ),
-    UsenetDiagnostics(
-        titleRes = Res.string.compose_settings_page_usenet_diagnostics,
-        category = SettingsCategory.Watch,
-        parentPage = Usenet,
-    ),
-    UsenetStats(
-        titleRes = Res.string.compose_settings_page_usenet_stats,
-        category = SettingsCategory.Watch,
-        parentPage = Usenet,
-    ),
     Homescreen(
         titleRes = Res.string.compose_settings_page_homescreen,
         category = SettingsCategory.Look,
@@ -240,6 +220,26 @@ internal enum class SettingsPage(
         titleRes = Res.string.compose_settings_page_debrid,
         category = SettingsCategory.Services,
         parentPage = Integrations,
+    ),
+    Usenet(
+        titleRes = Res.string.compose_settings_page_usenet,
+        category = SettingsCategory.Services,
+        parentPage = Integrations,
+    ),
+    UsenetSorting(
+        titleRes = Res.string.compose_settings_page_usenet_sorting,
+        category = SettingsCategory.Watch,
+        parentPage = Usenet,
+    ),
+    UsenetDiagnostics(
+        titleRes = Res.string.compose_settings_page_usenet_diagnostics,
+        category = SettingsCategory.Watch,
+        parentPage = Usenet,
+    ),
+    UsenetStats(
+        titleRes = Res.string.compose_settings_page_usenet_stats,
+        category = SettingsCategory.Watch,
+        parentPage = Usenet,
     ),
     TraktAuthentication(
         titleRes = Res.string.compose_settings_page_tracking,

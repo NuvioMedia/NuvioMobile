@@ -733,7 +733,6 @@ private fun MobileSettingsScreen(
                     onAddonsClick = onAddonsClick,
                     onPluginsClick = onPluginsClick,
                     onMediaServersClick = { onPageChange(SettingsPage.MediaServers) },
-                    onUsenetClick = { onPageChange(SettingsPage.Usenet) },
                 )
                 SettingsPage.Usenet -> usenetSettingsContent(
                     isTablet = false,
@@ -772,6 +771,7 @@ private fun MobileSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                    onUsenetClick = { onPageChange(SettingsPage.Usenet) },
                 )
                 SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                     isTablet = false,
@@ -1145,7 +1145,6 @@ private fun TabletSettingsScreen(
                         onAddonsClick = { openInlinePage(SettingsPage.Addons) },
                         onPluginsClick = { openInlinePage(SettingsPage.Plugins) },
                         onMediaServersClick = { openInlinePage(SettingsPage.MediaServers) },
-                        onUsenetClick = { openInlinePage(SettingsPage.Usenet) },
                     )
                     SettingsPage.Usenet -> usenetSettingsContent(
                         isTablet = true,
@@ -1184,6 +1183,7 @@ private fun TabletSettingsScreen(
                         onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                         onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                         onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                        onUsenetClick = { onPageChange(SettingsPage.Usenet) },
                     )
                     SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                         isTablet = true,
