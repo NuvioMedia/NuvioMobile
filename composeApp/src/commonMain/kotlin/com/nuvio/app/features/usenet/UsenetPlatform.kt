@@ -77,7 +77,8 @@ internal expect object UsenetPlatform {
 
     /**
      * Measures [provider]'s connection limit and the port and connection allowance that download
-     * fastest, with real test articles: up to about 1 GB of data. Cancelling stops it and signs every
+     * fastest, with real test articles: often more than 1 GB of data, up to about 4 GB on a fast line,
+     * as each of its steps may read up to 250 MB. Cancelling stops it and signs every
      * connection out. [pipeline] is the engine's requests in flight per connection.
      */
     suspend fun tuneProvider(

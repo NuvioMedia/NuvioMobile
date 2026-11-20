@@ -63,8 +63,9 @@ import org.jetbrains.compose.resources.stringResource
 
 /**
  * NuvioTV's Tune connections for one saved provider: before, during and after a run. A run uses up
- * to about 1 GB of test data, which the dialog says before it starts. Nothing is saved until Apply,
- * which stores the measured port and connection allowance and hands them to [onApplied].
+ * to about 4 GB of test data on a fast line, which the dialog says before it starts. Nothing is
+ * saved until Apply, which stores the measured port and connection allowance and hands them to
+ * [onApplied].
  */
 @Composable
 internal fun ProviderTuneDialog(
