@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.nuvio.app.core.ui.NuvioSectionLabel
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.player.languageLabelResForCode
@@ -119,6 +120,7 @@ import nuvio.composeapp.generated.resources.usenet_sort_smallest
 import nuvio.composeapp.generated.resources.usenet_source_disabled
 import nuvio.composeapp.generated.resources.usenet_sources_needed
 import nuvio.composeapp.generated.resources.usenet_sources_save_error
+import nuvio.composeapp.generated.resources.usenet_sources_title
 import nuvio.composeapp.generated.resources.usenet_throughput
 import nuvio.composeapp.generated.resources.usenet_stats_title
 import nuvio.composeapp.generated.resources.usenet_stats_row_desc
@@ -190,7 +192,8 @@ internal fun LazyListScope.usenetSettingsContent(
             UsenetRepository.updateSources(change)
         }
 
-        SettingsSection(title = stringResource(Res.string.usenet_builtin_enabled), isTablet = isTablet) {
+        // The switch, providers and indexers in one group, as NuvioTV shows them.
+        SettingsSection(title = stringResource(Res.string.usenet_sources_title), isTablet = isTablet) {
             SettingsGroup(isTablet = isTablet) {
                 SettingsSwitchRow(
                     title = stringResource(Res.string.usenet_builtin_enabled),
@@ -210,12 +213,8 @@ internal fun LazyListScope.usenetSettingsContent(
                         }
                     },
                 )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
-        SettingsSection(title = stringResource(Res.string.usenet_section_providers), isTablet = isTablet) {
-            SettingsGroup(isTablet = isTablet) {
+                SettingsGroupDivider(isTablet = isTablet)
+                SourcesLabel(stringResource(Res.string.usenet_section_providers), isTablet)
                 if (sources.providers.isEmpty()) EmptyLine(isTablet)
                 sources.providers.forEach { provider ->
                     SettingsNavigationRow(
@@ -236,12 +235,8 @@ internal fun LazyListScope.usenetSettingsContent(
                     isTablet = isTablet,
                     onClick = { editor = UsenetSourceEditor.Provider(null) },
                 )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(NuvioTokens.Space.s16))
-        SettingsSection(title = stringResource(Res.string.usenet_section_indexers), isTablet = isTablet) {
-            SettingsGroup(isTablet = isTablet) {
+                SettingsGroupDivider(isTablet = isTablet)
+                SourcesLabel(stringResource(Res.string.usenet_section_indexers), isTablet)
                 if (sources.indexers.isEmpty()) EmptyLine(isTablet)
                 sources.indexers.forEach { indexer ->
                     // Searches update the statuses while this page is open.
@@ -570,6 +565,20 @@ private fun UsenetChoiceDialog(
         )
         null -> Unit
     }
+}
+
+/** Heads the providers or the indexers inside the sources group. */
+@Composable
+private fun SourcesLabel(text: String, isTablet: Boolean) {
+    NuvioSectionLabel(
+        text = text,
+        modifier = Modifier.padding(
+            start = if (isTablet) 20.dp else 16.dp,
+            end = if (isTablet) 20.dp else 16.dp,
+            top = 14.dp,
+            bottom = 2.dp,
+        ),
+    )
 }
 
 @Composable
