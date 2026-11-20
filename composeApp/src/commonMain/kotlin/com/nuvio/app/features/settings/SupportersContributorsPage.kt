@@ -93,9 +93,13 @@ private data class ContributionsResponseDto(
 @Serializable
 private data class ContributionDto(
     val name: String? = null,
+    val login: String? = null,
     val avatar: String? = null,
+    val avatarUrl: String? = null,
     val profile: String? = null,
+    val profileUrl: String? = null,
     val total: Int? = null,
+    val contributions: Int? = null,
 )
 
 @Serializable
@@ -151,32 +155,66 @@ internal data class SupportersResult(
     val progress: DonationProgress?,
 )
 
+private const val FallbackContributionsUrl = "https://nuvio.tv/api/community/contributors"
+
+internal fun parseCommunityContributors(payload: String): List<CommunityContributor> =
+    CommunityContributorsJson.decodeFromString<ContributionsResponseDto>(payload)
+        .contributors
+        .mapNotNull(::normalizeContributor)
+        .sortedWith(
+            compareByDescending<CommunityContributor> { it.totalContributions }
+                .thenBy { it.login.lowercase() },
+        )
+
+private fun normalizeContributor(dto: ContributionDto): CommunityContributor? {
+    val login = dto.login?.trim().orEmpty().ifBlank { dto.name?.trim().orEmpty() }
+    val contributions = dto.contributions ?: dto.total ?: 0
+    if (login.isBlank() || contributions <= 0) return null
+
+    return CommunityContributor(
+        login = login,
+        avatarUrl = (dto.avatarUrl ?: dto.avatar)?.trim()?.takeIf { it.isNotBlank() },
+        profileUrl = (dto.profileUrl ?: dto.profile)?.trim()?.takeIf { it.isNotBlank() },
+        totalContributions = contributions,
+    )
+}
+
+private val CommunityContributorsJson = Json { ignoreUnknownKeys = true; isLenient = true }
+
 private object SupportersContributorsRepository {
-    private val json = Json { ignoreUnknownKeys = true; isLenient = true }
+    private val json = CommunityContributorsJson
 
     suspend fun getContributors(): Result<List<CommunityContributor>> = runCatching {
-        val contributionsUrl = CommunityConfig.CONTRIBUTIONS_URL.trim()
-        check(contributionsUrl.isNotBlank()) {
+        // The public endpoint is tried first. A baked git host that never accepts
+        // TCP still consumes the full connect timeout before a later fallback runs.
+        val urls = listOf(FallbackContributionsUrl, CommunityConfig.CONTRIBUTIONS_URL)
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+            .distinct()
+        check(urls.isNotEmpty()) {
             getString(Res.string.community_error_unable_load_contributors)
         }
 
+        var lastError: Throwable? = null
+        for (url in urls) {
+            val contributors = runCatching { fetchContributors(url) }
+            if (contributors.isSuccess) return@runCatching contributors.getOrThrow()
+            lastError = contributors.exceptionOrNull()
+        }
+        throw lastError ?: error(getString(Res.string.community_error_unable_load_contributors))
+    }
+
+    private suspend fun fetchContributors(url: String): List<CommunityContributor> {
         val response = httpRequestRaw(
             method = "GET",
-            url = contributionsUrl,
+            url = url,
             headers = emptyMap(),
             body = "",
         )
         if (response.status !in 200..299) {
             error(getString(Res.string.community_error_contributors_request_failed))
         }
-
-        json.decodeFromString<ContributionsResponseDto>(response.body)
-            .contributors
-            .mapNotNull(::normalizeContributor)
-            .sortedWith(
-                compareByDescending<CommunityContributor> { it.totalContributions }
-                    .thenBy { it.login.lowercase() },
-            )
+        return parseCommunityContributors(response.body)
     }
 
     suspend fun getSupporters(): Result<SupportersResult> = runCatching {
@@ -239,19 +277,6 @@ private object SupportersContributorsRepository {
             ?.toDonationProgressPercent()
             ?.let { percent -> DonationProgress(progressPercent = percent) }
     }.getOrNull()
-
-    private fun normalizeContributor(dto: ContributionDto): CommunityContributor? {
-        val login = dto.name?.trim().orEmpty()
-        val contributions = dto.total ?: 0
-        if (login.isBlank() || contributions <= 0) return null
-
-        return CommunityContributor(
-            login = login,
-            avatarUrl = dto.avatar?.trim()?.takeIf { it.isNotBlank() },
-            profileUrl = dto.profile?.trim()?.takeIf { it.isNotBlank() },
-            totalContributions = contributions,
-        )
-    }
 
     private fun Double.toDonationProgressPercent(): Int? {
         if (isNaN()) return null
