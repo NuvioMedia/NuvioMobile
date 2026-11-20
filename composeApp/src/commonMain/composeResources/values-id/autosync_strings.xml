@@ -1,0 +1,12 @@
+<resources>
+    <string name="settings_playback_subtitle_auto_sync">Sinkronisasi Subtitle Otomatis</string>
+    <string name="settings_playback_subtitle_auto_sync_description">Cocokkan subtitle add-on yang dipilih dengan waktu subtitle yang tertanam di video.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive">Pencarian Sinkronisasi Otomatis: Menyeluruh</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Terus bandingkan subtitle lain dan trek tertanam untuk kecocokan yang lebih dekat sebelum sinkronisasi. Hanya kecocokan yang meyakinkan yang diterapkan.</string>
+    <string name="settings_playback_auto_sync_mode_passive">Pencarian Sinkronisasi Otomatis: Cepat</string>
+    <string name="settings_playback_auto_sync_mode_passive_description">Menggunakan kecocokan kuat pertama lebih cepat. Hanya kecocokan yang meyakinkan yang diterapkan, sama seperti mode Menyeluruh.</string>
+    <string name="settings_playback_auto_sync_tolerance">Toleransi Sinkronisasi Otomatis: %1$s</string>
+    <string name="settings_playback_auto_sync_tolerance_description">Pertahankan waktu subtitle asli jika sinkronisasi hanya menggesernya sebesar ini atau kurang. Ketuk untuk mengubah.</string>
+    <string name="settings_playback_auto_sync_tolerance_off">Mati</string>
+    <string name="settings_playback_auto_sync_tolerance_value">%1$d ms</string>
+</resources>
