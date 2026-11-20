@@ -1,5 +1,6 @@
 package com.nuvio.app.features.catalog
 
+import com.nuvio.app.features.library.LOCAL_LIBRARY_LIST_KEY
 import com.nuvio.app.features.library.LibraryItem
 import com.nuvio.app.features.library.LibrarySection
 import com.nuvio.app.features.library.LibrarySortOption
@@ -9,6 +10,7 @@ import com.nuvio.app.features.library.LibraryProviderOrders
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
@@ -136,6 +138,26 @@ class LibraryCatalogStateTest {
         } finally {
             job.cancelAndJoin()
         }
+    }
+
+    @Test
+    fun `local list key shows every saved item`() = runBlocking {
+        val movie = item("movie")
+        val series = item("series").copy(type = "series")
+        val library = MutableStateFlow(
+            LibraryUiState(
+                items = listOf(movie, series),
+                sections = listOf(
+                    LibrarySection("movie", "Movie", listOf(movie)),
+                    LibrarySection("series", "Series", listOf(series)),
+                ),
+                isLoaded = true,
+            ),
+        )
+
+        val emission = library.libraryCatalogStates(target(LOCAL_LIBRARY_LIST_KEY)).first()
+
+        assertEquals(listOf("movie", "series"), emission.items.map { it.id })
     }
 
     @Test

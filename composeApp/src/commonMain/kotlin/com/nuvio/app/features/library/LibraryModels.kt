@@ -60,6 +60,7 @@ data class LibraryUiState(
     val sourceMode: LibrarySourceMode = LibrarySourceMode.LOCAL,
     val items: List<LibraryItem> = emptyList(),
     val sections: List<LibrarySection> = emptyList(),
+    val watchlistSectionType: String? = null,
     val isLoaded: Boolean = false,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,

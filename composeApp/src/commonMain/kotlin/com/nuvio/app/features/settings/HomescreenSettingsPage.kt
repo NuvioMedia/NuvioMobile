@@ -46,6 +46,8 @@ import nuvio.composeapp.generated.resources.action_retry
 import nuvio.composeapp.generated.resources.action_reset
 import nuvio.composeapp.generated.resources.layout_hide_unreleased
 import nuvio.composeapp.generated.resources.layout_hide_unreleased_sub
+import nuvio.composeapp.generated.resources.layout_show_watchlist_row
+import nuvio.composeapp.generated.resources.layout_show_watchlist_row_sub
 import nuvio.composeapp.generated.resources.layout_catalog_type
 import nuvio.composeapp.generated.resources.layout_catalog_type_sub
 import nuvio.composeapp.generated.resources.settings_homescreen_empty_message
@@ -75,6 +77,7 @@ internal fun LazyListScope.homescreenSettingsContent(
     heroEnabled: Boolean,
     showCatalogType: Boolean,
     hideUnreleasedContent: Boolean,
+    showWatchlistRow: Boolean,
     items: List<HomeCatalogSettingsItem>,
     isCatalogLoading: Boolean,
     catalogErrorMessage: String?,
@@ -117,6 +120,14 @@ internal fun LazyListScope.homescreenSettingsContent(
                     checked = hideUnreleasedContent,
                     isTablet = isTablet,
                     onCheckedChange = HomeCatalogSettingsRepository::setHideUnreleasedContent,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
+                SettingsSwitchRow(
+                    title = stringResource(Res.string.layout_show_watchlist_row),
+                    description = stringResource(Res.string.layout_show_watchlist_row_sub),
+                    checked = showWatchlistRow,
+                    isTablet = isTablet,
+                    onCheckedChange = HomeCatalogSettingsRepository::setShowWatchlistRow,
                 )
             }
         }
