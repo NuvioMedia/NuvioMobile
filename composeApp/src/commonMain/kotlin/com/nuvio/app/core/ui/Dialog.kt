@@ -53,7 +53,7 @@ fun DialogSurface(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
-    BasicAlertDialog(onDismissRequest = onDismissRequest, properties = properties) {
+    NuvioBasicDialog(onDismissRequest = onDismissRequest, properties = properties) {
         Surface(
             modifier = modifier
                 .fillMaxWidth()

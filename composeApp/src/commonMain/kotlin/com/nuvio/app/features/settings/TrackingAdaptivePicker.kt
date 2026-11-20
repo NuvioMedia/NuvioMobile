@@ -14,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material3.BasicAlertDialog
+import com.nuvio.app.core.ui.NuvioBasicDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -127,7 +128,7 @@ private fun <T> TrackingPickerDialog(
     onDismiss: () -> Unit,
 ) {
     val tokens = MaterialTheme.nuvio
-    BasicAlertDialog(onDismissRequest = onDismiss) {
+    NuvioBasicDialog(onDismissRequest = onDismiss) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()

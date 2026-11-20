@@ -10,6 +10,7 @@ import android.os.Build
 import android.provider.Settings
 import android.view.WindowManager
 import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -46,6 +47,15 @@ actual fun LockPlayerToLandscape() {
 
 @Composable
 actual fun FullscreenPlayerDialog(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    if (com.nuvio.app.core.ui.LocalUseInlineOverlays.current) {
+        // Android Auto screen: no dialog windows, draw it over Nuvio instead.
+        com.nuvio.app.core.ui.InlineOverlay(onDismissRequest = onDismiss) {
+            androidx.compose.foundation.layout.Box(
+                androidx.compose.ui.Modifier.fillMaxSize(),
+            ) { content() }
+        }
+        return
+    }
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),

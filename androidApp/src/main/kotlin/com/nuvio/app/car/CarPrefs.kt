@@ -44,11 +44,23 @@ internal object CarPrefs {
         prefs(ctx).edit().putBoolean("avoidButtons2", on).apply()
     }
 
-    /** Prefer streams at or under 720p while in the car on mobile data. */
-    fun dataSaver(ctx: Context): Boolean = prefs(ctx).getBoolean("dataSaver", true)
+    /** When to prefer streams at or under 720p while Nuvio is on the car screen. */
+    enum class DataSaver(val label: String) {
+        ALWAYS("Always in the car"),
+        MOBILE_DATA("Only on mobile data"),
+        OFF("Off"),
+    }
 
-    fun setDataSaver(ctx: Context, on: Boolean) {
-        prefs(ctx).edit().putBoolean("dataSaver", on).apply()
+    fun dataSaver(ctx: Context): DataSaver {
+        val p = prefs(ctx)
+        val stored = p.getString("dataSaverMode", null)
+        if (stored != null) return runCatching { DataSaver.valueOf(stored) }.getOrDefault(DataSaver.ALWAYS)
+        // Older builds had an on/off switch that meant "on mobile data".
+        return if (p.contains("dataSaver") && !p.getBoolean("dataSaver", true)) DataSaver.OFF else DataSaver.ALWAYS
+    }
+
+    fun setDataSaver(ctx: Context, mode: DataSaver) {
+        prefs(ctx).edit().putString("dataSaverMode", mode.name).apply()
     }
 
     /** Offer to resume the newest Continue Watching item when the car connects. */

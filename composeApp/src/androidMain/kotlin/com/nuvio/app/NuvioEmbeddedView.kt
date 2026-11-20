@@ -7,7 +7,12 @@ import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.LocalOnBackPressedDispatcherOwner
 import androidx.activity.result.ActivityResultRegistryOwner
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.ComposeView
+import com.nuvio.app.core.ui.InlineOverlayHost
+import com.nuvio.app.core.ui.LocalUseInlineOverlays
 import androidx.navigationevent.NavigationEventDispatcherOwner
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 
@@ -31,8 +36,13 @@ object NuvioEmbeddedView {
                     LocalActivityResultRegistryOwner provides resultOwner,
                     // Needed by Nuvio's NavDisplay (navigation3) for back handling; activities provide it.
                     LocalNavigationEventDispatcherOwner provides navigationOwner,
+                    // Dialogs and sheets draw inside this window: Android won't open dialog windows here.
+                    LocalUseInlineOverlays provides true,
                 ) {
-                    App()
+                    Box(Modifier.fillMaxSize()) {
+                        App()
+                        InlineOverlayHost()
+                    }
                 }
             }
         }

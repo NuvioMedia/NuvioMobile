@@ -92,10 +92,15 @@ internal object CarSession {
     }
 
     private fun applyCap(app: Context, cellular: Boolean) {
-        val cap = if (active && cellular && CarPrefs.dataSaver(app)) CarPrefs.DATA_SAVER_MAX_HEIGHT else null
+        val wanted = when (CarPrefs.dataSaver(app)) {
+            CarPrefs.DataSaver.ALWAYS -> true
+            CarPrefs.DataSaver.MOBILE_DATA -> cellular
+            CarPrefs.DataSaver.OFF -> false
+        }
+        val cap = if (active && wanted) CarPrefs.DATA_SAVER_MAX_HEIGHT else null
         if (StreamQualityCap.maxHeight.value != cap) {
             StreamQualityCap.set(cap)
-            CarLog.d(if (cap != null) "Mobile data: preferring ${cap}p streams" else "Stream cap off")
+            CarLog.d(if (cap != null) "Data saver on: ${cap}p streams first" else "Data saver off")
         }
     }
 

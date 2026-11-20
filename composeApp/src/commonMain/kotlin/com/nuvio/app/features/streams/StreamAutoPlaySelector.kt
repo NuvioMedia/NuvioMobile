@@ -87,7 +87,7 @@ object StreamAutoPlaySelector {
             StreamAutoPlaySource.INSTALLED_ADDONS_ONLY -> streams.filter { it.serverTarget != null || it.addonName in installedAddonNames }
             StreamAutoPlaySource.ENABLED_PLUGINS_ONLY -> streams.filter { it.addonName !in installedAddonNames }
         }
-        val candidateStreams = sourceScopedStreams.preferringMaxHeight(StreamQualityCap.maxHeight.value).filter { stream ->
+        val candidateStreams = sourceScopedStreams.filter { stream ->
             val isAddonStream = stream.addonName in installedAddonNames
             if (stream.serverTarget != null) {
                 true
@@ -133,7 +133,7 @@ object StreamAutoPlaySelector {
         } else {
             null
         }
-        val matchingStreams = when (mode) {
+        val profileMatches = when (mode) {
             StreamAutoPlayMode.MANUAL -> emptyList()
             StreamAutoPlayMode.FIRST_STREAM -> candidateStreams
             StreamAutoPlayMode.REGEX_MATCH -> {
@@ -178,10 +178,25 @@ object StreamAutoPlaySelector {
                 }
             }
         }
+        // Nuvio Auto data saver overrides the profile's choice: streams within the cap win, even ones the
+        // profile's regex wouldn't pick; without any, the profile's picks stand.
+        val matchingStreams = StreamQualityCap.maxHeight.value?.let { cap ->
+            val withinCap = { stream: StreamItem -> StreamQualityCap.heightOf(stream)?.let { it <= cap } == true }
+            val cappedMatches = profileMatches.filter(withinCap)
+            when {
+                mode == StreamAutoPlayMode.MANUAL -> profileMatches
+                cappedMatches.isNotEmpty() -> cappedMatches + profileMatches.filterNot(withinCap)
+                else -> candidateStreams.filter(withinCap).ifEmpty { null }?.plus(profileMatches) ?: profileMatches
+            }
+        } ?: profileMatches
         if (matchingStreams.isEmpty() && preferredStream == null) return StreamAutoPlayEvaluation()
 
+        val cap = StreamQualityCap.maxHeight.value
+        // With the data saver on, the binge-group pick only goes first if it's within the cap too.
+        val keepPreferred = cap == null || mode == StreamAutoPlayMode.MANUAL ||
+            preferredStream?.let { stream -> StreamQualityCap.heightOf(stream)?.let { it <= cap } } == true
         val readyStreams = buildList {
-            preferredStream?.let(::add)
+            if (keepPreferred) preferredStream?.let(::add)
             matchingStreams
                 .filter { it.isAutoPlayable(debridEnabled, activeResolverProviderId) }
                 .filterNot { it == preferredStream }

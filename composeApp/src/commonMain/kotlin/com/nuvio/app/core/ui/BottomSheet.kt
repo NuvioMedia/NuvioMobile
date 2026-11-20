@@ -1,6 +1,9 @@
 package com.nuvio.app.core.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 
 private val SheetShape = RoundedCornerShape(NuvioTokens.Space.s28)
+private val InlineSheetMaxWidth = 640.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,7 +50,31 @@ fun NuvioModalBottomSheet(
     fullHeight: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    if (usesNativeNuvioBottomSheet) {
+    if (LocalUseInlineOverlays.current) {
+        // Android Auto screen: no separate windows, so the sheet is drawn inside Nuvio's own window.
+        val tokens = MaterialTheme.nuvio
+        InlineOverlay(onDismissRequest = onDismissRequest, alignment = Alignment.BottomCenter) {
+            CompositionLocalProvider(LocalBottomInsetsConsumed provides true) {
+                Column(
+                    modifier = modifier
+                        .widthIn(max = InlineSheetMaxWidth)
+                        .fillMaxWidth()
+                        .then(if (fullHeight) Modifier.fillMaxHeight(0.95f) else Modifier)
+                        .padding(NuvioTokens.Space.s10)
+                        .clip(SheetShape)
+                        .background(containerColor)
+                        .border(tokens.borders.thin, SurfaceEdge, SheetShape),
+                ) {
+                    CompositionLocalProvider(androidx.compose.material3.LocalContentColor provides contentColor) {
+                        if (showDragHandle) {
+                            NuvioBottomSheetDragHandle(Modifier.align(Alignment.CenterHorizontally))
+                        }
+                        content()
+                    }
+                }
+            }
+        }
+    } else if (usesNativeNuvioBottomSheet) {
         NuvioNativeModalBottomSheet(
             onDismissRequest = onDismissRequest,
             modifier = modifier,

@@ -78,16 +78,27 @@ class CarSetupActivity : Activity() {
         })
 
         column.addView(text("In-car extras", 19f, top = 24))
-        column.addView(Switch(this).apply {
-            text = "Data saver: prefer 720p streams on mobile data"
-            setTextColor(Color.WHITE)
-            isChecked = CarPrefs.dataSaver(this@CarSetupActivity)
-            setOnCheckedChangeListener { _, on ->
-                CarPrefs.setDataSaver(this@CarSetupActivity, on)
-                CarSession.refresh(this@CarSetupActivity)
-            }
-        })
-        column.addView(text("Only while Nuvio is on the car screen and the phone is on mobile data. Bigger streams stay listed below.", 14f, MUTED))
+        column.addView(text("Data saver: 720p streams first, overriding the profile's auto-play choice", 15f, Color.WHITE))
+        val saver = RadioGroup(this)
+        CarPrefs.DataSaver.entries.forEach { mode ->
+            saver.addView(RadioButton(this).apply {
+                id = View.generateViewId()
+                text = mode.label
+                setTextColor(Color.WHITE)
+                isChecked = mode == CarPrefs.dataSaver(this@CarSetupActivity)
+                setOnClickListener {
+                    CarPrefs.setDataSaver(this@CarSetupActivity, mode)
+                    CarSession.refresh(this@CarSetupActivity)
+                }
+            })
+        }
+        column.addView(saver)
+        column.addView(text(
+            "Only while Nuvio is on the car screen. Streams at 720p or lower go to the top of every list and are " +
+                "what auto-play picks; bigger ones stay listed below. \"Always\" also covers a car Wi-Fi hotspot, " +
+                "which uses mobile data too.",
+            14f, MUTED,
+        ))
         column.addView(Switch(this).apply {
             text = "Offer to continue watching when the car connects"
             setTextColor(Color.WHITE)
