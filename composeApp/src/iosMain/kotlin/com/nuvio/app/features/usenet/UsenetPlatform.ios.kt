@@ -32,6 +32,13 @@ internal actual object UsenetPlatform {
 
     actual suspend fun testIndexer(indexer: UsenetIndexer): Boolean = false
 
+    actual suspend fun tuneProvider(
+        provider: UsenetProvider,
+        allowPrivateNetwork: Boolean,
+        pipeline: Int,
+        onProgress: (TuneProgress) -> Unit,
+    ): TuneOutcome = TuneOutcome.Failed(TuneFailure.CONNECT, UsenetProviderTestResult.UNREACHABLE)
+
     actual val indexerStatusChanges: StateFlow<Int> = unchanged
 
     actual fun indexerStatus(indexer: UsenetIndexer): UsenetIndexerStatus = UsenetIndexerStatus()

@@ -75,6 +75,18 @@ internal expect object UsenetPlatform {
     /** Live capabilities request and a one-result search; false on any failure. */
     suspend fun testIndexer(indexer: UsenetIndexer): Boolean
 
+    /**
+     * Measures [provider]'s connection limit and the port and connection allowance that download
+     * fastest, with real test articles: up to about 1 GB of data. Cancelling stops it and signs every
+     * connection out. [pipeline] is the engine's requests in flight per connection.
+     */
+    suspend fun tuneProvider(
+        provider: UsenetProvider,
+        allowPrivateNetwork: Boolean,
+        pipeline: Int,
+        onProgress: (TuneProgress) -> Unit,
+    ): TuneOutcome
+
     /** Increments whenever an indexer status may have changed. */
     val indexerStatusChanges: StateFlow<Int>
 

@@ -36,6 +36,7 @@ internal actual object UsenetPlatform {
     private val noStats = MutableStateFlow(0)
     private val client by lazy { NewznabClient(indexerStateStorage, sourceStats) { UsenetRepository.engineSettings().searchAgent } }
     private val tester by lazy { NntpProviderTester() }
+    private val tuner by lazy { NntpProviderTuner(tester) }
     private val service by lazy { BuiltInUsenetService(client, unplayable = unplayable, labels = ::localizedLabels, stats = sourceStats) }
     private val sidecar by lazy { UsenetSidecar(appContext, { UsenetRepository.engineSettings() }, unplayable, sourceStats) }
 
@@ -90,6 +91,16 @@ internal actual object UsenetPlatform {
         } catch (_: Exception) {
             false
         }
+    }
+
+    actual suspend fun tuneProvider(
+        provider: UsenetProvider,
+        allowPrivateNetwork: Boolean,
+        pipeline: Int,
+        onProgress: (TuneProgress) -> Unit,
+    ): TuneOutcome {
+        if (runCatching { provider.validate() }.isFailure) return TuneOutcome.Failed(TuneFailure.CONNECT, UsenetProviderTestResult.INVALID)
+        return tuner.tune(provider, allowPrivateNetwork, pipeline, onProgress)
     }
 
     actual val indexerStatusChanges: StateFlow<Int> get() = client.statusChanges

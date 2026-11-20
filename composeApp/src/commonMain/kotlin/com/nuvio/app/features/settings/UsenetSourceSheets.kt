@@ -98,6 +98,9 @@ import nuvio.composeapp.generated.resources.usenet_provider_test_unreachable
 import nuvio.composeapp.generated.resources.usenet_provider_tls
 import nuvio.composeapp.generated.resources.usenet_provider_username
 import nuvio.composeapp.generated.resources.usenet_save
+import nuvio.composeapp.generated.resources.usenet_provider_tune
+import nuvio.composeapp.generated.resources.usenet_provider_tune_description
+import nuvio.composeapp.generated.resources.usenet_provider_tune_data_warning
 import nuvio.composeapp.generated.resources.usenet_download_user_agent_description
 import nuvio.composeapp.generated.resources.usenet_search_user_agent_description
 import nuvio.composeapp.generated.resources.usenet_user_agent
@@ -150,6 +153,7 @@ internal fun UsenetProviderSheet(
     var testing by remember { mutableStateOf(false) }
     var testResult by remember { mutableStateOf<Pair<UsenetProviderTestResult, Boolean>?>(null) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var tuning by remember { mutableStateOf(false) }
 
     fun entered(): UsenetProvider? {
         val portValue = port.trim().toIntOrNull() ?: return null
@@ -260,6 +264,25 @@ internal fun UsenetProviderSheet(
             if (invalid) {
                 Text(stringResource(Res.string.usenet_provider_invalid), style = MaterialTheme.typography.bodySmall, color = tokens.colors.danger)
             }
+            // Tuning measures the saved provider, so it is offered once the provider exists.
+            if (existing != null) {
+                OutlinedButton(
+                    onClick = { tuning = true },
+                    enabled = !testing,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = tokens.shapes.button,
+                ) { Text(stringResource(Res.string.usenet_provider_tune)) }
+                Text(
+                    stringResource(Res.string.usenet_provider_tune_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = tokens.colors.textMuted,
+                )
+                Text(
+                    stringResource(Res.string.usenet_provider_tune_data_warning),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = tokens.colors.danger,
+                )
+            }
             SheetActions(
                 existing = existing != null,
                 onSave = ::save,
@@ -282,6 +305,25 @@ internal fun UsenetProviderSheet(
             },
             onDismiss = { confirmDelete = false },
         )
+    }
+
+    if (tuning) {
+        val saved = UsenetRepository.sources().providers.find { it.id == initial.id }
+        if (saved == null) {
+            tuning = false
+        } else {
+            ProviderTuneDialog(
+                provider = saved,
+                engine = UsenetRepository.engineSettings(),
+                // The sheet shows what was applied, so its Save keeps it.
+                onApplied = { tuned ->
+                    port = tuned.port.toString()
+                    tls = tuned.tls
+                    connections = tuned.connections.toString()
+                },
+                onDismiss = { tuning = false },
+            )
+        }
     }
 }
 
@@ -606,7 +648,7 @@ internal fun UsenetChip(label: String, selected: Boolean, onClick: () -> Unit) {
 }
 
 @Composable
-private fun providerTestMessage(result: UsenetProviderTestResult, anonymous: Boolean): String = when (result) {
+internal fun providerTestMessage(result: UsenetProviderTestResult, anonymous: Boolean): String = when (result) {
     UsenetProviderTestResult.SUCCESS -> stringResource(
         if (anonymous) Res.string.usenet_provider_test_connected else Res.string.usenet_provider_test_success,
     )

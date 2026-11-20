@@ -1,5 +1,6 @@
 package com.nuvio.app.features.usenet
 
+import com.nuvio.app.features.settings.dataSize
 import com.nuvio.app.features.settings.decimal
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,5 +60,12 @@ class UsenetStatsModelsTest {
         assertEquals("0.05", decimal(0.049, 2))
         assertEquals("1234.50", decimal(1234.5, 2))
         assertEquals("3", decimal(2.6, 0))
+    }
+
+    @Test
+    fun tuningDataReadsAsMegabytesOrGigabytes() {
+        assertEquals("812 MB", dataSize(812_400_000))
+        assertEquals("1.05 GB", dataSize(1_048_576_000))
+        assertEquals("0 MB", dataSize(0))
     }
 }

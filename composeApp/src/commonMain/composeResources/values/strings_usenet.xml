@@ -391,4 +391,30 @@
         <item quantity="one">%1$s · %2$d release on average</item>
         <item quantity="other">%1$s · %2$d releases on average</item>
     </plurals>
+    <string name="usenet_provider_tune">Tune connections</string>
+    <string name="usenet_provider_tune_description">Finds the connection limit, port and connection allowance that work best on this network.</string>
+    <string name="usenet_provider_tune_data_warning">Uses up to about 1 GB of data: it counts against a block account and, on mobile data, against your plan.</string>
+    <string name="usenet_provider_tune_title">Tune %1$s</string>
+    <string name="usenet_provider_tune_intro">Checks how many connections the account accepts, then measures the download speed on the provider’s ports and with more and more connections. It takes about two minutes. Keep the app open and do not play anything meanwhile. Other devices using this account at the same time lower the limit found. Nothing is saved until you apply the result.</string>
+    <string name="usenet_provider_tune_start">Start</string>
+    <string name="usenet_provider_tune_stop">Stop</string>
+    <string name="usenet_provider_tune_stopped">Stopped. Nothing was changed.</string>
+    <string name="usenet_provider_tune_apply">Apply</string>
+    <string name="usenet_provider_tune_again">Run again</string>
+    <string name="usenet_provider_tune_close">Close</string>
+    <string name="usenet_provider_tune_preparing">Connecting to the provider…</string>
+    <string name="usenet_provider_tune_limit_running">Checking the connection limit: %1$d accepted so far…</string>
+    <string name="usenet_provider_tune_port_running">Measuring port %1$d with %2$d connections…</string>
+    <string name="usenet_provider_tune_connections_running">Measuring %1$d connections…</string>
+    <string name="usenet_provider_tune_reading">Port %1$d, %2$d connections: %3$s Mbps</string>
+    <string name="usenet_provider_tune_limit">Connection limit: %1$d. The next connection was refused.</string>
+    <string name="usenet_provider_tune_no_limit">Connection limit: none found up to %1$d connections.</string>
+    <string name="usenet_provider_tune_over_limit">The current allowance of %1$d is above the limit: playback would get refused connections and stall while the engine retries them.</string>
+    <string name="usenet_provider_tune_fastest">%1$d connections already reach %2$s Mbps.</string>
+    <string name="usenet_provider_tune_recommended">Recommended: port %1$d with a connection allowance of %2$d (now port %3$d with %4$d). It stays under the limit and is otherwise not lowered.</string>
+    <string name="usenet_provider_tune_unchanged">Nothing to apply: the current port and connection allowance are already the best choice.</string>
+    <string name="usenet_provider_tune_data">Test data downloaded: %1$s</string>
+    <string name="usenet_provider_tune_test_data">Could not download the test data. Check the internet connection and try again.</string>
+    <string name="usenet_provider_tune_missing">This provider does not have the test articles, so its speed could not be measured.</string>
+    <string name="usenet_provider_tune_too_slow">Too little arrived to measure a speed. Try again later.</string>
 </resources>
