@@ -6,6 +6,7 @@ import java.net.ServerSocket
 import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
+import kotlin.random.Random
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancelAndJoin
@@ -67,6 +68,42 @@ class NntpProviderTunerTest {
         assertEquals(10, TunePlan.recommend(10, 32, 53, 54, initial, mapOf(10 to 120.0, 32 to 125.0)))
         assertEquals(10, TunePlan.recommend(10, 32, 53, 54, initial, emptyMap()))
         assertEquals(10, TunePlan.recommend(10, 32, 53, 54, mapOf(32 to 130.0), repeat))
+    }
+
+    @Test fun `only a possible raise is measured again`() {
+        assertEquals(listOf(8, 16), TunePlan.countsToRepeat(8, 16, mapOf(8 to 100.0, 16 to 130.0)))
+        // The proposed count is not above the saved one.
+        assertEquals(emptyList<Int>(), TunePlan.countsToRepeat(50, 12, mapOf(12 to 100.0, 16 to 98.0, 50 to 99.0)))
+        // The saved count was above the usable range, so it was not measured.
+        assertEquals(emptyList<Int>(), TunePlan.countsToRepeat(55, 54, mapOf(48 to 668.0, 54 to 703.0)))
+        assertEquals(emptyList<Int>(), TunePlan.countsToRepeat(8, 16, mapOf(16 to 130.0)))
+    }
+
+    @Test fun `skipping the repeats never changes the recommendation`() {
+        // Where nothing is repeated now, the two best counts measured again (as before) with any
+        // speeds lead to the same recommendation as no repeat at all.
+        val random = Random(7)
+        val counts = listOf(4, 8, 12, 16, 24, 32, 48, 54)
+        var checked = 0
+        repeat(20_000) {
+            val limit = if (random.nextBoolean()) null else random.nextInt(5, 70)
+            val tried = limit?.plus(1) ?: random.nextInt(5, 70)
+            val current = random.nextInt(1, 70)
+            val measured = counts.shuffled(random).take(random.nextInt(1, counts.size + 1)) +
+                if (random.nextBoolean()) listOf(current) else emptyList()
+            // Coarse speeds, so ties and near ties happen.
+            val round = measured.distinct().map { reading(it, random.nextInt(1, 20) * 10.0) }
+            val initial = TunePlan.averages(round) { it.connections }
+            val candidate = TunePlan.fastestConnections(round)!!
+            if (TunePlan.countsToRepeat(current, candidate, initial).isNotEmpty()) return@repeat
+            val repeated = initial.entries.sortedByDescending { it.value }.take(2)
+                .map { reading(it.key, random.nextInt(1, 20) * 10.0) }
+            val withRepeats = TunePlan.recommend(current, TunePlan.fastestConnections(round + repeated)!!, limit, tried,
+                initial, repeated.associate { it.connections to it.mbps })
+            assertEquals(TunePlan.recommend(current, candidate, limit, tried, initial, emptyMap()), withRepeats)
+            checked++
+        }
+        assertTrue(checked > 5_000)
     }
 
     @Test fun `the current port stays unless another is clearly faster`() {
@@ -222,6 +259,8 @@ class NntpProviderTunerTest {
             assertTrue(server.most.get() <= 13)
             assertEquals(4, server.refused.get())
             assertTrue(result.readings.all { it.connections <= 12 })
+            // The port at 8, then 4, 8 and 12. An allowance above the limit can only come down, so nothing is repeated.
+            assertEquals(4, result.readings.size)
             assertEquals(listOf(TuneProgress.Phase.LIMIT, TuneProgress.Phase.PORT, TuneProgress.Phase.CONNECTIONS),
                 phases.distinct())
             // Every connection signed out, the measured ones after reading the bodies still due.

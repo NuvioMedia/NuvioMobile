@@ -86,6 +86,15 @@ internal object TunePlan {
         return if (limit == null) wanted else wanted.coerceAtMost(usable(limit, tried))
     }
 
+    /**
+     * The counts to measure again before [recommend]: the saved and proposed ones, when a raise is
+     * possible. Otherwise none. Without a measured saved count below the [candidate], [recommend]
+     * keeps the saved allowance (within the limit) whatever a repeat measures, so repeating would
+     * only cost data.
+     */
+    fun countsToRepeat(current: Int, candidate: Int, initial: Map<Int, Double>): List<Int> =
+        if (candidate > current && current in initial) listOf(current, candidate) else emptyList()
+
     /** Compare working ports at the same number of signed-in connections. */
     fun pickPort(readings: List<TuneReading>, current: Pair<Int, Boolean>,
         remeasure: (TuneReading, Int) -> TuneReading?): Pair<Int, Boolean>? {
@@ -235,10 +244,8 @@ internal class NntpProviderTuner(
             val round = readings.filter { it.port == port && it.tls == tls }
             val initial = TunePlan.averages(round) { it.connections }
             val candidate = TunePlan.fastestConnections(round) ?: return TuneOutcome.Failed(TuneFailure.TOO_SLOW)
-            val countsToRepeat = if (candidate > current && current in initial) listOf(current, candidate)
-                else initial.entries.sortedByDescending { it.value }.take(2).map { it.key }
             val repeats = mutableMapOf<Int, Double>()
-            for (count in countsToRepeat) {
+            for (count in TunePlan.countsToRepeat(current, candidate, initial)) {
                 val repeat = measure(TuneProgress.Phase.CONNECTIONS, port, tls, count)
                 if (repeat?.connections == count) repeats[count] = repeat.mbps
             }
