@@ -1,6 +1,7 @@
 package com.nuvio.app.features.usenet
 
 import java.util.Collections
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.CancellationException
@@ -10,6 +11,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.Assert.*
 import org.junit.Test
 
@@ -349,6 +351,54 @@ class NewznabClientTest {
             // The rejected season search is not retried for the next episode.
             assertEquals(listOf(null, "5", "6"), asked.episodes())
         }
+    }
+
+    @Test fun `a Newznab season refusal is remembered like an HTTP 4xx`() = runBlocking {
+        MockWebServer().use { server ->
+            val asked = server.answer { url ->
+                when (val episode = url.queryParameter("ep")) {
+                    null -> MockResponse().setBody("""<error code="201" description="Incorrect parameter"/>""")
+                    else -> MockResponse().setBody(server.page("Show.S04E0$episode.1080p", episode.toInt()))
+                }
+            }
+            val client = NewznabClient(MemoryStorage())
+            fun episode(n: Int) = UsenetSearchRequest(imdbId = "tt1", series = true, season = 4, episode = n)
+            assertEquals(listOf("Show.S04E01.1080p"), client.search(server.indexer(), episode(1), NewznabCapabilities()).map { it.title })
+            assertEquals(listOf("Show.S04E02.1080p"), client.search(server.indexer(), episode(2), NewznabCapabilities()).map { it.title })
+            assertEquals(listOf(null, "1", "2"), asked.episodes())
+        }
+    }
+
+    @Test fun `a season search that fails for a moment is asked again for the next episode`() = runBlocking {
+        // A server error, and a connection dropped as an unreachable indexer would.
+        val failures = listOf(MockResponse().setResponseCode(503), MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
+        for (failure in failures) MockWebServer().use { server ->
+            val failSeason = AtomicBoolean(true)
+            val asked = server.answer { url ->
+                when (val episode = url.queryParameter("ep")) {
+                    null -> if (failSeason.get()) failure else MockResponse().setBody(server.page("Show.S03.1080p", 9))
+                    else -> MockResponse().setBody(server.page("Show.S03E0$episode.1080p", episode.toInt()))
+                }
+            }
+            val client = NewznabClient(MemoryStorage())
+            fun episode(n: Int) = UsenetSearchRequest(imdbId = "tt1", series = true, season = 3, episode = n)
+            // Only the search whose season request failed misses the pack.
+            assertEquals(listOf("Show.S03E01.1080p"), client.search(server.indexer(), episode(1), NewznabCapabilities()).map { it.title })
+            failSeason.set(false)
+            asked.clear()
+            assertEquals(listOf("Show.S03E02.1080p", "Show.S03.1080p"),
+                client.search(server.indexer(), episode(2), NewznabCapabilities()).map { it.title })
+            assertEquals(listOf(null, "2"), asked.episodes())
+        }
+    }
+
+    @Test fun `only refusals of the search itself count as rejections`() {
+        assertTrue(isSearchRejection(NewznabUnsupportedSearchException()))
+        listOf(400, 404, 405, 422).forEach { assertTrue("HTTP $it", isSearchRejection(IndexerHttpException(it))) }
+        listOf(401, 403, 408, 429, 500, 502, 503).forEach { assertFalse("HTTP $it", isSearchRejection(IndexerHttpException(it))) }
+        assertFalse(isSearchRejection(java.io.IOException("timeout")))
+        assertFalse(isSearchRejection(IndexerCooldownException(0)))
+        assertFalse(isSearchRejection(NewznabAuthException()))
     }
 
     @Test fun `pages follow the total the indexer reports, up to the results asked for`() = runBlocking {
