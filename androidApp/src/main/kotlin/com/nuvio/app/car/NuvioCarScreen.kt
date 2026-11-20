@@ -38,12 +38,28 @@ import kotlinx.coroutines.launch
 class NuvioCarScreen(ctx: CarContext) : Screen(ctx), SurfaceCallback {
 
     private val host = CarDisplayHost(ctx)
+    private var mirror: ClusterMirror? = null
     private var watching = false
     private var playing = false
 
     init {
         ctx.getCarService(AppManager::class.java).setSurfaceCallback(this)
         lifecycle.addObserver(object : DefaultLifecycleObserver {
+            // Mirror Maps' guidance only while Nuvio is the app on the car screen; with Maps showing, Maps
+            // drives the cockpit itself.
+            override fun onStart(owner: LifecycleOwner) {
+                if (CarPrefs.clusterMirror(ctx) && mirror == null) {
+                    mirror = runCatching { ClusterMirror(ctx).also { it.start() } }
+                        .onFailure { CarLog.d("Cockpit mirroring unavailable", it) }
+                        .getOrNull()
+                }
+            }
+
+            override fun onStop(owner: LifecycleOwner) {
+                mirror?.stop()
+                mirror = null
+            }
+
             override fun onDestroy(owner: LifecycleOwner) = host.release()
         })
         lifecycleScope.launch {
@@ -96,6 +112,7 @@ class NuvioCarScreen(ctx: CarContext) : Screen(ctx), SurfaceCallback {
             .setActionStrip(strip.build())
             .setMapActionStrip(
                 ActionStrip.Builder()
+                    .addAction(action(R.drawable.car_ic_mic) { openVoice() })
                     .addAction(action(R.drawable.car_ic_text_size) {
                         CarToast.makeText(carContext, "Screen size: ${host.cycleSize()}", CarToast.LENGTH_SHORT).show()
                     })
@@ -108,10 +125,20 @@ class NuvioCarScreen(ctx: CarContext) : Screen(ctx), SurfaceCallback {
         ExternalAppCommands.send(ExternalAppCommands.Command.OpenTab(tab))
     }
 
-    private fun openSearch() {
-        screenManager.push(CarKeyboardScreen(carContext) { query ->
+    private fun openVoice() {
+        screenManager.push(CarVoiceScreen(carContext) { query ->
             ExternalAppCommands.send(ExternalAppCommands.Command.Search(query))
         })
+    }
+
+    private fun openSearch() {
+        screenManager.push(
+            CarKeyboardScreen(
+                carContext,
+                onSubmit = { query -> ExternalAppCommands.send(ExternalAppCommands.Command.Search(query)) },
+                onVoice = { screenManager.pop(); openVoice() },
+            ),
+        )
     }
 
     override fun onSurfaceAvailable(container: SurfaceContainer) {

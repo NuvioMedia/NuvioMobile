@@ -15,6 +15,8 @@
     <!-- GPS speed, to hide the video while the car moves (optional, asked in Nuvio Auto setup). -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- Car voice search: Android Auto streams the car's microphone to the app (CarAudioRecord). -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <!-- Implicitly added because aauto.aar declares no minSdk; not needed. -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" tools:node="remove" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove" />
@@ -253,6 +255,20 @@
             </intent-filter>
         </service>
 
+
+        <!-- Experimental: reads Google Maps' navigation notification to mirror the next turn to the car's cockpit. -->
+        <service
+            android:name="com.nuvio.app.car.MapsGuidanceListener"
+            android:exported="true"
+            android:label="Nuvio Auto: Maps directions for the cockpit"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+            <meta-data
+                android:name="android.service.notification.default_filter_types"
+                android:value="ongoing" />
+        </service>
 
         <!-- Phone remote for a passenger while Nuvio is on the car screen. -->
         <activity

@@ -65,5 +65,12 @@ internal object CarPrefs {
         prefs(ctx).edit().putBoolean("remoteNotification", on).apply()
     }
 
+    /** Experimental: mirror Google Maps' next turn to the car's cockpit display while Nuvio is full screen. */
+    fun clusterMirror(ctx: Context): Boolean = prefs(ctx).getBoolean("clusterMirror", false)
+
+    fun setClusterMirror(ctx: Context, on: Boolean) {
+        prefs(ctx).edit().putBoolean("clusterMirror", on).apply()
+    }
+
     const val DATA_SAVER_MAX_HEIGHT = 720
 }

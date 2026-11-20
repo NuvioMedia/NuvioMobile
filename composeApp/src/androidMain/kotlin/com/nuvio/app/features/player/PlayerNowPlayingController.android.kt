@@ -149,7 +149,7 @@ internal class AndroidPlayerNowPlayingController(
             val loadingChanged = snapshot.isLoading != nextSnapshot.isLoading
             val endedChanged = snapshot.isEnded != nextSnapshot.isEnded
             snapshot = nextSnapshot
-            if (playingChanged) publishRemote()
+            publishRemote()
 
             if (durationChanged) publishMetadata()
             publishPlaybackState(force = false)
@@ -213,12 +213,19 @@ internal class AndroidPlayerNowPlayingController(
                 playing = current != null && snapshot.isPlaying,
                 title = current?.title,
                 subtitle = current?.subtitle,
+                artworkUrl = current?.artworkUrl,
+                positionMs = if (current != null) snapshot.positionMs else 0L,
+                durationMs = if (current != null) snapshot.durationMs else 0L,
             ),
         )
     }
 
     internal fun seekByMs(offsetMs: Long) {
         if (!released) controls.seekBy(offsetMs)
+    }
+
+    internal fun seekToMs(positionMs: Long) {
+        if (!released) controls.seekTo(positionMs.coerceAtLeast(0L))
     }
 
     private fun publishMetadata() {
@@ -382,6 +389,10 @@ private object AndroidNowPlayingActionDispatcher {
     fun seekBy(offsetMs: Long) {
         controllerRef?.get()?.seekByMs(offsetMs)
     }
+
+    fun seekTo(positionMs: Long) {
+        controllerRef?.get()?.seekToMs(positionMs)
+    }
 }
 
 /** What's playing, and play/pause/seek, for the Android Auto screen's buttons. */
@@ -391,6 +402,9 @@ object NuvioPlaybackRemote {
         val playing: Boolean = false,
         val title: String? = null,
         val subtitle: String? = null,
+        val artworkUrl: String? = null,
+        val positionMs: Long = 0L,
+        val durationMs: Long = 0L,
     )
 
     private val _state = kotlinx.coroutines.flow.MutableStateFlow(State())
@@ -406,6 +420,10 @@ object NuvioPlaybackRemote {
 
     fun seekBy(offsetMs: Long) {
         AndroidNowPlayingActionDispatcher.seekBy(offsetMs)
+    }
+
+    fun seekTo(positionMs: Long) {
+        AndroidNowPlayingActionDispatcher.seekTo(positionMs)
     }
 }
 

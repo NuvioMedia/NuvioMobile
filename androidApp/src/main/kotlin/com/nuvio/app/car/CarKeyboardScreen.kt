@@ -3,6 +3,7 @@ package com.nuvio.app.car
 import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
+import androidx.car.app.model.ActionStrip
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.ItemList
 import androidx.car.app.model.Row
@@ -19,6 +20,7 @@ import com.nuvio.app.features.search.SearchHistoryRepository
 internal class CarKeyboardScreen(
     ctx: CarContext,
     private val onSubmit: (String) -> Unit,
+    private val onVoice: () -> Unit,
 ) : Screen(ctx) {
 
     private fun submit(text: String) {
@@ -35,6 +37,16 @@ internal class CarKeyboardScreen(
             .setHeaderAction(Action.BACK)
             .setSearchHint("Search movies and shows")
             .setShowKeyboardByDefault(true)
+            .setActionStrip(
+                ActionStrip.Builder()
+                    .addAction(
+                        Action.Builder()
+                            .setIcon(CarIcon.Builder(IconCompat.createWithResource(carContext, R.drawable.car_ic_mic)).build())
+                            .setOnClickListener { onVoice() }
+                            .build(),
+                    )
+                    .build(),
+            )
 
         val recent = runCatching {
             SearchHistoryRepository.ensureLoaded()

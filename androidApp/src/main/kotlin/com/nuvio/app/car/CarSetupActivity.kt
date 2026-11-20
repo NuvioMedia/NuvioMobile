@@ -25,6 +25,9 @@ class CarSetupActivity : Activity() {
     private lateinit var locationNote: TextView
     private lateinit var locationButton: Button
     private lateinit var logView: TextView
+    private lateinit var micNote: TextView
+    private lateinit var micButton: Button
+    private lateinit var listenerButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,6 +109,39 @@ class CarSetupActivity : Activity() {
             }
         })
 
+        column.addView(text("Voice search", 19f, top = 24))
+        micNote = text("", 14f, MUTED)
+        column.addView(micNote)
+        micButton = Button(this).apply {
+            text = "Allow microphone"
+            setOnClickListener { requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 9) }
+        }
+        column.addView(micButton)
+
+        column.addView(text("Cockpit directions (experimental)", 19f, top = 24))
+        column.addView(text(
+            "While Nuvio fills the car screen, Android Auto treats it as the navigation app, so the cockpit loses " +
+                "Google Maps' next turn. This copies Maps' turn-by-turn (from its notification) into Nuvio so the " +
+                "cockpit keeps showing it. If Maps stops navigating when you open Nuvio, turn this off.",
+            14f, MUTED,
+        ))
+        column.addView(Switch(this).apply {
+            text = "Show Google Maps directions in the cockpit"
+            setTextColor(Color.WHITE)
+            isChecked = CarPrefs.clusterMirror(this@CarSetupActivity)
+            setOnCheckedChangeListener { _, on ->
+                CarPrefs.setClusterMirror(this@CarSetupActivity, on)
+                updateListenerAccess()
+            }
+        })
+        listenerButton = Button(this).apply {
+            text = "Allow notification access"
+            setOnClickListener {
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            }
+        }
+        column.addView(listenerButton)
+
         column.addView(text("Car screen size", 19f, top = 24))
         val sizes = RadioGroup(this)
         CarPrefs.SIZE_LABELS.forEachIndexed { i, label ->
@@ -182,6 +218,25 @@ class CarSetupActivity : Activity() {
         super.onResume()
         updateLocation()
         updateLog()
+        updateMic()
+        updateListenerAccess()
+    }
+
+    private fun updateMic() {
+        val ok = checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        micButton.visibility = if (ok) View.GONE else View.VISIBLE
+        micNote.text = if (ok) {
+            "Ready. Tap the mic on the car screen, then say a movie or show. The car's microphone is used."
+        } else {
+            "Needs the microphone permission for the car's mic button."
+        }
+    }
+
+    private fun updateListenerAccess() {
+        val granted = android.provider.Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+            ?.contains(packageName) == true
+        listenerButton.visibility =
+            if (CarPrefs.clusterMirror(this) && !granted) View.VISIBLE else View.GONE
     }
 
     private fun updateLog() {
@@ -221,6 +276,7 @@ class CarSetupActivity : Activity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         updateLocation()
+        if (requestCode == 9) updateMic()
     }
 
     private companion object {
