@@ -46,6 +46,7 @@ internal class CarDisplayHost(private val ctx: Context) {
     init {
         CarLog.init(ctx)
         CarLog.d("Car session started (${ctx.javaClass.simpleName}). ${CarLog.deviceLine()}")
+        CarSession.start(ctx, this)
     }
 
     // ---- Surface ----------------------------------------------------------------------------------------------
@@ -248,6 +249,7 @@ internal class CarDisplayHost(private val ctx: Context) {
         replayer.cancel()
         driving.stop()
         CarLog.d("Car session ended")
+        CarSession.stop(this)
         window?.close()
         window = null
         display?.release()

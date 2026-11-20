@@ -437,15 +437,17 @@ internal fun MainAppContent(
     // Android Auto screen: its Search/Home/Library buttons and car keyboard drive Nuvio through these.
     LaunchedEffect(navBackStack) {
         ExternalAppCommands.commands.collect { command ->
-            while (navBackStack.size > 1 && navBackStack.lastOrNull() !is TabsRoute) {
-                navBackStack.removeAt(navBackStack.lastIndex)
-            }
             when (command) {
                 is ExternalAppCommands.Command.Search -> {
+                    popToTabsRoot(navBackStack)
                     ExternalAppCommands.setPendingSearch(command.query)
                     activateTab(AppScreenTab.Search)
                 }
-                is ExternalAppCommands.Command.OpenTab -> activateTab(command.tab)
+                is ExternalAppCommands.Command.OpenTab -> {
+                    popToTabsRoot(navBackStack)
+                    activateTab(command.tab)
+                }
+                is ExternalAppCommands.Command.Resume -> Unit // handled next to openContinueWatching below
             }
         }
     }
@@ -1306,6 +1308,16 @@ internal fun MainAppContent(
                 )
             } else {
                 openContinueWatching(item, false, false)
+            }
+        }
+
+        // Android Auto: "Continue watching?" prompt when the car connects.
+        LaunchedEffect(navBackStack) {
+            ExternalAppCommands.commands.collect { command ->
+                if (command is ExternalAppCommands.Command.Resume) {
+                    popToTabsRoot(navBackStack)
+                    openContinueWatching(command.item, false, false)
+                }
             }
         }
 
@@ -2188,3 +2200,10 @@ private fun AppRoute?.drawsUnderVerticalBar(selectedTab: AppScreenTab): Boolean 
         is TabsRoute -> selectedTab == AppScreenTab.Home || selectedTab == AppScreenTab.Library
         else -> false
     }
+
+/** Back to the tabs screen, closing any pages (or the player) on top. */
+private fun popToTabsRoot(backStack: MutableList<androidx.navigation3.runtime.NavKey>) {
+    while (backStack.size > 1 && backStack.lastOrNull() !is TabsRoute) {
+        backStack.removeAt(backStack.lastIndex)
+    }
+}

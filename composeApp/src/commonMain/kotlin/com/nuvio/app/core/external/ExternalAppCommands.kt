@@ -1,6 +1,7 @@
 package com.nuvio.app.core.external
 
 import com.nuvio.app.AppScreenTab
+import com.nuvio.app.features.watchprogress.ContinueWatchingItem
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -19,6 +20,9 @@ object ExternalAppCommands {
 
         /** Go back to the root of [tab]. */
         data class OpenTab(val tab: AppScreenTab) : Command
+
+        /** Resume a Continue Watching item straight into playback. */
+        data class Resume(val item: ContinueWatchingItem) : Command
     }
 
     /** Where the user is, coarsely. */
@@ -34,6 +38,15 @@ object ExternalAppCommands {
 
     private val _screen = MutableStateFlow(Screen.HOME)
     val screen: StateFlow<Screen> = _screen.asStateFlow()
+
+    private val _continueWatching = MutableStateFlow<List<ContinueWatchingItem>>(emptyList())
+
+    /** The first items of the home screen's Continue Watching row, newest first. */
+    val continueWatching: StateFlow<List<ContinueWatchingItem>> = _continueWatching.asStateFlow()
+
+    fun publishContinueWatching(items: List<ContinueWatchingItem>) {
+        _continueWatching.value = items
+    }
 
     fun send(command: Command): Boolean = _commands.tryEmit(command)
 

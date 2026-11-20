@@ -43,4 +43,27 @@ internal object CarPrefs {
     fun setAvoidCarButtons(ctx: Context, on: Boolean) {
         prefs(ctx).edit().putBoolean("avoidButtons2", on).apply()
     }
+
+    /** Prefer streams at or under 720p while in the car on mobile data. */
+    fun dataSaver(ctx: Context): Boolean = prefs(ctx).getBoolean("dataSaver", true)
+
+    fun setDataSaver(ctx: Context, on: Boolean) {
+        prefs(ctx).edit().putBoolean("dataSaver", on).apply()
+    }
+
+    /** Offer to resume the newest Continue Watching item when the car connects. */
+    fun resumePrompt(ctx: Context): Boolean = prefs(ctx).getBoolean("resumePrompt", true)
+
+    fun setResumePrompt(ctx: Context, on: Boolean) {
+        prefs(ctx).edit().putBoolean("resumePrompt", on).apply()
+    }
+
+    /** Show a phone notification with the remote while Nuvio is on the car screen. */
+    fun remoteNotification(ctx: Context): Boolean = prefs(ctx).getBoolean("remoteNotification", true)
+
+    fun setRemoteNotification(ctx: Context, on: Boolean) {
+        prefs(ctx).edit().putBoolean("remoteNotification", on).apply()
+    }
+
+    const val DATA_SAVER_MAX_HEIGHT = 720
 }

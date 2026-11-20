@@ -131,7 +131,12 @@ fun StreamsScreen(
     modifier: Modifier = Modifier,
 ) {
     val useNativeNavigation = LocalUseNativeNavigation.current
-    val uiState by StreamsRepository.uiState.collectAsStateWithLifecycle()
+    val rawStreamsUiState by StreamsRepository.uiState.collectAsStateWithLifecycle()
+    // Nuvio Auto on mobile data: streams at or under the cap first.
+    val streamQualityCap by StreamQualityCap.maxHeight.collectAsStateWithLifecycle()
+    val uiState = remember(rawStreamsUiState, streamQualityCap) {
+        rawStreamsUiState.preferringMaxHeight(streamQualityCap)
+    }
     val streamDisplaySettings by remember {
         StreamBadgeSettingsRepository.ensureLoaded()
         StreamBadgeSettingsRepository.uiState

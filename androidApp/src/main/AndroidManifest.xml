@@ -250,6 +250,16 @@
         </service>
 
 
+        <!-- Phone remote for a passenger while Nuvio is on the car screen. -->
+        <activity
+            android:name="com.nuvio.app.car.CarRemoteActivity"
+            android:exported="false"
+            android:label="Nuvio remote"
+            android:taskAffinity="com.nuvio.app.carremote"
+            android:excludeFromRecents="false"
+            android:windowSoftInputMode="adjustResize"
+            android:theme="@android:style/Theme.DeviceDefault.NoActionBar" />
+
         <!-- Phone-side setup: install steps, car screen size, driving lock. -->
         <activity
             android:name="com.nuvio.app.car.CarSetupActivity"

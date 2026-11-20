@@ -63,10 +63,48 @@ class CarSetupActivity : Activity() {
         column.addView(text("In the car", 19f, top = 24))
         column.addView(text(
             "Tap to select, drag to scroll. Drags start from the middle of the screen, so to scroll a row of posters, " +
-                "first scroll it to the middle. Buttons: Back, Keyboard (tap Nuvio's search box first, then type with " +
-                "the car keyboard), Home, and Screen size.",
+                "first scroll it to the middle. Buttons while browsing: Back, Search (car keyboard), Home, Library. " +
+                "While watching: Back, back 10 s, play/pause, forward 30 s. Screen size is in the other corner. " +
+                "A passenger can also use the phone remote below.",
             15f, MUTED,
         ))
+
+        column.addView(Button(this).apply {
+            text = "Open the phone remote"
+            setOnClickListener { startActivity(Intent(this@CarSetupActivity, CarRemoteActivity::class.java)) }
+        })
+
+        column.addView(text("In-car extras", 19f, top = 24))
+        column.addView(Switch(this).apply {
+            text = "Data saver: prefer 720p streams on mobile data"
+            setTextColor(Color.WHITE)
+            isChecked = CarPrefs.dataSaver(this@CarSetupActivity)
+            setOnCheckedChangeListener { _, on ->
+                CarPrefs.setDataSaver(this@CarSetupActivity, on)
+                CarSession.refresh(this@CarSetupActivity)
+            }
+        })
+        column.addView(text("Only while Nuvio is on the car screen and the phone is on mobile data. Bigger streams stay listed below.", 14f, MUTED))
+        column.addView(Switch(this).apply {
+            text = "Offer to continue watching when the car connects"
+            setTextColor(Color.WHITE)
+            isChecked = CarPrefs.resumePrompt(this@CarSetupActivity)
+            setOnCheckedChangeListener { _, on -> CarPrefs.setResumePrompt(this@CarSetupActivity, on) }
+        })
+        column.addView(Switch(this).apply {
+            text = "Phone notification with the remote while in the car"
+            setTextColor(Color.WHITE)
+            isChecked = CarPrefs.remoteNotification(this@CarSetupActivity)
+            setOnCheckedChangeListener { _, on ->
+                CarPrefs.setRemoteNotification(this@CarSetupActivity, on)
+                if (on && android.os.Build.VERSION.SDK_INT >= 33 &&
+                    checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 8)
+                }
+                CarSession.refresh(this@CarSetupActivity)
+            }
+        })
 
         column.addView(text("Car screen size", 19f, top = 24))
         val sizes = RadioGroup(this)

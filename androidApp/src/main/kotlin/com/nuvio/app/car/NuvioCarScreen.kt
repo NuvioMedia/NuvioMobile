@@ -22,6 +22,8 @@ import com.nuvio.app.core.external.ExternalAppCommands
 import com.nuvio.app.features.player.NuvioPlaybackRemote
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 /**
@@ -52,6 +54,23 @@ class NuvioCarScreen(ctx: CarContext) : Screen(ctx), SurfaceCallback {
                 playing = isPlaying
                 invalidate()
             }
+        }
+        if (CarPrefs.resumePrompt(ctx)) offerResumeOnce()
+    }
+
+    /**
+     * Once per car session: when the home screen's Continue Watching row first has something (so a profile is
+     * picked and Nuvio is ready), ask whether to resume it.
+     */
+    private fun offerResumeOnce() {
+        lifecycleScope.launch {
+            val item = combine(ExternalAppCommands.continueWatching, ExternalAppCommands.screen) { items, screen ->
+                items.firstOrNull()?.takeIf { screen == ExternalAppCommands.Screen.HOME }
+            }.filterNotNull().first()
+            kotlinx.coroutines.delay(RESUME_PROMPT_DELAY_MS) // let the car's home screen settle first
+            if (ExternalAppCommands.screen.value != ExternalAppCommands.Screen.HOME) return@launch
+            CarLog.d("Offering to resume ${item.title}")
+            screenManager.push(CarResumeScreen(carContext, item))
         }
     }
 
@@ -109,4 +128,8 @@ class NuvioCarScreen(ctx: CarContext) : Screen(ctx), SurfaceCallback {
     override fun onScroll(distanceX: Float, distanceY: Float) = host.scroll(distanceX, distanceY)
 
     override fun onFling(velocityX: Float, velocityY: Float) = host.fling(velocityX, velocityY)
+
+    private companion object {
+        const val RESUME_PROMPT_DELAY_MS = 2_500L
+    }
 }

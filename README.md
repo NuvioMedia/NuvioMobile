@@ -22,6 +22,10 @@ Every push to `android-auto` builds one. Set the `NUVIO_AUTO_KEYSTORE_B64` secre
 4. Open **Nuvio Auto** on the phone once and sign in. Open **Nuvio Auto Setup** for screen size and the
    driving video lock.
 
+**Extras.** Car keyboard search with recent searches; buttons that switch to playback controls while watching;
+"Continue watching?" when the car connects; a phone remote for passengers (notification while connected);
+data saver that puts 720p-or-lower streams first on mobile data. All toggles are in Nuvio Auto Setup.
+
 **In the car.** Tap to select, drag to scroll (drags start from the middle of the screen). Buttons: Back,
 Keyboard (tap Nuvio's search box first), Home, Screen size. Video is covered while the phone's GPS says you're
 moving, unless you turn that off in Setup. Only watch while parked.
