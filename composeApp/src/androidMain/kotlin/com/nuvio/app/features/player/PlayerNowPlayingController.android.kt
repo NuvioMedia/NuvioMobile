@@ -136,6 +136,7 @@ internal class AndroidPlayerNowPlayingController(
             publishMetadata()
             publishPlaybackState(force = true)
             publishNotification()
+            publishRemote()
         }
     }
 
@@ -148,6 +149,7 @@ internal class AndroidPlayerNowPlayingController(
             val loadingChanged = snapshot.isLoading != nextSnapshot.isLoading
             val endedChanged = snapshot.isEnded != nextSnapshot.isEnded
             snapshot = nextSnapshot
+            if (playingChanged) publishRemote()
 
             if (durationChanged) publishMetadata()
             publishPlaybackState(force = false)
@@ -200,6 +202,23 @@ internal class AndroidPlayerNowPlayingController(
         )
         mediaSession.isActive = false
         PlayerNowPlayingService.hide(appContext)
+        publishRemote()
+    }
+
+    private fun publishRemote() {
+        val current = metadata
+        NuvioPlaybackRemote.publish(
+            NuvioPlaybackRemote.State(
+                active = !released && current != null,
+                playing = current != null && snapshot.isPlaying,
+                title = current?.title,
+                subtitle = current?.subtitle,
+            ),
+        )
+    }
+
+    internal fun seekByMs(offsetMs: Long) {
+        if (!released) controls.seekBy(offsetMs)
     }
 
     private fun publishMetadata() {
@@ -358,6 +377,35 @@ private object AndroidNowPlayingActionDispatcher {
 
     fun dispatch(action: String?) {
         controllerRef?.get()?.handleAction(action)
+    }
+
+    fun seekBy(offsetMs: Long) {
+        controllerRef?.get()?.seekByMs(offsetMs)
+    }
+}
+
+/** What's playing, and play/pause/seek, for the Android Auto screen's buttons. */
+object NuvioPlaybackRemote {
+    data class State(
+        val active: Boolean = false,
+        val playing: Boolean = false,
+        val title: String? = null,
+        val subtitle: String? = null,
+    )
+
+    private val _state = kotlinx.coroutines.flow.MutableStateFlow(State())
+    val state: kotlinx.coroutines.flow.StateFlow<State> get() = _state
+
+    internal fun publish(state: State) {
+        _state.value = state
+    }
+
+    fun togglePlayPause() {
+        AndroidNowPlayingActionDispatcher.dispatch(if (_state.value.playing) ACTION_PAUSE else ACTION_PLAY)
+    }
+
+    fun seekBy(offsetMs: Long) {
+        AndroidNowPlayingActionDispatcher.seekBy(offsetMs)
     }
 }
 

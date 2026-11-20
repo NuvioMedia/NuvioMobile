@@ -17,6 +17,7 @@ import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.nuvio.app.features.player.NuvioPlaybackRemote
 
 /**
  * Runs Nuvio on a car surface, whichever way Android Auto hands one over: a private VirtualDisplay renders
@@ -204,7 +205,10 @@ internal class CarDisplayHost(private val ctx: Context) {
             cover.visibility = View.GONE
             return
         }
-        if (cover.childCount == 0) buildCover(cover)
+        if (cover.visibility != View.VISIBLE) {
+            cover.removeAllViews()
+            buildCover(cover)
+        }
         cover.visibility = View.VISIBLE
     }
 
@@ -225,7 +229,11 @@ internal class CarDisplayHost(private val ctx: Context) {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER_HORIZONTAL
                 addView(line("Video hidden while driving", 24f, 0xFF))
-                addView(line("Audio keeps playing. The picture comes back when you stop.", 17f, 0xB3))
+                val playback = NuvioPlaybackRemote.state.value
+                if (playback.active && !playback.title.isNullOrBlank()) {
+                    addView(line(listOfNotNull(playback.title, playback.subtitle).joinToString(" · "), 19f, 0xE6))
+                }
+                addView(line("Audio keeps playing. Use the steering wheel or the buttons to pause or skip.", 17f, 0xB3))
             },
             FrameLayout.LayoutParams(-1, -2, Gravity.CENTER),
         )

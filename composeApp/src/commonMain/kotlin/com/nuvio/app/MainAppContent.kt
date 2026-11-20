@@ -1,5 +1,9 @@
 package com.nuvio.app
 
+import com.nuvio.app.core.external.ExternalAppCommands
+import com.nuvio.app.navigation.TabsRoute
+import com.nuvio.app.navigation.PlayerRoute
+
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.MutableTransitionState
@@ -428,6 +432,37 @@ internal fun MainAppContent(
             AppScreenTab.Library -> libraryScrollToTopRequests.tryEmit(Unit)
             AppScreenTab.Settings -> settingsRootActionRequests.tryEmit(Unit)
         }
+    }
+
+    // Android Auto screen: its Search/Home/Library buttons and car keyboard drive Nuvio through these.
+    LaunchedEffect(navBackStack) {
+        ExternalAppCommands.commands.collect { command ->
+            while (navBackStack.size > 1 && navBackStack.lastOrNull() !is TabsRoute) {
+                navBackStack.removeAt(navBackStack.lastIndex)
+            }
+            when (command) {
+                is ExternalAppCommands.Command.Search -> {
+                    ExternalAppCommands.setPendingSearch(command.query)
+                    activateTab(AppScreenTab.Search)
+                }
+                is ExternalAppCommands.Command.OpenTab -> activateTab(command.tab)
+            }
+        }
+    }
+
+    LaunchedEffect(currentRoute, selectedTab) {
+        ExternalAppCommands.publishScreen(
+            when (currentRoute) {
+                is PlayerRoute -> ExternalAppCommands.Screen.PLAYER
+                null, is TabsRoute -> when (selectedTab) {
+                    AppScreenTab.Home -> ExternalAppCommands.Screen.HOME
+                    AppScreenTab.Search -> ExternalAppCommands.Screen.SEARCH
+                    AppScreenTab.Library -> ExternalAppCommands.Screen.LIBRARY
+                    AppScreenTab.Settings -> ExternalAppCommands.Screen.SETTINGS
+                }
+                else -> ExternalAppCommands.Screen.DETAIL
+            },
+        )
     }
 
     LaunchedEffect(

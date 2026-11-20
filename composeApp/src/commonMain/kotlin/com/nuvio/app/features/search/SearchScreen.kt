@@ -1,5 +1,7 @@
 package com.nuvio.app.features.search
 
+import androidx.compose.runtime.collectAsState
+import com.nuvio.app.core.external.ExternalAppCommands
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -131,6 +133,13 @@ fun SearchScreen(
     val fullyWatchedSeriesKeys by WatchedRepository.fullyWatchedSeriesKeys.collectAsStateWithLifecycle()
     val networkStatusUiState by NetworkStatusRepository.uiState.collectAsStateWithLifecycle()
     var query by rememberSaveable { mutableStateOf("") }
+    // A search typed on the Android Auto keyboard.
+    val externalSearch by ExternalAppCommands.pendingSearch.collectAsState()
+    LaunchedEffect(externalSearch) {
+        val requested = externalSearch ?: return@LaunchedEffect
+        query = requested
+        ExternalAppCommands.consumeSearch(requested)
+    }
     var lastRequestedQuery by rememberSaveable { mutableStateOf<String?>(null) }
     var observedOfflineState by remember { mutableStateOf(false) }
     val discoverInFocus by remember(query, listState) {
