@@ -70,6 +70,7 @@
     <string name="addons_modal_success_title">Addon Installed</string>
     <string name="addons_move_down">Move addon down</string>
     <string name="addons_move_up">Move addon up</string>
+    <string name="addons_reorder">Reorder addon</string>
     <string name="addons_overview_active">Active</string>
     <string name="addons_overview_addons">Addons</string>
     <string name="addons_overview_catalogs">Catalogs</string>

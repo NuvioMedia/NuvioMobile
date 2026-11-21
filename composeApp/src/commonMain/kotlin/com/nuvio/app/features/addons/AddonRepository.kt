@@ -277,6 +277,32 @@ object AddonRepository {
         pushToServer()
     }
 
+    fun reorderAddons(orderedManifestUrls: List<String>) {
+        if (isUsingPrimaryAddonsFromSecondaryProfile()) return
+        var changed = false
+        _uiState.update { current ->
+            val requestedOrder = orderedManifestUrls.distinct()
+            val addonsByUrl = current.addons.associateBy(ManagedAddon::manifestUrl)
+            val reordered = buildList {
+                requestedOrder.forEach { manifestUrl ->
+                    addonsByUrl[manifestUrl]?.let { add(it) }
+                }
+                current.addons.forEach { addon ->
+                    if (addon.manifestUrl !in requestedOrder) add(addon)
+                }
+            }
+            if (reordered.map(ManagedAddon::manifestUrl) == current.addons.map(ManagedAddon::manifestUrl)) {
+                current
+            } else {
+                changed = true
+                current.copy(addons = reordered)
+            }
+        }
+        if (!changed) return
+        persist()
+        pushToServer()
+    }
+
     fun setAddonEnabled(manifestUrl: String, enabled: Boolean) {
         if (isUsingPrimaryAddonsFromSecondaryProfile()) return
         var shouldRefresh = false

@@ -9,18 +9,22 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowDownward
-import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.DragHandle
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -28,6 +32,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -37,6 +42,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -58,6 +65,9 @@ import com.nuvio.app.core.ui.NuvioSurfaceCard
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
+import sh.calvin.reorderable.ReorderableCollectionItemScope
+import sh.calvin.reorderable.ReorderableItem
+import sh.calvin.reorderable.rememberReorderableLazyListState
 
 @Composable
 fun AddonsScreen(
@@ -99,6 +109,24 @@ internal fun AddonsSettingsPageContent(
     val usePersonalMediaCopy = AppFeaturePolicy.personalMediaAddonCopyEnabled
 
     val overview = remember(uiState.addons) { uiState.addons.toOverview() }
+    var draggedAddonOrder by remember { mutableStateOf<List<String>?>(null) }
+    val installedAddonsListState = rememberLazyListState()
+    val reorderableAddonsListState = rememberReorderableLazyListState(
+        lazyListState = installedAddonsListState,
+    ) { from, to ->
+        val currentOrder = draggedAddonOrder ?: uiState.addons.map { it.manifestUrl }
+        if (from.index in currentOrder.indices && to.index in currentOrder.indices && from.index != to.index) {
+            draggedAddonOrder = currentOrder.toMutableList().apply {
+                add(to.index, removeAt(from.index))
+            }
+        }
+    }
+    val displayedAddons = remember(uiState.addons, draggedAddonOrder) {
+        val order = draggedAddonOrder ?: uiState.addons.map { it.manifestUrl }
+        val addonsByUrl = uiState.addons.associateBy { it.manifestUrl }
+        order.mapNotNull(addonsByUrl::get) +
+            uiState.addons.filterNot { it.manifestUrl in order }
+    }
 
     Column(
         modifier = modifier,
@@ -150,44 +178,63 @@ internal fun AddonsSettingsPageContent(
         if (uiState.addons.isEmpty()) {
             EmptyStateCard(usePersonalMediaCopy = usePersonalMediaCopy)
         } else {
-            val lastIndex = uiState.addons.lastIndex
-            uiState.addons.forEachIndexed { index, addon ->
-                val manifest = addon.manifest
-                val behaviorHints = manifest?.behaviorHints
-                val showConfigureAction = behaviorHints?.configurable == true || behaviorHints?.configurationRequired == true
-                val configureUrl = addon.manifestUrl.toConfigureUrl()
-                InstalledAddonCard(
-                    addon = addon,
-                    onMoveUpClick = if (index > 0) {
-                        { AddonRepository.moveAddon(index, index - 1) }
-                    } else {
-                        null
-                    },
-                    onMoveDownClick = if (index < lastIndex) {
-                        { AddonRepository.moveAddon(index, index + 1) }
-                    } else {
-                        null
-                    },
-                    onRefreshClick = {
-                        AddonRepository.refreshAddon(
-                            manifestUrl = addon.manifestUrl,
-                            forceRefresh = true,
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 680.dp),
+                state = installedAddonsListState,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                itemsIndexed(
+                    items = displayedAddons,
+                    key = { _, addon -> addon.manifestUrl },
+                ) { _, addon ->
+                    val manifest = addon.manifest
+                    val behaviorHints = manifest?.behaviorHints
+                    val showConfigureAction = behaviorHints?.configurable == true || behaviorHints?.configurationRequired == true
+                    val configureUrl = addon.manifestUrl.toConfigureUrl()
+                    ReorderableItem(
+                        state = reorderableAddonsListState,
+                        key = addon.manifestUrl,
+                    ) { isDragging ->
+                        val elevation by animateDpAsState(
+                            targetValue = if (isDragging) 6.dp else 0.dp,
                         )
-                    },
-                    onEnabledChange = { enabled ->
-                        AddonRepository.setAddonEnabled(addon.manifestUrl, enabled)
-                    },
-                    onConfigureClick = if (showConfigureAction && !configureUrl.isNullOrBlank()) {
-                        {
-                            runCatching {
-                                uriHandler.openUri(configureUrl)
-                            }
-                        }
-                    } else {
-                        null
-                    },
-                    onDeleteClick = { addonPendingDeletionUrl = addon.manifestUrl },
-                )
+                        InstalledAddonCard(
+                            modifier = Modifier.shadow(elevation, RoundedCornerShape(18.dp)),
+                            addon = addon,
+                            dragHandleScope = this,
+                            onDragStarted = { _ ->
+                                if (draggedAddonOrder == null) {
+                                    draggedAddonOrder = uiState.addons.map { it.manifestUrl }
+                                }
+                            },
+                            onDragStopped = {
+                                draggedAddonOrder?.let(AddonRepository::reorderAddons)
+                                draggedAddonOrder = null
+                            },
+                            onRefreshClick = {
+                                AddonRepository.refreshAddon(
+                                    manifestUrl = addon.manifestUrl,
+                                    forceRefresh = true,
+                                )
+                            },
+                            onEnabledChange = { enabled ->
+                                AddonRepository.setAddonEnabled(addon.manifestUrl, enabled)
+                            },
+                            onConfigureClick = if (showConfigureAction && !configureUrl.isNullOrBlank()) {
+                                {
+                                    runCatching {
+                                        uriHandler.openUri(configureUrl)
+                                    }
+                                }
+                            } else {
+                                null
+                            },
+                            onDeleteClick = { addonPendingDeletionUrl = addon.manifestUrl },
+                        )
+                    }
+                }
             }
         }
     }
@@ -438,9 +485,11 @@ private fun EmptyStateCard(
 
 @Composable
 private fun InstalledAddonCard(
+    modifier: Modifier = Modifier,
     addon: ManagedAddon,
-    onMoveUpClick: (() -> Unit)?,
-    onMoveDownClick: (() -> Unit)?,
+    dragHandleScope: ReorderableCollectionItemScope,
+    onDragStarted: (Offset) -> Unit,
+    onDragStopped: () -> Unit,
     onRefreshClick: () -> Unit,
     onEnabledChange: (Boolean) -> Unit,
     onConfigureClick: (() -> Unit)?,
@@ -448,7 +497,7 @@ private fun InstalledAddonCard(
 ) {
     val manifest = addon.manifest
 
-    NuvioSurfaceCard {
+    NuvioSurfaceCard(modifier = modifier) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.Top,
@@ -496,20 +545,19 @@ private fun InstalledAddonCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            onMoveUpClick?.let { onMoveUp ->
-                NuvioIconActionButton(
-                    icon = Icons.Rounded.ArrowUpward,
-                    contentDescription = stringResource(Res.string.addons_move_up),
+            IconButton(
+                modifier = with(dragHandleScope) {
+                    Modifier.longPressDraggableHandle(
+                        onDragStarted = onDragStarted,
+                        onDragStopped = onDragStopped,
+                    )
+                },
+                onClick = {},
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.DragHandle,
+                    contentDescription = stringResource(Res.string.addons_reorder),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    onClick = onMoveUp,
-                )
-            }
-            onMoveDownClick?.let { onMoveDown ->
-                NuvioIconActionButton(
-                    icon = Icons.Rounded.ArrowDownward,
-                    contentDescription = stringResource(Res.string.addons_move_down),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    onClick = onMoveDown,
                 )
             }
             NuvioIconActionButton(
