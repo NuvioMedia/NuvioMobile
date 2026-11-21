@@ -63,6 +63,26 @@ class CarSetupActivity : Activity() {
             }
         })
 
+        column.addView(text("Car mode", 19f, top = 24))
+        val modeNote = text(CarMode.current(this).description, 14f, MUTED)
+        val modes = RadioGroup(this)
+        CarMode.entries.forEach { mode ->
+            modes.addView(RadioButton(this).apply {
+                id = View.generateViewId()
+                text = mode.label
+                setTextColor(Color.WHITE)
+                isChecked = mode == CarMode.current(this@CarSetupActivity)
+                setOnClickListener {
+                    CarMode.set(this@CarSetupActivity, mode)
+                    modeNote.text = mode.description + "\n\nAfter switching: unplug the phone, force-stop Android Auto " +
+                        "(Settings > Apps > Android Auto > Force stop), then reconnect. If Nuvio is missing from the " +
+                        "car launcher, check Customize launcher."
+                }
+            })
+        }
+        column.addView(modes)
+        column.addView(modeNote)
+
         column.addView(text("In the car", 19f, top = 24))
         column.addView(text(
             "Tap to select, drag to scroll. Drags start from the middle of the screen, so to scroll a row of posters, " +
