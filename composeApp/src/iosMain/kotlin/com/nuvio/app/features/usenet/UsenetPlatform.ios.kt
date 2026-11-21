@@ -16,8 +16,9 @@ internal actual object UsenetPlatform {
 
     actual fun loadSources(profileId: Int): UsenetSourceConfiguration = UsenetSourceConfiguration()
 
-    actual fun saveSources(profileId: Int, value: UsenetSourceConfiguration) =
+    actual fun saveSources(profileId: Int, value: UsenetSourceConfiguration) {
         throw UnsupportedOperationException("Usenet is not available on this device")
+    }
 
     actual fun removeProfile(profileId: Int) = Unit
 
