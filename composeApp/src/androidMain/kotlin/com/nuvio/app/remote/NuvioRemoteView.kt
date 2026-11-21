@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -352,6 +353,17 @@ private fun PlayingContent(playback: NuvioPlaybackRemote.State) {
             }
             RoundIcon(Icons.Rounded.Forward30, 56) { NuvioPlaybackRemote.seekBy(30_000L) }
             SmallText("+2m") { NuvioPlaybackRemote.seekBy(120_000L) }
+        }
+        Spacer(Modifier.height(10.dp))
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(CardHigh)
+                .clickable { NuvioPlaybackRemote.nextEpisode() }.padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.SkipNext, null, tint = Color.White)
+            Spacer(Modifier.width(8.dp))
+            Text("Next episode", color = Color.White, fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
         }
     }
 }

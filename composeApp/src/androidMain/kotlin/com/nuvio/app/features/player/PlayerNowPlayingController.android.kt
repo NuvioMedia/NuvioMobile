@@ -77,6 +77,22 @@ internal class AndroidPlayerNowPlayingController(
                 override fun onFastForward() = controls.seekBy(SEEK_INTERVAL_MS)
 
                 override fun onRewind() = controls.seekBy(-SEEK_INTERVAL_MS)
+
+                // Steering wheel next/previous in the car (Nuvio Auto Setup decides what they do).
+                override fun onSkipToNext() {
+                    when (CarPlayerOverrides.config.value.steering) {
+                        CarPlayerOverrides.SteeringMode.EPISODES -> CarPlayerOverrides.requestNextEpisode()
+                        CarPlayerOverrides.SteeringMode.SEEK -> controls.seekBy(30_000L)
+                        CarPlayerOverrides.SteeringMode.DEFAULT -> controls.seekBy(SEEK_INTERVAL_MS)
+                    }
+                }
+
+                override fun onSkipToPrevious() {
+                    when (CarPlayerOverrides.config.value.steering) {
+                        CarPlayerOverrides.SteeringMode.DEFAULT -> controls.seekBy(-SEEK_INTERVAL_MS)
+                        else -> controls.seekBy(-10_000L)
+                    }
+                }
             },
             mainHandler,
         )
@@ -287,7 +303,12 @@ internal class AndroidPlayerNowPlayingController(
             PlaybackState.ACTION_SEEK_TO or
             PlaybackState.ACTION_FAST_FORWARD or
             PlaybackState.ACTION_REWIND or
-            PlaybackState.ACTION_STOP
+            PlaybackState.ACTION_STOP or
+            if (CarPlayerOverrides.config.value.steering != CarPlayerOverrides.SteeringMode.DEFAULT) {
+                PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS
+            } else {
+                0L
+            }
 
         mediaSession.setPlaybackState(
             PlaybackState.Builder()
@@ -417,6 +438,12 @@ object NuvioPlaybackRemote {
     fun togglePlayPause() {
         AndroidNowPlayingActionDispatcher.dispatch(if (_state.value.playing) ACTION_PAUSE else ACTION_PLAY)
     }
+
+    fun pause() {
+        if (_state.value.active) AndroidNowPlayingActionDispatcher.dispatch(ACTION_PAUSE)
+    }
+
+    fun nextEpisode() = CarPlayerOverrides.requestNextEpisode()
 
     fun seekBy(offsetMs: Long) {
         AndroidNowPlayingActionDispatcher.seekBy(offsetMs)

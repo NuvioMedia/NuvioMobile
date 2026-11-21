@@ -1,5 +1,7 @@
 package com.nuvio.app
 
+import com.nuvio.app.core.external.ExternalAppCommands
+import com.nuvio.app.core.ui.LocalUseInlineOverlays
 import com.nuvio.app.features.settings.PreloadAppBrandWordmark
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.MutableTransitionState
@@ -148,6 +150,8 @@ internal fun AppGate(
     }
 
     var gateScreen by rememberSaveable { mutableStateOf(AppGateScreen.Loading.name) }
+    // Nuvio Auto: the car window can open straight into a chosen profile and stay locked to it.
+    val isCarWindow = LocalUseInlineOverlays.current
     var editingProfile by remember { mutableStateOf<NuvioProfile?>(null) }
     var autoSkipProfileSelection by rememberSaveable { mutableStateOf(false) }
     var profileSelectionLoading by rememberSaveable { mutableStateOf(false) }
@@ -260,6 +264,12 @@ internal fun AppGate(
             ?.takeUnless { it.pinEnabled }
     }
 
+    fun carStartupProfile(profiles: List<NuvioProfile>): NuvioProfile? {
+        if (!isCarWindow) return null
+        val index = ExternalAppCommands.carProfileIndex.value ?: return null
+        return profiles.find { it.profileIndex == index && !it.pinEnabled }
+    }
+
     fun selectProfile(profile: NuvioProfile, sync: Boolean) {
         if (!renderMainContent) {
             appGateController?.beginContentReload()
@@ -276,6 +286,13 @@ internal fun AppGate(
         if (profiles.isEmpty()) {
             autoSkipProfileSelection = true
             gateScreen = AppGateScreen.ProfileSelection.name
+            return
+        }
+
+        carStartupProfile(profiles)?.let { profile ->
+            selectProfile(profile, sync = syncOnEnter)
+            gateScreen = AppGateScreen.Main.name
+            autoSkipProfileSelection = false
             return
         }
 
@@ -338,6 +355,17 @@ internal fun AppGate(
                     enterProfileGate(ProfileRepository.state.value.profiles, syncOnEnter = true)
                 }
             }
+        }
+    }
+
+    // Car lock: in the car, going back to "Who's watching" returns straight to the car profile.
+    LaunchedEffect(gateScreen, profileState.profiles) {
+        if (!isCarWindow || !ExternalAppCommands.carLocked.value) return@LaunchedEffect
+        if (gateScreen != AppGateScreen.ProfileSelection.name) return@LaunchedEffect
+        carStartupProfile(profileState.profiles)?.let { profile ->
+            selectProfile(profile, sync = true)
+            gateScreen = AppGateScreen.Main.name
+            autoSkipProfileSelection = false
         }
     }
 

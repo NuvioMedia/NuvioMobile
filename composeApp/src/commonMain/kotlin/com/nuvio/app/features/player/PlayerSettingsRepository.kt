@@ -1368,8 +1368,16 @@ object PlayerSettingsRepository {
         PlayerSettingsStorage.saveIosHdrComputePeakEnabled(iosHdrComputePeakEnabled)
     }
 
+    /** The saved settings, before Nuvio Auto's car overrides. */
+    private var lastSavedState = PlayerSettingsUiState()
+
+    /** Re-applies [CarPlayerOverrides] to the saved settings (the car connected, disconnected or changed a toggle). */
+    fun reapplyCarOverrides() {
+        _uiState.value = CarPlayerOverrides.overlay(lastSavedState)
+    }
+
     private fun publish() {
-        _uiState.value = PlayerSettingsUiState(
+        lastSavedState = PlayerSettingsUiState(
             useLegacyPlayerLayout = useLegacyPlayerLayout,
             showLoadingOverlay = showLoadingOverlay,
             showPlayerLoadingStatus = showPlayerLoadingStatus,
@@ -1461,6 +1469,7 @@ object PlayerSettingsRepository {
             iosSaturation = iosSaturation,
             iosGamma = iosGamma,
         )
+        reapplyCarOverrides()
     }
 
     private fun normalizeStreamAutoPlaySource(source: StreamAutoPlaySource): StreamAutoPlaySource {

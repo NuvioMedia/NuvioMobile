@@ -14,7 +14,10 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.core.app.NotificationCompat
+import com.nuvio.app.core.external.ExternalAppCommands
 import com.nuvio.app.features.player.CarPlayerOverrides
+import com.nuvio.app.features.player.NuvioPlaybackRemote
+import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.player.PlayerResizeMode
 import com.nuvio.app.features.streams.StreamQualityCap
 import java.lang.ref.WeakReference
@@ -42,14 +45,31 @@ internal object CarSession {
         appContext = app
         hostRef = WeakReference(host)
         watchNetwork(app)
-        applyVideoFraming(app)
+        applyOverrides(app)
         showNotification(app)
     }
 
-    private fun applyVideoFraming(app: Context) {
-        CarPlayerOverrides.setResizeMode(
-            if (active && CarPrefs.fillVideo(app)) PlayerResizeMode.Zoom else null,
+    /** Pushes every in-car override from Nuvio Auto Setup into Nuvio (or clears them when not in the car). */
+    private fun applyOverrides(app: Context) {
+        if (!active) {
+            CarPlayerOverrides.clear()
+            ExternalAppCommands.setCarProfile(null, locked = false)
+            return
+        }
+        val basic = CarPrefs.basicMode(app)
+        CarPlayerOverrides.set(
+            CarPlayerOverrides.Config(
+                resizeMode = if (CarPrefs.FILL_VIDEO.get(app)) PlayerResizeMode.Zoom else null,
+                bigBuffer = CarPrefs.BIG_BUFFER.get(app),
+                autoSkipIntros = CarPrefs.AUTO_SKIP_INTROS.get(app),
+                autoNextEpisode = CarPrefs.AUTO_NEXT_EPISODE.get(app),
+                subtitleScale = if (basic) 1f else CarPrefs.SUBTITLE_SCALES[CarPrefs.subtitleScaleIndex(app)],
+                subtitleBackground = CarPrefs.SUBTITLE_BACKGROUND.get(app),
+                steering = if (basic) CarPlayerOverrides.SteeringMode.DEFAULT else CarPrefs.steering(app),
+            ),
         )
+        ExternalAppCommands.setCarProfile(CarPrefs.carProfile(app), CarPrefs.CAR_LOCK.get(app))
+        CarLog.d("Car overrides: ${CarPlayerOverrides.config.value}, profile ${CarPrefs.carProfile(app)}")
     }
 
     fun stop(host: CarDisplayHost) {
@@ -61,7 +81,12 @@ internal object CarSession {
         }
         networkCallback = null
         StreamQualityCap.set(null)
-        CarPlayerOverrides.setResizeMode(null)
+        if (CarPrefs.PAUSE_ON_DISCONNECT.get(app)) {
+            NuvioPlaybackRemote.pause()
+            CarLog.d("Car disconnected: paused")
+        }
+        cacheProfiles(app)
+        applyOverrides(app)
         app.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
     }
 
@@ -70,9 +95,17 @@ internal object CarSession {
         val app = ctx.applicationContext
         if (!active) return
         applyCap(app, currentlyCellular(app))
-        applyVideoFraming(app)
+        applyOverrides(app)
         if (CarPrefs.remoteNotification(app)) showNotification(app)
         else app.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
+    }
+
+    /** Remembers profile names for the Setup screen's profile picker. */
+    fun cacheProfiles(ctx: Context) {
+        runCatching {
+            val profiles = ProfileRepository.state.value.profiles.map { it.profileIndex to it.name }
+            CarPrefs.cacheProfiles(ctx, profiles)
+        }
     }
 
     // ---- Data saver -------------------------------------------------------------------------------------------

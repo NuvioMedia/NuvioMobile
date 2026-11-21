@@ -1,6 +1,7 @@
 package com.nuvio.app
 
 import com.nuvio.app.core.external.ExternalAppCommands
+import androidx.compose.runtime.collectAsState
 import com.nuvio.app.navigation.TabsRoute
 import com.nuvio.app.navigation.PlayerRoute
 
@@ -435,7 +436,10 @@ internal fun MainAppContent(
     }
 
     // Android Auto screen: its Search/Home/Library buttons and car keyboard drive Nuvio through these.
-    LaunchedEffect(navBackStack) {
+    // Only the car window listens, so a Nuvio open on the phone at the same time isn't steered too.
+    val isCarWindow = com.nuvio.app.core.ui.LocalUseInlineOverlays.current
+    LaunchedEffect(navBackStack, isCarWindow) {
+        if (!isCarWindow) return@LaunchedEffect
         ExternalAppCommands.commands.collect { command ->
             when (command) {
                 is ExternalAppCommands.Command.Search -> {
@@ -447,12 +451,23 @@ internal fun MainAppContent(
                     popToTabsRoot(navBackStack)
                     activateTab(command.tab)
                 }
+                ExternalAppCommands.Command.OpenDownloads -> {
+                    popToTabsRoot(navBackStack)
+                    navController.navigate(DownloadsRoute(downloadsTitle))
+                }
                 is ExternalAppCommands.Command.Resume -> Unit // handled next to openContinueWatching below
             }
         }
     }
 
-    LaunchedEffect(currentRoute, selectedTab) {
+    // Car lock: Settings stays closed on the car screen.
+    val carLocked by ExternalAppCommands.carLocked.collectAsState()
+    LaunchedEffect(isCarWindow, carLocked, selectedTab) {
+        if (isCarWindow && carLocked && selectedTab == AppScreenTab.Settings) activateTab(AppScreenTab.Home)
+    }
+
+    LaunchedEffect(currentRoute, selectedTab, isCarWindow) {
+        if (!isCarWindow) return@LaunchedEffect
         ExternalAppCommands.publishScreen(
             when (currentRoute) {
                 is PlayerRoute -> ExternalAppCommands.Screen.PLAYER
@@ -1312,7 +1327,8 @@ internal fun MainAppContent(
         }
 
         // Android Auto: "Continue watching?" prompt when the car connects.
-        LaunchedEffect(navBackStack) {
+        LaunchedEffect(navBackStack, isCarWindow) {
+            if (!isCarWindow) return@LaunchedEffect
             ExternalAppCommands.commands.collect { command ->
                 if (command is ExternalAppCommands.Command.Resume) {
                     popToTabsRoot(navBackStack)

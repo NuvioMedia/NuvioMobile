@@ -22,6 +22,12 @@ Every push to `android-auto` builds one. Set the `NUVIO_AUTO_KEYSTORE_B64` secre
 4. Open **Nuvio Auto** on the phone once and sign in. Open **Nuvio Auto Setup** for screen size and the
    driving video lock.
 
+**Setup.** Every in-car extra has its own switch in Nuvio Auto Setup, plus Basic mode (all extras off at once),
+reset, and a shareable car log. Extras: car profile and car lock, continue-watching prompt, fill-screen video,
+bigger buffer, auto-skip intros, auto next episode, subtitle size and background, steering wheel mapping,
+pause on disconnect, data saver, audio-only and next-episode buttons, Downloads shortcut, button bar position
+and timeout, phone remote with Quick Settings tile.
+
 **Extras.** Car keyboard search with recent searches; buttons that switch to playback controls while watching;
 "Continue watching?" when the car connects; a phone remote for passengers (notification while connected);
 data saver that puts 720p-or-lower streams first on mobile data. All toggles are in Nuvio Auto Setup.

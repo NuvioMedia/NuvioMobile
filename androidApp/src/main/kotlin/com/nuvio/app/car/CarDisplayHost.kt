@@ -163,7 +163,11 @@ internal class CarDisplayHost(private val ctx: Context) {
     }
 
     private fun deliverTouch(event: MotionEvent) {
-        if (coverShowing()) return // the driving cover swallows touches
+        if (coverShowing()) {
+            // Audio-only (not driving): a tap on the cover brings the picture back.
+            if (audioOnly && !drivingCover() && event.actionMasked == MotionEvent.ACTION_UP) toggleAudioOnly()
+            return
+        }
         window?.injectTouch(event)
     }
 
@@ -197,7 +201,21 @@ internal class CarDisplayHost(private val ctx: Context) {
 
     // ---- Driving cover ----------------------------------------------------------------------------------------
 
-    private fun coverShowing(): Boolean = driving.moving && CarPrefs.hideVideoWhileDriving(ctx)
+    /** Audio-only: picture covered on purpose (button in the car), sound keeps playing. */
+    var audioOnly = false
+        private set
+
+    fun toggleAudioOnly(): Boolean {
+        audioOnly = !audioOnly
+        CarLog.d("Audio only: $audioOnly")
+        window?.cover?.let { it.visibility = View.GONE } // rebuild with the right text
+        updateCover()
+        return audioOnly
+    }
+
+    private fun drivingCover(): Boolean = driving.moving && CarPrefs.hideVideoWhileDriving(ctx)
+
+    private fun coverShowing(): Boolean = drivingCover() || audioOnly
 
     private fun updateCover() {
         val w = window ?: return
@@ -206,9 +224,11 @@ internal class CarDisplayHost(private val ctx: Context) {
             cover.visibility = View.GONE
             return
         }
-        if (cover.visibility != View.VISIBLE) {
+        val kind = if (drivingCover()) "driving" else "audio"
+        if (cover.visibility != View.VISIBLE || cover.tag != kind) {
             cover.removeAllViews()
             buildCover(cover)
+            cover.tag = kind
         }
         cover.visibility = View.VISIBLE
     }
@@ -229,12 +249,18 @@ internal class CarDisplayHost(private val ctx: Context) {
             LinearLayout(c).apply {
                 orientation = LinearLayout.VERTICAL
                 gravity = Gravity.CENTER_HORIZONTAL
-                addView(line("Video hidden while driving", 24f, 0xFF))
+                addView(line(if (drivingCover()) "Video hidden while driving" else "Audio only", 24f, 0xFF))
                 val playback = NuvioPlaybackRemote.state.value
                 if (playback.active && !playback.title.isNullOrBlank()) {
                     addView(line(listOfNotNull(playback.title, playback.subtitle).joinToString(" · "), 19f, 0xE6))
                 }
-                addView(line("Audio keeps playing. Use the steering wheel or the buttons to pause or skip.", 17f, 0xB3))
+                addView(
+                    line(
+                        if (drivingCover()) "Audio keeps playing. Use the steering wheel or the buttons to pause or skip."
+                        else "Tap the audio-only button again to bring the picture back.",
+                        17f, 0xB3,
+                    ),
+                )
             },
             FrameLayout.LayoutParams(-1, -2, Gravity.CENTER),
         )

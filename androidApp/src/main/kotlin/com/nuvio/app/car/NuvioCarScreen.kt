@@ -108,17 +108,28 @@ class NuvioCarScreen(ctx: CarContext) : Screen(ctx), SurfaceCallback {
             strip.addAction(action(R.drawable.car_ic_home) { openTab(AppScreenTab.Home) })
             strip.addAction(action(R.drawable.car_ic_library) { openTab(AppScreenTab.Library) })
         }
+        val map = ActionStrip.Builder()
+        if (watching) {
+            map.addAction(action(R.drawable.car_ic_next_episode) { NuvioPlaybackRemote.nextEpisode() })
+            map.addAction(action(R.drawable.car_ic_audio_only) { toggleAudioOnly() })
+        } else {
+            map.addAction(action(R.drawable.car_ic_mic) { openVoice() })
+            map.addAction(action(R.drawable.car_ic_downloads) {
+                ExternalAppCommands.send(ExternalAppCommands.Command.OpenDownloads)
+            })
+        }
+        map.addAction(action(R.drawable.car_ic_text_size) {
+            CarToast.makeText(carContext, "Screen size: ${host.cycleSize()}", CarToast.LENGTH_SHORT).show()
+        })
         return NavigationTemplate.Builder()
             .setActionStrip(strip.build())
-            .setMapActionStrip(
-                ActionStrip.Builder()
-                    .addAction(action(R.drawable.car_ic_mic) { openVoice() })
-                    .addAction(action(R.drawable.car_ic_text_size) {
-                        CarToast.makeText(carContext, "Screen size: ${host.cycleSize()}", CarToast.LENGTH_SHORT).show()
-                    })
-                    .build()
-            )
+            .setMapActionStrip(map.build())
             .build()
+    }
+
+    private fun toggleAudioOnly() {
+        val on = host.toggleAudioOnly()
+        CarToast.makeText(carContext, if (on) "Audio only" else "Picture back on", CarToast.LENGTH_SHORT).show()
     }
 
     private fun openTab(tab: AppScreenTab) {

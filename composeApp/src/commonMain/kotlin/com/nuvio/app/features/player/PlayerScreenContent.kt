@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
@@ -188,6 +189,10 @@ internal fun PlayerScreenContent(args: PlayerScreenArgs) {
             runtime.lastSyncedSettingsResizeMode = settingsResizeMode
         }
         runtime.resetIdentityStateIfNeeded()
+        // Nuvio Auto: "next episode" from the steering wheel or the car's buttons.
+        LaunchedEffect(runtime) {
+            CarPlayerOverrides.nextEpisodeRequests.collect { runtime.playNextEpisode() }
+        }
 
         EnterImmersivePlayerMode(keepScreenAwake = keepScreenAwake)
         ManagePlayerPictureInPicture(

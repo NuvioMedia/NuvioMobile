@@ -23,6 +23,24 @@ object ExternalAppCommands {
 
         /** Resume a Continue Watching item straight into playback. */
         data class Resume(val item: ContinueWatchingItem) : Command
+
+        /** Open the Downloads page. */
+        data object OpenDownloads : Command
+    }
+
+    private val _carProfileIndex = MutableStateFlow<Int?>(null)
+
+    /** Profile the car window opens straight into (skipping "Who's watching"), or null. */
+    val carProfileIndex: StateFlow<Int?> = _carProfileIndex.asStateFlow()
+
+    private val _carLocked = MutableStateFlow(false)
+
+    /** Car lock: no profile switching or Settings on the car screen. */
+    val carLocked: StateFlow<Boolean> = _carLocked.asStateFlow()
+
+    fun setCarProfile(profileIndex: Int?, locked: Boolean) {
+        _carProfileIndex.value = profileIndex
+        _carLocked.value = locked && profileIndex != null
     }
 
     /** Where the user is, coarsely. */

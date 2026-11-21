@@ -44,11 +44,16 @@ class LegacyCarActivity : CarActivity() {
     private lateinit var bar: LinearLayout
     private var barMode: String = ""
     private var searchField: CarSearchField? = null
+    private var resumeSeenAt = 0L
 
     private val hideBar = Runnable { bar.animate().alpha(0f).setDuration(250).withEndAction { bar.visibility = View.GONE } }
     private val poll = object : Runnable {
         override fun run() {
             rebuildBar(force = false)
+            if (!resumeOffered && ExternalAppCommands.continueWatching.value.isNotEmpty()) {
+                if (resumeSeenAt == 0L) resumeSeenAt = android.os.SystemClock.uptimeMillis()
+                if (android.os.SystemClock.uptimeMillis() - resumeSeenAt > RESUME_DELAY_MS) maybeOfferResume()
+            }
             main.postDelayed(this, 600)
         }
     }
@@ -60,7 +65,7 @@ class LegacyCarActivity : CarActivity() {
             val ui = carUiController
             ui.menuController.hideMenuButton()
             // Clear Android Auto's status overlay (signal, battery, clock, mic, title) off Nuvio's picture.
-            ui.statusBarController.run {
+            if (CarPrefs.HIDE_STATUS_OVERLAY.get(this)) ui.statusBarController.run {
                 hideAppHeader()
                 hideTitle()
                 hideClock()
@@ -101,10 +106,13 @@ class LegacyCarActivity : CarActivity() {
         }
         val root = FrameLayout(this).apply {
             addView(surfaceView, FrameLayout.LayoutParams(-1, -1))
-            addView(bar, FrameLayout.LayoutParams(-2, -2, Gravity.TOP or Gravity.END).apply {
+            val atBottom = CarPrefs.BAR_AT_BOTTOM.get(this@LegacyCarActivity)
+            addView(bar, FrameLayout.LayoutParams(-2, -2, (if (atBottom) Gravity.BOTTOM else Gravity.TOP) or Gravity.END).apply {
                 topMargin = dp(12)
+                bottomMargin = dp(12)
                 rightMargin = dp(12)
             })
+            addView(resumeCard, FrameLayout.LayoutParams(-2, -2, Gravity.CENTER))
         }
         setContentView(root)
         rebuildBar(force = true)
@@ -122,7 +130,8 @@ class LegacyCarActivity : CarActivity() {
         bar.animate().cancel()
         bar.visibility = View.VISIBLE
         bar.alpha = 1f
-        main.postDelayed(hideBar, BAR_TIMEOUT_MS)
+        val timeout = CarPrefs.BAR_TIMEOUTS[CarPrefs.barTimeoutIndex(this)]
+        if (timeout > 0) main.postDelayed(hideBar, timeout)
     }
 
     /** Browsing: Back, Search, Home, Library, Size. Watching: Back, -10 s, play/pause, +30 s. */
@@ -140,10 +149,18 @@ class LegacyCarActivity : CarActivity() {
                 NuvioPlaybackRemote.togglePlayPause()
             }
             addButton(R.drawable.car_ic_forward_30) { NuvioPlaybackRemote.seekBy(30_000L) }
+            addButton(R.drawable.car_ic_next_episode) { NuvioPlaybackRemote.nextEpisode() }
+            addButton(R.drawable.car_ic_audio_only) {
+                val on = host?.toggleAudioOnly() ?: return@addButton
+                Toast.makeText(this, if (on) "Audio only" else "Picture back on", Toast.LENGTH_SHORT).show()
+            }
         } else {
             addButton(R.drawable.car_ic_search) { startCarKeyboard() }
             addButton(R.drawable.car_ic_home) { tab(AppScreenTab.Home) }
             addButton(R.drawable.car_ic_library) { tab(AppScreenTab.Library) }
+            addButton(R.drawable.car_ic_downloads) {
+                ExternalAppCommands.send(ExternalAppCommands.Command.OpenDownloads)
+            }
             addButton(R.drawable.car_ic_text_size) {
                 val label = host?.cycleSize() ?: return@addButton
                 Toast.makeText(this, "Screen size: $label", Toast.LENGTH_SHORT).show()
@@ -210,8 +227,64 @@ class LegacyCarActivity : CarActivity() {
         super.onDestroy()
     }
 
+    // ---- "Continue watching?" ----------------------------------------------------------------------------------
+
+    private val resumeCard: LinearLayout by lazy { LinearLayout(this).apply { visibility = View.GONE } }
+    private var resumeOffered = false
+
+    /** Once per drive, when the home screen's Continue Watching row first has something. */
+    private fun maybeOfferResume() {
+        if (resumeOffered || !CarPrefs.resumePrompt(this)) return
+        if (ExternalAppCommands.screen.value != ExternalAppCommands.Screen.HOME) return
+        val item = ExternalAppCommands.continueWatching.value.firstOrNull() ?: return
+        resumeOffered = true
+        CarLog.d("Offering to resume ${item.title}")
+        resumeCard.removeAllViews()
+        resumeCard.apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            setPadding(dp(28), dp(22), dp(28), dp(20))
+            background = GradientDrawable().apply {
+                cornerRadius = dp(24).toFloat()
+                setColor(Color.argb(0xF0, 20, 20, 28))
+            }
+            fun label(text: String, sp: Float, alpha: Int) = android.widget.TextView(context).apply {
+                this.text = text
+                textSize = sp
+                setTextColor(Color.argb(alpha, 255, 255, 255))
+                gravity = Gravity.CENTER
+                setPadding(0, dp(2), 0, dp(2))
+            }
+            addView(label("Continue watching?", 16f, 0xB3))
+            addView(label(item.title, 22f, 0xFF))
+            item.subtitle.takeIf { it.isNotBlank() }?.let { addView(label(it, 15f, 0xB3)) }
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dp(14), 0, 0)
+                fun pill(text: String, primary: Boolean, onClick: () -> Unit) = android.widget.Button(context).apply {
+                    this.text = text
+                    isAllCaps = false
+                    textSize = 16f
+                    setTextColor(Color.WHITE)
+                    background = GradientDrawable().apply {
+                        cornerRadius = dp(22).toFloat()
+                        setColor(if (primary) Color.rgb(124, 77, 255) else Color.argb(0x40, 255, 255, 255))
+                    }
+                    setOnClickListener { onClick() }
+                }
+                addView(pill("Resume", true) {
+                    resumeCard.visibility = View.GONE
+                    ExternalAppCommands.send(ExternalAppCommands.Command.Resume(item))
+                }, LinearLayout.LayoutParams(dp(150), dp(52)).apply { marginEnd = dp(12) })
+                addView(pill("Not now", false) { resumeCard.visibility = View.GONE }, LinearLayout.LayoutParams(dp(150), dp(52)))
+            })
+            visibility = View.VISIBLE
+        }
+        main.postDelayed({ resumeCard.visibility = View.GONE }, 20_000L)
+    }
+
     private companion object {
-        const val BAR_TIMEOUT_MS = 4_000L
+        const val RESUME_DELAY_MS = 2_500L
     }
 }
 

@@ -53,6 +53,7 @@ class CarRemoteActivity : ComponentActivity() {
         }
 
         override fun openTab(tab: AppScreenTab) {
+            if (locked()) return
             ExternalAppCommands.send(ExternalAppCommands.Command.OpenTab(tab))
         }
 
@@ -68,7 +69,15 @@ class CarRemoteActivity : ComponentActivity() {
         setContentView(NuvioRemoteView.create(this, actions))
     }
 
+    /** Car lock: the remote only controls playback. */
+    private fun locked(): Boolean {
+        val on = ExternalAppCommands.carLocked.value
+        if (on) Toast.makeText(this, "Car lock is on: playback controls only", Toast.LENGTH_SHORT).show()
+        return on
+    }
+
     private fun sendSearch(query: String) {
+        if (locked()) return
         if (!CarSession.active) {
             Toast.makeText(this, "Open Nuvio on the car screen first", Toast.LENGTH_SHORT).show()
             return

@@ -560,8 +560,9 @@ fun HomeScreen(
         )
     }
     val hasContinueWatchingRows = continueWatchingItems.isNotEmpty() || upcomingItems.isNotEmpty()
-    LaunchedEffect(continueWatchingItems) {
-        ExternalAppCommands.publishContinueWatching(continueWatchingItems.take(5))
+    val publishForCar = com.nuvio.app.core.ui.LocalUseInlineOverlays.current
+    LaunchedEffect(continueWatchingItems, publishForCar) {
+        if (publishForCar) ExternalAppCommands.publishContinueWatching(continueWatchingItems.take(5))
     }
 
     ScreenActivityEffect(activeProfileId, continueWatchingItems.isNotEmpty(), hasUserScrolledContinueWatching) { active ->

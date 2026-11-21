@@ -270,6 +270,18 @@
                 android:value="ongoing" />
         </service>
 
+        <!-- Quick Settings tile that opens the phone remote. -->
+        <service
+            android:name="com.nuvio.app.car.RemoteTileService"
+            android:exported="true"
+            android:icon="@drawable/car_ic_play"
+            android:label="Nuvio remote"
+            android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
+            <intent-filter>
+                <action android:name="android.service.quicksettings.action.QS_TILE" />
+            </intent-filter>
+        </service>
+
         <!-- Phone remote for a passenger while Nuvio is on the car screen. -->
         <activity
             android:name="com.nuvio.app.car.CarRemoteActivity"
