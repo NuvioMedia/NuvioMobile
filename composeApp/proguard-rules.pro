@@ -62,3 +62,7 @@
 -dontwarn org.conscrypt.**
 -dontwarn org.bouncycastle.**
 -dontwarn org.openjsse.**
+
+# Audio Sync speech recognition uses JNI to read configuration fields by name.
+-keep class com.k2fsa.sherpa.onnx.** { *; }
+-keep interface com.k2fsa.sherpa.onnx.** { *; }

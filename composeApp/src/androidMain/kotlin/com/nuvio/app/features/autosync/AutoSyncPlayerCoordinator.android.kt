@@ -3,10 +3,10 @@
 package com.nuvio.app.features.autosync
 
 import android.content.Context
-import android.widget.Toast
 import androidx.media3.common.C
 import androidx.media3.common.MimeTypes
 import androidx.media3.exoplayer.ExoPlayer
+import com.nuvio.app.features.audiosync.AudioSyncFallback
 import com.nuvio.app.features.player.PlayerEngineController
 import com.nuvio.app.features.player.PlayerSubtitleUtils
 import com.nuvio.app.features.player.SidecarSubtitleController
@@ -21,10 +21,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.autosync_toast_no_fit
-import org.jetbrains.compose.resources.StringResource
-import org.jetbrains.compose.resources.getString
 
 /** AutoSync for one mobile ExoPlayer session; subtitle changes invalidate every pending result. */
 internal class AutoSyncPlayerCoordinator(
@@ -44,13 +40,23 @@ internal class AutoSyncPlayerCoordinator(
     private var selectedBodyJob: Job? = null
     private var operationToken = 0L
     private var candidates: List<AutoSyncSubtitleCandidate> = emptyList()
+    private var contentType: String? = null
+    private var videoId: String? = null
     private var appliedListener: ((subtitleUrl: String, delayMs: Int) -> Unit)? = null
+    private var audioFallback: AudioSyncFallback? = null
 
     fun wrap(controller: PlayerEngineController): PlayerEngineController =
         AutoSyncPlayerEngineController(controller, this)
 
+    fun setContent(contentType: String?, videoId: String?) {
+        this.contentType = contentType
+        this.videoId = videoId
+        audioFallback?.setContent(contentType, videoId)
+    }
+
     fun setCandidates(value: List<AutoSyncSubtitleCandidate>) {
         candidates = value.distinctBy { it.url }
+        audioFallback?.setCandidates(candidates)
     }
 
     fun setAppliedListener(listener: ((subtitleUrl: String, delayMs: Int) -> Unit)?) {
@@ -63,12 +69,35 @@ internal class AutoSyncPlayerCoordinator(
         job = null
         selectedBodyJob?.cancel()
         selectedBodyJob = null
+        audioFallback?.stop()
     }
 
     fun dispose() {
         cancel()
+        audioFallback?.release()
+        audioFallback = null
         forgetLibassCopies()
         appliedListener = null
+    }
+
+    private fun ensureAudioFallback(): AudioSyncFallback? {
+        audioFallback?.let { return it }
+        return AudioSyncFallback.forExoPlayer(
+            context = context,
+            scope = scope,
+            player = player,
+            sidecar = sidecar,
+            sourceUrl = sourceUrl,
+            sourceHeaders = sourceHeaders,
+            getSubtitleHeaders = getSubtitleHeaders,
+            onMimeTypeSelected = onMimeTypeSelected,
+            onSubtitleDelayChanged = onSubtitleDelayChanged,
+            getAppliedListener = { appliedListener },
+        )?.also { fallback ->
+            fallback.setContent(contentType, videoId)
+            fallback.setCandidates(candidates)
+            audioFallback = fallback
+        }
     }
 
     /** The subtitle is replaced or cleared: libass must load the original again next time. */
@@ -89,13 +118,6 @@ internal class AutoSyncPlayerCoordinator(
         }
     }
 
-    private fun showFailure(token: Long, resource: StringResource) {
-        scope.launch {
-            val text = getString(resource)
-            if (operationToken == token) Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
-        }
-    }
-
     fun start(url: String, candidateScope: AutoSyncCandidateScope, fallbackAttach: (String) -> Unit) {
         cancel()
         forgetLibassCopies()
@@ -103,7 +125,8 @@ internal class AutoSyncPlayerCoordinator(
         AutoSyncPreferencesRepository.ensureLoaded()
         if (decideAutoSyncStart(AutoSyncPreferencesRepository.preferredSubtitleAutoSyncOnStart.value) ==
             AutoSyncStartAction.ATTACH_ORIGINAL ||
-            !(sourceUrl.startsWith("https://", true) || sourceUrl.startsWith("http://", true))) {
+            !(sourceUrl.startsWith("https://", true) || sourceUrl.startsWith("http://", true))
+        ) {
             fallbackAttach(url)
             return
         }
@@ -131,7 +154,8 @@ internal class AutoSyncPlayerCoordinator(
                 headers = subtitleHeaders,
                 useLibass = useLibass,
                 rawBodyLoader = { bodyDeferred.await() ?: error("Subtitle body unavailable") },
-            )) {
+            )
+        ) {
             fallbackAttach(url)
             return
         }
@@ -139,6 +163,10 @@ internal class AutoSyncPlayerCoordinator(
         player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
             .setTrackTypeDisabled(C.TRACK_TYPE_TEXT, true)
             .build()
+
+        val fallback = ensureAudioFallback()
+        fallback?.arm()
+        val statusRun = AutoSyncSyncedSubtitle.start(url)
 
         selectedBodyJob = scope.launch {
             val body = try {
@@ -186,10 +214,16 @@ internal class AutoSyncPlayerCoordinator(
                 if (token != operationToken) return@launch
                 if (resolved == null) {
                     restoreOriginalIfRelevant()
-                    showNoFit(token, outcome)
+                    val audioTakesOver = outcome != AutoSyncAnalysisOutcome.SUBTITLE_UNAVAILABLE &&
+                        fallback?.takeOver(url) == true
+                    if (!audioTakesOver) {
+                        fallback?.disarm()
+                        AutoSyncSyncedSubtitle.mark(url, outcome.toFailureState())
+                    }
                     return@launch
                 }
 
+                fallback?.disarm()
                 val chosenUrl = resolved.subtitleUrl
                 val tolerance = AutoSyncPreferencesRepository.syncToleranceMs.value
                 val withinTolerance = tolerance > 0 && chosenUrl == url &&
@@ -217,24 +251,27 @@ internal class AutoSyncPlayerCoordinator(
                 if (token != operationToken) return@launch
                 if (!applied) {
                     restoreOriginalIfRelevant()
+                    AutoSyncSyncedSubtitle.mark(url, AutoSyncState.FAILED)
                     return@launch
                 }
                 onMimeTypeSelected(PlayerSubtitleUtils.mimeTypeFromUrl(chosenUrl))
                 onSubtitleDelayChanged(0)
                 appliedListener?.invoke(chosenUrl, 0)
-                AutoSyncSyncedSubtitle.mark(chosenUrl)
+                AutoSyncSyncedSubtitle.mark(
+                    chosenUrl,
+                    if (withinTolerance) AutoSyncState.NOT_NEEDED else AutoSyncState.SYNCED,
+                )
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (_: Exception) {
+                fallback?.disarm()
                 if (token != operationToken) return@launch
                 restoreOriginalIfRelevant()
+                AutoSyncSyncedSubtitle.mark(url, AutoSyncState.FAILED)
             }
+        }.also { activeJob ->
+            activeJob.invokeOnCompletion { AutoSyncSyncedSubtitle.end(statusRun) }
         }
-    }
-
-    /** Only a confirmed no-fit is worth telling the viewer; every other failure stays silent. */
-    private fun showNoFit(token: Long, outcome: AutoSyncAnalysisOutcome?) {
-        if (outcome == AutoSyncAnalysisOutcome.NO_FIT) showFailure(token, Res.string.autosync_toast_no_fit)
     }
 
     /**
@@ -261,6 +298,8 @@ internal class AutoSyncPlayerCoordinator(
         EmbeddedSubtitleTimelineLoader.prefetch(scope, sourceUrl, sourceHeaders)
         fun isAss(candidateUrl: String) =
             PlayerSubtitleUtils.mimeTypeFromUrl(candidateUrl) == MimeTypes.TEXT_SSA
+
+        val statusRun = AutoSyncSyncedSubtitle.start(url)
 
         job = scope.launch {
             try {
@@ -301,7 +340,7 @@ internal class AutoSyncPlayerCoordinator(
                 currentCoroutineContext().ensureActive()
                 if (token != operationToken) return@launch
                 if (resolved == null) {
-                    showNoFit(token, outcome)
+                    AutoSyncSyncedSubtitle.mark(url, outcome.toFailureState())
                     return@launch
                 }
 
@@ -310,13 +349,16 @@ internal class AutoSyncPlayerCoordinator(
                     // Nuvio's own switch shows the SRT/VTT through the sidecar; retime it there.
                     attach(chosenUrl)
                     if (!applyAutoSyncSidecarTimeline(sidecar, chosenUrl, resolved.timeline)) {
-                        if (token == operationToken) attach(url)
+                        if (token == operationToken) {
+                            attach(url)
+                            AutoSyncSyncedSubtitle.mark(url, AutoSyncState.FAILED)
+                        }
                         return@launch
                     }
                     onMimeTypeSelected(PlayerSubtitleUtils.mimeTypeFromUrl(chosenUrl))
                     onSubtitleDelayChanged(0)
                     appliedListener?.invoke(chosenUrl, 0)
-                    AutoSyncSyncedSubtitle.mark(chosenUrl)
+                    AutoSyncSyncedSubtitle.mark(chosenUrl, AutoSyncState.SYNCED)
                     return@launch
                 }
                 val tolerance = AutoSyncPreferencesRepository.syncToleranceMs.value
@@ -330,7 +372,10 @@ internal class AutoSyncPlayerCoordinator(
                     )
                     val retimed = withContext(autoSyncCpuDispatcher) {
                         AutoSyncSubtitleTextRetimer.retime(body, resolved.timeline)
-                    } ?: return@launch
+                    } ?: run {
+                        if (token == operationToken) AutoSyncSyncedSubtitle.mark(url, AutoSyncState.FAILED)
+                        return@launch
+                    }
                     currentCoroutineContext().ensureActive()
                     if (token != operationToken) return@launch
                     val trackId = addonSubtitleTrackId(chosenUrl)
@@ -344,12 +389,17 @@ internal class AutoSyncPlayerCoordinator(
                 }
                 onSubtitleDelayChanged(0)
                 appliedListener?.invoke(chosenUrl, 0)
-                AutoSyncSyncedSubtitle.mark(chosenUrl)
+                AutoSyncSyncedSubtitle.mark(
+                    chosenUrl,
+                    if (withinTolerance) AutoSyncState.NOT_NEEDED else AutoSyncState.SYNCED,
+                )
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (_: Exception) {
-                // Technical failures stay silent: libass keeps showing the original subtitle.
+                if (token == operationToken) AutoSyncSyncedSubtitle.mark(url, AutoSyncState.FAILED)
             }
+        }.also { activeJob ->
+            activeJob.invokeOnCompletion { AutoSyncSyncedSubtitle.end(statusRun) }
         }
     }
 }

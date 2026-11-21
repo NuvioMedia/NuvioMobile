@@ -1,12 +1,13 @@
 package com.nuvio.app.features.autosync
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalContext
+import com.nuvio.app.features.audiosync.AudioSyncFallback
+import com.nuvio.app.features.audiosync.MpvAudioSyncHost
 import com.nuvio.app.features.streams.StreamSubtitle
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -24,23 +25,41 @@ internal fun rememberLibmpvAutoSyncCoordinator(
     sourceHeaders: Map<String, String>,
     externalSubtitles: List<StreamSubtitle>,
     preferredSubtitleLanguage: String?,
+    getMpvHost: () -> MpvAudioSyncHost?,
+    onSubtitleDelayChanged: (Int) -> Unit,
 ): AutoSyncMpvCoordinator {
     val context = LocalContext.current
     val latestExternalSubtitles = rememberUpdatedState(externalSubtitles)
     val latestPreferredLanguage = rememberUpdatedState(preferredSubtitleLanguage)
+    val latestGetMpvHost = rememberUpdatedState(getMpvHost)
+    val latestOnSubtitleDelayChanged = rememberUpdatedState(onSubtitleDelayChanged)
     val coordinator = remember(sourceUrl, sourceHeaders, scope) {
+        val subtitleHeaders: (String) -> Map<String, String> = { subtitleUrl ->
+            latestExternalSubtitles.value
+                .firstOrNull { it.url == subtitleUrl }
+                ?.headers
+                .orEmpty()
+        }
         AutoSyncMpvCoordinator(
             scope = scope,
             sourceUrl = sourceUrl,
             sourceHeaders = sourceHeaders,
-            getSubtitleHeaders = { subtitleUrl ->
-                latestExternalSubtitles.value
-                    .firstOrNull { it.url == subtitleUrl }
-                    ?.headers
-                    .orEmpty()
-            },
+            getSubtitleHeaders = subtitleHeaders,
             getPreferredLanguage = { latestPreferredLanguage.value },
             platform = AndroidAutoSyncMpvPlatform(context.applicationContext),
+            audioFallbackFactory = {
+                latestGetMpvHost.value()?.let { host ->
+                    AudioSyncFallback.forMpv(
+                        context = context.applicationContext,
+                        scope = scope,
+                        mpvHost = host,
+                        sourceUrl = sourceUrl,
+                        sourceHeaders = sourceHeaders,
+                        getSubtitleHeaders = subtitleHeaders,
+                        onSubtitleDelayChanged = { delayMs -> latestOnSubtitleDelayChanged.value(delayMs) },
+                    )
+                }
+            },
         )
     }
     DisposableEffect(coordinator) {
@@ -59,8 +78,4 @@ private class AndroidAutoSyncMpvPlatform(private val context: Context) : AutoSyn
             file.writeText(content, Charsets.UTF_8)
             file.absolutePath
         }
-
-    override fun showMessage(text: String) {
-        Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
-    }
 }

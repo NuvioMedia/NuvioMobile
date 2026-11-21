@@ -8,21 +8,31 @@ import com.nuvio.app.features.autosync.AutoSyncPreferencesRepository
 import com.nuvio.app.features.autosync.AutoSyncSubtitleCandidate
 import kotlinx.coroutines.flow.collect
 
-private fun List<AddonSubtitle>.toAutoSyncCandidates(): List<AutoSyncSubtitleCandidate> =
+private fun List<AddonSubtitle>.toAutoSyncCandidates(
+    headersByUrl: Map<String, Map<String, String>> = emptyMap(),
+): List<AutoSyncSubtitleCandidate> =
     map { subtitle ->
         AutoSyncSubtitleCandidate(
             url = subtitle.url,
             language = subtitle.language,
-            name = subtitle.display,
+            name = subtitle.addonName?.takeIf { it.isNotBlank() } ?: subtitle.display,
+            headers = headersByUrl[subtitle.url].orEmpty(),
         )
     }
 
+private fun PlayerScreenRuntime.externalSubtitleHeadersByUrl(): Map<String, Map<String, String>> =
+    externalSubtitles.associate { it.url to it.headers.orEmpty() }
+
 private fun PlayerScreenRuntime.currentAutoSyncCandidates(): List<AutoSyncSubtitleCandidate> =
-    addonSubtitles.toAutoSyncCandidates()
+    addonSubtitles.toAutoSyncCandidates(externalSubtitleHeadersByUrl())
 
 internal fun PlayerScreenRuntime.configureAutoSyncController(
     controller: PlayerEngineController,
 ) {
+    controller.setAutoSyncContent(
+        contentType = activeAddonSubtitleType.takeIf { it.isNotBlank() },
+        videoId = activeVideoId?.takeIf { it.isNotBlank() },
+    )
     controller.setAutoSyncSubtitleCandidates(currentAutoSyncCandidates())
     controller.setAutoSyncAppliedListener { subtitleUrl, delayMs ->
         val appliedSubtitle = addonSubtitles.firstOrNull { it.url == subtitleUrl }
@@ -65,14 +75,21 @@ internal fun PlayerScreenRuntime.BindAutoSyncRuntimeEffects() {
         preferredSubtitleSelectionApplied = false
         refreshTracks()
     }
+    LaunchedEffect(playerController, activeAddonSubtitleType, activeVideoId) {
+        playerController?.setAutoSyncContent(
+            contentType = activeAddonSubtitleType.takeIf { it.isNotBlank() },
+            videoId = activeVideoId?.takeIf { it.isNotBlank() },
+        )
+    }
     LaunchedEffect(playerController, externalSubtitles) {
         val controller = playerController ?: return@LaunchedEffect
+        val headersByUrl = externalSubtitleHeadersByUrl()
         SubtitleRepository.addonSubtitles.collect { repositorySubtitles ->
             controller.setAutoSyncSubtitleCandidates(
                 mergeStreamAndAddonSubtitles(
                     repositorySubtitles,
                     externalSubtitles,
-                ).toAutoSyncCandidates(),
+                ).toAutoSyncCandidates(headersByUrl),
             )
         }
     }

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="audio_sync_setting_title">Synchronizacja napisów z dźwiękiem</string>
+    <string name="audio_sync_setting_description">Dopasowuje napisy do dialogów w filmie, gdy automatyczna synchronizacja nie znajdzie pewnego wyniku.</string>
+    <string name="audio_sync_model_title">Model mowy angielskiej (%1$d MB)</string>
+    <string name="audio_sync_model_description">Opcjonalny. Rozpoznaje angielską mowę i porównuje ją z zewnętrznymi angielskimi napisami, dzięki czemu synchronizacja jest szybsza i dokładniejsza. Bardziej obciąża procesor i pamięć.</string>
+    <string name="audio_sync_model_downloading">Pobieranie… %1$d%%</string>
+    <string name="audio_sync_model_ready">Pobrany. Jeśli odtwarzanie zwalnia, usuń go, a synchronizacja będzie korzystać tylko z wykrywania mowy.</string>
+    <string name="audio_sync_model_failed">Nie udało się pobrać. Wybierz, aby spróbować ponownie. Wykrywanie mowy działa bez modelu.</string>
+    <string name="audio_sync_model_download">Pobierz</string>
+    <string name="audio_sync_model_delete">Usuń</string>
+    <string name="audio_sync_sampling_title">Próbkowanie dźwięku</string>
+    <string name="audio_sync_sampling_description">Odsłuchuje dialogi z wyprzedzeniem, dzięki czemu synchronizacja jest gotowa szybciej.</string>
+    <string name="audio_sync_sampling_off">Wyłączone</string>
+    <string name="audio_sync_sampling_low">Niskie</string>
+    <string name="audio_sync_sampling_high">Wysokie</string>
+    <string name="audio_sync_sampling_off_description">Słucha tylko tego, co jest odtwarzane, więc synchronizacja trwa dłużej. Nie działa z odtwarzaczem mpv.</string>
+    <string name="audio_sync_sampling_low_description">Odsłuchuje z wyprzedzeniem kilka fragmentów z dialogami przez jedno dodatkowe połączenie, do 75 MB na tytuł. W sieciach z limitem danych zastępuje ustawienie Wysokie.</string>
+    <string name="audio_sync_sampling_high_description">Najszybsza synchronizacja. Odsłuchuje więcej fragmentów przez kilka połączeń, zwykle do 150 MB na tytuł, i bardziej obciąża procesor. Niektóre serwery ograniczają liczbę połączeń.</string>
+    <string name="licenses_attributions_audio_sync_title">Synchronizacja napisów z dźwiękiem</string>
+    <string name="licenses_attributions_audio_sync_body">Wykrywanie mowy korzysta z wag Silero VAD v5 (MIT, Silero Team). Opcjonalne rozpoznawanie mowy korzysta z sherpa-onnx (Apache-2.0, k2-fsa) i jego angielskiego modelu Zipformer GigaSpeech (Apache-2.0).</string>
+    <string name="licenses_attributions_audio_sync_license">Pełne informacje licencyjne są dołączone do aplikacji w licenses/audio_sync_NOTICE.md.</string>
+</resources>

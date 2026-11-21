@@ -6,12 +6,17 @@ import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
 import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.TestExecutable
 import org.jetbrains.kotlin.gradle.targets.native.tasks.KotlinNativeSimulatorTest
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
+import java.net.URI
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.security.MessageDigest
 import java.util.Properties
 
 abstract class GenerateRuntimeConfigsTask : DefaultTask() {
@@ -338,6 +343,48 @@ tasks.withType<KotlinCompilationTask<*>>().configureEach {
     dependsOn(generateRuntimeConfigs)
 }
 
+abstract class DownloadAudioSyncRuntimeTask : DefaultTask() {
+    @get:Input
+    abstract val version: Property<String>
+
+    @get:Input
+    abstract val sha256: Property<String>
+
+    @get:OutputFile
+    abstract val outputFile: RegularFileProperty
+
+    @TaskAction
+    fun download() {
+        val aar = outputFile.get().asFile
+        aar.parentFile.mkdirs()
+        val partial = File(aar.path + ".part")
+        val url = URI("https://github.com/k2-fsa/sherpa-onnx/releases/download/v${version.get()}/sherpa-onnx-${version.get()}.aar")
+        try {
+            url.toURL().openConnection().apply {
+                connectTimeout = 30_000
+                readTimeout = 60_000
+            }.getInputStream().use { input -> partial.outputStream().use { input.copyTo(it) } }
+            val digest = MessageDigest.getInstance("SHA-256")
+                .digest(partial.readBytes()).joinToString("") { "%02x".format(it) }
+            check(digest == sha256.get()) { "Checksum mismatch for $url" }
+            Files.move(partial.toPath(), aar.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            partial.delete()
+        }
+    }
+}
+
+// Same pinned speech runtime as NuvioTV. Download only during a build, never at
+// configuration time, and verify the upstream release before adding it to the classpath.
+val sherpaOnnxVersion = "1.13.8"
+val sherpaOnnxSha256 = "633c24321e06b1fe79feafa03ea16cbc0f8a286641e2da3559bac91bdb13bd96"
+val sherpaOnnxAar = layout.buildDirectory.file("audio-sync/sherpa-onnx-$sherpaOnnxVersion.aar")
+val downloadAudioSyncRuntime = tasks.register<DownloadAudioSyncRuntimeTask>("downloadAudioSyncRuntime") {
+    version.set(sherpaOnnxVersion)
+    sha256.set(sherpaOnnxSha256)
+    outputFile.set(sherpaOnnxAar)
+}
+
 kotlin {
     android {
         namespace = "com.nuvio.app"
@@ -439,6 +486,7 @@ kotlin {
             }
 
             dependencies {
+                implementation(files(sherpaOnnxAar).builtBy(downloadAudioSyncRuntime))
                 implementation(libs.compose.uiToolingPreview)
                 implementation(libs.androidx.appcompat)
                 implementation(libs.androidx.activity.compose)
