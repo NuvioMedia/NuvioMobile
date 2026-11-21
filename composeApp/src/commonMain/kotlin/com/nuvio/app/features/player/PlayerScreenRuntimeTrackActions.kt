@@ -361,7 +361,8 @@ private fun PlayerScreenRuntime.tryAutoSelectPreferredSubtitleFromAvailableTrack
         }
     } else if (!preferredSubtitleSelectionApplied) {
         disableAutomaticSubtitleSelection()
-        preferredSubtitleSelectionApplied = true
+        // Slower add-ons may still return a match, so only finish once loading is done.
+        preferredSubtitleSelectionApplied = !isLoadingAddonSubtitles
     }
 }
 
