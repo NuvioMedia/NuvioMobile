@@ -68,6 +68,7 @@ enum class AppLanguage(
     JAPANESE("ja", Res.string.lang_japanese),
     VIETNAMESE("vi", Res.string.lang_vietnamese),
     CHINESE("zh", Res.string.lang_chinese),
+    CHINESE_TRADITIONAL("zh-Hant", Res.string.lang_chinese_traditional),
     ;
 
     fun isRightToLeft(): Boolean {
