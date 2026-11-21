@@ -1,11 +1,11 @@
 package com.nuvio.app.features.settings
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.nuvio.app.core.ui.DialogButton
 import com.nuvio.app.core.ui.DialogButtons
 import com.nuvio.app.core.ui.DialogOption
@@ -77,11 +77,19 @@ internal fun <T> SettingsChoiceDialog(
         onDismissRequest = onDismiss,
         title = title,
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth(),
+        // Long lists (up to 50 options) scroll and open with the selected option in view, so the
+        // last options and the button stay reachable; short lists keep their natural height.
+        val listState = rememberLazyListState(
+            initialFirstVisibleItemIndex = (options.indexOf(selected) - 2).coerceAtLeast(0),
+        )
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f, fill = false),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            options.forEach { option ->
+            items(options) { option ->
                 val isSelected = option == selected
                 val optionDescription = description(option)
                 DialogOption(
