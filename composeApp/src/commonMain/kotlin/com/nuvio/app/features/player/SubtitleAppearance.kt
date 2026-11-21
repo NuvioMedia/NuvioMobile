@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import kotlin.math.abs
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -49,10 +50,11 @@ object SubtitleRendering {
     private fun isAss(codec: String): Boolean =
         codec.equals("ass", ignoreCase = true) || codec.equals("ssa", ignoreCase = true)
 
-    internal fun assOverride(codec: String, customizeAss: Boolean): String = when {
+    fun assOverride(codec: String, customizeAss: Boolean, assScale: Double = 1.0): String = when {
         !isAss(codec) -> "no"
         customizeAss -> "force"
-        else -> "scale"
+        abs(assScale - 1.0) > 0.001 -> "scale"
+        else -> "no"
     }
 
     fun supportsTextOverlay(codec: String): Boolean = codec.lowercase() in setOf(

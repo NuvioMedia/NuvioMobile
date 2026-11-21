@@ -534,6 +534,9 @@ private fun ExoPlayerSurface(
                 renderersFactory = renderersFactory,
                 audioDelayUsProvider = audioDelayUs::get,
             ).also { builtPlayer ->
+                builtPlayer.getAssHandlerCompat()?.applyAssFontScaleCompat(
+                    playerSettings.subtitleStyle.assScale.toFloat(),
+                )
                 // Apply video effects only when ASS track was detected as selected.
                 // On first init videoEffectsNeeded is false. When onTracksChanged
                 // detects a selected ASS track, it flips to true which triggers a
@@ -1207,6 +1210,7 @@ private fun ExoPlayerSurface(
 
                 override fun applySubtitleStyle(style: SubtitleStyleState) {
                     currentSubtitleStyle = style
+                    exoPlayer.getAssHandlerCompat()?.applyAssFontScaleCompat(style.assScale.toFloat())
                     playerViewRef?.subtitleView?.setCues(subtitlePresenter.refresh())
                     playerViewRef?.applySubtitleStyle(style, pipVideoHeightPx)
                 }
@@ -1725,12 +1729,13 @@ private class NuvioLibmpvView(
     private var appliedAssOverride: String? = null
     private var appliedAssScale = 1.0
     private var appliedAssBold: Boolean? = null
+    private var appliedSubPos: Int? = null
 
     fun updateStyledSubtitle() {
         executeMpv {
             val codec = mpv.getPropertyString("current-tracks/sub/codec").orEmpty()
             val style = appliedSubtitleStyle
-            val assOverride = SubtitleRendering.assOverride(codec, style.appearance.customizeAss)
+            val assOverride = SubtitleRendering.assOverride(codec, style.appearance.customizeAss, style.assScale)
             if (appliedAssOverride != assOverride) {
                 mpv.setPropertyString("sub-ass-override", assOverride)
                 appliedAssOverride = assOverride
@@ -1739,6 +1744,11 @@ private class NuvioLibmpvView(
             if (appliedAssScale != scale) {
                 mpv.setPropertyDouble("sub-scale", scale)
                 appliedAssScale = scale
+            }
+            val subPos = if (assOverride == "scale") 100 else (100 - style.bottomOffset / 10).coerceIn(0, 100)
+            if (appliedSubPos != subPos) {
+                mpv.setPropertyInt("sub-pos", subPos)
+                appliedSubPos = subPos
             }
             val assBold = style.bold.takeIf { assOverride == "force" }
             if (appliedAssBold != assBold) {
@@ -1785,6 +1795,7 @@ private class NuvioLibmpvView(
         // Room above 100% for the player's amplification (+10 dB is about 316%).
         mpv.setOptionString("volume-max", "$LIBMPV_MAX_VOLUME_PERCENT").logIfMpvError("volume-max")
         mpv.setOptionString("vd-lavc-film-grain", "cpu")
+        mpv.setOptionString("sub-ass-override", "no")
         mpv.setPropertyBoolean("keep-open", true)
         mpv.setPropertyBoolean("input-default-bindings", true)
         mpv.setPropertyBoolean("audio-fallback-to-null", true)
@@ -2144,7 +2155,6 @@ private class NuvioLibmpvView(
                     mpv.setPropertyInt("sub-font-size", style.toMpvSubtitleFontSize())
                     mpv.setPropertyInt("sub-outline-size", style.toMpvSubtitleOutlineSize())
                     mpv.setPropertyInt("sub-border-size", style.toMpvSubtitleOutlineSize())
-                    mpv.setPropertyInt("sub-pos", (100 - style.bottomOffset / 10).coerceIn(0, 100))
                     mpv.setPropertyBoolean("sub-filter-sdh", style.stripSdh)
                     mpv.setPropertyBoolean("sub-filter-sdh-harder", style.stripSdh)
                     updateStyledSubtitle()
@@ -2640,6 +2650,10 @@ private fun android.widget.FrameLayout.findAssOverlayChild(): AssSubtitleSurface
  * so subtitles shrink and grow with the video exactly as it is shown full screen.
  */
 private fun PlayerView.applySubtitleStyle(style: SubtitleStyleState, pipVideoHeightPx: Float? = null) {
+    (player as? ExoPlayer)?.getAssHandlerCompat()?.applyAssFontScaleCompat(style.assScale.toFloat())
+    findViewById<android.widget.FrameLayout>(R.id.libass_overlay_container_gl)
+        ?.findAssOverlayChild()
+        ?.invalidateSubtitles()
     subtitleView?.apply {
         val baseBottomPaddingFraction = SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION * 2f / 3f
         val offsetFraction = (style.bottomOffset / 1000f).coerceIn(0f, 0.2f)
