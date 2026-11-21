@@ -86,6 +86,7 @@ fun SubtitleModal(
     onAutoSyncReload: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
+    supportsAssStyleCustomization: Boolean = false,
 ) {
     val effectiveSelectedAddonSubtitle = selectedAddonSubtitle
         ?: addonSubtitles.findSelectedAddon(selectedAddonSubtitleId)
@@ -306,6 +307,7 @@ fun SubtitleModal(
                                     subtitleAutoSyncState = subtitleAutoSyncState,
                                     isCompact = railMaxHeight < 420.dp,
                                     showHeader = false,
+                                    supportsAssStyleCustomization = supportsAssStyleCustomization,
                                     onStyleChanged = onStyleChanged,
                                     onSubtitleDelayChanged = onSubtitleDelayChanged,
                                     onSubtitleDelayReset = onSubtitleDelayReset,

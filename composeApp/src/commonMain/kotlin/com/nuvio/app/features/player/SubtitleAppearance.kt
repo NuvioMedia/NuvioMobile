@@ -11,7 +11,17 @@ data class SubtitleAppearance(
     val shadowEnabled: Boolean = false,
     val shadowOpacity: Int = 75,
     val shadowSize: Int = 2,
+    val customizeAss: Boolean = false,
 ) {
+    // Keep the existing constructor used by Swift callers.
+    constructor(
+        fontId: String,
+        backgroundRadius: Int,
+        shadowEnabled: Boolean,
+        shadowOpacity: Int,
+        shadowSize: Int,
+    ) : this(fontId, backgroundRadius, shadowEnabled, shadowOpacity, shadowSize, customizeAss = false)
+
     fun normalized(): SubtitleAppearance = copy(
         fontId = fontId.takeIf { it in BuiltInSubtitleFonts || it.matches(Regex("custom-[a-f0-9-]{36}")) } ?: "default",
         backgroundRadius = backgroundRadius.coerceIn(0, 24),
@@ -36,10 +46,22 @@ internal val SubtitleStyleState.usesStyledOverlay: Boolean
         (outlineEnabled && outlineWidth != SUBTITLE_OUTLINE_WIDTH_DEFAULT)
 
 object SubtitleRendering {
+    private fun isAss(codec: String): Boolean =
+        codec.equals("ass", ignoreCase = true) || codec.equals("ssa", ignoreCase = true)
+
+    internal fun assOverride(codec: String, customizeAss: Boolean): String = when {
+        !isAss(codec) -> "no"
+        customizeAss -> "force"
+        else -> "scale"
+    }
+
     fun supportsTextOverlay(codec: String): Boolean = codec.lowercase() in setOf(
         "subrip", "srt", "webvtt", "text", "mov_text", "microdvd", "mpl2", "subviewer", "subviewer1", "sami", "realtext",
     )
 }
+
+internal val SubtitleStyleState.assScale: Double
+    get() = fontSizeSp.toDouble() / SubtitleStyleState.DEFAULT.fontSizeSp
 
 internal fun SubtitleStyleState.resetAppearance(): SubtitleStyleState = SubtitleStyleState.DEFAULT.copy(
     stripSdh = stripSdh,

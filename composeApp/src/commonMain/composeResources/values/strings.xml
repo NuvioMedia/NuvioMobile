@@ -2594,6 +2594,7 @@
     <string name="subtitle_shadow">Drop shadow</string>
     <string name="subtitle_shadow_description">Separate the text from bright scenes.</string>
     <string name="subtitle_shadow_opacity">Shadow opacity</string>
+    <string name="subtitle_customize_ass">Customize ASS/SSA styling</string>
     <string name="subtitle_shadow_size">Shadow size</string>
     <string name="subtitle_outline_width">Outline width</string>
     <string name="subtitle_reset_appearance">Reset appearance</string>
