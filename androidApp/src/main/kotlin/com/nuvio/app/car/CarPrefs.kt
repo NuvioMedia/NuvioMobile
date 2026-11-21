@@ -84,5 +84,12 @@ internal object CarPrefs {
         prefs(ctx).edit().putBoolean("clusterMirror", on).apply()
     }
 
+    /** In the car, crop video to fill the wide screen (no black bars) instead of fitting the whole picture. */
+    fun fillVideo(ctx: Context): Boolean = prefs(ctx).getBoolean("fillVideo", true)
+
+    fun setFillVideo(ctx: Context, on: Boolean) {
+        prefs(ctx).edit().putBoolean("fillVideo", on).apply()
+    }
+
     const val DATA_SAVER_MAX_HEIGHT = 720
 }

@@ -58,8 +58,17 @@ class LegacyCarActivity : CarActivity() {
         setIgnoreConfigChanges(0xFFFFFFFF.toInt())
         runCatching {
             val ui = carUiController
-            ui.statusBarController.hideAppHeader()
             ui.menuController.hideMenuButton()
+            // Clear Android Auto's status overlay (signal, battery, clock, mic, title) off Nuvio's picture.
+            ui.statusBarController.run {
+                hideAppHeader()
+                hideTitle()
+                hideClock()
+                hideBatteryLevel()
+                hideConnectivityLevel()
+                hideMicButton()
+                setAppBarAlpha(0f)
+            }
         }
         val h = CarDisplayHost(applicationContext)
         host = h

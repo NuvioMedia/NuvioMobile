@@ -206,6 +206,15 @@ class CarSetupActivity : Activity() {
 
         column.addView(text("Layout", 19f, top = 24))
         column.addView(Switch(this).apply {
+            text = "Fill the car screen with video (crops the edges, no black bars)"
+            setTextColor(Color.WHITE)
+            isChecked = CarPrefs.fillVideo(this@CarSetupActivity)
+            setOnCheckedChangeListener { _, on ->
+                CarPrefs.setFillVideo(this@CarSetupActivity, on)
+                CarSession.refresh(this@CarSetupActivity)
+            }
+        })
+        column.addView(Switch(this).apply {
             text = "Keep Nuvio clear of Android Auto's buttons"
             setTextColor(Color.WHITE)
             isChecked = CarPrefs.avoidCarButtons(this@CarSetupActivity)

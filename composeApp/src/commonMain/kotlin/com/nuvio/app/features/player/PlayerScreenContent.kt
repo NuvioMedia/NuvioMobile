@@ -1,5 +1,6 @@
 package com.nuvio.app.features.player
 
+import androidx.compose.runtime.collectAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -179,9 +180,12 @@ internal fun PlayerScreenContent(args: PlayerScreenArgs) {
                 args.parentMetaId,
             )?.videos ?: emptyList()
         }
-        if (runtime.lastSyncedSettingsResizeMode != playerSettingsUiState.resizeMode) {
-            runtime.resizeMode = playerSettingsUiState.resizeMode
-            runtime.lastSyncedSettingsResizeMode = playerSettingsUiState.resizeMode
+        // Nuvio Auto can override the framing on the wide car screen without changing saved settings.
+        val carResizeOverride by CarPlayerOverrides.resizeMode.collectAsState()
+        val settingsResizeMode = carResizeOverride ?: playerSettingsUiState.resizeMode
+        if (runtime.lastSyncedSettingsResizeMode != settingsResizeMode) {
+            runtime.resizeMode = settingsResizeMode
+            runtime.lastSyncedSettingsResizeMode = settingsResizeMode
         }
         runtime.resetIdentityStateIfNeeded()
 

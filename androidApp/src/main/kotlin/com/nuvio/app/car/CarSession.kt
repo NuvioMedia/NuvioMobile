@@ -14,6 +14,8 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import androidx.core.app.NotificationCompat
+import com.nuvio.app.features.player.CarPlayerOverrides
+import com.nuvio.app.features.player.PlayerResizeMode
 import com.nuvio.app.features.streams.StreamQualityCap
 import java.lang.ref.WeakReference
 
@@ -40,7 +42,14 @@ internal object CarSession {
         appContext = app
         hostRef = WeakReference(host)
         watchNetwork(app)
+        applyVideoFraming(app)
         showNotification(app)
+    }
+
+    private fun applyVideoFraming(app: Context) {
+        CarPlayerOverrides.setResizeMode(
+            if (active && CarPrefs.fillVideo(app)) PlayerResizeMode.Zoom else null,
+        )
     }
 
     fun stop(host: CarDisplayHost) {
@@ -52,6 +61,7 @@ internal object CarSession {
         }
         networkCallback = null
         StreamQualityCap.set(null)
+        CarPlayerOverrides.setResizeMode(null)
         app.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
     }
 
@@ -60,6 +70,7 @@ internal object CarSession {
         val app = ctx.applicationContext
         if (!active) return
         applyCap(app, currentlyCellular(app))
+        applyVideoFraming(app)
         if (CarPrefs.remoteNotification(app)) showNotification(app)
         else app.getSystemService(NotificationManager::class.java)?.cancel(NOTIFICATION_ID)
     }
