@@ -70,7 +70,7 @@ private data class PlayerSnapshotSignals(
  * treated as "not offline" so we never suppress work we are not sure about.
  */
 internal fun isNetworkOffline(): Boolean =
-    NetworkStatusRepository.uiState.value.isOfflineLike
+    NetworkStatusRepository.uiState.value.condition == NetworkCondition.NoInternet
 
 @Composable
 private fun rememberNetworkCondition(): NetworkCondition {

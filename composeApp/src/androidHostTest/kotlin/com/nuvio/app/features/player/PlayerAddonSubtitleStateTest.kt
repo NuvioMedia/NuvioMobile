@@ -4,16 +4,21 @@ import android.app.Application
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.createComposeRule
+import com.nuvio.app.core.network.NetworkCondition
+import com.nuvio.app.core.network.NetworkStatusRepository
+import com.nuvio.app.core.network.NetworkStatusUiState
 import com.nuvio.app.features.addons.AddonManifest
 import com.nuvio.app.features.addons.AddonResource
 import com.nuvio.app.features.addons.AddonsUiState
 import com.nuvio.app.features.addons.ManagedAddon
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -85,6 +90,27 @@ class PlayerAddonSubtitleStateTest {
             assertEquals("sub-1", observedSubtitles.single().id)
             assertTrue(observedLoading)
             assertNotNull(observedFetchKey)
+        }
+    }
+
+    @Test
+    fun serversUnreachableDoesNotMarkAddonSubtitlesOffline() {
+        val stateField = NetworkStatusRepository::class.java.getDeclaredField("_uiState")
+        stateField.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val stateFlow = stateField.get(NetworkStatusRepository) as MutableStateFlow<NetworkStatusUiState>
+        val previous = stateFlow.value
+        try {
+            stateFlow.value = NetworkStatusUiState(condition = NetworkCondition.ServersUnreachable)
+            assertFalse(isNetworkOffline())
+
+            stateFlow.value = NetworkStatusUiState(condition = NetworkCondition.NoInternet)
+            assertTrue(isNetworkOffline())
+
+            stateFlow.value = NetworkStatusUiState(condition = NetworkCondition.Online)
+            assertFalse(isNetworkOffline())
+        } finally {
+            stateFlow.value = previous
         }
     }
 
