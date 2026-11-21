@@ -210,19 +210,23 @@ private fun PlayerScreenRuntime.tryAutoSelectPreferredSubtitleFromAvailableTrack
             deviceLanguages = DeviceLanguagePreferences.preferredLanguageCodes(),
         )
     }
-    val primaryTarget = preferredSubtitleTargets.firstOrNull()
-
     if (preferredSubtitleSelectionApplied) {
+        // Addon subtitles can arrive after the first pass settled on a lower-ranked language or on none;
+        // run the selection again when one ranks higher than the current choice.
+        fun targetRank(language: String?): Int {
+            if (language == null) return Int.MAX_VALUE
+            val rank = preferredSubtitleTargets.indexOfFirst { target ->
+                SubtitleLanguageMatching.matchesLanguageCode(language, target)
+            }
+            return if (rank >= 0) rank else Int.MAX_VALUE
+        }
         val currentSelectedLang = when {
             selectedAddonSubtitle != null -> selectedAddonSubtitle?.language
             selectedSubtitleIndex >= 0 -> subtitleTracks.firstOrNull { it.index == selectedSubtitleIndex }?.language
             else -> null
         }
-        val isPrimarySatisfied = primaryTarget != null && currentSelectedLang != null &&
-            SubtitleLanguageMatching.matchesLanguageCode(currentSelectedLang, primaryTarget)
-        val hasBetterAddonMatch = !isPrimarySatisfied && primaryTarget != null &&
-            addonSubtitles.any { SubtitleLanguageMatching.matchesLanguageCode(it.language, primaryTarget) }
-        if (!hasBetterAddonMatch) return
+        val currentRank = targetRank(currentSelectedLang)
+        if (addonSubtitles.none { targetRank(it.language) < currentRank }) return
     }
 
     val selectedAudioTrack = audioTracks.firstOrNull { track -> track.index == selectedAudioIndex }
