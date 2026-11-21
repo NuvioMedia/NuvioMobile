@@ -31,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nuvio.app.features.addons.AddonRepository
 import com.nuvio.app.features.addons.enabledAddons
+import com.nuvio.app.features.usenet.BUILT_IN_USENET_GROUP_NAME
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.isIos
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.player.SOURCE_FALLBACK_MAX_SOURCES_RANGE
@@ -292,11 +294,22 @@ internal fun PlaybackStreamSettings(
     }
 
     if (showAutoPlayAddonSelectionDialog) {
+        val usenetEnabled = if (UsenetRepository.isSupported) {
+            val usenetState by remember {
+                UsenetRepository.ensureLoaded()
+                UsenetRepository.uiState
+            }.collectAsStateWithLifecycle()
+            usenetState.sources.enabled
+        } else {
+            false
+        }
         val addonNames = addonUiState.addons
             .enabledAddons()
             .mapNotNull { it.manifest }
             .filter { manifest -> manifest.resources.any { resource -> resource.name == "stream" } }
             .map { it.name }
+            // Auto-play counts built-in Usenet among the addons, so it can be allowed like one.
+            .plus(listOfNotNull(BUILT_IN_USENET_GROUP_NAME.takeIf { usenetEnabled }))
             .distinct()
             .sorted()
         StreamAutoPlayProviderSelectionDialog(

@@ -43,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.SkeletonBlock
 import com.nuvio.app.features.debrid.DebridProviders
+import com.nuvio.app.features.usenet.isLabelBadge
 
 internal val LocalStreamHighlight = staticCompositionLocalOf<(StreamItem) -> String?> { { null } }
 
@@ -71,7 +72,9 @@ internal fun StreamCard(
     val partyLabel = if (isCurrent) null else LocalStreamHighlight.current(stream)
     val cardShape = RoundedCornerShape(12.dp)
     val badgeImages = stream.badges.filter { it.imageURL.isNotBlank() }
-    val hasBadges = badgeImages.isNotEmpty() || (showFileSizeBadges && stream.behaviorHints.videoSize != null)
+    val labelBadges = stream.badges.filter { it.isLabelBadge() }
+    val hasBadges = badgeImages.isNotEmpty() || labelBadges.isNotEmpty() ||
+        (showFileSizeBadges && stream.behaviorHints.videoSize != null)
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -113,6 +116,7 @@ internal fun StreamCard(
             if (hasBadges && badgePlacement == StreamBadgePlacement.TOP) {
                 StreamCardBadgeRow(
                     badgeImages = badgeImages,
+                    labelBadges = labelBadges,
                     stream = stream,
                     showFileSizeBadges = showFileSizeBadges,
                 )
@@ -157,6 +161,7 @@ internal fun StreamCard(
                 Spacer(modifier = Modifier.height(5.dp))
                 StreamCardBadgeRow(
                     badgeImages = badgeImages,
+                    labelBadges = labelBadges,
                     stream = stream,
                     showFileSizeBadges = showFileSizeBadges,
                 )
@@ -210,6 +215,7 @@ internal fun StreamCardSkeleton(modifier: Modifier = Modifier) {
 @Composable
 private fun StreamCardBadgeRow(
     badgeImages: List<StreamBadge>,
+    labelBadges: List<StreamBadge>,
     stream: StreamItem,
     showFileSizeBadges: Boolean,
     modifier: Modifier = Modifier,
@@ -219,6 +225,9 @@ private fun StreamCardBadgeRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
+        labelBadges.forEach { badge ->
+            StreamLabelBadge(badge = badge)
+        }
         badgeImages.forEach { badge ->
             StreamBadgeImage(badge = badge)
         }

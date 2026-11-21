@@ -91,6 +91,12 @@ android {
     }
 
     sourceSets.getByName("androidTest").assets.srcDir("../testFixtures")
+    // The Usenet engine executable, downloaded and verified by native/usenet/android.gradle.kts,
+    // and its license notices.
+    sourceSets.getByName("main") {
+        jniLibs.directories.add("build/generated/usenet/jniLibs")
+        assets.directories.add("../native/usenet/licenses")
+    }
     sourceSets.getByName("main").baselineProfiles.directories.add("src/main/generated/baselineProfiles")
 
     packaging {
@@ -98,7 +104,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
         jniLibs {
+            // Also extracts the Usenet engine to nativeLibraryDir, where it can be executed.
             useLegacyPackaging = true
+            // Packaged exactly as published, so its checksum stays verifiable.
+            keepDebugSymbols += "**/libnuvio_usenet.so"
             pickFirsts += listOf(
                 "lib/*/libc++_shared.so",
                 "lib/*/libavcodec.so",
@@ -215,3 +224,7 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4:${libs.versions.composeMultiplatform.get()}")
     debugImplementation("androidx.compose.ui:ui-test-manifest:${libs.versions.composeMultiplatform.get()}")
 }
+
+extra["usenetSdkDirectory"] = androidComponents.sdkComponents.sdkDirectory.get().asFile.absolutePath
+extra["usenetNdkVersion"] = android.ndkVersion
+apply(from = rootProject.file("native/usenet/android.gradle.kts"))

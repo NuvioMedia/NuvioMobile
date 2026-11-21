@@ -36,6 +36,7 @@ import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.p2p.P2pSettingsRepository
 import com.nuvio.app.features.player.PlayerSettingsRepository
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.isIos
 import com.nuvio.app.supportsPosterNavigationMotion
 import nuvio.composeapp.generated.resources.*
@@ -868,6 +869,14 @@ internal fun settingsSearchEntries(
         title = mdbListPage,
         description = stringResource(Res.string.settings_integrations_mdblist_description),
     )
+    if (UsenetRepository.isSupported) {
+        addPage(
+            page = SettingsPage.Usenet,
+            key = "usenet",
+            title = stringResource(Res.string.compose_settings_page_usenet),
+            description = stringResource(Res.string.settings_integrations_usenet_description),
+        )
+    }
     val tmdbModulesSection = stringResource(Res.string.settings_tmdb_section_modules)
     listOf(
         PlaybackSearchRow("tmdb-enable", stringResource(Res.string.settings_tmdb_enable_enrichment), stringResource(Res.string.settings_tmdb_enable_enrichment_description), stringResource(Res.string.settings_tmdb_section_title)),

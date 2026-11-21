@@ -221,6 +221,26 @@ internal enum class SettingsPage(
         category = SettingsCategory.Services,
         parentPage = Integrations,
     ),
+    Usenet(
+        titleRes = Res.string.compose_settings_page_usenet,
+        category = SettingsCategory.Services,
+        parentPage = Integrations,
+    ),
+    UsenetSorting(
+        titleRes = Res.string.compose_settings_page_usenet_sorting,
+        category = SettingsCategory.Watch,
+        parentPage = Usenet,
+    ),
+    UsenetDiagnostics(
+        titleRes = Res.string.compose_settings_page_usenet_diagnostics,
+        category = SettingsCategory.Watch,
+        parentPage = Usenet,
+    ),
+    UsenetStats(
+        titleRes = Res.string.compose_settings_page_usenet_stats,
+        category = SettingsCategory.Watch,
+        parentPage = Usenet,
+    ),
     TraktAuthentication(
         titleRes = Res.string.compose_settings_page_tracking,
         category = SettingsCategory.Services,
@@ -260,6 +280,10 @@ internal val SettingsPage.icon: ImageVector
         SettingsPage.Plugins -> Icons.Default.Power
         SettingsPage.MediaServers -> Icons.Default.Dns
         SettingsPage.MediaServer -> Icons.Default.Dns
+        SettingsPage.Usenet -> Icons.Default.Dns
+        SettingsPage.UsenetSorting -> Icons.Default.Dns
+        SettingsPage.UsenetDiagnostics -> Icons.Default.Dns
+        SettingsPage.UsenetStats -> Icons.Default.Dns
         SettingsPage.Homescreen -> Icons.Default.Dashboard
         SettingsPage.MetaScreen -> Icons.Default.Description
         SettingsPage.Integrations -> Icons.Default.Link

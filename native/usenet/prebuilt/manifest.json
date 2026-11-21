@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "sourceSha256": "b6ca59925e184dce9d4796c52c11ec84ae04d96efcf78637a8f95e2ad4dcda39",
+  "binarySha256": {
+    "arm64-v8a": "ca41d6bfcd6dff19d16ec9e3e8e0742881439d1b6a1625218484e8e31253def4",
+    "armeabi-v7a": "e431406e4cebe3351cbeacbe42a90578ee0db5c768f1577314c5db52a0efd05e",
+    "x86_64": "7023028c9aba7796d052c9eaa6aee41ed00a25f1d8361f9d148930098846f417",
+    "x86": "21687c2d0d5ee960ccaf009ba8e252d396f4494ebc9b61577c8c1555e77e656e"
+  },
+  "downloadBaseUrl": "https://github.com/NuvioMedia/nuvio-usenet-engine/releases/download/usenet-native-b6ca59925e184dce",
+  "toolchain": {
+    "go": "go version go1.27.2 linux/amd64",
+    "ndk": "29.0.14206865"
+  }
+}

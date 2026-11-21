@@ -26,6 +26,7 @@ import coil3.compose.LocalPlatformContext
 import com.nuvio.app.core.i18n.localizedByteUnit
 import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.nuvio
+import com.nuvio.app.features.usenet.usenetBadgeText
 import kotlin.math.round
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.streams_size
@@ -144,6 +145,34 @@ internal fun StreamBadgeImage(
         borderColor = badge.borderColor,
         size = size,
     )
+}
+
+/** A badge a source draws as its name, in its colours, rather than as an image. */
+@Composable
+internal fun StreamLabelBadge(badge: StreamBadge) {
+    val background = badge.tagColor.toBadgeColorArgbOrNull()?.let { Color(it) } ?: MaterialTheme.nuvio.colors.surfacePopover
+    val textColor = badge.textColor.toBadgeColorArgbOrNull()?.let { Color(it) } ?: MaterialTheme.nuvio.colors.textPrimary
+    val shape = StreamBadgeChipDefaults.shape
+    Box(
+        modifier = Modifier
+            .height(StreamBadgeChipSize.STREAM.containerHeight)
+            .clip(shape)
+            .background(background)
+            .padding(horizontal = StreamBadgeChipDefaults.fileSizeHorizontalPadding),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = usenetBadgeText(badge.name),
+            style = MaterialTheme.typography.labelSmall.copy(
+                fontSize = StreamBadgeChipDefaults.fileSizeFontSize,
+                lineHeight = StreamBadgeChipDefaults.fileSizeLineHeight,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = StreamBadgeChipDefaults.fileSizeLetterSpacing,
+            ),
+            color = textColor,
+            maxLines = 1,
+        )
+    }
 }
 
 @Composable

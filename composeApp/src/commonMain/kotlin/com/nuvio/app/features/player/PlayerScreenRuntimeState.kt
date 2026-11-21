@@ -23,6 +23,7 @@ import com.nuvio.app.features.tracking.TrackingMediaReference
 import com.nuvio.app.features.watched.WatchedUiState
 import com.nuvio.app.features.watchprogress.WatchProgressUiState
 import kotlinx.coroutines.CoroutineScope
+import com.nuvio.app.features.usenet.UsenetFallbackSession
 import kotlinx.coroutines.Job
 import kotlin.time.TimeMark
 
@@ -234,6 +235,9 @@ internal class PlayerScreenRuntime(
     var sourceFallbackAttempts = 0
     val sourceFallbackTriedKeys = mutableSetOf<String>()
     var sourceFallbackJob: Job? = null
+    /** Automatic Usenet fallback of the release playing now, from the stream screen or a source switch. */
+    var usenetFallbackSession: UsenetFallbackSession? = null
+    var usenetFallbackJob: Job? = null
 
     var showAudioModal by mutableStateOf(false)
     var showSubtitleModal by mutableStateOf(false)

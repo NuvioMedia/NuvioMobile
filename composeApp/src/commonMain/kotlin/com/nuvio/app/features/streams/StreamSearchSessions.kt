@@ -7,6 +7,7 @@ import com.nuvio.app.features.debrid.LocalDebridAvailabilityService
 import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.plugins.pluginContentId
 import com.nuvio.app.features.servers.ServerStreamSource
+import com.nuvio.app.features.usenet.UsenetStreamSource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Dispatchers
@@ -47,17 +48,21 @@ internal class StreamSearchTargets(
     val streamAddons: List<InstalledStreamAddonTarget>,
     val serverSources: List<ServerStreamSource>,
     val pluginProviderGroups: List<PluginProviderGroup>,
+    /** The built-in Usenet search, when it is set up and can search this title. */
+    val usenetSource: UsenetStreamSource? = null,
     /** The debrid account streams are checked with, as the checked streams are kept with the search. */
     val debridConfiguration: String = LocalDebridAvailabilityService.cacheCheckConfiguration(),
 ) {
     val totalTasks: Int
-        get() = streamAddons.size + serverSources.size + pluginProviderGroups.sumOf { it.scrapers.size }
+        get() = streamAddons.size + serverSources.size + pluginProviderGroups.sumOf { it.scrapers.size } +
+            (if (usenetSource != null) 1 else 0)
 
     /** Changes whenever the queried sources or the debrid account change, so a search for an older setup is not reused. */
     val sourceConfiguration: String
         get() = buildList {
             streamAddons.forEach { add("addon:${it.addonId}") }
             serverSources.forEach { add("server:${it.addonId}") }
+            usenetSource?.let { add("usenet:${it.configurationKey}") }
             pluginProviderGroups.forEach { group ->
                 add("plugin:${group.addonId}:${group.scrapers.joinToString(",") { it.id }}")
             }
@@ -265,6 +270,11 @@ private fun CoroutineScope.launchStreamSearchTasks(
 
     targets.serverSources.forEach { source ->
         launch { onCompletion(StreamLoadCompletion.Addon(source.load())) }
+    }
+
+    targets.usenetSource?.let { source ->
+        // Each update replaces the group; it stays loading until every indexer answered.
+        launch { source.search().collect { group -> onCompletion(StreamLoadCompletion.Addon(group)) } }
     }
 
     targets.pluginProviderGroups.forEach { providerGroup ->

@@ -7,8 +7,11 @@ import com.nuvio.app.features.debrid.DebridSettingsRepository
 import com.nuvio.app.features.debrid.DirectDebridPlayableResult
 import com.nuvio.app.features.debrid.DirectDebridPlaybackResolver
 import com.nuvio.app.features.streams.StreamAutoPlaySelector
+import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.features.streams.StreamItem
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.isIos
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -32,6 +35,8 @@ internal fun PlayerScreenRuntime.playReplacementSource(stream: StreamItem, url: 
     }
     flushWatchProgress()
     stopActiveP2pStream()
+    // A newer engine session has already replaced it; otherwise the source it played is left.
+    UsenetPlayback.release(activeSourceUrl)
     externalSubtitles = stream.externalSubtitles
     activeSourceUrl = url
     activeSourceAudioUrl = null
@@ -56,9 +61,50 @@ internal fun PlayerScreenRuntime.playReplacementSource(stream: StreamItem, url: 
 
 /** Shows [message] as the playback error unless the next matching source is tried instead. */
 internal fun PlayerScreenRuntime.showErrorUnlessSourceFallback(message: String?) {
+    if (tryNextUsenetReleaseAfterError(message)) return
     if (tryFallbackToNextSourceAfterError(message)) return
     errorMessage = message
     controlsVisible = !playerControlsLocked
+}
+
+/**
+ * When the engine gave up on the Usenet release playing now, plays the next release of its
+ * automatic Usenet fallback, from the current position. It applies to releases the user picked
+ * too, and only while Automatic Usenet fallback is on.
+ *
+ * Returns `true` when a fallback was started and the error must not be shown yet.
+ */
+internal fun PlayerScreenRuntime.tryNextUsenetReleaseAfterError(message: String?): Boolean {
+    if (usenetFallbackJob?.isActive == true) return true
+    val failedUrl = activeSourceUrl
+    if (!UsenetPlayback.failedForGood(failedUrl)) return false
+    val session = usenetFallbackSession?.takeIf { it.ownsPlayback(failedUrl) }
+        ?: UsenetPlayback.takeFallback(failedUrl)?.also { usenetFallbackSession = it }
+        ?: return false
+    if (!session.canFallbackFrom(failedUrl)) return false
+    val videoId = activeVideoId ?: return false
+    val season = activeSeasonNumber
+    val episode = activeEpisodeNumber
+    session.playbackFailed()
+    errorMessage = null
+
+    usenetFallbackJob = scope.launch {
+        val next = session.resolveNext { candidate, attempt ->
+            NuvioToastController.show(UsenetPlayback.nextReleaseMessage(attempt, session.lastFailureReason))
+            UsenetPlayback.prepare(candidate, season, episode)
+        }
+        // The user switched source or left meanwhile; that choice wins.
+        if (activeSourceUrl != failedUrl || usenetFallbackSession !== session) return@launch
+        val url = next?.playableDirectUrl
+        if (next == null || url.isNullOrBlank()) {
+            errorMessage = UsenetPlayback.exhaustedMessage(session, otherwise = message)
+            controlsVisible = !playerControlsLocked
+            return@launch
+        }
+        log.i { "Usenet release failed, falling back to the next release from ${next.addonName}" }
+        playReplacementSource(next, url, videoId)
+    }
+    return true
 }
 
 /**
@@ -115,11 +161,20 @@ internal fun PlayerScreenRuntime.tryFallbackToNextSourceAfterError(message: Stri
                 next.playerSourceIdentityKey()?.let(sourceFallbackTriedKeys::add)
                 sourceFallbackAttempts++
 
-                val playable = when (
-                    val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(next, season, episode)
-                ) {
-                    is DirectDebridPlayableResult.Success -> resolved.stream
-                    else -> null
+                val playable = if (next.needsUsenetPreparation) {
+                    try {
+                        UsenetPlayback.prepare(next, season, episode)
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        // The engine remembered a release that cannot play; the next one is tried.
+                        null
+                    }
+                } else {
+                    when (val resolved = DirectDebridPlaybackResolver.resolveToPlayableStream(next, season, episode)) {
+                        is DirectDebridPlayableResult.Success -> resolved.stream
+                        else -> null
+                    }
                 }
                 val url = playable?.playableDirectUrl
                 if (playable == null || url.isNullOrBlank() || url == failedUrl) {
@@ -151,7 +206,8 @@ internal fun nextSourceFallbackCandidate(
     triedKeys: Set<String>,
     failedAddonId: String?,
     failedInfoHash: String?,
-    installedAddonNames: Set<String> = AddonRepository.uiState.value.addons.enabledAddons().map { it.displayTitle }.toSet(),
+    installedAddonNames: Set<String> = AddonRepository.uiState.value.addons.enabledAddons().map { it.displayTitle }.toSet() +
+        UsenetPlayback.autoPlayAddonNames(),
     debridEnabled: Boolean = DebridSettingsRepository.snapshot().canResolvePlayableLinks,
     activeResolverProviderId: String? = DebridSettingsRepository.snapshot().activeResolverProviderId,
 ): StreamItem? {

@@ -53,6 +53,7 @@ import androidx.navigation3.ui.NavDisplay
 import com.nuvio.app.core.ui.LocalPosterClickAnchor
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.core.ui.collectMappedAsState
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.navigation.PosterNavigationState
 import com.nuvio.app.navigation.posterNavigationEntry
 import com.nuvio.app.core.auth.AuthRepository
@@ -129,6 +130,7 @@ import com.nuvio.app.features.library.toMetaPreview
 import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.notifications.EpisodeReleaseNotificationsRepository
 import com.nuvio.app.features.p2p.P2pSettingsRepository
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.features.party.PartyEvent
 import com.nuvio.app.features.party.PartyMedia
 import com.nuvio.app.features.party.PartyRepository
@@ -665,6 +667,7 @@ internal fun MainAppContent(
             AppForegroundMonitor.events().collect { visibility ->
                 when (visibility) {
                     AppVisibility.Foreground -> {
+                        UsenetRepository.onAppForegrounded()
                         NetworkStatusRepository.requestForegroundRefresh()
                         DeviceSessionRegistration.registerIfAuthenticated()
                         MemberAccessRepository.refreshIfStale()
@@ -675,7 +678,11 @@ internal fun MainAppContent(
                             SyncManager.stopPeriodicNuvioSyncPull()
                         }
                     }
-                    AppVisibility.Background -> SyncManager.stopPeriodicNuvioSyncPull()
+                    AppVisibility.Background -> {
+                        // The engine stops unless a session plays; a player in the background keeps it.
+                        UsenetRepository.onAppBackgrounded()
+                        SyncManager.stopPeriodicNuvioSyncPull()
+                    }
                 }
             }
         } finally {
@@ -686,6 +693,8 @@ internal fun MainAppContent(
     var lastExternalPlayerLaunch by remember { mutableStateOf<PlayerLaunch?>(null) }
     val activePlaybackProfileId = activeProfileIndex ?: ProfileRepository.activeProfileId
     val launchExternalPlayer = rememberExternalPlayerLauncher { result ->
+        // Back from the external player: nothing plays its Usenet session any more.
+        UsenetPlayback.release(lastExternalPlayerLaunch?.sourceUrl)
         if (result != null) {
             val fallbackSession = lastExternalPlayerLaunch?.externalPlaybackSession()
             coroutineScope.launch {
@@ -842,6 +851,9 @@ internal fun MainAppContent(
                     NuvioToastController.show(externalPlayerFailedText)
                     false
                 }
+            }.also { launched ->
+                // A Usenet session opened for a player that never started has no owner.
+                if (!launched) UsenetPlayback.release(launch.sourceUrl)
             }
         }
 

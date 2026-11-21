@@ -85,6 +85,7 @@ import com.nuvio.app.features.tracking.TrackingSettingsRepository
 import com.nuvio.app.features.tracking.TrackingSettingsUiState
 import com.nuvio.app.features.tmdb.TmdbSettings
 import com.nuvio.app.features.tmdb.TmdbSettingsRepository
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesRepository
 import com.nuvio.app.features.watchprogress.ContinueWatchingPreferencesUiState
 import com.nuvio.app.navigation.LocalUseNativeNavigation
@@ -114,6 +115,8 @@ private fun SettingsPage.isEnabledByPolicy(): Boolean =
     when (this) {
         SettingsPage.SupportersContributors -> AppFeaturePolicy.supportersContributorsPageEnabled
         SettingsPage.PlaybackP2p -> P2pSettingsRepository.isVisible
+        SettingsPage.Usenet, SettingsPage.UsenetSorting, SettingsPage.UsenetDiagnostics, SettingsPage.UsenetStats ->
+            UsenetRepository.isSupported
         SettingsPage.PlaybackBuffer -> !isIos
         else -> true
     }
@@ -731,6 +734,15 @@ private fun MobileSettingsScreen(
                     onPluginsClick = onPluginsClick,
                     onMediaServersClick = { onPageChange(SettingsPage.MediaServers) },
                 )
+                SettingsPage.Usenet -> usenetSettingsContent(
+                    isTablet = false,
+                    onSortingClick = { onPageChange(SettingsPage.UsenetSorting) },
+                    onDiagnosticsClick = { onPageChange(SettingsPage.UsenetDiagnostics) },
+                    onStatsClick = { onPageChange(SettingsPage.UsenetStats) },
+                )
+                SettingsPage.UsenetSorting -> usenetSortingContent(isTablet = false)
+                SettingsPage.UsenetDiagnostics -> usenetDiagnosticsContent(isTablet = false)
+                SettingsPage.UsenetStats -> usenetStatsContent(isTablet = false)
                 SettingsPage.Addons -> addonsSettingsContent()
                 SettingsPage.MediaServers -> mediaServersSettingsContent(
                     isTablet = false,
@@ -759,6 +771,7 @@ private fun MobileSettingsScreen(
                     onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                     onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                     onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                    onUsenetClick = { onPageChange(SettingsPage.Usenet) },
                 )
                 SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                     isTablet = false,
@@ -1133,6 +1146,15 @@ private fun TabletSettingsScreen(
                         onPluginsClick = { openInlinePage(SettingsPage.Plugins) },
                         onMediaServersClick = { openInlinePage(SettingsPage.MediaServers) },
                     )
+                    SettingsPage.Usenet -> usenetSettingsContent(
+                        isTablet = true,
+                        onSortingClick = { openInlinePage(SettingsPage.UsenetSorting) },
+                        onDiagnosticsClick = { openInlinePage(SettingsPage.UsenetDiagnostics) },
+                        onStatsClick = { openInlinePage(SettingsPage.UsenetStats) },
+                    )
+                    SettingsPage.UsenetSorting -> usenetSortingContent(isTablet = true)
+                    SettingsPage.UsenetDiagnostics -> usenetDiagnosticsContent(isTablet = true)
+                    SettingsPage.UsenetStats -> usenetStatsContent(isTablet = true)
                     SettingsPage.Addons -> addonsSettingsContent()
                     SettingsPage.MediaServers -> mediaServersSettingsContent(
                         isTablet = true,
@@ -1161,6 +1183,7 @@ private fun TabletSettingsScreen(
                         onTmdbClick = { onPageChange(SettingsPage.TmdbEnrichment) },
                         onMdbListClick = { onPageChange(SettingsPage.MdbListRatings) },
                         onDebridClick = { onPageChange(SettingsPage.Debrid) },
+                        onUsenetClick = { onPageChange(SettingsPage.Usenet) },
                     )
                     SettingsPage.TmdbEnrichment -> tmdbSettingsContent(
                         isTablet = true,

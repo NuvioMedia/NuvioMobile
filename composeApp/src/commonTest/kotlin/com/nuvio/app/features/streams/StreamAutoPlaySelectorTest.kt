@@ -1,5 +1,7 @@
 package com.nuvio.app.features.streams
 
+import com.nuvio.app.features.usenet.BUILT_IN_USENET_GROUP_ID
+import com.nuvio.app.features.usenet.BUILT_IN_USENET_GROUP_NAME
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -7,6 +9,32 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class StreamAutoPlaySelectorTest {
+
+    @Test
+    fun `allowed addons can include built-in Usenet like an addon`() {
+        val usenet = StreamItem(
+            name = "1080p • Usenet • Indexer",
+            nzbUrl = "https://indexer.test/getnzb/1.nzb",
+            nzbServers = listOf("nntps://news.test:563/20"),
+            addonName = BUILT_IN_USENET_GROUP_NAME,
+            addonId = BUILT_IN_USENET_GROUP_ID,
+        )
+        val addon = stream(addonName = "AddonA", url = "https://example.com/a.m3u8", name = "720p", bingeGroup = null)
+        fun select(selectedAddons: Set<String>, source: StreamAutoPlaySource = StreamAutoPlaySource.ALL_SOURCES) =
+            StreamAutoPlaySelector.selectAutoPlayStream(
+                streams = listOf(usenet, addon),
+                mode = StreamAutoPlayMode.FIRST_STREAM,
+                regexPattern = "",
+                source = source,
+                installedAddonNames = setOf("AddonA", BUILT_IN_USENET_GROUP_NAME),
+                selectedAddons = selectedAddons,
+                selectedPlugins = setOf("Some plugin"),
+            )
+
+        assertEquals(usenet, select(setOf(BUILT_IN_USENET_GROUP_NAME)))
+        assertEquals(usenet, select(emptySet(), StreamAutoPlaySource.INSTALLED_ADDONS_ONLY))
+        assertEquals(addon, select(setOf("AddonA")))
+    }
 
     @Test
     fun `bingeGroup-first selects matching stream before first stream mode`() {
