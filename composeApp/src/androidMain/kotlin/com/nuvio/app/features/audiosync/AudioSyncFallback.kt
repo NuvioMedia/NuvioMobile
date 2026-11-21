@@ -327,9 +327,7 @@ internal class AudioSyncFallback private constructor(
         if (isMpv) isMpvShowing(current.url) else sidecar?.currentGenerationFor(current.url) == current.generation
 
     /** The user moved to another subtitle or track, or AutoSync starts over. */
-    override fun stop() = stop(restoreOriginalOnMpv = false)
-
-    private fun stop(restoreOriginalOnMpv: Boolean) {
+    override fun stop(restoreOriginalOnMpv: Boolean) {
         takeOverJob?.cancel()
         takeOverJob = null
         AutoSyncSyncedSubtitle.end(statusRun)

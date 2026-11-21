@@ -30,7 +30,8 @@ internal interface AutoSyncMpvAudioFallback {
     fun arm()
     fun disarm()
     fun takeOver(url: String): Boolean
-    fun stop()
+    /** [restoreOriginalOnMpv]: the subtitle stays on, so mpv shows the original again in place of the retimed copy. */
+    fun stop(restoreOriginalOnMpv: Boolean = false)
     fun release()
 }
 
@@ -83,11 +84,11 @@ internal class AutoSyncMpvCoordinator(
         audioFallback?.setAppliedListener(listener)
     }
 
-    fun cancel() {
+    fun cancel(restoreAudioSyncOriginal: Boolean = false) {
         operationToken++
         job?.cancel()
         job = null
-        audioFallback?.stop()
+        audioFallback?.stop(restoreOriginalOnMpv = restoreAudioSyncOriginal)
     }
 
     fun dispose() {
@@ -298,7 +299,8 @@ internal open class AutoSyncMpvEngineController(
     }
 
     override fun cancelForManualSubtitleDelay() {
-        coordinator.cancel()
+        // The same subtitle stays on with the user's delay, so the audio-synced copy gives way to the original.
+        coordinator.cancel(restoreAudioSyncOriginal = true)
         AutoSyncSyncedSubtitle.clear()
     }
 }
