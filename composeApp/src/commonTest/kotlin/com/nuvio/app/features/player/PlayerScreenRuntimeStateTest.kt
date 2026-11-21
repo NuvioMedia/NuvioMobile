@@ -191,6 +191,19 @@ class PlayerScreenRuntimeStateTest {
     }
 
     @Test
+    fun addonSubtitleUpdatesInvalidateUiWithoutPlaybackUpdates() {
+        val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
+        val visible = derivedStateOf { runtime.addonSubtitles.map { it.id } to runtime.isLoadingAddonSubtitles }
+
+        assertEquals(emptyList<String>() to false, visible.value)
+
+        runtime.isLoadingAddonSubtitles = true
+        runtime.addonSubtitles = listOf(AddonSubtitle(id = "ro", url = "https://example.com/ro.srt", language = "ro", display = "Romanian"))
+
+        assertEquals(listOf("ro") to true, visible.value)
+    }
+
+    @Test
     fun episodeFilterUpdatesInvalidateUiWithoutPlaybackUpdates() {
         val runtime = PlayerScreenRuntime(testPlayerScreenArgs())
         val selectedFilter = derivedStateOf { runtime.episodeStreamsRepoState.selectedFilter }
