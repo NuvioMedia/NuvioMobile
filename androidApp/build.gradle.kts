@@ -99,6 +99,8 @@ android {
         }
         jniLibs {
             useLegacyPackaging = true
+            // Audio Sync uses the JNI API; these unused native APIs duplicate runtime code.
+            excludes += listOf("lib/*/libsherpa-onnx-c-api.so", "lib/*/libsherpa-onnx-cxx-api.so")
             pickFirsts += listOf(
                 "lib/*/libc++_shared.so",
                 "lib/*/libavcodec.so",
