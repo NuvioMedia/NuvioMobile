@@ -1195,7 +1195,7 @@
     <string name="settings_playback_secondary_subtitle_language">Seconde langue préférée</string>
     <string name="settings_playback_section_decoder">DÉCODEUR</string>
     <string name="settings_playback_engine">Moteur de lecture</string>
-    <string name="settings_playback_engine_auto_description">ExoPlayer pour les films et les séries · MPV pour les animés</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer pour les films et les séries · mpv pour les animés</string>
     <string name="settings_playback_engine_exoplayer_description">Utiliser ExoPlayer et les décodeurs Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Utiliser libmpv pour la lecture Android.</string>
     <string name="settings_playback_auto_switch_engine_on_error">Changer automatiquement de moteur en cas d’erreur de lecture</string>
@@ -1843,7 +1843,7 @@
     <string name="player_error_stream_blocked">La source du flux est bloquée ou restreinte. Essayez une autre source.</string>
     <string name="player_error_source_invalid_content">Erreur de source&#160;: la source du flux a renvoyé un contenu invalide ou illisible. Le lien a peut-être expiré, ou le serveur a renvoyé une page d’erreur au lieu de la vidéo.\n\nEssayez une autre source. [%1$s]</string>
     <string name="player_error_unsupported_format">Ce flux utilise un format que votre appareil ne prend peut-être pas en charge. Essayez une autre source. [%1$s]</string>
-    <string name="player_engine_unavailable_rebuild">Moteur de lecture MPV indisponible. Veuillez reconstruire l’application.</string>
+    <string name="player_engine_unavailable_rebuild">Moteur de lecture mpv indisponible. Veuillez reconstruire l’application.</string>
     <string name="profile_pin_changed_requires_refresh">Le code PIN de ce profil a changé. Connectez-vous une fois pour mettre à jour le verrouillage sur cet appareil.</string>
     <string name="profile_pin_clear_failed">Impossible de supprimer le verrouillage PIN. Réessayez.</string>
     <string name="profile_pin_clear_requires_internet">Connectez-vous à Internet pour supprimer le verrouillage PIN.</string>
@@ -2111,7 +2111,7 @@
     <string name="player_ios_preset_sdr_tone_mapped_label">SDR avec tone mapping</string>
     <string name="player_ios_preset_sdr_tone_mapped_desc">Blancs et noirs plus prévisibles sur une sortie de type SDR.</string>
     <string name="player_ios_preset_compatibility_label">Compatibilité</string>
-    <string name="player_ios_preset_compatibility_desc">Au plus près de l’ancien comportement MPV iOS.</string>
+    <string name="player_ios_preset_compatibility_desc">Au plus près de l’ancien comportement mpv iOS.</string>
     <string name="player_ios_preset_custom_label">Personnalisé</string>
     <string name="player_ios_preset_custom_desc">Utilisez vos valeurs avancées ci-dessous.</string>
     <string name="player_ios_hardware_decoder_off">Désactivé</string>
@@ -2300,7 +2300,7 @@
     <string name="network_please_check_connection">Vérifiez votre connexion et réessayez.</string>
     <string name="network_request_failed_http">La requête a échoué avec HTTP %1$d</string>
     <string name="player_addon_subtitle_display_format">%1$s (%2$s)</string>
-    <string name="player_error_mpv_unavailable">Moteur de lecture MPV indisponible. Veuillez reconstruire l’application.</string>
+    <string name="player_error_mpv_unavailable">Moteur de lecture mpv indisponible. Veuillez reconstruire l’application.</string>
     <string name="player_error_unable_to_play_stream">Impossible de lire ce flux.</string>
     <string name="plugins_badge_disabled">Plugins désactivés</string>
     <string name="plugins_badge_enabled">Plugins activés</string>
