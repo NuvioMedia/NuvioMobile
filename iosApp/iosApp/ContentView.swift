@@ -20,6 +20,7 @@ private enum NuvioComposeHost {
         _ contentController: UIViewController,
         backgroundColor: UIColor = nuvioBackgroundColor,
         disablesInteractiveContentPopGesture: Bool = false,
+        backGestureExclusionZones: BackGestureExclusionZones? = nil,
         verticalBar: VerticalBar? = nil,
         hinge: Hinge? = nil,
         onTabBarControllerAvailable: ((UITabBarController) -> Void)? = nil
@@ -30,10 +31,66 @@ private enum NuvioComposeHost {
             contentController: contentController,
             backgroundColor: backgroundColor,
             disablesInteractiveContentPopGesture: disablesInteractiveContentPopGesture,
+            backGestureExclusionZones: backGestureExclusionZones,
             verticalBar: verticalBar,
             hinge: hinge,
             onTabBarControllerAvailable: onTabBarControllerAvailable
         )
+    }
+}
+
+/// Compose draws a whole screen in one UIView, so UIKit cannot see its horizontal
+/// scrollers. This observer never recognizes: it only switches the iOS 26
+/// full-content swipe-back off for touch sequences that start on such a scroller.
+@available(iOS 26.0, *)
+private final class ContentPopGestureGate: UIGestureRecognizer {
+    private let isExcluded: (CGPoint) -> Bool
+    private let contentPopGesture: () -> UIGestureRecognizer?
+    private var suppressedGesture: UIGestureRecognizer?
+
+    init(
+        isExcluded: @escaping (CGPoint) -> Bool,
+        contentPopGesture: @escaping () -> UIGestureRecognizer?
+    ) {
+        self.isExcluded = isExcluded
+        self.contentPopGesture = contentPopGesture
+        super.init(target: nil, action: nil)
+        cancelsTouchesInView = false
+        delaysTouchesBegan = false
+        delaysTouchesEnded = false
+    }
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesBegan(touches, with: event)
+        guard suppressedGesture == nil,
+              let touch = touches.first,
+              isExcluded(touch.location(in: view)),
+              let gesture = contentPopGesture(),
+              gesture.isEnabled
+        else { return }
+        gesture.isEnabled = false
+        suppressedGesture = gesture
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesEnded(touches, with: event)
+        finishIfIdle(event)
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
+        super.touchesCancelled(touches, with: event)
+        finishIfIdle(event)
+    }
+
+    override func reset() {
+        super.reset()
+        suppressedGesture?.isEnabled = true
+        suppressedGesture = nil
+    }
+
+    private func finishIfIdle(_ event: UIEvent) {
+        let active = event.allTouches?.filter { $0.phase != .ended && $0.phase != .cancelled } ?? []
+        if active.isEmpty { state = .failed }
     }
 }
 
@@ -44,6 +101,8 @@ final class RootComposeViewController: UIViewController {
     private let contentController: UIViewController
     private let backgroundColor: UIColor
     private let disablesInteractiveContentPopGesture: Bool
+    /// Non-nil only for screens that allow the iOS 26 full-content swipe-back.
+    private let backGestureExclusionZones: BackGestureExclusionZones?
     private let verticalBar: VerticalBar?
     private let hinge: Hinge?
     private let onTabBarControllerAvailable: ((UITabBarController) -> Void)?
@@ -56,6 +115,7 @@ final class RootComposeViewController: UIViewController {
         contentController: UIViewController,
         backgroundColor: UIColor,
         disablesInteractiveContentPopGesture: Bool,
+        backGestureExclusionZones: BackGestureExclusionZones?,
         verticalBar: VerticalBar?,
         hinge: Hinge?,
         onTabBarControllerAvailable: ((UITabBarController) -> Void)?
@@ -63,6 +123,7 @@ final class RootComposeViewController: UIViewController {
         self.contentController = contentController
         self.backgroundColor = backgroundColor
         self.disablesInteractiveContentPopGesture = disablesInteractiveContentPopGesture
+        self.backGestureExclusionZones = backGestureExclusionZones
         self.verticalBar = verticalBar
         self.hinge = hinge
         self.onTabBarControllerAvailable = onTabBarControllerAvailable
@@ -107,6 +168,15 @@ final class RootComposeViewController: UIViewController {
             }
         }
         contentController.didMove(toParent: self)
+        if #available(iOS 26.0, *), backGestureExclusionZones != nil {
+            view.addGestureRecognizer(ContentPopGestureGate(isExcluded: { [weak self] location in
+                guard let self, let zones = self.backGestureExclusionZones else { return false }
+                let point = self.view.convert(location, to: self.contentController.view)
+                return zones.contains(x: Double(point.x), y: Double(point.y))
+            }, contentPopGesture: { [weak self] in
+                self?.navigationController?.interactiveContentPopGestureRecognizer
+            }))
+        }
     }
 
     override func viewSafeAreaInsetsDidChange() {
@@ -192,7 +262,10 @@ final class RootComposeViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        configureBackGestures(isVisible: true)
+        // Toggling a back gesture while it drives an interactive pop cancels the pop.
+        if transitionCoordinator?.isInteractive != true {
+            configureBackGestures(isVisible: true)
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -215,8 +288,9 @@ final class RootComposeViewController: UIViewController {
     }
 
     private func configureBackGestures(isVisible: Bool) {
-        if #available(iOS 26.0, *) {
-            navigationController?.interactiveContentPopGestureRecognizer?.isEnabled = false
+        if #available(iOS 26.0, *), isVisible {
+            navigationController?.interactiveContentPopGestureRecognizer?.isEnabled =
+                backGestureExclusionZones != nil
         }
         navigationController?.interactivePopGestureRecognizer?.isEnabled =
             isVisible ? !disablesInteractiveContentPopGesture : true
@@ -847,6 +921,7 @@ struct DetailComposeView: UIViewControllerRepresentable {
     func makeUIViewController(context: Context) -> UIViewController {
         let verticalBar = VerticalBar()
         let hinge = Hinge()
+        let backGestureExclusionZones = BackGestureExclusionZones()
         let controller = MainViewControllerKt.ScreenViewController(
             route: route,
             onNavigate: { newRoute, launchSingleTop in
@@ -867,11 +942,13 @@ struct DetailComposeView: UIViewControllerRepresentable {
             },
             appGateController: appCoordinator.appGateController,
             verticalBar: verticalBar,
-            hinge: hinge
+            hinge: hinge,
+            backGestureExclusionZones: backGestureExclusionZones
         )
         return NuvioComposeHost.wrap(
             controller,
             disablesInteractiveContentPopGesture: route is PlayerRoute,
+            backGestureExclusionZones: route is DetailRoute ? backGestureExclusionZones : nil,
             verticalBar: verticalBar,
             hinge: route is PlayerRoute ? hinge : nil
         )

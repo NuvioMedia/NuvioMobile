@@ -4,6 +4,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.uikit.OnFocusBehavior
 import androidx.compose.ui.window.ComposeUIViewController
+import com.nuvio.app.core.ui.BackGestureExclusionZones
+import com.nuvio.app.core.ui.LocalBackGestureExclusionZones
 import com.nuvio.app.core.ui.LocalFold
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
 import com.nuvio.app.core.ui.NativeProfileSwitcherController
@@ -61,7 +63,8 @@ fun ScreenViewController(
     appGateController: AppGateController,
     verticalBar: VerticalBar,
     hinge: Hinge,
-): UIViewController = nuvioComposeViewController(verticalBar, hinge) {
+    backGestureExclusionZones: BackGestureExclusionZones,
+): UIViewController = nuvioComposeViewController(verticalBar, hinge, backGestureExclusionZones) {
     App(
         initialRoute = route,
         useNativeNavigation = true,
@@ -109,6 +112,7 @@ fun AppGateViewController(
 private fun nuvioComposeViewController(
     verticalBar: VerticalBar = VerticalBar(),
     hinge: Hinge = Hinge(),
+    backGestureExclusionZones: BackGestureExclusionZones? = null,
     content: @androidx.compose.runtime.Composable () -> Unit,
 ): UIViewController {
     AutoSyncPreferencesIos.initialize()
@@ -118,6 +122,7 @@ private fun nuvioComposeViewController(
             CompositionLocalProvider(
                 LocalVerticalBarPadding provides verticalBar.padding,
                 LocalFold provides hinge.fold,
+                LocalBackGestureExclusionZones provides backGestureExclusionZones,
                 content = content,
             )
         },
