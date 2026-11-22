@@ -10,6 +10,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -93,6 +95,7 @@ fun DetailMetaInfo(
             ?.toDoubleOrNull()
             ?.takeIf { it > 0.0 }
             ?.let(::formatOneDecimal)
+        val imdbId = meta.imdbId ?: meta.id.takeIf { it.startsWith("tt") }
         val ratingMedia = remember(meta) { meta.ratingReference() }
         val ratingState by rememberRatingState(ratingMedia)
         val hasMetaRow = releaseLine != null ||
@@ -130,7 +133,17 @@ fun DetailMetaInfo(
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.sp,
                     )
+                    val uriHandler = LocalUriHandler.current
                     Row(
+                        modifier = Modifier.then(
+                            if (imdbId != null) {
+                                Modifier.clickable {
+                                    runCatching { uriHandler.openUri("https://www.imdb.com/title/$imdbId") }
+                                }
+                            } else {
+                                Modifier
+                            }
+                        ),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         ImdbRatingSourceLabel(storeTextStyle = imdbTextStyle)
@@ -160,6 +173,7 @@ fun DetailMetaInfo(
             DetailRatingsRow(
                 ratings = meta.externalRatings,
                 horizontalScrollPadding = horizontalScrollPadding,
+                imdbId = imdbId,
             )
         }
 
@@ -190,11 +204,13 @@ fun DetailMetaInfo(
 @Composable
 internal fun DetailRatingsRow(
     ratings: List<MetaExternalRating>,
+    imdbId: String? = null,
     modifier: Modifier = Modifier,
     horizontalScrollPadding: Dp = 0.dp,
 ) {
     RatingsRow(
         ratings = ratings,
+        imdbId = imdbId,
         modifier = modifier
             .nuvioHorizontalScrollBleed(horizontalScrollPadding)
             .fillMaxWidth()
@@ -206,6 +222,7 @@ internal fun DetailRatingsRow(
 @Composable
 internal fun RatingsRow(
     ratings: List<MetaExternalRating>,
+    imdbId: String? = null,
     modifier: Modifier = Modifier,
     maxItems: Int = Int.MAX_VALUE,
 ) {
@@ -218,6 +235,7 @@ internal fun RatingsRow(
 
     if (orderedRatings.isEmpty()) return
 
+    val uriHandler = LocalUriHandler.current
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -229,6 +247,13 @@ internal fun RatingsRow(
                 letterSpacing = 0.sp,
             )
             Row(
+                modifier = Modifier.then(
+                    if (visuals.url != null && imdbId != null) {
+                        Modifier.clickable { runCatching { uriHandler.openUri(visuals.url + imdbId) } }
+                    } else {
+                        Modifier
+                    }
+                ),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (visuals.source == PROVIDER_IMDB && !AppFeaturePolicy.imdbRatingLogoEnabled) {
@@ -341,6 +366,7 @@ internal val ImdbYellow = Color(0xFFF5C518)
 
 private data class RatingVisuals(
     val source: String,
+    val url: String? = null,
     val displayName: String,
     val logo: DrawableResource,
     val logoWidth: androidx.compose.ui.unit.Dp,
@@ -362,6 +388,7 @@ private fun RatingVisuals.logoFor(rating: MetaExternalRating): DrawableResource 
 private val ratingVisuals = listOf(
     RatingVisuals(
         source = PROVIDER_IMDB,
+        url = "https://www.imdb.com/title/",
         displayName = "IMDb",
         logo = Res.drawable.rating_imdb,
         logoWidth = 30.dp,
@@ -386,6 +413,7 @@ private val ratingVisuals = listOf(
     ),
     RatingVisuals(
         source = PROVIDER_LETTERBOXD,
+        url = "https://letterboxd.com/imdb/",
         displayName = "Letterboxd",
         logo = Res.drawable.rating_letterboxd,
         logoWidth = 16.dp,

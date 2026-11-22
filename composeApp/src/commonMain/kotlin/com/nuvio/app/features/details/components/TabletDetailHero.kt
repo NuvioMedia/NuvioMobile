@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -291,6 +293,7 @@ fun TabletDetailHero(
     )
     var logoLoadError by remember(meta.id, meta.logo) { mutableStateOf(false) }
     val logoUrl = meta.logo?.takeIf { it.isNotBlank() }
+    val imdbId = meta.imdbId ?: meta.id.takeIf { it.startsWith("tt") }
 
     Box(
         modifier = Modifier
@@ -337,7 +340,11 @@ fun TabletDetailHero(
             }
             if (showOverview) {
                 Spacer(modifier = Modifier.height(space.s20))
-                TabletHeroMetaRow(meta = meta, showImdbRating = showOverallRatings && !isMdbListActive)
+                TabletHeroMetaRow(
+                    meta = meta,
+                    imdbId = imdbId,
+                    showImdbRating = showOverallRatings && !isMdbListActive
+                )
                 AnimatedVisibility(
                     visible = isMdbListActive && meta.externalRatings.isNotEmpty(),
                     enter = fadeIn() + expandVertically(),
@@ -347,6 +354,7 @@ fun TabletDetailHero(
                         Spacer(modifier = Modifier.height(space.s12))
                         DetailRatingsRow(
                             ratings = meta.externalRatings,
+                            imdbId = imdbId,
                             modifier = Modifier.widthIn(max = 520.dp),
                         )
                     }
@@ -425,7 +433,11 @@ fun TabletDetailHero(
 }
 
 @Composable
-private fun TabletHeroMetaRow(meta: MetaDetails, showImdbRating: Boolean) {
+private fun TabletHeroMetaRow(
+    meta: MetaDetails,
+    imdbId: String? = null,
+    showImdbRating: Boolean
+) {
     val colorScheme = MaterialTheme.colorScheme
     val seasonCount = remember(meta.videos) {
         meta.videos.mapNotNull { it.season }.filter { it > 0 }.toSet().size
@@ -464,7 +476,17 @@ private fun TabletHeroMetaRow(meta: MetaDetails, showImdbRating: Boolean) {
             DetailHeroMetaBadge(text = rating)
         }
         if (validImdbRating != null) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            val uriHandler = LocalUriHandler.current
+            Row(
+                modifier = Modifier.then(
+                    if (imdbId != null) {
+                        Modifier.clickable { runCatching { uriHandler.openUri("https://www.imdb.com/title/$imdbId") } }
+                    } else {
+                        Modifier
+                    }
+                ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 ImdbRatingSourceLabel(storeTextStyle = itemStyle)
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
