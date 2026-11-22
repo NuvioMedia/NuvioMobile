@@ -24,7 +24,24 @@ data class SubtitleTrack(
     val language: String? = null,
     val isSelected: Boolean = false,
     val isForced: Boolean = false,
+    val formatBadge: SubtitleFormatBadge? = null,
 )
+
+enum class SubtitleFormatBadge(val label: String) {
+    ASS("ASS"),
+    PGS("PGS"),
+    VOBSUB("VobSub"),
+    DVB("DVB"),
+}
+
+internal fun subtitleFormatBadgeForCodec(codec: String?): SubtitleFormatBadge? =
+    when (codec?.trim()?.lowercase()) {
+        "ass", "ssa" -> SubtitleFormatBadge.ASS
+        "hdmv_pgs_subtitle", "pgssub" -> SubtitleFormatBadge.PGS
+        "dvd_subtitle", "dvdsub" -> SubtitleFormatBadge.VOBSUB
+        "dvb_subtitle", "dvbsub" -> SubtitleFormatBadge.DVB
+        else -> null
+    }
 
 data class AddonSubtitle(
     val id: String,

@@ -163,6 +163,10 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
         guard let t = playerVC?.subtitleTracks, Int(at) < t.count else { return false }
         return t[Int(at)].selected
     }
+    func getSubtitleTrackCodec(at: Int32) -> String {
+        guard let t = playerVC?.subtitleTracks, Int(at) < t.count else { return "" }
+        return t[Int(at)].codec
+    }
 
     func selectAudioTrack(trackId: Int32) { playerVC?.selectAudio(Int(trackId)) }
     func applyAudioLanguagePreferences(languages: [String]) {
@@ -257,6 +261,7 @@ struct TrackInfo {
     let type: String
     let title: String
     let lang: String
+    let codec: String
     let selected: Bool
 }
 
@@ -1133,10 +1138,10 @@ final class MPVPlayerViewController: UIViewController {
             )
 
             if type == "audio" {
-                audio.append(TrackInfo(index: audioIdx, id: id, type: type, title: displayTitle, lang: lang, selected: selected))
+                audio.append(TrackInfo(index: audioIdx, id: id, type: type, title: displayTitle, lang: lang, codec: codec, selected: selected))
                 audioIdx += 1
             } else if type == "sub" {
-                subs.append(TrackInfo(index: subIdx, id: id, type: type, title: displayTitle, lang: lang, selected: selected))
+                subs.append(TrackInfo(index: subIdx, id: id, type: type, title: displayTitle, lang: lang, codec: codec, selected: selected))
                 subIdx += 1
             }
         }
@@ -1204,7 +1209,7 @@ final class MPVPlayerViewController: UIViewController {
         let base = ifNotBlank(title)
             ?? localizedLanguageName(lang)
             ?? (type == "sub" ? "Subtitle \(index + 1)" : "Track \(index + 1)")
-        let codecName = codecDisplayName(codec) ?? codecDisplayName(decoderDescription)
+        let codecName = type == "sub" ? nil : (codecDisplayName(codec) ?? codecDisplayName(decoderDescription))
         let channelName = type == "audio" ? channelLayoutName(channels: channels, channelCount: channelCount) : nil
         let details = [channelName, codecName]
             .compactMap { $0 }

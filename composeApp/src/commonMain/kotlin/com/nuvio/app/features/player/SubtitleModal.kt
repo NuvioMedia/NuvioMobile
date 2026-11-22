@@ -404,9 +404,11 @@ private fun SubtitleOptionRow(
     val sourceLabel: String
     val title: String
     val metadata: String?
+    val formatBadge: SubtitleFormatBadge?
 
     when (option) {
         is SubtitleSelectionOption.BuiltIn -> {
+            formatBadge = option.track.formatBadge
             sourceLabel = stringResource(Res.string.compose_player_built_in)
             title = localizedTrackDisplayName(
                 option.track.label,
@@ -421,6 +423,7 @@ private fun SubtitleOptionRow(
         }
 
         is SubtitleSelectionOption.Addon -> {
+            formatBadge = option.subtitle.formatBadge
             sourceLabel = option.subtitle.addonName ?: stringResource(Res.string.addon_title)
             title = option.subtitle.title ?: languageLabelForCode(option.subtitle.language)
             metadata = (option.subtitle.label ?: option.subtitle.display).takeIf { it.isNotBlank() && it != title }
@@ -450,13 +453,22 @@ private fun SubtitleOptionRow(
                     AutoSyncedChip(it.subtitle.url, selected) // AutoSync hook
                 }
             }
-            Text(
-                text = title,
-                color = if (selected) tokens.colors.onAccent else Color.White,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = title,
+                    modifier = Modifier.weight(1f, fill = false),
+                    color = if (selected) tokens.colors.onAccent else Color.White,
+                    style = MaterialTheme.typography.bodyLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                formatBadge?.let {
+                    SubtitleFormatChip(label = it.label, selected = selected)
+                }
+            }
             metadata?.let {
                 Text(
                     text = it,
@@ -510,6 +522,31 @@ private fun SubtitleSourceChip(
             style = MaterialTheme.typography.labelSmall,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Composable
+private fun SubtitleFormatChip(
+    label: String,
+    selected: Boolean,
+) {
+    val tokens = MaterialTheme.nuvio
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(
+                if (selected) tokens.colors.onAccent.copy(alpha = 0.14f)
+                else Color.White.copy(alpha = 0.08f),
+            )
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+    ) {
+        Text(
+            text = label,
+            color = if (selected) tokens.colors.onAccent.copy(alpha = 0.9f) else Color.White.copy(alpha = 0.78f),
+            style = MaterialTheme.typography.labelSmall,
+            maxLines = 1,
         )
     }
 }
