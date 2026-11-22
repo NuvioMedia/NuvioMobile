@@ -448,7 +448,11 @@ private fun SubtitleOptionRow(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SubtitleSourceChip(label = sourceLabel, selected = selected)
+                SubtitleSourceChip(
+                    label = sourceLabel,
+                    selected = selected,
+                    modifier = Modifier.weight(1f, fill = false),
+                )
                 (option as? SubtitleSelectionOption.Addon)?.let {
                     AutoSyncedChip(it.subtitle.url, selected) // AutoSync hook
                 }
@@ -496,12 +500,13 @@ private fun SubtitleOptionRow(
 private fun SubtitleSourceChip(
     label: String,
     selected: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     val tokens = MaterialTheme.nuvio
     val shape = RoundedCornerShape(999.dp)
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clip(shape)
             .background(
                 if (selected) tokens.colors.onAccent.copy(alpha = 0.14f)
