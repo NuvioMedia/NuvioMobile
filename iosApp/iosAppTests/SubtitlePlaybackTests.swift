@@ -42,7 +42,7 @@ final class SubtitlePlaybackTests: XCTestCase {
             route: PlayerRoute(launchId: launchId, title: "Subtitle test"),
             onNavigate: { _, _ in }, onGoBack: {}, onReplace: { _ in }, onActivate: { _ in },
             appGateController: AppGateController(), verticalBar: VerticalBar(), hinge: Hinge(),
-            backGestureExclusionZones: BackGestureExclusionZones()
+            backGestureBridge: BackGestureBridge()
         )
         window.makeKeyAndVisible()
         defer {

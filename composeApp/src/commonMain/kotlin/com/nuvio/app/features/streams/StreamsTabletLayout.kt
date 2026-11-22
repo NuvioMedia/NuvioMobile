@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalLayoutDirection
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.backGestureExclusion
 import com.nuvio.app.core.ui.platformPhysicalTopInset
 import com.nuvio.app.core.ui.shimmer
 import com.nuvio.app.core.ui.LocalOnBackdrop
@@ -392,6 +393,7 @@ private fun ActiveScrapersStatusBlock(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .backGestureExclusion()
                 .horizontalScroll(rememberScrollState()),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {

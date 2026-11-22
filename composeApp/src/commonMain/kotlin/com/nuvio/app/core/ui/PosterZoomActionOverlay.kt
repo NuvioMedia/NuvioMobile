@@ -227,7 +227,7 @@ fun NuvioPosterZoomActionOverlay(
         }
     }
 
-    PlatformBackHandler(enabled = true) {
+    InScreenBackHandler {
         close()
     }
 
