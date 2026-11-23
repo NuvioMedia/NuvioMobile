@@ -4,6 +4,12 @@ on:
   release:
     types:
       - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to add to the sideload sources
+        required: true
+        type: string
   workflow_call:
     inputs:
       tag:
@@ -22,13 +28,12 @@ concurrency:
 
 jobs:
   update:
-    name: Update store.json
-    if: github.event_name != 'release' || !github.event.release.prerelease
+    name: Update sideload sources
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}
       RELEASE_TAG: ${{ inputs.tag || github.event.release.tag_name }}
-      RELEASE_VERSION: ${{ inputs.version || github.event.release.tag_name }}
+      RELEASE_VERSION: ${{ inputs.version || inputs.tag || github.event.release.tag_name }}
       RELEASE_BRANCH: ${{ github.event.repository.default_branch }}
 
     steps:
@@ -76,7 +81,7 @@ jobs:
             exit 1
           fi
 
-      - name: Update sideload source
+      - name: Update sideload sources
         run: |
           release_json="${RUNNER_TEMP}/release.json"
           release_notes="${RUNNER_TEMP}/release-notes.md"
@@ -90,23 +95,29 @@ jobs:
           fi
 
           jq -rj '.body // ""' "${release_json}" > "${release_notes}"
-          python3 scripts/update-store-source.py \
-            --source store.json \
-            --ipa "source-assets/${ipa_name}" \
-            --release-notes "${release_notes}" \
-            --release-version "${RELEASE_VERSION%-beta}" \
-            --release-date "${release_date}" \
-            --download-url "${download_url}"
+          sources=(store-beta.json)
+          if [[ "$(jq -r '.prerelease' "${release_json}")" != "true" ]]; then
+            sources=(store.json store-beta.json)
+          fi
+          for source in "${sources[@]}"; do
+            python3 scripts/update-store-source.py \
+              --source "${source}" \
+              --ipa "source-assets/${ipa_name}" \
+              --release-notes "${release_notes}" \
+              --release-version "${RELEASE_VERSION%-beta}" \
+              --release-date "${release_date}" \
+              --download-url "${download_url}"
+          done
 
-      - name: Commit sideload source
+      - name: Commit sideload sources
         run: |
-          if [[ -z "$(git status --porcelain -- store.json)" ]]; then
-            echo "store.json is already current for ${RELEASE_VERSION}."
+          if [[ -z "$(git status --porcelain -- store.json store-beta.json)" ]]; then
+            echo "Sideload sources are already current for ${RELEASE_VERSION}."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add store.json
+          git add store.json store-beta.json
           git commit -m "chore(store): publish ${RELEASE_VERSION}"
           git push origin "HEAD:${RELEASE_BRANCH}"

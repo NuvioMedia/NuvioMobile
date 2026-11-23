@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="rating_rate">Puanla</string>
+    <string name="rating_your_rating">Puanınız</string>
+    <string name="rating_rate_episode">Bölümü puanla</string>
+    <string name="rating_rated">Puanlandı %1$s/10</string>
+    <string name="rating_value">%1$s / 10</string>
+    <string name="rating_syncs_to">%1$s ile senkronize edilir</string>
+    <string name="rating_saved">Puan kaydedildi</string>
+    <string name="rating_removed">Puan kaldırıldı</string>
+    <string name="rating_failed">%1$s üzerindeki puanınız güncellenemedi</string>
+    <string name="settings_tracking_ratings">Puanlar</string>
+    <string name="settings_tracking_ratings_description">Puanlarınızın kaydedildiği ve gösterildiği yer</string>
+    <string name="settings_tracking_ratings_picker_subtitle">Başlıkları detay sayfasından puanlayın. Puanlarınız seçtiğiniz hizmete kaydedilir ve oradan gösterilir.</string>
+    <string name="settings_tracking_ratings_off_description">Puanlama butonunu gizle.</string>
+    <string name="settings_tracking_ratings_simkl_description">Film ve dizileri puanlayın. Simkl listelerinizde olmayan bir başlığı puanlamak onu listelerinize ekler.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Film, dizi ve bölümleri puanlayın.</string>
+</resources>

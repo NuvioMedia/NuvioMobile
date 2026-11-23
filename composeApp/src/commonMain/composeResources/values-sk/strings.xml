@@ -76,7 +76,7 @@
     <string name="collections_editor_folder_editor_help">Nastavte identitu priečinka, prezentáciu a zdroje katalógov s rovnakou štruktúrou ako hlavný editor kolekcií.</string>
     <string name="collections_editor_folder_empty_subtitle">Pridajte jeden a začnite.</string>
     <string name="collections_editor_folder_empty_title">Zatiaľ žiadne priečinky</string>
-    <string name="collections_editor_folders">Priečinky</string>
+    <string name="collections_editor_folders">PRIEČINKY</string>
     <string name="collections_editor_genre_filter">Filter žánru</string>
     <string name="collections_editor_hide_title_desc">Zobraziť iba obrázok obalu</string>
     <string name="collections_editor_hide_title">Skryť názov</string>
@@ -300,7 +300,7 @@
     <string name="collections_new">Nová kolekcia</string>
     <string name="collections_pinned">Pripnuté</string>
     <string name="collections_tab_all">Všetky</string>
-    <string name="collections_your_collections">Vaše kolekcie</string>
+    <string name="collections_your_collections">VAŠE KOLEKCIE</string>
     <string name="compose_about_made_with">Vytvorené s ❤️ od Tapframe a priateľov</string>
     <string name="compose_about_version_format">Verzia %1$s (%2$s)</string>
     <string name="compose_action_off">Vypnuté</string>
@@ -683,12 +683,12 @@
     <string name="settings_debrid_description_template_description">Ovláda metadáta zobrazené pod každým výsledkom. Nechajte prázdne, aby sa použili pôvodné podrobnosti výsledku.</string>
     <string name="settings_debrid_formatter_reset_title">Obnoviť formátovanie</string>
     <string name="settings_debrid_formatter_reset_subtitle">Obnoviť predvolené formátovanie výsledkov.</string>
-    <string name="settings_stream_badges_section">Štýl Fusion</string>
+    <string name="settings_stream_badges_section">ŠTÝL FUSION</string>
     <string name="settings_stream_size_badges_title">Odznaky veľkosti</string>
     <string name="settings_stream_size_badges_description">Zobrazovať odznaky veľkosti súboru vo výsledkoch streamov a paneloch zdrojov prehrávača.</string>
     <string name="settings_stream_addon_logo_title">Logo doplnku</string>
     <string name="settings_stream_addon_logo_description">Zobrazovať logo a názov doplnku vedľa zdrojov streamov.</string>
-    <string name="settings_stream_display_section">Zobrazenie</string>
+    <string name="settings_stream_display_section">ZOBRAZENIE</string>
     <string name="settings_stream_badge_position_title">Pozícia odznakov</string>
     <string name="settings_stream_badge_position_description">Vyberte, či sa odznaky Fusion a veľkosti zobrazia nad alebo pod kartami streamov.</string>
     <string name="settings_stream_badge_position_dialog_title">Pozícia odznaku</string>
@@ -880,7 +880,7 @@
     <string name="settings_playback_reuse_binge_group">Znovu použiť skupinu binge</string>
     <string name="settings_playback_reuse_binge_group_description">Zapamätať a znovu použiť poslednú skupinu binge naprieč reláciami (Pokračovať v sledovaní, Podrobnosti atď.).</string>
     <string name="settings_playback_preferred_audio_language">Preferovaný jazyk zvuku</string>
-    <string name="settings_playback_preferred_subtitle_language">Preferovaný jazyk</string>
+    <string name="settings_playback_preferred_subtitle_language">Preferovaný jazyk titulkov</string>
     <string name="settings_playback_presets">Predvoľby</string>
     <string name="settings_playback_regex_matches_against">Porovnáva sa s názvom/titulom/popisom/doplnkom/URL streamu. Príklad: 4K|2160p|Remux</string>
     <string name="settings_playback_regex_pattern">Vzor regex</string>
@@ -902,7 +902,7 @@
     <string name="settings_playback_reuse_last_link">Znovu použiť posledný odkaz</string>
     <string name="settings_playback_reuse_last_link_description">Automaticky prehrať posledný funkčný stream pre rovnaký film/epizódu, keď je vyrovnávacia pamäť stále platná</string>
     <string name="settings_playback_secondary_audio_language">Sekundárny jazyk zvuku</string>
-    <string name="settings_playback_secondary_subtitle_language">Sekundárny preferovaný jazyk</string>
+    <string name="settings_playback_secondary_subtitle_language">Sekundárny jazyk titulkov</string>
     <string name="settings_playback_section_decoder">DEKODÉR</string>
     <string name="settings_playback_section_next_episode">ĎALŠIA EPIZÓDA</string>
     <string name="settings_playback_section_player">PREHRÁVAČ</string>
@@ -1953,7 +1953,7 @@
     <string name="settings_nav_bar_style_classic">Klasický</string>
     <string name="layout_catalog_type">Zobraziť typ katalógu</string>
     <string name="layout_catalog_type_sub">Zobraziť typ (Film/Seriál) vedľa názvu katalógu.</string>
-    <string name="settings_card_depth_title">Efekt hĺbky karty</string>
+    <string name="settings_card_depth_title">EFEKT HĹBKY KARTY</string>
     <string name="settings_card_depth_description">Pridáva osvetlený horný okraj a lesk kartám s obrázkami pre jemný pocit hĺbky.</string>
     <string name="settings_card_depth_enabled">Povoliť efekt hĺbky</string>
     <string name="settings_card_depth_edge">Žiara okrajov</string>
@@ -1986,7 +1986,7 @@
     <string name="settings_card_depth_surface_trailers">Trailery</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming">Oddeliť riadok Neodvysielané</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">Presunúť neodvysielané epizódy do samostatného riadka Neodvysielané</string>
-    <string name="upcoming_section_title">Nespustené</string>
+    <string name="upcoming_section_title">Neodvysielané</string>
     <string name="settings_meta_background_mode">Režim pozadia</string>
     <string name="settings_meta_background_mode_description">Vyberte, ako sa má zobrazovať pozadie za stránkami s metadátami.</string>
     <string name="settings_meta_background_mode_normal">Normálny</string>
@@ -2573,4 +2573,31 @@
     <string name="settings_playback_downmix_maintain_volume">Zachovať pôvodnú hlasitosť pri downmixovaní</string>
     <string name="settings_playback_downmix_maintain_volume_description">Keď je možnosť vypnutá, normalizácia downmixu môže znížiť celkovú hlasitosť.</string>
     <string name="auth_notice_signed_out">Boli ste odhlásení z Nuvio. Prihláste sa znova.</string>
+
+    <string name="addons_tracking_consent_title">Doplnok na sledovanie</string>
+    <string name="addons_tracking_consent_body">%1$s je doplnok na sledovanie. Nuvio mu bude odosielať vašu aktivitu: čo prehrávate, pozastavíte a zastavíte s pozíciou prehrávania, čo pridáte do knižnice alebo z nej odstránite, a čo označíte ako pozreté alebo nepozreté. Tieto údaje opúšťajú Nuvio a spracúva ich vývojár doplnku a služba, ku ktorej sa pripája.</string>
+    <string name="addons_tracking_consent_checkbox">Súhlasím so zdieľaním aktivity sledovania a knižnice s týmto doplnkom</string>
+    <string name="settings_continue_watching_click_action_title">Pri výbere</string>
+    <string name="settings_continue_watching_click_action_description">Čo sa otvorí po výbere položky Pokračovať v sledovaní</string>
+    <string name="settings_continue_watching_click_action_stream">Otvoriť stream</string>
+    <string name="settings_continue_watching_click_action_stream_desc">Vybrať zdroj alebo pokračovať v prehrávaní</string>
+    <string name="settings_continue_watching_click_action_details">Otvoriť detaily</string>
+    <string name="settings_continue_watching_click_action_details_desc">Otvoriť stránku s detailmi titulu</string>
+    <string name="settings_continue_watching_click_action_details_upcoming">Detaily iba pre nadchádzajúce</string>
+    <string name="settings_continue_watching_click_action_details_upcoming_desc">Otvoriť detaily pre epizódy, ktoré ešte neboli vysielané, a stream pre ostatné</string>
+    <string name="settings_playback_auto_switch_engine_blocked_by_fallback">Ak to chcete použiť, vypnite záložný zdroj pre ďalšiu zhodu.</string>
+    <string name="settings_playback_fallback_next_source">V prípade zlyhania použiť ďalší zhodný zdroj</string>
+    <string name="settings_playback_fallback_next_source_description">Ak automaticky vybratý zdroj zlyhá alebo sa nespustí včas, ticho vyskúšať ďalšie zhodné zdroje.</string>
+    <string name="settings_playback_fallback_max_sources">Zdroje na vyskúšanie pri zlyhaní</string>
+    <string name="settings_playback_fallback_startup_timeout">Čas na spustenie zdroja</string>
+    <string name="settings_playback_fallback_next_source_blocked_by_engine_switch">Ak to chcete použiť, vypnite automatické prepínanie enginu pri chybe prehrávania.</string>
+    <string name="player_error_source_startup_timeout">Zdroj sa nespustil do %1$d sekúnd.</string>
+    <string name="library_filter_genre">Žáner</string>
+    <string name="library_filter_watched">Pozreté</string>
+    <string name="library_filter_year">Rok</string>
+    <string name="library_type_all">Všetko</string>
+    <string name="library_watched_filter_all">Všetko</string>
+    <string name="library_watched_filter_watched">Pozreté</string>
+    <string name="library_watched_filter_unwatched">Nepozreté</string>
+    <string name="subtitle_outline_width">Šírka obrysu</string>
 </resources>

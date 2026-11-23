@@ -60,6 +60,7 @@ interface NuvioPlayerBridge {
     fun getSubtitleTrackLabel(at: Int): String
     fun getSubtitleTrackLang(at: Int): String
     fun isSubtitleTrackSelected(at: Int): Boolean
+    fun getSubtitleTrackCodec(at: Int): String
     fun selectAudioTrack(trackId: Int)
     fun applyAudioLanguagePreferences(languages: List<String>)
     fun selectSubtitleTrack(trackId: Int)

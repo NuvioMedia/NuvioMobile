@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">Értékelés</string>
+    <string name="rating_your_rating">Saját értékelésed</string>
+    <string name="rating_rate_episode">Epizód értékelése</string>
+    <string name="rating_rated">Értékelve: %1$s/10</string>
+    <string name="rating_value">%1$s / 10</string>
+    <string name="rating_syncs_to">Szinkronizálás ide: %1$s</string>
+    <string name="rating_saved">Értékelés mentve</string>
+    <string name="rating_removed">Értékelés eltávolítva</string>
+    <string name="rating_failed">Nem sikerült frissíteni az értékelésedet itt: %1$s</string>
+    <string name="settings_tracking_ratings">Értékelések</string>
+    <string name="settings_tracking_ratings_description">Hová mentődjenek az értékeléseid, és honnan jelenjenek meg</string>
+    <string name="settings_tracking_ratings_picker_subtitle">A címeket a részletek oldalukon értékelheted. Az értékeléseid a kiválasztott szolgáltatásba mentődnek, és onnan jelennek meg.</string>
+    <string name="settings_tracking_ratings_off_description">Az értékelés gomb elrejtése.</string>
+    <string name="settings_tracking_ratings_simkl_description">Filmek és sorozatok értékelése. Ha olyan címet értékelsz, amely nincs a Simkl-listáidon, az hozzáadódik azokhoz.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Filmek, sorozatok és epizódok értékelése.</string>
+</resources>
