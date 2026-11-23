@@ -43,12 +43,12 @@ internal actual object MemberAssetStorage {
     }
 
     actual fun loadProfileAvatar(cacheKey: String): String? =
-        avatarFile(cacheKey)?.takeIf { it.isFile && it.length() > 0L }?.toURI()?.toString()
+        avatarFile(cacheKey)?.takeIf { it.isFile && it.length() > 0L }?.toFileUriString()
 
     actual fun saveProfileAvatar(cacheKey: String, bytes: ByteArray): String? {
         val file = avatarFile(cacheKey) ?: return null
         saveFile(file, bytes)
-        return file.takeIf { it.isFile && it.length() > 0L }?.toURI()?.toString()
+        return file.takeIf { it.isFile && it.length() > 0L }?.toFileUriString()
     }
 
     actual fun clearAccess() {
@@ -74,4 +74,13 @@ internal actual object MemberAssetStorage {
     }
 
     private fun safeKey(value: String): String = value.replace(Regex("[^A-Za-z0-9._-]"), "_")
+
+    private fun File.toFileUriString(): String {
+        val uri = toURI().toString()
+        return if (uri.startsWith("file:/") && !uri.startsWith("file:///")) {
+            uri.replaceFirst("file:/", "file:///")
+        } else {
+            uri
+        }
+    }
 }
