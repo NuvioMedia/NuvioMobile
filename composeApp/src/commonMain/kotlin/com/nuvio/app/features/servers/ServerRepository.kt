@@ -35,6 +35,9 @@ data class ServersUiState(
         get() = connections.filter { it.enabled }
 }
 
+internal fun profileScopedDeviceId(clientId: String, profileId: Int): String =
+    if (profileId == 1) clientId else "$clientId-p$profileId"
+
 object ServerRepository {
     private val log = Logger.withTag("ServerRepository")
     private val json = Json { ignoreUnknownKeys = true }
@@ -64,6 +67,9 @@ object ServerRepository {
     fun onProfileChanged() {
         load(ProfileRepository.activeProfileId)
     }
+
+    fun profileDeviceId(clientId: String): String =
+        profileScopedDeviceId(clientId, loadedProfileId ?: ProfileRepository.activeProfileId)
 
     fun clearLocalState() {
         generation++

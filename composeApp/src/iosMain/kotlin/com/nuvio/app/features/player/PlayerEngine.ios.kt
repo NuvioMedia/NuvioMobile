@@ -178,6 +178,7 @@ actual fun PlatformPlayerSurface(
                             language = trackLanguage,
                             trackId = trackId,
                         ),
+                        formatBadge = subtitleFormatBadgeForCodec(bridge.getSubtitleTrackCodec(i)),
                     )
                 }
                 Logger.d(TAG) { "getSubtitleTracks: found ${tracks.size} tracks" }
@@ -285,6 +286,8 @@ actual fun PlatformPlayerSurface(
             }
 
             override val supportsAssStyleCustomization = true
+
+            override val rendersAssNatively = true
 
             override fun applySubtitleStyle(style: SubtitleStyleState) {
                 subtitleStyle = style

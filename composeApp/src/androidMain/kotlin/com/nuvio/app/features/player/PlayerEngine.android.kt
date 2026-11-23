@@ -535,7 +535,7 @@ private fun ExoPlayerSurface(
                 audioDelayUsProvider = audioDelayUs::get,
             ).also { builtPlayer ->
                 builtPlayer.getAssHandlerCompat()?.applyAssFontScaleCompat(
-                    playerSettings.subtitleStyle.assScale.toFloat(),
+                    playerSettings.assSubtitleStyle.assScale.toFloat(),
                 )
                 // Apply video effects only when ASS track was detected as selected.
                 // On first init videoEffectsNeeded is false. When onTracksChanged
@@ -1238,6 +1238,9 @@ private fun ExoPlayerSurface(
                         it.subtitleDelayUs = subtitleDelayMs.toLong() * 1000L
                     }
                 }
+
+                override val rendersAssNatively: Boolean
+                    get() = exoPlayer.getAssHandlerCompat() != null
 
                 override val supportsAudioDelay = true
 
@@ -2066,6 +2069,7 @@ private class NuvioLibmpvView(
                         language = track.language,
                         isSelected = track.isSelected,
                         isForced = track.isForced,
+                        formatBadge = track.formatBadge,
                     )
                 }
 
@@ -2172,6 +2176,8 @@ private class NuvioLibmpvView(
 
             override val supportsAssStyleCustomization = true
 
+            override val rendersAssNatively = true
+
             override val supportsAudioDelay = true
 
             override fun setAudioDelayMs(delayMs: Int) {
@@ -2254,11 +2260,15 @@ private class NuvioLibmpvView(
             .filter { node -> node.nodeString("type") == type }
             .mapIndexedNotNull { index, node ->
                 val id = node.nodeInt("id") ?: return@mapIndexedNotNull null
+                val codec = node.nodeString("codec")
+                val isSubtitle = type == "sub"
                 val rawLabel = node.nodeString("title")
                     ?: node.nodeString("external-filename")?.substringAfterLast('/')
-                    ?: node.nodeString("codec")
+                    ?: codec.takeUnless { isSubtitle }
                 val language = node.nodeString("lang") ?: normalizeLanguageCode(rawLabel)
+                val languageLabel = language.takeIf { isSubtitle }?.let(::languageLabelResForCode)
                 val label = rawLabel?.takeIf { it.isNotBlank() }
+                    ?: languageLabel?.let { runBlocking { getString(it) } }
                     ?: runBlocking { getString(Res.string.compose_player_track_number, index + 1) }
                 LibmpvTrack(
                     id = id,
@@ -2271,6 +2281,7 @@ private class NuvioLibmpvView(
                         trackId = id.toString(),
                         hasForcedSelectionFlag = node.nodeBoolean("forced") ?: false,
                     ),
+                    formatBadge = if (isSubtitle) subtitleFormatBadgeForCodec(codec) else null,
                 )
             }
     }
@@ -2282,6 +2293,7 @@ private data class LibmpvTrack(
     val language: String?,
     val isSelected: Boolean,
     val isForced: Boolean,
+    val formatBadge: SubtitleFormatBadge?,
 )
 
 private const val LIBMPV_MAX_VOLUME_PERCENT = 400
@@ -2819,7 +2831,7 @@ private fun ExoPlayer.extractSubtitleTracks(context: Context): List<SubtitleTrac
             SubtitleTrack(
                 index = idx,
                 id = format.id ?: idx.toString(),
-                label = trackNameProvider.getTrackName(format),
+                label = trackNameProvider.getSubtitleTrackName(format),
                 language = format.language,
                 isSelected = group.isSelected,
                 isForced = inferForcedSubtitleTrack(
@@ -2828,11 +2840,24 @@ private fun ExoPlayer.extractSubtitleTracks(context: Context): List<SubtitleTrac
                     trackId = format.id,
                     hasForcedSelectionFlag = hasForcedSelectionFlag,
                 ),
+                formatBadge = format.subtitleFormatBadge(),
             )
         )
         idx++
     }
     return tracks
+}
+
+private fun Format.subtitleFormatBadge(): SubtitleFormatBadge? {
+    if (isAssSubtitleFormat()) return SubtitleFormatBadge.ASS
+    val mimeTypes = listOfNotNull(sampleMimeType) +
+        codecs?.split(',')?.map { it.trim().lowercase() }.orEmpty()
+    return when {
+        MimeTypes.APPLICATION_PGS in mimeTypes -> SubtitleFormatBadge.PGS
+        MimeTypes.APPLICATION_VOBSUB in mimeTypes -> SubtitleFormatBadge.VOBSUB
+        MimeTypes.APPLICATION_DVBSUBS in mimeTypes -> SubtitleFormatBadge.DVB
+        else -> null
+    }
 }
 
 private fun ExoPlayer.selectTrackByIndex(trackType: Int, targetIndex: Int): Boolean {

@@ -40,6 +40,51 @@ internal fun decodeSubtitleAppearance(value: String?): SubtitleAppearance =
 
 internal fun SubtitleAppearance.encode(): String = subtitleAppearanceJson.encodeToString(normalized())
 
+@Serializable
+private data class StoredAssSubtitleStyle(
+    val textColor: String? = null,
+    val backgroundColor: String? = null,
+    val outlineColor: String? = null,
+    val outlineEnabled: Boolean? = null,
+    val outlineWidth: Int? = null,
+    val bold: Boolean? = null,
+    val fontSizeSp: Int? = null,
+    val bottomOffset: Int? = null,
+    val appearance: SubtitleAppearance? = null,
+)
+
+internal fun decodeAssSubtitleStyle(value: String?): SubtitleStyleState {
+    val defaults = SubtitleStyleState.DEFAULT
+    val stored = value?.let {
+        runCatching { subtitleAppearanceJson.decodeFromString<StoredAssSubtitleStyle>(it) }.getOrNull()
+    } ?: return defaults
+    return defaults.copy(
+        textColor = subtitleColorFromStorage(stored.textColor) ?: defaults.textColor,
+        backgroundColor = subtitleColorFromStorage(stored.backgroundColor) ?: defaults.backgroundColor,
+        outlineColor = subtitleColorFromStorage(stored.outlineColor) ?: defaults.outlineColor,
+        outlineEnabled = stored.outlineEnabled ?: defaults.outlineEnabled,
+        outlineWidth = (stored.outlineWidth ?: defaults.outlineWidth).coerceIn(subtitleOutlineWidthRange),
+        bold = stored.bold ?: defaults.bold,
+        fontSizeSp = (stored.fontSizeSp ?: defaults.fontSizeSp).coerceIn(subtitleFontSizeRangeSp),
+        bottomOffset = (stored.bottomOffset ?: defaults.bottomOffset).coerceIn(0, 200),
+        appearance = stored.appearance?.normalized() ?: defaults.appearance,
+    )
+}
+
+internal fun SubtitleStyleState.encodeAssStyle(): String = subtitleAppearanceJson.encodeToString(
+    StoredAssSubtitleStyle(
+        textColor = textColor.toStorageHexString(),
+        backgroundColor = backgroundColor.toStorageHexString(),
+        outlineColor = outlineColor.toStorageHexString(),
+        outlineEnabled = outlineEnabled,
+        outlineWidth = outlineWidth,
+        bold = bold,
+        fontSizeSp = fontSizeSp,
+        bottomOffset = bottomOffset,
+        appearance = appearance.normalized(),
+    ),
+)
+
 internal val SubtitleStyleState.usesStyledOverlay: Boolean
     get() = appearance.fontId != "default" ||
         backgroundColor.alpha > 0f ||

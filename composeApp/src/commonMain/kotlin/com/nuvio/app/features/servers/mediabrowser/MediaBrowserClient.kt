@@ -5,6 +5,7 @@ import com.nuvio.app.core.network.readBoundedResponseBody
 import com.nuvio.app.core.sync.SyncClientIdentity
 import com.nuvio.app.features.servers.ServerException
 import com.nuvio.app.features.servers.ServerFailure
+import com.nuvio.app.features.servers.ServerRepository
 import com.nuvio.app.getPlatform
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
@@ -33,7 +34,7 @@ internal class MediaBrowserClient(
     }
 
     val deviceId: String
-        get() = SyncClientIdentity.currentClientId()
+        get() = ServerRepository.profileDeviceId(SyncClientIdentity.currentClientId())
 
     suspend fun <T> get(
         baseUrl: String,
