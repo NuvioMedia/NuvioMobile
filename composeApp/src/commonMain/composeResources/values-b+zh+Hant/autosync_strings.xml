@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+	<string name="settings_playback_subtitle_auto_sync">自動同步字幕</string>
+	<string name="settings_playback_subtitle_auto_sync_description">將所選附加元件字幕對齊影片內嵌字幕的時間軸。</string>
+	<string name="settings_playback_auto_sync_mode_aggressive">自動同步搜尋：徹底</string>
+	<string name="settings_playback_auto_sync_mode_aggressive_description">持續比對其他字幕與內嵌軌道，以在同步前找到更接近的匹配。僅會套用有把握的匹配結果。</string>
+	<string name="settings_playback_auto_sync_mode_passive">自動同步搜尋：快速</string>
+	<string name="settings_playback_auto_sync_mode_passive_description">較早採用第一個強匹配。與「徹底」模式相同，僅會套用有把握的匹配結果。</string>
+	<string name="settings_playback_auto_sync_tolerance">自動同步容差：%1$s</string>
+	<string name="settings_playback_auto_sync_tolerance_description">當同步偏移不超過此值時，保留原始字幕時間軸。點按以變更。</string>
+	<string name="settings_playback_auto_sync_tolerance_off">關閉</string>
+	<string name="settings_playback_auto_sync_tolerance_value">%1$d 毫秒</string>
+</resources>
