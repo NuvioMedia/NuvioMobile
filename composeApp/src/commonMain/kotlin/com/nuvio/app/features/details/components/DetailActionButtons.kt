@@ -1,5 +1,11 @@
 package com.nuvio.app.features.details.components
 
+import com.nuvio.app.core.ui.netflixFaceActive
+import com.nuvio.app.core.ui.NetflixColors
+import com.nuvio.app.core.ui.NetflixIconAction
+import com.nuvio.app.core.ui.NetflixSans
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.ui.unit.sp
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -36,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -258,6 +265,23 @@ fun DetailActions(
     onSaveClick: () -> Unit,
     onSaveLongClick: (() -> Unit)?,
 ) {
+    if (netflixFaceActive()) {
+        NetflixDetailActions(
+            playLabel = if (playEnabled) playLabel else stringResource(Res.string.playback_unavailable),
+            playEnabled = playEnabled,
+            isSaved = isSaved,
+            isWatched = isWatched,
+            isTablet = isTablet,
+            shuffleEnabled = shuffleEnabled,
+            onPlayClick = onPlayClick,
+            onPlayLongClick = onPlayLongClick,
+            onShuffleClick = onShuffleClick,
+            onWatchedClick = onWatchedClick,
+            onSaveClick = onSaveClick,
+            onSaveLongClick = onSaveLongClick,
+        )
+        return
+    }
     val shuffleAction = onShuffleClick?.let { onClick ->
         DetailSecondaryAction(
             label = stringResource(if (shuffleEnabled) Res.string.shuffle_stop else Res.string.random_episode_title),
@@ -341,6 +365,104 @@ private fun DetailIconAction(
                 contentDescription = label,
                 modifier = Modifier.size(21.dp),
             )
+        }
+    }
+}
+
+/** Netflix details actions: full-width white Play, then My List / Watched / Shuffle icon row. */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun NetflixDetailActions(
+    playLabel: String,
+    playEnabled: Boolean,
+    isSaved: Boolean,
+    isWatched: Boolean,
+    isTablet: Boolean,
+    shuffleEnabled: Boolean,
+    onPlayClick: () -> Unit,
+    onPlayLongClick: (() -> Unit)?,
+    onShuffleClick: (() -> Unit)?,
+    onWatchedClick: () -> Unit,
+    onSaveClick: () -> Unit,
+    onSaveLongClick: (() -> Unit)?,
+) {
+    val hapticFeedback = LocalHapticFeedback.current
+    androidx.compose.foundation.layout.Column(
+        modifier = Modifier
+            .widthIn(max = if (isTablet) 560.dp else 600.dp)
+            .fillMaxWidth(),
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp),
+            shape = RoundedCornerShape(4.dp),
+            color = if (playEnabled) Color.White else Color.White.copy(alpha = 0.3f),
+            contentColor = Color.Black,
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .combinedClickable(
+                        enabled = playEnabled,
+                        onClick = onPlayClick,
+                        onLongClick = onPlayLongClick,
+                        role = Role.Button,
+                    ),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.PlayArrow,
+                    contentDescription = null,
+                    modifier = Modifier.size(28.dp),
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = playLabel,
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontFamily = NetflixSans,
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                        fontSize = 16.sp,
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(14.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            NetflixIconAction(
+                icon = if (isSaved) Icons.Default.Check else Icons.Default.Add,
+                label = "My List",
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onSaveClick()
+                },
+                onLongClick = onSaveLongClick,
+            )
+            NetflixIconAction(
+                icon = if (isWatched) Icons.Default.CheckCircle else Icons.Default.CheckCircleOutline,
+                label = if (isWatched) "Watched" else "Mark Watched",
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                    onWatchedClick()
+                },
+            )
+            onShuffleClick?.let { onShuffle ->
+                NetflixIconAction(
+                    icon = Icons.Default.Shuffle,
+                    label = if (shuffleEnabled) "Stop Shuffle" else "Shuffle",
+                    tint = if (shuffleEnabled) NetflixColors.Red else Color.White,
+                    onClick = {
+                        hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onShuffle()
+                    },
+                )
+            }
         }
     }
 }

@@ -59,6 +59,7 @@ import com.nuvio.app.features.details.MetaDetails
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.stringResource
 import com.nuvio.app.core.ui.LocalVerticalBarPadding
+import com.nuvio.app.core.ui.netflixFaceActive
 import com.nuvio.app.core.ui.verticalBarWidth
 
 @Composable
@@ -86,7 +87,12 @@ fun DetailHero(
     BoxWithConstraints(
         modifier = modifier.fillMaxWidth(),
     ) {
-        val heroHeight = detailHeroHeight(maxWidth - verticalBarWidth(), isTablet)
+        val netflixFace = netflixFaceActive()
+        val heroHeight = if (netflixFace && !isTablet) {
+            ((maxWidth - verticalBarWidth()) * 1.05f).coerceIn(360.dp, 640.dp)
+        } else {
+            detailHeroHeight(maxWidth - verticalBarWidth(), isTablet)
+        }
         val trailerAlpha by animateFloatAsState(
             targetValue = if (heroTrailerReady) 1f else 0f,
             animationSpec = tween(durationMillis = 300),
@@ -251,10 +257,22 @@ fun DetailHero(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = if (isTablet) 32.dp else 18.dp)
+                        .padding(horizontal = if (isTablet) 32.dp else if (netflixFace) 14.dp else 18.dp)
                         .padding(bottom = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                    horizontalAlignment = if (netflixFace) Alignment.Start else Alignment.CenterHorizontally,
                 ) {
+                    if (netflixFace) {
+                        Text(
+                            text = if (meta.type.trim().lowercase() == "movie") "F I L M" else "S E R I E S",
+                            style = androidx.compose.ui.text.TextStyle(
+                                fontFamily = com.nuvio.app.core.ui.NetflixSans,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                                fontSize = androidx.compose.ui.unit.TextUnit(11f, androidx.compose.ui.unit.TextUnitType.Sp),
+                                color = com.nuvio.app.core.ui.NetflixColors.Red,
+                            ),
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                    }
                     if (logoUrl != null && !logoLoadError) {
                         AsyncImage(
                             model = logoUrl,
@@ -263,7 +281,7 @@ fun DetailHero(
                                 .fillMaxWidth(if (isTablet) 0.56f else 0.6f)
                                 .widthIn(max = contentMaxWidth)
                                 .height(if (isTablet) 72.dp else 80.dp),
-                            alignment = Alignment.Center,
+                            alignment = if (netflixFace) Alignment.CenterStart else Alignment.Center,
                             contentScale = ContentScale.Fit,
                             onError = { logoLoadError = true },
                         )
@@ -272,7 +290,7 @@ fun DetailHero(
                             text = meta.name,
                             style = if (isTablet) MaterialTheme.typography.displaySmall else MaterialTheme.typography.displayLarge,
                             color = MaterialTheme.colorScheme.onBackground,
-                            textAlign = TextAlign.Center,
+                            textAlign = if (netflixFace) TextAlign.Start else TextAlign.Center,
                         )
                     }
 
@@ -282,7 +300,7 @@ fun DetailHero(
                             text = meta.genres.take(3).joinToString(" \u2022 "),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center,
+                            textAlign = if (netflixFace) TextAlign.Start else TextAlign.Center,
                         )
                     }
                 }

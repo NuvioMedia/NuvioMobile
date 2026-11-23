@@ -103,7 +103,14 @@ internal fun AppEnvironment(content: @Composable () -> Unit) {
 
     val customThemeColors by ThemeSettingsRepository.customThemeColors.collectAsStateWithLifecycle()
 
-    NuvioTheme(appTheme = selectedTheme, amoled = amoledEnabled, customThemeColors = customThemeColors) {
+    val netflixFaceEnabled by ThemeSettingsRepository.netflixFaceEnabled.collectAsStateWithLifecycle()
+
+    NuvioTheme(
+        appTheme = selectedTheme,
+        amoled = amoledEnabled,
+        customThemeColors = customThemeColors,
+        netflixFace = netflixFaceEnabled,
+    ) {
         content()
     }
 }

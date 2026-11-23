@@ -43,6 +43,10 @@ object ThemeSettingsRepository {
     private val _navBarGlowEnabled = MutableStateFlow(true)
     val navBarGlowEnabled: StateFlow<Boolean> = _navBarGlowEnabled.asStateFlow()
 
+    private val _netflixFaceEnabled = MutableStateFlow(true)
+    /** Dave's Netflix-style face: home, details, player and tab bar. On by default. */
+    val netflixFaceEnabled: StateFlow<Boolean> = _netflixFaceEnabled.asStateFlow()
+
     private var hasLoaded = false
     private var observesMembership = false
 
@@ -95,6 +99,14 @@ object ThemeSettingsRepository {
         _selectedAppLanguage.value = appLanguage
         _navBarGlowEnabled.value = ThemeSettingsStorage.loadNavBarGlowEnabled() ?: true
         _navBarStyle.value = NavBarStyle.fromKey(ThemeSettingsStorage.loadNavBarStyle())
+        _netflixFaceEnabled.value = ThemeSettingsStorage.loadNetflixFaceEnabled() ?: true
+    }
+
+    fun setNetflixFaceEnabled(enabled: Boolean) {
+        ensureLoaded()
+        if (_netflixFaceEnabled.value == enabled) return
+        _netflixFaceEnabled.value = enabled
+        ThemeSettingsStorage.saveNetflixFaceEnabled(enabled)
     }
 
     fun setTheme(theme: AppTheme) {

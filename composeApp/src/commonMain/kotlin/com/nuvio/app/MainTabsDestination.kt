@@ -11,6 +11,10 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.outlined.Home
+import com.nuvio.app.core.ui.NetflixBottomBar
+import com.nuvio.app.core.ui.NetflixBottomBarItem
+import com.nuvio.app.core.ui.netflixFaceActive
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -115,6 +119,8 @@ internal fun MainTabsDestination(
             ),
         )
 
+        val netflixFace = netflixFaceActive()
+        val netflixBottomBar = netflixFace && !isTabletLayout && !useNativeBottomTabs
         Scaffold(
             modifier = Modifier
                 .fillMaxSize()
@@ -122,7 +128,41 @@ internal fun MainTabsDestination(
             containerColor = Color.Transparent,
             contentWindowInsets = WindowInsets(0),
             bottomBar = {
-                if (!isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
+                if (netflixBottomBar) {
+                    NetflixBottomBar {
+                        NetflixBottomBarItem(
+                            selected = selectedTab == AppScreenTab.Home,
+                            label = stringResource(Res.string.compose_nav_home),
+                            onClick = { onTabSelected(AppScreenTab.Home) },
+                            icon = if (selectedTab == AppScreenTab.Home) Icons.Filled.Home else Icons.Outlined.Home,
+                        )
+                        NetflixBottomBarItem(
+                            selected = selectedTab == AppScreenTab.Search,
+                            label = stringResource(Res.string.compose_nav_search),
+                            onClick = { onTabSelected(AppScreenTab.Search) },
+                            drawable = Res.drawable.sidebar_search,
+                        )
+                        NetflixBottomBarItem(
+                            selected = selectedTab == AppScreenTab.Library,
+                            label = "My List",
+                            onClick = { onTabSelected(AppScreenTab.Library) },
+                            drawable = Res.drawable.sidebar_library,
+                        )
+                        NetflixBottomBarItem(
+                            selected = selectedTab == AppScreenTab.Settings,
+                            label = "My Nuvio",
+                            onClick = { onTabSelected(AppScreenTab.Settings) },
+                            customIcon = {
+                                ProfileSwitcherTab(
+                                    selected = selectedTab == AppScreenTab.Settings,
+                                    onClick = { onTabSelected(AppScreenTab.Settings) },
+                                    onProfileSelected = onProfileSelected,
+                                    onAddProfileRequested = onAddProfileRequested,
+                                )
+                            },
+                        )
+                    }
+                } else if (!isTabletLayout && !useNativeBottomTabs && navBarStyleSetting == NavBarStyle.CLASSIC) {
                     NuvioClassicNavigationBar {
                         NavItem(
                             selected = selectedTab == AppScreenTab.Home,
@@ -159,7 +199,7 @@ internal fun MainTabsDestination(
         ) { innerPadding ->
             Box(modifier = Modifier.fillMaxSize()) {
                 CompositionLocalProvider(
-                    LocalNuvioBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else if (!isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC) 72.dp else 0.dp,
+                    LocalNuvioBottomNavigationOverlayPadding provides if (useNativeBottomTabs) 49.dp else if (netflixBottomBar) 0.dp else if (!isTabletLayout && navBarStyleSetting != NavBarStyle.CLASSIC) 72.dp else 0.dp,
                     LocalNuvioNavBarScrollState provides navBarScrollState,
                 ) {
                     AppTabHost(
@@ -191,7 +231,7 @@ internal fun MainTabsDestination(
                     )
                 }
 
-                if (!isTabletLayout && !useNativeBottomTabs && navBarStyleSetting != NavBarStyle.CLASSIC) {
+                if (!isTabletLayout && !useNativeBottomTabs && !netflixBottomBar && navBarStyleSetting != NavBarStyle.CLASSIC) {
                     when (navBarStyleSetting) {
                         NavBarStyle.EXPANDED -> navBarScrollState.expand()
                         NavBarStyle.COMPACT -> navBarScrollState.collapse()

@@ -44,6 +44,23 @@ internal fun LazyListScope.layoutSettingsContent(
     onPosterCustomizationClick: () -> Unit,
 ) {
     item {
+        val netflixFaceEnabled by ThemeSettingsRepository.netflixFaceEnabled.collectAsStateWithLifecycle()
+        SettingsSection(
+            title = "Face",
+            isTablet = isTablet,
+        ) {
+            SettingsGroup(isTablet = isTablet) {
+                SettingsSwitchRow(
+                    title = "Netflix face",
+                    description = "Netflix-style home, details, player controls and tab bar. Turn off for the stock Nuvio look.",
+                    checked = netflixFaceEnabled,
+                    isTablet = isTablet,
+                    onCheckedChange = ThemeSettingsRepository::setNetflixFaceEnabled,
+                )
+            }
+        }
+    }
+    item {
         SettingsSection(
             title = stringResource(Res.string.settings_appearance_section_home),
             isTablet = isTablet,

@@ -1,6 +1,9 @@
 package com.nuvio.app.features.home
 
 import com.nuvio.app.core.external.ExternalAppCommands
+import com.nuvio.app.core.ui.netflixFaceActive
+import com.nuvio.app.features.home.components.NetflixHomeContent
+import com.nuvio.app.features.home.components.NetflixHomeRow
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.MutatePriority
@@ -958,6 +961,109 @@ fun HomeScreen(
         addonManifestsLoading = addonManifestsLoading,
         homeCatalogLoading = homeUiState.isLoading,
     )
+
+    if (netflixFaceActive()) {
+        val netflixRows = remember(keyedEnabledHomeItems, sectionsMap, collectionsMap, onCatalogClick) {
+            keyedEnabledHomeItems.mapNotNull { keyed ->
+                val settingsItem = keyed.value
+                if (settingsItem.isCollection) {
+                    collectionsMap[settingsItem.key]?.let { collection ->
+                        NetflixHomeRow.CollectionRow(collection = collection, key = keyed.lazyKey.toString())
+                    }
+                } else {
+                    sectionsMap[settingsItem.key]?.takeIf { it.items.isNotEmpty() }?.let { section ->
+                        NetflixHomeRow.Catalog(
+                            section = section,
+                            entries = section.items.take(HOME_CATALOG_PREVIEW_LIMIT),
+                            onViewAll = if (section.canOpenCatalog(HOME_CATALOG_PREVIEW_LIMIT)) {
+                                onCatalogClick?.let { click -> { click(section) } }
+                            } else {
+                                null
+                            },
+                            key = keyed.lazyKey.toString(),
+                        )
+                    }
+                }
+            }
+        }
+        val noSources = !hasActiveAddons && !hasServerLibraries && !hasRenderableCollectionRows
+        val noRows = homeUiState.sections.isEmpty() && homeUiState.heroItems.isEmpty() && !hasRenderableCollectionRows
+        val noSourcesContent: @Composable () -> Unit = {
+                    when {
+                        networkStatusUiState.isOfflineLike && addonManifestErrorMessage != null -> NuvioNetworkOfflineCard(
+                            condition = networkStatusUiState.condition,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            onRetry = {
+                                NetworkStatusRepository.requestRefresh(force = true)
+                                AddonRepository.refreshAll()
+                            },
+                        )
+                        addonManifestErrorMessage != null -> HomeEmptyStateCard(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            title = stringResource(Res.string.home_load_failed_title),
+                            message = addonManifestErrorMessage,
+                            actionLabel = stringResource(Res.string.action_retry),
+                            onActionClick = {
+                                NetworkStatusRepository.requestRefresh(force = true)
+                                AddonRepository.refreshAll()
+                            },
+                        )
+                        else -> HomeEmptyStateCard(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            title = stringResource(Res.string.home_empty_no_sources_title),
+                            message = stringResource(Res.string.home_empty_no_sources_message),
+                        )
+                    }
+        }
+        val noRowsContent: @Composable () -> Unit = {
+                    val loadFailed = !homeUiState.errorMessage.isNullOrBlank()
+                    HomeEmptyStateCard(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        title = stringResource(
+                            if (loadFailed) Res.string.home_load_failed_title else Res.string.home_empty_no_rows_title,
+                        ),
+                        message = homeUiState.errorMessage ?: stringResource(Res.string.home_empty_no_rows_message),
+                        actionLabel = if (loadFailed) stringResource(Res.string.action_retry) else null,
+                        onActionClick = if (loadFailed) {
+                            {
+                                NetworkStatusRepository.requestRefresh(force = true)
+                                HomeRepository.refresh(AddonRepository.uiState.value.addons.enabledAddons(), force = true)
+                            }
+                        } else {
+                            null
+                        },
+                    )
+        }
+        val emptyContent: (@Composable () -> Unit)? = when {
+            isInitialHomeContentLoading -> null
+            noSources -> noSourcesContent
+            noRows -> noRowsContent
+            else -> null
+        }
+        NetflixHomeContent(
+            listState = homeListState,
+            profileName = profileState.activeProfile?.name?.takeIf { it.isNotBlank() },
+            heroItems = homeUiState.heroItems,
+            showHero = showHeroSlot,
+            heroLoading = showHeroSkeleton,
+            rows = netflixRows,
+            continueWatchingItems = if (continueWatchingPreferences.isVisible) continueWatchingItems else emptyList(),
+            upcomingItems = if (continueWatchingPreferences.isVisible) upcomingItems else emptyList(),
+            upcomingTitle = stringResource(Res.string.upcoming_section_title),
+            isLoading = isInitialHomeContentLoading,
+            emptyContent = emptyContent,
+            watchedKeys = watchedUiState.watchedKeys,
+            fullyWatchedSeriesKeys = fullyWatchedSeriesKeys,
+            animateCollectionGifs = animateCollectionGifs,
+            onPosterClick = onPosterClick,
+            onPosterLongClick = onPosterLongClick,
+            onContinueWatchingClick = onContinueWatchingClick,
+            onContinueWatchingLongPress = onContinueWatchingLongPress,
+            onFolderClick = onFolderClick,
+            modifier = modifier,
+        )
+        return
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         val homeSectionPadding = homeSectionHorizontalPaddingForWidth(maxWidth.value)

@@ -10,7 +10,7 @@ name: Nuvio Auto
 
 on:
   push:
-    branches: [android-auto]
+    branches: [android-auto, netflix-face]
   workflow_dispatch:
 
 permissions:

@@ -173,6 +173,20 @@ object ThemeColors {
         backgroundCard = Color(0xFF222222),
     )
 
+    /** Netflix face: true black, Netflix red, neutral greys. */
+    val Netflix = ThemeColorPalette(
+        secondary = Color(0xFFE50914),
+        secondaryVariant = Color(0xFFB20710),
+        nativeAccentHex = "#E50914",
+        onSecondary = Color.White,
+        onSecondaryVariant = Color.White,
+        focusRing = Color(0xFFFFFFFF),
+        focusBackground = Color(0xFF2F2F2F),
+        background = Color(0xFF000000),
+        backgroundElevated = Color(0xFF141414),
+        backgroundCard = Color(0xFF232323),
+    )
+
     fun getColorPalette(
         theme: AppTheme,
         customColors: CustomThemeColors = CustomThemeColors.Default,

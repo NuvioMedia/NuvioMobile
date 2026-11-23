@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.LayoutDirection
 import com.nuvio.app.core.ui.AppIconResource
 import com.nuvio.app.core.ui.NuvioBackButton
+import com.nuvio.app.core.ui.netflixFaceActive
 import com.nuvio.app.core.ui.themePalette
 import com.nuvio.app.core.ui.accentBrush
 import com.nuvio.app.core.ui.appIconPainter
@@ -175,6 +176,50 @@ internal fun PlayerControlsShell(
             gestureController = gestureController,
             dimmed = !showPlaybackControls,
             onWake = onWake,
+            horizontalSafePadding = horizontalSafePadding,
+            modifier = modifier,
+        )
+        return
+    }
+    if (netflixFaceActive()) {
+        NetflixPlayerControls(
+            title = title,
+            seasonNumber = seasonNumber,
+            episodeNumber = episodeNumber,
+            episodeTitle = episodeTitle,
+            playbackSnapshot = playbackSnapshot,
+            displayedPositionMs = displayedPositionMs,
+            resizeMode = resizeMode,
+            showRemainingTime = showRemainingTime,
+            onRuntimeClick = onRuntimeClick,
+            onNextEpisodeClick = onNextEpisodeClick,
+            onInteraction = onInteraction,
+            showPlaybackControls = showPlaybackControls,
+            onLockToggle = onLockToggle,
+            onBack = onBack,
+            onPartyClick = onPartyClick,
+            partyActive = partyActive,
+            onTogglePlayback = onTogglePlayback,
+            onSeekBack = onSeekBack,
+            onSeekForward = onSeekForward,
+            onResizeModeClick = onResizeModeClick,
+            onSpeedClick = onSpeedClick,
+            onSubtitleClick = onSubtitleClick,
+            onAudioClick = onAudioClick,
+            onVideoSettingsClick = onVideoSettingsClick,
+            onSourcesClick = onSourcesClick,
+            onEpisodesClick = onEpisodesClick,
+            chapters = chapters,
+            onChaptersClick = onChaptersClick,
+            onOpenInExternalPlayer = onOpenInExternalPlayer,
+            onSubmitIntroClick = onSubmitIntroClick,
+            onSwitchEngineClick = onSwitchEngineClick,
+            onStreamInfoClick = onStreamInfoClick,
+            parentalWarnings = parentalWarnings,
+            showParentalGuide = showParentalGuide,
+            onParentalGuideAnimationComplete = onParentalGuideAnimationComplete,
+            onScrubChange = onScrubChange,
+            onScrubFinished = onScrubFinished,
             horizontalSafePadding = horizontalSafePadding,
             modifier = modifier,
         )

@@ -18,6 +18,7 @@ actual object ThemeSettingsStorage {
     private const val selectedAppLanguageKey = "selected_app_language"
     private const val navBarStyleKey = "nav_bar_style"
     private const val navBarGlowEnabledKey = "nav_bar_glow_enabled"
+    private const val netflixFaceEnabledKey = "netflix_face_enabled"
     private val profileScopedSyncKeys = listOf(
         selectedThemeKey,
         customThemeColorsKey,
@@ -67,6 +68,15 @@ actual object ThemeSettingsStorage {
 
     actual fun saveNavBarGlowEnabled(enabled: Boolean) {
         NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = ProfileScopedKey.of(navBarGlowEnabledKey))
+    }
+
+    actual fun loadNetflixFaceEnabled(): Boolean? {
+        val defaults = NSUserDefaults.standardUserDefaults
+        return if (defaults.objectForKey(netflixFaceEnabledKey) != null) defaults.boolForKey(netflixFaceEnabledKey) else null
+    }
+
+    actual fun saveNetflixFaceEnabled(enabled: Boolean) {
+        NSUserDefaults.standardUserDefaults.setBool(enabled, forKey = netflixFaceEnabledKey)
     }
 
     actual fun loadLiquidGlassNativeTabBarEnabled(): Boolean? {

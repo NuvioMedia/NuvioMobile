@@ -23,6 +23,10 @@ import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.jetbrains_sans_bold
 import nuvio.composeapp.generated.resources.jetbrains_sans_regular
 import nuvio.composeapp.generated.resources.jetbrains_sans_semibold
+import nuvio.composeapp.generated.resources.inter_black
+import nuvio.composeapp.generated.resources.inter_bold
+import nuvio.composeapp.generated.resources.inter_medium
+import nuvio.composeapp.generated.resources.inter_regular
 import org.jetbrains.compose.resources.Font
 
 val LocalAppTheme = staticCompositionLocalOf { AppTheme.WHITE }
@@ -67,9 +71,20 @@ private val JetBrainsSans: FontFamily
         Font(Res.font.jetbrains_sans_regular, FontWeight.Normal, FontStyle.Normal),
     )
 
-private val NuvioTypography: Typography
+/** Netflix-face type: Inter, close to Netflix Sans in weight and rhythm. */
+internal val NetflixSans: FontFamily
     @Composable
-    get() = Typography(
+    get() = FontFamily(
+        Font(Res.font.inter_black, FontWeight.Black, FontStyle.Normal),
+        Font(Res.font.inter_black, FontWeight.ExtraBold, FontStyle.Normal),
+        Font(Res.font.inter_bold, FontWeight.Bold, FontStyle.Normal),
+        Font(Res.font.inter_bold, FontWeight.SemiBold, FontStyle.Normal),
+        Font(Res.font.inter_medium, FontWeight.Medium, FontStyle.Normal),
+        Font(Res.font.inter_regular, FontWeight.Normal, FontStyle.Normal),
+    )
+
+@Composable
+private fun nuvioTypography(JetBrainsSans: FontFamily): Typography = Typography(
         displayLarge = TextStyle(
             fontFamily = JetBrainsSans,
             fontSize = NuvioTokens.Type.pageDisplay,
@@ -123,9 +138,8 @@ private val NuvioTypography: Typography
         ),
     )
 
-private val NuvioTypeTokens: NuvioTypeScale
-    @Composable
-    get() = NuvioTypeScale(
+@Composable
+private fun nuvioTypeTokens(JetBrainsSans: FontFamily): NuvioTypeScale = NuvioTypeScale(
         labelXs = TextStyle(
             fontFamily = JetBrainsSans,
             fontSize = NuvioTokens.Type.labelXs,
@@ -198,13 +212,16 @@ fun NuvioTheme(
     appTheme: AppTheme = AppTheme.WHITE,
     amoled: Boolean = false,
     customThemeColors: CustomThemeColors = CustomThemeColors.Default,
+    netflixFace: Boolean = false,
     content: @Composable () -> Unit,
 ) {
-    val palette = remember(appTheme, customThemeColors) {
-        ThemeColors.getColorPalette(appTheme, customThemeColors)
+    val palette = remember(appTheme, customThemeColors, netflixFace) {
+        if (netflixFace) ThemeColors.Netflix else ThemeColors.getColorPalette(appTheme, customThemeColors)
     }
-    val colorScheme = buildColorScheme(palette, amoled = amoled)
-    val tokens = defaultNuvioThemeTokens(palette, amoled = amoled, colorScheme = colorScheme)
+    val effectiveAmoled = amoled || netflixFace
+    val colorScheme = buildColorScheme(palette, amoled = effectiveAmoled)
+    val tokens = defaultNuvioThemeTokens(palette, amoled = effectiveAmoled, colorScheme = colorScheme)
+    val fontFamily = if (netflixFace) NetflixSans else JetBrainsSans
 
     val density = LocalDensity.current
     CompositionLocalProvider(
@@ -213,14 +230,15 @@ fun NuvioTheme(
             fontScale = 1f,
         ),
         LocalNuvioThemeTokens provides tokens,
-        LocalNuvioTypeScale provides NuvioTypeTokens,
+        LocalNuvioTypeScale provides nuvioTypeTokens(fontFamily),
+        LocalNetflixFace provides netflixFace,
         LocalRippleConfiguration provides NuvioRippleConfiguration,
         LocalAppTheme provides appTheme,
         LocalThemePalette provides palette,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = NuvioTypography,
+            typography = nuvioTypography(fontFamily),
         ) {
             SkeletonAnimationProvider(content = content)
         }
