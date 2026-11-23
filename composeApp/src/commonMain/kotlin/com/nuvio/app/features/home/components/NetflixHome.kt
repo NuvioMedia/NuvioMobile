@@ -447,6 +447,7 @@ private fun NetflixHeroBlock(
     BoxWithConstraints(Modifier.fillMaxWidth()) {
         val cardWidth = (maxWidth - 40.dp).coerceAtMost(460.dp)
         val cardHeight = cardWidth * 1.42f
+        val heroSidePeek = (maxWidth - cardWidth) / 2
         val pagerState = rememberPagerState(pageCount = { items.size.coerceAtLeast(1) })
         val current = items.getOrNull(pagerState.currentPage)
 
@@ -492,7 +493,7 @@ private fun NetflixHeroBlock(
             } else {
                 HorizontalPager(
                     state = pagerState,
-                    contentPadding = PaddingValues(horizontal = (maxWidth - cardWidth) / 2),
+                    contentPadding = PaddingValues(horizontal = heroSidePeek),
                     pageSpacing = 12.dp,
                 ) { page ->
                     val item = items[page]
