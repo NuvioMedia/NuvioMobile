@@ -13,7 +13,6 @@ class SyncManagerTest {
     @Test
     fun `source prerequisites finish before source dependent pulls`() = runBlocking {
         val events = mutableListOf<String>()
-        var profileSettingsApplied = false
         var credentialsApplied = false
 
         runOrderedProfileSync(
@@ -23,23 +22,20 @@ class SyncManagerTest {
                 pullAddons = { events += "addons" },
                 pullPlugins = { events += "plugins" },
                 pullProfileSettings = {
+                    assertTrue(credentialsApplied)
                     events += "settings:start"
                     yield()
-                    profileSettingsApplied = true
                     events += "settings:end"
                 },
                 syncProviderCredentials = {
-                    assertTrue(profileSettingsApplied)
                     credentialsApplied = true
                     events += "credentials"
                 },
                 pullLibrary = {
-                    assertTrue(profileSettingsApplied)
                     assertTrue(credentialsApplied)
                     events += "library"
                 },
                 refreshActiveWatchSource = {
-                    assertTrue(profileSettingsApplied)
                     assertTrue(credentialsApplied)
                     events += "active-watch-source"
                 },
@@ -49,10 +45,10 @@ class SyncManagerTest {
             onFailure = { _, error -> throw error },
         )
 
+        assertTrue(events.indexOf("credentials") < events.indexOf("settings:start"))
         val lastPrerequisite = events.indexOf("settings:end")
         assertTrue(events.indexOf("addons") > lastPrerequisite)
         assertTrue(events.indexOf("plugins") > lastPrerequisite)
-        assertTrue(events.indexOf("credentials") > lastPrerequisite)
         assertTrue(events.indexOf("library") > lastPrerequisite)
         assertTrue(events.indexOf("active-watch-source") > lastPrerequisite)
         assertEquals(1, events.count { it == "active-watch-source" })
@@ -70,6 +66,7 @@ class SyncManagerTest {
         )
 
         assertTrue("plugins" !in events)
+        assertTrue(events.indexOf("credentials") < events.indexOf("settings"))
         assertTrue(events.indexOf("settings") < events.indexOf("library"))
         assertTrue(events.indexOf("credentials") < events.indexOf("library"))
         assertTrue(events.indexOf("settings") < events.indexOf("active-watch-source"))

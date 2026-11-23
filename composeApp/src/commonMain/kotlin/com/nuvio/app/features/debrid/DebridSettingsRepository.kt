@@ -259,10 +259,10 @@ object DebridSettingsRepository {
     private fun normalizePreferredResolverProviderId(save: Boolean = false) {
         val providerId = DebridProviders.byId(preferredResolverProviderId)?.id.orEmpty()
         val connectedResolverIds = connectedResolverProviderIds()
-        val normalized = if (providerId in connectedResolverIds) {
-            providerId
-        } else {
-            connectedResolverIds.firstOrNull().orEmpty()
+        val normalized = when {
+            connectedResolverIds.isEmpty() -> preferredResolverProviderId
+            providerId in connectedResolverIds -> providerId
+            else -> connectedResolverIds.first()
         }
         if (preferredResolverProviderId != normalized) {
             preferredResolverProviderId = normalized
@@ -286,8 +286,8 @@ object DebridSettingsRepository {
             ?.let(DebridProviders::byId)
             ?.id
             .orEmpty()
-        normalizePreferredResolverProviderId(save = true)
-        enabled = (DebridSettingsStorage.loadEnabled() ?: false) && hasResolverProvider()
+        normalizePreferredResolverProviderId(save = providerApiKeys.isNotEmpty())
+        enabled = DebridSettingsStorage.loadEnabled() ?: false
         cloudLibraryEnabled = DebridSettingsStorage.loadCloudLibraryEnabled() ?: true
         instantPlaybackPreparationLimit = normalizeDebridInstantPlaybackPreparationLimit(
             DebridSettingsStorage.loadInstantPlaybackPreparationLimit() ?: 0,
