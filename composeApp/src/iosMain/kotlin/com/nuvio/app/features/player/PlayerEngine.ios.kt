@@ -287,6 +287,8 @@ actual fun PlatformPlayerSurface(
 
             override val supportsAssStyleCustomization = true
 
+            override val rendersAssNatively = true
+
             override fun applySubtitleStyle(style: SubtitleStyleState) {
                 subtitleStyle = style
                 bridge.applySubtitleStyle(

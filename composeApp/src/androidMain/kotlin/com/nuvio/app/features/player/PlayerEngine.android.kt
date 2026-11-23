@@ -535,7 +535,7 @@ private fun ExoPlayerSurface(
                 audioDelayUsProvider = audioDelayUs::get,
             ).also { builtPlayer ->
                 builtPlayer.getAssHandlerCompat()?.applyAssFontScaleCompat(
-                    playerSettings.subtitleStyle.assScale.toFloat(),
+                    playerSettings.assSubtitleStyle.assScale.toFloat(),
                 )
                 // Apply video effects only when ASS track was detected as selected.
                 // On first init videoEffectsNeeded is false. When onTracksChanged
@@ -1238,6 +1238,9 @@ private fun ExoPlayerSurface(
                         it.subtitleDelayUs = subtitleDelayMs.toLong() * 1000L
                     }
                 }
+
+                override val rendersAssNatively: Boolean
+                    get() = exoPlayer.getAssHandlerCompat() != null
 
                 override val supportsAudioDelay = true
 
@@ -2172,6 +2175,8 @@ private class NuvioLibmpvView(
             }
 
             override val supportsAssStyleCustomization = true
+
+            override val rendersAssNatively = true
 
             override val supportsAudioDelay = true
 

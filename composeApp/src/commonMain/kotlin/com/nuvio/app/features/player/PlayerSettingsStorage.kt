@@ -55,6 +55,8 @@ internal expect object PlayerSettingsStorage {
     fun saveSubtitleBackgroundColor(colorHex: String)
     fun loadSubtitleAppearance(): String?
     fun saveSubtitleAppearance(value: String)
+    fun loadAssSubtitleStyle(): String?
+    fun saveAssSubtitleStyle(value: String)
     fun loadSubtitleOutlineColor(): String?
     fun saveSubtitleOutlineColor(colorHex: String)
     fun loadSubtitleOutlineEnabled(): Boolean?
