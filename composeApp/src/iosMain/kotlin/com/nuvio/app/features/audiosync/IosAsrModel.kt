@@ -31,7 +31,7 @@ internal object IosAsrModel {
     fun initialize() {
         SubtitleSyncStatus.modelActions = object : SpeechModelActions {
             override fun download() {
-                startAudioSyncThread("NuvioAsrModelDownload") { download() }
+                startAudioSyncThread("NuvioAsrModelDownload") { downloadModel() }
             }
 
             override fun delete() {
@@ -107,7 +107,7 @@ internal object IosAsrModel {
         )
     }
 
-    private fun download() {
+    private fun downloadModel() {
         if (isReady()) {
             publish()
             return
