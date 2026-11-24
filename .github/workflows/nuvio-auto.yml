@@ -10,7 +10,7 @@ name: Nuvio Auto
 
 on:
   push:
-    branches: [android-auto]
+    branches: [android-auto, netflix-face]
   workflow_dispatch:
 
 permissions:
@@ -97,12 +97,29 @@ jobs:
           sed -i 's/^kotlin.daemon.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx3g/' gradle.properties
           grep -E "jvmargs" gradle.properties
 
+      # The netflix-face branch builds Nuvio Face: its own app, installed next to Nuvio Auto.
+      - name: Pick app identity
+        shell: bash
+        run: |
+          if [ "${GITHUB_REF_NAME}" = "netflix-face" ]; then
+            echo "APP_ID=com.dave.nuvioface" >> "$GITHUB_ENV"
+            echo "APK_BASENAME=NuvioFace" >> "$GITHUB_ENV"
+            f=androidApp/src/main/res/values/car_strings.xml
+            sed -i 's|<string name="app_name">Nuvio Auto</string>|<string name="app_name">Nuvio Face</string>|' "$f"
+            sed -i 's|<string name="car_app_label">Nuvio</string>|<string name="car_app_label">Nuvio Face</string>|' "$f"
+            sed -i 's|<string name="car_setup_label">Nuvio Auto Setup</string>|<string name="car_setup_label">Nuvio Face Setup</string>|' "$f"
+          else
+            echo "APP_ID=com.dave.nuvioauto" >> "$GITHUB_ENV"
+            echo "APK_BASENAME=NuvioAuto" >> "$GITHUB_ENV"
+          fi
+          grep -n "string name" androidApp/src/main/res/values/car_strings.xml
+
       - name: Build release APK
         run: >
           ./gradlew :androidApp:assembleFullRelease
           -Pnuvio.android.distribution=full
           -Pnuvio.ios.distribution=appstore
-          -Pnuvio.applicationId=com.dave.nuvioauto
+          -Pnuvio.applicationId=${{ env.APP_ID }}
           --stacktrace
 
       - name: Collect APK
@@ -111,12 +128,12 @@ jobs:
           ls -la androidApp/build/outputs/apk/full/release/
           mkdir -p out
           apk="$(ls androidApp/build/outputs/apk/full/release/*arm64-v8a*.apk | head -n1)"
-          cp "$apk" "out/NuvioAuto-${GITHUB_RUN_NUMBER}-arm64.apk"
+          cp "$apk" "out/${APK_BASENAME}-${GITHUB_RUN_NUMBER}-arm64.apk"
 
       - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
-          path: out/NuvioAuto-${{ github.run_number }}-arm64.apk
+          path: out/${{ env.APK_BASENAME }}-${{ github.run_number }}-arm64.apk
           archive: false
           if-no-files-found: error
           retention-days: 30
