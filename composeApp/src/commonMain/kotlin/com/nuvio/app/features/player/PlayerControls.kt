@@ -7,7 +7,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -45,14 +44,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
@@ -180,14 +175,13 @@ internal fun PlayerControlsShell(
         )
         return
     }
-    val density = LocalDensity.current
-    var timelineHeight by remember { mutableStateOf(0.dp) }
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val centerControlHeight = metrics.playIconSize + maxOf(metrics.playButtonPadding, metrics.sideButtonPadding) * 2
-        val centerBottomPadding = if (useLegacyLayout) metrics.centerLift else maxOf(
-            metrics.centerLift,
-            timelineHeight * 2 + centerControlHeight + 16.dp - maxHeight,
-        )
+    Box(modifier = modifier.fillMaxSize()) {
+        // The primary controls (rewind / play-pause / forward) must sit at the exact same
+        // vertical position whether or not playback badges, chapter titles, release info or
+        // any other timeline detail is visible. Their offset therefore comes from the layout
+        // metrics only and must never be derived from the measured height of the timeline
+        // stack, otherwise toggling badges would make the controls jump.
+        val centerBottomPadding = metrics.centerLift
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -330,7 +324,6 @@ internal fun PlayerControlsShell(
             if (showPlaybackControls && !useLegacyLayout) {
                 Column(
                     modifier = Modifier
-                        .onSizeChanged { size -> timelineHeight = with(density) { size.height.toDp() } }
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .windowInsetsPadding(playerTimelineBottomInsets(metrics))
