@@ -12,6 +12,10 @@ import com.nuvio.app.features.player.SubtitleSyncCue
 internal object AutoSyncDelayPreflight {
     // Scheduling threshold only. It never authorizes a subtitle by itself; authoritative V2
     // still has to pass its existing strong/exceptional gates before an early return.
+    private const val FAST_DELAY_MIN_SCORE = 0.90
+    private const val FAST_DELAY_MIN_MARGIN = 0.04
+    private const val FAST_DELAY_REQUIRED_SEGMENTS = 3
+    private const val MIN_PROBED_BEFORE_FAST_STOP = 2
 
     internal data class Match(
         val referenceKey: String,
@@ -38,6 +42,8 @@ internal object AutoSyncDelayPreflight {
         target: List<SubtitleSyncCue>,
         referenceActivityCache: MutableMap<String, AutoSyncTimelineRetimer.PreparedActivity?>,
         preparedTargetActivity: AutoSyncTimelineRetimer.PreparedActivity? = null,
+        earlyStopFastDelay: Boolean = false,
+        maxUnmatchedReferences: Int = Int.MAX_VALUE,
         cancellationCheck: (() -> Unit)? = null,
     ): Result {
         val targetActivity =
@@ -46,7 +52,9 @@ internal object AutoSyncDelayPreflight {
                 ?: return Result(best = null, evidenceByReferenceKey = emptyMap())
 
         var best: Match? = null
+        var bestFastEligible = false
         val evidenceByReferenceKey = linkedMapOf<String, Evidence>()
+        var probedCount = 0
 
         for (track in referenceTracks) {
             cancellationCheck?.invoke()
@@ -61,6 +69,7 @@ internal object AutoSyncDelayPreflight {
                     targetActivity = targetActivity,
                     cancellationCheck = cancellationCheck,
                 ) ?: continue
+            probedCount++
 
             // Match the exact delay-margin relaxation used by authoritative V2.
             val relaxDelayMargin = AutoSyncTimelineRetimer.shouldRelaxDelayOnlyMargin(
@@ -83,28 +92,40 @@ internal object AutoSyncDelayPreflight {
                 search = searchEvidence,
                 validatedAlignment = alignment,
             )
-            if (alignment == null) continue
+            if (alignment != null) {
+                val candidate = Match(
+                    referenceKey = track.key,
+                    alignment = alignment,
+                )
+                val candidateFastEligible = !relaxDelayMargin &&
+                    alignment.score >= FAST_DELAY_MIN_SCORE &&
+                    alignment.margin >= FAST_DELAY_MIN_MARGIN &&
+                    alignment.segmentsPassed >= FAST_DELAY_REQUIRED_SEGMENTS
 
-            val candidate = Match(
-                referenceKey = track.key,
-                alignment = alignment,
-            )
+                val currentBest = best
+                if (
+                    currentBest == null ||
+                    candidate.score > currentBest.score ||
+                    (
+                        candidate.score == currentBest.score &&
+                            candidate.margin > currentBest.margin
+                        ) ||
+                    (
+                        candidate.score == currentBest.score &&
+                            candidate.margin == currentBest.margin &&
+                            candidate.segmentsPassed > currentBest.segmentsPassed
+                        )
+                ) {
+                    best = candidate
+                    if (candidateFastEligible) bestFastEligible = true
+                }
+            }
 
-            val currentBest = best
-            if (
-                currentBest == null ||
-                candidate.score > currentBest.score ||
-                (
-                    candidate.score == currentBest.score &&
-                        candidate.margin > currentBest.margin
-                    ) ||
-                (
-                    candidate.score == currentBest.score &&
-                        candidate.margin == currentBest.margin &&
-                        candidate.segmentsPassed > currentBest.segmentsPassed
-                    )
-            ) {
-                best = candidate
+            if (earlyStopFastDelay && bestFastEligible && probedCount >= MIN_PROBED_BEFORE_FAST_STOP) {
+                break
+            }
+            if (best == null && probedCount >= maxUnmatchedReferences) {
+                break
             }
         }
 
