@@ -195,6 +195,7 @@ fun MetaDetailsScreen(
     sharedTransitionScope: SharedTransitionScope? = null,
     animatedVisibilityScope: AnimatedVisibilityScope? = null,
     modifier: Modifier = Modifier,
+    playTrailerOnOpen: Boolean = false,
 ) {
     val playbackAvailability = rememberPlaybackAvailability()
     val shuffleProfile by remember {
@@ -743,6 +744,7 @@ fun MetaDetailsScreen(
                 }
                 val heroTrailerPlaybackEnabled = AppFeaturePolicy.heroTrailerPlaybackSupported &&
                     inAppTrailerPlaybackEnabled &&
+                    !playTrailerOnOpen &&
                     metaScreenSettingsUiState.heroTrailerPlayback
                 var heroTrailerPlaybackSource by remember(meta.id, heroTrailerCandidate?.id) { mutableStateOf<TrailerPlaybackSource?>(null) }
                 var heroTrailerReady by remember(meta.id, heroTrailerCandidate?.id) { mutableStateOf(false) }
@@ -803,6 +805,11 @@ fun MetaDetailsScreen(
                                 trailerLoading = false
                             }
                         }
+                    }
+                }
+                LaunchedEffect(playTrailerOnOpen, meta.id, heroTrailerCandidate?.id) {
+                    if (playTrailerOnOpen) {
+                        heroTrailerCandidate?.let(resolveTrailer)
                     }
                 }
                 val primaryVideoId = seriesStreamVideoId ?: seriesAction?.videoId ?: meta.id

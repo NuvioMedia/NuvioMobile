@@ -81,6 +81,7 @@ internal fun DetailsDestination(
     MetaDetailsScreen(
         type = route.type,
         id = route.id,
+        playTrailerOnOpen = route.playTrailerOnOpen,
         onBack = onBack,
         onPlay = onPlay,
         onPlayManually = onPlayManually,
