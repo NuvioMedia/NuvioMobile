@@ -296,7 +296,18 @@ internal object MetaDetailsParser {
     }
 
     private fun JsonObject.trailers(): List<MetaTrailer> {
-        val legacy = legacyTrailers()
+        val streamNamesByYouTubeKey = array("trailerStreams")
+            .mapNotNull { element ->
+                val stream = element as? JsonObject ?: return@mapNotNull null
+                val ytId = stream.string("ytId")?.trim()?.takeIf(String::isNotBlank) ?: return@mapNotNull null
+                val name = listOf("title", "name", "description")
+                    .firstNotNullOfOrNull { field -> stream.string(field)?.trim()?.takeIf(String::isNotBlank) }
+                    ?: return@mapNotNull null
+                ytId to name
+            }
+            .distinctBy { it.first }
+            .toMap()
+        val legacy = legacyTrailers(streamNamesByYouTubeKey)
         val seenYouTubeKeys = legacy.filter { it.url == null }.mapTo(mutableSetOf()) { it.key }
         val seenUrls = legacy.mapNotNullTo(mutableSetOf()) { it.url }
         val fromStreams = array("trailerStreams").mapNotNull { element ->
@@ -331,7 +342,7 @@ internal object MetaDetailsParser {
         return legacy + fromStreams
     }
 
-    private fun JsonObject.legacyTrailers(): List<MetaTrailer> =
+    private fun JsonObject.legacyTrailers(streamNamesByYouTubeKey: Map<String, String>): List<MetaTrailer> =
         array("trailers").mapNotNull { element ->
             val trailer = element as? JsonObject ?: return@mapNotNull null
             val key = trailer.string("key")
@@ -346,7 +357,9 @@ internal object MetaDetailsParser {
             MetaTrailer(
                 id = trailer.string("id")?.takeIf(String::isNotBlank) ?: normalizedKey,
                 key = normalizedKey,
-                name = trailer.string("name")?.takeIf(String::isNotBlank) ?: runBlocking { getString(Res.string.generic_trailer) },
+                name = trailer.string("name")?.takeIf(String::isNotBlank)
+                    ?: streamNamesByYouTubeKey[normalizedKey]
+                    ?: runBlocking { getString(Res.string.generic_trailer) },
                 site = trailer.string("site")?.takeIf(String::isNotBlank) ?: "YouTube",
                 size = trailer.int("size"),
                 type = trailer.string("type")?.takeIf(String::isNotBlank) ?: runBlocking { getString(Res.string.generic_trailer) },

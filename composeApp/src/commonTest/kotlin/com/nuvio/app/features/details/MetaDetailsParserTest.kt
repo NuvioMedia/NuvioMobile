@@ -85,6 +85,31 @@ class MetaDetailsParserTest {
     }
 
     @Test
+    fun `parse names a legacy trailer from its matching trailer stream`() {
+        val result = MetaDetailsParser.parse(
+            """
+            {
+              "meta": {
+                "id": "tt1",
+                "type": "movie",
+                "name": "Movie",
+                "trailers": [
+                  { "source": "aaaaaaaaaaa", "type": "Trailer" },
+                  { "source": "bbbbbbbbbbb", "type": "Trailer", "name": "Own name" }
+                ],
+                "trailerStreams": [
+                  { "title": "The Matrix", "ytId": "aaaaaaaaaaa" },
+                  { "title": "Stream name", "ytId": "bbbbbbbbbbb" }
+                ]
+              }
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf("The Matrix", "Own name"), result.trailers.map { it.name })
+    }
+
+    @Test
     fun `parse accepts bare meta object response`() {
         val result = MetaDetailsParser.parse(
             """
