@@ -22,31 +22,14 @@ import java.util.concurrent.atomic.AtomicBoolean
  * [AsrModelFiles], so the host does not have to be trusted.
  */
 object AsrModel {
-    const val TOKENS = "tokens.txt"
-    const val DOWNLOAD_MB = 74
+    const val TOKENS = AsrModelFiles.TOKENS
+    const val DOWNLOAD_MB = AsrModelFiles.DOWNLOAD_MB
 
-    private const val ONNX_VERSION = "gigaspeech-2023-12-12"
-    private const val ORT_VERSION = "$ONNX_VERSION-ort-v1"
-
-    /**
-     * Where the ORT conversion of the upstream files below is hosted, or null to use the upstream
-     * ONNX files only. Should only ever point at a Nuvio-controlled release; the files are pinned
-     * in [AsrModelFiles.optimized] either way.
-     */
-    private val ORT_DOWNLOAD: String? =
-        "https://github.com/NuvioMedia/speech-models/releases/download/$ORT_VERSION/"
-
-    /** The upstream model repository, pinned to a commit so its files cannot change under us. */
-    private const val ONNX_DOWNLOAD =
-        "https://huggingface.co/k2-fsa/sherpa-onnx-zipformer-gigaspeech-2023-12-12/resolve/f7515a672ffb69232794aaaa44a0a360f7f25cd1/"
-
-    /** Upstream names of [AsrModelFiles.legacy], by local name. */
-    private val ONNX_UPSTREAM_NAMES = mapOf(
-        "encoder.int8.onnx" to "encoder-epoch-30-avg-1.int8.onnx",
-        "decoder.int8.onnx" to "decoder-epoch-30-avg-1.int8.onnx",
-        "joiner.int8.onnx" to "joiner-epoch-30-avg-1.int8.onnx",
-        TOKENS to TOKENS,
-    )
+    private const val ONNX_VERSION = AsrModelFiles.ONNX_VERSION
+    private const val ORT_VERSION = AsrModelFiles.ORT_VERSION
+    private val ORT_DOWNLOAD: String? = AsrModelFiles.ORT_DOWNLOAD
+    private const val ONNX_DOWNLOAD = AsrModelFiles.ONNX_DOWNLOAD
+    private val ONNX_UPSTREAM_NAMES = AsrModelFiles.ONNX_UPSTREAM_NAMES
 
     private val downloading = AtomicBoolean(false)
 

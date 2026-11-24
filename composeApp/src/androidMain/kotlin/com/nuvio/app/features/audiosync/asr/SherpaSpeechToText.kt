@@ -54,22 +54,7 @@ class SherpaSpeechToText(
         private const val SAMPLE_RATE = 16_000
 
         /** BPE pieces starting with "▁" (or a space) begin a new word. */
-        fun mergeTokens(tokens: Array<String>, timestamps: FloatArray): List<Pair<Double, String>> {
-            val words = ArrayList<Pair<Double, String>>()
-            val current = StringBuilder()
-            var start = 0.0
-            for (i in tokens.indices) {
-                val token = tokens[i]
-                val startsWord = token.startsWith('▁') || token.startsWith(' ') || current.isEmpty()
-                if (startsWord) {
-                    if (current.isNotEmpty()) words += start to current.toString()
-                    current.setLength(0)
-                    start = timestamps.getOrElse(i) { 0f }.toDouble()
-                }
-                current.append(token.trimStart('▁', ' '))
-            }
-            if (current.isNotEmpty()) words += start to current.toString()
-            return words
-        }
+        fun mergeTokens(tokens: Array<String>, timestamps: FloatArray): List<Pair<Double, String>> =
+            AsrTokens.merge(tokens.asList(), timestamps.map { it.toDouble() })
     }
 }

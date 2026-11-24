@@ -20,13 +20,15 @@ internal object AutoSyncSubtitleTextRetimer {
     private const val ASS_DEFAULT_END_INDEX = 2
     private const val ASS_MIN_DURATION_MS = 10L
 
-    fun retime(body: String, timeline: AutoSyncTimelineRetimeResult): String? {
+    fun retime(body: String, timeline: AutoSyncTimelineRetimeResult): String? =
+        retime(body, AutoSyncTimelineTimeMapper(timeline))
+
+    fun retime(body: String, mapper: SubtitleTimeMapping): String? {
         val text = body
             .replace("﻿", "")
             .replace("\r\n", "\n")
             .replace('\r', '\n')
         if (ttmlRegex.containsMatchIn(text.take(512))) return null
-        val mapper = AutoSyncTimelineTimeMapper(timeline)
         // Not a prefix sample: embedded [Fonts] or [Graphics] can push [Events] far into the file.
         return if (assEventsHeaderRegex.containsMatchIn(text)) {
             retimeAss(text, mapper)
@@ -36,7 +38,7 @@ internal object AutoSyncSubtitleTextRetimer {
     }
 
     /** SRT and WebVTT: every `start --> end` line, keeping cue settings after the end time. */
-    private fun retimeTimingLines(text: String, mapper: AutoSyncTimelineTimeMapper): String? {
+    private fun retimeTimingLines(text: String, mapper: SubtitleTimeMapping): String? {
         val lines = text.split('\n').toMutableList()
         val entries = ArrayList<TimingEntry>()
         lines.forEachIndexed { index, line ->
@@ -84,7 +86,7 @@ internal object AutoSyncSubtitleTextRetimer {
     }
 
     /** ASS/SSA: the Start and End fields of each Dialogue line in [Events]. */
-    private fun retimeAss(text: String, mapper: AutoSyncTimelineTimeMapper): String? {
+    private fun retimeAss(text: String, mapper: SubtitleTimeMapping): String? {
         val lines = text.split('\n').toMutableList()
         var inEvents = false
         var fieldCount = ASS_DEFAULT_FIELD_COUNT

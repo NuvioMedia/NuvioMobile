@@ -7,7 +7,6 @@ import kotlinx.coroutines.runBlocking
 import nuvio.composeapp.generated.resources.Res
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 
-/** The bundled Silero VAD weights, read once per process. Blocking; call from a background thread. */
 internal object SileroVadBundle {
     private const val PATH = "files/silero_vad_v5_16k.bin"
 
