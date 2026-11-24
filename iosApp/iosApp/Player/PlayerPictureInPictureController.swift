@@ -2,6 +2,9 @@ import AVKit
 import CoreMedia
 
 let playerSceneDidActivateNotification = Notification.Name("NuvioPlayerSceneDidActivate")
+// Consumed on the Kotlin side to keep the screen brightness scoped to the inline player.
+let playerPictureInPictureDidStartNotification = Notification.Name("NuvioPlayerPictureInPictureDidStart")
+let playerPictureInPictureDidStopNotification = Notification.Name("NuvioPlayerPictureInPictureDidStop")
 
 /// PiP presents MPV's existing VideoToolbox buffers; MPV remains the audio and playback clock owner.
 final class PlayerPictureInPictureController: NSObject,
@@ -312,6 +315,7 @@ final class PlayerPictureInPictureController: NSObject,
         hasPresentedPictureInPicture = true
         // Do not include inline artwork in the transition into PiP.
         owner?.setPictureInPicturePlaceholderVisible(true)
+        NotificationCenter.default.post(name: playerPictureInPictureDidStartNotification, object: nil)
         restoreInlineIfReady()
     }
 
@@ -348,6 +352,7 @@ final class PlayerPictureInPictureController: NSObject,
         stopRequested = false
         shouldReturnToInline = false
         metalLayer?.nuvioPiPConsumesVideo = isBackground
+        NotificationCenter.default.post(name: playerPictureInPictureDidStopNotification, object: nil)
         if isBackground { owner?.pauseBackgroundPlayback() }
     }
 
