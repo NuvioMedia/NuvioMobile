@@ -31,6 +31,9 @@ class CustomDefaultTrackNameProvider(resources: Resources) : DefaultTrackNamePro
         return trackName
     }
 
+    fun getSubtitleTrackName(format: Format): String =
+        format.label?.takeIf { it.isNotBlank() } ?: super.getTrackName(format)
+
     companion object {
         /**
          * Resolve a human-readable codec name from a MIME type, falling back to

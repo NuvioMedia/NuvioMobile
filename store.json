@@ -20,6 +20,16 @@
       "category": "entertainment",
       "versions": [
         {
+          "version": "1.0.1",
+          "buildVersion": "160",
+          "date": "2026-11-21T14:50:47Z",
+          "localizedDescription": "- c31c30e1 fix(player): ignore gesture insets for bottom controls on android @skoruppa  \r\n- 4baf886e fix(ios): keep downloads out of iCloud and computer backups @claude  \r\n- f81edc65 fix(debrid): match TorBox alternative-hash cache answers @WhiteGiso  \r\n- 103c5e07 fix(trakt): prevent unbounded library refresh queue @enricopro  \r\n",
+          "downloadURL": "https://github.com/NuvioMedia/NuvioMobile/releases/download/1.0.1/nuvio-1.0.1-full-release.ipa",
+          "size": 69936384,
+          "sha256": "3218eb0d6d30729014aba4e4f4db6edef7116504c297bc3533cc775aba06ed90",
+          "minOSVersion": "16.1"
+        },
+        {
           "version": "1.0.0",
           "buildVersion": "157",
           "date": "2026-11-15T18:28:31Z",

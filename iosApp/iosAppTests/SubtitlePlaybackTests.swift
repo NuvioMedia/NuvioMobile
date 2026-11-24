@@ -86,12 +86,13 @@ final class SubtitlePlaybackTests: XCTestCase {
         attachScreenshot(window, name: "ios-rtl")
         settings.setSubtitleStyle(style: SubtitleStyleState.companion.DEFAULT)
         try await until { bridge.getProperty(name: "sub-visibility") == "yes" }
-        settings.setSubtitleStyle(style: makeStyle(font: "serif", radius: 16))
         let ass = try XCTUnwrap(bundle.url(forResource: "styled", withExtension: "ass"))
         bridge.setSubtitleUrl(url: ass.absoluteString)
         try await until { bridge.getProperty(name: "current-tracks/sub/codec") == "ass" }
         try await until { bridge.getProperty(name: "sub-visibility") == "yes" }
         XCTAssertEqual(bridge.getProperty(name: "sub-ass-override"), "no")
+        settings.setSubtitleStyle(style: makeStyle(font: "serif", radius: 16))
+        try await until { bridge.getProperty(name: "sub-ass-override") == "scale" }
         attachScreenshot(window, name: "ios-ass")
         bridge.selectSubtitleTrack(trackId: -1)
         try await until { bridge.getProperty(name: "sub-text").isEmpty }

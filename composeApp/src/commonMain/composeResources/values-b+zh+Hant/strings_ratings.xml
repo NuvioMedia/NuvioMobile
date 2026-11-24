@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">評分</string>
+    <string name="rating_your_rating">你的評分</string>
+    <string name="rating_rate_episode">為單集評分</string>
+    <string name="rating_rated">已評分 %1$s/10</string>
+    <string name="rating_value">%1$s 分（滿分 10 分）</string>
+    <string name="rating_syncs_to">同步至 %1$s</string>
+    <string name="rating_saved">已儲存評分</string>
+    <string name="rating_removed">已移除評分</string>
+    <string name="rating_failed">無法更新你在 %1$s 上的評分</string>
+    <string name="settings_tracking_ratings">評分</string>
+    <string name="settings_tracking_ratings_description">儲存及顯示你評分的來源服務</string>
+    <string name="settings_tracking_ratings_picker_subtitle">在影片詳情頁面進行評分，你的評分將會儲存並顯示於所選的服務中。</string>
+    <string name="settings_tracking_ratings_off_description">隱藏評分按鈕。</string>
+    <string name="settings_tracking_ratings_simkl_description">為電影與影集評分。若為尚未加入 Simkl 片單的影片評分，系統會自動將其加入片單。</string>
+    <string name="settings_tracking_ratings_mdblist_description">為電影、影集與單集評分。</string>
+</resources>

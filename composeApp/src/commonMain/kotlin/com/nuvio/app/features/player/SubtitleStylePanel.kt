@@ -69,6 +69,7 @@ fun SubtitleStylePanel(
     onAutoSyncCapture: () -> Unit,
     onAutoSyncCueSelected: (SubtitleSyncCue) -> Unit,
     onAutoSyncReload: () -> Unit,
+    supportsAssStyleCustomization: Boolean = false,
 ) {
     val sectionGap = if (isCompact) 12.dp else 16.dp
 
@@ -107,6 +108,7 @@ fun SubtitleStylePanel(
         SubtitleAppearanceControls(
             style = style,
             spacing = sectionGap,
+            supportsAssStyleCustomization = supportsAssStyleCustomization,
             onStyleChanged = onStyleChanged,
         )
 
