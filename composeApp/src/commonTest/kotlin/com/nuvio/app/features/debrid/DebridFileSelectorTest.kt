@@ -154,6 +154,28 @@ class DebridFileSelectorTest {
     }
 
     @Test
+    fun `Torbox selector matches ampersand filename hint to and in provider filename`() {
+        val addonFilename =
+            "Madhurame Jeevitham (2026) 1080p - (DD+5.1 - 640Kbps & AAC 2.0) - ESub.mkv"
+        val files = listOf(
+            TorboxTorrentFileDto(
+                id = 0,
+                name = "Madhurame Jeevitham (2026) 1080p - (DD+5.1 - 640Kbps and AAC 2.0) - ESub.mkv",
+                size = 2_044_866_613,
+            ),
+        )
+
+        val selected = TorboxFileSelector().selectFile(
+            files = files,
+            resolve = resolve(fileIdx = 0, filename = addonFilename),
+            season = null,
+            episode = null,
+        )
+
+        assertEquals(0, selected?.id)
+    }
+
+    @Test
     fun `exact path distinguishes repeated basenames and handles windows separators`() {
         val files = listOf(
             TorboxTorrentFileDto(id = 1, name = "Show/Season 1/Episode 02.mkv", size = 200),
