@@ -42,6 +42,9 @@ jobs:
             touch local.properties
           fi
 
+      - name: Run Android host tests
+        run: ./gradlew :composeApp:testAndroidHostTest --stacktrace
+
       - name: Build fullDebug APK
         run: ./gradlew :androidApp:assembleFullDebug -Pnuvio.android.distribution=full -Pnuvio.ios.distribution=appstore --stacktrace
 

@@ -14,6 +14,10 @@ expect object AppUpdaterPlatform {
 
     fun setUpdateChannel(channel: String)
 
+    fun getShowUpdateBanner(): Boolean
+
+    fun setShowUpdateBanner(show: Boolean)
+
     fun deleteDownloadedApk(path: String)
 
     suspend fun downloadApk(

@@ -63,4 +63,23 @@ class UpdatePreferencesTest {
         assertEquals(UpdateChannel.BETA, UpdatePreferences("1.1.0-beta.1").channel.value)
         assertEquals("beta", AppUpdaterPlatform.getUpdateChannel())
     }
+
+    @Test
+    fun updateBannerIsEnabledByDefault() {
+        assertEquals(true, UpdatePreferences("1.1.0").showBanner.value)
+        assertEquals(true, AppUpdaterPlatform.getShowUpdateBanner())
+    }
+
+    @Test
+    fun updateBannerPreferencePersists() {
+        val preferences = UpdatePreferences("1.1.0")
+        preferences.setShowBanner(false)
+
+        assertEquals(false, preferences.showBanner.value)
+        assertEquals(false, AppUpdaterPlatform.getShowUpdateBanner())
+        assertEquals(false, UpdatePreferences("1.1.0").showBanner.value)
+
+        UpdatePreferences("1.1.0").setShowBanner(true)
+        assertEquals(true, AppUpdaterPlatform.getShowUpdateBanner())
+    }
 }

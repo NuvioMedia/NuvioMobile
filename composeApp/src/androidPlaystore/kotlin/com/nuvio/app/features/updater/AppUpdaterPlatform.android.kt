@@ -19,6 +19,10 @@ actual object AppUpdaterPlatform {
 
     actual fun setUpdateChannel(channel: String) = Unit
 
+    actual fun getShowUpdateBanner(): Boolean = true
+
+    actual fun setShowUpdateBanner(show: Boolean) = Unit
+
     actual fun deleteDownloadedApk(path: String) = Unit
 
     actual suspend fun downloadApk(

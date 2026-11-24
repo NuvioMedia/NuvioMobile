@@ -19,6 +19,12 @@ actual object AppUpdaterPlatform {
         AndroidAppUpdaterPlatform.setUpdateChannel(channel)
     }
 
+    actual fun getShowUpdateBanner(): Boolean = AndroidAppUpdaterPlatform.getShowUpdateBanner()
+
+    actual fun setShowUpdateBanner(show: Boolean) {
+        AndroidAppUpdaterPlatform.setShowUpdateBanner(show)
+    }
+
     actual fun deleteDownloadedApk(path: String) {
         AndroidAppUpdaterPlatform.deleteDownloadedApk(path)
     }

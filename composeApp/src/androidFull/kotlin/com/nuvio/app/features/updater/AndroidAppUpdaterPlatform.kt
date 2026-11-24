@@ -27,6 +27,7 @@ object AndroidAppUpdaterPlatform {
     private const val preferencesName = "nuvio_updater"
     private const val ignoredTagKey = "ignored_release_tag"
     private const val updateChannelKey = "update_channel"
+    private const val showUpdateBannerKey = "show_update_banner"
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -62,6 +63,13 @@ object AndroidAppUpdaterPlatform {
 
     fun setUpdateChannel(channel: String) {
         preferences().edit().putString(updateChannelKey, channel).apply()
+    }
+
+    fun getShowUpdateBanner(): Boolean =
+        preferences().getBoolean(showUpdateBannerKey, true)
+
+    fun setShowUpdateBanner(show: Boolean) {
+        preferences().edit().putBoolean(showUpdateBannerKey, show).apply()
     }
 
     fun deleteDownloadedApk(path: String) {

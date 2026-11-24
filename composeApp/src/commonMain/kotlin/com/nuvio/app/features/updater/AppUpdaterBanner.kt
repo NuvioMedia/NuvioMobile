@@ -89,6 +89,7 @@ fun AppUpdaterHost(
     }
 
     val state by controller.uiState.collectAsStateWithLifecycle()
+    val bannerEnabled by UpdatePreferences.shared.showBanner.collectAsStateWithLifecycle()
     var showReleaseNotes by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(controller) {
@@ -99,7 +100,7 @@ fun AppUpdaterHost(
     }
 
     val update = state.update
-    val showBanner = state.showDialog && update != null
+    val showBanner = bannerEnabled && state.showDialog && update != null
 
     Column(modifier = modifier) {
         AnimatedVisibility(
