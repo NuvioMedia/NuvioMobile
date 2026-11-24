@@ -64,6 +64,9 @@ Therefore, duplicate the values-he directory as values-iw. Keep both directories
     <string name="addons_error_enter_url">יש להזין כתובת תוסף.</string>
     <string name="addons_input_placeholder">כתובת התוסף</string>
     <string name="addons_install_button">התקנת תוסף</string>
+    <string name="addons_tracking_consent_title">תוסף מעקב</string>
+    <string name="addons_tracking_consent_body">%1$s הוא תוסף מעקב. Nuvio תשלח אליו את הפעילות שלך: מה שמופעל, מושהה ומופסק יחד עם מיקום ההפעלה, מה שנוסף לספרייה שלך או מוסר ממנה, ומה שסומן כנצפה או כלא נצפה. הנתונים האלה יוצאים מ-Nuvio ומטופלים על ידי מפתח התוסף ועל ידי השירות שאליו הוא מתחבר.</string>
+    <string name="addons_tracking_consent_checkbox">הסכמה לשיתוף פעילות הצפייה והספרייה שלי עם התוסף הזה</string>
     <string name="addons_loading_manifest_details">טוען פרטי manifest…</string>
     <string name="addons_modal_checking_message">מאמת את כתובת ה-manifest וטוען את פרטי התוסף לפני ההתקנה.</string>
     <string name="addons_modal_checking_title">בדיקת התוסף</string>
@@ -636,19 +639,33 @@ Therefore, duplicate the values-he directory as values-iw. Keep both directories
     <string name="detail_tab_trailer">טריילר</string>
     <string name="detail_trailer_category_count">%1$s (%2$d)</string>
     <string name="detail_trailers_title">טריילרים</string>
-    <string name="downloads_empty_episodes">אין פרקים שהושלמו</string>
+    <string name="downloads_delete_message">הפעולה תפנה %1$s במכשיר הזה.</string>
+    <string name="downloads_delete_title">למחוק את %1$s?</string>
+    <string name="downloads_downloading_count">%1$d בהורדה</string>
+    <string name="downloads_empty_message">יש ללחוץ לחיצה ארוכה על מקור ולבחור “הורדת קובץ” כדי לצפות בו במצב לא מקוון.</string>
     <string name="downloads_empty_title">עדיין אין הורדות</string>
-    <string name="downloads_episode_count">%1$d פרקים שהורדו</string>
     <string name="downloads_open_directory">פתיחת תיקיית ההורדות</string>
     <string name="downloads_open_directory_failed">לא ניתן לפתוח את תיקיית ההורדות</string>
+    <string name="downloads_pause_all">השהיית הכול</string>
+    <string name="downloads_resume_all">חידוש הכול</string>
     <string name="downloads_section_active">פעילות</string>
-    <string name="downloads_section_movies">סרטים</string>
-    <string name="downloads_section_shows">סדרות</string>
+    <string name="downloads_section_downloaded">הורדו</string>
     <string name="downloads_show_downloads">הצגת הורדות</string>
-    <string name="downloads_status_completed">הושלם • %1$s</string>
+    <string name="downloads_speed">%1$s/s</string>
     <string name="downloads_status_downloading">בהורדה • %1$s</string>
     <string name="downloads_status_failed">נכשל</string>
     <string name="downloads_status_paused">מושהה • %1$s</string>
+    <string name="downloads_watched_count">%1$d נצפו</string>
+    <plurals name="downloads_episodes">
+        <item quantity="one">פרק אחד</item>
+        <item quantity="two">שתי פרקים</item>
+        <item quantity="other">%1$d פרקים</item>
+    </plurals>
+    <plurals name="downloads_titles">
+        <item quantity="one">כותרת אחת</item>
+        <item quantity="two">שתי כותרות</item>
+        <item quantity="other">%1$d כותרות</item>
+    </plurals>
     <string name="episodes_cd_watched">נצפה</string>
     <string name="episodes_unavailable">לא זמין</string>
     <string name="episodes_season">עונה %1$d</string>
@@ -830,6 +847,14 @@ Therefore, duplicate the values-he directory as values-iw. Keep both directories
     <string name="settings_continue_watching_sort_mode_streaming_desc">פריטים שיצאו תחילה, עתידיים בסוף</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming">שורת "עתידי" נפרדת</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">העברת פרקים שטרם שודרו לשורת "עתידי" נפרדת</string>
+    <string name="settings_continue_watching_click_action_title">בעת בחירה</string>
+    <string name="settings_continue_watching_click_action_description">מה נפתח בעת בחירת פריט ב-“המשך צפייה”</string>
+    <string name="settings_continue_watching_click_action_stream">פתיחת הזרם</string>
+    <string name="settings_continue_watching_click_action_stream_desc">בחירת מקור או חידוש ההפעלה</string>
+    <string name="settings_continue_watching_click_action_details">פתיחת פרטים</string>
+    <string name="settings_continue_watching_click_action_details_desc">פתיחת דף הפרטים של הכותרת</string>
+    <string name="settings_continue_watching_click_action_details_upcoming">פרטים רק לפריטים קרובים</string>
+    <string name="settings_continue_watching_click_action_details_upcoming_desc">פתיחת הפרטים לפרקים שטרם שודרו, ופתיחת הזרם לשאר</string>
     <string name="upcoming_section_title">עתידי</string>
     <string name="settings_continue_watching_section_card_style">סגנון כרטיס פוסטר</string>
     <string name="settings_continue_watching_section_on_launch">בעת הפעלה</string>
@@ -1969,9 +1994,16 @@ Therefore, duplicate the values-he directory as values-iw. Keep both directories
     <string name="library_empty_message">כותרות שמורות יופיעו כאן לאחר הקשה על "שמירה" במסך הפרטים.</string>
     <string name="library_empty_title">הספרייה שלך ריקה</string>
     <string name="library_filter_all_types">כל הסוגים</string>
+    <string name="library_filter_genre">ז׳אנר</string>
     <string name="library_filter_list">בחירת רשימה</string>
     <string name="library_filter_sort">מיון הספרייה</string>
     <string name="library_filter_type">בחירת סוג</string>
+    <string name="library_filter_watched">נצפה</string>
+    <string name="library_filter_year">שנה</string>
+    <string name="library_type_all">הכול</string>
+    <string name="library_watched_filter_all">הכול</string>
+    <string name="library_watched_filter_watched">נצפה</string>
+    <string name="library_watched_filter_unwatched">לא נצפה</string>
     <string name="library_layout_show_horizontal">הצגת מדפים אופקיים</string>
     <string name="library_layout_show_vertical">הצגת רשת אנכית</string>
     <string name="library_load_failed">לא ניתן לטעון את הספרייה</string>
@@ -2570,5 +2602,6 @@ Therefore, duplicate the values-he directory as values-iw. Keep both directories
     <string name="subtitle_shadow_description">הפרדת הטקסט מסצנות בהירות.</string>
     <string name="subtitle_shadow_opacity">שקיפות הצל</string>
     <string name="subtitle_shadow_size">גודל הצל</string>
+    <string name="subtitle_outline_width">עובי המתאר</string>
     <string name="subtitle_reset_appearance">איפוס מראה</string>
 </resources>
