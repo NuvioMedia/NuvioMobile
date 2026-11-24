@@ -297,8 +297,8 @@ internal object MetaDetailsParser {
 
     private fun JsonObject.trailers(): List<MetaTrailer> {
         val legacy = legacyTrailers()
-        val seenYouTubeKeys = legacy.mapTo(mutableSetOf()) { it.key }
-        val seenUrls = mutableSetOf<String>()
+        val seenYouTubeKeys = legacy.filter { it.url == null }.mapTo(mutableSetOf()) { it.key }
+        val seenUrls = legacy.mapNotNullTo(mutableSetOf()) { it.url }
         val fromStreams = array("trailerStreams").mapNotNull { element ->
             val stream = element as? JsonObject ?: return@mapNotNull null
             val name = listOf("title", "name", "description")
@@ -338,7 +338,7 @@ internal object MetaDetailsParser {
                 ?: trailer.string("source")
                 ?: trailer.string("ytId")
                 ?: trailer.string("ytid")
-                ?: return@mapNotNull null
+                ?: return@mapNotNull trailer.directUrlTrailer()
 
             val normalizedKey = key.trim()
             if (normalizedKey.isEmpty()) return@mapNotNull null
@@ -356,6 +356,23 @@ internal object MetaDetailsParser {
                 displayName = trailer.string("displayName")?.takeIf(String::isNotBlank),
             )
         }
+
+    private fun JsonObject.directUrlTrailer(): MetaTrailer? {
+        val url = string("url")?.trim()
+            ?.takeIf { it.startsWith("https://", ignoreCase = true) || it.startsWith("http://", ignoreCase = true) }
+            ?: return null
+        val name = listOf("title", "name", "description")
+            .firstNotNullOfOrNull { field -> string(field)?.trim()?.takeIf(String::isNotBlank) }
+        return MetaTrailer(
+            id = url,
+            key = url,
+            name = name ?: runBlocking { getString(Res.string.generic_trailer) },
+            site = "Direct",
+            type = string("type")?.takeIf(String::isNotBlank) ?: "Trailer",
+            url = url,
+            thumbnail = string("thumbnail")?.trim()?.takeIf(String::isNotBlank),
+        )
+    }
 
     private fun JsonObject.embeddedStreams(): List<StreamItem> {
         val arr = this["streams"] as? JsonArray ?: return emptyList()
