@@ -411,6 +411,12 @@ private fun platformLicenseItems(): List<LicenseItem> =
                 licenseRes = Res.string.settings_licenses_attributions_mpvkit_license,
                 link = MpvKitUrl,
             ),
+            LicenseItem(
+                titleRes = Res.string.licenses_attributions_audio_sync_title,
+                bodyRes = Res.string.licenses_attributions_audio_sync_body,
+                licenseRes = Res.string.licenses_attributions_audio_sync_license,
+                link = SherpaOnnxUrl,
+            ),
         )
     } else {
         listOf(

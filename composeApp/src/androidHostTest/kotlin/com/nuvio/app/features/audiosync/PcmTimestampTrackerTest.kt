@@ -113,7 +113,7 @@ class PcmTimestampTrackerTest {
     }
 
     private fun analyzer(timeline: SpeechTimeline): SpeechAnalyzer {
-        val weights = File("src/androidMain/res/raw/silero_vad_v5_16k.bin").inputStream().use(SileroVadWeights::read)
+        val weights = SileroVadWeights.read(File("src/commonMain/composeResources/files/silero_vad_v5_16k.bin").readBytes())
         return SpeechAnalyzer(SileroVad(weights), timeline)
     }
 

@@ -17,7 +17,7 @@ class SpotSamplingTest {
 
     @Test
     fun shortPlaybackBuffersBuildEvidenceWhenCaptureHasNone() {
-        val weights = File("src/androidMain/res/raw/silero_vad_v5_16k.bin").inputStream().use(SileroVadWeights::read)
+        val weights = SileroVadWeights.read(File("src/commonMain/composeResources/files/silero_vad_v5_16k.bin").readBytes())
         for ((rate, frames) in listOf(48_000 to 960, 16_000 to 320, 48_000 to 320)) {
             val timeline = SpeechTimeline()
             val analyzer = SpeechAnalyzer(SileroVad(weights), timeline)
@@ -45,7 +45,7 @@ class SpotSamplingTest {
         val engine = AsrSyncEngine(timeline, onLock = { error("Recognition must remain idle") })
         engine.setListening(false) // Japanese audio, or no usable English reference.
         engine.setRecognizer { error("Sampled speech must not invoke English recognition") }
-        val weights = File("src/androidMain/res/raw/silero_vad_v5_16k.bin").inputStream().use(SileroVadWeights::read)
+        val weights = SileroVadWeights.read(File("src/commonMain/composeResources/files/silero_vad_v5_16k.bin").readBytes())
         val segmenter = SpeechSegmenter { frame, samples -> engine.offerSegment(frame, samples, spread = true) }
         val analyzer = SpeechAnalyzer(SileroVad(weights), timeline).apply { chunkListener = segmenter }
         val random = Random(721)

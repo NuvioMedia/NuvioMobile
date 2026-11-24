@@ -212,7 +212,7 @@ class AudioSubtitleSyncTest {
     }
 
     private fun loadWeights(): SileroVadWeights =
-        File("src/androidMain/res/raw/silero_vad_v5_16k.bin").inputStream().use(SileroVadWeights::read)
+        SileroVadWeights.read(File("src/commonMain/composeResources/files/silero_vad_v5_16k.bin").readBytes())
 
     private fun referenceSignal(length: Int): FloatArray {
         var state = 12_345L

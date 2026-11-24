@@ -1,5 +1,6 @@
 package com.nuvio.app.features.audiosync
 
+import kotlin.concurrent.Volatile
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -104,7 +105,7 @@ internal class SpeechAnalyzer(
         outputStep = sampleRate.toDouble() / SileroVad.SAMPLE_RATE
         // Start on the next frame boundary so chunks line up with the timeline grid.
         val frameUs = SpeechTimeline.FRAME_DURATION_US
-        val firstFrame = Math.floorDiv(timeUs + frameUs - 1, frameUs)
+        val firstFrame = (timeUs + frameUs - 1).floorDiv(frameUs)
         nextFrame = firstFrame.toInt()
         val firstOutputTimeUs = firstFrame * frameUs
         nextOutputPosition = (firstOutputTimeUs - timeUs) * sampleRate / 1_000_000.0

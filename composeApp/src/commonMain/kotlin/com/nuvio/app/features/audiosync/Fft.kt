@@ -1,5 +1,7 @@
 package com.nuvio.app.features.audiosync
 
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -14,8 +16,16 @@ internal class Fft(val size: Int) {
         require(size >= 2 && size and (size - 1) == 0) { "FFT size must be a power of two: $size" }
         cosTable = DoubleArray(size / 2) { cos(2.0 * PI * it / size) }
         sinTable = DoubleArray(size / 2) { sin(2.0 * PI * it / size) }
-        val bits = Integer.numberOfTrailingZeros(size)
-        bitReversed = IntArray(size) { Integer.reverse(it) ushr (32 - bits) }
+        val bits = size.countTrailingZeroBits()
+        bitReversed = IntArray(size) { index ->
+            var reversed = 0
+            var value = index
+            repeat(bits) {
+                reversed = (reversed shl 1) or (value and 1)
+                value = value ushr 1
+            }
+            reversed
+        }
     }
 
     /** Forward transform (e^{-i...}) when [inverse] is false. The inverse is unnormalized. */
@@ -57,12 +67,16 @@ internal class Fft(val size: Int) {
 
         // The tables never change, so transforms of one size share them instead of rebuilding
         // 1.5 MB of them on every alignment pass (every few seconds while searching).
-        private val cache = object : LinkedHashMap<Int, Fft>(8, 0.75f, true) {
-            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Fft>?) = size > CACHED_SIZES
-        }
+        private val cache = LinkedHashMap<Int, Fft>()
+        private val cacheLock = SynchronizedObject()
 
         /** A shared instance for [size]; [transform] only reads the tables, so it is thread-safe. */
-        fun of(size: Int): Fft = synchronized(cache) { cache.getOrPut(size) { Fft(size) } }
+        fun of(size: Int): Fft = synchronized(cacheLock) {
+            val fft = cache.remove(size) ?: Fft(size)
+            cache[size] = fft
+            if (cache.size > CACHED_SIZES) cache.remove(cache.keys.first())
+            fft
+        }
 
         fun sizeFor(minimum: Int): Int {
             var n = 2

@@ -40,6 +40,7 @@ import nuvio.composeapp.generated.resources.audio_sync_sampling_title
 import nuvio.composeapp.generated.resources.audio_sync_setting_description
 import nuvio.composeapp.generated.resources.audio_sync_setting_title
 import org.jetbrains.compose.resources.stringResource
+import com.nuvio.app.isIos
 
 /** Audio fallback settings, beside Auto Sync in Playback -> Subtitles. */
 @Composable
@@ -65,7 +66,8 @@ internal fun AudioSyncPlaybackSettingsRows(
     )
     if (autoSyncOn && fallbackOn) {
         val model by SubtitleSyncStatus.speechModel.collectAsStateWithLifecycle()
-        val sampling by AudioSyncSettings.samplingMode.collectAsStateWithLifecycle()
+        val storedSampling by AudioSyncSettings.samplingMode.collectAsStateWithLifecycle()
+        val sampling = if (isIos && storedSampling == AudioSamplingMode.OFF) AudioSamplingMode.LOW else storedSampling
         SettingsGroupDivider(isTablet = isTablet)
         SettingsNavigationRow(
             title = stringResource(Res.string.audio_sync_model_title, model.sizeMb),
@@ -135,7 +137,7 @@ private fun AudioSamplingModeDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            AudioSamplingMode.entries.forEach { mode ->
+            AudioSamplingMode.entries.filter { !isIos || it != AudioSamplingMode.OFF }.forEach { mode ->
                 DialogOption(
                     text = audioSamplingLabel(mode),
                     description = audioSamplingDescription(mode),

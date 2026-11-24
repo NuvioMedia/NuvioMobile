@@ -397,7 +397,7 @@ internal class WordAnchorMatcher(cues: List<Triple<Long, Long, String>>) {
         /** These indices ordered by [keys], stably (equal keys keep their order). */
         private fun IntArray.sortedStableBy(keys: DoubleArray): IntArray {
             val boxed = toTypedArray()
-            java.util.Arrays.sort(boxed) { a, b -> keys[a].compareTo(keys[b]) }
+            boxed.sortWith { a, b -> keys[a].compareTo(keys[b]) }
             return boxed.toIntArray()
         }
 

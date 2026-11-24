@@ -6,7 +6,13 @@ import com.nuvio.app.features.audiosync.SpeechTimeline
 import com.nuvio.app.features.audiosync.SubtitleAudioAligner
 import com.nuvio.app.features.audiosync.SubtitleSpeechTrack
 import com.nuvio.app.features.audiosync.SubtitleSyncSegment
-import java.util.PriorityQueue
+import com.nuvio.app.features.audiosync.audioSyncNanoTime
+import com.nuvio.app.features.audiosync.startAudioSyncThread
+import kotlin.concurrent.Volatile
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.runBlocking
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
@@ -25,6 +31,7 @@ internal class ReferenceSubtitle(
     val matcher = WordAnchorMatcher(cues)
     private val track = SubtitleSpeechTrack.fromCues(cues)
     private val localShifts = HashMap<Pair<SubtitleSpeechTrack, Int>, Double?>()
+    private val localShiftsLock = SynchronizedObject()
 
     /**
      * The [bridge] shift around [referenceSec] (see [SubtitleBridge.localShiftSec]), falling back
@@ -33,7 +40,7 @@ internal class ReferenceSubtitle(
     fun bridgeShiftSecAt(target: SubtitleSpeechTrack, referenceSec: Double): Double {
         val bridge = bridge ?: return 0.0
         val step = (referenceSec / LOCAL_STEP_SEC).roundToInt()
-        val local = synchronized(localShifts) {
+        val local = synchronized(localShiftsLock) {
             localShifts.getOrPut(target to step) {
                 SubtitleBridge.localShiftSec(target, track, bridge, step * LOCAL_STEP_SEC)
             }
@@ -83,13 +90,14 @@ internal class AsrSyncEngine(
         val endFrame: Int get() = startFrame + samples.size / SileroVad.CHUNK_SAMPLES
     }
 
-    private val lock = Object()
+    private val lock = SynchronizedObject()
+    private val wakeups = Channel<Unit>(Channel.CONFLATED)
 
     @Volatile
     private var playheadFrame = 0
 
     /** Nearest upcoming speech first: that is what will be on screen soonest. */
-    private val queue = PriorityQueue<Segment>(compareBy { segmentPriority(it) })
+    private val queue = ArrayList<Segment>()
     private var queuedSamples = 0L
     private var expectingUntilNanos = 0L
     private val covered = ArrayList<IntRange>()
@@ -126,7 +134,7 @@ internal class AsrSyncEngine(
 
     @Volatile
     private var released = false
-    private var worker: Thread? = null
+    private var workerStarted = false
 
     /** False while recognition cannot help (no recogniser, no usable reference, foreign audio). */
     @Volatile
@@ -140,7 +148,7 @@ internal class AsrSyncEngine(
 
     fun setRecognizer(recognizer: SpeechToText?) {
         stt = recognizer
-        synchronized(lock) { lock.notifyAll() }
+        synchronized(lock) { wake() }
     }
 
     /**
@@ -155,7 +163,7 @@ internal class AsrSyncEngine(
                 queue.clear()
                 queuedSamples = 0
             }
-            lock.notifyAll()
+            wake()
         }
     }
 
@@ -183,7 +191,7 @@ internal class AsrSyncEngine(
             queue.add(segment)
             queuedSamples += samples.size
             ensureWorker()
-            lock.notifyAll()
+            wake()
         }
     }
 
@@ -196,7 +204,7 @@ internal class AsrSyncEngine(
             locked = false
             provisional = null
             pendingMove = null
-            lock.notifyAll()
+            wake()
         }
         evaluate()
     }
@@ -208,19 +216,23 @@ internal class AsrSyncEngine(
      */
     fun expectReferences(forMs: Long) {
         synchronized(lock) {
-            expectingUntilNanos = if (forMs > 0) System.nanoTime() + forMs * 1_000_000L else 0L
-            lock.notifyAll()
+            expectingUntilNanos = if (forMs > 0) audioSyncNanoTime() + forMs * 1_000_000L else 0L
+            wake()
         }
     }
 
-    private fun expectingReferences(): Boolean = expectingUntilNanos != 0L && System.nanoTime() < expectingUntilNanos
+    private fun expectingReferences(): Boolean = expectingUntilNanos != 0L && audioSyncNanoTime() < expectingUntilNanos
+
+    private fun wake() {
+        wakeups.trySend(Unit)
+    }
 
     /** Adds a reference that finished downloading after the session started. */
     fun addReference(reference: ReferenceSubtitle) {
         synchronized(lock) {
             if (references.any { it.key == reference.key }) return
             references = references + reference
-            lock.notifyAll()
+            wake()
         }
         evaluate()
     }
@@ -269,7 +281,7 @@ internal class AsrSyncEngine(
         synchronized(lock) {
             released = true
             queue.clear()
-            lock.notifyAll()
+            wake()
         }
     }
 
@@ -286,7 +298,11 @@ internal class AsrSyncEngine(
      * nearest upcoming speech. Call with [lock] held and the queue not empty.
      */
     private fun nextSegment(): Segment {
-        if (queue.peek()?.spread != true) return queue.poll()
+        val head = queue.minBy(::segmentPriority)
+        if (!head.spread) {
+            queue.remove(head)
+            return head
+        }
         val next = queue.filter { it.spread }.minWith(
             compareBy<Segment>({ segment -> covered.count { abs(it.first - segment.startFrame) <= SPREAD_RADIUS_FRAMES } })
                 .thenBy { it.startFrame },
@@ -296,28 +312,34 @@ internal class AsrSyncEngine(
     }
 
     private fun ensureWorker() {
-        if (worker != null) return
-        worker = Thread({ runWorker() }, "NuvioAsrSync").apply {
-            isDaemon = true
-            priority = Thread.MIN_PRIORITY
-            start()
-        }
+        if (workerStarted) return
+        workerStarted = true
+        startAudioSyncThread("NuvioAsrSync") { runWorker() }
     }
 
     private fun runWorker() {
         runCatching(workerSetup)
         while (true) {
             var generation = 0L
-            val (segment, recognizer) = synchronized(lock) {
+            val next = synchronized(lock) {
                 generation = heardGeneration
+                if (released) return
                 // No reference to match words against: recognising is wasted work, unless one is
                 // still downloading (a translated subtitle's English references). Words heard
                 // meanwhile are kept and matched the moment one is added.
-                while (!released && (queue.isEmpty() || stt == null || target == null ||
-                        (references.isEmpty() && !expectingReferences()))) lock.wait()
-                if (released) return
-                nextSegment().also { queuedSamples -= it.samples.size } to stt!!
+                if (queue.isEmpty() || stt == null || target == null ||
+                    (references.isEmpty() && !expectingReferences())
+                ) {
+                    null
+                } else {
+                    nextSegment().also { queuedSamples -= it.samples.size } to stt!!
+                }
             }
+            if (next == null) {
+                runBlocking { wakeups.receive() }
+                continue
+            }
+            val (segment, recognizer) = next
             // Once synced, keep listening just ahead of the playhead: a scene the release adds or
             // cuts shows up as a new offset there before it is on screen.
             if (locked && !segment.spread && !nearPlayhead(segment)) continue

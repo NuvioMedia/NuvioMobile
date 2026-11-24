@@ -3,7 +3,7 @@
 Ported from DavidVamaiotu/NuvioTV-Reshaped, branch `subtitle-autosync-tester`,
 commit `05d4562c84acfbfd3af60b0e02ad4eb1611450c1` (tester.21), under the repository's GPL-3.0 license.
 
-The bundled `silero_vad_v5_16k.bin` raw resource contains float16 weights converted
+The bundled `silero_vad_v5_16k.bin` resource contains float16 weights converted
 from Silero VAD v5's official 16 kHz ONNX export. Silero VAD is MIT licensed:
 https://github.com/snakers4/silero-vad
 

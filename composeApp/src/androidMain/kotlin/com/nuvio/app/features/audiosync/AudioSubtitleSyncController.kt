@@ -13,7 +13,6 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.extractor.ExtractorsFactory
 import androidx.media3.extractor.text.CuesWithTiming
-import com.nuvio.app.R
 import com.nuvio.app.features.audiosync.SubtitleSyncStatus
 import com.nuvio.app.features.autosync.AutomaticSubtitleSync
 import com.nuvio.app.features.player.parseSidecarTimedCuesRobust
@@ -423,7 +422,7 @@ internal class AudioSubtitleSyncController(
 
     private fun sampleSpots(source: SpotSource, current: Session) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-        val weights = runCatching { loadWeights(appContext) }.getOrNull() ?: run {
+        val weights = runCatching { SileroVadBundle.load() }.getOrNull() ?: run {
             SyncLog.w("audio sampling skipped: speech detector weights unavailable")
             return
         }
@@ -1210,7 +1209,7 @@ internal class AudioSubtitleSyncController(
     private fun createDecoder(): AudioSyncDecoder? {
         decoder?.let { return it }
         if (decoderUnavailable || released) return null
-        val weights = runCatching { loadWeights(appContext) }.onFailure {
+        val weights = runCatching { SileroVadBundle.load() }.onFailure {
             SyncLog.w("could not load VAD weights: ${it.message}")
         }.getOrNull()
         if (weights == null) {
@@ -1423,17 +1422,6 @@ internal class AudioSubtitleSyncController(
         private const val DUTY_WINDOW_US = 60_000_000L
         private const val DUTY_CYCLE = 3L
 
-        @Volatile
-        private var cachedWeights: SileroVadWeights? = null
-
-        private fun loadWeights(context: Context): SileroVadWeights {
-            cachedWeights?.let { return it }
-            return synchronized(this) {
-                cachedWeights ?: context.resources.openRawResource(R.raw.silero_vad_v5_16k).use {
-                    SileroVadWeights.read(it)
-                }.also { cachedWeights = it }
-            }
-        }
 
         private val periodPrefix = Regex("^(\\d+:)+")
         private val changingPanelFields = Regex(" ahead=\\d+s words=\\d+")
@@ -1451,29 +1439,6 @@ internal class AudioSubtitleSyncController(
             return a.language == b.language && a.channelCount == b.channelCount && a.sampleRate == b.sampleRate
         }
     }
-}
-
-/** Progress worth showing to the user. */
-internal sealed interface AudioSyncStatus {
-    data object Failed : AudioSyncStatus
-
-    /** A subtitle was picked and the audio is being analysed. */
-    data object Listening : AudioSyncStatus
-
-    /** No second decoder for this codec: syncing uses the playing audio only, without look-ahead. */
-    data class LiveOnly(val mimeType: String) : AudioSyncStatus
-
-    /** The early estimate could not be confirmed; subtitles are back on the file's own timing. */
-    data object Withdrawn : AudioSyncStatus
-
-    /** An early, unconfirmed estimate was applied; it keeps adjusting until confirmed. */
-    data class Estimated(val offsetMs: Long) : AudioSyncStatus
-
-    /** Subtitles now follow the audio; [offsetMs] is the applied delay at the playhead. */
-    data class Synced(val offsetMs: Long, val rateCorrected: Boolean) : AudioSyncStatus
-
-    /** The subtitle timing changed partway through (a different cut). */
-    data class Adjusted(val offsetMs: Long) : AudioSyncStatus
 }
 
 /** Format of the audio track the player currently has selected, if any. */

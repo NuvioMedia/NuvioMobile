@@ -14,6 +14,7 @@ private let nuvioBackgroundColor = UIColor(
 private enum NuvioComposeHost {
     static let registerPlayerBridge: Void = {
         NuvioPlayerRegistration.register()
+        AudioSyncNativeRegistration.register()
     }()
 
     static func wrap(
