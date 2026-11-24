@@ -358,11 +358,7 @@ object PartyRepository {
                 if (payload.string("reason") == "disabled") _enabled.value = false
                 finish(PartyEvent.Ended)
             }
-            "media" -> {
-                val media = payload["media"]?.let { decode(it, PartyMedia.serializer()) } ?: return
-                val playback = payload["playback"]?.takeIf { it !is JsonNull }?.let { decode(it, PartyPlayback.serializer()) }
-                applyMedia(media, playback)
-            }
+            "media" -> acceptMedia(party, payload)
             "stream" -> {
                 if (party.isHost || payload.string("member_id") != party.hostMemberId) return
                 _sharedStream.value = payload["stream"]
@@ -372,6 +368,22 @@ object PartyRepository {
             }
             "chat" -> PartyChat.receive(payload)
         }
+    }
+
+    private suspend fun acceptMedia(party: ActiveParty, payload: JsonObject) {
+        val media = payload["media"]?.let { decode(it, PartyMedia.serializer()) } ?: return
+        val snapshot = runRemote { PartyApi.heartbeat(party.id, deviceId()) } ?: return
+        val confirmed = acceptsMediaBroadcast(
+            senderId = payload.string("member_id"),
+            hostMemberId = party.hostMemberId,
+            broadcastMediaKey = media.key,
+            serverMediaKey = snapshot.party?.media?.key,
+        )
+        if (!confirmed) {
+            log.w { "Ignoring watch party media broadcast the host did not send" }
+            return
+        }
+        applySnapshot(snapshot)
     }
 
     private fun onPresence(joins: Map<String, Presence>, leaves: Map<String, Presence>) {
