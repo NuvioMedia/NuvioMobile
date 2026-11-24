@@ -13,7 +13,6 @@ import androidx.media3.datasource.DataSource
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.extractor.ExtractorsFactory
 import androidx.media3.extractor.text.CuesWithTiming
-import com.nuvio.app.R
 import com.nuvio.app.features.audiosync.SubtitleSyncStatus
 import com.nuvio.app.features.autosync.AutomaticSubtitleSync
 import com.nuvio.app.features.player.parseSidecarTimedCuesRobust
@@ -423,7 +422,7 @@ internal class AudioSubtitleSyncController(
 
     private fun sampleSpots(source: SpotSource, current: Session) {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-        val weights = runCatching { loadWeights(appContext) }.getOrNull() ?: run {
+        val weights = runCatching { SileroVadBundle.load() }.getOrNull() ?: run {
             SyncLog.w("audio sampling skipped: speech detector weights unavailable")
             return
         }
@@ -1210,7 +1209,7 @@ internal class AudioSubtitleSyncController(
     private fun createDecoder(): AudioSyncDecoder? {
         decoder?.let { return it }
         if (decoderUnavailable || released) return null
-        val weights = runCatching { loadWeights(appContext) }.onFailure {
+        val weights = runCatching { SileroVadBundle.load() }.onFailure {
             SyncLog.w("could not load VAD weights: ${it.message}")
         }.getOrNull()
         if (weights == null) {
@@ -1423,17 +1422,6 @@ internal class AudioSubtitleSyncController(
         private const val DUTY_WINDOW_US = 60_000_000L
         private const val DUTY_CYCLE = 3L
 
-        @Volatile
-        private var cachedWeights: SileroVadWeights? = null
-
-        private fun loadWeights(context: Context): SileroVadWeights {
-            cachedWeights?.let { return it }
-            return synchronized(this) {
-                cachedWeights ?: context.resources.openRawResource(R.raw.silero_vad_v5_16k).use {
-                    SileroVadWeights.read(it)
-                }.also { cachedWeights = it }
-            }
-        }
 
         private val periodPrefix = Regex("^(\\d+:)+")
         private val changingPanelFields = Regex(" ahead=\\d+s words=\\d+")

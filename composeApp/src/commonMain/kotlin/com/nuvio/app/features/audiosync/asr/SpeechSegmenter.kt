@@ -2,6 +2,8 @@ package com.nuvio.app.features.audiosync.asr
 
 import com.nuvio.app.features.audiosync.SileroVad
 import com.nuvio.app.features.audiosync.SpeechAnalyzer
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
 /**
  * Cuts the analysed 16 kHz audio into speech segments using the Silero probabilities that are
@@ -21,9 +23,13 @@ internal class SpeechSegmenter(
     private var startFrame = 0
     private var lastSpeechFrame = 0
     private var expectedFrame = Int.MIN_VALUE
+    private val lock = SynchronizedObject()
 
-    @Synchronized
     override fun onChunk(frame: Int, chunk: FloatArray, probability: Float) {
+        synchronized(lock) { onChunkLocked(frame, chunk, probability) }
+    }
+
+    private fun onChunkLocked(frame: Int, chunk: FloatArray, probability: Float) {
         if (frame != expectedFrame) flushPending()
         expectedFrame = frame + 1
         val speech = probability >= SPEECH_THRESHOLD
@@ -47,12 +53,10 @@ internal class SpeechSegmenter(
         if (frame - lastSpeechFrame > HANGOVER_FRAMES || bufferFrames >= MAX_SEGMENT_FRAMES) finish()
     }
 
-    @Synchronized
-    override fun onReset() = flushPending()
+    override fun onReset() = synchronized(lock) { flushPending() }
 
     /** The audio ends here (e.g. sampling is done): hands on the speech in progress. */
-    @Synchronized
-    fun flush() = flushPending()
+    fun flush() = synchronized(lock) { flushPending() }
 
     private fun flushPending() {
         if (inSpeech) finish()

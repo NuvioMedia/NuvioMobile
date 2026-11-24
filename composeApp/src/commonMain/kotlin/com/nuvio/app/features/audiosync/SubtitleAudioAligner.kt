@@ -112,8 +112,8 @@ internal object SubtitleAudioAligner {
         detectorBiasMs: Double = DETECTOR_BIAS_MS,
     ): PreparedSpeech? {
         val frameMs = SpeechTimeline.FRAME_DURATION_MS
-        val minLag = Math.floorDiv((minShiftMs + detectorBiasMs).roundToInt(), frameMs.toInt())
-        val maxLag = Math.floorDiv((maxShiftMs + detectorBiasMs).roundToInt(), frameMs.toInt()) + 1
+        val minLag = (minShiftMs + detectorBiasMs).roundToInt().floorDiv(frameMs.toInt())
+        val maxLag = (maxShiftMs + detectorBiasMs).roundToInt().floorDiv(frameMs.toInt()) + 1
         val lagCount = maxLag - minLag + 1
 
         // One mean and norm over every known frame, as if the stretches were a single array.
@@ -234,9 +234,9 @@ internal object SubtitleAudioAligner {
             if (track.size == 0) return null
             val frameMs = SpeechTimeline.FRAME_DURATION_MS
             // Index k = maxLag - lag; a narrower shift range is a slice of the same lags.
-            val rangeMaxLag = maxShiftMs?.let { Math.floorDiv((it + detectorBiasMs).roundToInt(), frameMs.toInt()) + 1 }
+            val rangeMaxLag = maxShiftMs?.let { (it + detectorBiasMs).roundToInt().floorDiv(frameMs.toInt()) + 1 }
                 ?.coerceAtMost(maxLag) ?: maxLag
-            val rangeMinLag = minShiftMs?.let { Math.floorDiv((it + detectorBiasMs).roundToInt(), frameMs.toInt()) }
+            val rangeMinLag = minShiftMs?.let { (it + detectorBiasMs).roundToInt().floorDiv(frameMs.toInt()) }
                 ?.coerceAtLeast(minLag) ?: minLag
             if (rangeMinLag > rangeMaxLag) return null
             val fromIndex = maxLag - rangeMaxLag

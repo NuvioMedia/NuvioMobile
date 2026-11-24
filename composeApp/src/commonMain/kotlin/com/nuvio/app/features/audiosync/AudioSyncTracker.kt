@@ -1,7 +1,9 @@
 package com.nuvio.app.features.audiosync
 
+import kotlin.concurrent.Volatile
 import kotlin.math.abs
 import kotlin.math.roundToLong
+import kotlinx.atomicfu.atomic
 
 /** Piecewise mapping media time = subtitle time * scale + shift, each piece starting at [fromMediaMs]. */
 internal data class SubtitleSyncSegment(
@@ -42,7 +44,7 @@ internal class SubtitleSyncModel(val segments: List<SubtitleSyncSegment>) {
     }
 
     override fun toString(): String = segments.joinToString(prefix = "[", postfix = "]") {
-        "from=${it.fromMediaMs}ms scale=${"%.5f".format(it.scale)} shift=${it.shiftMs.roundToLong()}ms"
+        "from=${it.fromMediaMs}ms scale=${it.scale.toFixed(5)} shift=${it.shiftMs.roundToLong()}ms"
     }
 }
 
@@ -798,14 +800,14 @@ internal class AudioSyncTracker(
         }
 
         /** Splits [segments] in time into two parts holding half of the known frames each. */
-        /** The last line-start search prepared on this thread, reused while the same [segments] are checked. */
-        private val lastStarts = ThreadLocal<Pair<List<SpeechSegment>, SubtitleAudioAligner.PreparedSpeech?>>()
+        /** The last line-start search prepared, reused while the same [segments] are checked. */
+        private val lastStarts = atomic<Pair<List<SpeechSegment>, SubtitleAudioAligner.PreparedSpeech?>?>(null)
 
         /** Line starts of [segments] prepared for a full-range search; one search checks them several times. */
         private fun preparedStarts(segments: List<SpeechSegment>): SubtitleAudioAligner.PreparedSpeech? {
-            lastStarts.get()?.let { (key, prepared) -> if (key === segments) return prepared }
+            lastStarts.value?.let { (key, prepared) -> if (key === segments) return prepared }
             val prepared = SubtitleAudioAligner.prepare(SubtitleAudioAligner.speechStarts(segments), -MAX_SHIFT_MS, MAX_SHIFT_MS)
-            lastStarts.set(segments to prepared)
+            lastStarts.value = segments to prepared
             return prepared
         }
 

@@ -74,7 +74,7 @@ internal object DialogueSpotPlanner {
         val ends = track.endsMs
         val outerFrom = fromMs - TIMING_SLACK_MS
         val outerTo = toMs + TIMING_SLACK_MS
-        var index = starts.binarySearch(outerFrom).let { if (it < 0) -it - 1 else it }
+        var index = starts.binarySearchCompat(outerFrom).let { if (it < 0) -it - 1 else it }
         while (index > 0 && ends[index - 1] > outerFrom) index--
         var covered = 0.0
         var lines = 0
@@ -107,7 +107,7 @@ internal object DialogueSpotPlanner {
         val toMs = startMs + OPENING_MS + OPENING_SLACK_MS
         val starts = track.startsMs
         val ends = track.endsMs
-        var index = starts.binarySearch(fromMs).let { if (it < 0) -it - 1 else it }
+        var index = starts.binarySearchCompat(fromMs).let { if (it < 0) -it - 1 else it }
         while (index > 0 && ends[index - 1] > fromMs) index--
         var covered = 0.0
         while (index < starts.size && starts[index] < toMs) {
