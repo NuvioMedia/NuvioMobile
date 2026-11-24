@@ -255,8 +255,9 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
         subtitleAutoSyncState = SubtitleAutoSyncUiState()
     }
 
-    LaunchedEffect(playerController, subtitleStyle) {
-        playerController?.applySubtitleStyle(subtitleStyle)
+    val activeStyle = activeSubtitleStyle
+    LaunchedEffect(playerController, activeStyle) {
+        playerController?.applySubtitleStyle(activeStyle)
     }
 
     val subtitlePreferenceKey = listOf(

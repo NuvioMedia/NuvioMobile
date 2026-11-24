@@ -2547,6 +2547,7 @@
     <string name="subtitle_shadow">Cień</string>
     <string name="subtitle_shadow_description">Oddziel tekst od jasnych scen.</string>
     <string name="subtitle_shadow_opacity">Krycie cienia</string>
+    <string name="subtitle_customize_ass">Dostosuj styl ASS/SSA</string>
     <string name="subtitle_shadow_size">Rozmiar cienia</string>
     <string name="subtitle_outline_width">Grubość obrysu</string>
     <string name="subtitle_reset_appearance">Resetuj wygląd</string>
