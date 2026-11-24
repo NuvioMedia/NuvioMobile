@@ -3,7 +3,7 @@
     <string name="settings_playback_subtitle_auto_sync">Felirat automatikus szinkronizálása</string>
     <string name="settings_playback_subtitle_auto_sync_description">A kiegészítőből kiválasztott feliratot a videó beágyazott feliratához időzíti.</string>
     <string name="settings_playback_auto_sync_mode_aggressive">Szinkronkeresés: alapos</string>
-    <string name="settings_playback_auto_sync_mode_aggressive_description">Szinkronizálás előtt további feliratokat és beágyazott sávokat vet össze, hogy pontosabb egyezést találjon. A rendszer csak akkor alkalmazza az eredményt, ha az egyezés megbízhatónak tekinthető.</string>
+    <string name="settings_playback_auto_sync_mode_aggressive_description">Szinkronizálás előtt további feliratokat és beágyazott sávokat vet össze, hogy pontosabb egyezést találjon. Csak a biztos egyezéseket alkalmazza.</string>
     <string name="settings_playback_auto_sync_mode_passive">Szinkronkeresés: gyors</string>
     <string name="settings_playback_auto_sync_mode_passive_description">Hamarabb használja az első erős egyezést. Az alapos módhoz hasonlóan csak a biztos egyezéseket alkalmazza.</string>
     <string name="settings_playback_auto_sync_tolerance">Szinkronizálás tűréshatára: %1$s</string>
