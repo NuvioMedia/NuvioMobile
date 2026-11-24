@@ -295,7 +295,43 @@ internal object MetaDetailsParser {
         }.toMap()
     }
 
-    private fun JsonObject.trailers(): List<MetaTrailer> =
+    private fun JsonObject.trailers(): List<MetaTrailer> {
+        val legacy = legacyTrailers()
+        val seenYouTubeKeys = legacy.mapTo(mutableSetOf()) { it.key }
+        val seenUrls = mutableSetOf<String>()
+        val fromStreams = array("trailerStreams").mapNotNull { element ->
+            val stream = element as? JsonObject ?: return@mapNotNull null
+            val name = listOf("title", "name", "description")
+                .firstNotNullOfOrNull { field -> stream.string(field)?.trim()?.takeIf(String::isNotBlank) }
+            val thumbnail = stream.string("thumbnail")?.trim()?.takeIf(String::isNotBlank)
+            val ytId = stream.string("ytId")?.trim()?.takeIf(String::isNotBlank)
+            if (ytId != null) {
+                if (!seenYouTubeKeys.add(ytId)) return@mapNotNull null
+                return@mapNotNull MetaTrailer(
+                    id = ytId,
+                    key = ytId,
+                    name = name ?: runBlocking { getString(Res.string.generic_trailer) },
+                    site = "YouTube",
+                    thumbnail = thumbnail,
+                )
+            }
+            val url = stream.string("url")?.trim()
+                ?.takeIf { it.startsWith("https://", ignoreCase = true) || it.startsWith("http://", ignoreCase = true) }
+                ?: return@mapNotNull null
+            if (!seenUrls.add(url)) return@mapNotNull null
+            MetaTrailer(
+                id = url,
+                key = url,
+                name = name ?: runBlocking { getString(Res.string.generic_trailer) },
+                site = "Direct",
+                url = url,
+                thumbnail = thumbnail,
+            )
+        }
+        return legacy + fromStreams
+    }
+
+    private fun JsonObject.legacyTrailers(): List<MetaTrailer> =
         array("trailers").mapNotNull { element ->
             val trailer = element as? JsonObject ?: return@mapNotNull null
             val key = trailer.string("key")

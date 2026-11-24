@@ -921,7 +921,12 @@ object TmdbMetadataService {
         }
 
         if (enrichment != null && settings.useTrailers && enrichment.trailers.isNotEmpty()) {
-            updated = updated.copy(trailers = enrichment.trailers)
+            val tmdbTrailersByKey = enrichment.trailers.associateBy { it.key }
+            val addonTrailers = updated.trailers.map { trailer -> tmdbTrailersByKey[trailer.key] ?: trailer }
+            val addonKeys = addonTrailers.mapTo(mutableSetOf()) { it.key }
+            updated = updated.copy(
+                trailers = (addonTrailers + enrichment.trailers.filter { it.key !in addonKeys }).distinctBy { it.key },
+            )
         }
 
         return updated
@@ -1908,6 +1913,7 @@ private fun TmdbVideoResult.toMetaTrailer(
         seasonNumber = seasonNumber,
         displayName = displayName,
         iso6391 = iso6391?.trim()?.takeIf { it.isNotBlank() },
+        fromTmdb = true,
     )
 }
 

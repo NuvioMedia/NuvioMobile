@@ -25,6 +25,37 @@ class MetaDetailsParserTest {
     }
 
     @Test
+    fun `parse reads trailer streams with direct urls and youtube ids`() {
+        val result = MetaDetailsParser.parse(
+            """
+            {
+              "meta": {
+                "id": "tt1",
+                "type": "movie",
+                "name": "Movie",
+                "trailers": [{ "source": "aaaaaaaaaaa", "type": "Trailer", "name": "Legacy" }],
+                "trailerStreams": [
+                  { "ytId": "aaaaaaaaaaa", "title": "Duplicate" },
+                  { "url": "https://cdn.example/trailer.mp4", "title": "Plex 1080p", "thumbnail": "https://cdn.example/thumb.jpg" },
+                  { "url": "https://cdn.example/trailer.mp4", "name": "Duplicate" },
+                  { "url": "magnet:?xt=urn:btih:abc", "name": "Torrent" },
+                  { "ytId": "bbbbbbbbbbb", "name": "Teaser" }
+                ]
+              }
+            }
+            """.trimIndent(),
+        )
+
+        assertEquals(listOf("aaaaaaaaaaa", "https://cdn.example/trailer.mp4", "bbbbbbbbbbb"), result.trailers.map { it.key })
+        val direct = result.trailers[1]
+        assertEquals("https://cdn.example/trailer.mp4", direct.url)
+        assertEquals("Plex 1080p", direct.name)
+        assertEquals("https://cdn.example/thumb.jpg", direct.thumbnail)
+        assertEquals("Teaser", result.trailers[2].name)
+        assertNull(result.trailers[2].url)
+    }
+
+    @Test
     fun `parse accepts bare meta object response`() {
         val result = MetaDetailsParser.parse(
             """

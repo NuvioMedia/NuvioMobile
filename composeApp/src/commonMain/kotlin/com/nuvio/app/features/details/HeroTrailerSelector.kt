@@ -3,10 +3,12 @@ package com.nuvio.app.features.details
 internal fun selectHeroTrailer(trailers: List<MetaTrailer>): MetaTrailer? =
     trailers
         .asSequence()
-        .filter { it.isPlayableYouTubeTrailerCandidate() }
+        .filter { it.url != null || it.isPlayableYouTubeTrailerCandidate() }
         .distinctBy { it.key }
         .maxWithOrNull(
             compareBy<MetaTrailer>(
+                { it.fromTmdb },
+                { it.url != null },
                 { it.heroTrailerPriority() },
                 { it.publishedAt.orEmpty() },
                 { it.size ?: 0 },

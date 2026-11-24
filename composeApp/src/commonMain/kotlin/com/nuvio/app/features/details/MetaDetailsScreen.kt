@@ -760,7 +760,9 @@ fun MetaDetailsScreen(
                     if (!deferredMetaWorkAllowed || !heroTrailerPlaybackEnabled || heroTrailerCandidate == null) {
                         return@LaunchedEffect
                     }
-                    val resolvedSource = runCatching {
+                    val resolvedSource = heroTrailerCandidate.url?.let { url ->
+                        TrailerPlaybackSource(videoUrl = url)
+                    } ?: runCatching {
                         TrailerPlaybackResolver.resolveFromYouTubeUrl(heroTrailerCandidate.youtubePlaybackUrl())
                     }.getOrNull()
                     if (resolvedSource == null) {
@@ -780,6 +782,12 @@ fun MetaDetailsScreen(
                         val youtubeUrl = trailer.youtubePlaybackUrl()
                         if (!inAppTrailerPlaybackEnabled) {
                             runCatching { uriHandler.openUri(youtubeUrl) }
+                        } else if (trailer.url != null) {
+                            selectedTrailer = trailer
+                            trailerPlaybackSource = TrailerPlaybackSource(videoUrl = trailer.url)
+                            trailerErrorMessage = null
+                            trailerLoading = false
+                            trailerRequestToken += 1
                         } else {
                             selectedTrailer = trailer
                             trailerPlaybackSource = null
@@ -2421,6 +2429,7 @@ private fun ConfiguredMetaSections(
                         onTrailerClick = onTrailerClick,
                         showHeader = showHeader,
                         horizontalScrollPadding = horizontalScrollPadding,
+                        fallbackThumbnail = meta.background ?: meta.poster,
                     )
                 }
             }

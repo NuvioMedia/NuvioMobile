@@ -58,6 +58,7 @@ fun DetailTrailersSection(
     modifier: Modifier = Modifier,
     showHeader: Boolean = true,
     horizontalScrollPadding: Dp = 0.dp,
+    fallbackThumbnail: String? = null,
 ) {
     if (trailers.isEmpty()) return
 
@@ -173,6 +174,7 @@ fun DetailTrailersSection(
                 ) { _, trailer ->
                     TrailerCard(
                         trailer = trailer,
+                        fallbackThumbnail = fallbackThumbnail,
                         cardWidth = sizing.cardWidth,
                         cornerRadius = sizing.cardRadius,
                         titleFontSize = sizing.titleFontSize,
@@ -188,6 +190,7 @@ fun DetailTrailersSection(
 @Composable
 private fun TrailerCard(
     trailer: MetaTrailer,
+    fallbackThumbnail: String?,
     cardWidth: androidx.compose.ui.unit.Dp,
     cornerRadius: androidx.compose.ui.unit.Dp,
     titleFontSize: androidx.compose.ui.unit.TextUnit,
@@ -209,7 +212,11 @@ private fun TrailerCard(
                 .clickable(onClick = onClick),
         ) {
             AsyncImage(
-                model = "https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg",
+                model = if (trailer.url != null) {
+                    trailer.thumbnail ?: fallbackThumbnail
+                } else {
+                    "https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg"
+                },
                 contentDescription = trailer.displayName ?: trailer.name,
                 modifier = Modifier
                     .fillMaxWidth()

@@ -3,6 +3,7 @@ package com.nuvio.app.features.tmdb
 import com.nuvio.app.features.details.MetaCompany
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaPerson
+import com.nuvio.app.features.details.MetaTrailer
 import com.nuvio.app.features.details.MetaVideo
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -197,6 +198,55 @@ class TmdbMetadataServiceTest {
 
         assertEquals(base.releaseInfo, result.releaseInfo)
         assertEquals(base.lastAirDate, result.lastAirDate)
+    }
+
+    @Test
+    fun `applyEnrichment merges addon trailers with TMDB trailers`() {
+        val addonYouTube = MetaTrailer(id = "yt", key = "aaaaaaaaaaa", name = "Addon", site = "YouTube")
+        val addonDirect = MetaTrailer(
+            id = "https://cdn.example/trailer.mp4",
+            key = "https://cdn.example/trailer.mp4",
+            name = "Direct",
+            site = "Direct",
+            url = "https://cdn.example/trailer.mp4",
+        )
+        val tmdbTrailer = MetaTrailer(id = "tmdb", key = "bbbbbbbbbbb", name = "TMDB", site = "YouTube", fromTmdb = true)
+        val tmdbDuplicate = MetaTrailer(id = "tmdb-dup", key = "aaaaaaaaaaa", name = "TMDB copy", site = "YouTube", fromTmdb = true)
+        val base = MetaDetails(
+            id = "tt1234567",
+            type = "movie",
+            name = "Movie",
+            trailers = listOf(addonYouTube, addonDirect),
+        )
+
+        val result = TmdbMetadataService.applyEnrichment(
+            meta = base,
+            enrichment = TmdbEnrichment(
+                localizedTitle = null,
+                description = null,
+                genres = emptyList(),
+                backdrop = null,
+                logo = null,
+                poster = null,
+                people = emptyList(),
+                director = emptyList(),
+                writer = emptyList(),
+                releaseInfo = null,
+                rating = null,
+                runtimeMinutes = null,
+                ageRating = null,
+                status = null,
+                countries = emptyList(),
+                language = null,
+                productionCompanies = emptyList(),
+                networks = emptyList(),
+                trailers = listOf(tmdbTrailer, tmdbDuplicate),
+            ),
+            episodeMap = emptyMap(),
+            settings = TmdbSettings(enabled = true),
+        )
+
+        assertEquals(listOf("tmdb-dup", "https://cdn.example/trailer.mp4", "tmdb"), result.trailers.map { it.id })
     }
 
     @Test
