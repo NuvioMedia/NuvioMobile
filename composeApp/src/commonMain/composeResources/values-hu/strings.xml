@@ -1184,7 +1184,7 @@
     <string name="settings_playback_render_scale_description">Az alacsonyabb felbontás javítja a teljesítményt az erősen formázott (typesetting) feliratoknál, a képélesség rovására</string>
     <string name="settings_playback_render_mode">ASS-renderelési mód</string>
     <string name="settings_playback_render_mode_description">Hogyan kerüljenek rá az ASS/SSA feliratok a videóra</string>
-    <string name="settings_playback_render_mode_tunneled">Az alagutalt (tunneled) lejátszás megkerüli a videóeffekt-feldolgozást, ezért automatikusan az Átfedés mód lesz használva.</string>
+    <string name="settings_playback_render_mode_tunneled">A közvetlen hardveres (tunneled) lejátszás megkerüli a videóeffekt-feldolgozást, ezért automatikusan az Átfedés mód lesz használva.</string>
     <string name="settings_playback_render_mode_video_effect">Videóeffekt</string>
     <string name="settings_playback_render_mode_video_effect_description">A feliratokat közvetlenül az egyes videóképkockákra rajzolja. Képkockapontos időzítés minden hardveren. A HDR-tartalom SDR-re tónusleképezve jelenik meg.</string>
     <string name="settings_playback_render_mode_overlay">Átfedés (Overlay)</string>
@@ -1273,7 +1273,7 @@
     <string name="settings_playback_timeout_instant">Azonnali</string>
     <string name="settings_playback_timeout_seconds">%1$ss</string>
     <string name="settings_playback_timeout_unlimited">Korlátlan</string>
-    <string name="settings_playback_tunneled_playback">Alagutalt lejátszás</string>
+    <string name="settings_playback_tunneled_playback">Közvetlen hardveres lejátszás (Tunneled)</string>
     <string name="settings_playback_tunneled_playback_description">Hardverszintű hang- és videószinkronizáció. Javíthatja a lejátszást egyes Android TV-eszközökön.</string>
     <string name="settings_playback_exo_native_memory">ExoPlayer natív memória</string>
     <string name="settings_playback_exo_native_memory_description">A lejátszási pufferek natív memóriában tartása a Java heap helyett, így a nagy fájlok memóriaterhelés nélkül tovább pufferelhetők előre.</string>
