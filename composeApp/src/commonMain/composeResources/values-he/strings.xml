@@ -1,3 +1,8 @@
+<!--
+Hebrew: Android looks for values-iw (it reports Hebrew with the legacy language code "iw"),
+while iOS and desktop look for values-he.
+Therefore, duplicate the values-he directory as values-iw. Keep both directories in the project.
+-->
 <resources>
     <string name="theme_gold">זהב</string>
     <string name="theme_jade">ירקן</string>
