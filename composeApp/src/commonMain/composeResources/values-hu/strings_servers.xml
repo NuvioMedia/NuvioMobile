@@ -16,7 +16,7 @@
     <string name="servers_connecting">Csatlakozás…</string>
     <string name="servers_libraries">KÖNYVTÁRAK</string>
     <string name="servers_libraries_description">A kiválasztott könyvtárak megjelennek a kezdőlap soraiban, a keresésben és a streamtalálatok között.</string>
-    <string name="servers_no_libraries">Ez a felhasználó egyetlen film- vagy sorozatkönyvtárhoz sem fér hozzá.</string>
+    <string name="servers_no_libraries">Ennek a felhasználónak nincs elérhető film- vagy sorozatkönyvtára.</string>
     <string name="servers_refresh_libraries">Könyvtárak frissítése</string>
     <string name="servers_enabled">Engedélyezve</string>
     <string name="servers_enabled_description">A szerver megjelenítése a Kezdőlapon, a keresésben és a streamtalálatok között.</string>

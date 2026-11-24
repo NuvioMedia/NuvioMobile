@@ -212,11 +212,11 @@
     <string name="collections_editor_tmdb_votes_helper">Így kiszűrheted a kevéssé ismert, kevés szavazatot kapott címeket. Például: 100.</string>
     <string name="collections_editor_tmdb_votes_min_placeholder">100</string>
     <string name="collections_editor_tmdb_language">Eredeti nyelv</string>
-    <string name="collections_editor_tmdb_language_helper">Használj kétbetűs nyelvkódokat, például: en, ko, ja, hi.</string>
-    <string name="collections_editor_tmdb_language_placeholder">en, ko, ja, hi</string>
+    <string name="collections_editor_tmdb_language_helper">Használj kétbetűs nyelvkódokat, például: en, hu, ja, ko.</string>
+    <string name="collections_editor_tmdb_language_placeholder">en, hu, ja, ko</string>
     <string name="collections_editor_tmdb_country">Származási ország</string>
-    <string name="collections_editor_tmdb_country_helper">Használj kétbetűs országkódokat, például: US, KR, JP, IN.</string>
-    <string name="collections_editor_tmdb_country_placeholder">US, KR, JP, IN</string>
+    <string name="collections_editor_tmdb_country_helper">Használj kétbetűs országkódokat, például: US, HU, KR, JP.</string>
+    <string name="collections_editor_tmdb_country_placeholder">US, HU, KR, JP</string>
     <string name="collections_editor_tmdb_keywords">Kulcsszóazonosítók (ID)</string>
     <string name="collections_editor_tmdb_keywords_helper">Használj TMDB-kulcsszószámokat. A gyorsgombokkal gyakori értékeket adhatsz meg.</string>
     <string name="collections_editor_tmdb_keywords_placeholder">9715: szuperhős</string>
@@ -1048,7 +1048,7 @@
     <string name="community_membership_connected_description">Nem található aktív Nuvio-szint ezen a Patreon-fiókon. Nézd meg az elérhető lehetőségeket, vagy ha módosítottad a Patreon-tagságodat, frissíts.</string>
     <string name="community_membership_manage">Tagság kezelése</string>
     <string name="community_membership_refresh">Frissítés</string>
-    <string name="community_membership_refreshing">Frissítés...</string>
+    <string name="community_membership_refreshing">Frissítés…</string>
     <string name="community_membership_unable_load">A tagsági státusz nem tölthető be. Kérjük, próbáld újra.</string>
     <string name="community_membership_tier_supporter">Támogató</string>
     <string name="community_membership_tier_supporter_plus">Támogató Plusz</string>
@@ -2222,7 +2222,7 @@
     <string name="submit_intro_title">Időbélyegek beküldése</string>
     <string name="submit_intro_segment_type">SZAKASZ TÍPUSA</string>
     <string name="submit_intro_segment_intro">Intró (főcím)</string>
-    <string name="submit_intro_segment_recap">Recap (összefoglaló)</string>
+    <string name="submit_intro_segment_recap">Összefoglaló (Recap)</string>
     <string name="submit_intro_segment_outro">Outró (stáblista)</string>
     <string name="submit_intro_start_time">KEZDÉS IDEJE (MM:SS)</string>
     <string name="submit_intro_end_time">BEFEJEZÉS IDEJE (MM:SS)</string>
@@ -2236,7 +2236,7 @@
     <!-- Collection editor -->
     <string name="collections_editor_resolved_trakt_list">Megtalált Trakt-lista</string>
     <string name="collections_editor_tmdb_discover">TMDB-felfedezés</string>
-    <string name="collections_editor_watch_region_placeholder">US, KR, JP, IN</string>
+    <string name="collections_editor_watch_region_placeholder">US, HU, KR, JP</string>
     <!-- Collection editor error messages -->
     <string name="collections_editor_trakt_input_required">Adj meg egy Trakt-lista-nevet, URL-t vagy azonosítót (ID)</string>
     <string name="collections_editor_tmdb_invalid_id_error">Adj meg egy érvényes TMDB-azonosítót (ID) vagy URL-t.</string>
