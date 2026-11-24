@@ -1,0 +1,130 @@
+name: Nuvio Face
+# Builds Nuvio Face: Dave's Netflix-style Nuvio, as its own app (com.dave.nuvioface) for arm64 phones like the S25+.
+# Installs next to the official Nuvio and Nuvio Auto.
+#
+# Repository secrets (Settings > Secrets and variables > Actions), all optional:
+#   NUVIO_AUTO_KEYSTORE_B64   signing key (base64 .jks), so every new build installs over the last one
+#   NUVIO_SUPABASE_URL        } Nuvio account server; defaults to Nuvio's public web client values below
+#   NUVIO_SUPABASE_ANON_KEY   }
+#   NUVIO_SUPABASE_FALLBACK_URL, TMDB_API_KEY, TRAKT_CLIENT_ID, TRAKT_CLIENT_SECRET, SIMKL_CLIENT_ID,
+#   MDBLIST_CLIENT_ID, PREMIUMIZE_CLIENT_ID, INTRODB_API_URL, IMDB_RATINGS_API_BASE_URL, IMDB_TAPFRAME_API_BASE_URL
+
+on:
+  push:
+    branches: [netflix-face]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nuvio-auto-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Properties and signing key
+        env:
+          NUVIO_AUTO_KEYSTORE_B64: ${{ secrets.NUVIO_AUTO_KEYSTORE_B64 }}
+          NUVIO_SUPABASE_URL: ${{ secrets.NUVIO_SUPABASE_URL }}
+          NUVIO_SUPABASE_ANON_KEY: ${{ secrets.NUVIO_SUPABASE_ANON_KEY }}
+          NUVIO_SUPABASE_FALLBACK_URL: ${{ secrets.NUVIO_SUPABASE_FALLBACK_URL }}
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          TRAKT_CLIENT_ID: ${{ secrets.TRAKT_CLIENT_ID }}
+          TRAKT_CLIENT_SECRET: ${{ secrets.TRAKT_CLIENT_SECRET }}
+          SIMKL_CLIENT_ID: ${{ secrets.SIMKL_CLIENT_ID }}
+          MDBLIST_CLIENT_ID: ${{ secrets.MDBLIST_CLIENT_ID }}
+          PREMIUMIZE_CLIENT_ID: ${{ secrets.PREMIUMIZE_CLIENT_ID }}
+          INTRODB_API_URL: ${{ secrets.INTRODB_API_URL }}
+          IMDB_RATINGS_API_BASE_URL: ${{ secrets.IMDB_RATINGS_API_BASE_URL }}
+          IMDB_TAPFRAME_API_BASE_URL: ${{ secrets.IMDB_TAPFRAME_API_BASE_URL }}
+        shell: bash
+        run: |
+          : > local.properties
+          for name in NUVIO_SUPABASE_URL NUVIO_SUPABASE_ANON_KEY NUVIO_SUPABASE_FALLBACK_URL TMDB_API_KEY \
+            TRAKT_CLIENT_ID TRAKT_CLIENT_SECRET SIMKL_CLIENT_ID MDBLIST_CLIENT_ID PREMIUMIZE_CLIENT_ID \
+            INTRODB_API_URL IMDB_RATINGS_API_BASE_URL IMDB_TAPFRAME_API_BASE_URL; do
+            value="${!name}"
+            if [ -n "$value" ]; then
+              printf '%s=%s\n' "$name" "$value" >> local.properties
+              echo "$name: set"
+            else
+              echo "$name: not set"
+            fi
+          done
+          # No secrets: fall back to the Nuvio account server's public client values (the ones Nuvio's web
+          # client ships), so sign-in, sync and profiles work without any setup.
+          if [ -z "$NUVIO_SUPABASE_URL" ] || [ -z "$NUVIO_SUPABASE_ANON_KEY" ]; then
+            echo "Nuvio account server: using the public Nuvio web client values"
+            sed -i '/^NUVIO_SUPABASE_URL=/d;/^NUVIO_SUPABASE_ANON_KEY=/d' local.properties
+            printf 'NUVIO_SUPABASE_URL=%s\n' "https://api.nuvio.tv" >> local.properties
+            printf 'NUVIO_SUPABASE_ANON_KEY=%s\n' "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgxNTIxMzQ2LCJleHAiOjE5MzkyMDEzNDZ9.tmQaj682pwzehpqlgCDMnySOqiUvpgRbrE43T4VJpDI" >> local.properties
+          fi
+
+          keystore="$RUNNER_TEMP/nuvio-auto.jks"
+          if [ -n "$NUVIO_AUTO_KEYSTORE_B64" ]; then
+            printf '%s' "$NUVIO_AUTO_KEYSTORE_B64" | base64 --decode > "$keystore"
+          else
+            echo "::warning::NUVIO_AUTO_KEYSTORE_B64 is not set: this APK has a one-off key and won't install over other builds."
+            keytool -genkeypair -keystore "$keystore" -storetype PKCS12 -storepass nuvioauto -keypass nuvioauto \
+              -alias nuvioauto -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Nuvio Auto"
+          fi
+          {
+            printf 'NUVIO_RELEASE_STORE_FILE=%s\n' "$keystore"
+            printf 'NUVIO_RELEASE_STORE_PASSWORD=nuvioauto\n'
+            printf 'NUVIO_RELEASE_KEY_ALIAS=nuvioauto\n'
+            printf 'NUVIO_RELEASE_KEY_PASSWORD=nuvioauto\n'
+          } >> local.properties
+
+      # The runner has 16 GB; the repo's 12 GB Gradle + 8 GB Kotlin daemon settings can get it killed in R8.
+      - name: Fit Gradle memory to the runner
+        run: |
+          sed -i 's/^org.gradle.jvmargs=.*/org.gradle.jvmargs=-Xmx8g -XX:MaxMetaspaceSize=1g -Dfile.encoding=UTF-8/' gradle.properties
+          sed -i 's/^kotlin.daemon.jvmargs=.*/kotlin.daemon.jvmargs=-Xmx3g/' gradle.properties
+          grep -E "jvmargs" gradle.properties
+
+      - name: Name it Nuvio Face
+        run: |
+          sed -i 's|<string name="app_name">Nuvio Auto</string>|<string name="app_name">Nuvio Face</string>|' androidApp/src/main/res/values/car_strings.xml
+          sed -i 's|<string name="car_app_label">Nuvio</string>|<string name="car_app_label">Nuvio Face</string>|' androidApp/src/main/res/values/car_strings.xml
+          sed -i 's|<string name="car_setup_label">Nuvio Auto Setup</string>|<string name="car_setup_label">Nuvio Face Setup</string>|' androidApp/src/main/res/values/car_strings.xml
+          grep -n "string name" androidApp/src/main/res/values/car_strings.xml
+
+      - name: Build release APK
+        run: >
+          ./gradlew :androidApp:assembleFullRelease
+          -Pnuvio.android.distribution=full
+          -Pnuvio.ios.distribution=appstore
+          -Pnuvio.applicationId=com.dave.nuvioface
+          --stacktrace
+
+      - name: Collect APK
+        shell: bash
+        run: |
+          ls -la androidApp/build/outputs/apk/full/release/
+          mkdir -p out
+          apk="$(ls androidApp/build/outputs/apk/full/release/*arm64-v8a*.apk | head -n1)"
+          cp "$apk" "out/NuvioFace-${GITHUB_RUN_NUMBER}-arm64.apk"
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v7
+        with:
+          path: out/NuvioFace-${{ github.run_number }}-arm64.apk
+          archive: false
+          if-no-files-found: error
+          retention-days: 30
