@@ -46,8 +46,8 @@ class MetaDetailsParserTest {
             """.trimIndent(),
         )
 
-        assertEquals(listOf("aaaaaaaaaaa", "https://cdn.example/trailer.mp4", "bbbbbbbbbbb"), result.trailers.map { it.key })
-        val direct = result.trailers[1]
+        assertEquals(listOf("https://cdn.example/trailer.mp4", "aaaaaaaaaaa", "bbbbbbbbbbb"), result.trailers.map { it.key })
+        val direct = result.trailers[0]
         assertEquals("https://cdn.example/trailer.mp4", direct.url)
         assertEquals("Plex 1080p", direct.name)
         assertEquals("https://cdn.example/thumb.jpg", direct.thumbnail)
@@ -77,8 +77,8 @@ class MetaDetailsParserTest {
             """.trimIndent(),
         )
 
-        assertEquals(listOf("aaaaaaaaaaa", "bbbbbbbbbbb", "https://cdn.example/trailer.mp4"), result.trailers.map { it.key })
-        val direct = result.trailers[2]
+        assertEquals(listOf("https://cdn.example/trailer.mp4", "aaaaaaaaaaa", "bbbbbbbbbbb"), result.trailers.map { it.key })
+        val direct = result.trailers[0]
         assertEquals("https://cdn.example/trailer.mp4", direct.url)
         assertEquals("Plex 1080p", direct.name)
         assertEquals("https://cdn.example/thumb.jpg", direct.thumbnail)

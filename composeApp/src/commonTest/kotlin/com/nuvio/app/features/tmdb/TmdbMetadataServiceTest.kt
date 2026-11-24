@@ -246,7 +246,7 @@ class TmdbMetadataServiceTest {
             settings = TmdbSettings(enabled = true),
         )
 
-        assertEquals(listOf("tmdb-dup", "https://cdn.example/trailer.mp4", "tmdb"), result.trailers.map { it.id })
+        assertEquals(listOf("tmdb", "tmdb-dup", "https://cdn.example/trailer.mp4"), result.trailers.map { it.id })
     }
 
     @Test

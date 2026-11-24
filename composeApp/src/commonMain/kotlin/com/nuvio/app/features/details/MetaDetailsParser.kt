@@ -339,7 +339,7 @@ internal object MetaDetailsParser {
                 thumbnail = thumbnail,
             )
         }
-        return legacy + fromStreams
+        return (legacy + fromStreams).sortedByDescending { it.url != null }
     }
 
     private fun JsonObject.legacyTrailers(streamNamesByYouTubeKey: Map<String, String>): List<MetaTrailer> =

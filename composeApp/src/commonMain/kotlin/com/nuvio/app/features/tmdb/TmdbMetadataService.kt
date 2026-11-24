@@ -921,12 +921,7 @@ object TmdbMetadataService {
         }
 
         if (enrichment != null && settings.useTrailers && enrichment.trailers.isNotEmpty()) {
-            val tmdbTrailersByKey = enrichment.trailers.associateBy { it.key }
-            val addonTrailers = updated.trailers.map { trailer -> tmdbTrailersByKey[trailer.key] ?: trailer }
-            val addonKeys = addonTrailers.mapTo(mutableSetOf()) { it.key }
-            updated = updated.copy(
-                trailers = (addonTrailers + enrichment.trailers.filter { it.key !in addonKeys }).distinctBy { it.key },
-            )
+            updated = updated.copy(trailers = (enrichment.trailers + updated.trailers).distinctBy { it.key })
         }
 
         return updated
