@@ -1,0 +1,17 @@
+<resources>
+    <string name="rating_rate">Classificar</string>
+    <string name="rating_your_rating">A tua classificação</string>
+    <string name="rating_rate_episode">Classificar episódio</string>
+    <string name="rating_rated">Classificado com %1$s/10</string>
+    <string name="rating_value">%1$s em 10</string>
+    <string name="rating_syncs_to">Sincroniza com %1$s</string>
+    <string name="rating_saved">Classificação guardada</string>
+    <string name="rating_removed">Classificação removida</string>
+    <string name="rating_failed">Não foi possível atualizar a tua classificação em %1$s</string>
+    <string name="settings_tracking_ratings">Classificações</string>
+    <string name="settings_tracking_ratings_description">Onde as tuas classificações são guardadas e apresentadas</string>
+    <string name="settings_tracking_ratings_picker_subtitle">Classifica títulos a partir da página de detalhes. As tuas classificações são guardadas e mostradas a partir do serviço que escolheres.</string>
+    <string name="settings_tracking_ratings_off_description">Ocultar o botão de classificação.</string>
+    <string name="settings_tracking_ratings_simkl_description">Classifica filmes e séries. Classificar um título que não está nas tuas listas do Simkl adiciona-o a elas.</string>
+    <string name="settings_tracking_ratings_mdblist_description">Classifica filmes, séries e episódios.</string>
+</resources>
