@@ -122,4 +122,41 @@ class SpotAudioSyncEngineTest {
             engine.release()
         }
     }
+
+    @Test
+    fun playlistStreamsSkipSpotSamplingWhileDirectMp4Samples() {
+        val playlistReader = RecordingReader(unmetered = true)
+        val playlistEngine = SpotAudioSyncEngine(
+            playlistReader,
+            NoRecognizers(),
+            log = { synchronized(logLock) { logs += it } },
+            onStatus = {},
+        )
+        try {
+            playlistEngine.samplingMode = AudioSamplingMode.LOW
+            playlistEngine.setSource("https://example.com/live/master.m3u8?token=abc", emptyMap())
+            playlistEngine.startSession("https://example.com/subtitle.srt", dialogue())
+            assertTrue(drive(playlistEngine) { logs().contains("playlist streams") }, logs())
+            assertTrue(playlistReader.requests().isEmpty(), logs())
+        } finally {
+            playlistEngine.release()
+        }
+
+        val mp4Reader = RecordingReader(unmetered = true)
+        val mp4Engine = SpotAudioSyncEngine(
+            mp4Reader,
+            NoRecognizers(),
+            log = { synchronized(logLock) { logs += it } },
+            onStatus = {},
+        )
+        try {
+            mp4Engine.samplingMode = AudioSamplingMode.LOW
+            mp4Engine.setSource("https://example.com/film.mp4?fallback=master.m3u8", emptyMap())
+            mp4Engine.startSession("https://example.com/subtitle.srt", dialogue())
+            assertTrue(drive(mp4Engine) { mp4Reader.requests().isNotEmpty() }, logs())
+            assertEquals("https://example.com/film.mp4?fallback=master.m3u8", mp4Reader.requests().single().url)
+        } finally {
+            mp4Engine.release()
+        }
+    }
 }

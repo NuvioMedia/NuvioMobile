@@ -163,13 +163,17 @@ private final class AudioSyncSpotDecoder {
             return AudioSyncNativeSpotResult(sampled: 0, bytes: 0, failure: "out of memory")
         }
         let timeBase = stream.pointee.time_base
+        let startTimeUs: Int64 = context.pointee.start_time != audioSyncNoTimestamp
+            ? context.pointee.start_time
+            : 0
         let startedAt = Date()
         var sampled: Int32 = 0
         var totalBytes: Int64 = 0
         var failure: String?
         for (index, spotStartMs) in spotsMs.enumerated() {
             if sink.isCancelled() || totalBytes >= maxBytes { break }
-            guard av_seek_frame(context, -1, spotStartMs * 1_000, AVSEEK_FLAG_BACKWARD) >= 0 else {
+            let seekTargetUs = spotStartMs * 1_000 + startTimeUs
+            guard av_seek_frame(context, -1, seekTargetUs, AVSEEK_FLAG_BACKWARD) >= 0 else {
                 failure = "stream cannot seek"
                 break
             }
@@ -187,7 +191,7 @@ private final class AudioSyncSpotDecoder {
                 guard packet.pointee.stream_index == Int32(streamIndex) else { continue }
                 let rawTime = packet.pointee.pts != audioSyncNoTimestamp ? packet.pointee.pts : packet.pointee.dts
                 guard rawTime != audioSyncNoTimestamp else { continue }
-                let timeUs = av_rescale_q(rawTime, timeBase, microseconds)
+                let timeUs = av_rescale_q(rawTime, timeBase, microseconds) - startTimeUs
                 if firstUs == nil {
                     if abs(timeUs / 1_000 - spotStartMs) > audioSyncMaxSeekMissMs {
                         seekMissed = true
@@ -207,7 +211,15 @@ private final class AudioSyncSpotDecoder {
                 ) {
                     break
                 }
-                decode(packet: packet, decoder: decoder, frame: frame, resampler: resampler, timeBase: timeBase, sink: sink)
+                decode(
+                    packet: packet,
+                    decoder: decoder,
+                    frame: frame,
+                    resampler: resampler,
+                    timeBase: timeBase,
+                    startTimeUs: startTimeUs,
+                    sink: sink
+                )
             }
             resampler.close()
             if seekMissed {
@@ -240,6 +252,7 @@ private final class AudioSyncSpotDecoder {
         frame: UnsafeMutablePointer<AVFrame>,
         resampler: AudioSyncResampler,
         timeBase: AVRational,
+        startTimeUs: Int64,
         sink: any AudioSyncNativePcmSink
     ) {
         guard avcodec_send_packet(decoder, packet) >= 0 else { return }
@@ -250,7 +263,8 @@ private final class AudioSyncSpotDecoder {
             let bestEffort = frame.pointee.best_effort_timestamp
             let rawTime = bestEffort != audioSyncNoTimestamp ? bestEffort : frame.pointee.pts
             guard rawTime != audioSyncNoTimestamp else { continue }
-            let timeUs = av_rescale_q(rawTime, timeBase, microseconds)
+            let timeUs = av_rescale_q(rawTime, timeBase, microseconds) - startTimeUs
+            guard timeUs >= 0 else { continue }
             guard let samples = resampler.convert(frame: frame), !samples.isEmpty else { continue }
             let data = samples.withUnsafeBytes { Data($0) }
             sink.onPcm(samples: data, frames: Int32(samples.count), sampleRate: audioSyncSampleRate, timeUs: timeUs)

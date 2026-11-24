@@ -132,6 +132,9 @@ internal class SpotAudioSyncEngine(
     private var spotDeclined = false
 
     @Volatile
+    private var spotUnavailableReason: String? = null
+
+    @Volatile
     private var candidates: List<AudioSyncReference> = emptyList()
 
     @Volatile
@@ -189,6 +192,7 @@ internal class SpotAudioSyncEngine(
         if (url == sourceUrl) return
         sourceUrl = url
         sourceHeaders = headers
+        spotUnavailableReason = if (isPlaylistUrl(url)) "not available for playlist streams" else null
         timeline.clear()
         asr.clear()
         spotSamplingStarted.value = false
@@ -579,6 +583,10 @@ internal class SpotAudioSyncEngine(
         if (!enabled || released || (model != null && !estimated)) return
         if (mediaDurationMs < MIN_SAMPLED_FILM_MS) return
         if (!spotSamplingStarted.compareAndSet(expect = false, update = true)) return
+        spotUnavailableReason?.let { reason ->
+            log("audio sampling skipped: $reason")
+            return
+        }
         if (samplingMode == AudioSamplingMode.OFF) {
             log("audio sampling across the film is off")
             spotDeclined = true
@@ -722,6 +730,20 @@ internal class SpotAudioSyncEngine(
             val words = dialogue.asSequence().flatMap { WordAnchorMatcher.tokenize(it.third) }.take(2_000).toList()
             if (words.size < 50) return false
             return words.count { it in englishStopWords } >= words.size * 0.15
+        }
+
+        private fun isPlaylistUrl(url: String): Boolean {
+            val path = urlPath(url)
+            return path.endsWith(".m3u8") || path.endsWith(".mpd")
+        }
+
+        private fun urlPath(url: String): String {
+            val afterScheme = url.indexOf("://").let { if (it >= 0) url.substring(it + 3) else url }
+            val pathStart = afterScheme.indexOf('/')
+            if (pathStart < 0) return ""
+            val pathWithQuery = afterScheme.substring(pathStart)
+            val end = pathWithQuery.indexOfFirst { it == '?' || it == '#' }
+            return (if (end >= 0) pathWithQuery.substring(0, end) else pathWithQuery).lowercase()
         }
     }
 }
