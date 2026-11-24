@@ -1,7 +1,6 @@
 package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
-import com.nuvio.app.core.build.TrailerPlaybackMode
 import com.nuvio.app.features.trailer.TrailerPlaybackResolver
 
 /**
@@ -30,7 +29,7 @@ class YouTubeStreamResolver(
     companion object {
         val Default: YouTubeStreamResolver by lazy {
             YouTubeStreamResolver(
-                inAppPlaybackEnabled = AppFeaturePolicy.trailerPlaybackMode == TrailerPlaybackMode.IN_APP,
+                inAppPlaybackEnabled = AppFeaturePolicy.youTubeTrailerPlaybackEnabled,
                 extractSingleUrl = { url -> TrailerPlaybackResolver.resolveSingleUrlFromYouTubeUrl(url) },
             )
         }

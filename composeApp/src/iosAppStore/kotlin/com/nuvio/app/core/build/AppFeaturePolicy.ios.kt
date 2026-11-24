@@ -8,7 +8,8 @@ actual object AppFeaturePolicy {
     actual val accountDeletionEnabled: Boolean = true
     actual val personalMediaAddonCopyEnabled: Boolean = true
     actual val p2pEnabled: Boolean = false
-    actual val trailerPlaybackMode: TrailerPlaybackMode = TrailerPlaybackMode.EXTERNAL
+    actual val trailerPlaybackMode: TrailerPlaybackMode = TrailerPlaybackMode.IN_APP
+    actual val youTubeTrailerPlaybackEnabled: Boolean = false
     actual val heroTrailerPlaybackSupported: Boolean = false
     actual val inAppUpdaterEnabled: Boolean = false
     actual val imdbRatingLogoEnabled: Boolean = false

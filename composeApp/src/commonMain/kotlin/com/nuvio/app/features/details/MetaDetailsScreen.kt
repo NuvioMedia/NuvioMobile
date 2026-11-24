@@ -739,7 +739,9 @@ fun MetaDetailsScreen(
                 var trailerRequestToken by remember(meta.id) { mutableIntStateOf(0) }
                 var isLeavingDetails by remember(meta.id) { mutableStateOf(false) }
                 val heroTrailerCandidate = remember(meta.trailers) {
-                    selectHeroTrailer(meta.trailers)
+                    selectHeroTrailer(
+                        meta.trailers.filter { AppFeaturePolicy.youTubeTrailerPlaybackEnabled || it.url != null },
+                    )
                 }
                 val heroTrailerPlaybackEnabled = AppFeaturePolicy.heroTrailerPlaybackSupported &&
                     inAppTrailerPlaybackEnabled &&
@@ -780,7 +782,7 @@ fun MetaDetailsScreen(
                 val resolveTrailer: (MetaTrailer) -> Unit = remember(meta.id, inAppTrailerPlaybackEnabled, uriHandler) {
                     { trailer ->
                         val youtubeUrl = trailer.youtubePlaybackUrl()
-                        if (!inAppTrailerPlaybackEnabled) {
+                        if (!inAppTrailerPlaybackEnabled || (trailer.url == null && !AppFeaturePolicy.youTubeTrailerPlaybackEnabled)) {
                             runCatching { uriHandler.openUri(youtubeUrl) }
                         } else if (trailer.url != null) {
                             selectedTrailer = trailer
