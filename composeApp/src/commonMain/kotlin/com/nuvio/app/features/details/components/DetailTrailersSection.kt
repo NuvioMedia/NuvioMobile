@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.ui.Menu
 import com.nuvio.app.core.ui.MenuItem
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
@@ -64,8 +65,13 @@ fun DetailTrailersSection(
 
     val trailerLabel = stringResource(Res.string.detail_tab_trailer)
     val grouped = remember(trailers) {
+        val orderedTrailers = if (AppFeaturePolicy.youTubeTrailerPlaybackEnabled) {
+            trailers
+        } else {
+            trailers.sortedByDescending { it.url != null }
+        }
         linkedMapOf<String, MutableList<MetaTrailer>>().apply {
-            trailers.forEach { trailer ->
+            orderedTrailers.forEach { trailer ->
                 val category = trailer.type.ifBlank { trailerLabel }
                 getOrPut(category) { mutableListOf() }.add(trailer)
             }
