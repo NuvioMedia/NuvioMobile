@@ -14,7 +14,7 @@ class FolderCatalogTabLabelTest {
     }
 
     @Test
-    fun `genre stays with the name, before the type`() {
+    fun `genre stays with the name before the type`() {
         assertEquals("Popular · Drama - Series", folderCatalogTabLabel("Popular", "Series", "Drama", showCatalogType = true, withType))
         assertEquals("Popular · Drama", folderCatalogTabLabel("Popular", "Series", "Drama", showCatalogType = false, withType))
     }
