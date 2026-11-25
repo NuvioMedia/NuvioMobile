@@ -56,6 +56,10 @@ internal fun PlayerScreenModalHosts(
     onAutoSyncCueSelected: (SubtitleSyncCue) -> Unit,
     onAutoSyncReload: () -> Unit,
     onSubtitleModalDismissed: () -> Unit,
+    showPlaybackSpeedModal: Boolean = false,
+    currentPlaybackSpeed: Float = 1.0f,
+    onSpeedSelected: (Float) -> Unit = {},
+    onPlaybackSpeedModalDismissed: () -> Unit = {},
     showVideoSettingsModal: Boolean,
     playerSettings: PlayerSettingsUiState,
     onVideoSettingsChanged: () -> Unit,
@@ -142,6 +146,13 @@ internal fun PlayerScreenModalHosts(
         showCenterMix = showCenterMix,
         centerMixLevelDb = centerMixLevelDb,
         onCenterMixLevelChanged = onCenterMixLevelChanged,
+    )
+
+    PlaybackSpeedModal(
+        visible = showPlaybackSpeedModal,
+        currentSpeed = currentPlaybackSpeed,
+        onSpeedSelected = onSpeedSelected,
+        onDismiss = onPlaybackSpeedModalDismissed,
     )
 
     SubtitleModal(
