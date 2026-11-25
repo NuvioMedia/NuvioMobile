@@ -71,9 +71,16 @@ class AudioSubtitleSyncTest {
     fun soundEffectAndLyricCuesAreIgnored() {
         assertTrue(SubtitleSpeechTrack.isDialogue("Where were you?"))
         assertTrue(SubtitleSpeechTrack.isDialogue("JOHN: Where were you?"))
+        assertTrue(SubtitleSpeechTrack.isDialogue("<i>JOHN:</i> Where were you?"))
+        assertTrue(SubtitleSpeechTrack.isDialogue("Hello!\n♪ la la la ♪"))
+        assertTrue(SubtitleSpeechTrack.isDialogue("Hello!\nla la la ♪"))
         assertFalse(SubtitleSpeechTrack.isDialogue("[door slams]"))
         assertFalse(SubtitleSpeechTrack.isDialogue("(thunder rumbling)"))
         assertFalse(SubtitleSpeechTrack.isDialogue("♪ la la la ♪"))
+        assertFalse(SubtitleSpeechTrack.isDialogue("<i>[door slams]</i>"))
+        assertFalse(SubtitleSpeechTrack.isDialogue("<i> ♪ Vampirina ♪</i>"))
+        assertFalse(SubtitleSpeechTrack.isDialogue("<i> ♪ We were normal vampires</i>\n<i> in Transylvania ♪</i>"))
+        assertFalse(SubtitleSpeechTrack.isDialogue("♪ Line 1\nLine 2\nLine 3 ♪"))
     }
 
     @Test

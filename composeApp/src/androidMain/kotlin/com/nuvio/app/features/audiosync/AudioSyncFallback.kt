@@ -131,6 +131,7 @@ internal class AudioSyncFallback private constructor(
     /** Playback time the current takeover has gone without any mapping. */
     private var unmatchedPlayedMs = 0L
     private var unmatchedReported = false
+    private var lockConfirmed = false
 
     private val trackListener = object : Player.Listener {
         override fun onTracksChanged(tracks: Tracks) {
@@ -275,6 +276,7 @@ internal class AudioSyncFallback private constructor(
             appliedModel = null
             unmatchedPlayedMs = 0L
             unmatchedReported = false
+            lockConfirmed = false
             startTicker()
             SyncLog.i("AutoSync kept the original timing of $url; syncing it to the audio")
             controller.startSession(url, cues)
@@ -297,6 +299,7 @@ internal class AudioSyncFallback private constructor(
         appliedModel = null
         unmatchedPlayedMs = 0L
         unmatchedReported = false
+        lockConfirmed = false
         startTicker()
         SyncLog.i("AutoSync kept the original timing of $url on mpv; syncing it to sampled audio")
         controller.startSession(url, cues)
@@ -352,6 +355,7 @@ internal class AudioSyncFallback private constructor(
         }
         appliedModel = null
         pendingStatus = null
+        lockConfirmed = false
         controller.listensBeforeSession = false
         controller.stopSession()
     }
@@ -400,13 +404,15 @@ internal class AudioSyncFallback private constructor(
                     when (status) {
                         is AudioSyncStatus.Synced, is AudioSyncStatus.Adjusted -> {
                             if (appliedModel != null && appliedModel === controller.currentModel()) {
+                                lockConfirmed = true
                                 AutoSyncSyncedSubtitle.mark(current.url)
                             } else if (controller.currentModel() != null) {
                                 pendingStatus = status
                             }
                         }
                         AudioSyncStatus.Withdrawn -> {
-                            if (controller.currentModel() == null) {
+                            if (controller.currentModel() == null && lockConfirmed) {
+                                lockConfirmed = false
                                 statusRun = AutoSyncSyncedSubtitle.start(current.url)
                                 unmatchedPlayedMs = 0L
                                 unmatchedReported = false
@@ -421,7 +427,7 @@ internal class AudioSyncFallback private constructor(
                     }
                 }
                 // Still nothing after a while: log it once, and keep searching.
-                if (current != null && target.get() === current && !unmatchedReported && controller.currentModel() == null) {
+                if (current != null && target.get() === current && !unmatchedReported && !controller.isModelConfirmed) {
                     if (isPlaying) unmatchedPlayedMs += TICK_MS
                     if (unmatchedPlayedMs >= UNMATCHED_REPORT_MS) {
                         unmatchedReported = true

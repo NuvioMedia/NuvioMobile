@@ -305,6 +305,9 @@ internal class AudioSubtitleSyncController(
     /** The mapping currently applied to the session's subtitle (subtitle time -> media time), if any. */
     fun currentModel(): SubtitleSyncModel? = model.takeIf { enabled && session != null }
 
+    /** True when [currentModel] is confirmed rather than an early provisional estimate. */
+    val isModelConfirmed: Boolean get() = enabled && session != null && model != null && !estimated
+
     /** Extra delay to add to the user's subtitle delay at the current playback position. */
     fun autoDelayMs(): Int {
         val current = model ?: return 0

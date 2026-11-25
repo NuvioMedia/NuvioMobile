@@ -205,6 +205,9 @@ internal class SpotAudioSyncEngine(
 
     fun currentModel(): SubtitleSyncModel? = model.takeIf { enabled && session != null }
 
+    /** True when [currentModel] is confirmed rather than an early provisional estimate. */
+    val isModelConfirmed: Boolean get() = enabled && session != null && model != null && !estimated
+
     fun setReferenceSubtitles(list: List<AudioSyncReference>) {
         candidates = list
         if (list.isNotEmpty()) prepareRecognizer()

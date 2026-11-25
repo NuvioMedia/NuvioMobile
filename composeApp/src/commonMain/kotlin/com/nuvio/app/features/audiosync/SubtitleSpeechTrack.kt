@@ -64,8 +64,9 @@ internal class SubtitleSpeechTrack private constructor(
     }
 
     companion object {
+        private val htmlTag = Regex("</?[a-zA-Z][^>]*>")
         private val musicOnly = Regex("^[\\s♪♫#*~-]*$")
-        private val musicWrapped = Regex("^\\s*[♪♫#].*[♪♫#]?\\s*$")
+        private val musicLine = Regex("^\\s*[♪♫#].*|.*[♪♫]\\s*$")
 
         /** Builds the track from (startMs, endMs, text) cues, dropping sound-effect and lyric-only cues. */
         fun fromCues(cues: List<Triple<Long, Long, String>>): SubtitleSpeechTrack {
@@ -83,8 +84,18 @@ internal class SubtitleSpeechTrack private constructor(
 
         internal fun isDialogue(text: String): Boolean {
             if (text.isBlank()) return true // Bitmap or styled cues without text still mark dialogue.
-            val filtered = SubtitleSdhFilter.filter(text) ?: return false
-            val lines = filtered.lines().filterNot { musicOnly.matches(it) || musicWrapped.matches(it) }
+            val plain = htmlTag.replace(text, "")
+            val filtered = SubtitleSdhFilter.filter(plain) ?: return false
+            val nonBlankLines = filtered.lines().filter { it.isNotBlank() }
+            if (nonBlankLines.isEmpty()) return false
+            val first = nonBlankLines.first().trim()
+            val last = nonBlankLines.last().trim()
+            if ((first.startsWith('♪') || first.startsWith('♫')) &&
+                (last.endsWith('♪') || last.endsWith('♫'))
+            ) {
+                return false
+            }
+            val lines = nonBlankLines.filterNot { musicOnly.matches(it) || musicLine.matches(it) }
             return lines.any { line -> line.any(Char::isLetterOrDigit) }
         }
 

@@ -87,6 +87,7 @@ internal class MpvSpotAudioSyncFallback(
     private var statusRun: AutoSyncSyncedSubtitle.Status? = null
     private var unmatchedPlayedMs = 0L
     private var unmatchedReported = false
+    private var lockConfirmed = false
 
     init {
         engine.enabled = AudioSyncSettings.fallbackEnabled.value
@@ -167,6 +168,7 @@ internal class MpvSpotAudioSyncFallback(
         }
         appliedModel = null
         pendingStatus = null
+        lockConfirmed = false
         engine.stopSession()
     }
 
@@ -213,6 +215,7 @@ internal class MpvSpotAudioSyncFallback(
         appliedModel = null
         unmatchedPlayedMs = 0L
         unmatchedReported = false
+        lockConfirmed = false
         startTicker()
         log("AutoSync kept the original timing of $url; syncing it to sampled audio")
         engine.startSession(url, dialogue)
@@ -242,13 +245,15 @@ internal class MpvSpotAudioSyncFallback(
                     when (status) {
                         is AudioSyncStatus.Synced, is AudioSyncStatus.Adjusted -> {
                             if (appliedModel != null && appliedModel === engine.currentModel()) {
+                                lockConfirmed = true
                                 AutoSyncSyncedSubtitle.mark(current.url)
                             } else if (engine.currentModel() != null) {
                                 pendingStatus = status
                             }
                         }
                         AudioSyncStatus.Withdrawn -> {
-                            if (engine.currentModel() == null) {
+                            if (engine.currentModel() == null && lockConfirmed) {
+                                lockConfirmed = false
                                 statusRun = AutoSyncSyncedSubtitle.start(current.url)
                                 unmatchedPlayedMs = 0L
                                 unmatchedReported = false
@@ -262,7 +267,7 @@ internal class MpvSpotAudioSyncFallback(
                         else -> Unit
                     }
                 }
-                if (current != null && target === current && !unmatchedReported && engine.currentModel() == null) {
+                if (current != null && target === current && !unmatchedReported && !engine.isModelConfirmed) {
                     if (host.isPlaying()) unmatchedPlayedMs += TICK_MS
                     if (unmatchedPlayedMs >= UNMATCHED_REPORT_MS) {
                         unmatchedReported = true
