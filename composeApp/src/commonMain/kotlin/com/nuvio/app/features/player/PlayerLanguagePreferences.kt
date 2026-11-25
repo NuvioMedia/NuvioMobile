@@ -377,6 +377,23 @@ private val LanguageNameAliases = mapOf(
     "zulu" to "zu",
 )
 
+private val WhitespaceRunRegex = Regex("\\s+")
+
+// Longest names are tried first. The sort is stable, so names of equal length keep their
+// declaration order.
+private val LanguageNameAliasesLongestFirst = LanguageNameAliases.entries
+    .sortedByDescending { it.key.length }
+
+// When several options normalize to the same code, the first one wins.
+private val LanguageLabelResByNormalizedCode: Map<String, StringResource> by lazy {
+    buildMap {
+        AvailableLanguageOptions.forEach { option ->
+            val normalized = normalizeLanguageCode(option.code) ?: return@forEach
+            getOrPut(normalized) { option.labelRes }
+        }
+    }
+}
+
 fun normalizeLanguageCode(language: String?): String? {
     val raw = language
         ?.trim()
@@ -389,7 +406,7 @@ fun normalizeLanguageCode(language: String?): String? {
         .replace('-', ' ')
         .replace('.', ' ')
         .replace('/', ' ')
-        .replace(Regex("\\s+"), " ")
+        .replace(WhitespaceRunRegex, " ")
         .trim()
 
     fun containsAny(vararg values: String): Boolean =
@@ -415,15 +432,16 @@ fun normalizeLanguageCode(language: String?): String? {
 
     LanguageCodeAliases[raw]?.let { return it.replace('_', '-').lowercase() }
     LanguageNameAliases[tokenized]?.let { return it }
-    LanguageNameAliases.entries
-        .sortedByDescending { it.key.length }
-        .firstOrNull { (name, _) ->
-            tokenized == name ||
+    // Exact names already returned above, and each pattern below needs a space in tokenized.
+    if (' ' in tokenized) {
+        LanguageNameAliasesLongestFirst
+            .firstOrNull { (name, _) ->
                 tokenized.startsWith("$name ") ||
-                tokenized.endsWith(" $name") ||
-                tokenized.contains(" $name ")
-        }
-        ?.let { return it.value }
+                    tokenized.endsWith(" $name") ||
+                    tokenized.contains(" $name ")
+            }
+            ?.let { return it.value }
+    }
 
     val primary = raw.substringBefore('-')
     val primaryAlias = LanguageCodeAliases[primary]?.replace('_', '-')?.lowercase()
@@ -449,9 +467,7 @@ fun languageMatchesPreference(trackLanguage: String?, targetLanguage: String): B
 
 internal fun languageLabelResForCode(code: String?): StringResource? {
     val normalized = normalizeLanguageCode(code) ?: return null
-    return AvailableLanguageOptions.firstOrNull {
-        normalizeLanguageCode(it.code) == normalized
-    }?.labelRes
+    return LanguageLabelResByNormalizedCode[normalized]
 }
 
 @Composable
