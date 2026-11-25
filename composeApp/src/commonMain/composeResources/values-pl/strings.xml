@@ -2305,6 +2305,8 @@
     <string name="settings_p2p_profile_balanced_description">Zalecana równowaga między szybkością uruchamiania a stabilnością</string>
     <string name="settings_p2p_profile_fast_description">Używa więcej połączeń dla trudnych lub wysokobitratowych torrentów</string>
     <string name="settings_p2p_cache_size_title">Rozmiar cache torrentów</string>
+    <string name="settings_p2p_cache_memory_only">Tylko pamięć RAM</string>
+    <string name="settings_p2p_cache_memory_only_description">Dane torrenta zostają w pamięci RAM i nie są zapisywane w pamięci urządzenia. Przewinięcie do tyłu pobiera je ponownie.</string>
     <string name="settings_p2p_cache_none">Brak trwałego cache</string>
     <string name="settings_p2p_cache_2_gb">2 GB</string>
     <string name="settings_p2p_cache_5_gb">5 GB</string>

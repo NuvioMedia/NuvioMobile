@@ -149,6 +149,7 @@ internal fun PlaybackP2pSettings(
             options = P2pCacheSize.entries,
             selected = p2pSettings.cacheSize,
             label = { p2pCacheSizeLabel(it) },
+            description = { p2pCacheSizeDescription(it) },
             onSelect = { size ->
                 P2pSettingsRepository.setCacheSize(size)
                 p2pCacheClearResult = null
@@ -178,10 +179,17 @@ private fun p2pProfileLabel(profile: P2pTorrentProfile): String = when (profile)
 
 @Composable
 private fun p2pCacheSizeLabel(size: P2pCacheSize): String = when (size) {
+    P2pCacheSize.MEMORY_ONLY -> stringResource(Res.string.settings_p2p_cache_memory_only)
     P2pCacheSize.NONE -> stringResource(Res.string.settings_p2p_cache_none)
     P2pCacheSize.GB_2 -> stringResource(Res.string.settings_p2p_cache_2_gb)
     P2pCacheSize.GB_5 -> stringResource(Res.string.settings_p2p_cache_5_gb)
     P2pCacheSize.GB_10 -> stringResource(Res.string.settings_p2p_cache_10_gb)
+}
+
+@Composable
+private fun p2pCacheSizeDescription(size: P2pCacheSize): String? = when (size) {
+    P2pCacheSize.MEMORY_ONLY -> stringResource(Res.string.settings_p2p_cache_memory_only_description)
+    else -> null
 }
 
 private fun formatP2pCacheBytes(bytes: Long): String {
