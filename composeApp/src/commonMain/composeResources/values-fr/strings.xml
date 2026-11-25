@@ -594,7 +594,7 @@
     <string name="settings_licenses_attributions_tmdb_title">The Movie Database (TMDB)</string>
     <string name="settings_licenses_attributions_tmdb_body">Nuvio utilise l’API TMDB pour les métadonnées des films et des séries, les visuels, les bandes-annonces, la distribution, les détails de production, les collections et les recommandations. Ce produit utilise l’API TMDB, mais n’est ni approuvé ni certifié par TMDB.</string>
     <string name="settings_licenses_attributions_imdb_title">Jeux de données non commerciaux d’IMDb</string>
-    <string name="settings_licenses_attributions_imdb_body">Nuvio utilise les jeux de données non commerciaux IMDb, y compris title.ratings.tsv.gz, pour les notes et le nombre de votes IMDb. Informations fournies par IMDb (https://www.imdb.com). Utilisé avec autorisation. Les données IMDb sont destinées à un usage personnel et non commercial selon les conditions d’IMDb.</string>
+    <string name="settings_licenses_attributions_imdb_body">Nuvio utilise les jeux de données non commerciaux d’IMDb, dont title.ratings.tsv.gz, pour les notes et le nombre de votes IMDb. Informations fournies par IMDb (https://www.imdb.com). Utilisées avec autorisation. Les données d’IMDb sont destinées à un usage personnel et non commercial, conformément aux conditions d’IMDb.</string>
     <string name="settings_licenses_attributions_trakt_title">Trakt</string>
     <string name="settings_licenses_attributions_trakt_body">Nuvio se connecte à Trakt pour l’authentification du compte, l’historique de visionnage, la synchronisation de la progression, les données de la bibliothèque, les notes, les listes et les commentaires. Nuvio n’est ni affilié à Trakt ni approuvé par Trakt.</string>
     <string name="settings_licenses_attributions_simkl_title">Simkl</string>
@@ -2594,6 +2594,7 @@
     <string name="subtitle_shadow">Ombre portée</string>
     <string name="subtitle_shadow_description">Détacher le texte des scènes lumineuses.</string>
     <string name="subtitle_shadow_opacity">Opacité de l’ombre</string>
+    <string name="subtitle_customize_ass">Personnaliser le style ASS/SSA</string>
     <string name="subtitle_shadow_size">Taille de l’ombre</string>
     <string name="subtitle_outline_width">Épaisseur du contour</string>
     <string name="subtitle_reset_appearance">Réinitialiser l’apparence</string>
