@@ -7,6 +7,15 @@ fun formatReleaseDateForDisplay(raw: String): String = formatReleaseDate(raw, in
 
 fun formatReleaseDateWithoutYear(raw: String): String = formatReleaseDate(raw, includeYear = false)
 
+fun formatShortReleaseDate(raw: String, todayIsoDate: String): String =
+    formatShortReleaseDate(raw, todayIsoDate, Locale.current.toLanguageTag())
+
+internal fun formatShortReleaseDate(raw: String, todayIsoDate: String, localeTag: String): String {
+    val date = parseEpisodeReleaseLocalDate(raw) ?: return raw
+    val includeYear = date.take(4) != todayIsoDate.take(4)
+    return formatCalendarDate(date, localeTag, includeYear, abbreviatedMonth = true)
+}
+
 internal fun formatReleaseDate(
     raw: String,
     includeYear: Boolean,
@@ -16,7 +25,15 @@ internal fun formatReleaseDate(
     return formatCalendarDate(date, localeTag, includeYear)
 }
 
-internal expect fun formatCalendarDate(isoDate: String, localeTag: String, includeYear: Boolean): String
+internal expect fun formatCalendarDate(
+    isoDate: String,
+    localeTag: String,
+    includeYear: Boolean,
+    abbreviatedMonth: Boolean = false,
+): String
+
+internal fun calendarDateSkeleton(includeYear: Boolean, abbreviatedMonth: Boolean): String =
+    (if (abbreviatedMonth) "dMMM" else "dMMMM") + if (includeYear) "y" else ""
 
 /**
  * Parses a release/air string (ISO date, year-only, or timestamp prefix) for compact UI (e.g. year chips).

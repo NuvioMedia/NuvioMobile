@@ -1,7 +1,7 @@
 package com.nuvio.app.features.watchprogress
 
 import androidx.compose.runtime.Composable
-import com.nuvio.app.core.format.formatReleaseDateWithoutYear
+import com.nuvio.app.core.format.formatShortReleaseDate
 import com.nuvio.app.core.time.daysUntilEpisodeRelease
 import com.nuvio.app.core.time.parseEpisodeReleaseEpochMs
 import nuvio.composeapp.generated.resources.*
@@ -33,7 +33,7 @@ fun computeAirDateBadgeText(
         daysUntil == 1 -> stringResource(Res.string.cw_airs_tomorrow)
         daysUntil in 2..7 -> pluralStringResource(Res.plurals.cw_airs_in_days, daysUntil, daysUntil)
         else -> {
-            val formattedDate = formatReleaseDateWithoutYear(releasedIso)
+            val formattedDate = formatShortReleaseDate(releasedIso, todayIsoDate)
             stringResource(Res.string.cw_airs_date, formattedDate)
         }
     }

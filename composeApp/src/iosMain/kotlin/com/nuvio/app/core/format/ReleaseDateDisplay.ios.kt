@@ -8,12 +8,17 @@ import platform.Foundation.NSTimeZone
 import platform.Foundation.dateWithTimeIntervalSince1970
 import platform.Foundation.timeZoneForSecondsFromGMT
 
-internal actual fun formatCalendarDate(isoDate: String, localeTag: String, includeYear: Boolean): String {
+internal actual fun formatCalendarDate(
+    isoDate: String,
+    localeTag: String,
+    includeYear: Boolean,
+    abbreviatedMonth: Boolean,
+): String {
     val epochMs = parseEpisodeReleaseEpochMs(isoDate) ?: return isoDate
     val date = NSDate.dateWithTimeIntervalSince1970(epochMs / 1_000.0)
     return NSDateFormatter().apply {
         locale = NSLocale(localeIdentifier = localeTag)
         timeZone = NSTimeZone.timeZoneForSecondsFromGMT(0)
-        setLocalizedDateFormatFromTemplate(if (includeYear) "dMMMMy" else "dMMMM")
+        setLocalizedDateFormatFromTemplate(calendarDateSkeleton(includeYear, abbreviatedMonth))
     }.stringFromDate(date)
 }

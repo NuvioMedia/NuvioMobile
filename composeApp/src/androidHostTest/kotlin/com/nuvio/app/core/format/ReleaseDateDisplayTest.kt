@@ -99,6 +99,21 @@ class ReleaseDateDisplayTest {
     }
 
     @Test
+    fun shortReleaseDateUsesAbbreviatedMonthWithinTheCurrentYear() {
+        assertEquals("Feb 1", formatShortReleaseDate("2025-02-01", "2025-01-20", "en-US"))
+    }
+
+    @Test
+    fun shortReleaseDateAddsYearOutsideTheCurrentYear() {
+        assertEquals("Feb 1, 2026", formatShortReleaseDate("2026-02-01T00:00:00Z", "2025-12-20", "en-US"))
+    }
+
+    @Test
+    fun shortReleaseDateLeavesNonIsoUnchanged() {
+        assertEquals("TBA", formatShortReleaseDate("TBA", "2025-01-20", "en-US"))
+    }
+
+    @Test
     fun preservesInvalidCalendarDates() {
         assertEquals("2025-02-30", formatReleaseDateForDisplay("2025-02-30"))
     }
