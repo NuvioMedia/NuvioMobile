@@ -109,6 +109,12 @@ class ReleaseDateDisplayTest {
     }
 
     @Test
+    fun compactReleaseDateUsesAbbreviatedMonthWithYear() {
+        assertEquals("Nov 6, 2020", formatCompactReleaseDate("2020-11-06", "en-US"))
+        assertEquals("TBA", formatCompactReleaseDate("TBA", "en-US"))
+    }
+
+    @Test
     fun shortReleaseDateLeavesNonIsoUnchanged() {
         assertEquals("TBA", formatShortReleaseDate("TBA", "2025-01-20", "en-US"))
     }

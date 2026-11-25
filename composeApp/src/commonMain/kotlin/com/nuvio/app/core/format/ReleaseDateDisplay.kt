@@ -7,6 +7,14 @@ fun formatReleaseDateForDisplay(raw: String): String = formatReleaseDate(raw, in
 
 fun formatReleaseDateWithoutYear(raw: String): String = formatReleaseDate(raw, includeYear = false)
 
+fun formatCompactReleaseDate(raw: String): String =
+    formatCompactReleaseDate(raw, Locale.current.toLanguageTag())
+
+internal fun formatCompactReleaseDate(raw: String, localeTag: String): String {
+    val date = parseEpisodeReleaseLocalDate(raw) ?: return raw
+    return formatCalendarDate(date, localeTag, includeYear = true, abbreviatedMonth = true)
+}
+
 fun formatShortReleaseDate(raw: String, todayIsoDate: String): String =
     formatShortReleaseDate(raw, todayIsoDate, Locale.current.toLanguageTag())
 
