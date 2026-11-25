@@ -2,8 +2,13 @@ package com.nuvio.app.features.audiosync
 
 import android.app.Application
 import com.nuvio.app.features.audiosync.asr.SpeechToText
+import kotlin.math.PI
+import kotlin.math.abs
+import kotlin.math.sin
+import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.atomicfu.locks.SynchronizedObject
@@ -63,8 +68,8 @@ class SpotAudioSyncEngineTest {
             setSource("https://example.com/film.mkv", mapOf("Referer" to "https://example.com"))
         }
 
-    private fun drive(engine: SpotAudioSyncEngine, until: () -> Boolean): Boolean = runBlocking {
-        withTimeoutOrNull(10_000L) {
+    private fun drive(engine: SpotAudioSyncEngine, timeoutMs: Long = 10_000L, until: () -> Boolean): Boolean = runBlocking {
+        withTimeoutOrNull(timeoutMs) {
             while (!until()) {
                 engine.onPlaybackPosition(positionMs = 5_000L, durationMs = 45 * 60_000L)
                 delay(50L)
@@ -157,6 +162,137 @@ class SpotAudioSyncEngineTest {
             assertEquals("https://example.com/film.mp4?fallback=master.m3u8", mp4Reader.requests().single().url)
         } finally {
             mp4Engine.release()
+        }
+    }
+
+    @Test
+    fun switchesToMatchingSameLanguageCandidateOnSampledSpotsAndAdoptsHandover() {
+        val durationMs = 45 * 60_000L
+        val spoken = syntheticCues(Random(202), durationMs)
+        val chosen = syntheticCues(Random(101), durationMs)
+        val decoy = syntheticCues(Random(303), durationMs)
+        val winner = spoken.map { (start, end, text) -> Triple(start - 2_500L, end - 2_500L, text) }
+
+        val chosenUrl = "https://example.com/chosen.srt"
+        val decoyUrl = "https://example.com/decoy.srt"
+        val winnerUrl = "https://example.com/winner.srt"
+        val bodies = mapOf(
+            decoyUrl to toSrt(decoy),
+            winnerUrl to toSrt(winner),
+        )
+
+        val reader = SpeechGeneratingReader(spoken)
+        var switchedUrl: String? = null
+        var syncedStatus: AudioSyncStatus.Synced? = null
+        val engine = SpotAudioSyncEngine(
+            reader = reader,
+            recognizers = NoRecognizers(),
+            log = { synchronized(logLock) { logs += it } },
+            onStatus = { status ->
+                if (status is AudioSyncStatus.Synced) syncedStatus = status
+            },
+            requestSwitch = { url -> switchedUrl = url },
+            downloadSubtitle = { ref -> bodies.getValue(ref.url) },
+        )
+        try {
+            engine.samplingMode = AudioSamplingMode.HIGH
+            engine.setSource("https://example.com/film.mkv", emptyMap())
+            engine.setReferenceSubtitles(
+                listOf(
+                    AudioSyncReference(chosenUrl, "ro", emptyMap()),
+                    AudioSyncReference(decoyUrl, "Romanian", emptyMap()),
+                    AudioSyncReference(winnerUrl, "rum", emptyMap()),
+                ),
+            )
+            engine.startSession(chosenUrl, chosen)
+            assertTrue(drive(engine, timeoutMs = 30_000L) { switchedUrl != null }, logs())
+            assertEquals(winnerUrl, switchedUrl, logs())
+
+            engine.startSession(winnerUrl, winner)
+            assertTrue(drive(engine, timeoutMs = 10_000L) { syncedStatus != null && engine.isModelConfirmed }, logs())
+            val adopted = assertNotNull(engine.currentModel(), logs())
+            val delayMs = adopted.delayUsAt(600_000_000L) / 1_000.0
+            assertTrue(abs(delayMs - 2_500.0) < 250.0, "expected ~2500ms delay, got $delayMs\n${logs()}")
+        } finally {
+            engine.release()
+        }
+    }
+
+    private fun syntheticCues(random: Random, durationMs: Long): List<Triple<Long, Long, String>> {
+        val cues = mutableListOf<Triple<Long, Long, String>>()
+        var t = 5_000L + random.nextLong(20_000L)
+        while (t < durationMs - 60_000L) {
+            val length = 800L + random.nextLong(3_700L)
+            cues += Triple(t, t + length, "Line ${cues.size} of dialogue")
+            t += length + 200L + random.nextLong(if (random.nextInt(5) == 0) 9_000L else 2_500L)
+        }
+        return cues
+    }
+
+    private fun toSrt(cues: List<Triple<Long, Long, String>>): String = buildString {
+        cues.forEachIndexed { index, (start, end, text) ->
+            append(index + 1).append('\n')
+            append(formatSrtTime(start)).append(" --> ").append(formatSrtTime(end)).append('\n')
+            append(text).append("\n\n")
+        }
+    }
+
+    private fun formatSrtTime(ms: Long): String {
+        val clamped = ms.coerceAtLeast(0L)
+        val hours = clamped / 3_600_000L
+        val minutes = clamped / 60_000L % 60L
+        val seconds = clamped / 1_000L % 60L
+        val millis = clamped % 1_000L
+        return "%02d:%02d:%02d,%03d".format(hours, minutes, seconds, millis)
+    }
+
+    private class SpeechGeneratingReader(
+        private val spoken: List<Triple<Long, Long, String>>,
+    ) : AudioSyncSpotReader {
+        private val voiceTemplate: FloatArray = FloatArray(16_000).also { samples ->
+            var state = 12_345L
+            for (n in samples.indices) {
+                state = (state * 1_103_515_245L + 12_345L) % (1L shl 31)
+                val noise = state.toDouble() / (1L shl 31) - 0.5
+                val envelope = 0.5 + 0.5 * sin(2 * PI * 3 * n / 16_000)
+                val t = 2 * PI * n / 16_000
+                samples[n] = (0.25 * envelope * (sin(180 * t) + 0.5 * sin(360 * t) + 0.25 * sin(540 * t)) + 0.02 * noise).toFloat()
+            }
+        }
+
+        override fun isUnmetered(): Boolean = true
+
+        override fun read(request: AudioSyncSpotRequest, sink: AudioSyncSpotSink): AudioSyncSpotResult {
+            val sampleRate = 16_000
+            val chunkSamples = 1_600 // 100 ms
+            val chunk = FloatArray(chunkSamples)
+            var sampled = 0
+            for (spotMs in request.spotsMs) {
+                if (sink.isCancelled()) break
+                val spotEndMs = spotMs + request.spotMs
+                val overlapping = spoken.filter { it.second > spotMs && it.first < spotEndMs }
+                var offsetMs = 0L
+                while (offsetMs < request.spotMs && !sink.isCancelled()) {
+                    val chunkStartMs = spotMs + offsetMs
+                    chunk.fill(0f)
+                    for (cue in overlapping) {
+                        val fromMs = maxOf(cue.first, chunkStartMs)
+                        val toMs = minOf(cue.second, chunkStartMs + 100L)
+                        if (toMs > fromMs) {
+                            val fromIdx = ((fromMs - chunkStartMs) * 16L).toInt().coerceIn(0, chunkSamples)
+                            val toIdx = ((toMs - chunkStartMs) * 16L).toInt().coerceIn(fromIdx, chunkSamples)
+                            for (i in fromIdx until toIdx) {
+                                chunk[i] = voiceTemplate[((chunkStartMs * 16L + i) % voiceTemplate.size).toInt()]
+                            }
+                        }
+                    }
+                    sink.onPcm(chunk, chunkSamples, sampleRate, chunkStartMs * 1_000L)
+                    offsetMs += 100L
+                }
+                sink.onSpotEnd()
+                sampled++
+            }
+            return AudioSyncSpotResult(sampled, 4_000_000L, null)
         }
     }
 }

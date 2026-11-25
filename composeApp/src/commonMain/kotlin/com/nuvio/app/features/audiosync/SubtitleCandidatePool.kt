@@ -3,9 +3,11 @@ package com.nuvio.app.features.audiosync
 import com.nuvio.app.features.audiosync.asr.AnchorFit
 import com.nuvio.app.features.audiosync.asr.HeardWord
 import com.nuvio.app.features.audiosync.asr.WordAnchorMatcher
-import java.util.Locale
+import kotlin.concurrent.Volatile
 import kotlin.math.abs
 import kotlin.math.roundToInt
+import kotlinx.atomicfu.locks.SynchronizedObject
+import kotlinx.atomicfu.locks.synchronized
 
 /**
  * The other subtitles in the chosen subtitle's language, tested against the same audio evidence so
@@ -39,12 +41,13 @@ internal class SubtitleCandidatePool(
 
     private class Reference(val key: String, val track: SubtitleSpeechTrack, val matcher: WordAnchorMatcher)
 
-    private val lock = Any()
+    private val lock = SynchronizedObject()
     private val active = ArrayList<Candidate>()
     private val references = ArrayList<Reference>()
     private val fingerprints = hashSetOf(fingerprint(target))
     private var arrived = 0
     private var ruledOut = 0
+    private var dirty = false
 
     /** The chosen subtitle already fits; nothing left to do. */
     @Volatile
@@ -59,6 +62,7 @@ internal class SubtitleCandidatePool(
     private var lastWordCount = -1
     private var lastPin: String? = null
     private var cursor = 0
+    private var scoredInPass = 0
 
     /** Short progress line, e.g. "testing 4 · 7 ruled out". */
     val summary: String
@@ -82,6 +86,7 @@ internal class SubtitleCandidatePool(
                 return false
             }
             active += Candidate(key, track)
+            dirty = true
         }
         return true
     }
@@ -91,7 +96,23 @@ internal class SubtitleCandidatePool(
         val reference = Reference(key, SubtitleSpeechTrack.fromCues(cues), WordAnchorMatcher(cues))
         if (reference.matcher.isEmpty) return
         synchronized(lock) {
-            if (references.none { it.key == key }) references += reference
+            if (references.none { it.key == key }) {
+                references += reference
+                dirty = true
+            }
+        }
+    }
+
+    /** True when [update] still has candidates or new evidence to score. */
+    fun hasPendingWork(timelineVersion: Long, wordCount: Int): Boolean {
+        if (finished) return false
+        return synchronized(lock) {
+            active.isNotEmpty() && (
+                timelineVersion != lastVersion ||
+                    wordCount != lastWordCount ||
+                    dirty ||
+                    scoredInPass < active.size
+                )
         }
     }
 
@@ -103,18 +124,26 @@ internal class SubtitleCandidatePool(
         if (finished) return null
         val version = timeline.version
         val wordCount = words?.size ?: 0
-        if (version == lastVersion && wordCount == lastWordCount) return null
+        if (!hasPendingWork(version, wordCount)) return null
         lastUpdateAtMs?.let { if (nowMs - it < UPDATE_INTERVAL_MS) return null }
-        lastUpdateAtMs = nowMs
-        lastVersion = version
-        val newWords = wordCount != lastWordCount
-        lastWordCount = wordCount
+        var versionChanged = false
+        var newWords = false
+        var wasDirty = false
         val candidates = synchronized(lock) {
             applyShapeCheck()
-            active.toList()
+            val list = active.toList()
+            if (list.isEmpty()) return null
+            versionChanged = version != lastVersion
+            newWords = wordCount != lastWordCount
+            wasDirty = dirty
+            dirty = false
+            lastVersion = version
+            lastWordCount = wordCount
+            if (versionChanged || wasDirty) scoredInPass = 0
+            list
         }
-        if (candidates.isEmpty()) return null
-        if (newWords && !words.isNullOrEmpty()) {
+        lastUpdateAtMs = nowMs
+        if ((newWords || wasDirty) && !words.isNullOrEmpty()) {
             fromRecognition(words, candidates)?.let { return it }
             if (finished) return null
         }
@@ -152,16 +181,23 @@ internal class SubtitleCandidatePool(
     private fun fromSpeech(timeline: SpeechTimeline, candidates: List<Candidate>): Winner? {
         val segments = timeline.segments(maxFrames = WINDOW_FRAMES)
         val knownFrames = segments.sumOf { it.knownFrames }
-        if (knownFrames < MIN_SCORING_FRAMES) return null
+        if (knownFrames < MIN_SCORING_FRAMES) {
+            synchronized(lock) { scoredInPass = candidates.size }
+            return null
+        }
         val speech = SubtitleAudioAligner.prepare(
             segments = segments,
             minShiftMs = -AudioSyncTracker.MAX_SHIFT_MS,
             maxShiftMs = AudioSyncTracker.MAX_SHIFT_MS,
-        ) ?: return null
+        ) ?: run {
+            synchronized(lock) { scoredInPass = candidates.size }
+            return null
+        }
 
         var best: Pair<Candidate, SubtitleAudioAligner.Estimate>? = null
         val batch = List(minOf(BATCH_SIZE, candidates.size)) { candidates[(cursor + it) % candidates.size] }
         cursor = (cursor + batch.size) % candidates.size
+        synchronized(lock) { scoredInPass += batch.size }
         for (candidate in batch) {
             val scales = candidate.scales ?: SubtitleAudioAligner.CANDIDATE_SCALES
             val estimate = speech.estimate(candidate.track, scales)
@@ -303,13 +339,6 @@ internal class SubtitleCandidatePool(
         private val traditionalChinese = setOf("hant", "tw", "hk", "mo", "taiwan", "hong", "traditional", "cht")
         private val simplifiedChinese = setOf("hans", "cn", "simplified")
 
-        private val languageNames: Map<String, String> by lazy {
-            Locale.getISOLanguages().associateBy(
-                { Locale(it).getDisplayLanguage(Locale.ENGLISH).lowercase() },
-                { runCatching { Locale(it).isO3Language }.getOrDefault(it) },
-            )
-        }
-
         /**
          * ISO 639-2/T code for a language code or English name ("ro", "rum", "Romanian" -> "ron").
          * Brazilian Portuguese, Latin American Spanish and Traditional Chinese are separate
@@ -334,14 +363,10 @@ internal class SubtitleCandidatePool(
 
         private fun baseLanguageKey(value: String, code: String): String {
             bibliographic[code]?.let { return it }
-            if (code.length == 2 || code.length == 3) {
-                val iso3 = runCatching { Locale(code).isO3Language }.getOrNull()
-                if (!iso3.isNullOrEmpty()) return bibliographic[iso3] ?: iso3
+            audioSyncIso3Language(value, code)?.let { iso3 ->
+                return bibliographic[iso3] ?: iso3
             }
-            val name = value.substringBefore('(').trim()
-            return languageNames[name]
-                ?: languageNames.entries.firstOrNull { it.key.length >= 4 && name.startsWith(it.key) }?.value
-                ?: value
+            return value
         }
     }
 }

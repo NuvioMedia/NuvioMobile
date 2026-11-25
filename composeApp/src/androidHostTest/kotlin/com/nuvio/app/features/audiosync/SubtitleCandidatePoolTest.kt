@@ -6,6 +6,7 @@ import kotlin.math.roundToInt
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -45,6 +46,39 @@ class SubtitleCandidatePoolTest {
             if (winner != null) break
         }
         assertEquals("good", assertNotNull(winner, "the correct file must remain available for later evidence").key)
+    }
+
+    @Test
+    fun spotOnlyScoresLaterBatchesWhenTimelineVersionStopsChanging() {
+        val spoken = cues(Random(990), durationMs)
+        val speech = speechFor(spoken, shiftMs = 0.0, random = Random(991))
+        val pool = SubtitleCandidatePool(SubtitleSpeechTrack.fromCues(cues(Random(992), durationMs)))
+            .apply { mediaDurationMs = durationMs }
+        repeat(6) { pool.addCandidate("decoy$it", cues(Random(1000 + it), durationMs)) }
+        pool.addCandidate("goodInBatch2", spoken.map { (a, b, t) -> Triple(a - 3_000L, b - 3_000L, t) })
+
+        // Timeline version never changes between updates, as happens in spot-only mode after all spots finish.
+        assertTrue(pool.hasPendingWork(speech.version, wordCount = 0))
+        assertNull(pool.update(speech, null, nowMs = 0L))
+        assertTrue(pool.hasPendingWork(speech.version, wordCount = 0))
+        val winner = assertNotNull(
+            pool.update(speech, null, nowMs = 10_000L),
+            "winner in batch 2 must be scored without waiting for timeline.version to change",
+        )
+        assertEquals("goodInBatch2", winner.key)
+        assertFalse(pool.hasPendingWork(speech.version, wordCount = 0))
+        val delayMs = winner.model.delayUsAt(600_000_000L) / 1_000.0
+        assertTrue(abs(delayMs - 3_000.0) < 80.0, "delay $delayMs")
+
+        // When no candidate matches, pending work clears once all batches are scored.
+        val unmatchedPool = SubtitleCandidatePool(SubtitleSpeechTrack.fromCues(cues(Random(1020), durationMs)))
+            .apply { mediaDurationMs = durationMs }
+        repeat(6) { unmatchedPool.addCandidate("miss$it", cues(Random(1030 + it), durationMs)) }
+        assertTrue(unmatchedPool.hasPendingWork(speech.version, wordCount = 0))
+        assertNull(unmatchedPool.update(speech, null, nowMs = 0L))
+        assertTrue(unmatchedPool.hasPendingWork(speech.version, wordCount = 0))
+        assertNull(unmatchedPool.update(speech, null, nowMs = 10_000L))
+        assertFalse(unmatchedPool.hasPendingWork(speech.version, wordCount = 0))
     }
 
     @Test

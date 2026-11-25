@@ -43,6 +43,10 @@ internal fun createIosAudioSyncFallback(
             bridge.replaceExternalSubtitle(replacedUrl, path)
         }
 
+        override fun setSubtitleDelayMs(delayMs: Int) {
+            bridge.setSubtitleDelayMs(delayMs)
+        }
+
         override suspend fun writeSubtitleFile(fileName: String, stalePrefix: String, content: String): String? =
             IosAutoSyncMpvPlatform.writeSubtitleFile(fileName, stalePrefix, content)
     }

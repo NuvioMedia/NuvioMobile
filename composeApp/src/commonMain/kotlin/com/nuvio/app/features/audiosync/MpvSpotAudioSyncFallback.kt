@@ -32,6 +32,8 @@ internal interface MpvSpotAudioSyncHost {
 
     fun replaceSubtitle(replacedUrl: String, path: String)
 
+    fun setSubtitleDelayMs(delayMs: Int) {}
+
     suspend fun writeSubtitleFile(fileName: String, stalePrefix: String, content: String): String?
 }
 
@@ -57,11 +59,21 @@ internal class MpvSpotAudioSyncFallback(
     private val getSubtitleHeaders: (String) -> Map<String, String>,
     private val log: (String) -> Unit,
 ) : AutoSyncMpvAudioFallback {
-    private class Target(val url: String, val body: String) {
+    private class Target(
+        val url: String,
+        val body: String,
+        var replacedSource: String = url,
+    ) {
         var shownPath: String? = null
     }
 
-    private val engine = SpotAudioSyncEngine(reader, recognizers, log, ::onStatus)
+    private val engine = SpotAudioSyncEngine(
+        reader = reader,
+        recognizers = recognizers,
+        log = log,
+        onStatus = ::onStatus,
+        requestSwitch = ::replaceSubtitle,
+    )
 
     @Volatile
     private var target: Target? = null
@@ -78,10 +90,15 @@ internal class MpvSpotAudioSyncFallback(
     @Volatile
     private var videoId: String? = null
 
+    @Volatile
+    private var appliedListener: ((subtitleUrl: String, delayMs: Int) -> Unit)? = null
+
     private var armed = false
     private var appliedModel: SubtitleSyncModel? = null
     private var ticker: Job? = null
     private var takeOverJob: Job? = null
+    @Volatile
+    private var switchJob: Job? = null
     private var settingsJob: Job? = null
     private var pendingStatus: AudioSyncStatus? = null
     private var statusRun: AutoSyncSyncedSubtitle.Status? = null
@@ -119,6 +136,10 @@ internal class MpvSpotAudioSyncFallback(
         if (armed) engine.setReferenceSubtitles(references(candidates))
     }
 
+    override fun setAppliedListener(listener: ((subtitleUrl: String, delayMs: Int) -> Unit)?) {
+        appliedListener = listener
+    }
+
     override fun arm() {
         stop(restoreOriginalOnMpv = false)
         if (!AudioSyncSettings.fallbackEnabled.value) return
@@ -143,6 +164,8 @@ internal class MpvSpotAudioSyncFallback(
             return false
         }
         takeOverJob?.cancel()
+        switchJob?.cancel()
+        switchJob = null
         statusRun = AutoSyncSyncedSubtitle.start(url)
         activeUrl = url
         takeOverJob = scope.launch { takeOverSubtitle(url) }
@@ -152,6 +175,8 @@ internal class MpvSpotAudioSyncFallback(
     override fun stop(restoreOriginalOnMpv: Boolean) {
         takeOverJob?.cancel()
         takeOverJob = null
+        switchJob?.cancel()
+        switchJob = null
         AutoSyncSyncedSubtitle.end(statusRun)
         statusRun = null
         ticker?.cancel()
@@ -298,15 +323,54 @@ internal class MpvSpotAudioSyncFallback(
             log("could not write the synced subtitle copy")
             return stop(restoreOriginalOnMpv = false)
         }
-        host.replaceSubtitle(current.shownPath ?: current.url, path)
+        host.replaceSubtitle(current.replacedSource, path)
+        current.replacedSource = path
         current.shownPath = path
     }
 
     private suspend fun showOriginal(current: Target) {
         val shown = current.shownPath ?: return
         val path = writeCopy(current.url, current.body, original = true) ?: return
+        if (activeUrl != current.url) return
         host.replaceSubtitle(shown, path)
+        current.replacedSource = path
         current.shownPath = path
+    }
+
+    private fun replaceSubtitle(url: String) {
+        switchJob?.cancel()
+        switchJob = scope.launch {
+            val current = target ?: return@launch
+            val candidate = candidates.firstOrNull { it.url == url }
+            val headers = candidate?.headers?.ifEmpty { getSubtitleHeaders(url) } ?: getSubtitleHeaders(url)
+            val body = try {
+                withContext(Dispatchers.IO) {
+                    AutomaticSubtitleSync.downloadSubtitleBody(
+                        url = url,
+                        headers = headers,
+                        languageHint = candidate?.language,
+                    )
+                }
+            } catch (cancel: CancellationException) {
+                throw cancel
+            } catch (error: Exception) {
+                log("could not download $url for audio sync switch: ${error.message}")
+                null
+            }
+            if (body == null || target !== current || activeUrl != current.url) return@launch
+            val dialogue = withContext(Dispatchers.Default) { SpotAudioSyncEngine.dialogueOf(body, url) }
+            if (dialogue.isEmpty() || target !== current || activeUrl != current.url) return@launch
+            statusRun = AutoSyncSyncedSubtitle.start(url)
+            activeUrl = url
+            target = Target(url, body, replacedSource = current.shownPath ?: current.url)
+            appliedModel = null
+            unmatchedPlayedMs = 0L
+            unmatchedReported = false
+            lockConfirmed = false
+            host.setSubtitleDelayMs(0)
+            appliedListener?.invoke(url, 0)
+            engine.startSession(url, dialogue)
+        }
     }
 
     private suspend fun writeCopy(url: String, text: String, original: Boolean): String? {

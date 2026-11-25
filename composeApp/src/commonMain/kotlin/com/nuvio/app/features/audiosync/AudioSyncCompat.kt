@@ -37,3 +37,5 @@ private val monotonicOrigin = TimeSource.Monotonic.markNow()
 internal fun audioSyncNanoTime(): Long = monotonicOrigin.elapsedNow().inWholeNanoseconds
 
 internal expect fun startAudioSyncThread(name: String, body: () -> Unit)
+
+internal expect fun audioSyncIso3Language(value: String, code: String): String?

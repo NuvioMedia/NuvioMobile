@@ -73,6 +73,10 @@ internal class SpotAudioSyncEngine(
     private val recognizers: AudioSyncRecognizers?,
     private val log: (String) -> Unit,
     private val onStatus: (AudioSyncStatus) -> Unit,
+    private val requestSwitch: (url: String) -> Unit = {},
+    private val downloadSubtitle: suspend (AudioSyncReference) -> String = { candidate ->
+        AutomaticSubtitleSync.downloadSubtitleBody(url = candidate.url, headers = candidate.headers)
+    },
 ) {
     private class Session(
         val key: String,
@@ -84,6 +88,8 @@ internal class SpotAudioSyncEngine(
         @Volatile
         var maintainedByRecognition = false
     }
+
+    private class Handover(val key: String, val model: SubtitleSyncModel, val method: String)
 
     private enum class FallbackState { Idle, Loading, Done }
 
@@ -100,6 +106,18 @@ internal class SpotAudioSyncEngine(
     private val parsedReferences = HashMap<String, List<Triple<Long, Long, String>>>()
     private val pendingReferences = HashMap<String, MutableList<(List<Triple<Long, Long, String>>) -> Unit>>()
     private val fallbackListeners = ArrayList<() -> Unit>()
+    private val poolLock = SynchronizedObject()
+    private val poolCandidatesRequested = HashSet<String>()
+    private val poolReferencesRequested = HashSet<String>()
+    private val switchedAway = HashSet<String>()
+    private val poolVersion = atomic(0L)
+
+    @Volatile
+    private var pool: SubtitleCandidatePool? = null
+    private var poolSession: Session? = null
+
+    @Volatile
+    private var handover: Handover? = null
 
     @Volatile
     private var session: Session? = null
@@ -160,6 +178,7 @@ internal class SpotAudioSyncEngine(
 
     private var lastAlignedSession: Session? = null
     private var lastAlignVersion = -1L
+    private var lastPoolVersion = -1L
     private var lastAlignAtMs = 0L
     private var lastRecognizerRefreshAtMs = 0L
 
@@ -195,6 +214,9 @@ internal class SpotAudioSyncEngine(
         spotUnavailableReason = if (isPlaylistUrl(url)) "not available for playlist streams" else null
         timeline.clear()
         asr.clear()
+        stopPool()
+        synchronized(poolLock) { switchedAway.clear() }
+        handover = null
         spotSamplingStarted.value = false
         spotBytesUsed = 0L
         spotRestarts.value = 0
@@ -212,6 +234,7 @@ internal class SpotAudioSyncEngine(
         candidates = list
         if (list.isNotEmpty()) prepareRecognizer()
         prefetchReferences()
+        session?.let { current -> if (model == null || estimated) startPool(current) }
     }
 
     fun setContent(type: String?, videoId: String?) {
@@ -232,6 +255,9 @@ internal class SpotAudioSyncEngine(
         prepareRecognizer()
         val request = sessionRequest.incrementAndGet()
         session = null
+        stopPool()
+        val handedOver = handover?.takeIf { it.key == key }
+        handover = null
         model = null
         estimated = false
         scope.launch(serial) {
@@ -246,13 +272,19 @@ internal class SpotAudioSyncEngine(
             session = started
             log("sync session started for $key with ${track.size} dialogue cues")
             if (!enabled) return@launch
+            if (handedOver != null) {
+                adoptHandover(started, handedOver)
+                return@launch
+            }
             notify(AudioSyncStatus.Listening)
             startRecognition(started)
+            startPool(started)
         }
     }
 
     fun stopSession() {
         sessionRequest.incrementAndGet()
+        stopPool()
         asr.stopSession()
         session = null
         model = null
@@ -260,7 +292,10 @@ internal class SpotAudioSyncEngine(
 
     fun onPlaybackPosition(positionMs: Long, durationMs: Long) {
         playbackPositionMs = positionMs.coerceAtLeast(0L)
-        if (durationMs > 0) mediaDurationMs = durationMs
+        if (durationMs > 0) {
+            mediaDurationMs = durationMs
+            pool?.mediaDurationMs = durationMs
+        }
         asr.onPlayhead(playbackPositionMs)
         scheduleAlignment()
         maybeSampleSpots()
@@ -278,6 +313,7 @@ internal class SpotAudioSyncEngine(
     fun release() {
         released = true
         session = null
+        stopPool()
         model = null
         asr.release()
         scope.cancel()
@@ -384,6 +420,12 @@ internal class SpotAudioSyncEngine(
                 if (session !== current) return@fetchReference
                 val bridge = SubtitleBridge.align(current.track, SubtitleSpeechTrack.fromCues(dialogue))
                 log("reference ${candidate.url}: bridge=$bridge")
+                if (dialogue.isNotEmpty()) {
+                    pool?.let { activePool ->
+                        activePool.addReference(candidate.url, dialogue)
+                        poolVersion.incrementAndGet()
+                    }
+                }
                 if (bridge != null) {
                     matched.incrementAndGet()
                     asr.addReference(ReferenceSubtitle(candidate.url, dialogue, bridge))
@@ -440,7 +482,7 @@ internal class SpotAudioSyncEngine(
         var attempt = 0
         while (true) {
             try {
-                val body = AutomaticSubtitleSync.downloadSubtitleBody(url = candidate.url, headers = candidate.headers)
+                val body = downloadSubtitle(candidate)
                 return dialogueOf(body, candidate.url)
             } catch (cancel: CancellationException) {
                 throw cancel
@@ -482,6 +524,7 @@ internal class SpotAudioSyncEngine(
             fallbackCandidates = found
             fallbackState = FallbackState.Done
             prefetchReferences()
+            session?.let { current -> if (model == null || estimated) startPool(current) }
             val listeners = synchronized(referenceLock) {
                 fallbackListeners.toList().also { fallbackListeners.clear() }
             }
@@ -489,21 +532,128 @@ internal class SpotAudioSyncEngine(
         }
     }
 
+    private fun startPool(current: Session) {
+        if (!enabled || released || session !== current) return
+        if (synchronized(poolLock) { current.key in switchedAway }) return
+        val language = SubtitleCandidatePool.languageKey(candidates.firstOrNull { it.url == current.key }?.language)
+            ?: return
+        val alternatives = candidates
+            .filter { it.url != current.key && SubtitleCandidatePool.languageKey(it.language) == language }
+            .distinctBy { it.url }
+            .take(MAX_ALTERNATIVES)
+        if (alternatives.isEmpty()) return
+        val active = synchronized(poolLock) {
+            if (poolSession !== current) {
+                poolCandidatesRequested.clear()
+                poolReferencesRequested.clear()
+                poolSession = current
+                pool = SubtitleCandidatePool(current.track, log).apply {
+                    mediaDurationMs = this@SpotAudioSyncEngine.mediaDurationMs
+                }
+                log("testing ${alternatives.size} other $language subtitles against the audio")
+            }
+            pool
+        } ?: return
+        for (alternative in alternatives) {
+            val shouldFetch = synchronized(poolLock) { poolCandidatesRequested.add(alternative.url) }
+            if (!shouldFetch) continue
+            fetchReference(alternative) { dialogue ->
+                if (pool === active && active.addCandidate(alternative.url, dialogue)) {
+                    poolVersion.incrementAndGet()
+                }
+            }
+        }
+        if (recognizers?.isModelReady() != true) return
+        englishCandidates().take(MAX_REFERENCES).forEach { reference ->
+            if (reference.url != current.key) {
+                val shouldFetch = synchronized(poolLock) { poolReferencesRequested.add(reference.url) }
+                if (shouldFetch) {
+                    fetchReference(reference) { dialogue ->
+                        if (pool === active && dialogue.isNotEmpty()) {
+                            active.addReference(reference.url, dialogue)
+                            poolVersion.incrementAndGet()
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun stopPool() {
+        synchronized(poolLock) {
+            pool = null
+            poolSession = null
+            poolCandidatesRequested.clear()
+            poolReferencesRequested.clear()
+        }
+    }
+
+    private fun updatePool(current: Session) {
+        val alternatives = pool ?: return
+        if (session !== current || (model != null && !estimated)) return
+        val winner = alternatives.update(timeline, asr.heardWords(), audioSyncNanoTime() / 1_000_000L) ?: return
+        if (session !== current || !enabled || released) return
+        if (winner.chosen) {
+            stopPool()
+            current.tracker.adopt(winner.model)
+            model = winner.model
+            estimated = false
+            log("LOCK of the chosen subtitle through the recognised reference: ${winner.model}")
+            notify(
+                AudioSyncStatus.Synced(
+                    offsetMs = winner.model.delayUsAt(playbackPositionMs * 1_000L) / 1_000L,
+                    rateCorrected = winner.model.segments.first().scale != 1.0,
+                ),
+            )
+            return
+        }
+        log("SWITCHING subtitle ${current.key} -> ${winner.key} via ${winner.method}: ${winner.model}")
+        synchronized(poolLock) { switchedAway += current.key }
+        stopPool()
+        handover = Handover(winner.key, winner.model, winner.method)
+        try {
+            requestSwitch(winner.key)
+        } catch (_: Throwable) {
+        }
+    }
+
+    private fun adoptHandover(current: Session, handedOver: Handover) {
+        current.tracker.adopt(handedOver.model)
+        model = handedOver.model
+        estimated = false
+        log("adopted mapping of switched-to subtitle ${handedOver.model}")
+        notify(
+            AudioSyncStatus.Synced(
+                offsetMs = handedOver.model.delayUsAt(playbackPositionMs * 1_000L) / 1_000L,
+                rateCorrected = handedOver.model.segments.first().scale != 1.0,
+            ),
+        )
+    }
+
     private fun scheduleAlignment() {
         val current = session ?: return
         if (!enabled || released) return
         val now = audioSyncNanoTime() / 1_000_000L
         val version = timeline.version
+        val wordCount = asr.heardWords().size
+        val currentPoolVersion = poolVersion.value
+        val activePool = pool?.takeIf { it.hasPendingWork(version, wordCount) }
         val interval = if (current.tracker.model == null) SEARCH_INTERVAL_MS else ALIGN_INTERVAL_MS
-        if (current === lastAlignedSession && (version == lastAlignVersion || now - lastAlignAtMs < interval)) return
+        val timelineDue = current !== lastAlignedSession || (version != lastAlignVersion && now - lastAlignAtMs >= interval)
+        val poolDue = activePool != null && (
+            (currentPoolVersion != lastPoolVersion && now - lastAlignAtMs >= SEARCH_INTERVAL_MS) ||
+                now - lastAlignAtMs >= ALIGN_INTERVAL_MS
+            )
+        if (!timelineDue && !poolDue) return
         if (!alignRunning.compareAndSet(expect = false, update = true)) return
         lastAlignedSession = current
-        lastAlignVersion = version
+        if (timelineDue) lastAlignVersion = version
+        lastPoolVersion = currentPoolVersion
         lastAlignAtMs = now
         val position = playbackPositionMs
         scope.launch(serial) {
             try {
-                align(current, position)
+                align(current, position, runTracker = timelineDue)
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (error: Throwable) {
@@ -514,46 +664,50 @@ internal class SpotAudioSyncEngine(
         }
     }
 
-    private fun align(current: Session, positionMs: Long) {
-        if (current.maintainedByRecognition) return
-        val outcome = current.tracker.update(timeline, positionMs)
-        if (session !== current) return
-        when (outcome) {
-            is AudioSyncTracker.Outcome.Provisional -> {
-                val first = model == null
-                model = outcome.model
-                estimated = true
-                log("provisional ${outcome.model}")
-                if (first) notify(AudioSyncStatus.Estimated(offsetMs = outcome.model.delayUsAt(positionMs * 1_000L) / 1_000L))
+    private fun align(current: Session, positionMs: Long, runTracker: Boolean) {
+        if (runTracker && !current.maintainedByRecognition) {
+            val outcome = current.tracker.update(timeline, positionMs)
+            if (session !== current) return
+            when (outcome) {
+                is AudioSyncTracker.Outcome.Provisional -> {
+                    val first = model == null
+                    model = outcome.model
+                    estimated = true
+                    log("provisional ${outcome.model}")
+                    if (first) notify(AudioSyncStatus.Estimated(offsetMs = outcome.model.delayUsAt(positionMs * 1_000L) / 1_000L))
+                }
+                is AudioSyncTracker.Outcome.Retracted -> {
+                    model = null
+                    estimated = false
+                    log("early estimate withdrawn")
+                    notify(AudioSyncStatus.Withdrawn)
+                }
+                is AudioSyncTracker.Outcome.Locked -> {
+                    stopPool()
+                    model = outcome.model
+                    estimated = false
+                    log("LOCKED ${outcome.model}")
+                    notify(
+                        AudioSyncStatus.Synced(
+                            offsetMs = outcome.model.delayUsAt(positionMs * 1_000L) / 1_000L,
+                            rateCorrected = outcome.estimate.scale != 1.0,
+                        ),
+                    )
+                }
+                is AudioSyncTracker.Outcome.Refined -> {
+                    model = outcome.model
+                    log("refined ${outcome.model}")
+                }
+                is AudioSyncTracker.Outcome.Jumped -> {
+                    model = outcome.model
+                    log("jump detected ${outcome.model}")
+                    notify(AudioSyncStatus.Adjusted(offsetMs = outcome.model.delayUsAt(positionMs * 1_000L) / 1_000L))
+                }
+                else -> Unit
             }
-            is AudioSyncTracker.Outcome.Retracted -> {
-                model = null
-                estimated = false
-                log("early estimate withdrawn")
-                notify(AudioSyncStatus.Withdrawn)
-            }
-            is AudioSyncTracker.Outcome.Locked -> {
-                model = outcome.model
-                estimated = false
-                log("LOCKED ${outcome.model}")
-                notify(
-                    AudioSyncStatus.Synced(
-                        offsetMs = outcome.model.delayUsAt(positionMs * 1_000L) / 1_000L,
-                        rateCorrected = outcome.estimate.scale != 1.0,
-                    ),
-                )
-            }
-            is AudioSyncTracker.Outcome.Refined -> {
-                model = outcome.model
-                log("refined ${outcome.model}")
-            }
-            is AudioSyncTracker.Outcome.Jumped -> {
-                model = outcome.model
-                log("jump detected ${outcome.model}")
-                notify(AudioSyncStatus.Adjusted(offsetMs = outcome.model.delayUsAt(positionMs * 1_000L) / 1_000L))
-            }
-            else -> Unit
         }
+        if (session !== current) return
+        if (model == null || estimated) updatePool(current)
     }
 
     private fun onAsrLock(result: AsrLock) {
@@ -564,7 +718,10 @@ internal class SpotAudioSyncEngine(
         val previous = model
         val wasFinal = current.maintainedByRecognition
         current.tracker.adopt(adopted)
-        if (result.final) current.maintainedByRecognition = true
+        if (result.final) {
+            stopPool()
+            current.maintainedByRecognition = true
+        }
         model = adopted
         estimated = !result.final
         val position = playbackPositionMs
@@ -692,6 +849,7 @@ internal class SpotAudioSyncEngine(
         private const val SEARCH_INTERVAL_MS = 3_000L
         private const val RECOGNIZER_REFRESH_MS = 1_000L
         private const val MAX_REFERENCES = 4
+        private const val MAX_ALTERNATIVES = 12
         private const val REFERENCE_WAIT_MS = 30_000L
         private const val MAX_FALLBACK_REFERENCES = 6
         private const val DOWNLOAD_RETRIES = 3
