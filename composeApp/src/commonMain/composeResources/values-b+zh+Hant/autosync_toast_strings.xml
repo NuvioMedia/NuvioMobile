@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<string name="autosync_toast_no_fit">同步失敗：這些字幕與此版本的影片不相符。</string>
 	<string name="autosync_label_synced">已自動同步</string>
 </resources>

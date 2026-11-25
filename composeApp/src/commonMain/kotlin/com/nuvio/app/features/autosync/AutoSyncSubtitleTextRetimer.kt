@@ -15,10 +15,12 @@ internal object AutoSyncSubtitleTextRetimer {
     private const val ASS_DEFAULT_END_INDEX = 2
     private const val ASS_MIN_DURATION_MS = 10L
 
-    fun retime(body: String, timeline: AutoSyncTimelineRetimeResult): String? {
+    fun retime(body: String, timeline: AutoSyncTimelineRetimeResult): String? =
+        retime(body, AutoSyncTimelineTimeMapper(timeline))
+
+    fun retime(body: String, mapper: SubtitleTimeMapping): String? {
         val text = AutoSyncSubtitleCueParser.cleanText(body)
         if (ttmlRegex.containsMatchIn(text.substring(0, minOf(512, text.length)))) return null
-        val mapper = AutoSyncTimelineTimeMapper(timeline)
         // Not a prefix sample: embedded [Fonts] or [Graphics] can push [Events] far into the file.
         return if (AutoSyncSubtitleCueParser.hasAssEventsHeader(text)) {
             retimeAss(text, mapper)
@@ -28,7 +30,7 @@ internal object AutoSyncSubtitleTextRetimer {
     }
 
     /** SRT and WebVTT: every `start --> end` line, keeping cue settings after the end time. */
-    private fun retimeTimingLines(text: String, mapper: AutoSyncTimelineTimeMapper): String? {
+    private fun retimeTimingLines(text: String, mapper: SubtitleTimeMapping): String? {
         val len = text.length
         val entries = ArrayList<TimingEntry>(maxOf(16, len / 80))
         var pos = 0
@@ -65,7 +67,7 @@ internal object AutoSyncSubtitleTextRetimer {
         lineStart: Int,
         lineEnd: Int,
         arrow: Int,
-        mapper: AutoSyncTimelineTimeMapper,
+        mapper: SubtitleTimeMapping,
     ): TimingEntry? {
         val startTsFrom = AutoSyncSubtitleCueParser.trimStartIndex(text, lineStart, arrow)
         val startTsTo = AutoSyncSubtitleCueParser.trimEndIndex(text, startTsFrom, arrow)
@@ -123,7 +125,7 @@ internal object AutoSyncSubtitleTextRetimer {
     }
 
     /** ASS/SSA: the Start and End fields of each Dialogue line in [Events]. */
-    private fun retimeAss(text: String, mapper: AutoSyncTimelineTimeMapper): String? {
+    private fun retimeAss(text: String, mapper: SubtitleTimeMapping): String? {
         val len = text.length
         val out = StringBuilder(len + 64)
         var inEvents = false

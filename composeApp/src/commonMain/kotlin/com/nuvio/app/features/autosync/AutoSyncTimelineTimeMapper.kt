@@ -3,11 +3,17 @@ package com.nuvio.app.features.autosync
 import kotlin.math.abs
 import kotlin.math.roundToLong
 
+internal interface SubtitleTimeMapping {
+    fun mapStartMs(originalMs: Long): Long
+
+    fun mapEndMs(originalMs: Long): Long
+}
+
 /**
  * Maps original subtitle times onto a retimed AutoSync timeline: the nearest retimed cue boundary
  * when one is close enough, otherwise the timeline's whole-film transform.
  */
-internal class AutoSyncTimelineTimeMapper(private val timeline: AutoSyncTimelineRetimeResult) {
+internal class AutoSyncTimelineTimeMapper(private val timeline: AutoSyncTimelineRetimeResult) : SubtitleTimeMapping {
     private val startOriginal: LongArray
     private val startRetimed: LongArray
     private val endOriginal: LongArray
@@ -47,9 +53,9 @@ internal class AutoSyncTimelineTimeMapper(private val timeline: AutoSyncTimeline
     var affineFallback = 0
         private set
 
-    fun mapStartMs(originalMs: Long): Long = mapTime(originalMs, startOriginal, startRetimed)
+    override fun mapStartMs(originalMs: Long): Long = mapTime(originalMs, startOriginal, startRetimed)
 
-    fun mapEndMs(originalMs: Long): Long = mapTime(originalMs, endOriginal, endRetimed)
+    override fun mapEndMs(originalMs: Long): Long = mapTime(originalMs, endOriginal, endRetimed)
 
     private fun mapTime(originalMs: Long, originals: LongArray, retimed: LongArray): Long {
         val n = originals.size

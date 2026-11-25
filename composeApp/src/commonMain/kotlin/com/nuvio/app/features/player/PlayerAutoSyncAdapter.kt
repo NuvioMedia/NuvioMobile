@@ -3,6 +3,13 @@ package com.nuvio.app.features.player
 import com.nuvio.app.features.autosync.AutoSyncPlayerController
 import com.nuvio.app.features.autosync.AutoSyncSubtitleCandidate
 
+internal fun PlayerEngineController.setAutoSyncContent(
+    contentType: String?,
+    videoId: String?,
+) {
+    (this as? AutoSyncPlayerController)?.setAutoSyncContent(contentType, videoId)
+}
+
 internal fun PlayerEngineController.setAutoSyncSubtitleCandidates(
     candidates: List<AutoSyncSubtitleCandidate>,
 ) {
