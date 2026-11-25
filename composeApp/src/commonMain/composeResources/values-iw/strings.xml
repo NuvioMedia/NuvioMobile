@@ -2388,14 +2388,16 @@ Therefore, duplicate the values-he directory as values-iw. Keep both directories
     <string name="cw_airs_today">עולה היום</string>
     <string name="cw_airs_tomorrow">עולה מחר</string>
     <plurals name="cw_airs_in_days">
-        <item quantity="one">משודר בעוד %1$d יום</item>
+        <item quantity="one">משודר מחר</item>
+        <item quantity="two">משודר מוחרתיים</item>
         <item quantity="other">משודר בעוד %1$d ימים</item>
     </plurals>
     <string name="cw_airs_date_short">%1$s</string>
     <string name="cw_airs_today_short">היום</string>
     <string name="cw_airs_tomorrow_short">מחר</string>
     <plurals name="cw_airs_in_days_short">
-        <item quantity="one">בעוד %1$d יום</item>
+        <item quantity="one">בעוד יום</item>
+        <item quantity="two">בעוד יומיים</item>
         <item quantity="other">בעוד %1$d ימים</item>
     </plurals>
     <string name="cw_new_episode">פרק חדש</string>
