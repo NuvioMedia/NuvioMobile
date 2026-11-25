@@ -285,6 +285,10 @@ actual fun PlatformPlayerSurface(
                 bridge.setSubtitleDelayMs(delayMs.coerceIn(SUBTITLE_DELAY_MIN_MS, SUBTITLE_DELAY_MAX_MS))
             }
 
+            override val supportsAssStyleCustomization = true
+
+            override val rendersAssNatively = true
+
             override fun applySubtitleStyle(style: SubtitleStyleState) {
                 subtitleStyle = style
                 bridge.applySubtitleStyle(
@@ -297,6 +301,8 @@ actual fun PlatformPlayerSurface(
                     subPos = style.toMpvSubtitlePosition(),
                     stripSdh = style.stripSdh,
                     styledOverlay = style.usesStyledOverlay,
+                    customizeAss = style.appearance.customizeAss,
+                    assScale = style.assScale,
                 )
             }
         }
