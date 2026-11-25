@@ -168,10 +168,9 @@ private final class AudioSyncSpotDecoder {
             : 0
         let startedAt = Date()
         var sampled: Int32 = 0
-        var totalBytes: Int64 = 0
         var failure: String?
         for (index, spotStartMs) in spotsMs.enumerated() {
-            if sink.isCancelled() || totalBytes >= maxBytes { break }
+            if sink.isCancelled() || bytesRead(context) >= maxBytes { break }
             let seekTargetUs = spotStartMs * 1_000 + startTimeUs
             guard av_seek_frame(context, -1, seekTargetUs, AVSEEK_FLAG_BACKWARD) >= 0 else {
                 failure = "stream cannot seek"
@@ -179,11 +178,10 @@ private final class AudioSyncSpotDecoder {
             }
             avcodec_flush_buffers(decoder)
             let resampler = AudioSyncResampler()
-            let startPosition = position(context)
-            let share = max(0, targetBytes - totalBytes) / Int64(spotsMs.count - index)
+            let spotStartBytes = bytesRead(context)
+            let share = max(0, targetBytes - spotStartBytes) / Int64(spotsMs.count - index)
             let endUs = (spotStartMs + spotMs) * 1_000
             var firstUs: Int64?
-            var spotBytes: Int64 = 0
             var seekMissed = false
             while !sink.isCancelled() {
                 if av_read_frame(context, packet) < 0 { break }
@@ -200,13 +198,14 @@ private final class AudioSyncSpotDecoder {
                     firstUs = timeUs
                 }
                 if timeUs >= endUs { break }
-                spotBytes = max(0, position(context) - startPosition)
-                if totalBytes + spotBytes >= maxBytes { break }
+                let readBytes = bytesRead(context)
+                if readBytes >= maxBytes { break }
+                let spotBytes = readBytes - spotStartBytes
                 if spotBytes >= share && !wantsMore(
                     spotBytes: spotBytes,
                     readUs: timeUs - (firstUs ?? timeUs),
                     minSpotMs: minSpotMs,
-                    downloadedBytes: totalBytes + spotBytes,
+                    downloadedBytes: readBytes,
                     startedAt: startedAt
                 ) {
                     break
@@ -221,21 +220,31 @@ private final class AudioSyncSpotDecoder {
                     sink: sink
                 )
             }
+            if !seekMissed && !sink.isCancelled() {
+                decode(
+                    packet: nil,
+                    decoder: decoder,
+                    frame: frame,
+                    resampler: resampler,
+                    timeBase: timeBase,
+                    startTimeUs: startTimeUs,
+                    sink: sink
+                )
+            }
             resampler.close()
             if seekMissed {
                 failure = "stream cannot seek"
                 break
             }
-            totalBytes += spotBytes
             if firstUs != nil { sampled += 1 }
             sink.onSpotEnd()
         }
-        return AudioSyncNativeSpotResult(sampled: sampled, bytes: totalBytes, failure: failure)
+        return AudioSyncNativeSpotResult(sampled: sampled, bytes: bytesRead(context), failure: failure)
     }
 
-    private func position(_ context: UnsafeMutablePointer<AVFormatContext>) -> Int64 {
+    private func bytesRead(_ context: UnsafeMutablePointer<AVFormatContext>) -> Int64 {
         guard let io = context.pointee.pb else { return 0 }
-        return max(0, avio_seek(io, 0, SEEK_CUR))
+        return io.pointee.bytes_read
     }
 
     private func wantsMore(spotBytes: Int64, readUs: Int64, minSpotMs: Int64, downloadedBytes: Int64, startedAt: Date) -> Bool {
@@ -247,7 +256,7 @@ private final class AudioSyncSpotDecoder {
     }
 
     private func decode(
-        packet: UnsafeMutablePointer<AVPacket>,
+        packet: UnsafeMutablePointer<AVPacket>?,
         decoder: UnsafeMutablePointer<AVCodecContext>,
         frame: UnsafeMutablePointer<AVFrame>,
         resampler: AudioSyncResampler,
@@ -255,7 +264,7 @@ private final class AudioSyncSpotDecoder {
         startTimeUs: Int64,
         sink: any AudioSyncNativePcmSink
     ) {
-        guard avcodec_send_packet(decoder, packet) >= 0 else { return }
+        guard avcodec_send_packet(decoder, packet.map { UnsafePointer($0) }) >= 0 else { return }
         while avcodec_receive_frame(decoder, frame) >= 0 {
             defer { av_frame_unref(frame) }
             let sampleCount = frame.pointee.nb_samples
