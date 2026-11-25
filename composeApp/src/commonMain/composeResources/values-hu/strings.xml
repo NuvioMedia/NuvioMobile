@@ -1048,7 +1048,7 @@
     <string name="community_membership_connected_description">Nem található aktív Nuvio-szint ezen a Patreon-fiókon. Nézd meg az elérhető lehetőségeket, vagy ha módosítottad a Patreon-tagságodat, frissíts.</string>
     <string name="community_membership_manage">Tagság kezelése</string>
     <string name="community_membership_refresh">Frissítés</string>
-    <string name="community_membership_refreshing">Frissítés...</string>
+    <string name="community_membership_refreshing">Frissítés…</string>
     <string name="community_membership_unable_load">A tagsági státusz nem tölthető be. Kérjük, próbáld újra.</string>
     <string name="community_membership_tier_supporter">Támogató</string>
     <string name="community_membership_tier_supporter_plus">Támogató Plusz</string>
