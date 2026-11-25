@@ -41,7 +41,7 @@
     <string name="addons_badge_catalogs">%1$d katalógus</string>
     <string name="addons_badge_configurable">Konfigurálható</string>
     <string name="addons_badge_disabled">Kikapcsolva</string>
-    <string name="addons_badge_refreshing">Frissítés...</string>
+    <string name="addons_badge_refreshing">Frissítés…</string>
     <string name="addons_badge_resources">%1$d erőforrás</string>
     <string name="addons_badge_unavailable">Nem érhető el</string>
     <string name="addons_configure">Kiegészítő konfigurálása</string>
@@ -1736,7 +1736,7 @@
     <string name="streams_episode_fallback_title">Epizód</string>
     <string name="streams_episode_title_with_name">S%1$d E%2$d - %3$s</string>
     <string name="streams_fetching">Lekérés…</string>
-    <string name="streams_finding_source">Forrás keresése...</string>
+    <string name="streams_finding_source">Forrás keresése…</string>
     <string name="playback_show_loading_status">Betöltési állapot megjelenítése</string>
     <string name="playback_show_loading_status_sub">Lépésenkénti állapot megjelenítése a lejátszó indítása közben.</string>
     <string name="player_loading_preparing">Stream előkészítése…</string>
@@ -2305,7 +2305,7 @@
     <string name="plugins_badge_disabled">Bővítmények letiltva</string>
     <string name="plugins_badge_enabled">Bővítmények engedélyezve</string>
     <string name="plugins_badge_providers">%1$d szolgáltató</string>
-    <string name="plugins_badge_refreshing">Frissítés...</string>
+    <string name="plugins_badge_refreshing">Frissítés…</string>
     <string name="plugins_badge_repos">%1$d repó</string>
     <string name="plugins_button_install_repo">Bővítménytároló telepítése</string>
     <string name="plugins_button_installing">Telepítés…</string>
