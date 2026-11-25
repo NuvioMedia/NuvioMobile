@@ -42,7 +42,7 @@
     <string name="settings_mdblist_disconnect_description">Leválasztás után ez a profil nem küld több megtekintési adatot. Az MDBList-előzményeid megmaradnak.</string>
     <string name="settings_mdblist_revoke_failed">A fiókot leválasztottuk erről az eszközről. A hozzáférés teljes visszavonásához távolítsd el az alkalmazást az MDBList-fiókod beállításaiban.</string>
     <string name="settings_mdblist_account_fallback">MDBList-felhasználó</string>
-    <string name="settings_mdblist_syncing">Megtekintési előzmények és lejátszási előrehaladás szinkronizálása…</string>
+    <string name="settings_mdblist_syncing">Megtekintési előzmények és lejátszási előrehaladás szinkronizálása...</string>
     <string name="settings_mdblist_last_synced">Utoljára szinkronizálva: %1$s</string>
     <string name="library_create_list_action">Létrehozás</string>
     <string name="library_list_privacy">Adatvédelem</string>
