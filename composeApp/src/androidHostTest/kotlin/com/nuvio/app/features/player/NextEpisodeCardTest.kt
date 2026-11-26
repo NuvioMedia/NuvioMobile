@@ -37,6 +37,7 @@ class NextEpisodeCardTest {
 
     private val visible = mutableStateOf(true)
     private val countdown = mutableStateOf<Int?>(null)
+    private val stillWatchingCountdown = mutableStateOf<Int?>(null)
     private var dismissals = 0
     private var plays = 0
     private var seeks = 0
@@ -140,6 +141,39 @@ class NextEpisodeCardTest {
         assertDismissed()
     }
 
+    @Test
+    fun stillWatchingPromptShowsQuestionAndCountdown() {
+        stillWatchingCountdown.value = 60
+        showCard()
+        compose.onNodeWithText("Are you still watching?").assertIsDisplayed()
+        compose.onNodeWithText("Stopping in 60").assertIsDisplayed()
+        compose.runOnIdle { stillWatchingCountdown.value = 59 }
+        compose.onNodeWithText("Stopping in 59").assertIsDisplayed()
+        compose.onNodeWithText("Next Episode").assertDoesNotExist()
+    }
+
+    @Test
+    fun stillWatchingPlayContinues() {
+        stillWatchingCountdown.value = 60
+        showCard()
+        compose.onNodeWithText("Play").performClick()
+        compose.runOnIdle {
+            assertEquals(1, plays)
+            assertEquals(0, dismissals)
+        }
+    }
+
+    @Test
+    fun stillWatchingExitDismissesWithoutPlaying() {
+        stillWatchingCountdown.value = 60
+        showCard()
+        compose.onNodeWithText("Exit").performClick()
+        compose.runOnIdle {
+            assertEquals(1, dismissals)
+            assertEquals(0, plays)
+        }
+    }
+
     private fun card() = compose.onNodeWithText("Next Episode")
 
     private fun assertDismissed() {
@@ -194,6 +228,7 @@ class NextEpisodeCardTest {
                         isAutoPlaySearching = false,
                         autoPlaySourceName = "Source",
                         autoPlayCountdownSec = countdown.value,
+                        stillWatchingCountdownSec = stillWatchingCountdown.value,
                         blurred = false,
                         onPlayNext = { plays++ },
                         onDismiss = { dismissals++; visible.value = false },
