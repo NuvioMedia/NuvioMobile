@@ -1,0 +1,45 @@
+name: Addon stream-order test
+
+on:
+  push:
+    branches:
+      - feat/addon-stream-drag-reorder
+    paths:
+      - ".github/workflows/addon-stream-order-test.yml"
+      - "composeApp/src/commonMain/kotlin/com/nuvio/app/features/streams/**"
+      - "composeApp/src/commonTest/kotlin/com/nuvio/app/features/streams/**"
+      - "composeApp/build.gradle.kts"
+      - "gradle/**"
+      - "gradlew"
+      - "gradle.properties"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: addon-stream-order-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Common stream tests (Android host)
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Create empty local properties for CI
+        run: touch local.properties
+
+      - name: Run common stream tests
+        run: ./gradlew :composeApp:testAndroidHostTest --tests 'com.nuvio.app.features.streams.StreamAutoPlaySelectorTest' --no-daemon --stacktrace
