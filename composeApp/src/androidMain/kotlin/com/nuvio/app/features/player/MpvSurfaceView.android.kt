@@ -11,6 +11,7 @@ import android.view.SurfaceView
 import android.view.TextureView
 import android.widget.FrameLayout
 import androidx.annotation.RequiresApi
+import com.nuvio.app.features.audiosync.AudioSyncTaps
 import `is`.xyz.mpv.MPV
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
@@ -44,6 +45,7 @@ internal abstract class MpvSurfaceView(context: Context, private val vo: String)
         mpv.setOptionString("force-window", "no")
         mpv.setOptionString("idle", "once")
         observeProperties()
+        AudioSyncTaps.attachMpv(mpv, this)
         addView(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) createSurfaceView() else createTextureView())
     }
 
@@ -90,7 +92,10 @@ internal abstract class MpvSurfaceView(context: Context, private val vo: String)
         destroyJob = mpvScope.launch {
             try {
                 detachSurface()
-                if (mpvInstance.isInitialized()) runCatching { mpv.close() }.onFailure(::logFailure)
+                if (mpvInstance.isInitialized()) {
+                    AudioSyncTaps.detachMpv(mpv)
+                    runCatching { mpv.close() }.onFailure(::logFailure)
+                }
             } finally {
                 mpvDispatcher.close()
             }

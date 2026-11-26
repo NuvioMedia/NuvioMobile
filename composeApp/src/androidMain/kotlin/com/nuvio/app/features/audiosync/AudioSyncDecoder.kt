@@ -43,12 +43,14 @@ internal class AudioSyncDecoder(
         class Sample(val format: Format, val timeUs: Long, val data: ByteArray) : Item
         class Pcm(val samples: FloatArray, val sampleRate: Int, val timeUs: Long) : Item
         data object Discontinuity : Item
+        data object LiveDiscontinuity : Item
     }
 
     private val lock = Object()
     private val queue = ArrayDeque<Item>()
     private var queuedBytes = 0
     private var dropping = false
+    private var liveDropping = false
     private var released = false
     private var thread: Thread? = null
 
@@ -129,12 +131,28 @@ internal class AudioSyncDecoder(
             val bytes = frames * 4
             if (queuedBytes + bytes > MAX_QUEUED_BYTES) {
                 droppedPlaybackBuffers.incrementAndGet()
+                if (!liveDropping) {
+                    liveDropping = true
+                    queue.addLast(Item.LiveDiscontinuity)
+                }
                 return
             }
+            liveDropping = false
             queue.addLast(Item.Pcm(mono.copyOf(frames), sampleRate, timeUs))
             queuedBytes += bytes
             ensureThread()
             lock.notifyAll()
+        }
+    }
+
+    /** Signals a discontinuity on the live playback PCM path without discarding earlier queued audio. */
+    fun liveDiscontinuity() {
+        synchronized(lock) {
+            if (released) return
+            if (queue.lastOrNull() !== Item.LiveDiscontinuity) {
+                queue.addLast(Item.LiveDiscontinuity)
+                lock.notifyAll()
+            }
         }
     }
 
@@ -203,19 +221,23 @@ internal class AudioSyncDecoder(
                         when (item) {
                             is Item.Sample -> queuedBytes -= item.data.size
                             is Item.Pcm -> queuedBytes -= item.samples.size * 4
-                            Item.Discontinuity -> Unit
+                            Item.Discontinuity, Item.LiveDiscontinuity -> Unit
                         }
                     }
                 }
                 workerState = when (item) {
                     is Item.Pcm -> "analysing playback PCM"
                     is Item.Sample -> "decoding compressed audio"
-                    Item.Discontinuity -> "resetting"
+                    Item.Discontinuity, Item.LiveDiscontinuity -> "resetting"
                 }
                 when (item) {
                     is Item.Discontinuity -> {
                         flushCodec()
                         analyzer.reset()
+                        liveAnalyzer.reset()
+                    }
+                    is Item.LiveDiscontinuity -> {
+                        liveAnalyzer.reset()
                     }
                     is Item.Sample -> decode(item)
                     is Item.Pcm -> {

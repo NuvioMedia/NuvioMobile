@@ -2,6 +2,15 @@ package com.nuvio.app.features.audiosync
 
 import kotlin.concurrent.Volatile
 import platform.Foundation.NSData
+import platform.Foundation.NSMutableData
+
+class AudioSyncNativeTapChunk {
+    var sampleRate: Int = 0
+    var sampleCount: Int = 0
+    var generation: Int = 0
+    var ptsUs: Long = 0L
+    var flags: Int = 0
+}
 
 interface AudioSyncNativePcmSink {
     fun isCancelled(): Boolean
@@ -56,6 +65,18 @@ interface AudioSyncNativeBridge {
         sha256: String,
         progress: AudioSyncNativeDownloadProgress,
     ): String?
+
+    fun isMpvAudioTapSupported(): Boolean
+
+    fun isMpvAudioTapAvailable(): Boolean
+
+    fun enableMpvAudioTap(ringCapacitySamples: Int): Long
+
+    fun setMpvAudioTapPaused(token: Long, paused: Boolean)
+
+    fun readMpvAudioTap(token: Long, outSamples: NSMutableData, maxSamples: Int, outMeta: AudioSyncNativeTapChunk): Int
+
+    fun disableMpvAudioTap(token: Long)
 }
 
 object AudioSyncNativeRegistry {

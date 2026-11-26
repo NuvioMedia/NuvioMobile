@@ -16,3 +16,6 @@ internal actual fun ensureAudioSyncInitialized() {
     )
     IosAsrModel.initialize()
 }
+
+internal actual fun isPlaybackOnlyAudioSyncSupported(): Boolean =
+    AudioSyncNativeRegistry.bridge?.isMpvAudioTapSupported() == true

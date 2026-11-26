@@ -30,6 +30,10 @@ internal interface MpvSpotAudioSyncHost {
 
     fun selectedAudioLanguage(): String?
 
+    fun liveAudioTap(): MpvLiveAudioTap? = null
+
+    fun isBackgroundOrPip(): Boolean = false
+
     fun replaceSubtitle(replacedUrl: String, path: String)
 
     fun setSubtitleDelayMs(delayMs: Int) {}
@@ -73,6 +77,7 @@ internal class MpvSpotAudioSyncFallback(
         log = log,
         onStatus = ::onStatus,
         requestSwitch = ::replaceSubtitle,
+        liveTap = host.liveAudioTap(),
     )
 
     @Volatile
@@ -95,6 +100,7 @@ internal class MpvSpotAudioSyncFallback(
 
     private var armed = false
     private var appliedModel: SubtitleSyncModel? = null
+    private var appliedConfirmed = false
     private var ticker: Job? = null
     private var takeOverJob: Job? = null
     @Volatile
@@ -108,7 +114,7 @@ internal class MpvSpotAudioSyncFallback(
 
     init {
         engine.enabled = AudioSyncSettings.fallbackEnabled.value
-        engine.samplingMode = spotSamplingMode()
+        engine.samplingMode = effectiveSamplingMode()
         engine.audioLanguage = host.selectedAudioLanguage()
         engine.setSource(sourceUrl, sourceHeaders)
         settingsJob = scope.launch {
@@ -144,8 +150,12 @@ internal class MpvSpotAudioSyncFallback(
         stop(restoreOriginalOnMpv = false)
         if (!AudioSyncSettings.fallbackEnabled.value) return
         engine.enabled = true
-        engine.samplingMode = spotSamplingMode()
+        engine.samplingMode = effectiveSamplingMode()
         engine.prepareRecognizer()
+        if (engine.isLiveAudioTapSupported) {
+            engine.setLiveTapPaused(host.isBackgroundOrPip() || !host.isPlaying())
+            engine.startLiveListening()
+        }
         if (!armed) {
             armed = true
             engine.setContent(contentType, videoId)
@@ -160,6 +170,14 @@ internal class MpvSpotAudioSyncFallback(
 
     override fun takeOver(url: String): Boolean {
         if (!AudioSyncSettings.fallbackEnabled.value || !engine.enabled) {
+            disarm()
+            return false
+        }
+        val sampling = effectiveSamplingMode()
+        engine.samplingMode = sampling
+        val liveUsable = engine.isLiveAudioTapSupported && !engine.isLiveAudioNonPcm
+        if (!liveUsable && sampling == AudioSamplingMode.OFF) {
+            log("libmpv live audio tap unavailable and audio sampling is off")
             disarm()
             return false
         }
@@ -192,6 +210,7 @@ internal class MpvSpotAudioSyncFallback(
             }
         }
         appliedModel = null
+        appliedConfirmed = false
         pendingStatus = null
         lockConfirmed = false
         engine.stopSession()
@@ -203,8 +222,17 @@ internal class MpvSpotAudioSyncFallback(
         engine.release()
     }
 
-    private fun spotSamplingMode(): AudioSamplingMode =
-        AudioSyncSettings.samplingMode.value.takeIf { it != AudioSamplingMode.OFF } ?: AudioSamplingMode.LOW
+    /**
+     * Patched libmpv supports [AudioSamplingMode.OFF] (live playback audio only), matching
+     * ExoPlayer. On unpatched stock binaries that lack the tap ABI, keep coercing OFF to LOW so
+     * spot-only playback continues to work without regression.
+     */
+    private fun effectiveSamplingMode(): AudioSamplingMode =
+        if (engine.isLiveAudioTapSupported) {
+            AudioSyncSettings.samplingMode.value
+        } else {
+            AudioSyncSettings.samplingMode.value.takeIf { it != AudioSamplingMode.OFF } ?: AudioSamplingMode.LOW
+        }
 
     private fun references(list: List<AutoSyncSubtitleCandidate>): List<AudioSyncReference> =
         list.distinctBy { it.url }.map { subtitle ->
@@ -238,11 +266,13 @@ internal class MpvSpotAudioSyncFallback(
         }
         target = Target(url, body)
         appliedModel = null
+        appliedConfirmed = false
         unmatchedPlayedMs = 0L
         unmatchedReported = false
         lockConfirmed = false
         startTicker()
-        log("AutoSync kept the original timing of $url; syncing it to sampled audio")
+        val modeDesc = if (engine.hasLiveAudioTap) "live and sampled audio" else "sampled audio"
+        log("AutoSync kept the original timing of $url; syncing it to $modeDesc")
         engine.startSession(url, dialogue)
     }
 
@@ -256,12 +286,24 @@ internal class MpvSpotAudioSyncFallback(
                     return@launch
                 }
                 engine.audioLanguage = host.selectedAudioLanguage()
+                val playing = host.isPlaying()
+                engine.setLiveTapPaused(host.isBackgroundOrPip() || !playing)
                 val positionMs = host.positionMs().coerceAtLeast(0L)
                 val durationMs = host.durationMs().coerceAtLeast(0L)
                 engine.onPlaybackPosition(positionMs, durationMs)
                 val model = engine.currentModel()
-                if (current != null && model !== appliedModel) {
+                val confirmed = engine.isModelConfirmed
+                if (current != null &&
+                    MpvSubtitleRetimerThrottle.shouldApply(
+                        previousModel = appliedModel,
+                        previousConfirmed = appliedConfirmed,
+                        newModel = model,
+                        newConfirmed = confirmed,
+                        positionMs = positionMs,
+                    )
+                ) {
                     appliedModel = model
+                    appliedConfirmed = confirmed
                     apply(current, model)
                 }
                 val status = pendingStatus
@@ -269,10 +311,14 @@ internal class MpvSpotAudioSyncFallback(
                 if (current != null && target === current && status != null) {
                     when (status) {
                         is AudioSyncStatus.Synced, is AudioSyncStatus.Adjusted -> {
-                            if (appliedModel != null && appliedModel === engine.currentModel()) {
+                            val currentModel = engine.currentModel()
+                            val currentConfirmed = engine.isModelConfirmed
+                            if (appliedModel != null &&
+                                (appliedModel === currentModel || (appliedConfirmed && currentConfirmed))
+                            ) {
                                 lockConfirmed = true
                                 AutoSyncSyncedSubtitle.mark(current.url)
-                            } else if (engine.currentModel() != null) {
+                            } else if (currentModel != null) {
                                 pendingStatus = status
                             }
                         }
@@ -293,7 +339,7 @@ internal class MpvSpotAudioSyncFallback(
                     }
                 }
                 if (current != null && target === current && !unmatchedReported && !engine.isModelConfirmed) {
-                    if (host.isPlaying()) unmatchedPlayedMs += TICK_MS
+                    if (playing) unmatchedPlayedMs += TICK_MS
                     if (unmatchedPlayedMs >= UNMATCHED_REPORT_MS) {
                         unmatchedReported = true
                         log("no audio match after ${unmatchedPlayedMs / 1_000}s of playback; still searching")
@@ -364,6 +410,7 @@ internal class MpvSpotAudioSyncFallback(
             activeUrl = url
             target = Target(url, body, replacedSource = current.shownPath ?: current.url)
             appliedModel = null
+            appliedConfirmed = false
             unmatchedPlayedMs = 0L
             unmatchedReported = false
             lockConfirmed = false

@@ -16,7 +16,9 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import platform.Foundation.NSData
+import platform.Foundation.NSMutableData
 import platform.Foundation.create
+import platform.Foundation.dataWithLength
 import platform.posix.memcpy
 
 @OptIn(ExperimentalForeignApi::class)
@@ -127,5 +129,74 @@ internal class IosAudioSyncRecognizers(private val bridge: AudioSyncNativeBridge
 
     override fun release() {
         IosSharedRecognizer.release()
+    }
+}
+
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
+internal class IosMpvLiveAudioTap(
+    private val native: AudioSyncNativeBridge,
+) : MpvLiveAudioTap {
+    private val lock = SynchronizedObject()
+    private var scratchData: NSMutableData? = null
+    private var scratchCapacitySamples = 0
+    private val metaBuffer = AudioSyncNativeTapChunk()
+
+    override val isSupported: Boolean
+        get() = native.isMpvAudioTapSupported()
+
+    override val isAvailable: Boolean
+        get() = native.isMpvAudioTapAvailable()
+
+    override fun enable(ringCapacitySamples: Int): Long =
+        native.enableMpvAudioTap(ringCapacitySamples)
+
+    override fun setPaused(token: Long, paused: Boolean) {
+        if (token == 0L) return
+        native.setMpvAudioTapPaused(token, paused)
+    }
+
+    override fun readInto(token: Long, outSamples: FloatArray, maxSamples: Int, outMeta: MpvAudioTapChunk): Int {
+        if (token == 0L) {
+            outMeta.flags = MpvAudioTapFlags.EOF
+            return 0
+        }
+        val limit = minOf(maxSamples, outSamples.size)
+        if (limit <= 0) return -1
+        return synchronized(lock) {
+            val data = ensureScratchLocked(limit) ?: return@synchronized -1
+            val read = native.readMpvAudioTap(token, data, limit, metaBuffer)
+            outMeta.sampleRate = metaBuffer.sampleRate
+            outMeta.sampleCount = metaBuffer.sampleCount
+            outMeta.generation = metaBuffer.generation
+            outMeta.ptsUs = metaBuffer.ptsUs
+            outMeta.flags = metaBuffer.flags
+            if (read > 0) {
+                val count = minOf(read, limit)
+                outSamples.usePinned { pinned ->
+                    memcpy(pinned.addressOf(0), data.bytes, (count * 4).convert())
+                }
+                count
+            } else {
+                read
+            }
+        }
+    }
+
+    override fun disable(token: Long) {
+        if (token == 0L) return
+        native.disableMpvAudioTap(token)
+        synchronized(lock) {
+            scratchData = null
+            scratchCapacitySamples = 0
+        }
+    }
+
+    private fun ensureScratchLocked(samples: Int): NSMutableData? {
+        val existing = scratchData
+        if (existing != null && scratchCapacitySamples >= samples) return existing
+        val created = NSMutableData.dataWithLength((samples * 4).convert()) ?: return null
+        scratchData = created
+        scratchCapacitySamples = samples
+        return created
     }
 }
