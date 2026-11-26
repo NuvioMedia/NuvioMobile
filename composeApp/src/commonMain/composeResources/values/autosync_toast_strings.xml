@@ -1,5 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="autosync_toast_no_fit">Sync failed: these subtitles don’t match this version of the video.</string>
     <string name="autosync_label_synced">Auto synced</string>
+    <string name="autosync_status_title">Auto Sync Status</string>
+    <string name="autosync_status_synced">Synced</string>
+    <string name="autosync_status_not_needed">Not needed</string>
+    <string name="autosync_status_in_progress">In progress</string>
+    <string name="autosync_status_no_fit">May not match</string>
+    <string name="autosync_status_no_reference">No embedded subtitles</string>
+    <string name="autosync_status_failed">Failed</string>
 </resources>

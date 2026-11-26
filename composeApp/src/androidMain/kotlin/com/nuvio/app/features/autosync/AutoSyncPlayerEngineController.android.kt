@@ -68,6 +68,9 @@ internal class AutoSyncPlayerEngineController(
     private val coordinator: AutoSyncPlayerCoordinator,
 ) : PlayerEngineController by base, AutoSyncPlayerController {
 
+    override fun setAutoSyncContent(contentType: String?, videoId: String?) =
+        coordinator.setContent(contentType, videoId)
+
     override fun setAutoSyncSubtitleCandidates(candidates: List<AutoSyncSubtitleCandidate>) =
         coordinator.setCandidates(candidates)
 
