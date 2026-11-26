@@ -73,6 +73,11 @@ internal fun PlaybackSubtitleSettings(
                     enabled = !settings.externalPlayerEnabled,
                 )
                 SettingsGroupDivider(isTablet = isTablet)
+                AudioSyncPlaybackSettingsRows(
+                    isTablet = isTablet,
+                    enabled = !settings.externalPlayerEnabled,
+                )
+                SettingsGroupDivider(isTablet = isTablet)
                 SettingsSwitchRow(
                     title = stringResource(Res.string.settings_playback_subtitle_strip_sdh),
                     description = stringResource(Res.string.settings_playback_subtitle_strip_sdh_description),

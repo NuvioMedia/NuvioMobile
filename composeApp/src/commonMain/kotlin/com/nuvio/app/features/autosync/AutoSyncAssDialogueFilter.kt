@@ -34,11 +34,6 @@ internal object AutoSyncAssDialogueFilter {
             """internal|narrat\w*|overlap|top|alt|sub|subs|subtitles?)(?:$|[^a-z])""",
     )
 
-    // Override tags that place, animate, clip or draw text: typesetting, not dialogue.
-    private val typesetTag = Regex(
-        """\\(?:pos|move|org|i?clip)\s*\(|\\t\s*\(|\\p[1-9]|\\[kK][fo]?\d|\\fr[xyz]?-?\d|\\fa[xy]""",
-    )
-
     internal data class Style(val name: String, val alignment: Int?)
 
     internal data class Event(
@@ -56,15 +51,45 @@ internal object AutoSyncAssDialogueFilter {
      */
     fun dialogueEvents(events: List<Event>, styles: List<Style>): List<Event> {
         if (events.size < MIN_DIALOGUE_EVENTS) return events
-        val stylesByName = styles.associateBy { it.name.lowercase() }
-        val eventsByStyle = events.groupBy { it.style.lowercase() }
-        val dialogueStyles = eventsByStyle
-            .filter { (style, styleEvents) ->
-                isDialogueStyle(style, stylesByName[style], styleEvents)
+        val stylesByName = HashMap<String, Style>(styles.size * 2)
+        for (i in styles.indices) {
+            val s = styles[i]
+            stylesByName[s.name.lowercase()] = s
+        }
+
+        // Compute lowered style name and typeset flag ONCE per event instead of twice.
+        val styleNames = arrayOfNulls<String>(events.size)
+        val isTypeset = BooleanArray(events.size)
+        val styleTotals = HashMap<String, Int>(16)
+        val styleTypesetCounts = HashMap<String, Int>(16)
+        val styleNameCache = HashMap<String, String>(16)
+
+        for (i in events.indices) {
+            val ev = events[i]
+            val lowered = styleNameCache.getOrPut(ev.style) { ev.style.lowercase() }
+            styleNames[i] = lowered
+            val ts = hasTypesetTag(ev.rawText)
+            isTypeset[i] = ts
+            styleTotals[lowered] = (styleTotals[lowered] ?: 0) + 1
+            if (ts) {
+                styleTypesetCounts[lowered] = (styleTypesetCounts[lowered] ?: 0) + 1
             }
-            .keys
-        val dialogue = events.filter { event ->
-            event.style.lowercase() in dialogueStyles && isDialogueEvent(event)
+        }
+
+        val dialogueStyles = HashSet<String>(styleTotals.size * 2)
+        for ((styleName, total) in styleTotals) {
+            val typesetCount = styleTypesetCounts[styleName] ?: 0
+            if (isDialogueStyleCounts(styleName, stylesByName[styleName], total, typesetCount)) {
+                dialogueStyles += styleName
+            }
+        }
+
+        val dialogue = ArrayList<Event>(events.size)
+        for (i in events.indices) {
+            val ev = events[i]
+            if (styleNames[i] in dialogueStyles && !isTypeset[i] && isDialogueEventWithoutTypeset(ev)) {
+                dialogue += ev
+            }
         }
         return if (dialogue.size < MIN_DIALOGUE_EVENTS) events else dialogue
     }
@@ -82,46 +107,117 @@ internal object AutoSyncAssDialogueFilter {
         estimatedEndStartsMs: Set<Long>,
     ): List<SubtitleSyncCue> {
         if (cues.size < MIN_DIALOGUE_EVENTS) return cues
-        val sorted = cues.sortedBy { it.startTimeMs }
-        val starts = LongArray(sorted.size) { sorted[it].startTimeMs }
-        val dialogue = sorted.filterIndexed { index, cue ->
-            val durationMs = cue.endTimeMs - cue.startTimeMs
-            val explicit = cue.startTimeMs !in estimatedEndStartsMs
-            if (explicit && durationMs !in MIN_DIALOGUE_DURATION_MS..MAX_DIALOGUE_DURATION_MS) {
-                return@filterIndexed false
+        var alreadySorted = true
+        for (i in 1 until cues.size) {
+            if (cues[i].startTimeMs < cues[i - 1].startTimeMs) {
+                alreadySorted = false
+                break
             }
-            startsWithin(starts, index, BURST_WINDOW_MS) < BURST_MIN_STARTS
+        }
+        val sorted = if (alreadySorted) cues else cues.sortedBy { it.startTimeMs }
+        val n = sorted.size
+        val dialogue = ArrayList<SubtitleSyncCue>(n)
+        var left = 0
+        var right = 0
+        for (index in 0 until n) {
+            val cue = sorted[index]
+            val center = cue.startTimeMs
+            while (left < index && center - sorted[left].startTimeMs > BURST_WINDOW_MS) left++
+            while (right + 1 < n && sorted[right + 1].startTimeMs - center <= BURST_WINDOW_MS) right++
+            val durationMs = cue.endTimeMs - center
+            val explicit = center !in estimatedEndStartsMs
+            if (explicit && durationMs !in MIN_DIALOGUE_DURATION_MS..MAX_DIALOGUE_DURATION_MS) {
+                continue
+            }
+            if (right - left + 1 < BURST_MIN_STARTS) {
+                dialogue += cue
+            }
         }
         return if (dialogue.size < MIN_DIALOGUE_EVENTS) cues else dialogue
     }
 
-    /** How many of the sorted [starts] lie within [radiusMs] of the one at [index], itself included. */
-    private fun startsWithin(starts: LongArray, index: Int, radiusMs: Long): Int {
-        val center = starts[index]
-        var first = index
-        while (first > 0 && center - starts[first - 1] <= radiusMs) first--
-        var last = index
-        while (last < starts.lastIndex && starts[last + 1] - center <= radiusMs) last++
-        return last - first + 1
-    }
-
-    private fun isDialogueStyle(name: String, style: Style?, events: List<Event>): Boolean {
+    private fun isDialogueStyleCounts(
+        name: String,
+        style: Style?,
+        totalEvents: Int,
+        typesetEvents: Int,
+    ): Boolean {
         val namedDialogue = dialogueName.containsMatchIn(name)
         if (!namedDialogue && nonDialogueName.containsMatchIn(name)) return false
         // Numpad alignment: 4-6 is the middle row, where dialogue is not placed.
         if (!namedDialogue && style?.alignment in 4..6) return false
-        val typeset = events.count { typesetTag.containsMatchIn(it.rawText) }
-        return typeset < events.size * TYPESET_STYLE_RATIO
+        return typesetEvents < totalEvents * TYPESET_STYLE_RATIO
     }
 
-    private fun isDialogueEvent(event: Event): Boolean {
+    private fun isDialogueEventWithoutTypeset(event: Event): Boolean {
         if (event.effect.isNotBlank()) return false
-        val actor = event.name.lowercase()
-        if (actor.isNotEmpty() && !dialogueName.containsMatchIn(actor) &&
-            nonDialogueName.containsMatchIn(actor)
-        ) {
-            return false
+        val rawActor = event.name
+        if (rawActor.isNotEmpty()) {
+            val actor = rawActor.lowercase()
+            if (!dialogueName.containsMatchIn(actor) && nonDialogueName.containsMatchIn(actor)) {
+                return false
+            }
         }
-        return !typesetTag.containsMatchIn(event.rawText)
+        return true
+    }
+
+    /**
+     * Exact zero-regex match inside ASS `{...}` override blocks for:
+     * `\\(?:pos|move|org|i?clip)\s*\(|\\t\s*\(|\\p[1-9]|\\[kK][fo]?\d|\\fr[xyz]?-?\d|\\fa[xy]`
+     */
+    internal fun hasTypesetTag(rawText: String): Boolean {
+        val len = rawText.length
+        var blockStart = rawText.indexOf('{')
+        while (blockStart >= 0 && blockStart + 2 < len) {
+            val blockEnd = rawText.indexOf('}', blockStart + 1)
+            val limit = if (blockEnd >= 0) blockEnd else len
+            var i = rawText.indexOf('\\', blockStart + 1)
+            while (i in (blockStart + 1) until (limit - 1)) {
+                val c1 = rawText[i + 1]
+                val matched = when (c1) {
+                    'p', 'P' -> (c1 == 'p' && i + 2 < limit && rawText[i + 2] in '1'..'9') ||
+                        matchesTagWithParen(rawText, i + 1, limit, "pos")
+                    'm', 'M' -> matchesTagWithParen(rawText, i + 1, limit, "move")
+                    'o', 'O' -> matchesTagWithParen(rawText, i + 1, limit, "org")
+                    'c', 'C' -> matchesTagWithParen(rawText, i + 1, limit, "clip")
+                    'i', 'I' -> matchesTagWithParen(rawText, i + 1, limit, "iclip")
+                    't', 'T' -> hasOptionalSpacesThenOpenParen(rawText, i + 2, limit)
+                    'k', 'K' -> {
+                        var k = i + 2
+                        if (k < limit && rawText[k].lowercaseChar().let { it == 'f' || it == 'o' }) k++
+                        k < limit && rawText[k] in '0'..'9'
+                    }
+                    'f', 'F' -> i + 2 < limit && when (rawText[i + 2].lowercaseChar()) {
+                        'r' -> {
+                            var k = i + 3
+                            if (k < limit && rawText[k].lowercaseChar() in "xyz") k++
+                            if (k < limit && rawText[k] == '-') k++
+                            k < limit && rawText[k] in '0'..'9'
+                        }
+                        'a' -> i + 3 < limit && rawText[i + 3].lowercaseChar() in "xy"
+                        else -> false
+                    }
+                    else -> false
+                }
+                if (matched) return true
+                i = rawText.indexOf('\\', i + 1)
+            }
+            if (blockEnd < 0) break
+            blockStart = rawText.indexOf('{', blockEnd + 1)
+        }
+        return false
+    }
+
+    private fun matchesTagWithParen(text: String, start: Int, limit: Int, tag: String): Boolean {
+        val after = start + tag.length
+        return after < limit &&
+            text.regionMatches(start, tag, 0, tag.length, ignoreCase = true) &&
+            hasOptionalSpacesThenOpenParen(text, after, limit)
+    }
+
+    private fun hasOptionalSpacesThenOpenParen(text: String, start: Int, len: Int): Boolean {
+        var k = start
+        while (k < len && text[k].isWhitespace()) k++
+        return k < len && text[k] == '('
     }
 }

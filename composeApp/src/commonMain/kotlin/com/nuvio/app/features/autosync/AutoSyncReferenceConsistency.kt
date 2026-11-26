@@ -13,7 +13,7 @@ import kotlin.math.max
  * are grouped first, so correlated copies cannot outvote an independent track.
  */
 internal object AutoSyncReferenceConsistency {
-    private const val MAX_CHECKED_REFERENCES = 8
+    internal const val MAX_CHECKED_REFERENCES = 8
     private const val MAX_CHECKED_SOURCES = 6
     private const val SAME_SOURCE_MIN_OVERLAP = 0.90
     private const val MAX_AGREEING_OFFSET_MS = 1_000.0
@@ -40,12 +40,20 @@ internal object AutoSyncReferenceConsistency {
         if (checked.size < 3) return emptySet()
 
         val agrees = Array(checked.size) { BooleanArray(checked.size) }
+        val hasAgreement = BooleanArray(checked.size)
         for (first in checked.indices) {
             for (second in first + 1 until checked.size) {
+                // If both sources already agree with some peer, testing (first, second) can
+                // never mark either as an outlier nor change whether others confirm each other.
+                if (hasAgreement[first] && hasAgreement[second]) continue
                 cancellationCheck?.invoke()
                 val agreement = agreeAtNearZeroDelay(checked[first].first(), checked[second].first())
-                agrees[first][second] = agreement
-                agrees[second][first] = agreement
+                if (agreement) {
+                    agrees[first][second] = true
+                    agrees[second][first] = true
+                    hasAgreement[first] = true
+                    hasAgreement[second] = true
+                }
             }
         }
 
@@ -67,6 +75,7 @@ internal object AutoSyncReferenceConsistency {
             referenceActivity = reference.activity,
             targetActivity = target.activity,
             targetSize = target.cueCount,
+            maxAbsOffsetMs = MAX_AGREEING_OFFSET_MS,
         ) ?: return false
         return abs(alignment.offsetMs) <= MAX_AGREEING_OFFSET_MS
     }
