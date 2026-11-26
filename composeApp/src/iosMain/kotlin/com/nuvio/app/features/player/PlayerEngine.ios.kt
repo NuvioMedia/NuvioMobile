@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import co.touchlab.kermit.Logger
 import com.nuvio.app.features.autosync.AutoSyncMpvCoordinator
 import com.nuvio.app.features.autosync.AutoSyncMpvEngineController
+import com.nuvio.app.features.audiosync.createIosAudioSyncFallback
 import com.nuvio.app.features.autosync.IosAutoSyncMpvPlatform
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
@@ -313,18 +314,28 @@ actual fun PlatformPlayerSurface(
     val latestExternalSubtitles = rememberUpdatedState(externalSubtitles)
     val sanitizedSourceHeaders = remember(sourceHeaders) { sanitizePlaybackHeaders(sourceHeaders) }
     val autoSyncCoordinator = remember(sourceUrl, sanitizedSourceHeaders, coroutineScope) {
+        val subtitleHeaders: (String) -> Map<String, String> = { subtitleUrl ->
+            latestExternalSubtitles.value
+                .firstOrNull { it.url == subtitleUrl }
+                ?.headers
+                .orEmpty()
+        }
         AutoSyncMpvCoordinator(
             scope = coroutineScope,
             sourceUrl = sourceUrl,
             sourceHeaders = sanitizedSourceHeaders,
-            getSubtitleHeaders = { subtitleUrl ->
-                latestExternalSubtitles.value
-                    .firstOrNull { it.url == subtitleUrl }
-                    ?.headers
-                    .orEmpty()
-            },
+            getSubtitleHeaders = subtitleHeaders,
             getPreferredLanguage = { latestPlayerSettings.value.preferredSubtitleLanguage },
             platform = IosAutoSyncMpvPlatform,
+            audioFallbackFactory = {
+                createIosAudioSyncFallback(
+                    scope = coroutineScope,
+                    bridge = bridge,
+                    sourceUrl = sourceUrl,
+                    sourceHeaders = sanitizedSourceHeaders,
+                    getSubtitleHeaders = subtitleHeaders,
+                )
+            },
         )
     }
     DisposableEffect(autoSyncCoordinator) {

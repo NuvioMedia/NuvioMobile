@@ -22,7 +22,8 @@ internal object AutoSyncPreferencesRepository {
 
     /** Keep the original timing when the needed correction is at most this; 0 disables it. */
     val syncToleranceOptionsMs = listOf(0, 100, 200, 300, 400, 500)
-    private val _syncToleranceMs = MutableStateFlow(0)
+    private const val DEFAULT_SYNC_TOLERANCE_MS = 300
+    private val _syncToleranceMs = MutableStateFlow(DEFAULT_SYNC_TOLERANCE_MS)
     val syncToleranceMs: StateFlow<Int> = _syncToleranceMs.asStateFlow()
 
     private var loadedProfileId: Int? = null
@@ -59,7 +60,7 @@ internal object AutoSyncPreferencesRepository {
         _preferredSubtitleAutoSyncOnStart.value = loadPersistedValue?.invoke() ?: true
         _aggressiveMode.value = loadAggressiveModePersistedValue?.invoke() ?: true
         _syncToleranceMs.value = loadSyncTolerancePersistedValue?.invoke()
-            ?.takeIf { it in syncToleranceOptionsMs } ?: 0
+            ?.takeIf { it in syncToleranceOptionsMs } ?: DEFAULT_SYNC_TOLERANCE_MS
         loadedProfileId = profileId
         lastStartupSessionKey = null
         lastStartupPlaybackKey = null

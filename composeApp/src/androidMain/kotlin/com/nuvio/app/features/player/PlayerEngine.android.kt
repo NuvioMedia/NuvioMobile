@@ -75,6 +75,10 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.SubtitleView
 import androidx.media3.ui.CaptionStyleCompat
+import com.nuvio.app.features.audiosync.AudioSyncFallback
+import com.nuvio.app.features.audiosync.AudioSyncSettings
+import com.nuvio.app.features.audiosync.AudioSyncTaps
+import com.nuvio.app.features.audiosync.MpvAudioSyncHost
 import com.nuvio.app.features.autosync.AutoSyncExtractorsFactory
 import com.nuvio.app.features.autosync.AutoSyncPreferencesRepository
 import com.nuvio.app.features.autosync.LIBMPV_AUTOSYNC_FILE_PREFIX
@@ -321,7 +325,13 @@ private fun ExoPlayerSurface(
             .let { factory -> // AutoSync hook: no observation while disabled.
                 AutoSyncPreferencesRepository.ensureLoaded()
                 if (AutoSyncPreferencesRepository.preferredSubtitleAutoSyncOnStart.value) {
-                    AutoSyncExtractorsFactory(factory, sourceUrl)
+                    AudioSyncFallback.initialize(context)
+                    val audioDelegate = if (AudioSyncSettings.fallbackEnabled.value) {
+                        AudioSyncTaps.wrapExtractors(factory, sourceUrl)
+                    } else {
+                        factory
+                    }
+                    AutoSyncExtractorsFactory(audioDelegate, sourceUrl)
                 } else factory
             }
     }
@@ -1357,14 +1367,16 @@ private fun LibmpvPlayerSurface(
     val sanitizedSourceHeaders = remember(sourceHeaders) {
         sanitizePlaybackHeaders(sourceHeaders)
     }
+    var playerViewRef by remember { mutableStateOf<NuvioLibmpvView?>(null) }
     val autoSyncCoordinator = rememberLibmpvAutoSyncCoordinator( // AutoSync hook
         scope = coroutineScope,
         sourceUrl = sourceUrl,
         sourceHeaders = sanitizedSourceHeaders,
         externalSubtitles = externalSubtitles,
         preferredSubtitleLanguage = preferredSubtitleLanguage,
+        getMpvHost = { playerViewRef },
+        onSubtitleDelayChanged = { delayMs -> playerViewRef?.setSubtitleDelayMs(delayMs) },
     )
-    var playerViewRef by remember { mutableStateOf<NuvioLibmpvView?>(null) }
     val nowPlayingController = remember(context, playerViewRef) {
         playerViewRef?.let { view ->
             AndroidPlayerNowPlayingController(
@@ -1708,7 +1720,7 @@ private class NuvioLibmpvView(
     videoOutput: AndroidLibmpvVideoOutput,
     private val hardwareDecodingEnabled: Boolean,
     private val yuv420pEnabled: Boolean,
-) : MpvSurfaceView(context, videoOutput.mpvValue) {
+) : MpvSurfaceView(context, videoOutput.mpvValue), MpvAudioSyncHost {
     private var currentSourceUrl: String? = null
     private var currentSourceAudioUrl: String? = null
     private var currentRequestHeaders: Map<String, String> = emptyMap()
@@ -2228,6 +2240,116 @@ private class NuvioLibmpvView(
                 }
                 .mapNotNull { node -> node.nodeInt("id") }
                 .forEach { id -> mpv.command("sub-remove", id.toString()) }
+        }
+    }
+
+    override fun currentPlaybackSnapshot(): PlayerPlaybackSnapshot = latestSnapshot
+
+    override fun selectedAudioLanguage(): String? =
+        latestAudioTracks.firstOrNull { it.isSelected }?.language
+
+    fun setSubtitleDelayMs(delayMs: Int) {
+        executeMpv {
+            mpv.setPropertyDouble(
+                "sub-delay",
+                delayMs.coerceIn(SUBTITLE_DELAY_MIN_MS, SUBTITLE_DELAY_MAX_MS) / 1000.0,
+            )
+        }
+    }
+
+    /**
+     * Adds [path] (a retimed copy of a subtitle) as a new external track and selects it, then
+     * removes [replaceTrackId], an earlier copy, so repeated retiming doesn't pile up tracks.
+     * Returns the new track's id, or null when it could not be added.
+     */
+    override suspend fun replaceAudioSyncSubtitle(
+        replacedUrl: String?,
+        path: String,
+        title: String?,
+        language: String?,
+        replaceTrackId: Int?,
+    ): Int? {
+        if (released.get() || path.isBlank()) return null
+        return withContext(mpvDispatcher) {
+            if (released.get()) return@withContext null
+            runCatching {
+                fun externalSubtitleTracks() = mpv.getPropertyNode("track-list")?.asArray()?.toList().orEmpty()
+                    .filter { node -> node.nodeString("type") == "sub" && node.nodeBoolean("external") == true }
+
+                val wasPaused = mpv.getPropertyBoolean("pause") ?: false
+                val replacedSource = replacedUrl?.toMpvSource()
+                val replaced = replacedSource?.let { source ->
+                    externalSubtitleTracks()
+                        .lastOrNull { node -> node.nodeString("external-filename") == source }
+                }
+                val safeTitle = title?.takeIf { it.isNotBlank() }
+                    ?: replaced?.let { node ->
+                        node.nodeString("title") ?: node.nodeString("external-filename")?.substringAfterLast('/')
+                    }
+                val safeLanguage = language?.takeIf { it.isNotBlank() } ?: replaced?.nodeString("lang")
+                when {
+                    safeTitle != null && safeLanguage != null ->
+                        mpv.command("sub-add", path, "select", safeTitle, safeLanguage)
+                    safeTitle != null -> mpv.command("sub-add", path, "select", safeTitle)
+                    else -> mpv.command("sub-add", path, "select")
+                }
+                mpv.setPropertyBoolean("sub-visibility", !styledSubtitleVisible)
+                val added = mpv.getPropertyString("sid")?.toIntOrNull()
+                if (replaceTrackId != null && replaceTrackId != added) {
+                    runCatching { mpv.command("sub-remove", replaceTrackId.toString()) }
+                }
+                // Drop the original URL track so libmpv's track-list doesn't show a duplicate entry.
+                if (replacedSource != null) {
+                    externalSubtitleTracks()
+                        .filter { node ->
+                            val id = node.nodeInt("id") ?: return@filter false
+                            val filename = node.nodeString("external-filename") ?: return@filter false
+                            id != added && filename == replacedSource
+                        }
+                        .mapNotNull { node -> node.nodeInt("id") }
+                        .forEach { id -> runCatching { mpv.command("sub-remove", id.toString()) } }
+                }
+                if (!wasPaused) mpv.setPropertyBoolean("pause", false)
+                latestAudioTracks = extractLibmpvTracks(context, type = "audio")
+                latestSubtitleTracks = extractLibmpvTracks(context, type = "sub")
+                updateStyledSubtitle()
+                added
+            }.getOrElse {
+                Log.w(TAG, "Failed to replace audio-synced external subtitle: ${it.message}")
+                null
+            }
+        }
+    }
+
+    override suspend fun restoreOriginalAudioSyncSubtitle(
+        trackId: Int,
+        originalUrl: String?,
+        title: String?,
+        language: String?,
+    ) {
+        if (released.get()) return
+        withContext(mpvDispatcher) {
+            if (released.get()) return@withContext
+            runCatching {
+                if (originalUrl != null && mpv.getPropertyString("sid")?.toIntOrNull() == trackId) {
+                    val safeTitle = title?.takeIf { it.isNotBlank() }
+                    val safeLanguage = language?.takeIf { it.isNotBlank() }
+                    val source = originalUrl.toMpvSource()
+                    when {
+                        safeTitle != null && safeLanguage != null ->
+                            mpv.command("sub-add", source, "select", safeTitle, safeLanguage)
+                        safeTitle != null -> mpv.command("sub-add", source, "select", safeTitle)
+                        else -> mpv.command("sub-add", source, "select")
+                    }
+                    mpv.setPropertyBoolean("sub-visibility", !styledSubtitleVisible)
+                }
+                mpv.command("sub-remove", trackId.toString())
+                latestAudioTracks = extractLibmpvTracks(context, type = "audio")
+                latestSubtitleTracks = extractLibmpvTracks(context, type = "sub")
+                updateStyledSubtitle()
+            }.onFailure {
+                Log.w(TAG, "Failed to restore original external subtitle: ${it.message}")
+            }
         }
     }
 
@@ -2979,11 +3101,12 @@ private class SubtitleOffsetRenderersFactory(
         enableFloatOutput: Boolean,
         enableAudioTrackPlaybackParams: Boolean,
     ): AudioSink {
-        return DefaultAudioSink.Builder(context)
+        val baseAudioSink = DefaultAudioSink.Builder(context)
             .setEnableFloatOutput(enableFloatOutput)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
             .setAudioProcessors(arrayOf(GainAudioProcessor(audioAmplificationDbProvider)))
             .build()
+        return AudioSyncTaps.wrapAudioSink(baseAudioSink)
     }
 
     override fun buildAudioRenderers(

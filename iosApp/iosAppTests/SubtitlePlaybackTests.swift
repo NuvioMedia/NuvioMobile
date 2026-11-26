@@ -33,7 +33,8 @@ final class SubtitlePlaybackTests: XCTestCase {
             pauseDescription: nil, providerName: "Local", providerAddonId: nil, contentType: nil, videoId: nil,
             parentMetaId: "subtitle-test", parentMetaType: "movie", torrentInfoHash: nil, torrentFileIdx: nil,
             torrentFilename: nil, torrentTrackers: [], initialPositionMs: 0, initialProgressFraction: nil,
-            contentLanguage: "en", subtitleExtras: nil, sourceFilename: nil, stream: nil
+            contentLanguage: "en", subtitleExtras: nil, sourceFilename: nil, stream: nil,
+            sourceFromLinkCache: false, sourceAutoSelected: false
         )
         let launchId = PlayerLaunchStore.shared.put(launch: launch)
         let window = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.windows.first)
