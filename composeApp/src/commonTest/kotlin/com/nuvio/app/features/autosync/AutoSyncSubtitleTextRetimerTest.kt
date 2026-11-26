@@ -2,6 +2,8 @@ package com.nuvio.app.features.autosync
 
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -163,6 +165,81 @@ class AutoSyncSubtitleTextRetimerTest {
 
         assertNull(AutoSyncSubtitleTextRetimer.retime(ttml, delayOnly))
         assertNull(AutoSyncSubtitleTextRetimer.retime("no timing here", delayOnly))
+    }
+
+    @Test
+    fun assWithEmbeddedFontsAndIndentedEventsParsesAndRetimes() {
+        val ass = buildString {
+            appendLine("[Script Info]")
+            appendLine("ScriptType: v4.00+")
+            appendLine("[Fonts]")
+            appendLine("fontname: embedded.ttf")
+            appendLine("!!%[not-a-header]abcdef1234567890")
+            appendLine("  [Events]")
+            appendLine("Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text")
+            appendLine("Dialogue: 0,0:00:05.00,0:00:07.50,Default,,0,0,0,,Hello world")
+            appendLine("Dialogue: 0,0:00:10.00,0:00:12.00,Default,,0,0,0,,Second line")
+        }
+
+        val cues = AutoSyncSubtitleCueParser.parse(ass)
+        assertEquals(2, cues.size)
+        assertEquals(5_000L, cues[0].startTimeMs)
+        assertEquals(10_000L, cues[1].startTimeMs)
+
+        val retimed = AutoSyncSubtitleTextRetimer.retime(
+            ass,
+            timeline(
+                cues = cues.map {
+                    AutoSyncRetimedCue(it.startTimeMs, it.endTimeMs, it.startTimeMs + 1_500L, it.endTimeMs + 1_500L)
+                },
+                interceptMs = 1_500.0,
+            ),
+        )
+        assertNotNull(retimed)
+        assertTrue(retimed.contains("fontname: embedded.ttf"))
+        val reparsed = AutoSyncSubtitleCueParser.parse(retimed)
+        assertEquals(2, reparsed.size)
+        assertEquals(6_500L, reparsed[0].startTimeMs)
+        assertEquals(11_500L, reparsed[1].startTimeMs)
+    }
+
+    @Test
+    fun hasAssEventsHeaderAndBulkSkipHandleCrAndCrLf() {
+        val rawCrLf = "[Script Info]\r\nScriptType: v4.00+\r\n\r\n[Events]\r\nFormat: Start, End, Text\r\n"
+        assertTrue(AutoSyncSubtitleCueParser.hasAssEventsHeader(rawCrLf))
+
+        val rawCr = "[Fonts]\rfontname: a.ttf\rAB[CD\r  [Events]\rFormat: Start, End, Text\r"
+        assertEquals(
+            rawCr.indexOf("  [Events]"),
+            AutoSyncSubtitleCueParser.findNextAssSectionAfterBulk(rawCr, rawCr.indexOf('\r') + 1),
+        )
+
+        val rawFontsCrLf = "[Fonts]\r\nfontname: a.ttf\r\nAB[CD\r\n  [Events]\r\nFormat: Start, End, Text\r\n"
+        assertEquals(
+            rawFontsCrLf.indexOf("  [Events]"),
+            AutoSyncSubtitleCueParser.findNextAssSectionAfterBulk(rawFontsCrLf, rawFontsCrLf.indexOf('\n') + 1),
+        )
+    }
+
+    @Test
+    fun malformedAssFormatWithCollidingStartAndDefaultEndDoesNotCrash() {
+        val malformed = """
+            [Events]
+            Format: Layer, Name, Start, Text
+            Dialogue: 0,Actor,0:00:01.00,Hello
+        """.trimIndent()
+        val delayOnly = timeline(cues = emptyList(), interceptMs = 1_000.0)
+
+        assertNull(AutoSyncSubtitleTextRetimer.retime(malformed, delayOnly))
+    }
+
+    @Test
+    fun legacyMatroskaAssCodecIdsAreTreatedAsAss() {
+        listOf("S_TEXT/ASS", "S_TEXT/SSA", "S_ASS", "S_SSA", "s_ass").forEach { codecId ->
+            assertTrue(EmbeddedSubtitleTimelineLoader.isMatroskaAssCodec(codecId), codecId)
+        }
+        assertFalse(EmbeddedSubtitleTimelineLoader.isMatroskaAssCodec("S_TEXT/UTF8"))
+        assertFalse(EmbeddedSubtitleTimelineLoader.isMatroskaAssCodec(null))
     }
 
     private fun shifted(srtOrVtt: String, offsetMs: Long): AutoSyncTimelineRetimeResult =
