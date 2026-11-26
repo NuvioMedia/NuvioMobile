@@ -851,7 +851,7 @@
     <string name="upcoming_section_title">À venir</string>
     <string name="settings_continue_watching_section_card_style">STYLE DE CARTE D’AFFICHE</string>
     <string name="settings_continue_watching_section_on_launch">AU DÉMARRAGE</string>
-    <string name="settings_continue_watching_section_up_next_behavior">COMPORTEMENT DE LA SUITE</string>
+    <string name="settings_continue_watching_section_up_next_behavior">COMPORTEMENT DE L’ÉPISODE SUIVANT</string>
     <string name="settings_continue_watching_section_visibility">VISIBILITÉ</string>
     <string name="settings_continue_watching_show_description">Afficher le bandeau Continuer à regarder sur l’écran d’accueil.</string>
     <string name="settings_continue_watching_show_title">Afficher Continuer à regarder</string>
@@ -1667,7 +1667,7 @@
     <string name="person_age">(%1$d ans)</string>
     <string name="person_born">Naissance&#160;: %1$s%2$s</string>
     <string name="person_died">Décès&#160;: %1$s</string>
-    <string name="person_known_for">Connu(e) pour&#160;: %1$s</string>
+    <string name="person_known_for">Domaine&#160;: %1$s</string>
     <string name="person_latest">Récent</string>
     <string name="person_load_failed">Impossible de charger les détails de %1$s</string>
     <string name="person_popular">Populaire</string>
@@ -1762,7 +1762,7 @@
     <string name="streams_size">TAILLE %1$s</string>
     <string name="streams_torrent_not_supported">Ce type de flux n’est pas pris en charge</string>
     <string name="debrid_missing_api_key">Connectez un compte dans les paramètres.</string>
-    <string name="debrid_not_cached">Non mis en cache sur Torbox.</string>
+    <string name="debrid_not_cached">Non mis en cache sur TorBox.</string>
     <string name="debrid_stream_stale">Ce lien a expiré. Actualisation des résultats.</string>
     <string name="debrid_resolve_failed">Impossible d’ouvrir ce lien.</string>
     <string name="external_player_failed">Impossible d’ouvrir le lecteur externe</string>
