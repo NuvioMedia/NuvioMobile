@@ -50,4 +50,11 @@ class StreamClearKeysTest {
             clearKeyLavfOptions("$kid:$key,$key:$kid"),
         )
     }
+
+    @Test
+    fun `a single pair is also given as the one-key options older FFmpeg builds read`() {
+        val options = clearKeyLavfOptions("$kid:$key")
+        assertEquals(true, options.endsWith(",cenc_decryption_key=$key,decryption_key=$key"))
+        assertEquals(false, clearKeyLavfOptions("$kid:$key,$key:$kid").contains("decryption_key="))
+    }
 }
