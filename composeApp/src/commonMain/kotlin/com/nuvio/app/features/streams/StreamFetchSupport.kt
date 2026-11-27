@@ -109,6 +109,7 @@ internal fun PluginRuntimeResult.toStreamItem(
 
     return StreamItem(
         name = name ?: title,
+        title = title.takeIf { it.isNotBlank() },
         description = subtitleParts.joinToString(" • ").ifBlank { null },
         url = url,
         infoHash = infoHash,

@@ -1,6 +1,8 @@
 package com.nuvio.app.features.streams
 
 import com.nuvio.app.features.debrid.DebridProviders
+import com.nuvio.app.features.plugins.PluginRuntimeResult
+import com.nuvio.app.features.plugins.PluginScraper
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -211,5 +213,58 @@ class StreamBadgePresentationTest {
         assertEquals(listOf("REMUX"), badgeNames(rules("REMUX", "(?i)remux")))
         assertEquals(emptyList(), badgeNames(StreamBadgeRules()))
         assertEquals(listOf("WEB"), badgeNames(webRules))
+    }
+
+    @Test
+    fun `preserves plugin title for badge matching while keeping streamSubtitle clean`() {
+        val scraper = PluginScraper(
+            id = "demo",
+            repositoryUrl = "https://example.test/manifest.json",
+            name = "DemoPlugin",
+            description = "Demo plugin",
+            version = "1.0.0",
+            filename = "providers/demo.js",
+            supportedTypes = listOf("movie"),
+            enabled = true,
+            manifestEnabled = true,
+            code = "",
+        )
+        val item = PluginRuntimeResult(
+            name = "DemoPlugin",
+            title = "DemoPlugin • 1080p • WEB-DL • H.264",
+            url = "https://example.test/video.m3u8",
+            quality = "1080p",
+        ).toStreamItem(scraper)
+
+        assertEquals("DemoPlugin", item.streamLabel)
+        assertEquals("1080p", item.streamSubtitle)
+        assertEquals("DemoPlugin • 1080p • WEB-DL • H.264", item.title)
+
+        val rules = StreamBadgeRules(
+            imports = listOf(
+                StreamBadgeImport(
+                    sourceUrl = "https://example.test/badges.json",
+                    filters = listOf(
+                        StreamBadgeFilter(
+                            name = "WEB",
+                            pattern = "(?i)web-dl",
+                            imageURL = "https://example.test/web.png",
+                        ),
+                    ),
+                ),
+            ),
+        )
+        val presented = StreamBadgePresentation.apply(
+            groups = listOf(
+                AddonStreamGroup(
+                    addonName = "DemoPlugin",
+                    addonId = "plugin:demo",
+                    streams = listOf(item),
+                ),
+            ),
+            rules = rules,
+        ).single().streams.single()
+
+        assertEquals(listOf("WEB"), presented.badges.map { it.name })
     }
 }
