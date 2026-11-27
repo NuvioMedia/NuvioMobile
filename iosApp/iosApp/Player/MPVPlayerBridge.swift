@@ -571,7 +571,6 @@ final class MPVPlayerViewController: UIViewController {
         checkError(mpv_set_option_string(mpv, "vulkan-queue-count", "1"))
         checkError(mpv_set_option_string(mpv, "vulkan-async-compute", "no"))
         checkError(mpv_set_option_string(mpv, "vulkan-async-transfer", "no"))
-        checkError(mpv_set_option_string(mpv, "vulkan-disable-interop", "yes"))
         checkError(mpv_set_option_string(mpv, "video-rotate", "no"))
         checkError(mpv_set_option_string(mpv, "subs-match-os-language", "yes"))
         checkError(mpv_set_option_string(mpv, "subs-fallback", "yes"))
