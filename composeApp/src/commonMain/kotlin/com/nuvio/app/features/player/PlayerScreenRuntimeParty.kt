@@ -187,6 +187,7 @@ internal fun PlayerScreenRuntime.currentPartyStream(): PartyStream? {
         bingeGroup = stream.behaviorHints.bingeGroup,
         streamType = activeStreamType,
         badges = stream.badges,
+        clearKeys = stream.behaviorHints.clearKeys,
     )
 }
 

@@ -13,7 +13,9 @@ interface NuvioPlayerBridge {
         videoUrl: String,
         audioUrl: String?,
         headersJson: String?,
-        subtitlesJson: String? = null
+        subtitlesJson: String? = null,
+        // libmpv `demuxer-lavf-o` value (ClearKey keys), empty to clear it.
+        lavfOptions: String? = null
     )
     fun play()
     fun pause()

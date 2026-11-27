@@ -7,6 +7,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
+import androidx.media3.exoplayer.drm.DrmSessionManagerProvider
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.RenderersFactory
@@ -36,6 +37,7 @@ internal fun ExoPlayer.Builder.buildWithAssSupportCompat(
     extractorsFactory: ExtractorsFactory = DefaultExtractorsFactory(),
     renderersFactory: RenderersFactory = DefaultRenderersFactory(context),
     audioDelayUsProvider: () -> Long = { 0L },
+    drmSessionManagerProvider: DrmSessionManagerProvider? = null,
 ): ExoPlayer {
     val assHandler = AssHandler()
     val assSubtitleParserFactory = CompatAssSubtitleParserFactory(assHandler)
@@ -49,6 +51,7 @@ internal fun ExoPlayer.Builder.buildWithAssSupportCompat(
         assExtractorsFactory
     )
     mediaSourceFactory.setSubtitleParserFactory(assSubtitleParserFactory)
+    drmSessionManagerProvider?.let(mediaSourceFactory::setDrmSessionManagerProvider)
 
     // Wrap the renderers factory with AssRenderersFactory to add a
     // NoSampleRenderer-based position fallback for tunneled playback.

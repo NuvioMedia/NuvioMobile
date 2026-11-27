@@ -22,12 +22,13 @@ final class MPVPlayerBridgeImpl: NSObject, NuvioPlayerBridge {
     }
 
     func loadFile(url: String) { ensurePlayerViewController().loadFile(url) }
-    func loadFileWithAudio(videoUrl: String, audioUrl: String?, headersJson: String?, subtitlesJson: String?) {
+    func loadFileWithAudio(videoUrl: String, audioUrl: String?, headersJson: String?, subtitlesJson: String?, lavfOptions: String?) {
         ensurePlayerViewController().loadFile(
             videoUrl,
             audioUrl: audioUrl,
             requestHeaders: parseRequestHeaders(headersJson),
-            subtitles: parseSubtitles(subtitlesJson)
+            subtitles: parseSubtitles(subtitlesJson),
+            lavfOptions: lavfOptions ?? ""
         )
     }
 
@@ -274,6 +275,7 @@ private struct PendingLoadRequest {
     let audioUrl: String?
     let requestHeaders: [String: String]
     let subtitles: [PluginSubtitle]
+    let lavfOptions: String
     let queuedAtUptime: TimeInterval
 }
 
@@ -653,12 +655,13 @@ final class MPVPlayerViewController: UIViewController {
 
     // MARK: - Playback API
 
-    func loadFile(_ urlString: String, audioUrl: String? = nil, requestHeaders: [String: String] = [:], subtitles: [PluginSubtitle] = []) {
+    func loadFile(_ urlString: String, audioUrl: String? = nil, requestHeaders: [String: String] = [:], subtitles: [PluginSubtitle] = [], lavfOptions: String = "") {
         let request = PendingLoadRequest(
             urlString: urlString,
             audioUrl: audioUrl,
             requestHeaders: requestHeaders,
             subtitles: subtitles,
+            lavfOptions: lavfOptions,
             queuedAtUptime: ProcessInfo.processInfo.systemUptime
         )
 
@@ -698,6 +701,8 @@ final class MPVPlayerViewController: UIViewController {
         let sanitizedHeaders = sanitizeRequestHeaders(request.requestHeaders)
         activeRequestHeaders = sanitizedHeaders
         applyRequestHeaders(sanitizedHeaders)
+        // ClearKey keys for FFmpeg's DASH/MP4 demuxers; global like the headers, so set (or cleared) per file.
+        checkError(mpv_set_property_string(mpv, "demuxer-lavf-o", request.lavfOptions))
         isPlayerLoading = true
         isPlayerEnded = false
         isFileLoaded = false

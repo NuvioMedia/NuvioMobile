@@ -55,6 +55,7 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.TransferListener
 import androidx.media3.decoder.ffmpeg.FfmpegAudioRenderer
+import androidx.media3.exoplayer.drm.DrmSessionManagerProvider
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.ForwardingRenderer
@@ -119,6 +120,7 @@ actual fun PlatformPlayerSurface(
     sourceAudioUrl: String?,
     sourceHeaders: Map<String, String>,
     sourceResponseHeaders: Map<String, String>,
+    clearKeys: String?,
     externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     streamType: String?,
     useYoutubeChunkedPlayback: Boolean,
@@ -146,8 +148,19 @@ actual fun PlatformPlayerSurface(
         normalizeStreamType(streamType).orEmpty(),
         useYoutubeChunkedPlayback,
         initialPositionRequestKey.orEmpty(),
+        clearKeys.orEmpty(),
     )
-    val requestedEngine = playbackEngine ?: playerSettings.androidPlaybackEngine
+    // libmpv decrypts ClearKey DASH and MP4 through FFmpeg, but FFmpeg's HLS demuxer rejects
+    // SAMPLE-AES-CTR key tags, so an encrypted HLS stream stays on ExoPlayer.
+    val clearKeysNeedExoPlayer = clearKeys != null && remember(sourceUrl, sourceResponseHeaders, streamType) {
+        playbackMediaItemFromUrl(sourceUrl, sanitizePlaybackResponseHeaders(sourceResponseHeaders), normalizeStreamType(streamType))
+            .localConfiguration?.mimeType == MimeTypes.APPLICATION_M3U8
+    }
+    val requestedEngine = if (clearKeysNeedExoPlayer) {
+        AndroidPlaybackEngine.ExoPlayer
+    } else {
+        playbackEngine ?: playerSettings.androidPlaybackEngine
+    }
     val activeEngine by remember(playerSourceKey, requestedEngine) {
         mutableStateOf(requestedEngine.initialAndroidEngine())
     }
@@ -158,6 +171,7 @@ actual fun PlatformPlayerSurface(
             sourceAudioUrl = sourceAudioUrl,
             sourceHeaders = sourceHeaders,
             sourceResponseHeaders = sourceResponseHeaders,
+            clearKeys = clearKeys,
             externalSubtitles = externalSubtitles,
             streamType = streamType,
             useYoutubeChunkedPlayback = useYoutubeChunkedPlayback,
@@ -182,6 +196,7 @@ actual fun PlatformPlayerSurface(
                 sourceUrl = sourceUrl,
                 sourceAudioUrl = sourceAudioUrl,
                 sourceHeaders = sourceHeaders,
+                clearKeys = clearKeys,
                 externalSubtitles = externalSubtitles,
                 modifier = modifier,
                 playWhenReady = playWhenReady,
@@ -217,6 +232,7 @@ private fun ExoPlayerSurface(
     sourceAudioUrl: String?,
     sourceHeaders: Map<String, String>,
     sourceResponseHeaders: Map<String, String>,
+    clearKeys: String?,
     externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     streamType: String?,
     useYoutubeChunkedPlayback: Boolean,
@@ -263,7 +279,15 @@ private fun ExoPlayerSurface(
         normalizedStreamType.orEmpty(),
         useYoutubeChunkedPlayback,
         initialPositionRequestKey.orEmpty(),
+        clearKeys.orEmpty(),
     )
+    // ClearKey DRM answered locally from the stream's keys; null for clear streams.
+    val drmSessionManagerProvider = remember(clearKeys) {
+        clearKeys?.let { keys ->
+            Log.i(TAG, "DRM: ClearKey with ${keys.count { it == ',' } + 1} key(s)")
+            DrmSessionManagerProvider { ClearKeyDrmSessionManager(keys) }
+        }
+    }
     // Tracks whether an ASS track was actively selected and video effects need activation.
     // When this flips to true, the player remember key changes and player rebuilds with effects.
     var videoEffectsNeeded by remember(playerSourceKey) { mutableStateOf(false) }
@@ -399,7 +423,9 @@ private fun ExoPlayerSurface(
         if (!sourceAudioUrl.isNullOrBlank()) {
             // Keep libass parsing for addon ASS subtitles, like sources the player builds itself.
             val mediaSourceFactory = getAssMediaSourceFactoryCompat()
-                ?: DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory)
+                ?: DefaultMediaSourceFactory(dataSourceFactory, extractorsFactory).apply {
+                    drmSessionManagerProvider?.let(::setDrmSessionManagerProvider)
+                }
             val videoSource = mediaSourceFactory.createMediaSource(videoMediaItem)
             val audioSource = mediaSourceFactory.createMediaSource(playbackMediaItemFromUrl(sourceAudioUrl))
             val mergedSource = AudioDelayMediaSource(MergingMediaSource(videoSource, audioSource), audioDelayUs::get)
@@ -420,6 +446,7 @@ private fun ExoPlayerSurface(
         sourceAudioUrl,
         sanitizedSourceHeaders,
         sanitizedSourceResponseHeaders,
+        drmSessionManagerProvider,
         normalizedStreamType,
         useYoutubeChunkedPlayback,
         effectiveDecoderPriority,
@@ -543,6 +570,7 @@ private fun ExoPlayerSurface(
                 extractorsFactory = extractorsFactory,
                 renderersFactory = renderersFactory,
                 audioDelayUsProvider = audioDelayUs::get,
+                drmSessionManagerProvider = drmSessionManagerProvider,
             ).also { builtPlayer ->
                 builtPlayer.getAssHandlerCompat()?.applyAssFontScaleCompat(
                     playerSettings.assSubtitleStyle.assScale.toFloat(),
@@ -566,7 +594,7 @@ private fun ExoPlayerSurface(
             val mediaSourceFactory = DefaultMediaSourceFactory(
                 dataSourceFactory,
                 extractorsFactory,
-            )
+            ).apply { drmSessionManagerProvider?.let(::setDrmSessionManagerProvider) }
 
             playerBuilder
                 .setRenderersFactory(renderersFactory)
@@ -1345,6 +1373,7 @@ private fun LibmpvPlayerSurface(
     sourceUrl: String,
     sourceAudioUrl: String?,
     sourceHeaders: Map<String, String>,
+    clearKeys: String?,
     externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
     modifier: Modifier,
     playWhenReady: Boolean,
@@ -1618,7 +1647,7 @@ private fun LibmpvPlayerSurface(
         }
     }
 
-    LaunchedEffect(playerViewRef, sourceUrl, sourceAudioUrl, sanitizedSourceHeaders, externalSubtitles) {
+    LaunchedEffect(playerViewRef, sourceUrl, sourceAudioUrl, sanitizedSourceHeaders, clearKeys, externalSubtitles) {
         val view = playerViewRef ?: return@LaunchedEffect
         playbackDiagnostics.attempt += 1
         playbackDiagnostics.prepareStartedAtMs = SystemClock.elapsedRealtime()
@@ -1634,6 +1663,7 @@ private fun LibmpvPlayerSurface(
             sourceUrl = sourceUrl,
             sourceAudioUrl = sourceAudioUrl,
             requestHeaders = sanitizedSourceHeaders,
+            clearKeys = clearKeys,
             externalSubtitles = externalSubtitles,
             playWhenReady = latestPlayWhenReady.value,
         )
@@ -1724,6 +1754,7 @@ private class NuvioLibmpvView(
     private var currentSourceUrl: String? = null
     private var currentSourceAudioUrl: String? = null
     private var currentRequestHeaders: Map<String, String> = emptyMap()
+    private var currentClearKeys: String? = null
     private var currentExternalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> = emptyList()
     @Volatile
     private var latestSnapshot = PlayerPlaybackSnapshot()
@@ -1839,6 +1870,7 @@ private class NuvioLibmpvView(
         sourceUrl: String,
         sourceAudioUrl: String?,
         requestHeaders: Map<String, String>,
+        clearKeys: String?,
         externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle>,
         playWhenReady: Boolean,
     ) {
@@ -1849,10 +1881,12 @@ private class NuvioLibmpvView(
                     currentSourceUrl == sourceUrl &&
                         currentSourceAudioUrl == sourceAudioUrl &&
                         currentRequestHeaders == requestHeaders &&
+                        currentClearKeys == clearKeys &&
                         currentExternalSubtitles == externalSubtitles
                 currentSourceUrl = sourceUrl
                 currentSourceAudioUrl = sourceAudioUrl
                 currentRequestHeaders = requestHeaders
+                currentClearKeys = clearKeys
                 currentExternalSubtitles = externalSubtitles
                 if (!sameSource) {
                     loadCurrentSourceNow(playWhenReady = playWhenReady)
@@ -1867,6 +1901,8 @@ private class NuvioLibmpvView(
     private fun loadCurrentSourceNow(playWhenReady: Boolean) {
         val sourceUrl = currentSourceUrl ?: return
         applyRequestHeadersNow(currentRequestHeaders)
+        // Global like the headers, so it is set again (or cleared) before every file.
+        mpv.setPropertyString("demuxer-lavf-o", currentClearKeys?.let(::clearKeyLavfOptions).orEmpty())
         setPausedNow(!playWhenReady)
         mpv.setPropertyString("aid", "auto")
         fileLoaded = false

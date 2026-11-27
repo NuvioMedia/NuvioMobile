@@ -87,6 +87,8 @@ expect fun PlatformPlayerSurface(
     sourceAudioUrl: String? = null,
     sourceHeaders: Map<String, String> = emptyMap(),
     sourceResponseHeaders: Map<String, String> = emptyMap(),
+    // ClearKey DRM pairs (`kid:key,kid:key`, hex) of the stream, or null.
+    clearKeys: String? = null,
     externalSubtitles: List<com.nuvio.app.features.streams.StreamSubtitle> = emptyList(),
     streamType: String? = null,
     useYoutubeChunkedPlayback: Boolean = false,
