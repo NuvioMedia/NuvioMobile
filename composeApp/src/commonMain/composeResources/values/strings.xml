@@ -736,6 +736,7 @@
     <string name="settings_homescreen_pin_to_move_toast">Remove pin to top from collection to move</string>
     <string name="settings_homescreen_pinned">Pinned</string>
     <string name="settings_homescreen_pinned_to_top">Pinned to top</string>
+    <string name="settings_homescreen_pinned_to_bottom">Pinned to bottom</string>
     <string name="settings_homescreen_reorder">Reorder</string>
     <string name="settings_homescreen_section_catalogs">CATALOGS</string>
     <string name="settings_homescreen_section_catalogs_collections">CATALOGS &amp; COLLECTIONS</string>

@@ -34,6 +34,7 @@ data class SyncCatalogItem(
     @SerialName("custom_title") val customTitle: String = "",
     @SerialName("is_collection") val isCollection: Boolean = false,
     @SerialName("collection_id") val collectionId: String = "",
+    @SerialName("row_placement") val rowPlacement: String = HomeCatalogRowPlacement.NORMAL.storageValue,
     val key: String = "",
 )
 
