@@ -43,8 +43,10 @@ class StreamClearKeysTest {
     @Test
     fun `libmpv gets the pairs as an FFmpeg dictionary in mpv length quoting`() {
         val dict = "$kid=$key:${key}=$kid"
+        val segment = "decryption_keys=$kid\\=$key\\:$key\\=$kid"
         assertEquals(
-            "cenc_decryption_keys=%${dict.length}%$dict,decryption_keys=%${dict.length}%$dict",
+            "cenc_decryption_keys=%${dict.length}%$dict,decryption_keys=%${dict.length}%$dict," +
+                "seg_format_options=%${segment.length}%$segment",
             clearKeyLavfOptions("$kid:$key,$key:$kid"),
         )
     }
