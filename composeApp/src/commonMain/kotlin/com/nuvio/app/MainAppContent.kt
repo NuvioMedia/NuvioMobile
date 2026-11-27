@@ -147,6 +147,7 @@ import com.nuvio.app.features.player.prepareExternalPlayerLaunch
 import com.nuvio.app.features.player.LockPlayerToLandscape
 import com.nuvio.app.features.player.HidePlayerSystemBars
 import com.nuvio.app.features.player.rememberExternalPlayerLauncher
+import com.nuvio.app.features.plugins.PluginRepository
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.settings.AccountSettingsScreen
 import com.nuvio.app.features.settings.AddonsSettingsScreen
@@ -297,7 +298,12 @@ internal fun MainAppContent(
         var pickerError by remember { mutableStateOf<String?>(null) }
         var pendingTrackingRemoval by remember { mutableStateOf<PendingTrackingMembershipRemoval?>(null) }
         val trackingListsUpdateFailedMessage = stringResource(Res.string.tracking_lists_update_failed)
-        remember { AddonRepository.initialize() }
+        remember {
+            AddonRepository.initialize()
+            if (AppFeaturePolicy.pluginsEnabled) {
+                PluginRepository.initialize()
+            }
+        }
         val librarySourceMode by remember {
             LibraryRepository.ensureLoaded()
             LibraryRepository.uiState

@@ -69,7 +69,10 @@ class PluginSyncTest {
     @Test
     fun emptyRemoteRemovesCachedPluginsWithoutUploadingAndStaysEmptyAfterReload(): Unit = runBlocking {
         seedPlugins()
+        respondPluginRefresh()
         PluginRepository.initialize()
+        awaitRefreshes()
+        drainRequests(2)
         assertEquals(1, PluginRepository.uiState.value.repositories.size)
         respond("[]")
 
@@ -81,7 +84,6 @@ class PluginSyncTest {
         assertTrue(stored.repositories.isEmpty())
         assertTrue(stored.scrapers.isEmpty())
         PluginRepository.clearLocalState()
-        PluginRepository.initialize()
         respond("[]")
         PluginRepository.pullFromServer(1)
 
@@ -136,14 +138,31 @@ class PluginSyncTest {
     }
 
     @Test
+    fun initializeRefreshesRecentlyUpdatedRepositoryManifestAndCode(): Unit = runBlocking {
+        seedPlugins()
+        val updatedCode = "module.exports = { updated: true }"
+        respond(
+            """{"name":"Updated plugin","version":"2","scrapers":[{"id":"scraper","name":"Scraper","version":"2","filename":"scraper.js"}]}""",
+        )
+        respond(updatedCode)
+
+        PluginRepository.initialize()
+        awaitRefreshes()
+
+        assertEquals("Updated plugin", PluginRepository.uiState.value.repositories.single().name)
+        assertEquals(updatedCode, PluginStorage.loadScraperCode(1, "${manifestUrl.lowercase()}:scraper"))
+    }
+
+    @Test
     fun explicitRemovalStillUploadsTheUpdatedPlugins(): Unit = runBlocking {
         seedPlugins()
+        respondPluginRefresh()
         respond("{}")
 
         PluginRepository.removeRepository(manifestUrl)
 
-        val request = assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
-        assertEquals("POST", request.method)
+        val requests = List(3) { assertNotNull(server.takeRequest(5, TimeUnit.SECONDS)) }
+        val request = requests.single { it.method == "POST" }
         assertEquals("/rest/v1/rpc/sync_push_plugins", request.requestUrl?.encodedPath)
         assertTrue(request.body.readUtf8().contains("\"p_plugins\":[]"))
         assertTrue(PluginRepository.uiState.value.repositories.isEmpty())
@@ -204,6 +223,26 @@ class PluginSyncTest {
 
     private fun respond(body: String) {
         server.enqueue(MockResponse().setHeader("Content-Type", "application/json").setBody(body))
+    }
+
+    private fun respondPluginRefresh(name: String = "Refreshed plugin") {
+        respond(
+            """{"name":"$name","version":"1","scrapers":[{"id":"scraper","name":"Scraper","version":"1","filename":"scraper.js"}]}""",
+        )
+        respond("module.exports = {}")
+    }
+
+    private suspend fun awaitRefreshes() {
+        withTimeout(5_000) {
+            PluginRepository.uiState.first { state -> state.repositories.none { it.isRefreshing } }
+        }
+    }
+
+    private fun drainRequests(count: Int) {
+        repeat(count) {
+            val request = assertNotNull(server.takeRequest(5, TimeUnit.SECONDS))
+            assertEquals("no-cache", request.getHeader("Cache-Control"))
+        }
     }
 
     private fun assertPullsOnly(table: String, count: Int = 1) {
