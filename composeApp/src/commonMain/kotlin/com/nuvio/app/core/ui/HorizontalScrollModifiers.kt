@@ -17,9 +17,10 @@ fun Modifier.nuvioHorizontalScrollBleed(horizontalPadding: Dp): Modifier =
     nuvioHorizontalScrollBleed(PaddingValues(horizontal = horizontalPadding.coerceAtLeast(0.dp)))
 
 fun Modifier.nuvioHorizontalScrollBleed(padding: PaddingValues): Modifier {
-    if (padding == NoPadding) return this
+    val scroller = backGestureExclusion()
+    if (padding == NoPadding) return scroller
 
-    return layout { measurable, constraints ->
+    return scroller.layout { measurable, constraints ->
         val leftPx = padding.calculateLeftPadding(layoutDirection).roundToPx()
         val rightPx = padding.calculateRightPadding(layoutDirection).roundToPx()
         if (!constraints.hasBoundedWidth || leftPx + rightPx == 0) {

@@ -56,7 +56,7 @@ fun Slider(
         onValueChangeFinished = onValueChangeFinished,
         enabled = enabled,
         interactionSource = interactionSource,
-        modifier = modifier,
+        modifier = modifier.backGestureExclusion(),
         thumb = {
             Box(
                 Modifier

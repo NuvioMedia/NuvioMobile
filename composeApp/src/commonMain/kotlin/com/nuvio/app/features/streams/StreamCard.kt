@@ -42,6 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import com.nuvio.app.core.ui.SkeletonBlock
+import com.nuvio.app.core.ui.backGestureExclusion
 import com.nuvio.app.features.debrid.DebridProviders
 
 internal val LocalStreamHighlight = staticCompositionLocalOf<(StreamItem) -> String?> { { null } }
@@ -215,7 +216,7 @@ private fun StreamCardBadgeRow(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
+        modifier = modifier.backGestureExclusion().horizontalScroll(rememberScrollState()),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {

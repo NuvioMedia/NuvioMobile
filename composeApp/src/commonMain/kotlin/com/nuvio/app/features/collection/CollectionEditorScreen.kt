@@ -66,6 +66,7 @@ import com.nuvio.app.core.ui.NuvioScreen
 import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.core.ui.NuvioSectionLabel
 import com.nuvio.app.core.ui.NuvioSurfaceCard
+import com.nuvio.app.core.ui.backGestureExclusion
 import com.nuvio.app.core.ui.nuvioSafeBottomPadding
 import com.nuvio.app.core.ui.PlatformBackHandler
 import com.nuvio.app.features.home.PosterShape
@@ -585,7 +586,7 @@ private fun FolderListItem(
         ) {
             IconButton(
                 modifier = with(dragHandleScope) {
-                    Modifier.draggableHandle(
+                    Modifier.backGestureExclusion().draggableHandle(
                         onDragStarted = {
                             hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress)
                         },

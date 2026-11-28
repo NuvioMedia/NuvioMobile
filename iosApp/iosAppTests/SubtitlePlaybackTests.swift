@@ -42,7 +42,8 @@ final class SubtitlePlaybackTests: XCTestCase {
         window.rootViewController = MainViewControllerKt.ScreenViewController(
             route: PlayerRoute(launchId: launchId, title: "Subtitle test"),
             onNavigate: { _, _ in }, onGoBack: {}, onReplace: { _ in }, onActivate: { _ in },
-            appGateController: AppGateController(), verticalBar: VerticalBar(), hinge: Hinge()
+            appGateController: AppGateController(), verticalBar: VerticalBar(), hinge: Hinge(),
+            backGestureBridge: BackGestureBridge()
         )
         window.makeKeyAndVisible()
         defer {

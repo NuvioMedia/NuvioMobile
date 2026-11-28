@@ -55,6 +55,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.core.ui.backGestureExclusion
 import kotlin.math.roundToInt
 import com.nuvio.app.core.ui.Slider
 import com.nuvio.app.core.ui.CardDepthStyleRepository
@@ -609,6 +610,7 @@ private fun CardDepthTuningPad(
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
                 shape = shape,
             )
+            .backGestureExclusion()
             .pointerInput(Unit) {
                 fun valuesAt(position: Offset): Pair<Float, Float> {
                     val x = (position.x / size.width).coerceIn(0f, 1f)
