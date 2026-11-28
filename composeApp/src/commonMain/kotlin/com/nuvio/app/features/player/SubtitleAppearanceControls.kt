@@ -45,10 +45,19 @@ import kotlin.math.roundToInt
 internal fun SubtitleAppearanceControls(
     style: SubtitleStyleState,
     spacing: Dp,
+    supportsAssStyleCustomization: Boolean = false,
     onStyleChanged: (SubtitleStyleState) -> Unit,
 ) {
     var showFonts by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
+        if (supportsAssStyleCustomization) {
+            SubtitleToggleControl(
+                stringResource(Res.string.subtitle_customize_ass),
+                style.appearance.customizeAss,
+            ) { enabled ->
+                onStyleChanged(style.copy(appearance = style.appearance.copy(customizeAss = enabled)))
+            }
+        }
         SubtitleStyleSection(stringResource(Res.string.subtitle_font)) {
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp))

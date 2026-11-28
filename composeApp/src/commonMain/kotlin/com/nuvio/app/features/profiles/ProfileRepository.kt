@@ -42,6 +42,7 @@ import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -147,6 +148,16 @@ object ProfileRepository {
             log.e(e) { "Failed to pull profiles" }
             if (!_state.value.isLoaded) {
                 _state.value = _state.value.copy(isLoaded = true)
+            }
+        }
+    }
+
+    suspend fun preload(profileIndex: Int) {
+        coroutineScope {
+            launch { runCatching { WatchedRepository.preload(profileIndex) } }
+            launch { runCatching { WatchProgressRepository.preload(profileIndex) } }
+            if (com.nuvio.app.core.build.AppFeaturePolicy.pluginsEnabled) {
+                launch { runCatching { PluginRepository.preload(profileIndex) } }
             }
         }
     }

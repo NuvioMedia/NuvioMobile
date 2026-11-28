@@ -33,7 +33,8 @@ final class SubtitlePlaybackTests: XCTestCase {
             pauseDescription: nil, providerName: "Local", providerAddonId: nil, contentType: nil, videoId: nil,
             parentMetaId: "subtitle-test", parentMetaType: "movie", torrentInfoHash: nil, torrentFileIdx: nil,
             torrentFilename: nil, torrentTrackers: [], initialPositionMs: 0, initialProgressFraction: nil,
-            contentLanguage: "en", subtitleExtras: nil, sourceFilename: nil, stream: nil
+            contentLanguage: "en", subtitleExtras: nil, sourceFilename: nil, stream: nil,
+            sourceFromLinkCache: false, sourceAutoSelected: false
         )
         let launchId = PlayerLaunchStore.shared.put(launch: launch)
         let window = try XCTUnwrap(UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.windows.first)
@@ -86,12 +87,13 @@ final class SubtitlePlaybackTests: XCTestCase {
         attachScreenshot(window, name: "ios-rtl")
         settings.setSubtitleStyle(style: SubtitleStyleState.companion.DEFAULT)
         try await until { bridge.getProperty(name: "sub-visibility") == "yes" }
-        settings.setSubtitleStyle(style: makeStyle(font: "serif", radius: 16))
         let ass = try XCTUnwrap(bundle.url(forResource: "styled", withExtension: "ass"))
         bridge.setSubtitleUrl(url: ass.absoluteString)
         try await until { bridge.getProperty(name: "current-tracks/sub/codec") == "ass" }
         try await until { bridge.getProperty(name: "sub-visibility") == "yes" }
         XCTAssertEqual(bridge.getProperty(name: "sub-ass-override"), "no")
+        settings.setSubtitleStyle(style: makeStyle(font: "serif", radius: 16))
+        try await until { bridge.getProperty(name: "sub-ass-override") == "scale" }
         attachScreenshot(window, name: "ios-ass")
         bridge.selectSubtitleTrack(trackId: -1)
         try await until { bridge.getProperty(name: "sub-text").isEmpty }

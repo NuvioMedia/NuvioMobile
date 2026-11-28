@@ -1,6 +1,5 @@
 package com.nuvio.app.features.autosync
 
-import com.nuvio.app.core.ui.NuvioToastController
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.Dispatchers
@@ -15,7 +14,7 @@ import platform.Foundation.NSUserDomainMask
 import platform.Foundation.create
 import platform.Foundation.writeToFile
 
-/** Writes retimed subtitles to Caches/subtitles and shows messages as Nuvio toasts. */
+/** Writes retimed subtitles to Caches/subtitles. */
 internal object IosAutoSyncMpvPlatform : AutoSyncMpvPlatform {
 
     @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
@@ -34,8 +33,4 @@ internal object IosAutoSyncMpvPlatform : AutoSyncMpvPlatform {
             val written = NSString.create(string = content).writeToFile(path, true, NSUTF8StringEncoding, null)
             if (written) path else null
         }
-
-    override fun showMessage(text: String) {
-        NuvioToastController.show(text)
-    }
 }

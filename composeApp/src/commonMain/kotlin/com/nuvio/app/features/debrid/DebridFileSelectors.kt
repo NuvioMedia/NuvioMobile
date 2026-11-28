@@ -114,8 +114,32 @@ private fun <T> List<T>.matchingFiles(name: String, path: (T) -> String): List<T
         }
         if (matches.isNotEmpty()) return matches
     }
+
+    val ampersandEquivalentName = name.normalizeAmpersandConjunction()
+    for (ignoreCase in listOf(false, true)) {
+        val matches = filter {
+            val filePath = path(it).normalizedPath().normalizeAmpersandConjunction()
+            filePath.equals(ampersandEquivalentName, ignoreCase = ignoreCase) ||
+                (ampersandEquivalentName.contains('/') &&
+                    filePath.endsWith("/$ampersandEquivalentName", ignoreCase = ignoreCase))
+        }
+        if (matches.isNotEmpty()) return matches
+    }
+    val ampersandEquivalentBasename = ampersandEquivalentName.substringAfterLast('/')
+    for (ignoreCase in listOf(false, true)) {
+        val matches = filter {
+            path(it)
+                .normalizedPath()
+                .substringAfterLast('/')
+                .normalizeAmpersandConjunction()
+                .equals(ampersandEquivalentBasename, ignoreCase = ignoreCase)
+        }
+        if (matches.isNotEmpty()) return matches
+    }
     return emptyList()
 }
+
+private fun String.normalizeAmpersandConjunction(): String = replace(" & ", " and ")
 
 private fun buildEpisodePattern(season: Int?, episode: Int?): Regex? {
     if (season == null || episode == null) return null

@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+Hebrew: Android looks for values-iw (it reports Hebrew with the legacy language code "iw"),
+while iOS and desktop look for values-he.
+Therefore, duplicate the values-he directory as values-iw. Keep both directories in the project.
+-->
 <resources>
     <string name="settings_playback_subtitle_auto_sync">סנכרון אוטומטי של כתוביות</string>
     <string name="settings_playback_subtitle_auto_sync_description">התאמת התזמון של כתוביות התוסף שנבחרו לתזמון הכתוביות המוטמעות בסרטון.</string>

@@ -59,6 +59,9 @@
     <string name="addons_error_enter_url">Saisissez une URL d’addon.</string>
     <string name="addons_input_placeholder">URL de l’addon</string>
     <string name="addons_install_button">Installer l’addon</string>
+    <string name="addons_tracking_consent_title">Addon de suivi</string>
+    <string name="addons_tracking_consent_body">%1$s est un addon de suivi. Nuvio lui enverra votre activité&#160;: ce que vous lancez, mettez en pause et arrêtez avec la position de lecture, ce que vous ajoutez à votre bibliothèque ou en retirez, et ce que vous marquez comme vu ou non vu. Ces données quittent Nuvio et sont traitées par le développeur de l’addon et par le service auquel il se connecte.</string>
+    <string name="addons_tracking_consent_checkbox">J’accepte de partager mon activité de visionnage et ma bibliothèque avec cet addon</string>
     <string name="addons_loading_manifest_details">Chargement des détails du manifeste…</string>
     <string name="addons_modal_checking_message">Validation de l’URL du manifeste et chargement des détails de l’addon avant l’installation.</string>
     <string name="addons_modal_checking_title">Vérification de l’addon</string>
@@ -631,19 +634,31 @@
     <string name="detail_tab_trailer">Bande-annonce</string>
     <string name="detail_trailer_category_count">%1$s (%2$d)</string>
     <string name="detail_trailers_title">Bandes-annonces</string>
-    <string name="downloads_empty_episodes">Aucun épisode terminé</string>
+    <string name="downloads_delete_message">Cela libère %1$s sur cet appareil.</string>
+    <string name="downloads_delete_title">Supprimer %1$s&#160;?</string>
+    <string name="downloads_downloading_count">%1$d en cours de téléchargement</string>
+    <string name="downloads_empty_message">Appuyez longuement sur un flux et choisissez Télécharger le fichier pour le regarder hors ligne.</string>
     <string name="downloads_empty_title">Aucun téléchargement pour le moment</string>
-    <string name="downloads_episode_count">%1$d épisode(s) téléchargé(s)</string>
     <string name="downloads_open_directory">Ouvrir le dossier des téléchargements</string>
     <string name="downloads_open_directory_failed">Impossible d’ouvrir le dossier des téléchargements</string>
+    <string name="downloads_pause_all">Tout mettre en pause</string>
+    <string name="downloads_resume_all">Tout reprendre</string>
     <string name="downloads_section_active">Actifs</string>
-    <string name="downloads_section_movies">Films</string>
-    <string name="downloads_section_shows">Séries</string>
+    <string name="downloads_section_downloaded">Téléchargés</string>
     <string name="downloads_show_downloads">Afficher les téléchargements</string>
-    <string name="downloads_status_completed">Terminé • %1$s</string>
+    <string name="downloads_speed">%1$s/s</string>
     <string name="downloads_status_downloading">Téléchargement • %1$s</string>
     <string name="downloads_status_failed">Échoué</string>
     <string name="downloads_status_paused">En pause • %1$s</string>
+    <string name="downloads_watched_count">%1$d vu(s)</string>
+    <plurals name="downloads_episodes">
+        <item quantity="one">%1$d épisode</item>
+        <item quantity="other">%1$d épisodes</item>
+    </plurals>
+    <plurals name="downloads_titles">
+        <item quantity="one">%1$d titre</item>
+        <item quantity="other">%1$d titres</item>
+    </plurals>
     <string name="episodes_cd_watched">Vu</string>
     <string name="episodes_unavailable">Indisponible</string>
     <string name="episodes_season">Saison %1$d</string>
@@ -655,7 +670,7 @@
     <string name="hero_remove_from_library">Retirer de la bibliothèque</string>
     <string name="home_view_all">Tout voir</string>
     <string name="play_manually">Regarder manuellement</string>
-    <string name="poster_logo_content_description">Logo de %1$s</string>
+    <string name="poster_logo_content_description">Logo %1$s</string>
     <string name="settings_account">Compte</string>
     <string name="settings_account_delete_account">Supprimer le compte</string>
     <string name="settings_account_delete_account_description">Cela supprimera définitivement votre compte et toutes les données associées.</string>
@@ -1180,7 +1195,7 @@
     <string name="settings_playback_secondary_subtitle_language">Seconde langue préférée</string>
     <string name="settings_playback_section_decoder">DÉCODEUR</string>
     <string name="settings_playback_engine">Moteur de lecture</string>
-    <string name="settings_playback_engine_auto_description">ExoPlayer pour les films et les séries · MPV pour les animés</string>
+    <string name="settings_playback_engine_auto_description">ExoPlayer pour les films et les séries · mpv pour les animés</string>
     <string name="settings_playback_engine_exoplayer_description">Utiliser ExoPlayer et les décodeurs Android Media3.</string>
     <string name="settings_playback_engine_libmpv_description">Utiliser libmpv pour la lecture Android.</string>
     <string name="settings_playback_auto_switch_engine_on_error">Changer automatiquement de moteur en cas d’erreur de lecture</string>
@@ -1798,7 +1813,7 @@
     <string name="catalog_load_failed">Impossible de charger les éléments du catalogue.</string>
     <string name="continue_watching_up_next">Épisode suivant</string>
     <string name="continue_watching_up_next_episode">Épisode suivant • S%1$d E%2$d</string>
-    <string name="detail_logo_content_description">Logo de %1$s</string>
+    <string name="detail_logo_content_description">Logo %1$s</string>
     <string name="details_comments_load_failed">Impossible de charger les commentaires</string>
     <string name="details_load_failed_all_addons">Impossible de charger les détails depuis aucun addon.</string>
     <string name="details_networks">Chaînes</string>
@@ -1828,7 +1843,7 @@
     <string name="player_error_stream_blocked">La source du flux est bloquée ou restreinte. Essayez une autre source.</string>
     <string name="player_error_source_invalid_content">Erreur de source&#160;: la source du flux a renvoyé un contenu invalide ou illisible. Le lien a peut-être expiré, ou le serveur a renvoyé une page d’erreur au lieu de la vidéo.\n\nEssayez une autre source. [%1$s]</string>
     <string name="player_error_unsupported_format">Ce flux utilise un format que votre appareil ne prend peut-être pas en charge. Essayez une autre source. [%1$s]</string>
-    <string name="player_engine_unavailable_rebuild">Moteur de lecture MPV indisponible. Veuillez reconstruire l’application.</string>
+    <string name="player_engine_unavailable_rebuild">Moteur de lecture mpv indisponible. Veuillez reconstruire l’application.</string>
     <string name="profile_pin_changed_requires_refresh">Le code PIN de ce profil a changé. Connectez-vous une fois pour mettre à jour le verrouillage sur cet appareil.</string>
     <string name="profile_pin_clear_failed">Impossible de supprimer le verrouillage PIN. Réessayez.</string>
     <string name="profile_pin_clear_requires_internet">Connectez-vous à Internet pour supprimer le verrouillage PIN.</string>
@@ -1972,9 +1987,16 @@
     <string name="library_empty_message">Les titres enregistrés apparaîtront ici après avoir appuyé sur Enregistrer sur un écran de détail.</string>
     <string name="library_empty_title">Votre bibliothèque est vide</string>
     <string name="library_filter_all_types">Tous les types</string>
+    <string name="library_filter_genre">Genre</string>
     <string name="library_filter_list">Sélectionner une liste</string>
     <string name="library_filter_sort">Trier la bibliothèque</string>
     <string name="library_filter_type">Sélectionner un type</string>
+    <string name="library_filter_watched">Vus</string>
+    <string name="library_filter_year">Année</string>
+    <string name="library_type_all">Tout</string>
+    <string name="library_watched_filter_all">Tous</string>
+    <string name="library_watched_filter_watched">Vus</string>
+    <string name="library_watched_filter_unwatched">Non vus</string>
     <string name="library_layout_show_horizontal">Afficher les rangées horizontales</string>
     <string name="library_layout_show_vertical">Afficher la grille verticale</string>
     <string name="library_load_failed">Impossible de charger la bibliothèque</string>
@@ -2060,7 +2082,7 @@
     <string name="trailer_no_playable_stream">Aucun flux de bande-annonce lisible trouvé.</string>
     <string name="trailer_season_label">Saison %1$d - %2$s</string>
     <string name="unit_bytes_b">o</string>
-    <string name="unit_bytes_kb">Ko</string>
+    <string name="unit_bytes_kb">ko</string>
     <string name="unit_bytes_mb">Mo</string>
     <string name="unit_bytes_gb">Go</string>
     <!-- PlayerControls a11y -->
@@ -2089,7 +2111,7 @@
     <string name="player_ios_preset_sdr_tone_mapped_label">SDR avec tone mapping</string>
     <string name="player_ios_preset_sdr_tone_mapped_desc">Blancs et noirs plus prévisibles sur une sortie de type SDR.</string>
     <string name="player_ios_preset_compatibility_label">Compatibilité</string>
-    <string name="player_ios_preset_compatibility_desc">Au plus près de l’ancien comportement MPV iOS.</string>
+    <string name="player_ios_preset_compatibility_desc">Au plus près de l’ancien comportement mpv iOS.</string>
     <string name="player_ios_preset_custom_label">Personnalisé</string>
     <string name="player_ios_preset_custom_desc">Utilisez vos valeurs avancées ci-dessous.</string>
     <string name="player_ios_hardware_decoder_off">Désactivé</string>
@@ -2278,7 +2300,7 @@
     <string name="network_please_check_connection">Vérifiez votre connexion et réessayez.</string>
     <string name="network_request_failed_http">La requête a échoué avec HTTP %1$d</string>
     <string name="player_addon_subtitle_display_format">%1$s (%2$s)</string>
-    <string name="player_error_mpv_unavailable">Moteur de lecture MPV indisponible. Veuillez reconstruire l’application.</string>
+    <string name="player_error_mpv_unavailable">Moteur de lecture mpv indisponible. Veuillez reconstruire l’application.</string>
     <string name="player_error_unable_to_play_stream">Impossible de lire ce flux.</string>
     <string name="plugins_badge_disabled">Plugins désactivés</string>
     <string name="plugins_badge_enabled">Plugins activés</string>
@@ -2573,5 +2595,6 @@
     <string name="subtitle_shadow_description">Détacher le texte des scènes lumineuses.</string>
     <string name="subtitle_shadow_opacity">Opacité de l’ombre</string>
     <string name="subtitle_shadow_size">Taille de l’ombre</string>
+    <string name="subtitle_outline_width">Épaisseur du contour</string>
     <string name="subtitle_reset_appearance">Réinitialiser l’apparence</string>
 </resources>

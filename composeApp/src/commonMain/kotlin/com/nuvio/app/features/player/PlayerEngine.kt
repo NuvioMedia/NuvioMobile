@@ -30,6 +30,8 @@ interface PlayerEngineController {
         useCustomSubtitles: Boolean = false,
     ) {}
     fun setSubtitleDelayMs(delayMs: Int) {}
+    val supportsAssStyleCustomization: Boolean get() = false
+    val rendersAssNatively: Boolean get() = false
     /** Whether [setAudioDelayMs] has an effect; the player hides the audio delay control otherwise. */
     val supportsAudioDelay: Boolean get() = false
     /** Plays the audio [delayMs] later than the video; negative values play it earlier. */

@@ -8,6 +8,8 @@ import kotlin.math.roundToLong
 internal object AutoSyncSampledReferenceAligner {
     private const val MAX_OFFSET_MS = 180_000L
     private const val HISTOGRAM_BIN_MS = 250L
+    private const val MAX_HISTOGRAM_BIN = (MAX_OFFSET_MS / HISTOGRAM_BIN_MS).toInt()
+    private const val HISTOGRAM_SIZE = MAX_HISTOGRAM_BIN * 2 + 1
     private const val MATCH_TOLERANCE_MS = 1_250L
     private const val DISTINCT_OFFSET_MS = 3_000L
     private const val MIN_MATCHED_CUES = 8
@@ -21,40 +23,62 @@ internal object AutoSyncSampledReferenceAligner {
         target: List<SubtitleSyncCue>,
     ): AutoSyncDelayOnlyAlignment? {
         if (reference.size < MIN_MATCHED_CUES || target.size < MIN_MATCHED_CUES) return null
-        val referenceStarts = reference.map { it.startTimeMs }.sorted()
-        val targetStarts = target.map { it.startTimeMs }.sorted()
-        val histogram = HashMap<Long, Int>()
+        val referenceStarts = sortedStarts(reference)
+        val targetStarts = sortedStarts(target)
+        val histogram = IntArray(HISTOGRAM_SIZE)
+        val invBinMs = 1.0 / HISTOGRAM_BIN_MS.toDouble()
 
+        var windowStart = 0
+        val targetSize = targetStarts.size
         for (referenceMs in referenceStarts) {
             val minimum = referenceMs - MAX_OFFSET_MS
             val maximum = referenceMs + MAX_OFFSET_MS
-            var index = targetStarts.lowerBound(minimum)
-            while (index < targetStarts.size && targetStarts[index] <= maximum) {
-                val offset = referenceMs - targetStarts[index]
-                val bin = (offset.toDouble() / HISTOGRAM_BIN_MS).roundToLong()
-                histogram[bin] = (histogram[bin] ?: 0) + 1
+            while (windowStart < targetSize && targetStarts[windowStart] < minimum) windowStart++
+            var index = windowStart
+            while (index < targetSize && targetStarts[index] <= maximum) {
+                val bin = ((referenceMs - targetStarts[index]).toDouble() * invBinMs).roundToLong().toInt() + MAX_HISTOGRAM_BIN
+                if (bin in 0 until HISTOGRAM_SIZE) histogram[bin]++
                 index++
             }
         }
 
-        val candidateSeeds = mutableListOf<Long>()
-        histogram.entries
-            .sortedByDescending { it.value }
-            .map { it.key * HISTOGRAM_BIN_MS }
-            .forEach { offset ->
-                if (candidateSeeds.none { abs(it - offset) < DISTINCT_OFFSET_MS }) {
-                    candidateSeeds += offset
+        // Select top distinct histogram peaks by descending count.
+        val candidateSeeds = LongArray(MAX_HISTOGRAM_CANDIDATES)
+        var seedCount = 0
+        while (seedCount < MAX_HISTOGRAM_CANDIDATES) {
+            var bestBin = -1
+            var bestCount = 0
+            for (b in 0 until HISTOGRAM_SIZE) {
+                if (histogram[b] > bestCount) {
+                    bestCount = histogram[b]
+                    bestBin = b
                 }
             }
-        val candidates = candidateSeeds
-            .take(MAX_HISTOGRAM_CANDIDATES)
-            .map { evaluate(it, referenceStarts, targetStarts) }
-            .sortedByDescending { it.score }
-        val best = candidates.firstOrNull() ?: return null
-        val second = candidates.firstOrNull {
-            abs(it.offsetMs - best.offsetMs) >= DISTINCT_OFFSET_MS
+            if (bestBin < 0) break
+            histogram[bestBin] = 0
+            val offset = (bestBin - MAX_HISTOGRAM_BIN).toLong() * HISTOGRAM_BIN_MS
+            var distinct = true
+            for (j in 0 until seedCount) {
+                if (abs(candidateSeeds[j] - offset) < DISTINCT_OFFSET_MS) {
+                    distinct = false
+                    break
+                }
+            }
+            if (distinct) candidateSeeds[seedCount++] = offset
         }
-        val margin = best.score - (second?.score ?: 0.0)
+        if (seedCount == 0) return null
+
+        val scratchDeltas = LongArray(referenceStarts.size)
+        val candidates = Array(seedCount) { idx ->
+            evaluate(candidateSeeds[idx], referenceStarts, targetStarts, scratchDeltas)
+        }
+        candidates.sortByDescending { it.score }
+        val best = candidates[0]
+        val secondScore = candidates.drop(1)
+            .firstOrNull { abs(it.offsetMs - best.offsetMs) >= DISTINCT_OFFSET_MS }
+            ?.score
+            ?: 0.0
+        val margin = best.score - secondScore
 
         if (best.matches < MIN_MATCHED_CUES || best.score < MIN_COVERAGE ||
             best.segments < REQUIRED_SEGMENTS || margin < MIN_MARGIN
@@ -70,42 +94,84 @@ internal object AutoSyncSampledReferenceAligner {
         )
     }
 
-    private fun evaluate(
-        seedOffsetMs: Long,
-        reference: List<Long>,
-        target: List<Long>,
-    ): Candidate {
-        val initialMatches = match(seedOffsetMs, reference, target)
-        if (initialMatches.isEmpty()) return Candidate(seedOffsetMs, 0, 0.0, 0)
-        val refinedOffset = initialMatches
-            .map { it.referenceMs - it.targetMs }
-            .sorted()
-            .let { it[it.size / 2] }
-        val matches = match(refinedOffset, reference, target)
-        val score = matches.size.toDouble() / reference.size.toDouble()
-        val first = reference.first()
-        val span = (reference.last() - first).coerceAtLeast(1L)
-        val segments = matches
-            .map { ((it.referenceMs - first) * 3L / (span + 1L)).toInt().coerceIn(0, 2) }
-            .distinct()
-            .size
-        return Candidate(refinedOffset, matches.size, score, segments)
+    private fun sortedStarts(cues: List<SubtitleSyncCue>): LongArray {
+        val starts = LongArray(cues.size)
+        var sorted = true
+        var prev = Long.MIN_VALUE
+        for (i in cues.indices) {
+            val s = cues[i].startTimeMs
+            starts[i] = s
+            if (s < prev) sorted = false
+            prev = s
+        }
+        if (!sorted) starts.sort()
+        return starts
     }
 
-    private fun match(
+    private fun evaluate(
+        seedOffsetMs: Long,
+        reference: LongArray,
+        target: LongArray,
+        scratchDeltas: LongArray,
+    ): Candidate {
+        var initialCount = 0
+        forEachMatch(seedOffsetMs, reference, target) { rIdx, tIdx ->
+            scratchDeltas[initialCount++] = reference[rIdx] - target[tIdx]
+        }
+        if (initialCount == 0) return Candidate(seedOffsetMs, 0, 0.0, 0)
+        scratchDeltas.sort(0, initialCount)
+        val refinedOffset = scratchDeltas[initialCount / 2]
+
+        val first = reference[0]
+        val spanPlusOne = (reference[reference.lastIndex] - first).coerceAtLeast(1L) + 1L
+        var availableTimeMask = 0
+        for (rMs in reference) {
+            availableTimeMask = availableTimeMask or (1 shl ((rMs - first) * 3L / spanPlusOne).toInt().coerceIn(0, 2))
+        }
+        var matchCount = 0
+        var timeSegmentMask = 0
+        var indexSegmentMask = 0
+        val refSize = reference.size
+        forEachMatch(refinedOffset, reference, target) { rIdx, _ ->
+            matchCount++
+            timeSegmentMask = timeSegmentMask or
+                (1 shl ((reference[rIdx] - first) * 3L / spanPlusOne).toInt().coerceIn(0, 2))
+            indexSegmentMask = indexSegmentMask or (1 shl (rIdx * 3 / refSize).coerceIn(0, 2))
+        }
+
+        val score = matchCount.toDouble() / refSize.toDouble()
+        // If the sparse reference itself has a silent middle third (fewer than 3 populated time
+        // thirds), accept when every populated time third AND all 3 cue-index thirds matched.
+        val timeSegments = timeSegmentMask.countOneBits()
+        val availableTimeSegments = availableTimeMask.countOneBits()
+        val segments = if (availableTimeSegments < REQUIRED_SEGMENTS && timeSegments == availableTimeSegments) {
+            indexSegmentMask.countOneBits()
+        } else {
+            timeSegments
+        }
+        return Candidate(refinedOffset, matchCount, score, segments)
+    }
+
+    private inline fun forEachMatch(
         offsetMs: Long,
-        reference: List<Long>,
-        target: List<Long>,
-    ): List<Match> {
-        val matches = ArrayList<Match>()
+        reference: LongArray,
+        target: LongArray,
+        onMatch: (refIndex: Int, targetIndex: Int) -> Unit,
+    ) {
         var minimumTargetIndex = 0
-        for (referenceMs in reference) {
+        var searchStart = 0
+        val targetSize = target.size
+        for (rIdx in reference.indices) {
+            val referenceMs = reference[rIdx]
             val expectedTargetMs = referenceMs - offsetMs
-            var index = target.lowerBound(expectedTargetMs - MATCH_TOLERANCE_MS)
-                .coerceAtLeast(minimumTargetIndex)
+            val minTarget = expectedTargetMs - MATCH_TOLERANCE_MS
+            val maxTarget = expectedTargetMs + MATCH_TOLERANCE_MS
+            if (searchStart < minimumTargetIndex) searchStart = minimumTargetIndex
+            while (searchStart < targetSize && target[searchStart] < minTarget) searchStart++
+            var index = searchStart
             var bestIndex = -1
             var bestResidual = Long.MAX_VALUE
-            while (index < target.size && target[index] <= expectedTargetMs + MATCH_TOLERANCE_MS) {
+            while (index < targetSize && target[index] <= maxTarget) {
                 val residual = abs((target[index] + offsetMs) - referenceMs)
                 if (residual < bestResidual) {
                     bestResidual = residual
@@ -114,24 +180,11 @@ internal object AutoSyncSampledReferenceAligner {
                 index++
             }
             if (bestIndex >= 0) {
-                matches += Match(referenceMs, target[bestIndex])
+                onMatch(rIdx, bestIndex)
                 minimumTargetIndex = bestIndex + 1
             }
         }
-        return matches
     }
-
-    private fun List<Long>.lowerBound(value: Long): Int {
-        var low = 0
-        var high = size
-        while (low < high) {
-            val middle = (low + high) ushr 1
-            if (this[middle] < value) low = middle + 1 else high = middle
-        }
-        return low
-    }
-
-    private data class Match(val referenceMs: Long, val targetMs: Long)
 
     private data class Candidate(
         val offsetMs: Long,

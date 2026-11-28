@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="audio_sync_setting_title">Sync subtitles to audio</string>
+    <string name="audio_sync_setting_description">Aligns subtitles with the dialogue when Auto Sync can't find a reliable match.</string>
+    <string name="audio_sync_model_title">English speech model (%1$d MB)</string>
+    <string name="audio_sync_model_description">Optional. Recognizes English speech and matches it with external English subtitles, for faster and more accurate sync. Uses more CPU and memory.</string>
+    <string name="audio_sync_model_downloading">Downloading… %1$d%%</string>
+    <string name="audio_sync_model_ready">Downloaded. If playback struggles, delete it to sync with speech detection only.</string>
+    <string name="audio_sync_model_failed">Download failed. Select to retry. Speech detection still works.</string>
+    <string name="audio_sync_model_download">Download</string>
+    <string name="audio_sync_model_delete">Delete</string>
+    <string name="audio_sync_sampling_title">Audio sampling</string>
+    <string name="audio_sync_sampling_description">Listens to dialogue ahead of playback, so the sync is found sooner.</string>
+    <string name="audio_sync_sampling_off">Off</string>
+    <string name="audio_sync_sampling_low">Low</string>
+    <string name="audio_sync_sampling_high">High</string>
+    <string name="audio_sync_sampling_off_description">Listens only to what is playing, so syncing takes longer. Doesn't work with the mpv player.</string>
+    <string name="audio_sync_sampling_low_description">Listens ahead to a few dialogue scenes over one extra connection, up to 75 MB per title. Also used instead of High on metered networks.</string>
+    <string name="audio_sync_sampling_high_description">Fastest sync. Listens ahead to more scenes over several connections, usually up to 150 MB per title, and uses more CPU. Some servers limit how many connections they allow.</string>
+    <string name="licenses_attributions_audio_sync_title">Audio subtitle sync</string>
+    <string name="licenses_attributions_audio_sync_body">Speech detection uses Silero VAD v5 weights (MIT, Silero Team). Optional speech recognition uses sherpa-onnx (Apache-2.0, k2-fsa) and its Zipformer GigaSpeech English model (Apache-2.0).</string>
+    <string name="licenses_attributions_audio_sync_license">Full notices ship with the app in licenses/audio_sync_NOTICE.md.</string>
+</resources>

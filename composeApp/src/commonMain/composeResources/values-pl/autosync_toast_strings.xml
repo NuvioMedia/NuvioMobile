@@ -1,4 +1,10 @@
 <resources>
-    <string name="autosync_toast_no_fit">Synchronizacja nie powiodła się: te napisy nie pasują do tej wersji wideo.</string>
     <string name="autosync_label_synced">Dopasowane</string>
+    <string name="autosync_status_title">Status synchronizacji</string>
+    <string name="autosync_status_synced">Zsynchronizowano</string>
+    <string name="autosync_status_not_needed">Niepotrzebna</string>
+    <string name="autosync_status_in_progress">W toku</string>
+    <string name="autosync_status_no_fit">Mogą nie pasować</string>
+    <string name="autosync_status_no_reference">Brak napisów w wideo</string>
+    <string name="autosync_status_failed">Nieudana</string>
 </resources>

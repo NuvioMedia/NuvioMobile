@@ -182,12 +182,12 @@ object ProfileBackgroundRepository {
     ) {
         _catalog.update { catalog ->
             catalog.map { background ->
-                if (background.id != item.id || background.assetVersion != item.assetVersion) {
-                    background
-                } else if (portrait) {
-                    background.copy(portraitImageBytes = bytes)
-                } else {
-                    background.copy(landscapeImageBytes = bytes)
+                val current = if (portrait) background.portraitImageBytes else background.landscapeImageBytes
+                when {
+                    background.id != item.id || background.assetVersion != item.assetVersion -> background
+                    current?.contentEquals(bytes) == true -> background
+                    portrait -> background.copy(portraitImageBytes = bytes)
+                    else -> background.copy(landscapeImageBytes = bytes)
                 }
             }
         }

@@ -7,6 +7,8 @@ expect object PluginRepository {
 
     fun initialize()
 
+    suspend fun preload(profileId: Int)
+
     fun onProfileChanged(profileId: Int)
 
     fun clearLocalState()

@@ -27,6 +27,7 @@ import java.util.WeakHashMap
 private val assHandlersByPlayer = Collections.synchronizedMap(WeakHashMap<ExoPlayer, AssHandler>())
 private val assMediaSourceFactoriesByPlayer =
     Collections.synchronizedMap(WeakHashMap<ExoPlayer, DefaultMediaSourceFactory>())
+private val assFontScaleByHandler = Collections.synchronizedMap(WeakHashMap<AssHandler, Float>())
 
 @OptIn(UnstableApi::class)
 internal fun ExoPlayer.Builder.buildWithAssSupportCompat(
@@ -65,6 +66,16 @@ internal fun ExoPlayer.Builder.buildWithAssSupportCompat(
 
 internal fun ExoPlayer.getAssHandlerCompat(): AssHandler? = assHandlersByPlayer[this]
 
+internal fun AssHandler.applyAssFontScaleCompat(scale: Float) {
+    val clamped = scale.coerceIn(0.25f, 3.0f)
+    assFontScaleByHandler[this] = clamped
+    renderCallback = { assRender ->
+        val desired = assFontScaleByHandler[this] ?: 1.0f
+        assRender?.setFontScale(desired)
+    }
+    render?.setFontScale(clamped)
+}
+
 /**
  * Whether a text track is ASS/SSA. Subtitles parsed during extraction (e.g. addon subtitles
  * attached as sideloaded tracks) report `application/x-media3-cues` and keep the original type
@@ -87,6 +98,7 @@ internal fun ExoPlayer.getAssMediaSourceFactoryCompat(): DefaultMediaSourceFacto
 internal fun ExoPlayer.releaseWithAssSupportCompat() {
     val assHandler = assHandlersByPlayer.remove(this)
     assMediaSourceFactoriesByPlayer.remove(this)
+    assHandler?.let { assFontScaleByHandler.remove(it) }
     try {
         release()
     } finally {

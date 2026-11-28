@@ -2,7 +2,6 @@ package com.nuvio.app
 
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -112,6 +111,7 @@ import com.nuvio.app.features.home.HomeCatalogSection
 import com.nuvio.app.features.home.HomeCatalogSettingsRepository
 import com.nuvio.app.features.home.HomeRepository
 import com.nuvio.app.features.home.buildAddonCatalogRefreshSignature
+import com.nuvio.app.features.home.buildHomeCatalogDefinitions
 import com.nuvio.app.features.home.opensDetails
 import com.nuvio.app.features.home.components.shouldBlurContinueWatchingArtwork
 import com.nuvio.app.features.library.LibraryItem
@@ -189,12 +189,14 @@ import com.nuvio.app.navigation.*
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 import com.nuvio.app.features.servers.ServerRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -208,7 +210,6 @@ internal fun MainAppContent(
     useNativeTabBar: Boolean = false,
     useTabletFloatingTabBar: Boolean = false,
     ownsAppRuntime: Boolean = true,
-    showLaunchOverlay: Boolean = true,
     onNavigate: ((AppRoute, launchSingleTop: Boolean) -> Unit)? = null,
     onGoBack: (() -> Unit)? = null,
     onReplace: ((AppRoute) -> Unit)? = null,
@@ -314,9 +315,6 @@ internal fun MainAppContent(
                 selectedPosterActionTarget = target
             }
         }
-        val launchOverlayProfile by ProfileRepository.state.collectMappedAsState { state ->
-            state.activeProfile ?: state.profiles.firstOrNull()
-        }
         val activeProfileIndex by ProfileRepository.state.collectMappedAsState { it.activeProfile?.profileIndex }
     val playerSettingsUiState by remember {
         PlayerSettingsRepository.ensureLoaded()
@@ -402,8 +400,11 @@ internal fun MainAppContent(
             .collectLatest {
                 val enabledAddons = AddonRepository.uiState.value.addons.enabledAddons()
                 if (enabledAddons.isWaitingForFirstEnabledManifest()) return@collectLatest
-                HomeCatalogSettingsRepository.syncCatalogs(enabledAddons)
-                HomeRepository.refresh(enabledAddons)
+                val definitions = withContext(Dispatchers.Default) {
+                    buildHomeCatalogDefinitions(enabledAddons)
+                }
+                HomeCatalogSettingsRepository.syncCatalogs(enabledAddons, definitions)
+                HomeRepository.refresh(enabledAddons, definitions = definitions)
             }
     }
 
@@ -495,13 +496,6 @@ internal fun MainAppContent(
     var profileSwitchLoading by remember { mutableStateOf(false) }
 
     val rootContentReady = !ownsAppRuntime || (initialHomeReady && !profileSwitchLoading)
-    val launchOverlayVisible = ownsAppRuntime && showLaunchOverlay && !rootContentReady
-    val launchOverlayState = remember(ownsAppRuntime, showLaunchOverlay) {
-        MutableTransitionState(
-            launchOverlayVisible,
-        )
-    }
-    launchOverlayState.targetState = launchOverlayVisible
 
     LaunchedEffect(
         rootContentReady,
@@ -2112,17 +2106,6 @@ internal fun MainAppContent(
                     showExitConfirmation = false
                 },
             )
-
-            androidx.compose.animation.AnimatedVisibility(
-                visibleState = launchOverlayState,
-                enter = fadeIn(),
-                exit = fadeOut(androidx.compose.animation.core.tween(400)),
-            ) {
-                AppLaunchOverlay(
-                    profile = launchOverlayProfile,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
 
             if (profileSwitchLoading) {
                 LaunchedEffect(Unit) {

@@ -6,12 +6,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import nuvio.composeapp.generated.resources.Res
-import nuvio.composeapp.generated.resources.autosync_toast_no_fit
-import org.jetbrains.compose.resources.StringResource
-import org.jetbrains.compose.resources.getString
 
 /** File name prefix of the retimed subtitle copies that mpv players load. */
 internal const val LIBMPV_AUTOSYNC_FILE_PREFIX = "autosync_"
@@ -23,9 +20,19 @@ internal interface AutoSyncMpvPlatform {
      * start with [stalePrefix], and returns the written file's path, or null when it cannot be written.
      */
     suspend fun writeSubtitleFile(fileName: String, stalePrefix: String, content: String): String?
+}
 
-    /** Shows a short message over the player. */
-    fun showMessage(text: String)
+/** Optional audio-based fallback when embedded AutoSync keeps the subtitle's original timing. */
+internal interface AutoSyncMpvAudioFallback {
+    fun setContent(contentType: String?, videoId: String?) {}
+    fun setCandidates(candidates: List<AutoSyncSubtitleCandidate>) {}
+    fun setAppliedListener(listener: ((subtitleUrl: String, delayMs: Int) -> Unit)?) {}
+    fun arm()
+    fun disarm()
+    fun takeOver(url: String): Boolean
+    /** [restoreOriginalOnMpv]: the subtitle stays on, so mpv shows the original again in place of the retimed copy. */
+    fun stop(restoreOriginalOnMpv: Boolean = false)
+    fun release()
 }
 
 /**
@@ -41,11 +48,15 @@ internal class AutoSyncMpvCoordinator(
     private val getSubtitleHeaders: (String) -> Map<String, String>,
     private val getPreferredLanguage: () -> String?,
     private val platform: AutoSyncMpvPlatform,
+    private val audioFallbackFactory: (() -> AutoSyncMpvAudioFallback?)? = null,
 ) {
     private var job: Job? = null
     private var operationToken = 0L
     private var candidates: List<AutoSyncSubtitleCandidate> = emptyList()
+    private var contentType: String? = null
+    private var videoId: String? = null
     private var appliedListener: ((subtitleUrl: String, delayMs: Int) -> Unit)? = null
+    private var audioFallback: AutoSyncMpvAudioFallback? = null
 
     /**
      * [replaceExternalSubtitle] loads a local file in place of the external track that was loaded
@@ -57,29 +68,44 @@ internal class AutoSyncMpvCoordinator(
     ): PlayerEngineController =
         AutoSyncMpvEngineController(controller, this, replaceExternalSubtitle)
 
+    fun setContent(contentType: String?, videoId: String?) {
+        this.contentType = contentType
+        this.videoId = videoId
+        audioFallback?.setContent(contentType, videoId)
+    }
+
     fun setCandidates(value: List<AutoSyncSubtitleCandidate>) {
         candidates = value.distinctBy { it.url }
+        audioFallback?.setCandidates(candidates)
     }
 
     fun setAppliedListener(listener: ((subtitleUrl: String, delayMs: Int) -> Unit)?) {
         appliedListener = listener
+        audioFallback?.setAppliedListener(listener)
     }
 
-    fun cancel() {
+    fun cancel(restoreAudioSyncOriginal: Boolean = false) {
         operationToken++
         job?.cancel()
         job = null
+        audioFallback?.stop(restoreOriginalOnMpv = restoreAudioSyncOriginal)
     }
 
     fun dispose() {
         cancel()
+        audioFallback?.release()
+        audioFallback = null
         appliedListener = null
+        AutoSyncSyncedSubtitle.clear()
     }
 
-    private fun showFailure(token: Long, resource: StringResource) {
-        scope.launch {
-            val text = getString(resource)
-            if (operationToken == token) platform.showMessage(text)
+    private fun ensureAudioFallback(): AutoSyncMpvAudioFallback? {
+        audioFallback?.let { return it }
+        return audioFallbackFactory?.invoke()?.also { fallback ->
+            fallback.setContent(contentType, videoId)
+            fallback.setCandidates(candidates)
+            fallback.setAppliedListener(appliedListener)
+            audioFallback = fallback
         }
     }
 
@@ -91,11 +117,13 @@ internal class AutoSyncMpvCoordinator(
     ) {
         cancel()
         val token = operationToken
+        AutoSyncSyncedSubtitle.clear()
         base.setSubtitleUri(url)
         AutoSyncPreferencesRepository.ensureLoaded()
         if (decideAutoSyncStart(AutoSyncPreferencesRepository.preferredSubtitleAutoSyncOnStart.value) ==
             AutoSyncStartAction.ATTACH_ORIGINAL ||
-            !(sourceUrl.startsWith("https://", true) || sourceUrl.startsWith("http://", true))) {
+            !(sourceUrl.startsWith("https://", true) || sourceUrl.startsWith("http://", true))
+        ) {
             return
         }
 
@@ -104,7 +132,12 @@ internal class AutoSyncMpvCoordinator(
             ?.takeIf { it.isNotBlank() } ?: getPreferredLanguage()
         EmbeddedSubtitleTimelineLoader.prefetch(scope, sourceUrl, sourceHeaders)
 
+        val fallback = ensureAudioFallback()
+        fallback?.arm()
+        val statusRun = AutoSyncSyncedSubtitle.start(url)
+
         job = scope.launch {
+            var audioTookOver = false
             try {
                 var outcome: AutoSyncAnalysisOutcome? = null
                 suspend fun search(searchScope: AutoSyncCandidateScope) =
@@ -132,9 +165,10 @@ internal class AutoSyncMpvCoordinator(
                 currentCoroutineContext().ensureActive()
                 if (token != operationToken) return@launch
                 if (resolved == null) {
-                    // Only a confirmed no-fit is worth telling; anything else stays silent.
-                    if (outcome == AutoSyncAnalysisOutcome.NO_FIT) {
-                        showFailure(token, Res.string.autosync_toast_no_fit)
+                    audioTookOver = outcome != AutoSyncAnalysisOutcome.SUBTITLE_UNAVAILABLE &&
+                        fallback?.takeOver(url) == true
+                    if (!audioTookOver) {
+                        AutoSyncSyncedSubtitle.mark(url, outcome.toFailureState())
                     }
                     return@launch
                 }
@@ -147,17 +181,31 @@ internal class AutoSyncMpvCoordinator(
                     val path = writeRetimedSubtitle(chosenUrl, resolved, subtitleLanguage)
                     currentCoroutineContext().ensureActive()
                     if (token != operationToken) return@launch
-                    if (path == null) return@launch
+                    if (path == null) {
+                        AutoSyncSyncedSubtitle.mark(url, AutoSyncState.FAILED)
+                        return@launch
+                    }
                     replaceExternalSubtitle(url, path)
                 }
                 base.setSubtitleDelayMs(0)
                 appliedListener?.invoke(chosenUrl, 0)
-                AutoSyncSyncedSubtitle.mark(chosenUrl)
+                AutoSyncSyncedSubtitle.mark(
+                    chosenUrl,
+                    if (withinTolerance) AutoSyncState.NOT_NEEDED else AutoSyncState.SYNCED,
+                )
             } catch (cancel: CancellationException) {
                 throw cancel
             } catch (_: Exception) {
-                // Technical failures stay silent: the original subtitle keeps its timing.
+                if (token == operationToken) {
+                    AutoSyncSyncedSubtitle.mark(url, AutoSyncState.FAILED)
+                }
+            } finally {
+                if (!audioTookOver && currentCoroutineContext().isActive) {
+                    fallback?.disarm()
+                }
             }
+        }.also { activeJob ->
+            activeJob.invokeOnCompletion { AutoSyncSyncedSubtitle.end(statusRun) }
         }
     }
 
@@ -207,6 +255,9 @@ internal open class AutoSyncMpvEngineController(
     private val replaceExternalSubtitle: (replacedUrl: String, path: String) -> Unit,
 ) : PlayerEngineController by base, AutoSyncPlayerController {
 
+    override fun setAutoSyncContent(contentType: String?, videoId: String?) =
+        coordinator.setContent(contentType, videoId)
+
     override fun setAutoSyncSubtitleCandidates(candidates: List<AutoSyncSubtitleCandidate>) =
         coordinator.setCandidates(candidates)
 
@@ -216,6 +267,7 @@ internal open class AutoSyncMpvEngineController(
 
     override fun setSubtitleUri(url: String) {
         coordinator.cancel()
+        AutoSyncSyncedSubtitle.clear()
         base.setSubtitleUri(url)
     }
 
@@ -230,21 +282,25 @@ internal open class AutoSyncMpvEngineController(
 
     override fun selectSubtitleTrack(index: Int) {
         coordinator.cancel()
+        AutoSyncSyncedSubtitle.clear()
         base.selectSubtitleTrack(index)
     }
 
     override fun clearExternalSubtitle() {
         coordinator.cancel()
+        AutoSyncSyncedSubtitle.clear()
         base.clearExternalSubtitle()
     }
 
     override fun clearExternalSubtitleAndSelect(trackIndex: Int) {
         coordinator.cancel()
+        AutoSyncSyncedSubtitle.clear()
         base.clearExternalSubtitleAndSelect(trackIndex)
     }
 
     override fun cancelForManualSubtitleDelay() {
-        coordinator.cancel()
+        // The same subtitle stays on with the user's delay, so the audio-synced copy gives way to the original.
+        coordinator.cancel(restoreAudioSyncOriginal = true)
         AutoSyncSyncedSubtitle.clear()
     }
 }

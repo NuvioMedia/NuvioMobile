@@ -92,9 +92,9 @@ internal class PlayerScreenRuntime(
     var sourceStreamsState by mutableStateOf(StreamsUiState())
     var episodeStreamsRepoState by mutableStateOf(StreamsUiState())
     var metaUiState: MetaDetailsUiState = MetaDetailsUiState()
-    var addonsUiState: AddonsUiState = AddonsUiState()
-    var addonSubtitles: List<AddonSubtitle> = emptyList()
-    var isLoadingAddonSubtitles: Boolean = false
+    var addonsUiState by mutableStateOf(AddonsUiState())
+    var addonSubtitles by mutableStateOf<List<AddonSubtitle>>(emptyList())
+    var isLoadingAddonSubtitles by mutableStateOf(false)
 
     var horizontalSafePadding: Dp = 0.dp
     var metrics: PlayerLayoutMetrics = PlayerLayoutMetrics.fromWidth(0.dp)

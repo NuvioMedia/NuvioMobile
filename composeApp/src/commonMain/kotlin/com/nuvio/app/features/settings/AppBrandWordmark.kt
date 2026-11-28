@@ -33,7 +33,7 @@ internal fun AppBrandWordmark(
     val resource = rememberAppBrandWordmarkResource(icon)
     val environment = rememberResourceEnvironment()
     val bitmap by produceState(AppBrandWordmarkCache[resource], resource, environment) {
-        if (value == null) value = AppBrandWordmarkCache.load(resource, environment)
+        value = AppBrandWordmarkCache.load(resource, environment)
     }
     val loaded = bitmap
     val painter = if (loaded != null) {

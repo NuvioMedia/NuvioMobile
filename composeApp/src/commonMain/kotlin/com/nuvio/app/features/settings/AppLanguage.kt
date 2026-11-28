@@ -31,6 +31,7 @@ import nuvio.composeapp.generated.resources.lang_norwegian
 import nuvio.composeapp.generated.resources.lang_japanese
 import nuvio.composeapp.generated.resources.lang_vietnamese
 import nuvio.composeapp.generated.resources.lang_chinese
+import nuvio.composeapp.generated.resources.lang_chinese_traditional
 import nuvio.composeapp.generated.resources.settings_appearance_app_language_device
 import org.jetbrains.compose.resources.StringResource
 
@@ -68,6 +69,7 @@ enum class AppLanguage(
     JAPANESE("ja", Res.string.lang_japanese),
     VIETNAMESE("vi", Res.string.lang_vietnamese),
     CHINESE("zh", Res.string.lang_chinese),
+    CHINESE_TRADITIONAL("zh-Hant", Res.string.lang_chinese_traditional),
     ;
 
     fun isRightToLeft(): Boolean {

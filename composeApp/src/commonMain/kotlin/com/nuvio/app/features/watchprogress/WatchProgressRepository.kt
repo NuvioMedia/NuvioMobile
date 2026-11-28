@@ -11,6 +11,7 @@ import com.nuvio.app.features.addons.enabledAddons
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaDetailsRepository
 import com.nuvio.app.features.player.PlayerPlaybackSnapshot
+import com.nuvio.app.features.profiles.ProfilePreload
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.servers.ServerItemRef
 import com.nuvio.app.features.tracking.TrackingProgressProvider
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.atomicfu.locks.SynchronizedObject
 import kotlinx.atomicfu.locks.synchronized
 import kotlinx.coroutines.sync.Mutex
@@ -271,6 +273,7 @@ object WatchProgressRepository {
     private var persistSequence = 0L
     private var persistedSequence = 0L
     private val pendingPersists = mutableMapOf<Int, PendingWatchProgressPayload>()
+    private val payloadPreload = ProfilePreload<StoredWatchProgressPayload>()
     private val providerMetadataOverlay = ProviderProgressMetadataOverlay()
     private val nuvioPullMutex = Mutex()
     private var lastSuccessfulPushEpochMs = 0L
@@ -318,7 +321,14 @@ object WatchProgressRepository {
         }
     }
 
+    suspend fun preload(profileId: Int) {
+        if (synchronized(persistLock) { pendingPersists[profileId] } != null) return
+        val payload = withContext(Dispatchers.Default) { readStoredPayload(profileId) } ?: return
+        payloadPreload.put(profileId, payload)
+    }
+
     fun onProfileChanged(profileId: Int) {
+        val preloaded = payloadPreload.take(profileId)
         if (profileId == currentProfileId && hasLoaded) return
         updateActiveSource(
             effectiveWatchProgressSource(
@@ -326,7 +336,7 @@ object WatchProgressRepository {
                 isProviderAuthenticated = ::isProgressProviderAvailable,
             ),
         )
-        loadFromDisk(profileId)
+        loadFromDisk(profileId, preloaded)
         TrackingProviderRegistry.progressProviders().forEach(TrackingProgressProvider::onProfileChanged)
     }
 
@@ -355,7 +365,12 @@ object WatchProgressRepository {
         _uiState.value = WatchProgressUiState()
     }
 
-    private fun loadFromDisk(profileId: Int) {
+    private fun readStoredPayload(profileId: Int): StoredWatchProgressPayload? =
+        WatchProgressStorage.loadPayload(profileId).orEmpty().trim()
+            .takeIf { it.isNotEmpty() }
+            ?.let(WatchProgressCodec::decodePayload)
+
+    private fun loadFromDisk(profileId: Int, preloaded: StoredWatchProgressPayload? = null) {
         cancelMetadataResolution(resetProviderHistory = true)
         currentProfileId = profileId
         profileGeneration += 1L
@@ -366,7 +381,7 @@ object WatchProgressRepository {
         clearMetadataEnrichmentAttempts()
 
         val pending = synchronized(persistLock) { pendingPersists[profileId] }
-        val payload = WatchProgressStorage.loadPayload(profileId).orEmpty().trim()
+        val storedPayload = if (pending == null) preloaded ?: readStoredPayload(profileId) else null
         if (pending != null) {
             // A persist is still in flight: its snapshot is newer than the stored file.
             lastSuccessfulPushEpochMs = pending.lastSuccessfulPushEpochMs
@@ -374,8 +389,7 @@ object WatchProgressRepository {
             deltaInitialized = pending.deltaInitialized
             replaceLocalEntries(pending.entries)
             replaceDirtyProgressKeys(pending.dirtyProgressKeys)
-        } else if (payload.isNotEmpty()) {
-            val storedPayload = WatchProgressCodec.decodePayload(payload)
+        } else if (storedPayload != null) {
             lastSuccessfulPushEpochMs = storedPayload.lastSuccessfulPushEpochMs
             deltaCursorEventId = storedPayload.deltaCursorEventId
             deltaInitialized = storedPayload.deltaInitialized

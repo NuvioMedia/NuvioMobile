@@ -139,12 +139,15 @@ object HomeCatalogSettingsRepository {
         _uiState.value = HomeCatalogSettingsUiState()
     }
 
-    fun syncCatalogs(addons: List<ManagedAddon>) {
+    fun syncCatalogs(
+        addons: List<ManagedAddon>,
+        catalogDefinitions: List<HomeCatalogDefinition>? = null,
+    ) {
         ensureLoaded()
         val collections = CollectionRepository.collections.value
         val syncInput = CatalogSyncInput(addons, collections, Locale.current.toLanguageTag(), ServerRepository.uiState.value.revision)
         if (lastCatalogSync == syncInput) return
-        definitions = buildHomeCatalogDefinitions(addons)
+        definitions = catalogDefinitions ?: buildHomeCatalogDefinitions(addons)
         collectionDefinitions = buildCollectionDefinitions(collections)
         lastCatalogSync = syncInput
         lastCollectionSync = lastCollectionSync?.takeIf {

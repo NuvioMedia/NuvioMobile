@@ -24,7 +24,24 @@ data class SubtitleTrack(
     val language: String? = null,
     val isSelected: Boolean = false,
     val isForced: Boolean = false,
+    val formatBadge: SubtitleFormatBadge? = null,
 )
+
+enum class SubtitleFormatBadge(val label: String) {
+    ASS("ASS"),
+    PGS("PGS"),
+    VOBSUB("VobSub"),
+    DVB("DVB"),
+}
+
+internal fun subtitleFormatBadgeForCodec(codec: String?): SubtitleFormatBadge? =
+    when (codec?.trim()?.lowercase()) {
+        "ass", "ssa" -> SubtitleFormatBadge.ASS
+        "hdmv_pgs_subtitle", "pgssub" -> SubtitleFormatBadge.PGS
+        "dvd_subtitle", "dvdsub" -> SubtitleFormatBadge.VOBSUB
+        "dvb_subtitle", "dvbsub" -> SubtitleFormatBadge.DVB
+        else -> null
+    }
 
 data class AddonSubtitle(
     val id: String,
@@ -88,7 +105,7 @@ internal const val SUBTITLE_OUTLINE_WIDTH_DEFAULT = 2
 internal val subtitleOutlineWidthRange: IntRange = 1..5
 
 internal val subtitleFontSizeRangeSp: IntRange
-    get() = if (isIos) 6..40 else 12..40
+    get() = if (isIos) 6..40 else 12..60
 
 data class SubtitleStyleState(
     val textColor: Color = Color.White,
