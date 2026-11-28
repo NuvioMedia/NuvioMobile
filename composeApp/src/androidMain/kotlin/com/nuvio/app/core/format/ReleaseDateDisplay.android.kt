@@ -5,8 +5,13 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-internal actual fun formatCalendarDate(isoDate: String, localeTag: String, includeYear: Boolean): String {
+internal actual fun formatCalendarDate(
+    isoDate: String,
+    localeTag: String,
+    includeYear: Boolean,
+    abbreviatedMonth: Boolean,
+): String {
     val locale = Locale.forLanguageTag(localeTag)
-    val pattern = DateFormat.getBestDateTimePattern(locale, if (includeYear) "dMMMMy" else "dMMMM")
+    val pattern = DateFormat.getBestDateTimePattern(locale, calendarDateSkeleton(includeYear, abbreviatedMonth))
     return DateTimeFormatter.ofPattern(pattern, locale).format(LocalDate.parse(isoDate))
 }
