@@ -33,6 +33,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
+import com.nuvio.app.features.streams.toStreamClearKeys
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.generic_unknown
 import org.jetbrains.compose.resources.getString
@@ -244,6 +245,7 @@ internal object PluginRuntime {
                     infoHash = item.stringOrNull("infoHash"),
                     headers = headers,
                     subtitles = subtitles,
+                    clearKeys = (item["behaviorHints"] as? JsonObject)?.get("clearKeys").toStreamClearKeys(),
                 )
             }.filter { it.url.isNotBlank() }
         }.getOrElse { emptyList() }

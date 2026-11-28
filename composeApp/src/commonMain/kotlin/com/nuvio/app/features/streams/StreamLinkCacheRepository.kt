@@ -23,6 +23,7 @@ data class CachedStreamLink(
     val contentLanguage: String? = null,
     val addonLogo: String? = null,
     val streamDescription: String? = null,
+    val clearKeys: String? = null,
 )
 
 internal expect fun epochMs(): Long
@@ -64,6 +65,7 @@ object StreamLinkCacheRepository {
         contentLanguage: String? = null,
         addonLogo: String? = null,
         streamDescription: String? = null,
+        clearKeys: String? = null,
     ) {
         val entry = CachedStreamLink(
             url = url,
@@ -84,6 +86,7 @@ object StreamLinkCacheRepository {
             contentLanguage = contentLanguage,
             addonLogo = addonLogo,
             streamDescription = streamDescription,
+            clearKeys = clearKeys,
         )
         val payload = json.encodeToString(CachedStreamLink.serializer(), entry)
         StreamLinkCacheStorage.saveEntry(hashedKey(contentKey), payload)

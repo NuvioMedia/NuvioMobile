@@ -61,6 +61,7 @@ object StreamParser {
                     videoSize = hintsObj?.long("videoSize"),
                     filename = hintsObj?.string("filename"),
                     proxyHeaders = proxyHeaders,
+                    clearKeys = hintsObj?.get("clearKeys").toStreamClearKeys(),
                 ),
             )
         }

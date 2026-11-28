@@ -495,8 +495,14 @@ internal fun PlayerScreenRuntime.persistPlaybackProgressTick() {
 internal val AndroidPlaybackEngine.switchTarget: AndroidPlaybackEngine
     get() = if (this == AndroidPlaybackEngine.Libmpv) AndroidPlaybackEngine.ExoPlayer else AndroidPlaybackEngine.Libmpv
 
+// Encrypted HLS stays on ExoPlayer (libmpv's FFmpeg cannot decrypt it), so a switch to libmpv would do nothing.
+private val PlayerScreenRuntime.clearKeyHlsNeedsExoPlayer: Boolean
+    get() = activeStream?.behaviorHints?.clearKeys != null &&
+        (activeStreamType == "hls" || activeSourceUrl.substringBefore('?').endsWith(".m3u8", ignoreCase = true))
+
 internal fun PlayerScreenRuntime.switchPlaybackEngine() {
     val target = playerController?.playbackEngine?.switchTarget ?: return
+    if (target == AndroidPlaybackEngine.Libmpv && clearKeyHlsNeedsExoPlayer) return
     flushWatchProgress()
     if (initialSeekApplied) {
         activeInitialPositionMs = playbackSnapshot.positionMs.coerceAtLeast(0L)
@@ -541,6 +547,7 @@ internal fun PlayerScreenRuntime.maybeFailoverPlaybackEngine(
     } else {
         AndroidPlaybackEngine.Libmpv
     }
+    if (target == AndroidPlaybackEngine.Libmpv && clearKeyHlsNeedsExoPlayer) return false
 
     engineFailoverTriggered = true
     engineFailoverSourceIdentity = sourceIdentity

@@ -55,6 +55,15 @@ class PartyStreamTest {
     }
 
     @Test
+    fun guestsGetTheHostClearKeys() {
+        val keys = "00112233445566778899aabbccddeeff:ffeeddccbbaa99887766554433221100"
+        val payload = PartyApi.json.encodeToString(PartyStream.serializer(), stream.copy(clearKeys = keys))
+        assertTrue(payload.contains("\"clear_keys\""))
+        val decoded = PartyApi.json.decodeFromString(PartyStream.serializer(), payload)
+        assertEquals(keys, decoded.toStreamItem().behaviorHints.clearKeys)
+    }
+
+    @Test
     fun sharedStreamSurvivesTheWire() {
         val encoded = PartyApi.json.encodeToString(PartyStream.serializer(), stream)
         assertEquals(stream, PartyApi.json.decodeFromString(PartyStream.serializer(), encoded))

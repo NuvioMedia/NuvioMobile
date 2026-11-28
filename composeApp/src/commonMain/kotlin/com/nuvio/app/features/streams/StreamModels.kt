@@ -212,6 +212,8 @@ data class StreamBehaviorHints(
     val videoSize: Long? = null,
     val filename: String? = null,
     val proxyHeaders: StreamProxyHeaders? = null,
+    // ClearKey DRM pairs as `kid:key,kid:key` (hex), see [toStreamClearKeys].
+    val clearKeys: String? = null,
 )
 
 data class StreamProxyHeaders(
