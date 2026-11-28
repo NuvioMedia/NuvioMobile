@@ -2,6 +2,7 @@ package com.nuvio.app.features.usenet
 
 import android.content.Context
 import com.nuvio.app.features.streams.AddonStreamGroup
+import com.nuvio.app.features.streams.StreamBadgeSettingsRepository
 import com.nuvio.app.features.streams.StreamItem
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -39,7 +40,8 @@ internal actual object UsenetPlatform {
     private val tuner by lazy { NntpProviderTuner(tester) }
     private val service by lazy {
         BuiltInUsenetService(client, unplayable = unplayable, labels = ::localizedLabels, stats = sourceStats,
-            catalog = AppUsenetCatalogSource)
+            catalog = AppUsenetCatalogSource,
+            sizeBadges = { withContext(Dispatchers.Main) { StreamBadgeSettingsRepository.showFileSizeBadgesSnapshot() } })
     }
     private val sidecar by lazy { UsenetSidecar(appContext, { UsenetRepository.engineSettings() }, unplayable, sourceStats) }
 

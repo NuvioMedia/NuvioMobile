@@ -114,7 +114,7 @@
     <string name="usenet_hide_duplicates">Hide repeated releases</string>
     <string name="usenet_hide_duplicates_description">Show a release found by several indexers once, from the indexer with the highest priority.</string>
     <string name="usenet_show_release_names">Show release names</string>
-    <string name="usenet_show_release_names_description">Show the release name of each result above its size, age and indexer.</string>
+    <string name="usenet_show_release_names_description">Show the release name of each result above its details. Hidden, its release group ends the details.</string>
     <string name="usenet_progressive_results">Show results as each indexer answers</string>
     <string name="usenet_progressive_results_description">Off: the list appears once every indexer answered, or after 5 seconds if one is slow, and fills in from there. On: it grows and reorders as each indexer answers.</string>
     <string name="usenet_available_first">Show available releases first</string>

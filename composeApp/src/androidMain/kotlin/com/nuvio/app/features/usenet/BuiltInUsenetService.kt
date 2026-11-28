@@ -3,6 +3,7 @@ package com.nuvio.app.features.usenet
 import android.util.Log
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaDetailsRepository
+import com.nuvio.app.features.details.parseRuntimeMinutes
 import com.nuvio.app.features.player.skip.SimklIdResolver
 import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamBadge
@@ -93,6 +94,8 @@ internal class BuiltInUsenetService(
     private val stats: UsenetSourceStats? = null,
     /** The metas and Simkl mapping that give an anime catalog's ids their IMDb equivalent; null in unit tests without them. */
     private val catalog: UsenetCatalogSource? = null,
+    /** Whether results show the size badge; unit tests keep the size in the details. */
+    private val sizeBadges: suspend () -> Boolean = { false },
 ) {
     /** [contentId] is the title's own id, its meta's, when known. */
     fun search(config: UsenetSourceConfiguration, type: String, videoId: String,
@@ -118,6 +121,21 @@ internal class BuiltInUsenetService(
         val request = UsenetSearchRequest(baseImdb ?: equivalent?.imdbId, baseTmdb, season = resolvedSeason,
             episode = resolvedEpisode, series = series)
         if (series && (resolvedSeason == null || resolvedSeason < 0 || resolvedEpisode == null || resolvedEpisode < 1)) return@flow
+        // Read once, when a result first has a size to give a bitrate for.
+        var runtimeRead = false
+        var runtime: Int? = null
+        suspend fun runtime(): Int? {
+            if (!runtimeRead) {
+                runtime = heldRuntime(type, listOfNotNull(contentId, baseImdb, baseTmdb?.let { "tmdb:$it" }), videoId,
+                    season ?: idSeason, episode ?: idEpisode)
+                runtimeRead = true
+            }
+            return runtime
+        }
+        val profile = config.ranking.profile()
+        val sizeBadge = try { sizeBadges() }
+            catch (e: CancellationException) { throw e }
+            catch (_: Exception) { false }
         coroutineScope {
             // A failed child would cancel this scope; keep lookup failures per indexer.
             val titleLookup = async(start = CoroutineStart.LAZY) {
@@ -206,12 +224,14 @@ internal class BuiltInUsenetService(
                     val outcomes = outcomes()
                     val arranged = arranged(outcomes)
                     log("show ${arranged.size} results")
+                    val minutes = if (arranged.any { it.size > 0 }) runtime() else null
                     emit(UsenetSearchUpdate(group = AddonStreamGroup(groupName, groupId,
                         arranged.map {
                             val outcome = outcomes.getValue(it.nzbUrl)
                             it.toStream(config, series, groupName, groupId, text, outcome.failed, outcome.played,
                                 pack = series && it.packSeasons.isNotEmpty(), seasonEpisodes = seasonCounts(),
-                                sibling = outcome.sibling, searched = searched)
+                                sibling = outcome.sibling, searched = searched, runtimeMinutes = minutes,
+                                profile = profile, sizeBadge = sizeBadge)
                         }, isLoading = loading)))
                 }
                 // The list appears whole once every indexer answered, unless one is slow: after a short
@@ -316,33 +336,59 @@ internal class BuiltInUsenetService(
         }
     }
 
-    /** [searched] is the season and episode the release was searched by, when they differ from the episode's own. */
+    /**
+     * [searched] is the season and episode the release was searched by, when they differ from the
+     * episode's own. [runtimeMinutes], the movie's or episode's, gives the bitrate; [profile], the
+     * ranking profile, the release's quality tier. With [sizeBadge], the size badge results show, a
+     * single video's size is left out of the details: the badge shows the same.
+     */
     private fun UsenetRelease.toStream(config: UsenetSourceConfiguration, series: Boolean, groupName: String,
         groupId: String, text: UsenetLabels, failed: Boolean = false, played: Boolean = false, pack: Boolean = false,
-        seasonEpisodes: Map<Int, Int>? = null, sibling: SiblingOutcome? = null, searched: Pair<Int, Int>? = null): StreamItem {
+        seasonEpisodes: Map<Int, Int>? = null, sibling: SiblingOutcome? = null, searched: Pair<Int, Int>? = null,
+        runtimeMinutes: Int? = null, profile: StreamRankingProfile? = null, sizeBadge: Boolean = false): StreamItem {
         fun gb(bytes: Long) = "%.2f GB".format(Locale.ROOT, bytes / (1024.0 * 1024 * 1024))
         // A pack's size is its seasons', not the episode's that plays: with their episode counts, the
         // size badge shows an episode's share and the details keep the whole size.
         val episodeShare = episodeSize(seasonEpisodes).takeIf { pack && it != size }
         val season = packSeasons.size == 1
         val sizeLabel = if (size <= 0) null else when {
-            !pack -> gb(size)
+            !pack -> gb(size).takeUnless { sizeBadge }
             episodeShare != null && season -> text.sizeSeasonShare.format(gb(size), gb(episodeShare))
             episodeShare != null -> text.sizePackShare.format(gb(size), gb(episodeShare))
             season -> text.sizeSeason.format(gb(size))
             else -> text.sizePack.format(gb(size))
         }
         val age = if (publishedAt > 0) "${((System.currentTimeMillis() - publishedAt) / 86400000).coerceAtLeast(0)}d" else null
-        val details = listOfNotNull(sizeLabel, age, indexerName).joinToString(" • ")
+        // A pack's bitrate is its episode share's, an estimate; unknown until its episodes are counted.
+        val bitrate = (if (pack) episodeShare else size)?.takeIf { it > 0 }?.let { bytes ->
+            val minutes = runtimeMinutes?.takeIf { it > 0 } ?: return@let null
+            val mbps = bytes * 8.0 / (minutes * 60) / 1_000_000
+            // Whole megabits from 10 on, so the details stay short.
+            if (mbps < 0.1 || mbps > MAX_LISTED_MBPS) null
+            else (if (mbps < 10) "%s%.1f Mbps" else "%s%.0f Mbps").format(Locale.ROOT, if (pack) "~" else "", mbps)
+        }
+        val facts = rankingFacts
+        val named = this.labels
+        val pixels = facts.resolution.takeIf { it > 0 } ?: resolution
         val resolutionLabel = when {
-            resolution >= 2160 -> "4K"
-            resolution > 0 -> "${resolution}p"
+            pixels >= 2160 -> "4K"
+            pixels > 0 -> "${pixels}p"
             else -> null
         }
+        // The name describes the video; the details, its audio, languages and listing. The release
+        // group is part of the release name; when that is hidden, the group ends the details.
+        val video = listOfNotNull(resolutionLabel, named.service, UsenetReleaseLabels.quality(facts.quality))
+            .joinToString(" ").ifEmpty { null }
+        val tier = profile?.tierOf(facts)?.takeIf { it >= 0 }?.let { "T${it + 1}" }
+        val name = listOfNotNull(video, UsenetReleaseLabels.visual(facts.visual), UsenetReleaseLabels.codec(facts.codec), tier)
+            .joinToString(" • ").ifEmpty { "Usenet" }
+        val details = listOfNotNull(named.audio, UsenetReleaseLabels.languages(named.languages), sizeLabel, bitrate, age,
+            indexerName.takeIf { it.isNotBlank() }, named.group.takeIf { !config.showReleaseNames })
+            .joinToString(" • ")
         return StreamItem(
-            name = listOfNotNull(resolutionLabel, "Usenet", indexerName).joinToString(" • "),
+            name = name,
             title = title,
-            description = if (config.showReleaseNames) "$title\n$details" else details,
+            description = listOfNotNull(title.takeIf { config.showReleaseNames }, details.ifEmpty { null }).joinToString("\n"),
             sourceName = groupName,
             addonName = groupName,
             addonId = groupId,
@@ -388,6 +434,19 @@ internal class BuiltInUsenetService(
         runCatching { Log.i("UsenetSearch", "$videoId on IMDb: ${equivalent ?: "unknown"}") }
         return equivalent
     }
+
+    /**
+     * The movie's or episode's runtime in minutes, from the meta the details page holds under one of
+     * [ids]; null when none is held or it gives none. Nothing is fetched for it.
+     */
+    private suspend fun heldRuntime(type: String, ids: List<String>, videoId: String, season: Int?, episode: Int?): Int? = try {
+        ids.distinct().firstNotNullOfOrNull { heldMeta(type, it) }?.let { meta ->
+            val video = meta.videos.firstOrNull { it.id == videoId.trim() }
+                ?: meta.videos.firstOrNull { season != null && it.season == season && it.episode == episode }
+            video?.runtime?.takeIf { it > 0 } ?: parseRuntimeMinutes(meta.runtime)?.takeIf { it > 0 }
+        }
+    } catch (e: CancellationException) { throw e }
+    catch (_: Exception) { null }
 
     private suspend fun heldMeta(type: String, id: String): MetaDetails? = try {
         catalog?.heldMeta(type, id)
@@ -452,6 +511,8 @@ internal class BuiltInUsenetService(
         /** How long a search waits for every indexer before it shows what came. */
         const val COMPLETE_RESULTS_WAIT_MS = 5_000L
         private const val BLURAY_COLOR = "#0B5ED7"
+        /** Above a UHD disc's peak: such a bitrate comes from a runtime that is not this release's. */
+        private const val MAX_LISTED_MBPS = 150.0
 
         /**
          * One upload's episodes share a binge group, so the next episode plays from the same upload

@@ -48,6 +48,8 @@ internal data class UsenetRelease(
     val resolution: Int = RESOLUTION.find(title)?.groupValues?.get(1)?.toInt()
         ?: if (FOUR_K.containsMatchIn(title)) 2160 else 0
     val rankingFacts: StreamRankingFacts by lazy(LazyThreadSafetyMode.PUBLICATION) { StreamRankingFacts.parse(title) }
+    /** Its result's text, read once: the list is rebuilt as each indexer answers. */
+    val labels: UsenetReleaseLabels by lazy(LazyThreadSafetyMode.PUBLICATION) { UsenetReleaseLabels.parse(title) }
     val lowQuality: Boolean = LOW_QUALITY.containsMatchIn(title)
     /** The seasons of a whole-season release (S01, Season 2, S01-S03); empty for an episode or a movie. */
     val packSeasons: List<Int> = NewznabProtocol.packSeasons(title)

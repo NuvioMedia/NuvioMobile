@@ -208,7 +208,7 @@ class BuiltInUsenetServiceTest {
         val stream = BuiltInUsenetService(client, metadata).search(config, "series", "tt1:1:2", null, null).toList()
             .lastGroup().streams.single()
         assertEquals(listOf(USENET_BADGE_SEASON_PACK), stream.badges.map { it.name })
-        assertEquals("9.00 GB whole season (~1.00 GB per episode) • A", stream.description)
+        assertEquals("9.00 GB whole season (~1.00 GB per episode) • A • GRP", stream.description)
         assertEquals(1L shl 30, stream.behaviorHints.videoSize)
         assertEquals(1, metadata.seasonLookups)
     }
@@ -223,7 +223,7 @@ class BuiltInUsenetServiceTest {
         val metadata = FakeMetadata(seasons = { mapOf(0 to 4, 1 to 10, 2 to 12, 3 to 12) })
         val stream = BuiltInUsenetService(client, metadata).search(config, "series", "tt1:1:2", null, null).toList()
             .lastGroup().streams.single()
-        assertEquals("34.00 GB whole pack (~1.00 GB per episode) • A", stream.description)
+        assertEquals("34.00 GB whole pack (~1.00 GB per episode) • A • GRP", stream.description)
         assertEquals(1L shl 30, stream.behaviorHints.videoSize)
     }
 
@@ -236,7 +236,7 @@ class BuiltInUsenetServiceTest {
             listOf(release(indexer, "Movie.2020.2160p-GRP"), release(indexer, "Movie.2020.720p-GRP"), release(indexer, "Movie.2020-GRP"))
         val names = BuiltInUsenetService(client, FakeMetadata()).search(config, "movie", "tt1", null, null).toList()
             .lastGroup().streams.map { it.name }
-        assertEquals(listOf("4K • Usenet • A", "720p • Usenet • A", "Usenet • A"), names)
+        assertEquals(listOf("4K", "720p", "Usenet"), names)
     }
 
     @Test fun `results wait for every indexer, briefly, unless shown progressively`() = runTest {
@@ -309,7 +309,46 @@ class BuiltInUsenetServiceTest {
         suspend fun description(config: UsenetSourceConfiguration) =
             service.search(config, "movie", "tt1", null, null).toList().lastGroup().streams.single().description
         assertEquals("Movie.2020.1080p-GRP\n2.00 GB • A", description(config))
-        assertEquals("2.00 GB • A", description(config.copy(showReleaseNames = false)))
+        // Without the release name, its group ends the details.
+        assertEquals("2.00 GB • A • GRP", description(config.copy(showReleaseNames = false)))
+    }
+
+    @Test fun `results show what the release name says, the bitrate and the quality tier`() = runTest {
+        val indexer = UsenetIndexer(id = "a", name = "A", apiUrl = "https://a.test/api")
+        val config = UsenetSourceConfiguration(enabled = true, providers = listOf(provider), indexers = listOf(indexer),
+            ranking = StreamRankingSettings(StreamRankingPreset.BEST_QUALITY))
+        val title = "The.Movie.2026.2160p.UHD.BluRay.REMUX.DV.HDR10Plus.HEVC.TrueHD.Atmos.7.1-FraMeSToR"
+        val client = mockk<NewznabClient>()
+        coEvery { client.capabilities(any()) } returns NewznabCapabilities()
+        coEvery { client.search(indexer, any(), any(), any()) } returns listOf(UsenetRelease(title, "https://a.test/nzb/1",
+            size = 60L shl 30, publishedAt = System.currentTimeMillis() - 3 * 86_400_000L - 60_000, indexerId = "a", indexerName = "A"))
+        // The runtime comes from the meta the details page holds.
+        val catalog = FakeCatalog(held = mapOf("movie:tt1" to MetaDetails(id = "tt1", type = "movie", name = "The Movie", runtime = "120 min")))
+        val service = BuiltInUsenetService(client, FakeMetadata(), catalog = catalog)
+        suspend fun stream(config: UsenetSourceConfiguration) =
+            service.search(config, "movie", "tt1", null, null).toList().lastGroup().streams.single()
+        val shown = stream(config)
+        assertEquals("4K Remux • DV HDR10+ • HEVC • T1", shown.name)
+        assertEquals("$title\nTrueHD 7.1 Atmos • 60.00 GB • 72 Mbps • 3d • A", shown.description)
+        assertEquals("TrueHD 7.1 Atmos • 60.00 GB • 72 Mbps • 3d • A • FraMeSToR",
+            stream(config.copy(showReleaseNames = false)).description)
+    }
+
+    @Test fun `with size badges shown, only a pack's details keep its size`() = runTest {
+        val indexer = UsenetIndexer(id = "a", name = "A", apiUrl = "https://a.test/api")
+        val config = UsenetSourceConfiguration(enabled = true, providers = listOf(provider), indexers = listOf(indexer),
+            showReleaseNames = false)
+        val client = mockk<NewznabClient>()
+        coEvery { client.capabilities(any()) } returns NewznabCapabilities()
+        coEvery { client.search(indexer, any(), any(), any()) } returns listOf(
+            UsenetRelease("Show.S01E02.1080p-GRP", "https://a.test/nzb/episode", size = 2L shl 30, indexerId = "a", indexerName = "A"),
+            UsenetRelease("Show.S01.1080p-GRP", "https://a.test/nzb/pack", size = 9L shl 30, indexerId = "a", indexerName = "A"))
+        suspend fun details(sizes: Boolean) = BuiltInUsenetService(client, FakeMetadata(seasons = { mapOf(1 to 9) }),
+            sizeBadges = { sizes }).search(config, "series", "tt1:1:2", null, null).toList().lastGroup().streams
+            .associate { it.title to it.description }
+        assertEquals(mapOf("Show.S01E02.1080p-GRP" to "A • GRP",
+            "Show.S01.1080p-GRP" to "9.00 GB whole season (~1.00 GB per episode) • A • GRP"), details(sizes = true))
+        assertEquals("2.00 GB • A • GRP", details(sizes = false)["Show.S01E02.1080p-GRP"])
     }
 
     @Test fun `with fallback on lower priority indexers are only searched when higher ones find nothing`() = runTest {
@@ -325,7 +364,7 @@ class BuiltInUsenetServiceTest {
         coEvery { client.search(backup, any(), any(), any()) } returns listOf(release(backup))
         val service = BuiltInUsenetService(client, FakeMetadata())
         val group = service.search(config, "movie", "tt1", null, null).toList().lastGroup()
-        assertEquals(listOf("1080p • Usenet • A"), group.streams.map { it.name })
+        assertEquals(listOf("Movie.2020.1080p\nA"), group.streams.map { it.description })
         assertFalse(group.isLoading)
         coVerify { client.search(shared, any(), any(), any()) }
         coVerify(exactly = 0) { client.capabilities(backup) }
@@ -333,7 +372,7 @@ class BuiltInUsenetServiceTest {
         // A failed or empty higher priority falls through to the next one; the group keeps loading meanwhile.
         coEvery { client.search(first, any(), any(), any()) } throws IllegalStateException("down")
         val fallback = service.search(config, "movie", "tt1", null, null).toList().mapNotNull { it.group }
-        assertEquals(listOf("1080p • Usenet • C"), fallback.last().streams.map { it.name })
+        assertEquals(listOf("Movie.2020.1080p\nC"), fallback.last().streams.map { it.description })
         assertTrue(fallback.dropLast(1).all { it.isLoading })
     }
 
@@ -348,7 +387,7 @@ class BuiltInUsenetServiceTest {
         val results = BuiltInUsenetService(client, FakeMetadata(title = { error("tmdb down") }))
             .search(config, "movie", "tt1", null, null).toList()
         assertEquals(listOf("Titles: indexer search failed. Check the API URL, key and limits."), results.mapNotNull { it.failure })
-        assertEquals(listOf("1080p • Usenet • Ids"), results.lastGroup().streams.map { it.name })
+        assertEquals(listOf("Movie.2020.1080p\nIds"), results.lastGroup().streams.map { it.description })
     }
 
     @Test fun `tvdb id is looked up for indexers that only search tv by tvdb`() = runTest {
@@ -359,7 +398,7 @@ class BuiltInUsenetServiceTest {
         coEvery { client.search(tvdbOnly, any(), any(), any()) } returns listOf(release(tvdbOnly, "Show.S01E02.1080p"))
         val metadata = FakeMetadata(title = { UsenetTitleMetadata(tmdbId = "1399", tvdbId = "121361") })
         val results = BuiltInUsenetService(client, metadata).search(config, "series", "tt0944947:1:2", null, null).toList()
-        assertEquals(listOf("1080p • Usenet • Tvdb"), results.lastGroup().streams.map { it.name })
+        assertEquals(listOf("Show.S01E02.1080p\nTvdb"), results.lastGroup().streams.map { it.description })
         coVerify { client.search(tvdbOnly, match { it.tvdbId == "121361" && it.episode == 2 }, any(), any()) }
     }
 
