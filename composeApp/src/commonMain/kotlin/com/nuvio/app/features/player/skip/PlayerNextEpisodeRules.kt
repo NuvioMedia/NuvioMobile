@@ -5,6 +5,9 @@ import com.nuvio.app.features.watching.domain.isShortPlaceholderDuration
 
 object PlayerNextEpisodeRules {
 
+    fun resolvePlayableEpisodeAtIndex(videos: List<MetaVideo>, index: Int): MetaVideo? =
+        videos.getOrNull(index)?.takeIf { hasEpisodeAired(it.released) }
+
     fun resolveNextEpisode(
         videos: List<MetaVideo>,
         currentSeason: Int?,
