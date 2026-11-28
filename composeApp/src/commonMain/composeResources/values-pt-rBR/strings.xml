@@ -423,6 +423,7 @@
     <string name="compose_player_audio_amplification">Amplificação</string>
     <string name="compose_player_audio_amplification_keep">Manter nos próximos vídeos</string>
     <string name="compose_player_center_mix">Nível do canal central</string>
+    <string name="compose_player_night_mode">Modo noturno</string>
     <string name="compose_player_audio">Áudio</string>
     <string name="compose_player_auto_sync">Sincronização automática</string>
     <string name="compose_player_bold">Negrito</string>
@@ -1288,6 +1289,15 @@
     <string name="settings_playback_exo_chapters_description">Lê os capítulos dos arquivos MKV para marcá-los na barra de progresso e listá-los no player.</string>
     <string name="settings_playback_chapter_title">Mostrar título do capítulo</string>
     <string name="settings_playback_chapter_title_description">Mostrar o nome do capítulo atual acima da barra de progresso.</string>
+    <string name="settings_playback_night_mode">Modo noturno</string>
+    <string name="settings_playback_night_mode_description">Realça diálogos e sons baixos para você manter o volume baixo. Funciona com o ExoPlayer.</string>
+    <string name="settings_playback_night_mode_off">Desativado</string>
+    <string name="settings_playback_night_mode_light">Leve</string>
+    <string name="settings_playback_night_mode_light_desc">Realce suave, até +6 dB</string>
+    <string name="settings_playback_night_mode_medium">Médio</string>
+    <string name="settings_playback_night_mode_medium_desc">Diálogos bem realçados, até +10 dB</string>
+    <string name="settings_playback_night_mode_strong">Forte</string>
+    <string name="settings_playback_night_mode_strong_desc">Até +15 dB, para assistir à noite com volume baixo</string>
     <string name="settings_playback_remember_audio_delay">Lembrar atraso do áudio por dispositivo</string>
     <string name="settings_playback_remember_audio_delay_description">Restaura o atraso do áudio definido no player sempre que a mesma saída tocar de novo, como o alto-falante do celular, fones com fio ou cada dispositivo Bluetooth</string>
     <string name="settings_playback_downmix_section">DOWNMIX</string>

@@ -71,6 +71,7 @@ data class PlayerSettingsUiState(
     val audioOutputChannels: AudioOutputChannels = AudioOutputChannels.default,
     val maintainOriginalAudioOnDownmix: Boolean = true,
     val centerMixLevelDb: Int = 0,
+    val nightMode: NightMode = NightMode.OFF,
     val decoderPriority: Int = 1,
     val mapDV7ToHevc: Boolean = false,
     val tunnelingEnabled: Boolean = false,
@@ -187,6 +188,7 @@ object PlayerSettingsRepository {
     private var audioOutputChannels = AudioOutputChannels.default
     private var maintainOriginalAudioOnDownmix = true
     private var centerMixLevelDb = 0
+    private var nightMode = NightMode.OFF
     private var decoderPriority = 1
     private var mapDV7ToHevc = false
     private var tunnelingEnabled = false
@@ -290,6 +292,7 @@ object PlayerSettingsRepository {
         audioOutputChannels = AudioOutputChannels.default
         maintainOriginalAudioOnDownmix = true
         centerMixLevelDb = 0
+        nightMode = NightMode.OFF
         decoderPriority = 1
         mapDV7ToHevc = false
         tunnelingEnabled = false
@@ -430,6 +433,7 @@ object PlayerSettingsRepository {
         maintainOriginalAudioOnDownmix = PlayerSettingsStorage.loadMaintainOriginalAudioOnDownmix() ?: true
         centerMixLevelDb = (PlayerSettingsStorage.loadCenterMixLevelDb() ?: 0)
             .coerceIn(CENTER_MIX_LEVEL_MIN_DB, CENTER_MIX_LEVEL_MAX_DB)
+        nightMode = NightMode.fromSettingValue(PlayerSettingsStorage.loadNightMode())
         decoderPriority = PlayerSettingsStorage.loadDecoderPriority() ?: 1
         mapDV7ToHevc = PlayerSettingsStorage.loadMapDV7ToHevc() ?: false
         tunnelingEnabled = PlayerSettingsStorage.loadTunnelingEnabled() ?: false
@@ -884,6 +888,14 @@ object PlayerSettingsRepository {
         centerMixLevelDb = clamped
         publish()
         PlayerSettingsStorage.saveCenterMixLevelDb(clamped)
+    }
+
+    fun setNightMode(mode: NightMode) {
+        ensureLoaded()
+        if (nightMode == mode) return
+        nightMode = mode
+        publish()
+        PlayerSettingsStorage.saveNightMode(mode.settingValue)
     }
 
     fun setDecoderPriority(priority: Int) {
@@ -1437,6 +1449,7 @@ object PlayerSettingsRepository {
             audioOutputChannels = audioOutputChannels,
             maintainOriginalAudioOnDownmix = maintainOriginalAudioOnDownmix,
             centerMixLevelDb = centerMixLevelDb,
+            nightMode = nightMode,
             decoderPriority = decoderPriority,
             mapDV7ToHevc = mapDV7ToHevc,
             tunnelingEnabled = tunnelingEnabled,

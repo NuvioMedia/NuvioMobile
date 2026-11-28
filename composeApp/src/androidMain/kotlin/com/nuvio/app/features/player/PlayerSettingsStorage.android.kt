@@ -70,6 +70,7 @@ actual object PlayerSettingsStorage {
     private const val audioOutputChannelsKey = "audio_output_channels"
     private const val maintainOriginalAudioOnDownmixKey = "maintain_original_audio_on_downmix"
     private const val centerMixLevelDbKey = "center_mix_level_db"
+    private const val nightModeKey = "night_mode"
     private const val decoderPriorityKey = "decoder_priority"
     private const val mapDV7ToHevcKey = "map_dv7_to_hevc"
     private const val tunnelingEnabledKey = "tunneling_enabled"
@@ -174,6 +175,7 @@ actual object PlayerSettingsStorage {
         audioOutputChannelsKey,
         maintainOriginalAudioOnDownmixKey,
         centerMixLevelDbKey,
+        nightModeKey,
         decoderPriorityKey,
         mapDV7ToHevcKey,
         tunnelingEnabledKey,
@@ -985,6 +987,16 @@ actual object PlayerSettingsStorage {
             ?.apply()
     }
 
+    actual fun loadNightMode(): String? =
+        preferences?.getString(ProfileScopedKey.of(nightModeKey), null)
+
+    actual fun saveNightMode(value: String) {
+        preferences
+            ?.edit()
+            ?.putString(ProfileScopedKey.of(nightModeKey), value)
+            ?.apply()
+    }
+
     actual fun loadDecoderPriority(): Int? =
         preferences?.let { sharedPreferences ->
             val key = ProfileScopedKey.of(decoderPriorityKey)
@@ -1659,6 +1671,7 @@ actual object PlayerSettingsStorage {
         loadAudioOutputChannels()?.let { put(audioOutputChannelsKey, encodeSyncString(it)) }
         loadMaintainOriginalAudioOnDownmix()?.let { put(maintainOriginalAudioOnDownmixKey, encodeSyncBoolean(it)) }
         loadCenterMixLevelDb()?.let { put(centerMixLevelDbKey, encodeSyncInt(it)) }
+        loadNightMode()?.let { put(nightModeKey, encodeSyncString(it)) }
         loadDecoderPriority()?.let { put(decoderPriorityKey, encodeSyncInt(it)) }
         loadMapDV7ToHevc()?.let { put(mapDV7ToHevcKey, encodeSyncBoolean(it)) }
         loadTunnelingEnabled()?.let { put(tunnelingEnabledKey, encodeSyncBoolean(it)) }
@@ -1756,6 +1769,7 @@ actual object PlayerSettingsStorage {
         payload.decodeSyncString(audioOutputChannelsKey)?.let(::saveAudioOutputChannels)
         payload.decodeSyncBoolean(maintainOriginalAudioOnDownmixKey)?.let(::saveMaintainOriginalAudioOnDownmix)
         payload.decodeSyncInt(centerMixLevelDbKey)?.let(::saveCenterMixLevelDb)
+        payload.decodeSyncString(nightModeKey)?.let(::saveNightMode)
         payload.decodeSyncInt(decoderPriorityKey)?.let(::saveDecoderPriority)
         payload.decodeSyncBoolean(mapDV7ToHevcKey)?.let(::saveMapDV7ToHevc)
         payload.decodeSyncBoolean(tunnelingEnabledKey)?.let(::saveTunnelingEnabled)

@@ -281,6 +281,8 @@ private fun ExoPlayerSurface(
     // Read by the playback thread's audio sink; every rebuilt player picks up the current gain.
     val audioAmplificationDb = remember { AtomicInteger(AUDIO_AMPLIFICATION_MIN_DB) }
     val centerMixLevelDb = remember { AtomicInteger(0) }
+    // Starts at the saved level so the first audio of the session already has it.
+    val nightMode = remember { AtomicReference(playerSettings.nightMode) }
     // The current player's FFmpeg audio renderer, for center mix changes during playback.
     val ffmpegAudioRenderer = remember { AtomicReference<FfmpegAudioRenderer?>(null) }
     val latestExternalSubtitleMimeType = rememberUpdatedState(selectedExternalSubtitleMimeType)
@@ -455,6 +457,7 @@ private fun ExoPlayerSurface(
             subtitleDelayUsProvider = { latestSubtitleDelayMs.value.toLong() * 1_000L },
             audioDelayUsProvider = audioDelayUs::get,
             audioAmplificationDbProvider = audioAmplificationDb::get,
+            nightModeProvider = nightMode::get,
             audioDownmix = audioDownmix,
             preferAppAudioDecoder = bluetoothOutput,
             centerMixLevelDbProvider = centerMixLevelDb::get,
@@ -1273,6 +1276,12 @@ private fun ExoPlayerSurface(
                     val clamped = db.coerceIn(CENTER_MIX_LEVEL_MIN_DB, CENTER_MIX_LEVEL_MAX_DB)
                     centerMixLevelDb.set(clamped)
                     ffmpegAudioRenderer.get()?.setCenterMixLevelDb(clamped)
+                }
+
+                override val supportsNightMode = true
+
+                override fun setNightMode(mode: NightMode) {
+                    nightMode.set(mode)
                 }
             }),
         )
@@ -3087,6 +3096,7 @@ private class SubtitleOffsetRenderersFactory(
     private val subtitleDelayUsProvider: () -> Long,
     private val audioDelayUsProvider: () -> Long,
     private val audioAmplificationDbProvider: () -> Int,
+    private val nightModeProvider: () -> NightMode,
     private val audioDownmix: FfmpegAudioDownmix?,
     private val preferAppAudioDecoder: Boolean,
     private val centerMixLevelDbProvider: () -> Int,
@@ -3104,7 +3114,12 @@ private class SubtitleOffsetRenderersFactory(
         val baseAudioSink = DefaultAudioSink.Builder(context)
             .setEnableFloatOutput(enableFloatOutput)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-            .setAudioProcessors(arrayOf(GainAudioProcessor(audioAmplificationDbProvider)))
+            .setAudioProcessors(
+                arrayOf(
+                    GainAudioProcessor(audioAmplificationDbProvider),
+                    NightModeAudioProcessor(nightModeProvider),
+                ),
+            )
             .build()
         return AudioSyncTaps.wrapAudioSink(baseAudioSink)
     }

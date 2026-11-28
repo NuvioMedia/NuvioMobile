@@ -250,6 +250,7 @@ internal fun PlayerScreenRuntime.BindPlayerRuntimeEffects() {
 
     BindAudioDelayEffects()
     BindAudioAmplificationEffects()
+    BindNightModeEffects()
 
     LaunchedEffect(selectedAddonSubtitleId, useCustomSubtitles, activeSourceUrl) {
         subtitleAutoSyncState = SubtitleAutoSyncUiState()

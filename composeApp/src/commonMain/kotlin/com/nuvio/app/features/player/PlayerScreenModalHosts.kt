@@ -35,6 +35,9 @@ internal fun PlayerScreenModalHosts(
     showCenterMix: Boolean,
     centerMixLevelDb: Int,
     onCenterMixLevelChanged: (Int) -> Unit,
+    showNightMode: Boolean,
+    nightMode: NightMode,
+    onNightModeChanged: (NightMode) -> Unit,
     showSubtitleModal: Boolean,
     subtitleTracks: List<SubtitleTrack>,
     selectedSubtitleIndex: Int,
@@ -142,6 +145,9 @@ internal fun PlayerScreenModalHosts(
         showCenterMix = showCenterMix,
         centerMixLevelDb = centerMixLevelDb,
         onCenterMixLevelChanged = onCenterMixLevelChanged,
+        showNightMode = showNightMode,
+        nightMode = nightMode,
+        onNightModeChanged = onNightModeChanged,
     )
 
     SubtitleModal(

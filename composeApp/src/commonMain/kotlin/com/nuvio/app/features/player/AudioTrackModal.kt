@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -17,6 +18,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -41,8 +44,13 @@ import nuvio.composeapp.generated.resources.compose_player_audio_amplification_k
 import nuvio.composeapp.generated.resources.compose_player_audio_delay
 import nuvio.composeapp.generated.resources.compose_player_audio_tracks
 import nuvio.composeapp.generated.resources.compose_player_center_mix
+import nuvio.composeapp.generated.resources.compose_player_night_mode
 import nuvio.composeapp.generated.resources.compose_player_no_audio_tracks_available
 import nuvio.composeapp.generated.resources.compose_player_reset
+import nuvio.composeapp.generated.resources.settings_playback_night_mode_light
+import nuvio.composeapp.generated.resources.settings_playback_night_mode_medium
+import nuvio.composeapp.generated.resources.settings_playback_night_mode_off
+import nuvio.composeapp.generated.resources.settings_playback_night_mode_strong
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.abs
 
@@ -70,6 +78,9 @@ fun AudioTrackModal(
     showCenterMix: Boolean = false,
     centerMixLevelDb: Int = 0,
     onCenterMixLevelChanged: (Int) -> Unit = {},
+    showNightMode: Boolean = false,
+    nightMode: NightMode = NightMode.OFF,
+    onNightModeChanged: (NightMode) -> Unit = {},
 ) {
     PlayerOverlayScaffold(
         visible = visible,
@@ -81,7 +92,7 @@ fun AudioTrackModal(
             val railWidth = minOf(maxWidth, 444.dp)
             val railMaxHeight = (maxHeight - 64.dp).coerceAtLeast(120.dp).coerceAtMost(620.dp)
             val panelMaxHeight = maxHeight
-            val hasAdjustments = showAudioDelay || showAudioAmplification || showCenterMix
+            val hasAdjustments = showAudioDelay || showAudioAmplification || showCenterMix || showNightMode
             val adjustments: @Composable () -> Unit = {
                 if (showAudioDelay) {
                     AudioDelaySection(
@@ -105,6 +116,14 @@ fun AudioTrackModal(
                     CenterMixSection(
                         levelDb = centerMixLevelDb,
                         onLevelChanged = onCenterMixLevelChanged,
+                        modifier = Modifier.padding(top = 12.dp),
+                    )
+                }
+
+                if (showNightMode) {
+                    NightModeSection(
+                        mode = nightMode,
+                        onModeChanged = onNightModeChanged,
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 }
@@ -261,6 +280,50 @@ private fun CenterMixSection(
 }
 
 @Composable
+private fun NightModeSection(
+    mode: NightMode,
+    onModeChanged: (NightMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            text = stringResource(Res.string.compose_player_night_mode),
+            color = Color.White,
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        FlowRow(
+            modifier = Modifier.selectableGroup(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            NightMode.entries.forEach { level ->
+                val selected = level == mode
+                AudioChip(
+                    label = nightModeLevelLabel(level),
+                    checked = selected,
+                    interaction = Modifier.selectable(
+                        selected = selected,
+                        role = Role.RadioButton,
+                        onClick = { onModeChanged(level) },
+                    ),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun nightModeLevelLabel(mode: NightMode): String = when (mode) {
+    NightMode.OFF -> stringResource(Res.string.settings_playback_night_mode_off)
+    NightMode.LIGHT -> stringResource(Res.string.settings_playback_night_mode_light)
+    NightMode.MEDIUM -> stringResource(Res.string.settings_playback_night_mode_medium)
+    NightMode.STRONG -> stringResource(Res.string.settings_playback_night_mode_strong)
+}
+
+@Composable
 private fun AudioAmplificationSection(
     gainDb: Int,
     keep: Boolean,
@@ -303,6 +366,20 @@ private fun AudioToggleChip(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
 ) {
+    AudioChip(
+        label = label,
+        checked = checked,
+        interaction = Modifier.toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange),
+    )
+}
+
+/** A chip that is highlighted with a check mark while [checked]; [interaction] makes it clickable. */
+@Composable
+private fun AudioChip(
+    label: String,
+    checked: Boolean,
+    interaction: Modifier,
+) {
     val tokens = MaterialTheme.nuvio
     val contentColor = if (checked) tokens.colors.onAccent else Color.White
 
@@ -310,7 +387,7 @@ private fun AudioToggleChip(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
             .background(if (checked) tokens.colors.accent else Color.White.copy(alpha = 0.08f))
-            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .then(interaction)
             .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalAlignment = Alignment.CenterVertically,

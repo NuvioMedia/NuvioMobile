@@ -2,17 +2,21 @@ package com.nuvio.app.features.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
+import com.nuvio.app.core.ui.nuvio
 import com.nuvio.app.features.player.AndroidPlaybackEngine
 import com.nuvio.app.features.player.AudioLanguageOption
 import com.nuvio.app.features.player.AudioOutputChannels
 import com.nuvio.app.features.player.AvailableLanguageOptions
 import com.nuvio.app.features.player.IosAudioOutputMode
+import com.nuvio.app.features.player.NightMode
 import com.nuvio.app.features.player.PlayerSettingsRepository
 import com.nuvio.app.features.player.effectiveDownmixEnabled
 import com.nuvio.app.features.player.languageLabelForCode
@@ -30,6 +34,7 @@ internal fun PlaybackAudioSettings(
     var showSecondaryAudioDialog by remember { mutableStateOf(false) }
     var showIosAudioOutputDialog by remember { mutableStateOf(false) }
     var showDownmixChannelsDialog by remember { mutableStateOf(false) }
+    var showNightModeDialog by remember { mutableStateOf(false) }
     Column(verticalArrangement = Arrangement.spacedBy(if (isTablet) 18.dp else 12.dp)) {
         SettingsSection(
             title = stringResource(Res.string.settings_playback_page_audio),
@@ -57,6 +62,23 @@ internal fun PlaybackAudioSettings(
                     onClick = { showSecondaryAudioDialog = true },
                 )
                 if (!isIos) {
+                    SettingsGroupDivider(isTablet = isTablet)
+                    // The night mode processor sits in ExoPlayer's audio sink.
+                    SettingsNavigationRow(
+                        title = stringResource(Res.string.settings_playback_night_mode),
+                        description = stringResource(Res.string.settings_playback_night_mode_description),
+                        enabled = !settings.externalPlayerEnabled &&
+                            settings.androidPlaybackEngine != AndroidPlaybackEngine.Libmpv,
+                        isTablet = isTablet,
+                        trailingContent = {
+                            Text(
+                                text = nightModeLabel(settings.nightMode),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.nuvio.colors.textSecondary,
+                            )
+                        },
+                        onClick = { showNightModeDialog = true },
+                    )
                     SettingsGroupDivider(isTablet = isTablet)
                     SettingsSwitchRow(
                         title = stringResource(Res.string.settings_playback_remember_audio_delay),
@@ -142,6 +164,28 @@ internal fun PlaybackAudioSettings(
         )
     }
 
+    if (showNightModeDialog) {
+        SettingsChoiceDialog(
+            title = stringResource(Res.string.settings_playback_night_mode),
+            options = NightMode.entries,
+            selected = settings.nightMode,
+            label = { nightModeLabel(it) },
+            description = {
+                when (it) {
+                    NightMode.OFF -> null
+                    NightMode.LIGHT -> stringResource(Res.string.settings_playback_night_mode_light_desc)
+                    NightMode.MEDIUM -> stringResource(Res.string.settings_playback_night_mode_medium_desc)
+                    NightMode.STRONG -> stringResource(Res.string.settings_playback_night_mode_strong_desc)
+                }
+            },
+            onSelect = {
+                PlayerSettingsRepository.setNightMode(it)
+                showNightModeDialog = false
+            },
+            onDismiss = { showNightModeDialog = false },
+        )
+    }
+
     if (showPreferredAudioDialog) {
         val originalHint = stringResource(Res.string.settings_playback_option_original_hint)
         LanguageSelectionDialog(
@@ -201,4 +245,12 @@ internal fun PlaybackAudioSettings(
             onDismiss = { showIosAudioOutputDialog = false },
         )
     }
+}
+
+@Composable
+private fun nightModeLabel(mode: NightMode): String = when (mode) {
+    NightMode.OFF -> stringResource(Res.string.settings_playback_night_mode_off)
+    NightMode.LIGHT -> stringResource(Res.string.settings_playback_night_mode_light)
+    NightMode.MEDIUM -> stringResource(Res.string.settings_playback_night_mode_medium)
+    NightMode.STRONG -> stringResource(Res.string.settings_playback_night_mode_strong)
 }

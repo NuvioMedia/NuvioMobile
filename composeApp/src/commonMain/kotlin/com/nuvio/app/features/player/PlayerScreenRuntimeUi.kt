@@ -675,6 +675,9 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         showCenterMix = centerMixAvailable,
         centerMixLevelDb = centerMixLevelDb,
         onCenterMixLevelChanged = { db -> setCenterMixLevel(db) },
+        showNightMode = playerController?.supportsNightMode == true,
+        nightMode = playerSettingsUiState.nightMode,
+        onNightModeChanged = { mode -> setNightMode(mode) },
         showSubtitleModal = showSubtitleModal,
         subtitleTracks = serverSubtitleTracks.ifEmpty { subtitleTracks },
         selectedSubtitleIndex = if (serverSubtitleTracks.isEmpty()) {
