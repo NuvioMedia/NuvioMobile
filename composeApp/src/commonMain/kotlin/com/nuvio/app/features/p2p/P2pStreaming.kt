@@ -20,11 +20,23 @@ enum class P2pTorrentProfile {
 }
 
 enum class P2pCacheSize(val bytes: Long) {
+    MEMORY_ONLY(0L),
     NONE(0L),
     GB_2(2L * 1024L * 1024L * 1024L),
     GB_5(5L * 1024L * 1024L * 1024L),
     GB_10(10L * 1024L * 1024L * 1024L),
 }
+
+private const val MiB = 1024L * 1024L
+internal const val MinP2pMemoryStorageBytes = 128L * MiB
+internal const val MaxP2pMemoryStorageBytes = 512L * MiB
+
+internal fun p2pMemoryStorageCapacityBytes(totalMemoryBytes: Long, lowRamDevice: Boolean): Long =
+    if (lowRamDevice) {
+        MinP2pMemoryStorageBytes
+    } else {
+        (totalMemoryBytes / 8).coerceIn(MinP2pMemoryStorageBytes, MaxP2pMemoryStorageBytes)
+    }
 
 data class P2pCacheUiState(
     val usedBytes: Long = 0L,

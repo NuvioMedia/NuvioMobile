@@ -1,12 +1,16 @@
 package com.nuvio.app.features.p2p
 
+import android.app.ActivityManager
 import android.content.Context
 import android.os.SystemClock
+import android.system.ErrnoException
+import android.system.Os
 import android.util.Log
 import com.nuvio.app.core.i18n.localizedP2pUnknownTorrentError
 import com.nuvio.engine.NuvioEngine
 import com.nuvio.engine.NuvioEngineConfig
 import com.nuvio.engine.NuvioEventType
+import com.nuvio.engine.NuvioStorageMode
 import com.nuvio.engine.NuvioStream
 import com.nuvio.engine.NuvioTorrentProfile
 import com.nuvio.engine.NuvioUploadMode
@@ -40,11 +44,18 @@ internal fun buildNuvioEngineConfig(
     cacheDirectory: File,
     uploadEnabled: Boolean,
     torrentProfile: P2pTorrentProfile,
-    diskCacheCapacityBytes: Long,
+    cacheSize: P2pCacheSize,
+    memoryStorageCapacityBytes: Long,
 ): NuvioEngineConfig = NuvioEngineConfig(
     dataDirectory = stateDirectory,
     cacheDirectory = cacheDirectory,
-    diskCacheCapacityBytes = diskCacheCapacityBytes,
+    diskCacheCapacityBytes = cacheSize.bytes,
+    storageMode = if (cacheSize == P2pCacheSize.MEMORY_ONLY) {
+        NuvioStorageMode.Memory
+    } else {
+        NuvioStorageMode.Disk
+    },
+    memoryStorageCapacityBytes = memoryStorageCapacityBytes,
     torrentProfile = when (torrentProfile) {
         P2pTorrentProfile.SOFT -> NuvioTorrentProfile.Soft
         P2pTorrentProfile.BALANCED -> NuvioTorrentProfile.Balanced
@@ -57,6 +68,21 @@ internal fun buildNuvioEngineConfig(
     },
     streamInactivityTimeoutMilliseconds = 0,
 )
+
+internal fun measureP2pPayloadBytes(
+    cacheDirectory: File,
+    storedBytes: (File) -> Long = ::allocatedFileBytes,
+): Long = File(cacheDirectory, "payload")
+    .walkTopDown()
+    .filter { it.isFile }
+    .sumOf(storedBytes)
+
+private fun allocatedFileBytes(file: File): Long = try {
+    val stat = Os.lstat(file.path)
+    minOf(stat.st_size, stat.st_blocks * 512L)
+} catch (_: ErrnoException) {
+    0L
+}
 
 internal fun migrateNestedPayloadDirectory(cacheDirectory: File) {
     val payloadDirectory = File(cacheDirectory, "payload")
@@ -109,7 +135,7 @@ actual object P2pStreamingEngine {
     private data class EngineConfigurationKey(
         val uploadEnabled: Boolean,
         val torrentProfile: P2pTorrentProfile,
-        val diskCacheCapacityBytes: Long,
+        val cacheSize: P2pCacheSize,
     )
 
     private data class DetachedStream(
@@ -142,6 +168,11 @@ actual object P2pStreamingEngine {
 
     fun initialize(context: Context) {
         appContext = context.applicationContext
+        scope.launch {
+            if (engine == null) {
+                refreshCacheStateFromDisk()
+            }
+        }
     }
 
     actual suspend fun startStream(request: P2pStreamRequest): String = withContext(Dispatchers.IO) {
@@ -454,7 +485,7 @@ actual object P2pStreamingEngine {
         val configurationKey = EngineConfigurationKey(
             uploadEnabled = settings.enableUpload,
             torrentProfile = settings.torrentProfile,
-            diskCacheCapacityBytes = settings.cacheSize.bytes,
+            cacheSize = settings.cacheSize,
         )
         engine?.takeIf { engineConfigurationKey == configurationKey }?.let {
             Log.i(
@@ -486,7 +517,8 @@ actual object P2pStreamingEngine {
                 cacheDirectory = cacheDirectory,
                 uploadEnabled = configurationKey.uploadEnabled,
                 torrentProfile = configurationKey.torrentProfile,
-                diskCacheCapacityBytes = configurationKey.diskCacheCapacityBytes,
+                cacheSize = configurationKey.cacheSize,
+                memoryStorageCapacityBytes = memoryStorageCapacityBytes(context),
             )
         ).also { created ->
             engine = created
@@ -520,6 +552,9 @@ actual object P2pStreamingEngine {
                 target.shutdown()
             } catch (error: Exception) {
                 Log.w(TAG, "Error shutting down Nuvio Engine", error)
+            }
+            if (engine == null) {
+                refreshCacheStateFromDisk()
             }
         }
         Log.i(
@@ -805,6 +840,25 @@ actual object P2pStreamingEngine {
     private fun ensureCurrentGeneration(generation: Long) {
         if (!isCurrentGeneration(generation)) {
             throw CancellationException("P2P stream start was cancelled")
+        }
+    }
+
+    private fun memoryStorageCapacityBytes(context: Context): Long {
+        val activityManager = context.getSystemService(ActivityManager::class.java)
+        val memoryInfo = ActivityManager.MemoryInfo()
+        activityManager?.getMemoryInfo(memoryInfo)
+        return p2pMemoryStorageCapacityBytes(
+            totalMemoryBytes = memoryInfo.totalMem,
+            lowRamDevice = activityManager?.isLowRamDevice ?: true,
+        )
+    }
+
+    private fun refreshCacheStateFromDisk() {
+        val context = appContext ?: return
+        try {
+            updateCacheState(measureP2pPayloadBytes(File(context.cacheDir, "nuvio-engine")), 0L)
+        } catch (error: Exception) {
+            Log.w(TAG, "Could not measure the torrent cache", error)
         }
     }
 

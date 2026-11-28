@@ -10,6 +10,8 @@ import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_EVENT_TORRENT_ERROR
 import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_EVENT_TORRENT_METADATA_READY
 import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_STATUS_NO_EVENT
 import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_STATUS_OK
+import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_STORAGE_DISK
+import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_STORAGE_MEMORY
 import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_TORRENT_PROFILE_BALANCED
 import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_TORRENT_PROFILE_FAST
 import com.nuvio.app.features.p2p.native.NUVIO_ENGINE_TORRENT_PROFILE_SOFT
@@ -68,6 +70,7 @@ import kotlinx.coroutines.withContext
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSHomeDirectory
 import platform.Foundation.NSLog
+import platform.Foundation.NSProcessInfo
 
 private const val StatsPollIntervalMs = 250L
 private const val StartupStatsPollIntervalMs = 1_000L
@@ -78,7 +81,7 @@ actual object P2pStreamingEngine {
     private data class EngineConfigurationKey(
         val uploadEnabled: Boolean,
         val torrentProfile: P2pTorrentProfile,
-        val diskCacheCapacityBytes: Long,
+        val cacheSize: P2pCacheSize,
     )
 
     private data class NativeEvent(
@@ -322,7 +325,7 @@ actual object P2pStreamingEngine {
         val configuration = EngineConfigurationKey(
             uploadEnabled = settings.enableUpload,
             torrentProfile = settings.torrentProfile,
-            diskCacheCapacityBytes = settings.cacheSize.bytes,
+            cacheSize = settings.cacheSize,
         )
         engine?.takeIf { engineConfigurationKey == configuration }?.let { return it }
         closeEngine()
@@ -338,7 +341,16 @@ actual object P2pStreamingEngine {
             config.data_directory = stateDirectory.cstr.getPointer(this)
             config.cache_directory = cacheDirectory.cstr.getPointer(this)
             config.memory_cache_capacity_bytes = MemoryCacheCapacityBytes.toULong()
-            config.disk_cache_capacity_bytes = configuration.diskCacheCapacityBytes.toULong()
+            config.disk_cache_capacity_bytes = configuration.cacheSize.bytes.toULong()
+            config.storage_mode = if (configuration.cacheSize == P2pCacheSize.MEMORY_ONLY) {
+                NUVIO_ENGINE_STORAGE_MEMORY
+            } else {
+                NUVIO_ENGINE_STORAGE_DISK
+            }
+            config.memory_storage_capacity_bytes = p2pMemoryStorageCapacityBytes(
+                totalMemoryBytes = NSProcessInfo.processInfo.physicalMemory.toLong(),
+                lowRamDevice = false,
+            ).toULong()
             config.upload_mode = if (configuration.uploadEnabled) {
                 NUVIO_ENGINE_UPLOAD_UNLIMITED
             } else {

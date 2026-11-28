@@ -1,5 +1,6 @@
 package com.nuvio.app.features.p2p
 
+import com.nuvio.engine.NuvioStorageMode
 import com.nuvio.engine.NuvioUploadMode
 import com.nuvio.engine.NuvioTorrentProfile
 import java.io.File
@@ -21,14 +22,16 @@ class P2pStreamingEngineAndroidTest {
             cacheDirectory = cacheDirectory,
             uploadEnabled = true,
             torrentProfile = P2pTorrentProfile.FAST,
-            diskCacheCapacityBytes = P2pCacheSize.GB_5.bytes,
+            cacheSize = P2pCacheSize.GB_5,
+            memoryStorageCapacityBytes = MinP2pMemoryStorageBytes,
         )
         val downloadOnly = buildNuvioEngineConfig(
             stateDirectory = stateDirectory,
             cacheDirectory = cacheDirectory,
             uploadEnabled = false,
             torrentProfile = P2pTorrentProfile.SOFT,
-            diskCacheCapacityBytes = P2pCacheSize.NONE.bytes,
+            cacheSize = P2pCacheSize.NONE,
+            memoryStorageCapacityBytes = MinP2pMemoryStorageBytes,
         )
 
         assertEquals(0, uploading.streamInactivityTimeoutMilliseconds)
@@ -39,6 +42,49 @@ class P2pStreamingEngineAndroidTest {
         assertEquals(NuvioUploadMode.Disabled, downloadOnly.uploadMode)
         assertEquals(NuvioTorrentProfile.Soft, downloadOnly.torrentProfile)
         assertEquals(0L, downloadOnly.diskCacheCapacityBytes)
+        assertEquals(NuvioStorageMode.Disk, uploading.storageMode)
+        assertEquals(NuvioStorageMode.Disk, downloadOnly.storageMode)
+    }
+
+    @Test
+    fun memoryOnlyCacheSelectsEngineMemoryStorage() {
+        val config = buildNuvioEngineConfig(
+            stateDirectory = File("state"),
+            cacheDirectory = File("cache"),
+            uploadEnabled = true,
+            torrentProfile = P2pTorrentProfile.BALANCED,
+            cacheSize = P2pCacheSize.MEMORY_ONLY,
+            memoryStorageCapacityBytes = 256L * 1024L * 1024L,
+        )
+
+        assertEquals(NuvioStorageMode.Memory, config.storageMode)
+        assertEquals(256L * 1024L * 1024L, config.memoryStorageCapacityBytes)
+        assertEquals(0L, config.diskCacheCapacityBytes)
+    }
+
+    @Test
+    fun memoryStorageCapacityFollowsDeviceMemoryWithinBounds() {
+        val gib = 1024L * 1024L * 1024L
+        assertEquals(256L * 1024L * 1024L, p2pMemoryStorageCapacityBytes(2L * gib, lowRamDevice = false))
+        assertEquals(MinP2pMemoryStorageBytes, p2pMemoryStorageCapacityBytes(512L * 1024L * 1024L, lowRamDevice = false))
+        assertEquals(MaxP2pMemoryStorageBytes, p2pMemoryStorageCapacityBytes(8L * gib, lowRamDevice = false))
+        assertEquals(MinP2pMemoryStorageBytes, p2pMemoryStorageCapacityBytes(8L * gib, lowRamDevice = true))
+    }
+
+    @Test
+    fun payloadMeasurementSumsStoredBytesOfEveryPayloadFile() {
+        val cacheDirectory = Files.createTempDirectory("nuvio-engine-cache-").toFile()
+        try {
+            File(cacheDirectory, "payload/$TORRENT_ID/season").mkdirs()
+            File(cacheDirectory, "payload/$TORRENT_ID/video.mkv").writeText("12345")
+            File(cacheDirectory, "payload/$TORRENT_ID/season/episode.mkv").writeText("123")
+            File(cacheDirectory, "state.bin").writeText("ignored")
+
+            assertEquals(8L, measureP2pPayloadBytes(cacheDirectory) { it.length() })
+            assertEquals(0L, measureP2pPayloadBytes(File(cacheDirectory, "missing")) { it.length() })
+        } finally {
+            cacheDirectory.deleteRecursively()
+        }
     }
 
     @Test
