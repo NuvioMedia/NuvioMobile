@@ -24,20 +24,25 @@ import org.junit.Test
 
 /** TMDB answers for a search; each test sets what it needs. */
 private class FakeMetadata(
-    var title: suspend () -> UsenetTitleMetadata = { error("metadata unavailable") },
+    /** A title's metadata, given a series' details. */
+    var title: suspend (UsenetSeriesDetails?) -> UsenetTitleMetadata = { error("metadata unavailable") },
     var seasons: suspend () -> Map<Int, Int>? = { null },
+    /** A series' details; by default only the [seasons]' episode counts. */
+    var details: (suspend () -> UsenetSeriesDetails?)? = null,
 ) : UsenetMetadataSource {
     var titleLookups = 0
     var seasonLookups = 0
 
-    override suspend fun title(imdbId: String?, tmdbId: String?, videoId: String, series: Boolean): UsenetTitleMetadata {
+    override suspend fun title(imdbId: String?, tmdbId: String?, videoId: String, series: Boolean,
+        details: UsenetSeriesDetails?): UsenetTitleMetadata {
         titleLookups++
-        return title().let { it.copy(imdbId = it.imdbId ?: imdbId, tmdbId = it.tmdbId ?: tmdbId) }
+        return title(details).let { it.copy(imdbId = it.imdbId ?: imdbId, tmdbId = it.tmdbId ?: tmdbId) }
     }
 
-    override suspend fun seasonEpisodes(tmdbId: String?, videoId: String): Map<Int, Int>? {
+    override suspend fun series(tmdbId: String?, videoId: String): UsenetSeriesDetails? {
         seasonLookups++
-        return seasons()
+        details?.let { return it() }
+        return UsenetSeriesDetails(tmdbId ?: "1", seasons = seasons().orEmpty().map { (number, count) -> UsenetSeasonSummary(number, count) })
     }
 }
 
@@ -109,8 +114,7 @@ class BuiltInUsenetServiceTest {
         assertTrue(stream.needsUsenetPreparation)
         assertEquals(listOf("nntps://user:pass@news.test:563/20?priority=1"), stream.nzbServers)
         coVerify { client.search(good, match { it.season == 1 && it.episode == 3 && it.imdbId == "tt123" }, any(), any()) }
-        // An episode searched by id needs no title.
-        assertEquals(0, metadata.titleLookups)
+        // The series' metadata failed here (the fake has no answers): its results are listed unchecked.
     }
 
     @Test fun `an upload's episodes share a binge group, so the next episode keeps to it`() {
@@ -600,5 +604,82 @@ class BuiltInUsenetServiceTest {
         assertTrue(results.mapNotNull { it.group }.all { it.streams.isEmpty() })
         coVerify(exactly = 0) { client.search(any(), match { it.imdbId != null || it.tvdbId != null || it.tmdbId != null }, any(), any()) }
         coVerify(exactly = 0) { client.search(any(), match { it.title != null }, any(), any()) }
+    }
+
+    // The Korean Suits (2018), which shares its name with the American one (2011).
+    private fun koreanSuits() = UsenetSeriesDetails("77548", name = "Suits", firstAirDate = "2018-04-25", votes = 24,
+        countries = setOf("KR"), seasons = listOf(UsenetSeasonSummary(1, 16, "2018-04-25")))
+    private fun suitsSearch() = listOf(
+        UsenetTitledSeries("37680", "Suits", "Suits", 2011, setOf("US"), 6055),
+        UsenetTitledSeries("77548", "Suits", "슈츠", 2018, setOf("KR"), 24),
+        UsenetTitledSeries("259453", "Suits LA", "Suits LA", 2025, setOf("US"), 66))
+
+    /** TMDB as it answers for the Korean Suits: [details] and [search] stand for its details and its TV search. */
+    private fun suitsMetadata(
+        details: suspend () -> UsenetSeriesDetails? = { koreanSuits() },
+        search: () -> List<UsenetTitledSeries>? = { suitsSearch() },
+    ) = FakeMetadata(details = details, title = { found ->
+        val show = found ?: error("TMDB id unavailable")
+        UsenetTitleMetadata(imdbId = "tt8084058", tmdbId = show.tmdbId, tvdbId = "336811", title = show.name,
+            year = show.firstAirDate?.take(4)?.toIntOrNull(), countries = show.countries, votes = show.votes,
+            sameTitleSeries = show.name?.let { search() })
+    })
+
+    @Test fun `a series' results of another series of its name are dropped once its metadata comes`() = runTest {
+        val indexer = UsenetIndexer(id = "a", name = "A", apiUrl = "https://a.test/api")
+        val config = UsenetSourceConfiguration(enabled = true, providers = listOf(provider), indexers = listOf(indexer))
+        val client = mockk<NewznabClient>()
+        coEvery { client.capabilities(any()) } returns NewznabCapabilities()
+        coEvery { client.search(indexer, any(), any(), any()) } returns listOf(release(indexer, "Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG"),
+            release(indexer, "Suits.S01E02.1080p.BluRay-GERUDO"), release(indexer, "Suits.S01E02.2011.1080p.WEB-DL-DBTV"))
+        suspend fun titles(metadata: FakeMetadata) = BuiltInUsenetService(client, metadata)
+            .search(config, "series", "tt8084058:1:2", null, null).toList().lastGroup().streams.map { it.title }.toSet()
+        assertEquals(setOf("Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG"), titles(suitsMetadata()))
+        // Without the series of its name, only names with another year are another series'.
+        assertEquals(setOf("Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG", "Suits.S01E02.1080p.BluRay-GERUDO"),
+            titles(suitsMetadata(search = { null })))
+        // Without its year, every result is listed.
+        assertEquals(3, titles(suitsMetadata(details = { UsenetSeriesDetails("77548") })).size)
+    }
+
+    @Test fun `a series' list never waits for its metadata and is arranged again when it comes`() = runTest {
+        val indexer = UsenetIndexer(id = "a", name = "A", apiUrl = "https://a.test/api")
+        val config = UsenetSourceConfiguration(enabled = true, providers = listOf(provider), indexers = listOf(indexer))
+        val client = mockk<NewznabClient>()
+        coEvery { client.capabilities(any()) } returns NewznabCapabilities()
+        coEvery { client.search(indexer, any(), any(), any()) } returns listOf(release(indexer, "Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG"),
+            release(indexer, "Suits.S01E02.1080p.BluRay-GERUDO"))
+        val shownAt = mutableListOf<Long>()
+        val lists = BuiltInUsenetService(client, suitsMetadata(details = { delay(1_000); koreanSuits() }))
+            .search(config, "series", "tt8084058:1:2", null, null)
+            .onEach { if (it.group != null) shownAt += testScheduler.currentTime }.toList().mapNotNull { it.group }
+        assertEquals(listOf(0L, 1_000L), shownAt)
+        assertEquals(2, lists.first().streams.size)
+        assertTrue(lists.first().isLoading)
+        assertEquals(listOf("Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG"), lists.last().streams.map { it.title })
+
+        // Metadata later than its few seconds changes nothing: the list only stops loading.
+        val late = BuiltInUsenetService(client, suitsMetadata(details = { delay(60_000); koreanSuits() }))
+            .search(config, "series", "tt8084058:1:2", null, null).toList().mapNotNull { it.group }
+        assertEquals(late.first().streams, late.last().streams)
+        assertEquals(2, late.last().streams.size)
+        assertFalse(late.last().isLoading)
+    }
+
+    @Test fun `an id search that found only another series of its name is asked again by title`() = runTest {
+        val indexer = UsenetIndexer(id = "a", name = "A", apiUrl = "https://a.test/api")
+        val config = UsenetSourceConfiguration(enabled = true, providers = listOf(provider), indexers = listOf(indexer))
+        val client = mockk<NewznabClient>()
+        coEvery { client.capabilities(any()) } returns NewznabCapabilities(tvParams = setOf("imdbid", "q", "season", "ep"))
+        // The indexer filed the American series' release under the Korean one's id, and answers after TMDB.
+        coEvery { client.search(indexer, match { it.imdbId != null }, any(), any()) } coAnswers {
+            delay(100); listOf(release(indexer, "Suits.S01E02.2011.1080p.WEB-DL-DBTV"))
+        }
+        coEvery { client.search(indexer, match { it.imdbId == null }, any(), any()) } returns
+            listOf(release(indexer, "Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG"))
+        val streams = BuiltInUsenetService(client, suitsMetadata()).search(config, "series", "tt8084058:1:2", null, null)
+            .toList().lastGroup().streams
+        assertEquals(listOf("Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG"), streams.map { it.title })
+        coVerify { client.search(indexer, match { it.imdbId == null && it.title == "Suits" && it.episode == 2 }, any(), any()) }
     }
 }

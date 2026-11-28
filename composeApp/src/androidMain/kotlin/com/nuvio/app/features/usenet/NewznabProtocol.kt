@@ -22,10 +22,22 @@ internal data class UsenetSearchRequest(
     /** A movie's other names, its alternative titles and translations; null when unknown. */
     val otherTitles: List<String>? = null,
     val year: Int? = null,
+    /** A series' searched season's first air year, and the year it last aired: release names give these too. */
+    val seasonYear: Int? = null,
+    val lastYear: Int? = null,
+    /** A series' origin countries (US, GB), which some release names give, as in The.Office.US. */
+    val countries: Set<String> = emptySet(),
+    /** Other series of its name; null when unknown. */
+    val namesakes: List<UsenetNamesake>? = null,
+    /** A series' vote count, which a namesake's is weighed against. */
+    val votes: Int? = null,
     val season: Int? = null,
     val episode: Int? = null,
     val series: Boolean = false
 )
+
+/** Another series of a series' name: its first air year, origin countries and vote count. */
+internal data class UsenetNamesake(val year: Int?, val countries: Set<String> = emptySet(), val votes: Int = 0)
 
 @kotlinx.serialization.Serializable
 internal data class NewznabCapabilities(
@@ -261,6 +273,119 @@ internal object NewznabProtocol {
     }
 
     /**
+     * The [releases] of a series' episode that its name does not give to another series of its
+     * name: by years none of which is within one of its first air year or its season's (any year
+     * of its run when the season's is unknown), or, when another series of its name is known, by
+     * another country's tag (The.Office.US). Indexers file both under either show, and searching
+     * by title finds both. Every name passes when its year is unknown, and a pack of several
+     * seasons keeps its years, which may be any of theirs.
+     */
+    fun seriesResultsOf(show: UsenetSearchRequest, releases: List<UsenetRelease>): List<UsenetRelease> {
+        if (show.year == null) return releases
+        val titles = seriesTitles(show)
+        return releases.filter { seriesName(it, show, titles) != SeriesName.ANOTHER }
+    }
+
+    /**
+     * Release groups name a newer series after an older one of its name with its year or country
+     * next to its title, and leave the older one's names bare: Suits.2018.S01E02, The.Office.US.
+     * So when [show] is the newer one, the [releases] named after it without its year or country
+     * are the older one's. That holds only when the older series is by far the better known one:
+     * groups post the names of a known reboot bare too (Battlestar.Galactica.S01E01.33,
+     * Magnum.P.I.S01E01.I.Saw.the.Sun.Rise), so the older one needs [NAMESAKE_VOTE_RATIO] times
+     * the votes of [show], and [MIN_NAMESAKE_VOTES] at least. The bare names are dropped only when
+     * another of [releases] is named with its year or country, so this never empties the list,
+     * and names not after its title (obfuscated ones) pass.
+     */
+    fun withoutNamesakeReleases(show: UsenetSearchRequest, releases: List<UsenetRelease>): List<UsenetRelease> {
+        val year = show.year ?: return releases
+        val votes = show.votes ?: return releases
+        val newer = show.namesakes.orEmpty().any {
+            it.year != null && it.year < year && it.votes >= MIN_NAMESAKE_VOTES && it.votes >= votes.toLong() * NAMESAKE_VOTE_RATIO
+        }
+        if (!newer) return releases
+        val titles = seriesTitles(show)
+        val names = releases.associate { it.nzbUrl to seriesName(it, show, titles) }
+        if (names.values.none { it == SeriesName.OWN }) return releases
+        return releases.filter { names[it.nzbUrl] != SeriesName.BARE }
+    }
+
+    /** Whether [name] is [title] as release names spell both: Marvel's Daredevil is Marvels Daredevil. */
+    fun sameName(name: String?, title: String): Boolean =
+        name != null && words(name).let { it.isNotEmpty() && it == words(title) }
+
+    /** What a release name says of the series it is of. */
+    private enum class SeriesName {
+        /** Named after the series with its year or country next to its title. */
+        OWN,
+        /** Named after the series, with only a year after its episode number that fits it: kept, but no proof. */
+        DATED,
+        /** Named after the series, with no year or country. */
+        BARE,
+        /** Named with another series' year or country. */
+        ANOTHER,
+        /** Not named after the series (obfuscated, or another name), with no year or country against it. */
+        UNKNOWN
+    }
+
+    /** A series' title and original title, as release names spell them. */
+    private fun seriesTitles(show: UsenetSearchRequest): List<List<String>> =
+        listOfNotNull(show.title, show.originalTitle)
+            .flatMap { listOf(words(it), words(it, umlauts = false)) }
+            .filter { it.isNotEmpty() }.distinct().map { it.split(' ') }
+
+    /**
+     * Reads the years and country tags a release name gives for its show: before its episode
+     * number (Suits.2018.S01E02, Suits (2011) - S01E02, The.Office.US.S01E01), or right after it
+     * (Suits.S01E02.2011.1080p); without one, before its first tag. A year right after the number
+     * is often the year the episode aired, so it can tell another series but never names this
+     * one. Words of the show's title (1923, This Is Us) are not years or countries, nor are a
+     * date's year (Show.2024.05.12), which the episode aired, or a span of years
+     * (S01-S09.2011-2019), which is no one year.
+     */
+    private fun seriesName(release: UsenetRelease, show: UsenetSearchRequest, titles: List<List<String>>): SeriesName {
+        val name = words(release.title).split(' ').filter { it.isNotEmpty() }
+        val own = titles.flatten().toSet()
+        val marker = name.indexOfFirst { EPISODE_NUMBER.matches(it) || it == "season" }
+        val head = if (marker >= 0) name.subList(0, marker)
+            else name.takeWhile { it !in RELEASE_TAGS && !RESOLUTION_WORD.matches(it) }
+        fun yearAt(i: Int): Int? {
+            val word = name.getOrNull(i)?.takeIf { YEAR.matches(it) && it !in own } ?: return null
+            val next = name.getOrNull(i + 1)
+            if (next != null && YEAR.matches(next)) return null
+            if (i > 0 && YEAR.matches(name[i - 1]) && name[i - 1] !in own) return null
+            val date = next?.let { DAY_OR_MONTH.matches(it) } == true && name.getOrNull(i + 2)?.let { DAY_OR_MONTH.matches(it) } == true
+            return if (date) null else word.toInt()
+        }
+        val titleYears = head.indices.mapNotNull(::yearAt)
+        val years = titleYears.toMutableList()
+        if (marker >= 0) {
+            var next = marker
+            while (next < name.size && EPISODE_NUMBER.matches(name[next])) next++
+            yearAt(next)?.let { years += it }
+        }
+        val countries = head.filter { it !in own }.mapNotNull { COUNTRY_TAGS[it] }
+        val first = show.year
+        val fits = { year: Int ->
+            when {
+                first == null -> true
+                show.seasonYear != null -> listOf(first, show.seasonYear).any { kotlin.math.abs(year - it) <= 1 }
+                else -> year >= first - 1 && show.lastYear.let { last -> last == null || year <= maxOf(last, first) + 1 }
+            }
+        }
+        val countryOwn = countries.any { it in show.countries }
+        val anotherYear = years.isNotEmpty() && years.none(fits) && release.packSeasons.size <= 1
+        val anotherCountry = countries.isNotEmpty() && !countryOwn && show.countries.isNotEmpty() && !show.namesakes.isNullOrEmpty()
+        return when {
+            anotherYear || anotherCountry -> SeriesName.ANOTHER
+            titles.none { isNamedAs(name, it, series = true) } -> SeriesName.UNKNOWN
+            titleYears.any(fits) || countryOwn -> SeriesName.OWN
+            years.isNotEmpty() -> SeriesName.DATED
+            else -> SeriesName.BARE
+        }
+    }
+
+    /**
      * The words of each of [names] as releases spell them, articles left out: umlauts both ways,
      * and without the letters some posts lose (Amélie posted as Amlie).
      */
@@ -284,7 +409,9 @@ internal object NewznabProtocol {
      * the title only articles may come; after it, the year, the episode or release tags.
      *
      * Series names often keep a prefix the metadata title drops (Marvels Daredevil); the episode
-     * number vouches for those, except an article before a one-word title (The Batman is not Batman).
+     * number vouches for those, except an article before a one-word title (The Batman is not Batman),
+     * and the title must come before that number: after it comes the episode's own name
+     * (Supernoobs.S01E02.Super.Noob.Suits is not Suits).
      * A movie may carry a subtitle before its year (Star Wars Episode IV A New Hope 1977), which the
      * year check then judges, so a sequel only passes if it came out within a year.
      */
@@ -292,7 +419,8 @@ internal object NewznabProtocol {
         (0..name.size - title.size).any { i ->
             if (name.subList(i, i + title.size) != title) return@any false
             val before = name.subList(0, i)
-            val leading = if (series) title.size > 1 || before.isEmpty() || before.any { it !in ARTICLES }
+            val leading = if (series) before.none { EPISODE_NUMBER.matches(it) } &&
+                (title.size > 1 || before.isEmpty() || before.any { it !in ARTICLES })
                 else before.all { it in ARTICLES }
             val after = name.subList(i + title.size, name.size)
             val marker = after.indexOfFirst { it in RELEASE_TAGS || RELEASE_MARKER.matches(it) }
@@ -383,6 +511,16 @@ internal object NewznabProtocol {
 
     private val ARTICLES = setOf("the", "a", "an")
     private val YEAR = Regex("(?:19|20)\\d{2}")
+    /** A word of a release name that numbers its episode or season: S01E02, S01, E02, Ep02 or 1x02. */
+    private val EPISODE_NUMBER = Regex("s\\d{1,3}(?:e\\d{1,4})*|e\\d{1,4}|ep\\d{1,4}|\\d{1,2}x\\d{1,3}")
+    private val RESOLUTION_WORD = Regex("\\d{3,4}[pi]|[48]k")
+    private val DAY_OR_MONTH = Regex("\\d{1,2}")
+    /** The country tags release names give a series, by its TMDB origin country. */
+    private val COUNTRY_TAGS = mapOf("us" to "US", "uk" to "GB", "au" to "AU", "ca" to "CA", "nz" to "NZ")
+    /** How many votes an older series of a name needs for its releases to be thought posted. */
+    const val MIN_NAMESAKE_VOTES = 10
+    /** How many times the votes of a newer series of its name an older one needs for bare names to be its. */
+    const val NAMESAKE_VOTE_RATIO = 10
     private val RELEASE_MARKER = Regex("(?:19|20)\\d{2}|s\\d{1,3}(?:e\\d{1,4})*|e\\d{1,4}|\\d{1,2}x\\d{1,3}|" +
         "\\d{3,4}[pi]|[48]k|\\d{1,2}bit|season|complete")
     /** Words that start the tags of a release name: language, edition, source, codec, country. */

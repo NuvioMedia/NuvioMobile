@@ -381,6 +381,9 @@ class NewznabProtocolTest {
         assertTrue(episode("The Office", "The.Office.US.S01E01.720p"))
         assertTrue(episode("Doctor Who", "Doctor.Who.2005.S01E01.720p"))
         assertFalse(episode("Batman", "The.Batman.S01E01.720p"))
+        // After the episode number comes its own name, which is not the show's.
+        assertFalse(episode("Suits", "Supernoobs.S01E01.Super.Noob.Suits.480p.WEB-DL"))
+        assertTrue(episode("Suits", "Suits.S01E01.Pilot.1080p"))
 
         assertTrue(movie("Money Heist", "La.Casa.de.Papel.2017.1080p", 2017, original = "La casa de papel"))
         assertFalse(movie("Money Heist", "La.Casa.de.Papel.2017.1080p", 2017))
@@ -416,5 +419,91 @@ class NewznabProtocolTest {
         assertFalse(episode("A.Show.S01E04-1080p", 5))
         assertTrue(NewznabProtocol.matches(UsenetRelease("A.Show.S01.Complete", "url"), series, false))
         assertFalse(NewznabProtocol.matches(UsenetRelease("A.Show.S02.Complete", "url"), series, true))
+    }
+
+    private fun seriesKept(show: UsenetSearchRequest, vararg names: String) =
+        NewznabProtocol.seriesResultsOf(show, names.map { UsenetRelease(it, it) }).map { it.title }
+
+    @Test fun `a series' results named with another series' year are dropped`() {
+        // The Korean Suits (2018) shares its name with the American one (2011).
+        val korean = UsenetSearchRequest(title = "Suits", year = 2018, seasonYear = 2018, series = true, season = 1, episode = 2)
+        val names = arrayOf("Suits.2018.S01E02.1080p.NF.WEB-DL.H.264-TSRG",
+            "Suits.S01E02.2011.1080p.Netflix.WEB-DL.AVC.DDP.5.1-DBTV",
+            "Suits (2011) S01E02 1080p BluRay x265 10bit HEVC",
+            "Suits.2011.S01E02.1080p.NF.WEBRip.H.264-PTerWEB",
+            "Suits 2011 1x02 Errores Y Omisiones Micro-HD",
+            "Suits.S01E02.1080p.BluRay.H264-GERUDO",
+            "8f3a2c1d9e7b6a5f4e3d2c1b")
+        assertEquals(listOf("Suits.2018.S01E02.1080p.NF.WEB-DL.H.264-TSRG", "Suits.S01E02.1080p.BluRay.H264-GERUDO",
+            "8f3a2c1d9e7b6a5f4e3d2c1b"), seriesKept(korean, *names))
+        // Without the series' year every name passes.
+        assertEquals(names.toList(), seriesKept(korean.copy(year = null), *names))
+
+        // A later season is named with the series' first year or the season's, within one.
+        val american = UsenetSearchRequest(title = "Suits", year = 2011, seasonYear = 2019, series = true, season = 9, episode = 1)
+        assertEquals(listOf("Suits.2011.S09E01.1080p", "Suits.S09E01.2019.1080p", "Suits.S09E01.2020.720p"),
+            seriesKept(american, "Suits.2011.S09E01.1080p", "Suits.S09E01.2019.1080p", "Suits.S09E01.2020.720p", "Suits.2015.S09E01.1080p"))
+        // With the season's year unknown, any year of the series' run.
+        val unknownSeason = american.copy(seasonYear = null, lastYear = 2019)
+        assertEquals(listOf("Suits.2016.S09E01.1080p"), seriesKept(unknownSeason, "Suits.2016.S09E01.1080p", "Suits.2022.S09E01.1080p"))
+    }
+
+    @Test fun `title words, dates and spans of years are not a series' year`() {
+        val show = UsenetSearchRequest(title = "1923", year = 2022, seasonYear = 2022, series = true, season = 1, episode = 1)
+        assertEquals(listOf("1923.S01E01.1080p.WEB", "1923.2022.S01E01.720p"),
+            seriesKept(show, "1923.S01E01.1080p.WEB", "1923.2022.S01E01.720p", "1923.2019.S01E01.720p"))
+        // A daily show's date is the day an episode aired, and a span of years in a pack is no one year.
+        val daily = UsenetSearchRequest(title = "The Daily Show", year = 1996, seasonYear = 1996, series = true, season = 29, episode = 50)
+        assertEquals(2, seriesKept(daily, "The.Daily.Show.2024.05.12.Guest.720p.WEB", "The.Daily.Show.S29.2020-2024.1080p").size)
+        // A pack of several seasons may carry any of their years.
+        assertEquals(1, seriesKept(show.copy(year = 2011, seasonYear = 2011), "Show.S01-S03.2013.1080p").size)
+    }
+
+    @Test fun `a series' results with another country's tag are dropped when a series of its name is known`() {
+        val uk = UsenetSearchRequest(title = "The Office", year = 2001, seasonYear = 2001, countries = setOf("GB"),
+            namesakes = listOf(UsenetNamesake(2005, setOf("US"), 5765)), series = true, season = 1, episode = 1)
+        assertEquals(listOf("The.Office.UK.S01E01.720p", "The.Office.S01E01.1080p.BluRay"),
+            seriesKept(uk, "The.Office.US.S01E01.720p", "The.Office.UK.S01E01.720p", "The.Office.S01E01.1080p.BluRay"))
+        // Without a known series of its name a country tag says nothing; "us" in the title is no tag.
+        assertEquals(1, seriesKept(uk.copy(namesakes = null), "The.Office.US.S01E01.720p").size)
+        assertEquals(1, seriesKept(UsenetSearchRequest(title = "This Is Us", year = 2016, seasonYear = 2016, countries = setOf("US"),
+            namesakes = listOf(UsenetNamesake(2020, setOf("GB"), 50)), series = true, season = 1, episode = 1),
+            "This.Is.Us.S01E01.1080p").size)
+    }
+
+    @Test fun `a newer series' bare names are another's once one is named with its year or country`() {
+        val older = UsenetNamesake(2011, setOf("US"), 6055)
+        val korean = UsenetSearchRequest(title = "Suits", year = 2018, seasonYear = 2018, countries = setOf("KR"), votes = 24,
+            namesakes = listOf(older, UsenetNamesake(2018, setOf("JP"), 11)), series = true, season = 1, episode = 2)
+        fun kept(show: UsenetSearchRequest, vararg names: String) =
+            NewznabProtocol.withoutNamesakeReleases(show, names.map { UsenetRelease(it, it) }).map { it.title }
+        val names = arrayOf("Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG", "Suits.S01E02.1080p.BluRay.H264-GERUDO",
+            "Suits - S01E02 - Errors and Omissions - Bluray-720p", "8f3a2c1d9e7b6a5f4e3d2c1b", "Pearson.S01E02.1080p")
+        assertEquals(listOf("Suits.2018.S01E02.1080p.NF.WEB-DL-TSRG", "8f3a2c1d9e7b6a5f4e3d2c1b", "Pearson.S01E02.1080p"),
+            kept(korean, *names))
+        // Never emptied: without a release named with its year, the bare names stay.
+        assertEquals(names.size - 1, kept(korean, *names.drop(1).toTypedArray()).size)
+        // A year after the episode number is often the year it aired: a fitting one keeps its release,
+        // but does not name the series.
+        assertEquals(names.size, kept(korean, "Suits.S01E02.2018.1080p.WEB", *names.drop(1).toTypedArray()).size)
+        assertEquals(4, kept(korean, *names, "Suits.S01E02.2018.1080p.WEB").size)
+        // The older series counts only when it is by far the better known, and known enough.
+        assertEquals(names.size, kept(korean.copy(namesakes = listOf(older.copy(votes = 9))), *names).size)
+        assertEquals(names.size, kept(korean.copy(votes = 606), *names).size)
+        assertEquals(3, kept(korean.copy(votes = 605), *names).size)
+        assertEquals(names.size, kept(korean.copy(votes = null), *names).size)
+        // The older series' own names are never touched by it.
+        assertEquals(names.size, kept(korean.copy(year = 2011, votes = 6055, namesakes = listOf(UsenetNamesake(2018, setOf("KR"), 24))), *names).size)
+        // A country tag names a series as well as a year does.
+        val us = UsenetSearchRequest(title = "The Office", year = 2005, seasonYear = 2005, countries = setOf("US"), votes = 100,
+            namesakes = listOf(UsenetNamesake(2001, setOf("GB"), 1030)), series = true, season = 2, episode = 1)
+        assertEquals(listOf("The.Office.US.S02E01.720p"), kept(us, "The.Office.US.S02E01.720p", "The.Office.S02E01.720p"))
+    }
+
+    @Test fun `names are compared as releases spell them`() {
+        assertTrue(NewznabProtocol.sameName("Marvel's Daredevil", "Marvels Daredevil"))
+        assertTrue(NewznabProtocol.sameName("SUITS", "Suits"))
+        assertFalse(NewznabProtocol.sameName("Suits LA", "Suits"))
+        assertFalse(NewznabProtocol.sameName(null, "Suits"))
     }
 }

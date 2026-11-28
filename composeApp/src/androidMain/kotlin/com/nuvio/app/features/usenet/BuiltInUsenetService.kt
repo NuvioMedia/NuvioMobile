@@ -31,16 +31,19 @@ import kotlinx.coroutines.withTimeoutOrNull
 
 /** The TMDB lookups a search makes; tests replace them. */
 internal interface UsenetMetadataSource {
-    suspend fun title(imdbId: String?, tmdbId: String?, videoId: String, series: Boolean): UsenetTitleMetadata
-    suspend fun seasonEpisodes(tmdbId: String?, videoId: String): Map<Int, Int>?
+    /** [details], a series', give its names and years; a movie's are looked up here. */
+    suspend fun title(imdbId: String?, tmdbId: String?, videoId: String, series: Boolean,
+        details: UsenetSeriesDetails? = null): UsenetTitleMetadata
+
+    /** A series' TMDB id and details, read once for its metadata and its seasons' episode counts. */
+    suspend fun series(tmdbId: String?, videoId: String): UsenetSeriesDetails?
 }
 
 internal object TmdbUsenetMetadataSource : UsenetMetadataSource {
-    override suspend fun title(imdbId: String?, tmdbId: String?, videoId: String, series: Boolean) =
-        UsenetMetadata.title(imdbId, tmdbId, videoId, series)
+    override suspend fun title(imdbId: String?, tmdbId: String?, videoId: String, series: Boolean,
+        details: UsenetSeriesDetails?) = UsenetMetadata.title(imdbId, tmdbId, videoId, series, details)
 
-    override suspend fun seasonEpisodes(tmdbId: String?, videoId: String) =
-        UsenetMetadata.seasonEpisodes(tmdbId, videoId)
+    override suspend fun series(tmdbId: String?, videoId: String) = UsenetMetadata.series(tmdbId, videoId)
 }
 
 /** The metas and Simkl mapping that give an anime catalog's ids their IMDb equivalent; tests replace them. */
@@ -138,31 +141,49 @@ internal class BuiltInUsenetService(
             catch (_: Exception) { false }
         coroutineScope {
             // A failed child would cancel this scope; keep lookup failures per indexer.
-            val titleLookup = async(start = CoroutineStart.LAZY) {
+            // A series' TMDB id and details, asked for once: its metadata and its seasons' episode counts
+            // read them. Null when its TMDB id could not be looked up.
+            val seriesLookup = if (!series) null else async {
+                try { metadata.series(request.tmdbId, lookupId) }
+                catch (e: CancellationException) { throw e }
+                catch (_: Exception) { null }
+            }
+            // Results are checked against the title's names and year, asked for alongside the indexers.
+            val titleLookup = async {
                 try {
-                    metadata.title(request.imdbId, request.tmdbId, lookupId, series).let { found ->
+                    val details = seriesLookup?.await()
+                    metadata.title(request.imdbId, request.tmdbId, lookupId, series, details).let { found ->
                         request.copy(imdbId = found.imdbId, tmdbId = found.tmdbId, tvdbId = found.tvdbId,
                             title = found.title, originalTitle = found.originalTitle,
-                            otherTitles = found.otherTitles, year = found.year)
+                            otherTitles = found.otherTitles, year = found.year,
+                            seasonYear = details?.seasonYear(request.season), lastYear = found.lastYear,
+                            countries = found.countries, votes = found.votes,
+                            namesakes = found.title?.let { title -> namesakes(found.sameTitleSeries, title, found.tmdbId) })
                     }
                 } catch (e: CancellationException) { throw e }
                 catch (_: Exception) { null }
             }
-            // A movie's ID results are checked against its names and year, asked for alongside the indexers.
-            if (!series) titleLookup.start()
+            // A series' metadata, once it came within a few seconds: it tells the series' releases from
+            // another series' of its name. Like the episode counts, the list never waits for it, and is
+            // arranged again when it comes.
+            val seriesFacts = AtomicReference<UsenetSearchRequest?>(null)
+            val factsLookup = if (!series) null else launch {
+                withTimeoutOrNull(ID_CHECK_WAIT_MS) { titleLookup.await() }?.let { seriesFacts.set(it) }
+            }
             val releases = mutableListOf<UsenetRelease>()
             val servers = config.servers()
             // Each season's episode count lets season packs be filtered and sorted by their size per
-            // episode. It is asked of TMDB once the first pack shows up, and the list never waits for it.
+            // episode. The show's seasons are read once the first pack shows up, and the list never
+            // waits for them.
             val seasonEpisodes = AtomicReference<Map<Int, Int>?>(null)
-            val seasonLookup = if (!series) null else launch(start = CoroutineStart.LAZY) {
-                val counts = withTimeoutOrNull(SEASON_LOOKUP_TIMEOUT_MS) {
-                    try { metadata.seasonEpisodes(request.tmdbId, lookupId) }
-                    catch (e: CancellationException) { throw e }
-                    catch (_: Exception) { null }
-                }
+            val seasonLookup = if (seriesLookup == null) null else launch(start = CoroutineStart.LAZY) {
+                val counts = withTimeoutOrNull(SEASON_LOOKUP_TIMEOUT_MS) { seriesLookup.await()?.episodeCounts }
                 seasonEpisodes.set(counts)
             }
+            // A series' releases its names leave to it, once its metadata is known.
+            fun ofSeries(found: List<UsenetRelease>): List<UsenetRelease> = seriesFacts.get()?.let {
+                NewznabProtocol.withoutNamesakeReleases(it, NewznabProtocol.seriesResultsOf(it, found))
+            } ?: found
             fun seasonCounts(): Map<Int, Int>? = seasonEpisodes.get()
             fun posted(release: UsenetRelease) = release.publishedAt.takeIf { it > 0 }
             // Each release's outcome is looked up once per list, by nzbUrl.
@@ -176,10 +197,12 @@ internal class BuiltInUsenetService(
                 val ranks = outcomes.mapValues { (_, it) ->
                     outcomeRank(it.failed || it.sibling?.blank == true, it.played, config.availableFirst)
                 }
+                // Across indexers: one indexer's release named with a newer series' year tells another's bare names apart.
+                val ofSeries = ofSeries(releases)
                 val listed = if (config.hideDuplicates) {
-                    NewznabProtocol.withoutDuplicates(releases, config, seasonEpisodes = seasonCounts(), series = series)
+                    NewznabProtocol.withoutDuplicates(ofSeries, config, seasonEpisodes = seasonCounts(), series = series)
                 } else {
-                    releases
+                    ofSeries
                 }
                 return NewznabProtocol.arrange(listed, config, seasonEpisodes = seasonCounts(), series = series) {
                     ranks[it.nzbUrl] ?: 1
@@ -203,11 +226,25 @@ internal class BuiltInUsenetService(
                                 error("Metadata unavailable")
                             }
                             val fetchLimit = config.indexerResults(indexer)
-                            val found = client.search(indexer, search, caps, fetchLimit)
-                                .let { if (canSearchId && !series) confirmed(indexer, it) { titleLookup.await() } else it }
+                            // A series' results, found by ID or by title, are checked as found when its
+                            // metadata is already known, so that results of another series alone are
+                            // asked again by title; a movie's title results were checked by the search,
+                            // which had its year.
+                            val seriesCheck: suspend (List<UsenetRelease>) -> List<UsenetRelease> = {
+                                seriesChecked(indexer, it, seriesFacts.get() ?: titleLookup.takeIf { m -> m.isCompleted }?.await())
+                            }
+                            val found = client.search(indexer, search, caps, fetchLimit).let {
+                                when {
+                                    series -> seriesCheck(it)
+                                    canSearchId -> confirmed(indexer, it) { titleLookup.await() }
+                                    else -> it
+                                }
+                            }
                             Result.success(
-                                if (found.isEmpty()) askAgain(indexer, search, caps, fetchLimit) { titleLookup.await() } ?: found
-                                else found,
+                                if (found.isEmpty()) {
+                                    askAgain(indexer, search, caps, fetchLimit, seriesCheck.takeIf { series }) { titleLookup.await() }
+                                        ?: found
+                                } else found,
                             )
                         } catch (e: CancellationException) { throw e }
                         catch (e: Exception) { Result.failure(e) }
@@ -239,12 +276,17 @@ internal class BuiltInUsenetService(
                 val wait = if (config.progressiveResults) null else async { delay(COMPLETE_RESULTS_WAIT_MS) }
                 var waiting = wait != null
                 var lookupShown = false
+                var factsShown = false
+                // Whether the series' metadata, now known, takes releases off the list.
+                fun factsChangeList() = ofSeries(releases).size != releases.size
                 while (true) {
                     val event = select<Any> {
                         results.onReceiveCatching { it }
                         if (waiting) wait?.onAwait { WAIT_OVER }
                         // Arranged again once the episode count came, if the list is already shown.
                         if (!lookupShown && seasonLookup?.isActive == true) seasonLookup.onJoin { SEASON_COUNTED }
+                        // And once the series' metadata came, if it takes releases off the shown list.
+                        if (!factsShown && factsLookup?.isActive == true) factsLookup.onJoin { SERIES_KNOWN }
                     }
                     if (event === WAIT_OVER) {
                         log("wait over")
@@ -255,6 +297,11 @@ internal class BuiltInUsenetService(
                     if (event === SEASON_COUNTED) {
                         lookupShown = true
                         if (!waiting && seasonEpisodes.get() != null) show(loading = true)
+                        continue
+                    }
+                    if (event === SERIES_KNOWN) {
+                        factsShown = true
+                        if (!waiting && factsChangeList()) show(loading = true)
                         continue
                     }
                     @Suppress("UNCHECKED_CAST")
@@ -277,11 +324,14 @@ internal class BuiltInUsenetService(
                     }
                 }
                 wait?.cancel()
-                // Every indexer answered before the episode count: the list is shown, and arranged
-                // again when the count comes within its few seconds.
-                if (!lookupShown && seasonLookup?.isActive == true) {
+                // Every indexer answered before the episode count or the series' metadata: the list is
+                // shown, and arranged again when they come within their few seconds.
+                val countPending = !lookupShown && seasonLookup?.isActive == true
+                val factsPending = !factsShown && factsLookup?.isActive == true
+                if (countPending || factsPending) {
                     show(loading = true)
-                    seasonLookup.join()
+                    if (countPending) seasonLookup?.join()
+                    if (factsPending) factsLookup?.join()
                 }
                 val last = tier === tiers.last()
                 val found = arranged(outcomes()).isNotEmpty()
@@ -290,6 +340,8 @@ internal class BuiltInUsenetService(
                 if (last || found) break
             }
             titleLookup.cancel()
+            seriesLookup?.cancel()
+            factsLookup?.cancel()
             seasonLookup?.cancel()
         }
     }
@@ -297,10 +349,11 @@ internal class BuiltInUsenetService(
     /**
      * Asks again when a search found nothing: by title after an ID search (some indexers have thin
      * ID coverage), then by the original title, under which foreign releases are often posted.
-     * Each attempt is made only when the ones before it found nothing. Null when none found anything.
+     * Each attempt is made only when the ones before it found nothing, after [check]. Null when none found anything.
      */
     private suspend fun askAgain(indexer: UsenetIndexer, searched: UsenetSearchRequest, caps: NewznabCapabilities,
-        results: Int, metadata: suspend () -> UsenetSearchRequest?): List<UsenetRelease>? {
+        results: Int, check: (suspend (List<UsenetRelease>) -> List<UsenetRelease>)? = null,
+        metadata: suspend () -> UsenetSearchRequest?): List<UsenetRelease>? {
         val url = NewznabProtocol.searchUrl(indexer, searched, caps) ?: return null
         val byTitle = (metadata() ?: return null).copy(imdbId = null, tmdbId = null, tvdbId = null)
         val attempts = listOfNotNull(
@@ -311,7 +364,7 @@ internal class BuiltInUsenetService(
         )
         for (attempt in attempts) {
             if (NewznabProtocol.searchUrl(indexer, attempt, caps) == null) continue
-            val found = try { client.search(indexer, attempt, caps, results) }
+            val found = try { client.search(indexer, attempt, caps, results).let { check?.invoke(it) ?: it } }
             catch (e: CancellationException) { throw e }
             catch (e: IndexerCooldownException) { throw e }
             // The first search succeeded; a failed later attempt only means nothing more was found.
@@ -320,6 +373,29 @@ internal class BuiltInUsenetService(
         }
         return null
     }
+
+    /**
+     * A series' releases that their names leave to it rather than to another series of its name,
+     * when its metadata, [series], is known; otherwise all of them.
+     */
+    private fun seriesChecked(indexer: UsenetIndexer, releases: List<UsenetRelease>,
+        series: UsenetSearchRequest?): List<UsenetRelease> {
+        if (releases.isEmpty() || series == null) return releases
+        return NewznabProtocol.seriesResultsOf(series, releases).also { kept ->
+            if (kept.size < releases.size) runCatching {
+                Log.i("UsenetSearch", "${indexer.name}: ${releases.size - kept.size} results of another series")
+            }
+        }
+    }
+
+    /**
+     * The other series of [title] among those TMDB found by it ([found]), its own TMDB [id] left out;
+     * null when TMDB did not answer.
+     */
+    private fun namesakes(found: List<UsenetTitledSeries>?, title: String, id: String?): List<UsenetNamesake>? =
+        found?.filter {
+            it.tmdbId != id && (NewznabProtocol.sameName(it.name, title) || NewznabProtocol.sameName(it.originalName, title))
+        }?.map { UsenetNamesake(it.year, it.countries, it.votes) }
 
     /**
      * A movie's ID results that its names and year confirm, once its metadata comes within
@@ -500,13 +576,17 @@ internal class BuiltInUsenetService(
     companion object {
         private val WAIT_OVER = Any()
         private val SEASON_COUNTED = Any()
+        private val SERIES_KNOWN = Any()
         /** How long a search may use for a season's episode count; the list never waits for it. */
         private const val SEASON_LOOKUP_TIMEOUT_MS = 3_000L
         /** How long a search of an anime catalog's id waits for its meta when the details page no longer holds it. */
         private const val META_LOOKUP_TIMEOUT_MS = 5_000L
         /** How long a search of an anime catalog's id waits for Simkl's mapping when its meta gives none. */
         private const val SIMKL_LOOKUP_TIMEOUT_MS = 5_000L
-        /** How long a movie's ID results wait for its metadata before they are listed unchecked. */
+        /**
+         * How long a movie's ID results wait for its metadata before they are listed unchecked, and
+         * how long a series' list may change once its metadata comes.
+         */
         private const val ID_CHECK_WAIT_MS = 3_000L
         /** How long a search waits for every indexer before it shows what came. */
         const val COMPLETE_RESULTS_WAIT_MS = 5_000L
