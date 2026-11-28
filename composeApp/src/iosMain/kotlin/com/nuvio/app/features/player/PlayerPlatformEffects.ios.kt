@@ -12,9 +12,15 @@ import platform.AVFAudio.outputVolume
 import platform.Foundation.NSNotificationCenter
 import platform.MediaPlayer.MPVolumeView
 import platform.UIKit.UIApplication
+import platform.UIKit.UIApplicationDidBecomeActiveNotification
+import platform.UIKit.UIApplicationWillResignActiveNotification
+import platform.UIKit.UIApplicationState
 import platform.UIKit.UIControlEventValueChanged
 import platform.UIKit.UIScreen
 import platform.UIKit.UISlider
+
+private const val playerPictureInPictureDidStartNotification = "NuvioPlayerPictureInPictureDidStart"
+private const val playerPictureInPictureDidStopNotification = "NuvioPlayerPictureInPictureDidStop"
 
 private const val lockPlayerToLandscapeNotification = "NuvioPlayerLockLandscape"
 private const val unlockPlayerOrientationNotification = "NuvioPlayerUnlockOrientation"
@@ -90,7 +96,49 @@ internal actual fun rememberPlatformPlayerGestureController(): PlayerGestureCont
     val controller = remember { IOSPlayerGestureController() }
 
     DisposableEffect(controller) {
+        // La luminosità è globale: va restituita appena l'app perde il foreground
+        // (Apple QA1751), altrimenti resta alzata su Home e PiP, dove il player non
+        // viene distrutto e nessuno la ripristinerebbe.
+        val resignObserver = NSNotificationCenter.defaultCenter.addObserverForName(
+            name = UIApplicationWillResignActiveNotification,
+            `object` = null,
+            queue = null,
+        ) { _ ->
+            controller.restoreBrightness()
+        }
+        val activeObserver = NSNotificationCenter.defaultCenter.addObserverForName(
+            name = UIApplicationDidBecomeActiveNotification,
+            `object` = null,
+            queue = null,
+        ) { _ ->
+            controller.reapplyBrightness()
+        }
+        // Su iPad il PiP può partire con l'app ancora attiva: nessun resign, quindi il
+        // delegate del PiP è l'unico punto in cui restituire la luminosità.
+        val pipStartObserver = NSNotificationCenter.defaultCenter.addObserverForName(
+            name = playerPictureInPictureDidStartNotification,
+            `object` = null,
+            queue = null,
+        ) { _ ->
+            controller.restoreBrightness()
+        }
+        val pipStopObserver = NSNotificationCenter.defaultCenter.addObserverForName(
+            name = playerPictureInPictureDidStopNotification,
+            `object` = null,
+            queue = null,
+        ) { _ ->
+            // Sulla Home il PiP si chiude con l'app in background: riaccendere lo schermo
+            // lì sarebbe di nuovo il problema iniziale.
+            if (UIApplication.sharedApplication.applicationState == UIApplicationState.UIApplicationStateActive) {
+                controller.reapplyBrightness()
+            }
+        }
+
         onDispose {
+            NSNotificationCenter.defaultCenter.removeObserver(resignObserver)
+            NSNotificationCenter.defaultCenter.removeObserver(activeObserver)
+            NSNotificationCenter.defaultCenter.removeObserver(pipStartObserver)
+            NSNotificationCenter.defaultCenter.removeObserver(pipStopObserver)
             controller.restoreBrightness()
         }
     }
@@ -103,14 +151,18 @@ private class IOSPlayerGestureController : PlayerGestureController {
         hidden = true
         alpha = 0.01
     }
-    private val originalBrightness = UIScreen.mainScreen.brightness
-    private var brightnessRestored = false
+    private var originalBrightness: Double? = null
+    private var lastBrightness: Double? = null
 
     override fun currentBrightness(): Float =
         UIScreen.mainScreen.brightness.toFloat().coerceIn(0f, 1f)
 
     override fun setBrightness(level: Float): Float {
         val target = level.coerceIn(0f, 1f)
+        if (originalBrightness == null) {
+            originalBrightness = UIScreen.mainScreen.brightness
+        }
+        lastBrightness = target.toDouble()
         UIScreen.mainScreen.brightness = target.toDouble()
         return target
     }
@@ -136,8 +188,16 @@ private class IOSPlayerGestureController : PlayerGestureController {
     }
 
     fun restoreBrightness() {
-        if (brightnessRestored) return
-        brightnessRestored = true
-        UIScreen.mainScreen.brightness = originalBrightness
+        val original = originalBrightness ?: return
+        originalBrightness = null
+        UIScreen.mainScreen.brightness = original
+    }
+
+    fun reapplyBrightness() {
+        val value = lastBrightness ?: return
+        if (originalBrightness == null) {
+            originalBrightness = UIScreen.mainScreen.brightness
+        }
+        UIScreen.mainScreen.brightness = value
     }
 }
