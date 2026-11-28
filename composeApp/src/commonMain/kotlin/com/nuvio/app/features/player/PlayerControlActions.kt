@@ -68,6 +68,7 @@ internal fun PlayerToolbar(
 ) {
     Row(modifier = modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
         Spacer(Modifier.weight(1f))
+        PlatformCastAction(modifier = Modifier.size(48.dp))
         if (onSwitchEngineClick != null) {
             PlayerAction(
                 description = stringResource(Res.string.cd_switch_player_engine),
