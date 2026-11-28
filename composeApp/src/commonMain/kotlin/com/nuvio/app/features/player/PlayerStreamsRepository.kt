@@ -362,10 +362,17 @@ object PlayerStreamsRepository {
                                     if (group.addonId != completion.addonId) {
                                         group
                                     } else {
-                                        val mergedStreams = if (completion.streams.isEmpty()) {
+                                        val presentedStreams = if (completion.streams.isEmpty()) {
+                                            emptyList()
+                                        } else {
+                                            presentStreamGroup(
+                                                group.copy(streams = completion.streams),
+                                            ).streams
+                                        }
+                                        val mergedStreams = if (presentedStreams.isEmpty()) {
                                             group.streams
                                         } else {
-                                            (group.streams + completion.streams).sortedForGroupedDisplay()
+                                            (group.streams + presentedStreams).sortedForGroupedDisplay()
                                         }
                                         val stillLoading = remaining > 0
                                         val finalError = if (mergedStreams.isEmpty() && !stillLoading) {
