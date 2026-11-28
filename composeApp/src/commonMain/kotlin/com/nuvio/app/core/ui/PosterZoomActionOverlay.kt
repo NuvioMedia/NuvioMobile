@@ -16,10 +16,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -145,6 +151,7 @@ fun NuvioPosterZoomActionOverlay(
     imageUrl: String?,
     title: String,
     subtitle: String?,
+    description: String? = null,
     isWatched: Boolean = false,
     blurred: Boolean = false,
     depthSurface: NuvioCardDepthSurface = NuvioCardDepthSurface.Posters,
@@ -246,7 +253,9 @@ fun NuvioPosterZoomActionOverlay(
             ?: 0.675f
         val aspect = anchorAspect.coerceIn(0.35f, 2.4f)
         val maxPosterWidth = if (aspect >= 1f) maxWidth * 0.8f else maxWidth * 0.6f
-        val posterHeight = min(maxPosterWidth / aspect, maxHeight * 0.44f)
+        val hasDescription = !description.isNullOrBlank()
+        // Leave room for the synopsis when there is one; it takes whatever height is left.
+        val posterHeight = min(maxPosterWidth / aspect, maxHeight * if (hasDescription) 0.30f else 0.44f)
         val posterWidth = posterHeight * aspect
         val menuWidth = min(280.dp, maxWidth - NuvioTokens.Space.s48)
         val columnWidth = max(posterWidth, menuWidth)
@@ -275,7 +284,11 @@ fun NuvioPosterZoomActionOverlay(
         Column(
             modifier = Modifier
                 .align(Alignment.Center)
-                .width(columnWidth),
+                // A synopsis can make the content as tall as the window; keep it clear of the
+                // system bars so the last action stays readable and tappable.
+                .then(if (hasDescription) Modifier.windowInsetsPadding(WindowInsets.safeDrawing) else Modifier)
+                .width(columnWidth)
+                .heightIn(max = maxHeight),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Invisible slot marking where the zoomed poster comes to rest.
@@ -317,6 +330,36 @@ fun NuvioPosterZoomActionOverlay(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.padding(horizontal = NuvioTokens.Space.s12),
+                    )
+                }
+            }
+
+            if (!description.isNullOrBlank()) {
+                // Measured after the poster, title and actions, so it only takes the height
+                // left over and scrolls; the action menu is never pushed off screen by it.
+                Box(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .width(columnWidth)
+                        .graphicsLayer {
+                            val progress = menu.value.coerceIn(0f, 1f)
+                            alpha = progress
+                            translationY = (1f - progress) * NuvioTokens.Space.s10.toPx()
+                        }
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    Text(
+                        text = description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = tokens.colors.textMuted,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                start = NuvioTokens.Space.s12,
+                                top = NuvioTokens.Space.s8,
+                                end = NuvioTokens.Space.s12,
+                            ),
                     )
                 }
             }

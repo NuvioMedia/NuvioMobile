@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DoneAll
@@ -85,6 +87,7 @@ fun EpisodeWatchedActionSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(bottom = nuvioSafeBottomPadding(16.dp)),
         ) {
             EpisodeActionSheetHeader(
@@ -288,5 +291,13 @@ private fun EpisodeActionSheetHeader(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )
+        val overview = episode.overview
+        if (!overview.isNullOrBlank()) {
+            Text(
+                text = overview,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
