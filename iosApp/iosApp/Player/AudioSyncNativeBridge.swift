@@ -1,5 +1,6 @@
 import ComposeApp
 import CryptoKit
+import Darwin
 import Foundation
 import Libavcodec
 import Libavformat
@@ -7,6 +8,7 @@ import Libavutil
 import Libswresample
 import Network
 import SherpaOnnxC
+import UIKit
 
 private let audioSyncSampleRate: Int32 = 16_000
 private let audioSyncNoTimestamp = Int64.min
@@ -95,6 +97,269 @@ final class AudioSyncNativeBridgeImpl: NSObject, AudioSyncNativeBridge {
             sha256: sha256,
             progress: progress
         ).run()
+    }
+
+    func isMpvAudioTapSupported() -> Bool {
+        AudioSyncMpvTapRegistry.isSupported()
+    }
+
+    func isMpvAudioTapAvailable() -> Bool {
+        AudioSyncMpvTapRegistry.isAvailable()
+    }
+
+    func enableMpvAudioTap(ringCapacitySamples: Int32) -> Int64 {
+        AudioSyncMpvTapRegistry.enable(ringCapacitySamples: ringCapacitySamples)
+    }
+
+    func setMpvAudioTapPaused(token: Int64, paused: Bool) {
+        AudioSyncMpvTapRegistry.setCallerPaused(token: token, paused: paused)
+    }
+
+    func readMpvAudioTap(token: Int64, outSamples: NSMutableData, maxSamples: Int32, outMeta: AudioSyncNativeTapChunk) -> Int32 {
+        AudioSyncMpvTapRegistry.read(token: token, outSamples: outSamples, maxSamples: maxSamples, outMeta: outMeta)
+    }
+
+    func disableMpvAudioTap(token: Int64) {
+        AudioSyncMpvTapRegistry.disable(token: token)
+    }
+}
+
+/// Detaches libmpv's live audio tap (`patches/libmpv/0010-audio-tap.patch`) from MPVPlayerBridge.
+/// MPVPlayerViewController only registers/unregisters its `mpv_handle*` on init and teardown.
+///
+/// Lock hierarchy is strictly `lifecycleLock -> tapLock` so `setCallerPaused`, `setBackgroundPaused`,
+/// and `read` never wait behind `mpv_audio_tap_create` (`mp_dispatch_lock`), while `detach` still
+/// serializes tap teardown strictly before `mpv_terminate_destroy`.
+enum AudioSyncMpvTapRegistry {
+    private struct Functions {
+        static let expectedApiVersion: UInt32 = 1
+        static let configByteSize: UInt32 = 16
+        static let chunkByteSize: UInt32 = 32
+        static let flagEof: Int32 = 1 << 2
+
+        typealias ApiVersionFn = @convention(c) () -> UInt32
+        typealias CreateFn = @convention(c) (OpaquePointer?, UnsafeRawPointer?) -> OpaquePointer?
+        typealias ReadFn = @convention(c) (OpaquePointer?, UnsafeMutablePointer<Float>?, UInt32, UnsafeMutableRawPointer?) -> Int32
+        typealias SetPausedFn = @convention(c) (OpaquePointer?, Int32) -> Void
+        typealias DestroyFn = @convention(c) (OpaquePointer?) -> Void
+
+        let create: CreateFn
+        let read: ReadFn
+        let setPaused: SetPausedFn
+        let destroy: DestroyFn
+
+        static let resolved: Functions? = {
+            let rtldDefault = UnsafeMutableRawPointer(bitPattern: -2)
+            guard
+                let versionSym = dlsym(rtldDefault, "mpv_audio_tap_api_version"),
+                let createSym = dlsym(rtldDefault, "mpv_audio_tap_create"),
+                let readSym = dlsym(rtldDefault, "mpv_audio_tap_read"),
+                let pauseSym = dlsym(rtldDefault, "mpv_audio_tap_set_paused"),
+                let destroySym = dlsym(rtldDefault, "mpv_audio_tap_destroy")
+            else {
+                return nil
+            }
+            let apiVersion = unsafeBitCast(versionSym, to: ApiVersionFn.self)
+            guard apiVersion() == expectedApiVersion else {
+                return nil
+            }
+            return Functions(
+                create: unsafeBitCast(createSym, to: CreateFn.self),
+                read: unsafeBitCast(readSym, to: ReadFn.self),
+                setPaused: unsafeBitCast(pauseSym, to: SetPausedFn.self),
+                destroy: unsafeBitCast(destroySym, to: DestroyFn.self)
+            )
+        }()
+    }
+
+    private static let lifecycleLock = NSLock()
+    private static let tapLock = NSLock()
+    private static var activeMpv: OpaquePointer?
+    private static var hasAttachedMpv = false
+    private static var activeTap: OpaquePointer?
+    private static var activeToken: Int64 = 0
+    private static var nextToken: Int64 = 0
+    private static var callerPaused = false
+    private static var backgroundPaused = false
+    private static var lifecycleInstalled = false
+
+    static func attach(_ mpv: OpaquePointer?) {
+        installLifecycleObserversIfNeeded()
+        var staleTap: OpaquePointer?
+        lifecycleLock.lock()
+        if activeMpv != mpv {
+            activeMpv = mpv
+            tapLock.lock()
+            hasAttachedMpv = (mpv != nil)
+            staleTap = activeTap
+            activeTap = nil
+            activeToken = 0
+            callerPaused = false
+            tapLock.unlock()
+        }
+        lifecycleLock.unlock()
+        if let staleTap, let fns = Functions.resolved {
+            fns.destroy(staleTap)
+        }
+    }
+
+    static func detach(_ mpv: OpaquePointer) {
+        var tapToDestroy: OpaquePointer?
+        lifecycleLock.lock()
+        if activeMpv == mpv {
+            activeMpv = nil
+            tapLock.lock()
+            hasAttachedMpv = false
+            tapToDestroy = activeTap
+            activeTap = nil
+            activeToken = 0
+            callerPaused = false
+            tapLock.unlock()
+        }
+        lifecycleLock.unlock()
+        if let tapToDestroy, let fns = Functions.resolved {
+            fns.destroy(tapToDestroy)
+        }
+    }
+
+    static func isSupported() -> Bool {
+        Functions.resolved != nil
+    }
+
+    /// Reads `hasAttachedMpv` under `tapLock` so Main-thread ticks never block behind `lifecycleLock` / `mp_dispatch_lock`.
+    static func isAvailable() -> Bool {
+        guard Functions.resolved != nil else { return false }
+        tapLock.lock()
+        let available = hasAttachedMpv
+        tapLock.unlock()
+        return available
+    }
+
+    static func enable(ringCapacitySamples: Int32) -> Int64 {
+        guard let fns = Functions.resolved else { return 0 }
+        var replacedTap: OpaquePointer?
+        var assignedToken: Int64 = 0
+
+        lifecycleLock.lock()
+        if let ctx = activeMpv {
+            var cfgStorage: (UInt32, UInt32, UInt32, UInt32) = (
+                Functions.configByteSize,
+                Functions.expectedApiVersion,
+                ringCapacitySamples > 0 ? UInt32(ringCapacitySamples) : 0,
+                0
+            )
+            let created = withUnsafeBytes(of: &cfgStorage) { raw -> OpaquePointer? in
+                fns.create(ctx, raw.baseAddress)
+            }
+            if let created {
+                tapLock.lock()
+                replacedTap = activeTap
+                activeTap = created
+                nextToken += 1
+                activeToken = nextToken
+                assignedToken = activeToken
+                callerPaused = false
+                fns.setPaused(created, backgroundPaused ? 1 : 0)
+                tapLock.unlock()
+            }
+        }
+        lifecycleLock.unlock()
+
+        if let replacedTap {
+            fns.destroy(replacedTap)
+        }
+        return assignedToken
+    }
+
+    static func setCallerPaused(token: Int64, paused: Bool) {
+        guard token != 0 else { return }
+        tapLock.lock()
+        if token == activeToken {
+            callerPaused = paused
+            if let tap = activeTap, let fns = Functions.resolved {
+                fns.setPaused(tap, (callerPaused || backgroundPaused) ? 1 : 0)
+            }
+        }
+        tapLock.unlock()
+    }
+
+    static func read(token: Int64, outSamples: NSMutableData, maxSamples: Int32, outMeta: AudioSyncNativeTapChunk) -> Int32 {
+        guard let fns = Functions.resolved else { return -1 }
+        let capacitySamples = Int32(outSamples.length / MemoryLayout<Float>.size)
+        let limit = min(maxSamples, capacitySamples)
+        guard limit > 0 else { return -1 }
+
+        tapLock.lock()
+        defer { tapLock.unlock() }
+        guard token != 0, token == activeToken, let tap = activeTap else {
+            outMeta.sampleRate = 0
+            outMeta.sampleCount = 0
+            outMeta.generation = 0
+            outMeta.ptsUs = 0
+            outMeta.flags = Functions.flagEof
+            return 0
+        }
+
+        // Stack-allocated 32-byte C-layout buffer matching struct mpv_audio_tap_chunk.
+        var chunkStorage: (UInt64, UInt64, UInt64, UInt64) = (0, 0, 0, 0)
+        return withUnsafeMutableBytes(of: &chunkStorage) { raw -> Int32 in
+            raw.storeBytes(of: Functions.chunkByteSize, toByteOffset: 0, as: UInt32.self)
+            let samplesPtr = outSamples.mutableBytes.assumingMemoryBound(to: Float.self)
+            let n = fns.read(tap, samplesPtr, UInt32(limit), raw.baseAddress)
+            outMeta.sampleRate = Int32(bitPattern: raw.load(fromByteOffset: 4, as: UInt32.self))
+            outMeta.sampleCount = Int32(bitPattern: raw.load(fromByteOffset: 8, as: UInt32.self))
+            outMeta.generation = Int32(bitPattern: raw.load(fromByteOffset: 12, as: UInt32.self))
+            outMeta.ptsUs = raw.load(fromByteOffset: 16, as: Int64.self)
+            outMeta.flags = Int32(bitPattern: raw.load(fromByteOffset: 24, as: UInt32.self))
+            return n
+        }
+    }
+
+    static func disable(token: Int64) {
+        guard token != 0 else { return }
+        var tapToDestroy: OpaquePointer?
+        tapLock.lock()
+        if token == activeToken {
+            tapToDestroy = activeTap
+            activeTap = nil
+            activeToken = 0
+            callerPaused = false
+        }
+        tapLock.unlock()
+        if let tapToDestroy, let fns = Functions.resolved {
+            fns.destroy(tapToDestroy)
+        }
+    }
+
+    private static func setBackgroundPaused(_ paused: Bool) {
+        tapLock.lock()
+        backgroundPaused = paused
+        if let tap = activeTap, let fns = Functions.resolved {
+            fns.setPaused(tap, (callerPaused || backgroundPaused) ? 1 : 0)
+        }
+        tapLock.unlock()
+    }
+
+    private static func installLifecycleObserversIfNeeded() {
+        tapLock.lock()
+        let alreadyInstalled = lifecycleInstalled
+        lifecycleInstalled = true
+        tapLock.unlock()
+        guard !alreadyInstalled else { return }
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            setBackgroundPaused(true)
+        }
+        NotificationCenter.default.addObserver(
+            forName: UIApplication.willEnterForegroundNotification,
+            object: nil,
+            queue: nil
+        ) { _ in
+            setBackgroundPaused(false)
+        }
     }
 }
 

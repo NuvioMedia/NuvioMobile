@@ -276,26 +276,44 @@ internal class AudioSubtitleSyncController(
     var listensBeforeSession: Boolean = true
 
     /**
-     * No audio reaches this controller while the film plays (the mpv engine plays it outside
-     * ExoPlayer, so neither the demux nor the output tap sees it). The film is only heard through
-     * the spots sampled ahead of playback, which then start without waiting for heard audio.
+     * True when playback is driven outside ExoPlayer (libmpv), so ExoPlayer's demux/track
+     * callbacks do not run and audio arrives via the libmpv live PCM tap (and optional spot reads).
+     */
+    @Volatile
+    var externalPlayer: Boolean = false
+
+    /**
+     * No live playback PCM is reaching this controller (e.g. non-PCM bitstream passthrough or an
+     * unpatched libmpv binary), so the film can only be heard through ahead-of-playhead spots,
+     * which then start without waiting for live audio frames.
      */
     @Volatile
     var spotOnly: Boolean = false
 
     /**
-     * Language of the audio track the player outside ExoPlayer plays ([spotOnly]), used to pick
-     * the same track out of the sampled stream and to judge whether the speech model applies.
+     * Language of the audio track played outside ExoPlayer ([externalPlayer]), used to pick the
+     * same track out of sampled spots, reset heard audio on track switches, and gate the English
+     * speech model just like ExoPlayer's [onAudioTrackSelected].
      */
     @Volatile
-    var spotOnlyAudioLanguage: String? = null
+    var externalAudioLanguage: String? = null
         set(value) {
-            val changed = SubtitleCandidatePool.languageKey(value) != SubtitleCandidatePool.languageKey(field)
+            val previous = field
+            val changed = SubtitleCandidatePool.languageKey(value) != SubtitleCandidatePool.languageKey(previous)
             field = value
-            if (changed && spotOnly) {
+            if (changed && (externalPlayer || spotOnly)) {
                 // Another track (a dub, say): the earlier pick and what was heard on it no longer apply.
                 provisionalAudioFormat = null
+                if (previous != null) {
+                    timeline.clear()
+                    decoder?.discontinuity()
+                    asr?.forgetHeard()
+                }
                 updateListening()
+                if (enabled && !audioIsForeign()) {
+                    if (session != null) ensureRecognizer()
+                    else if (recognizerPreparationRequested) prepareRecognizer()
+                }
             }
         }
 
@@ -535,7 +553,7 @@ internal class AudioSubtitleSyncController(
      * starve it. Streams whose audio can't be captured ahead give no such signal and are not held back.
      */
     private fun playbackBufferedAhead(): Boolean {
-        if (liveOnly || spotOnly) return true
+        if (liveOnly || spotOnly || externalPlayer) return true
         val playheadFrame = SpeechTimeline.frameForTimeUs(playbackPositionMs * 1_000L)
         val known = timeline.knownFramesIn(playheadFrame, playheadFrame + BUFFERED_AHEAD_FRAMES)
         return known >= BUFFERED_AHEAD_FRAMES * 8 / 10
@@ -546,7 +564,7 @@ internal class AudioSubtitleSyncController(
         override fun wantsSamples(format: Format): Boolean {
             if (!enabled || released) return false
             val playing = selectedAudioFormat ?: provisionalAudioFormat
-                ?: (if (spotOnly) adoptSpotOnlyAudio(format) else null)
+                ?: (if (externalPlayer || spotOnly) adoptExternalAudio(format) else null)
                 ?: return false
             return matches(format, playing)
         }
@@ -564,22 +582,22 @@ internal class AudioSubtitleSyncController(
     }
 
     /**
-     * Spot-only: the first sampled audio track in the language the player plays (or the first
-     * one, when either language is unknown) stands in for the playing track.
+     * External player (libmpv): the first sampled audio track in the language the player plays (or
+     * the first one, when either language is unknown) stands in for ExoPlayer's selected track.
      */
-    private fun adoptSpotOnlyAudio(format: Format): Format? {
-        val adopted = synchronized(spotOnlyAudioLock) {
+    private fun adoptExternalAudio(format: Format): Format? {
+        val adopted = synchronized(externalAudioLock) {
             provisionalAudioFormat?.let { return it }
-            val wanted = SubtitleCandidatePool.languageKey(spotOnlyAudioLanguage?.takeIf { it.lowercase() !in UNKNOWN_LANGUAGES })
+            val wanted = SubtitleCandidatePool.languageKey(externalAudioLanguage?.takeIf { it.lowercase() !in UNKNOWN_LANGUAGES })
             val offered = SubtitleCandidatePool.languageKey(format.language?.takeIf { it.lowercase() !in UNKNOWN_LANGUAGES })
             if (wanted != null && offered != null && wanted != offered) return null
             format.also { provisionalAudioFormat = it }
         }
-        SyncLog.d("spot-only audio track: ${describe(adopted)}")
+        SyncLog.d("external player audio track: ${describe(adopted)}")
         updateListening()
         return adopted
     }
-    private val spotOnlyAudioLock = Any()
+    private val externalAudioLock = Any()
 
     fun onAudioTrackSelected(format: Format?) {
         if (format == null || selectedAudioFormat?.let { matches(it, format) } == true) return
@@ -604,7 +622,8 @@ internal class AudioSubtitleSyncController(
      * model understands English only. Untagged audio is assumed to be English.
      */
     private fun audioIsForeign(): Boolean {
-        val language = ((selectedAudioFormat ?: provisionalAudioFormat)?.language ?: spotOnlyAudioLanguage.takeIf { spotOnly })
+        val language = ((selectedAudioFormat ?: provisionalAudioFormat)?.language
+            ?: externalAudioLanguage.takeIf { externalPlayer || spotOnly })
             ?.trim()?.lowercase()
         if (language.isNullOrEmpty() || language in UNKNOWN_LANGUAGES) return false
         return !isEnglish(language)
@@ -1197,6 +1216,30 @@ internal class AudioSubtitleSyncController(
     override fun onPlaybackPcm(mono: FloatArray, frames: Int, sampleRate: Int, mediaTimeUs: Long) {
         decoder?.offerPlaybackPcm(mono, frames, sampleRate, mediaTimeUs)
     }
+
+    /**
+     * External live PCM (e.g. libmpv audio tap) runs on a background reader thread, so it can
+     * lazily initialize the decoder before any subtitle session exists without touching ExoPlayer's
+     * audio thread.
+     */
+    fun wantsExternalPlaybackPcm(mediaTimeUs: Long, durationUs: Long): Boolean {
+        if (!enabled || released || decoderUnavailable || !listening()) return false
+        if (mediaTimeUs < 0 || !inDutyWindow(mediaTimeUs)) return false
+        return timeline.needsAnalysis(mediaTimeUs, durationUs)
+    }
+
+    fun offerExternalPlaybackPcm(mono: FloatArray, frames: Int, sampleRate: Int, mediaTimeUs: Long) {
+        if (!enabled || released || decoderUnavailable) return
+        val active = decoder ?: createDecoder() ?: return
+        active.offerPlaybackPcm(mono, frames, sampleRate, mediaTimeUs)
+    }
+
+    fun onExternalPlaybackDiscontinuity() {
+        decoder?.liveDiscontinuity()
+    }
+
+    fun isInDutyWindowForLiveTap(): Boolean =
+        enabled && !released && listening() && inDutyWindow(playbackPositionMs * 1_000L)
 
     /**
      * Once a lock has been refined over a long stretch, analyse one minute in three: enough to follow

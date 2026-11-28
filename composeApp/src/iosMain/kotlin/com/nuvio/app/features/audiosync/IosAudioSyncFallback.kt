@@ -26,6 +26,7 @@ internal fun createIosAudioSyncFallback(
     ensureAudioSyncInitialized()
     if (!AudioSyncSettings.fallbackEnabled.value) return null
     val native = AudioSyncNativeRegistry.bridge ?: return null
+    val liveTap = IosMpvLiveAudioTap(native)
     val host = object : MpvSpotAudioSyncHost {
         override fun positionMs(): Long = bridge.getPositionMs()
 
@@ -38,6 +39,10 @@ internal fun createIosAudioSyncFallback(
                 .firstOrNull { bridge.isAudioTrackSelected(it) }
                 ?.let { bridge.getAudioTrackLang(it) }
                 ?.takeIf { it.isNotBlank() }
+
+        override fun liveAudioTap(): MpvLiveAudioTap = liveTap
+
+        override fun isBackgroundOrPip(): Boolean = bridge.getKeepsPlaybackInBackground()
 
         override fun replaceSubtitle(replacedUrl: String, path: String) {
             bridge.replaceExternalSubtitle(replacedUrl, path)

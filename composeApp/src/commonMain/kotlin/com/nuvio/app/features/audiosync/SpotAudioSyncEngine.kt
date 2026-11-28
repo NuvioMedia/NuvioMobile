@@ -18,6 +18,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
@@ -77,6 +78,7 @@ internal class SpotAudioSyncEngine(
     private val downloadSubtitle: suspend (AudioSyncReference) -> String = { candidate ->
         AutomaticSubtitleSync.downloadSubtitleBody(url = candidate.url, headers = candidate.headers)
     },
+    private val liveTap: MpvLiveAudioTap? = null,
 ) {
     private class Session(
         val key: String,
@@ -111,6 +113,19 @@ internal class SpotAudioSyncEngine(
     private val poolReferencesRequested = HashSet<String>()
     private val switchedAway = HashSet<String>()
     private val poolVersion = atomic(0L)
+    private val liveLock = SynchronizedObject()
+    private var liveReader: MpvLiveAudioReader? = null
+    private var previousLiveReaderJob: Job? = null
+    private var liveTapFailures = 0
+
+    @Volatile
+    private var listensBeforeSession = false
+
+    @Volatile
+    private var hostTapPaused = false
+
+    @Volatile
+    private var lockedAtMs = 0L
 
     @Volatile
     private var pool: SubtitleCandidatePool? = null
@@ -186,8 +201,37 @@ internal class SpotAudioSyncEngine(
     var enabled: Boolean = true
         set(value) {
             field = value
-            if (!value) model = null
+            if (!value) {
+                model = null
+                stopLiveListening()
+            }
         }
+
+    val isLiveAudioTapSupported: Boolean
+        get() = liveTap?.isSupported == true
+
+    val hasLiveAudioTap: Boolean
+        get() = liveTap?.isAvailable == true
+
+    val isLiveAudioActive: Boolean
+        get() = liveReader?.let { it.isRunning && !it.isNonPcm } == true
+
+    val isLiveAudioNonPcm: Boolean
+        get() = liveReader?.let { it.isRunning && it.isNonPcm } == true
+
+    fun setLiveTapPaused(paused: Boolean) {
+        if (hostTapPaused == paused) return
+        hostTapPaused = paused
+        updateLiveTapPauseState()
+    }
+
+    fun startLiveListening(): Boolean {
+        val tap = liveTap ?: return false
+        if (!enabled || released || !tap.isSupported) return false
+        synchronized(liveLock) { liveTapFailures = 0 }
+        listensBeforeSession = true
+        return ensureLiveReaderStarted()
+    }
 
     @Volatile
     var samplingMode: AudioSamplingMode = AudioSamplingMode.LOW
@@ -202,9 +246,22 @@ internal class SpotAudioSyncEngine(
     @Volatile
     var audioLanguage: String? = null
         set(value) {
-            val changed = languageKey(value) != languageKey(field)
+            val previous = field
+            val changed = languageKey(value) != languageKey(previous)
             field = value
-            if (changed) updateListening()
+            if (changed) {
+                if (previous != null) {
+                    timeline.clear()
+                    synchronized(liveLock) {
+                        liveReader?.requestDiscontinuity()
+                    }
+                    asr.forgetHeard()
+                }
+                updateListening()
+                if (enabled && !audioIsForeign() && (session != null || listensBeforeSession)) {
+                    prepareRecognizer()
+                }
+            }
         }
 
     fun setSource(url: String, headers: Map<String, String>) {
@@ -212,6 +269,7 @@ internal class SpotAudioSyncEngine(
         sourceUrl = url
         sourceHeaders = headers
         spotUnavailableReason = if (isPlaylistUrl(url)) "not available for playlist streams" else null
+        stopLiveListening()
         timeline.clear()
         asr.clear()
         stopPool()
@@ -223,6 +281,7 @@ internal class SpotAudioSyncEngine(
         spotDeclined = false
         model = null
         estimated = false
+        lockedAtMs = 0L
     }
 
     fun currentModel(): SubtitleSyncModel? = model.takeIf { enabled && session != null }
@@ -260,6 +319,7 @@ internal class SpotAudioSyncEngine(
         handover = null
         model = null
         estimated = false
+        lockedAtMs = 0L
         scope.launch(serial) {
             val track = SubtitleSpeechTrack.fromCues(dialogue)
             if (sessionRequest.value != request || released) return@launch
@@ -270,6 +330,9 @@ internal class SpotAudioSyncEngine(
             }
             val started = Session(key, track, dialogue)
             session = started
+            if (enabled && liveTap?.isAvailable == true) {
+                ensureLiveReaderStarted()
+            }
             log("sync session started for $key with ${track.size} dialogue cues")
             if (!enabled) return@launch
             if (handedOver != null) {
@@ -284,6 +347,9 @@ internal class SpotAudioSyncEngine(
 
     fun stopSession() {
         sessionRequest.incrementAndGet()
+        listensBeforeSession = false
+        lockedAtMs = 0L
+        stopLiveListening()
         stopPool()
         asr.stopSession()
         session = null
@@ -296,6 +362,13 @@ internal class SpotAudioSyncEngine(
             mediaDurationMs = durationMs
             pool?.mediaDurationMs = durationMs
         }
+        if (enabled && !released && listening() && liveTap?.isAvailable == true) {
+            val shouldStart = synchronized(liveLock) {
+                liveReader?.isRunning != true && liveTapFailures < MAX_LIVE_TAP_FAILURES
+            }
+            if (shouldStart) ensureLiveReaderStarted()
+        }
+        updateLiveTapPauseState()
         asr.onPlayhead(playbackPositionMs)
         scheduleAlignment()
         maybeSampleSpots()
@@ -312,7 +385,9 @@ internal class SpotAudioSyncEngine(
 
     fun release() {
         released = true
+        listensBeforeSession = false
         session = null
+        stopLiveListening()
         stopPool()
         model = null
         asr.release()
@@ -320,6 +395,108 @@ internal class SpotAudioSyncEngine(
         if (recognizer != null) {
             recognizer = null
             recognizers?.release()
+        }
+    }
+
+    private fun listening(): Boolean =
+        session != null || (listensBeforeSession && timeline.knownFrameCount() < PRE_SESSION_FRAMES)
+
+    private fun inDutyWindow(timeUs: Long): Boolean {
+        if (model == null || estimated || lockedAtMs == 0L) return true
+        val nowMs = audioSyncNanoTime() / 1_000_000L
+        if (nowMs - lockedAtMs < FULL_ANALYSIS_AFTER_LOCK_MS) return true
+        return (timeUs / DUTY_WINDOW_US) % DUTY_CYCLE == 0L
+    }
+
+    private fun updateLiveTapPauseState() {
+        val activeReader = synchronized(liveLock) { liveReader } ?: return
+        val shouldPause = hostTapPaused || !enabled || released || !listening() ||
+            !inDutyWindow(playbackPositionMs * 1_000L)
+        activeReader.setPaused(shouldPause)
+    }
+
+    private fun ensureLiveReaderStarted(): Boolean {
+        val tap = liveTap ?: return false
+        if (!enabled || released || !tap.isAvailable) return false
+        synchronized(liveLock) {
+            if (liveReader?.isRunning == true) {
+                updateLiveTapPauseState()
+                return true
+            }
+            if (liveTapFailures >= MAX_LIVE_TAP_FAILURES) return false
+            // Load Silero VAD weights lazily on the reader's background thread so calling
+            // arm() / onPlaybackPosition() on the Main thread never blocks on disk I/O.
+            var analyzer: SpeechAnalyzer? = null
+            var weightsFailed = false
+            fun ensureAnalyzer(): SpeechAnalyzer? {
+                analyzer?.let { return it }
+                if (weightsFailed) return null
+                val weights = runCatching { SileroVadBundle.load() }.getOrNull() ?: run {
+                    weightsFailed = true
+                    log("live audio tap skipped: speech detector weights unavailable")
+                    return null
+                }
+                return SpeechAnalyzer(SileroVad(weights), timeline).also { createdAnalyzer ->
+                    createdAnalyzer.chunkListener = SpeechSegmenter { startFrame, samples ->
+                        asr.offerSegment(startFrame, samples, spread = false)
+                    }
+                    analyzer = createdAnalyzer
+                }
+            }
+            val created = MpvLiveAudioReader(
+                scope = scope,
+                tap = tap,
+                wantsPcm = { mediaTimeUs, durationUs ->
+                    enabled && !released && listening() &&
+                        mediaTimeUs >= 0L && inDutyWindow(mediaTimeUs) &&
+                        timeline.needsAnalysis(mediaTimeUs, durationUs)
+                },
+                onPcm = { samples, frames, sampleRate, mediaTimeUs ->
+                    ensureAnalyzer()?.accept(samples, frames, sampleRate, mediaTimeUs)
+                },
+                onDiscontinuity = {
+                    analyzer?.reset()
+                },
+                onNonPcmDetected = {
+                    if (spotDeclined && samplingMode != AudioSamplingMode.OFF) {
+                        spotDeclined = false
+                        spotSamplingStarted.value = false
+                    }
+                },
+                onEnabled = {
+                    synchronized(liveLock) { liveTapFailures = 0 }
+                    log("libmpv continuous live audio tap enabled")
+                },
+                onStopped = { failed ->
+                    if (failed) {
+                        synchronized(liveLock) { liveTapFailures++ }
+                    }
+                },
+                log = log,
+            )
+            val shouldPause = hostTapPaused || !enabled || released || !listening() ||
+                !inDutyWindow(playbackPositionMs * 1_000L)
+            created.setPaused(shouldPause)
+            val prevJob = previousLiveReaderJob
+            previousLiveReaderJob = null
+            if (!created.start(previousJob = prevJob)) {
+                log("libmpv live audio tap could not be enabled; using spot sampling")
+                return false
+            }
+            liveReader = created
+            return true
+        }
+    }
+
+    private fun stopLiveListening() {
+        val toStop = synchronized(liveLock) {
+            val existing = liveReader
+            liveReader = null
+            existing
+        }
+        val cancelled = toStop?.stop()
+        if (cancelled != null) {
+            synchronized(liveLock) { previousLiveReaderJob = cancelled }
         }
     }
 
@@ -598,6 +775,7 @@ internal class SpotAudioSyncEngine(
             current.tracker.adopt(winner.model)
             model = winner.model
             estimated = false
+            lockedAtMs = audioSyncNanoTime() / 1_000_000L
             log("LOCK of the chosen subtitle through the recognised reference: ${winner.model}")
             notify(
                 AudioSyncStatus.Synced(
@@ -621,6 +799,7 @@ internal class SpotAudioSyncEngine(
         current.tracker.adopt(handedOver.model)
         model = handedOver.model
         estimated = false
+        lockedAtMs = audioSyncNanoTime() / 1_000_000L
         log("adopted mapping of switched-to subtitle ${handedOver.model}")
         notify(
             AudioSyncStatus.Synced(
@@ -679,6 +858,7 @@ internal class SpotAudioSyncEngine(
                 is AudioSyncTracker.Outcome.Retracted -> {
                     model = null
                     estimated = false
+                    lockedAtMs = 0L
                     log("early estimate withdrawn")
                     notify(AudioSyncStatus.Withdrawn)
                 }
@@ -686,6 +866,7 @@ internal class SpotAudioSyncEngine(
                     stopPool()
                     model = outcome.model
                     estimated = false
+                    lockedAtMs = audioSyncNanoTime() / 1_000_000L
                     log("LOCKED ${outcome.model}")
                     notify(
                         AudioSyncStatus.Synced(
@@ -721,6 +902,7 @@ internal class SpotAudioSyncEngine(
         if (result.final) {
             stopPool()
             current.maintainedByRecognition = true
+            lockedAtMs = audioSyncNanoTime() / 1_000_000L
         }
         model = adopted
         estimated = !result.final
@@ -742,6 +924,7 @@ internal class SpotAudioSyncEngine(
         val current = session ?: return
         if (!enabled || released || (model != null && !estimated)) return
         if (mediaDurationMs < MIN_SAMPLED_FILM_MS) return
+        if (isLiveAudioActive && timeline.knownFrameCount() < SAMPLE_AFTER_FRAMES) return
         if (!spotSamplingStarted.compareAndSet(expect = false, update = true)) return
         spotUnavailableReason?.let { reason ->
             log("audio sampling skipped: $reason")
@@ -866,6 +1049,12 @@ internal class SpotAudioSyncEngine(
         private const val MIN_SAMPLED_FILM_MS = 20 * 60_000L
         private const val RESUME_THRESHOLD_MS = 10 * 60_000L
         private const val NOTIFY_CHANGE_MS = 1_000L
+        private val SAMPLE_AFTER_FRAMES = (5_000 / SpeechTimeline.FRAME_DURATION_MS).toInt()
+        private val PRE_SESSION_FRAMES = (10 * 60 * 1_000 / SpeechTimeline.FRAME_DURATION_MS).toInt()
+        private const val FULL_ANALYSIS_AFTER_LOCK_MS = 10 * 60_000L
+        private const val DUTY_WINDOW_US = 60_000_000L
+        private const val DUTY_CYCLE = 3L
+        private const val MAX_LIVE_TAP_FAILURES = 2
         private const val OPEN_SUBTITLES_FALLBACK = "https://opensubtitles-v3.strem.io"
         private val UNKNOWN_LANGUAGES = setOf("und", "mul", "zxx", "mis", "unknown")
         private val englishStopWords = setOf(

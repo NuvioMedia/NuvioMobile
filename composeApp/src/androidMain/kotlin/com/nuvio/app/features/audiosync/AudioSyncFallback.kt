@@ -5,6 +5,8 @@ package com.nuvio.app.features.audiosync
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.net.Uri
+import android.view.View
+import `is`.xyz.mpv.MPV
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.Player
@@ -39,7 +41,7 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-/** Android libmpv operations that [AudioSyncFallback] uses in spot-only mode. */
+/** Android libmpv operations that [AudioSyncFallback] uses for continuous live audio sync. */
 internal interface MpvAudioSyncHost {
     fun currentPlaybackSnapshot(): PlayerPlaybackSnapshot
     fun selectedAudioLanguage(): String?
@@ -69,9 +71,11 @@ internal interface MpvAudioSyncHost {
  * same way AutoSync applies its own result, so Nuvio's subtitle rendering is untouched. When the
  * sidecar moves on (another subtitle or track), the fallback stops on its own.
  *
- * With the mpv engine ([player] is null) no audio passes through ExoPlayer, so the film is heard
- * only through spots sampled ahead of playback, and the mapping is shown the way AutoSync shows
- * its own result there: a retimed copy of the subtitle loaded as an external mpv track.
+ * With the mpv engine ([player] is null), decoded mono PCM is streamed directly from libmpv's
+ * live audio tap (matching ExoPlayer's live playback tap) alongside optional ahead-of-playhead
+ * spot sampling, and the mapping is shown the way AutoSync shows its own result there: a retimed
+ * copy of the subtitle loaded as an external mpv track. Non-PCM passthrough audio (or an unpatched
+ * libmpv binary) falls back to ahead-of-playhead spot sampling automatically.
  */
 internal class AudioSyncFallback private constructor(
     context: Context,
@@ -88,6 +92,11 @@ internal class AudioSyncFallback private constructor(
     private val getAppliedListener: () -> ((subtitleUrl: String, delayMs: Int) -> Unit)?,
 ) : AutoSyncMpvAudioFallback {
     private val isMpv = player == null
+    private var mpvLiveReader: MpvLiveAudioReader? = null
+    private var previousMpvReaderJob: Job? = null
+    @Volatile
+    private var mpvLiveTapFailures = 0
+    private fun currentMpvTap(): AndroidMpvLiveAudioTap? = if (isMpv) AudioSyncTaps.currentMpvTap() else null
     private val appContext = context.applicationContext
     private val controller = AudioSubtitleSyncController(
         context = appContext,
@@ -112,6 +121,7 @@ internal class AudioSyncFallback private constructor(
     private val target = AtomicReference<Target?>(null)
     private var armed = false
     private var appliedModel: SubtitleSyncModel? = null
+    private var appliedConfirmed = false
     private var ticker: Job? = null
     private var takeOverJob: Job? = null
     private var settingsJob: Job? = null
@@ -142,8 +152,9 @@ internal class AudioSyncFallback private constructor(
     init {
         initialize(appContext)
         controller.listensBeforeSession = false
-        controller.spotOnly = isMpv
-        if (isMpv) controller.spotOnlyAudioLanguage = mpvHost?.selectedAudioLanguage()
+        controller.externalPlayer = isMpv
+        controller.spotOnly = isMpv && currentMpvTap()?.isAvailable != true
+        if (isMpv) controller.externalAudioLanguage = mpvHost?.selectedAudioLanguage()
         controller.enabled = AudioSyncSettings.fallbackEnabled.value
         controller.samplingMode = AudioSyncSettings.samplingMode.value
         controller.onSourceChanged(sourceUrl)
@@ -211,6 +222,10 @@ internal class AudioSyncFallback private constructor(
             if (!type.isNullOrBlank() && !vid.isNullOrBlank()) controller.setContent(type, vid)
         }
         controller.setReferenceSubtitles(referenceCandidates(candidates))
+        if (isMpv) {
+            mpvLiveTapFailures = 0
+            startMpvLiveTapIfAvailable()
+        }
         startTicker()
     }
 
@@ -242,9 +257,17 @@ internal class AudioSyncFallback private constructor(
             disarm()
             return false
         }
-        // mpv's audio is only heard through sampling; with sampling off there is nothing to sync to.
-        if (isMpv && AudioSyncSettings.samplingMode.value == AudioSamplingMode.OFF) {
-            SyncLog.i("audio sampling is off; the mpv engine has no other audio to sync to")
+        // Live playback audio handles sync even when ahead-of-playhead sampling is off, matching
+        // ExoPlayer. Only abort if live PCM is unavailable (unpatched binary or non-PCM
+        // passthrough) and spot sampling is off.
+        val reader = mpvLiveReader
+        val liveUsable = isMpv && if (reader != null && reader.isRunning) {
+            !reader.isNonPcm
+        } else {
+            currentMpvTap()?.isSupported == true
+        }
+        if (isMpv && !liveUsable && AudioSyncSettings.samplingMode.value == AudioSamplingMode.OFF) {
+            SyncLog.i("libmpv live audio tap unavailable and audio sampling is off")
             disarm()
             return false
         }
@@ -297,12 +320,65 @@ internal class AudioSyncFallback private constructor(
         val current = Target(url, cues, generation = 0L)
         target.set(current)
         appliedModel = null
+        appliedConfirmed = false
         unmatchedPlayedMs = 0L
         unmatchedReported = false
         lockConfirmed = false
+        val liveActive = startMpvLiveTapIfAvailable()
         startTicker()
-        SyncLog.i("AutoSync kept the original timing of $url on mpv; syncing it to sampled audio")
+        val sourceDesc = if (liveActive) "live and sampled audio" else "sampled audio"
+        SyncLog.i("AutoSync kept the original timing of $url on mpv; syncing it to $sourceDesc")
         controller.startSession(url, cues)
+    }
+
+    private fun startMpvLiveTapIfAvailable(): Boolean {
+        val tap = currentMpvTap() ?: return false
+        if (!tap.isAvailable || mpvLiveTapFailures >= MAX_LIVE_TAP_FAILURES) {
+            controller.spotOnly = true
+            return false
+        }
+        val isPlaying = mpvHost?.currentPlaybackSnapshot()?.isPlaying == true
+        val shouldPause = !isPlaying || tap.isBackgroundOrPip() || !controller.isInDutyWindowForLiveTap()
+        val existing = mpvLiveReader
+        if (existing?.isRunning == true) {
+            existing.setPaused(shouldPause)
+            return !existing.isNonPcm
+        }
+        val reader = MpvLiveAudioReader(
+            scope = scope,
+            tap = tap,
+            wantsPcm = controller::wantsExternalPlaybackPcm,
+            onPcm = controller::offerExternalPlaybackPcm,
+            onDiscontinuity = controller::onExternalPlaybackDiscontinuity,
+            onNonPcmDetected = { controller.spotOnly = true },
+            onPcmResumed = { controller.spotOnly = false },
+            onEnabled = {
+                mpvLiveTapFailures = 0
+                controller.spotOnly = false
+                SyncLog.i("libmpv continuous live audio tap enabled on Android")
+            },
+            onStopped = { failed ->
+                if (failed) mpvLiveTapFailures++
+                if (mpvLiveReader?.isEnabled != true) {
+                    controller.spotOnly = true
+                }
+            },
+            log = SyncLog::i,
+        )
+        reader.setPaused(shouldPause)
+        val prevJob = previousMpvReaderJob
+        previousMpvReaderJob = null
+        if (!reader.start(previousJob = prevJob)) {
+            controller.spotOnly = true
+            return false
+        }
+        mpvLiveReader = reader
+        return true
+    }
+
+    private fun stopMpvLiveTap() {
+        previousMpvReaderJob = mpvLiveReader?.stop() ?: previousMpvReaderJob
+        mpvLiveReader = null
     }
 
     private suspend fun downloadCues(
@@ -354,8 +430,10 @@ internal class AudioSyncFallback private constructor(
             }
         }
         appliedModel = null
+        appliedConfirmed = false
         pendingStatus = null
         lockConfirmed = false
+        stopMpvLiveTap()
         controller.listensBeforeSession = false
         controller.stopSession()
     }
@@ -379,7 +457,6 @@ internal class AudioSyncFallback private constructor(
                     stop(restoreOriginalOnMpv = false)
                     return@launch
                 }
-                if (isMpv) controller.spotOnlyAudioLanguage = mpvHost?.selectedAudioLanguage()
                 val snapshot = mpvHost?.currentPlaybackSnapshot()
                 val positionMs = if (player != null) {
                     player.currentPosition.coerceAtLeast(0L)
@@ -392,10 +469,36 @@ internal class AudioSyncFallback private constructor(
                     snapshot?.durationMs?.takeIf { it > 0L } ?: 0L
                 }
                 val isPlaying = player?.isPlaying ?: (snapshot?.isPlaying == true)
+                if (isMpv) {
+                    controller.externalAudioLanguage = mpvHost?.selectedAudioLanguage()
+                    if (mpvLiveReader?.isRunning != true &&
+                        mpvLiveTapFailures < MAX_LIVE_TAP_FAILURES &&
+                        currentMpvTap()?.isAvailable == true
+                    ) {
+                        startMpvLiveTapIfAvailable()
+                    }
+                    val tap = currentMpvTap()
+                    mpvLiveReader?.setPaused(
+                        !isPlaying || tap?.isBackgroundOrPip() == true || !controller.isInDutyWindowForLiveTap(),
+                    )
+                }
                 controller.onPlaybackPosition(positionMs, durationMs)
                 val model = controller.currentModel()
-                if (current != null && model !== appliedModel) {
+                val confirmed = controller.isModelConfirmed
+                val shouldApply = current != null && if (isMpv) {
+                    MpvSubtitleRetimerThrottle.shouldApply(
+                        previousModel = appliedModel,
+                        previousConfirmed = appliedConfirmed,
+                        newModel = model,
+                        newConfirmed = confirmed,
+                        positionMs = positionMs,
+                    )
+                } else {
+                    model !== appliedModel
+                }
+                if (shouldApply) {
                     appliedModel = model
+                    appliedConfirmed = confirmed
                     apply(current, model)
                 }
                 val status = pendingStatus
@@ -403,10 +506,14 @@ internal class AudioSyncFallback private constructor(
                 if (current != null && target.get() === current && status != null) {
                     when (status) {
                         is AudioSyncStatus.Synced, is AudioSyncStatus.Adjusted -> {
-                            if (appliedModel != null && appliedModel === controller.currentModel()) {
+                            val currentModel = controller.currentModel()
+                            val currentConfirmed = controller.isModelConfirmed
+                            if (appliedModel != null &&
+                                (appliedModel === currentModel || (isMpv && appliedConfirmed && currentConfirmed))
+                            ) {
                                 lockConfirmed = true
                                 AutoSyncSyncedSubtitle.mark(current.url)
-                            } else if (controller.currentModel() != null) {
+                            } else if (currentModel != null) {
                                 pendingStatus = status
                             }
                         }
@@ -543,6 +650,7 @@ internal class AudioSyncFallback private constructor(
                     ),
                 )
                 appliedModel = null
+                appliedConfirmed = false
                 onSubtitleDelayChanged(0)
                 listener?.invoke(url, 0)
                 controller.startSession(url, cues)
@@ -584,6 +692,7 @@ internal class AudioSyncFallback private constructor(
         private const val CUES_WAIT_MS = 5_000L
         private const val CUES_POLL_MS = 50L
         private const val UNMATCHED_REPORT_MS = 5 * 60_000L
+        private const val MAX_LIVE_TAP_FAILURES = 2
         private val initialized = AtomicBoolean(false)
 
         /** Settings persistence and the speech model. Safe to call more than once. */
@@ -720,6 +829,9 @@ internal object AudioSyncTaps {
     @Volatile
     private var active: AudioSubtitleSyncController? = null
 
+    private val mpvTapLock = Any()
+    private var activeMpvTap: AndroidMpvLiveAudioTap? = null
+
     fun attach(controller: AudioSubtitleSyncController) {
         active = controller
     }
@@ -727,6 +839,32 @@ internal object AudioSyncTaps {
     fun detach(controller: AudioSubtitleSyncController) {
         if (active === controller) active = null
     }
+
+    /** Registers the active Android libmpv instance so audio sync can tap its decoded PCM. */
+    fun attachMpv(mpv: MPV, hostView: View) {
+        val replaced = synchronized(mpvTapLock) {
+            val previous = activeMpvTap
+            activeMpvTap = AndroidMpvLiveAudioTap(mpv, hostView)
+            previous?.takeIf { it.mpv !== mpv }
+        }
+        replaced?.detach()
+    }
+
+    /** Detaches and synchronously destroys any active tap before [mpv] is closed. */
+    fun detachMpv(mpv: MPV) {
+        val detached = synchronized(mpvTapLock) {
+            val current = activeMpvTap
+            if (current != null && current.mpv === mpv) {
+                activeMpvTap = null
+                current
+            } else {
+                null
+            }
+        }
+        detached?.detach()
+    }
+
+    internal fun currentMpvTap(): AndroidMpvLiveAudioTap? = synchronized(mpvTapLock) { activeMpvTap }
 
     /** Copies the audio of [sourceKey]'s stream while it is demuxed (look-ahead). */
     fun wrapExtractors(factory: ExtractorsFactory, sourceKey: String): ExtractorsFactory =

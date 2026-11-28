@@ -583,6 +583,7 @@ final class MPVPlayerViewController: UIViewController {
         checkError(mpv_set_option_string(mpv, "hdr-compute-peak", "yes"))
 
         checkError(mpv_initialize(mpv))
+        AudioSyncMpvTapRegistry.attach(mpv)
         applyAudioLanguagePreferences(preferredAudioLanguages)
 
         // Observe properties
@@ -1093,6 +1094,7 @@ final class MPVPlayerViewController: UIViewController {
         clearPlaybackError()
         deactivateAudioSession()
         guard let ctx = mpv else { return }
+        AudioSyncMpvTapRegistry.detach(ctx)
         mpv = nil  // nil first so event loop stops reading
         mpv_terminate_destroy(ctx)
     }

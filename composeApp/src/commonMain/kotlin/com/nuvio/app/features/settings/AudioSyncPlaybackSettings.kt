@@ -19,6 +19,7 @@ import com.nuvio.app.features.audiosync.AudioSamplingMode
 import com.nuvio.app.features.audiosync.AudioSyncSettings
 import com.nuvio.app.features.audiosync.SubtitleSyncStatus
 import com.nuvio.app.features.audiosync.ensureAudioSyncInitialized
+import com.nuvio.app.features.audiosync.isPlaybackOnlyAudioSyncSupported
 import com.nuvio.app.features.autosync.AutoSyncPreferencesRepository
 import nuvio.composeapp.generated.resources.Res
 import nuvio.composeapp.generated.resources.action_done
@@ -40,7 +41,6 @@ import nuvio.composeapp.generated.resources.audio_sync_sampling_title
 import nuvio.composeapp.generated.resources.audio_sync_setting_description
 import nuvio.composeapp.generated.resources.audio_sync_setting_title
 import org.jetbrains.compose.resources.stringResource
-import com.nuvio.app.isIos
 
 /** Audio fallback settings, beside Auto Sync in Playback -> Subtitles. */
 @Composable
@@ -66,8 +66,13 @@ internal fun AudioSyncPlaybackSettingsRows(
     )
     if (autoSyncOn && fallbackOn) {
         val model by SubtitleSyncStatus.speechModel.collectAsStateWithLifecycle()
+        val playbackOnlySupported = remember { isPlaybackOnlyAudioSyncSupported() }
         val storedSampling by AudioSyncSettings.samplingMode.collectAsStateWithLifecycle()
-        val sampling = if (isIos && storedSampling == AudioSamplingMode.OFF) AudioSamplingMode.LOW else storedSampling
+        val sampling = if (!playbackOnlySupported && storedSampling == AudioSamplingMode.OFF) {
+            AudioSamplingMode.LOW
+        } else {
+            storedSampling
+        }
         SettingsGroupDivider(isTablet = isTablet)
         SettingsNavigationRow(
             title = stringResource(Res.string.audio_sync_model_title, model.sizeMb),
@@ -112,6 +117,7 @@ internal fun AudioSyncPlaybackSettingsRows(
         if (showSamplingDialog) {
             AudioSamplingModeDialog(
                 selectedMode = sampling,
+                allowOff = playbackOnlySupported,
                 onModeSelected = { mode ->
                     AudioSyncSettings.setSamplingMode(mode)
                     showSamplingDialog = false
@@ -125,6 +131,7 @@ internal fun AudioSyncPlaybackSettingsRows(
 @Composable
 private fun AudioSamplingModeDialog(
     selectedMode: AudioSamplingMode,
+    allowOff: Boolean,
     onModeSelected: (AudioSamplingMode) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -137,7 +144,7 @@ private fun AudioSamplingModeDialog(
             modifier = Modifier.fillMaxWidth(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            AudioSamplingMode.entries.filter { !isIos || it != AudioSamplingMode.OFF }.forEach { mode ->
+            AudioSamplingMode.entries.filter { allowOff || it != AudioSamplingMode.OFF }.forEach { mode ->
                 DialogOption(
                     text = audioSamplingLabel(mode),
                     description = audioSamplingDescription(mode),

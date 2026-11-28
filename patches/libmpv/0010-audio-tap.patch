@@ -1,0 +1,847 @@
+diff --git a/audio/audio_tap.c b/audio/audio_tap.c
+new file mode 100644
+index 0000000..2d7b305
+--- /dev/null
++++ b/audio/audio_tap.c
+@@ -0,0 +1,564 @@
++/*
++ * Lock-free SPSC audio tap for passive PCM capture inside libmpv.
++ *
++ * Design invariants:
++ * - Zero overhead when unused (mpctx->audio_tap == NULL).
++ * - Producer (mpv audio core thread) never blocks, never locks, and never
++ *   allocates memory during playback.
++ * - Fixed power-of-two mono float32 ring buffer allocated lazily on create and
++ *   freed once both mpv and the consumer release their atomic reference.
++ * - Pre-gain / pre-mute hook in ao_process(), AO-agnostic.
++ * - Non-PCM passthrough frames and non-1.0x speed frames are safely skipped
++ *   and surfaced via status flags rather than poisoning downstream analysis.
++ */
++
++#include <math.h>
++#include <stdatomic.h>
++#include <stdbool.h>
++#include <stddef.h>
++#include <stdint.h>
++#include <stdlib.h>
++#include <string.h>
++
++#include "audio/aframe.h"
++#include "audio/audio_tap.h"
++#include "audio/chmap.h"
++#include "audio/format.h"
++#include "common/common.h"
++#include "options/options.h"
++#include "player/core.h"
++
++#define MPV_AUDIO_TAP_RING_CHUNKS 128u
++#define MPV_AUDIO_TAP_RING_CHUNKS_MASK (MPV_AUDIO_TAP_RING_CHUNKS - 1u)
++#define MPV_AUDIO_TAP_MAX_SLICE_SAMPLES 4096u
++#define MPV_AUDIO_TAP_CENTER_WEIGHT 0.7f
++#define MPV_AUDIO_TAP_SIDE_WEIGHT 0.15f
++
++struct tap_chunk_desc {
++    uint64_t sample_offset;
++    uint32_t sample_count;
++    uint32_t sample_rate;
++    uint32_t generation;
++    uint32_t reset_generation;
++    uint32_t flags;
++    int64_t pts_us;
++};
++
++struct mpv_audio_tap {
++    float *samples;
++    uint32_t cap_samples;
++    uint32_t cap_mask;
++
++    struct tap_chunk_desc chunks[MPV_AUDIO_TAP_RING_CHUNKS];
++
++    /* Atomic lifecycle & control state */
++    atomic_int refcount;
++    atomic_int closed;
++    atomic_int paused;
++    atomic_uint_fast32_t reset_generation;
++    atomic_uint_fast32_t latest_generation;
++    atomic_uint_fast32_t status_flags;
++
++    /* Lock-free SPSC indices (monotonic 64-bit counters) */
++    atomic_uint_fast64_t sample_write;
++    atomic_uint_fast64_t sample_read;
++    atomic_uint_fast64_t chunk_write;
++    atomic_uint_fast64_t chunk_read;
++
++    /* Producer-only state */
++    uint32_t producer_generation;
++    uint32_t producer_reset_generation;
++    uint32_t last_sample_rate;
++    bool was_paused;
++    bool pending_dropped;
++
++    /* Consumer-only state */
++    uint32_t partial_offset;
++};
++
++static uint32_t round_up_pow2(uint32_t v)
++{
++    if (v <= MPV_AUDIO_TAP_MIN_RING_SAMPLES)
++        return MPV_AUDIO_TAP_MIN_RING_SAMPLES;
++    if (v >= MPV_AUDIO_TAP_MAX_RING_SAMPLES)
++        return MPV_AUDIO_TAP_MAX_RING_SAMPLES;
++    v--;
++    v |= v >> 1;
++    v |= v >> 2;
++    v |= v >> 4;
++    v |= v >> 8;
++    v |= v >> 16;
++    v++;
++    if (v > MPV_AUDIO_TAP_MAX_RING_SAMPLES)
++        return MPV_AUDIO_TAP_MAX_RING_SAMPLES;
++    return v;
++}
++
++static void tap_unref(struct mpv_audio_tap *tap)
++{
++    if (!tap)
++        return;
++    if (atomic_fetch_sub_explicit(&tap->refcount, 1, memory_order_acq_rel) == 1) {
++        free(tap->samples);
++        free(tap);
++    }
++}
++
++static void tap_detach_from_mpctx(struct MPContext *mpctx, bool set_eof)
++{
++    struct mpv_audio_tap *tap = mpctx->audio_tap;
++    if (!tap)
++        return;
++    mpctx->audio_tap = NULL;
++    if (set_eof) {
++        atomic_fetch_or_explicit(&tap->status_flags, MPV_AUDIO_TAP_FLAG_EOF,
++                                 memory_order_release);
++    }
++    tap_unref(tap);
++}
++
++static void tap_bump_generation(struct mpv_audio_tap *tap, bool discard_queued)
++{
++    tap->producer_generation++;
++    if (tap->producer_generation == 0)
++        tap->producer_generation = 1;
++    atomic_store_explicit(&tap->latest_generation, tap->producer_generation,
++                          memory_order_release);
++    if (discard_queued) {
++        tap->producer_reset_generation++;
++        if (tap->producer_reset_generation == 0)
++            tap->producer_reset_generation = 1;
++        atomic_store_explicit(&tap->reset_generation,
++                              tap->producer_reset_generation,
++                              memory_order_release);
++    }
++}
++
++static inline float read_sample_as_float(const uint8_t *ptr, int base_fmt)
++{
++    switch (base_fmt) {
++    case AF_FORMAT_U8: {
++        uint8_t v = *ptr;
++        return ((int)v - 128) * (1.0f / 128.0f);
++    }
++    case AF_FORMAT_S16: {
++        int16_t v;
++        memcpy(&v, ptr, sizeof(v));
++        return (float)v * (1.0f / 32768.0f);
++    }
++    case AF_FORMAT_S32: {
++        int32_t v;
++        memcpy(&v, ptr, sizeof(v));
++        return (float)((double)v * (1.0 / 2147483648.0));
++    }
++    case AF_FORMAT_S64: {
++        int64_t v;
++        memcpy(&v, ptr, sizeof(v));
++        return (float)((double)v * (1.0 / 9223372036854775808.0));
++    }
++    case AF_FORMAT_FLOAT: {
++        float v;
++        memcpy(&v, ptr, sizeof(v));
++        return v;
++    }
++    case AF_FORMAT_DOUBLE: {
++        double v;
++        memcpy(&v, ptr, sizeof(v));
++        return (float)v;
++    }
++    default:
++        return 0.0f;
++    }
++}
++
++static void downmix_slice_to_ring(struct mpv_audio_tap *tap,
++                                  uint64_t dst_offset,
++                                  uint8_t *const *planes,
++                                  int fmt,
++                                  int channels,
++                                  int fl_idx,
++                                  int fr_idx,
++                                  int fc_idx,
++                                  uint32_t src_frame_offset,
++                                  uint32_t frame_count)
++{
++    bool planar = af_fmt_is_planar(fmt);
++    int base_fmt = af_fmt_from_planar(fmt);
++    size_t bps = (size_t)af_fmt_to_bytes(base_fmt);
++    bool use_center_mix = channels >= 3 && fc_idx >= 0 && fl_idx >= 0 && fr_idx >= 0;
++    float inv_channels = 1.0f / (float)channels;
++    uint32_t mask = tap->cap_mask;
++    float *ring = tap->samples;
++
++    if (planar) {
++        for (uint32_t i = 0; i < frame_count; i++) {
++            size_t byte_off = (size_t)(src_frame_offset + i) * bps;
++            float mono;
++            if (use_center_mix) {
++                float fl = read_sample_as_float(planes[fl_idx] + byte_off, base_fmt);
++                float fr = read_sample_as_float(planes[fr_idx] + byte_off, base_fmt);
++                float fc = read_sample_as_float(planes[fc_idx] + byte_off, base_fmt);
++                mono = MPV_AUDIO_TAP_CENTER_WEIGHT * fc +
++                       MPV_AUDIO_TAP_SIDE_WEIGHT * (fl + fr);
++            } else {
++                float sum = 0.0f;
++                for (int c = 0; c < channels; c++)
++                    sum += read_sample_as_float(planes[c] + byte_off, base_fmt);
++                mono = sum * inv_channels;
++            }
++            ring[(dst_offset + i) & mask] = mono;
++        }
++    } else {
++        const uint8_t *base = planes[0];
++        size_t frame_stride = bps * (size_t)channels;
++        for (uint32_t i = 0; i < frame_count; i++) {
++            const uint8_t *frame_ptr = base + (size_t)(src_frame_offset + i) * frame_stride;
++            float mono;
++            if (use_center_mix) {
++                float fl = read_sample_as_float(frame_ptr + (size_t)fl_idx * bps, base_fmt);
++                float fr = read_sample_as_float(frame_ptr + (size_t)fr_idx * bps, base_fmt);
++                float fc = read_sample_as_float(frame_ptr + (size_t)fc_idx * bps, base_fmt);
++                mono = MPV_AUDIO_TAP_CENTER_WEIGHT * fc +
++                       MPV_AUDIO_TAP_SIDE_WEIGHT * (fl + fr);
++            } else {
++                float sum = 0.0f;
++                for (int c = 0; c < channels; c++)
++                    sum += read_sample_as_float(frame_ptr + (size_t)c * bps, base_fmt);
++                mono = sum * inv_channels;
++            }
++            ring[(dst_offset + i) & mask] = mono;
++        }
++    }
++}
++
++uint32_t mpv_audio_tap_api_version(void)
++{
++    return MPV_AUDIO_TAP_API_VERSION;
++}
++
++struct mpv_audio_tap *mp_audio_tap_attach(struct MPContext *mpctx,
++                                          const mpv_audio_tap_config *cfg)
++{
++    if (!mpctx || !cfg)
++        return NULL;
++    if (cfg->struct_size < sizeof(mpv_audio_tap_config))
++        return NULL;
++    if (cfg->api_version != MPV_AUDIO_TAP_API_VERSION)
++        return NULL;
++    if (cfg->flags != 0)
++        return NULL;
++
++    uint32_t requested = cfg->ring_capacity_samples
++        ? cfg->ring_capacity_samples
++        : MPV_AUDIO_TAP_DEFAULT_RING_SAMPLES;
++    uint32_t cap = round_up_pow2(requested);
++
++    struct mpv_audio_tap *tap = calloc(1, sizeof(*tap));
++    if (!tap)
++        return NULL;
++
++    tap->samples = malloc((size_t)cap * sizeof(float));
++    if (!tap->samples) {
++        free(tap);
++        return NULL;
++    }
++
++    tap->cap_samples = cap;
++    tap->cap_mask = cap - 1u;
++    tap->producer_generation = 1;
++    tap->producer_reset_generation = 1;
++
++    atomic_init(&tap->refcount, 2); /* 1 for mpctx, 1 for caller */
++    atomic_init(&tap->closed, 0);
++    atomic_init(&tap->paused, 0);
++    atomic_init(&tap->reset_generation, 1u);
++    atomic_init(&tap->latest_generation, 1u);
++    atomic_init(&tap->status_flags, MPV_AUDIO_TAP_FLAG_NONE);
++    atomic_init(&tap->sample_write, 0);
++    atomic_init(&tap->sample_read, 0);
++    atomic_init(&tap->chunk_write, 0);
++    atomic_init(&tap->chunk_read, 0);
++
++    if (mpctx->audio_tap)
++        tap_detach_from_mpctx(mpctx, true);
++
++    mpctx->audio_tap = tap;
++    return tap;
++}
++
++void mp_audio_tap_reset(struct MPContext *mpctx)
++{
++    struct mpv_audio_tap *tap = mpctx ? mpctx->audio_tap : NULL;
++    if (!tap)
++        return;
++    if (atomic_load_explicit(&tap->closed, memory_order_acquire)) {
++        tap_detach_from_mpctx(mpctx, false);
++        return;
++    }
++    tap_bump_generation(tap, true);
++}
++
++static volatile uintptr_t mp_audio_tap_export_anchor;
++
++void mp_audio_tap_shutdown(struct MPContext *mpctx)
++{
++    static const void *const exports[] = {
++        (const void *)&mpv_audio_tap_api_version,
++        (const void *)&mpv_audio_tap_create,
++        (const void *)&mpv_audio_tap_read,
++        (const void *)&mpv_audio_tap_set_paused,
++        (const void *)&mpv_audio_tap_destroy,
++    };
++    mp_audio_tap_export_anchor = (uintptr_t)exports;
++    if (!mpctx)
++        return;
++    tap_detach_from_mpctx(mpctx, true);
++}
++
++void mp_audio_tap_push(struct MPContext *mpctx, struct mp_aframe *af)
++{
++    struct mpv_audio_tap *tap = mpctx ? mpctx->audio_tap : NULL;
++    if (!tap || !af)
++        return;
++
++    if (atomic_load_explicit(&tap->closed, memory_order_acquire)) {
++        tap_detach_from_mpctx(mpctx, false);
++        return;
++    }
++
++    if (atomic_load_explicit(&tap->paused, memory_order_acquire)) {
++        tap->was_paused = true;
++        return;
++    }
++
++    if (tap->was_paused) {
++        tap->was_paused = false;
++        tap_bump_generation(tap, false);
++    }
++
++    int fmt = mp_aframe_get_format(af);
++    if (!af_fmt_is_pcm(fmt)) {
++        if (!(atomic_load_explicit(&tap->status_flags, memory_order_relaxed) &
++              MPV_AUDIO_TAP_FLAG_NON_PCM))
++        {
++            atomic_fetch_or_explicit(&tap->status_flags, MPV_AUDIO_TAP_FLAG_NON_PCM,
++                                     memory_order_release);
++            tap_bump_generation(tap, false);
++        }
++        return;
++    }
++
++    /* Clear NON_PCM flag once PCM audio resumes (e.g. after BT switch). */
++    if (atomic_load_explicit(&tap->status_flags, memory_order_relaxed) &
++        MPV_AUDIO_TAP_FLAG_NON_PCM)
++    {
++        atomic_fetch_and_explicit(&tap->status_flags, ~MPV_AUDIO_TAP_FLAG_NON_PCM,
++                                  memory_order_release);
++        tap_bump_generation(tap, false);
++    }
++
++    double opt_speed = mpctx->opts ? mpctx->opts->playback_speed : 1.0;
++    double frame_speed = mp_aframe_get_speed(af);
++    if (fabs(opt_speed - 1.0) > 0.01 || fabs(frame_speed - 1.0) > 0.01) {
++        if (!(atomic_load_explicit(&tap->status_flags, memory_order_relaxed) &
++              MPV_AUDIO_TAP_FLAG_SPEED_MISMATCH))
++        {
++            atomic_fetch_or_explicit(&tap->status_flags, MPV_AUDIO_TAP_FLAG_SPEED_MISMATCH,
++                                     memory_order_release);
++            tap_bump_generation(tap, false);
++        }
++        return;
++    }
++
++    if (atomic_load_explicit(&tap->status_flags, memory_order_relaxed) &
++        MPV_AUDIO_TAP_FLAG_SPEED_MISMATCH)
++    {
++        atomic_fetch_and_explicit(&tap->status_flags, ~MPV_AUDIO_TAP_FLAG_SPEED_MISMATCH,
++                                  memory_order_release);
++        tap_bump_generation(tap, false);
++    }
++
++    int sample_count = mp_aframe_get_size(af);
++    int sample_rate = mp_aframe_get_rate(af);
++    int channels = mp_aframe_get_channels(af);
++    int planes = mp_aframe_get_planes(af);
++    double pts = mp_aframe_get_pts(af);
++    if (sample_count <= 0 || sample_rate <= 0 || channels <= 0 || planes <= 0)
++        return;
++    if (pts == MP_NOPTS_VALUE || !isfinite(pts))
++        return;
++
++    uint8_t **data = mp_aframe_get_data_ro(af);
++    if (!data)
++        return;
++    for (int p = 0; p < planes; p++) {
++        if (!data[p])
++            return;
++    }
++
++    if (tap->last_sample_rate != (uint32_t)sample_rate) {
++        if (tap->last_sample_rate != 0)
++            tap_bump_generation(tap, false);
++        tap->last_sample_rate = (uint32_t)sample_rate;
++    }
++
++    int fl_idx = -1, fr_idx = -1, fc_idx = -1;
++    struct mp_chmap chmap = {0};
++    if (mp_aframe_get_chmap(af, &chmap) && chmap.num == channels) {
++        for (int c = 0; c < chmap.num; c++) {
++            if (chmap.speaker[c] == MP_SPEAKER_ID_FL && fl_idx < 0)
++                fl_idx = c;
++            else if (chmap.speaker[c] == MP_SPEAKER_ID_FR && fr_idx < 0)
++                fr_idx = c;
++            else if (chmap.speaker[c] == MP_SPEAKER_ID_FC && fc_idx < 0)
++                fc_idx = c;
++        }
++    }
++
++    int64_t base_pts_us = (int64_t)llround(pts * 1000000.0);
++    uint32_t remaining = (uint32_t)sample_count;
++    uint32_t offset = 0;
++
++    while (remaining > 0) {
++        uint32_t slice = remaining > MPV_AUDIO_TAP_MAX_SLICE_SAMPLES
++            ? MPV_AUDIO_TAP_MAX_SLICE_SAMPLES
++            : remaining;
++
++        uint64_t sw = atomic_load_explicit(&tap->sample_write, memory_order_relaxed);
++        uint64_t sr = atomic_load_explicit(&tap->sample_read, memory_order_acquire);
++        uint64_t cw = atomic_load_explicit(&tap->chunk_write, memory_order_relaxed);
++        uint64_t cr = atomic_load_explicit(&tap->chunk_read, memory_order_acquire);
++
++        uint64_t free_samples = (uint64_t)tap->cap_samples - (sw - sr);
++        uint64_t free_chunks = (uint64_t)MPV_AUDIO_TAP_RING_CHUNKS - (cw - cr);
++
++        if (free_samples < slice || free_chunks == 0) {
++            tap->pending_dropped = true;
++            return;
++        }
++
++        if (tap->pending_dropped) {
++            tap_bump_generation(tap, false);
++        }
++
++        downmix_slice_to_ring(tap, sw, data, fmt, channels,
++                              fl_idx, fr_idx, fc_idx, offset, slice);
++
++        int64_t slice_pts_us = base_pts_us +
++            (int64_t)offset * 1000000LL / (int64_t)sample_rate;
++
++        uint32_t chunk_flags = MPV_AUDIO_TAP_FLAG_NONE;
++        if (tap->pending_dropped) {
++            chunk_flags |= MPV_AUDIO_TAP_FLAG_DROPPED;
++            tap->pending_dropped = false;
++        }
++
++        struct tap_chunk_desc *desc = &tap->chunks[cw & MPV_AUDIO_TAP_RING_CHUNKS_MASK];
++        desc->sample_offset = sw;
++        desc->sample_count = slice;
++        desc->sample_rate = (uint32_t)sample_rate;
++        desc->generation = tap->producer_generation;
++        desc->reset_generation = tap->producer_reset_generation;
++        desc->flags = chunk_flags;
++        desc->pts_us = slice_pts_us;
++
++        atomic_store_explicit(&tap->sample_write, sw + slice, memory_order_relaxed);
++        atomic_store_explicit(&tap->chunk_write, cw + 1, memory_order_release);
++
++        offset += slice;
++        remaining -= slice;
++    }
++}
++
++int mpv_audio_tap_read(mpv_audio_tap *tap,
++                       float *out_samples,
++                       uint32_t max_samples,
++                       mpv_audio_tap_chunk *out_meta)
++{
++    if (!tap || !out_samples || max_samples == 0 || !out_meta)
++        return -1;
++    if (out_meta->struct_size < sizeof(mpv_audio_tap_chunk))
++        return -1;
++
++    uint32_t reset_gen = atomic_load_explicit(&tap->reset_generation,
++                                              memory_order_acquire);
++    uint32_t latest_gen = atomic_load_explicit(&tap->latest_generation,
++                                               memory_order_acquire);
++    uint64_t cw = atomic_load_explicit(&tap->chunk_write, memory_order_acquire);
++    uint64_t cr = atomic_load_explicit(&tap->chunk_read, memory_order_relaxed);
++
++    /* Discard stale pre-seek / pre-reset chunks immediately. */
++    while (cr < cw) {
++        const struct tap_chunk_desc *desc = &tap->chunks[cr & MPV_AUDIO_TAP_RING_CHUNKS_MASK];
++        if (desc->reset_generation >= reset_gen)
++            break;
++        uint64_t next_sr = desc->sample_offset + desc->sample_count;
++        cr++;
++        tap->partial_offset = 0;
++        atomic_store_explicit(&tap->sample_read, next_sr, memory_order_release);
++        atomic_store_explicit(&tap->chunk_read, cr, memory_order_release);
++    }
++
++    uint32_t status = atomic_load_explicit(&tap->status_flags, memory_order_acquire);
++
++    if (cr >= cw) {
++        out_meta->sample_rate = 0;
++        out_meta->sample_count = 0;
++        out_meta->generation = latest_gen;
++        out_meta->pts_us = 0;
++        out_meta->flags = status;
++        out_meta->reserved = 0;
++        return 0;
++    }
++
++    const struct tap_chunk_desc *desc = &tap->chunks[cr & MPV_AUDIO_TAP_RING_CHUNKS_MASK];
++    uint32_t partial = tap->partial_offset;
++    uint32_t avail = desc->sample_count - partial;
++    uint32_t to_copy = avail < max_samples ? avail : max_samples;
++
++    uint64_t start_pos = desc->sample_offset + partial;
++    uint32_t start_idx = (uint32_t)(start_pos & tap->cap_mask);
++    uint32_t first = tap->cap_samples - start_idx;
++    if (first > to_copy)
++        first = to_copy;
++
++    memcpy(out_samples, tap->samples + start_idx, (size_t)first * sizeof(float));
++    if (to_copy > first) {
++        memcpy(out_samples + first, tap->samples,
++               (size_t)(to_copy - first) * sizeof(float));
++    }
++
++    out_meta->sample_rate = desc->sample_rate;
++    out_meta->sample_count = to_copy;
++    out_meta->generation = desc->generation;
++    out_meta->pts_us = desc->pts_us +
++        (int64_t)partial * 1000000LL / (int64_t)desc->sample_rate;
++    out_meta->flags = (partial == 0 ? desc->flags : 0u) | status;
++    out_meta->reserved = 0;
++
++    if (partial + to_copy >= desc->sample_count) {
++        uint64_t next_sr = desc->sample_offset + desc->sample_count;
++        tap->partial_offset = 0;
++        atomic_store_explicit(&tap->sample_read, next_sr, memory_order_release);
++        atomic_store_explicit(&tap->chunk_read, cr + 1, memory_order_release);
++    } else {
++        tap->partial_offset = partial + to_copy;
++    }
++
++    return (int)to_copy;
++}
++
++void mpv_audio_tap_set_paused(mpv_audio_tap *tap, int paused)
++{
++    if (!tap)
++        return;
++    atomic_store_explicit(&tap->paused, paused ? 1 : 0, memory_order_release);
++}
++
++void mpv_audio_tap_destroy(mpv_audio_tap *tap)
++{
++    if (!tap)
++        return;
++    atomic_store_explicit(&tap->closed, 1, memory_order_release);
++    tap_unref(tap);
++}
+diff --git a/audio/audio_tap.h b/audio/audio_tap.h
+new file mode 100644
+index 0000000..c1fc381
+--- /dev/null
++++ b/audio/audio_tap.h
+@@ -0,0 +1,26 @@
++/*
++ * Internal audio tap hooks for libmpv.
++ */
++
++#ifndef MP_AUDIO_TAP_H_
++#define MP_AUDIO_TAP_H_
++
++#include "mpv/audio_tap.h"
++
++struct MPContext;
++struct mp_aframe;
++
++/** Attach a new audio tap to mpctx (caller must hold mpctx->dispatch lock). */
++struct mpv_audio_tap *mp_audio_tap_attach(struct MPContext *mpctx,
++                                          const mpv_audio_tap_config *cfg);
++
++/** Push a decoded audio frame from the audio core thread (lock-free). */
++void mp_audio_tap_push(struct MPContext *mpctx, struct mp_aframe *af);
++
++/** Signal seek, track change, or audio chain reset from the audio core thread. */
++void mp_audio_tap_reset(struct MPContext *mpctx);
++
++/** Detach and mark EOF when mpctx is shutting down. */
++void mp_audio_tap_shutdown(struct MPContext *mpctx);
++
++#endif /* MP_AUDIO_TAP_H_ */
+diff --git a/include/mpv/audio_tap.h b/include/mpv/audio_tap.h
+new file mode 100644
+index 0000000..bdd0254
+--- /dev/null
++++ b/include/mpv/audio_tap.h
+@@ -0,0 +1,115 @@
++/*
++ * Low-overhead audio tap API for libmpv.
++ *
++ * Allows an embedding application to passively read decoded mono PCM audio
++ * frames with media-timeline timestamps from a lock-free SPSC ring buffer
++ * without disturbing audio playback, routing, or volume/mute state.
++ */
++
++#ifndef MPV_CLIENT_API_AUDIO_TAP_H_
++#define MPV_CLIENT_API_AUDIO_TAP_H_
++
++#include <stdint.h>
++#include "client.h"
++
++#ifdef __cplusplus
++extern "C" {
++#endif
++
++#define MPV_AUDIO_TAP_API_VERSION 1u
++#define MPV_AUDIO_TAP_DEFAULT_RING_SAMPLES 65536u
++#define MPV_AUDIO_TAP_MIN_RING_SAMPLES 8192u
++#define MPV_AUDIO_TAP_MAX_RING_SAMPLES 262144u
++
++typedef struct mpv_audio_tap mpv_audio_tap;
++
++enum mpv_audio_tap_flags {
++    MPV_AUDIO_TAP_FLAG_NONE = 0,
++    /** Audio stream is encoded passthrough (e.g. S/PDIF/HDMI bitstream), not PCM. */
++    MPV_AUDIO_TAP_FLAG_NON_PCM = 1u << 0,
++    /** One or more frames were dropped due to ring overflow before this chunk. */
++    MPV_AUDIO_TAP_FLAG_DROPPED = 1u << 1,
++    /** The mpv instance was destroyed or detached from this tap. */
++    MPV_AUDIO_TAP_FLAG_EOF = 1u << 2,
++    /** Playback speed is not 1.0; frames are skipped while time-stretched. */
++    MPV_AUDIO_TAP_FLAG_SPEED_MISMATCH = 1u << 3,
++};
++
++typedef struct mpv_audio_tap_config {
++    /** Must be set to sizeof(mpv_audio_tap_config). */
++    uint32_t struct_size;
++    /** Must be set to MPV_AUDIO_TAP_API_VERSION. */
++    uint32_t api_version;
++    /**
++     * Mono float32 sample capacity (rounded up to a power of two and clamped to
++     * [MPV_AUDIO_TAP_MIN_RING_SAMPLES, MPV_AUDIO_TAP_MAX_RING_SAMPLES]).
++     * Pass 0 for MPV_AUDIO_TAP_DEFAULT_RING_SAMPLES (65536 = 256 KiB).
++     */
++    uint32_t ring_capacity_samples;
++    /** Reserved for future options; must be 0. */
++    uint32_t flags;
++} mpv_audio_tap_config;
++
++typedef struct mpv_audio_tap_chunk {
++    /** Caller must set to sizeof(mpv_audio_tap_chunk). */
++    uint32_t struct_size;
++    /** Sample rate in Hz of the returned mono float32 samples. */
++    uint32_t sample_rate;
++    /** Number of mono float32 samples written to out_samples. */
++    uint32_t sample_count;
++    /** Monotonic counter incremented on seek, reset, track switch, or gap. */
++    uint32_t generation;
++    /** Media-timeline start timestamp in microseconds. */
++    int64_t pts_us;
++    /** Bitmask of enum mpv_audio_tap_flags. */
++    uint32_t flags;
++    /** Reserved; set to 0. */
++    uint32_t reserved;
++} mpv_audio_tap_chunk;
++
++/**
++ * Returns MPV_AUDIO_TAP_API_VERSION. Can be resolved via dlsym() to detect
++ * patched libmpv builds at runtime without linking directly.
++ */
++MPV_EXPORT uint32_t mpv_audio_tap_api_version(void);
++
++/**
++ * Attaches a new audio tap to an initialized mpv_handle and allocates its fixed
++ * ring buffer. Replaces any previously attached tap on the same mpv instance.
++ *
++ * Returns NULL on invalid parameters, uninitialized handle, or OOM.
++ */
++MPV_EXPORT mpv_audio_tap *mpv_audio_tap_create(mpv_handle *ctx,
++                                               const mpv_audio_tap_config *cfg);
++
++/**
++ * Non-blocking read of up to max_samples mono float32 samples from the ring.
++ * Must be called from a single consumer thread.
++ *
++ * Returns:
++ *   > 0: number of samples written to out_samples (also in out_meta->sample_count)
++ *     0: no audio available right now (out_meta->flags still reports status bits)
++ *   < 0: invalid arguments
++ */
++MPV_EXPORT int mpv_audio_tap_read(mpv_audio_tap *tap,
++                                  float *out_samples,
++                                  uint32_t max_samples,
++                                  mpv_audio_tap_chunk *out_meta);
++
++/**
++ * Pauses (paused != 0) or resumes (paused == 0) sample capture without freeing
++ * the tap. While paused, mpv's audio path skips downmix and ring writes.
++ */
++MPV_EXPORT void mpv_audio_tap_set_paused(mpv_audio_tap *tap, int paused);
++
++/**
++ * Releases the caller's reference to the tap. Safe to call before or after
++ * mpv_terminate_destroy().
++ */
++MPV_EXPORT void mpv_audio_tap_destroy(mpv_audio_tap *tap);
++
++#ifdef __cplusplus
++}
++#endif
++
++#endif /* MPV_CLIENT_API_AUDIO_TAP_H_ */
+diff --git a/meson.build b/meson.build
+index fb10be5..36917f5 100644
+--- a/meson.build
++++ b/meson.build
+@@ -56,6 +56,7 @@ features = {
+ sources = files(
+     ## Audio
+     'audio/aframe.c',
++    'audio/audio_tap.c',
+     'audio/chmap.c',
+     'audio/chmap_avchannel.c',
+     'audio/chmap_sel.c',
+@@ -1795,8 +1796,9 @@ if get_option('libmpv')
+     pkg.generate(libmpv, version: client_api_version,
+                  description: 'mpv media player client library')
+ 
+-    headers = ['include/mpv/client.h', 'include/mpv/render.h',
+-               'include/mpv/render_gl.h', 'include/mpv/stream_cb.h']
++    headers = ['include/mpv/audio_tap.h', 'include/mpv/client.h',
++               'include/mpv/render.h', 'include/mpv/render_gl.h',
++               'include/mpv/stream_cb.h']
+     install_headers(headers, subdir: 'mpv')
+ 
+     # Allow projects to build with libmpv by cloning into ./subprojects/mpv
+diff --git a/player/audio.c b/player/audio.c
+index b3e975d..ac6cbb5 100644
+--- a/player/audio.c
++++ b/player/audio.c
+@@ -30,6 +30,7 @@
+ #include "common/common.h"
+ #include "osdep/timer.h"
+ 
++#include "audio/audio_tap.h"
+ #include "audio/format.h"
+ #include "audio/out/ao.h"
+ #include "demux/demux.h"
+@@ -229,6 +230,7 @@ static void ao_chain_reset_state(struct ao_chain *ao_c)
+ 
+ void reset_audio_state(struct MPContext *mpctx)
+ {
++    mp_audio_tap_reset(mpctx);
+     if (mpctx->ao_chain) {
+         ao_chain_reset_state(mpctx->ao_chain);
+         struct track *t = mpctx->ao_chain->track;
+@@ -286,6 +288,7 @@ static void ao_chain_uninit(struct ao_chain *ao_c)
+ 
+ void uninit_audio_chain(struct MPContext *mpctx)
+ {
++    mp_audio_tap_reset(mpctx);
+     if (mpctx->ao_chain) {
+         ao_chain_uninit(mpctx->ao_chain);
+         mpctx->ao_chain = NULL;
+@@ -748,6 +751,9 @@ static void ao_process(struct mp_filter *f)
+             MP_VERBOSE(mpctx, "previous audio still playing; continuing\n");
+         }
+ 
++        if (mpctx->audio_tap)
++            mp_audio_tap_push(mpctx, af);
++
+         mp_pin_in_write(ao_c->queue_filter->pins[0], frame);
+     } else if (frame.type == MP_FRAME_EOF) {
+         MP_VERBOSE(mpctx, "audio filter EOF\n");
+diff --git a/player/client.c b/player/client.c
+index e23b98b..94ee897 100644
+--- a/player/client.c
++++ b/player/client.c
+@@ -43,6 +43,7 @@
+ #include "osdep/io.h"
+ #include "stream/stream.h"
+ 
++#include "audio/audio_tap.h"
+ #include "command.h"
+ #include "core.h"
+ #include "client.h"
+@@ -2245,3 +2246,17 @@ bool mp_streamcb_lookup(struct mpv_global *g, const char *protocol,
+     mp_mutex_unlock(&clients->lock);
+     return found;
+ }
++
++mpv_audio_tap *mpv_audio_tap_create(mpv_handle *ctx,
++                                    const mpv_audio_tap_config *cfg)
++{
++    if (!ctx || !ctx->mpctx || !ctx->mpctx->initialized ||
++        mp_is_shutting_down(ctx->mpctx))
++        return NULL;
++    mp_dispatch_lock(ctx->mpctx->dispatch);
++    mpv_audio_tap *tap = NULL;
++    if (ctx->mpctx->initialized && !mp_is_shutting_down(ctx->mpctx))
++        tap = mp_audio_tap_attach(ctx->mpctx, cfg);
++    mp_dispatch_unlock(ctx->mpctx->dispatch);
++    return tap;
++}
+diff --git a/player/core.h b/player/core.h
+index eb7f508..e1832e3 100644
+--- a/player/core.h
++++ b/player/core.h
+@@ -324,6 +324,7 @@ typedef struct MPContext {
+     struct ao *ao;
+     struct mp_aframe *ao_filter_fmt; // for weak gapless audio check
+     struct ao_chain *ao_chain;
++    struct mpv_audio_tap *audio_tap;
+ 
+     struct vo_chain *vo_chain;
+ 
+diff --git a/player/main.c b/player/main.c
+index 37eb6b1..7985951 100644
+--- a/player/main.c
++++ b/player/main.c
+@@ -59,6 +59,7 @@
+ #include "input/input.h"
+ #include "demux/packet_pool.h"
+ 
++#include "audio/audio_tap.h"
+ #include "audio/out/ao.h"
+ #include "misc/thread_tools.h"
+ #include "sub/osd.h"
+@@ -180,6 +181,7 @@ void mp_destroy(struct MPContext *mpctx)
+     mpctx->ipc_ctx = NULL;
+ 
+     uninit_audio_out(mpctx);
++    mp_audio_tap_shutdown(mpctx);
+     uninit_video_out(mpctx);
+ 
+     // If it's still set here, it's an error.
