@@ -310,7 +310,7 @@ object StreamsRepository {
                             } else persistedFilename
                         }
                         val bingeAndFilename = allStreams.firstOrNull { stream ->
-                            stream.behaviorHints.bingeGroup == persistedBingeGroup &&
+                            stream.effectiveBingeGroup == persistedBingeGroup &&
                                 FilenameEpisodeMatcher.matches(stream.behaviorHints.filename, nextFilename)
                         }
                         if (bingeAndFilename != null) {
@@ -321,7 +321,7 @@ object StreamsRepository {
                     // InfoHash match (fallback when filename didn't match or was null)
                     if (persistedInfoHash != null) {
                         val bingeAndInfoHash = allStreams.firstOrNull { stream ->
-                            stream.behaviorHints.bingeGroup == persistedBingeGroup &&
+                            stream.effectiveBingeGroup == persistedBingeGroup &&
                                 stream.infoHash?.equals(persistedInfoHash, ignoreCase = true) == true
                         }
                         if (bingeAndInfoHash != null) {
