@@ -739,7 +739,9 @@ fun MetaDetailsScreen(
                 var trailerRequestToken by remember(meta.id) { mutableIntStateOf(0) }
                 var isLeavingDetails by remember(meta.id) { mutableStateOf(false) }
                 val heroTrailerCandidate = remember(meta.trailers) {
-                    selectHeroTrailer(meta.trailers)
+                    selectHeroTrailer(
+                        meta.trailers.filter { AppFeaturePolicy.youTubeTrailerPlaybackEnabled || it.url != null },
+                    )
                 }
                 val heroTrailerPlaybackEnabled = AppFeaturePolicy.heroTrailerPlaybackSupported &&
                     inAppTrailerPlaybackEnabled &&
@@ -760,7 +762,9 @@ fun MetaDetailsScreen(
                     if (!deferredMetaWorkAllowed || !heroTrailerPlaybackEnabled || heroTrailerCandidate == null) {
                         return@LaunchedEffect
                     }
-                    val resolvedSource = runCatching {
+                    val resolvedSource = heroTrailerCandidate.url?.let { url ->
+                        TrailerPlaybackSource(videoUrl = url)
+                    } ?: runCatching {
                         TrailerPlaybackResolver.resolveFromYouTubeUrl(heroTrailerCandidate.youtubePlaybackUrl())
                     }.getOrNull()
                     if (resolvedSource == null) {
@@ -778,8 +782,14 @@ fun MetaDetailsScreen(
                 val resolveTrailer: (MetaTrailer) -> Unit = remember(meta.id, inAppTrailerPlaybackEnabled, uriHandler) {
                     { trailer ->
                         val youtubeUrl = trailer.youtubePlaybackUrl()
-                        if (!inAppTrailerPlaybackEnabled) {
+                        if (!inAppTrailerPlaybackEnabled || (trailer.url == null && !AppFeaturePolicy.youTubeTrailerPlaybackEnabled)) {
                             runCatching { uriHandler.openUri(youtubeUrl) }
+                        } else if (trailer.url != null) {
+                            selectedTrailer = trailer
+                            trailerPlaybackSource = TrailerPlaybackSource(videoUrl = trailer.url)
+                            trailerErrorMessage = null
+                            trailerLoading = false
+                            trailerRequestToken += 1
                         } else {
                             selectedTrailer = trailer
                             trailerPlaybackSource = null
@@ -2421,6 +2431,7 @@ private fun ConfiguredMetaSections(
                         onTrailerClick = onTrailerClick,
                         showHeader = showHeader,
                         horizontalScrollPadding = horizontalScrollPadding,
+                        fallbackThumbnail = meta.background ?: meta.poster,
                     )
                 }
             }

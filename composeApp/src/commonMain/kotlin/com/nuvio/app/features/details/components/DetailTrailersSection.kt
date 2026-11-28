@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.build.AppFeaturePolicy
 import com.nuvio.app.core.ui.Menu
 import com.nuvio.app.core.ui.MenuItem
 import com.nuvio.app.core.ui.NuvioCardDepthSurface
@@ -58,13 +59,19 @@ fun DetailTrailersSection(
     modifier: Modifier = Modifier,
     showHeader: Boolean = true,
     horizontalScrollPadding: Dp = 0.dp,
+    fallbackThumbnail: String? = null,
 ) {
     if (trailers.isEmpty()) return
 
     val trailerLabel = stringResource(Res.string.detail_tab_trailer)
     val grouped = remember(trailers) {
+        val orderedTrailers = if (AppFeaturePolicy.youTubeTrailerPlaybackEnabled) {
+            trailers
+        } else {
+            trailers.sortedByDescending { it.url != null }
+        }
         linkedMapOf<String, MutableList<MetaTrailer>>().apply {
-            trailers.forEach { trailer ->
+            orderedTrailers.forEach { trailer ->
                 val category = trailer.type.ifBlank { trailerLabel }
                 getOrPut(category) { mutableListOf() }.add(trailer)
             }
@@ -173,6 +180,7 @@ fun DetailTrailersSection(
                 ) { _, trailer ->
                     TrailerCard(
                         trailer = trailer,
+                        fallbackThumbnail = fallbackThumbnail,
                         cardWidth = sizing.cardWidth,
                         cornerRadius = sizing.cardRadius,
                         titleFontSize = sizing.titleFontSize,
@@ -188,6 +196,7 @@ fun DetailTrailersSection(
 @Composable
 private fun TrailerCard(
     trailer: MetaTrailer,
+    fallbackThumbnail: String?,
     cardWidth: androidx.compose.ui.unit.Dp,
     cornerRadius: androidx.compose.ui.unit.Dp,
     titleFontSize: androidx.compose.ui.unit.TextUnit,
@@ -209,7 +218,11 @@ private fun TrailerCard(
                 .clickable(onClick = onClick),
         ) {
             AsyncImage(
-                model = "https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg",
+                model = if (trailer.url != null) {
+                    trailer.thumbnail ?: fallbackThumbnail
+                } else {
+                    "https://img.youtube.com/vi/${trailer.key}/hqdefault.jpg"
+                },
                 contentDescription = trailer.displayName ?: trailer.name,
                 modifier = Modifier
                     .fillMaxWidth()

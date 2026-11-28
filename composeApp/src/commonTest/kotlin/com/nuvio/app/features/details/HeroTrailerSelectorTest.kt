@@ -48,6 +48,26 @@ class HeroTrailerSelectorTest {
     }
 
     @Test
+    fun `prefers a direct url trailer over youtube trailers`() {
+        val trailers = listOf(
+            trailer(id = "official", type = "Trailer", official = true),
+            trailer(id = "direct", site = "Direct", url = "https://cdn.example/trailer.mp4"),
+        )
+
+        assertEquals("direct", selectHeroTrailer(trailers)?.id)
+    }
+
+    @Test
+    fun `prefers a tmdb trailer over a direct url trailer`() {
+        val trailers = listOf(
+            trailer(id = "direct", site = "Direct", url = "https://cdn.example/trailer.mp4"),
+            trailer(id = "tmdb", type = "Teaser", fromTmdb = true),
+        )
+
+        assertEquals("tmdb", selectHeroTrailer(trailers)?.id)
+    }
+
+    @Test
     fun `returns null for empty or unsupported trailer lists`() {
         assertNull(selectHeroTrailer(emptyList()))
         assertNull(selectHeroTrailer(listOf(trailer(id = "blank", key = ""))))
@@ -62,6 +82,8 @@ class HeroTrailerSelectorTest {
         official: Boolean = false,
         publishedAt: String? = null,
         seasonNumber: Int? = null,
+        url: String? = null,
+        fromTmdb: Boolean = false,
     ): MetaTrailer =
         MetaTrailer(
             id = id,
@@ -72,5 +94,7 @@ class HeroTrailerSelectorTest {
             official = official,
             publishedAt = publishedAt,
             seasonNumber = seasonNumber,
+            url = url,
+            fromTmdb = fromTmdb,
         )
 }

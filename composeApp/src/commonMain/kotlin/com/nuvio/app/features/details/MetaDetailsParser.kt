@@ -295,14 +295,61 @@ internal object MetaDetailsParser {
         }.toMap()
     }
 
-    private fun JsonObject.trailers(): List<MetaTrailer> =
+    private fun JsonObject.trailers(): List<MetaTrailer> {
+        val streamNamesByYouTubeKey = array("trailerStreams")
+            .mapNotNull { element ->
+                val stream = element as? JsonObject ?: return@mapNotNull null
+                val ytId = stream.string("ytId")?.trim()?.takeIf(String::isNotBlank) ?: return@mapNotNull null
+                val name = listOf("title", "name", "description")
+                    .firstNotNullOfOrNull { field -> stream.string(field)?.trim()?.takeIf(String::isNotBlank) }
+                    ?: return@mapNotNull null
+                ytId to name
+            }
+            .distinctBy { it.first }
+            .toMap()
+        val legacy = legacyTrailers(streamNamesByYouTubeKey)
+        val seenYouTubeKeys = legacy.filter { it.url == null }.mapTo(mutableSetOf()) { it.key }
+        val seenUrls = legacy.mapNotNullTo(mutableSetOf()) { it.url }
+        val fromStreams = array("trailerStreams").mapNotNull { element ->
+            val stream = element as? JsonObject ?: return@mapNotNull null
+            val name = listOf("title", "name", "description")
+                .firstNotNullOfOrNull { field -> stream.string(field)?.trim()?.takeIf(String::isNotBlank) }
+            val thumbnail = stream.string("thumbnail")?.trim()?.takeIf(String::isNotBlank)
+            val ytId = stream.string("ytId")?.trim()?.takeIf(String::isNotBlank)
+            if (ytId != null) {
+                if (!seenYouTubeKeys.add(ytId)) return@mapNotNull null
+                return@mapNotNull MetaTrailer(
+                    id = ytId,
+                    key = ytId,
+                    name = name ?: runBlocking { getString(Res.string.generic_trailer) },
+                    site = "YouTube",
+                    thumbnail = thumbnail,
+                )
+            }
+            val url = stream.string("url")?.trim()
+                ?.takeIf { it.startsWith("https://", ignoreCase = true) || it.startsWith("http://", ignoreCase = true) }
+                ?: return@mapNotNull null
+            if (!seenUrls.add(url)) return@mapNotNull null
+            MetaTrailer(
+                id = url,
+                key = url,
+                name = name ?: runBlocking { getString(Res.string.generic_trailer) },
+                site = "Direct",
+                url = url,
+                thumbnail = thumbnail,
+            )
+        }
+        return (legacy + fromStreams).sortedByDescending { it.url != null }
+    }
+
+    private fun JsonObject.legacyTrailers(streamNamesByYouTubeKey: Map<String, String>): List<MetaTrailer> =
         array("trailers").mapNotNull { element ->
             val trailer = element as? JsonObject ?: return@mapNotNull null
             val key = trailer.string("key")
                 ?: trailer.string("source")
                 ?: trailer.string("ytId")
                 ?: trailer.string("ytid")
-                ?: return@mapNotNull null
+                ?: return@mapNotNull trailer.directUrlTrailer()
 
             val normalizedKey = key.trim()
             if (normalizedKey.isEmpty()) return@mapNotNull null
@@ -310,7 +357,9 @@ internal object MetaDetailsParser {
             MetaTrailer(
                 id = trailer.string("id")?.takeIf(String::isNotBlank) ?: normalizedKey,
                 key = normalizedKey,
-                name = trailer.string("name")?.takeIf(String::isNotBlank) ?: runBlocking { getString(Res.string.generic_trailer) },
+                name = trailer.string("name")?.takeIf(String::isNotBlank)
+                    ?: streamNamesByYouTubeKey[normalizedKey]
+                    ?: runBlocking { getString(Res.string.generic_trailer) },
                 site = trailer.string("site")?.takeIf(String::isNotBlank) ?: "YouTube",
                 size = trailer.int("size"),
                 type = trailer.string("type")?.takeIf(String::isNotBlank) ?: runBlocking { getString(Res.string.generic_trailer) },
@@ -320,6 +369,23 @@ internal object MetaDetailsParser {
                 displayName = trailer.string("displayName")?.takeIf(String::isNotBlank),
             )
         }
+
+    private fun JsonObject.directUrlTrailer(): MetaTrailer? {
+        val url = string("url")?.trim()
+            ?.takeIf { it.startsWith("https://", ignoreCase = true) || it.startsWith("http://", ignoreCase = true) }
+            ?: return null
+        val name = listOf("title", "name", "description")
+            .firstNotNullOfOrNull { field -> string(field)?.trim()?.takeIf(String::isNotBlank) }
+        return MetaTrailer(
+            id = url,
+            key = url,
+            name = name ?: runBlocking { getString(Res.string.generic_trailer) },
+            site = "Direct",
+            type = string("type")?.takeIf(String::isNotBlank) ?: "Trailer",
+            url = url,
+            thumbnail = string("thumbnail")?.trim()?.takeIf(String::isNotBlank),
+        )
+    }
 
     private fun JsonObject.embeddedStreams(): List<StreamItem> {
         val arr = this["streams"] as? JsonArray ?: return emptyList()

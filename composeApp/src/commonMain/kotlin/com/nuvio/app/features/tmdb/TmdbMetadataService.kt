@@ -921,7 +921,7 @@ object TmdbMetadataService {
         }
 
         if (enrichment != null && settings.useTrailers && enrichment.trailers.isNotEmpty()) {
-            updated = updated.copy(trailers = enrichment.trailers)
+            updated = updated.copy(trailers = (enrichment.trailers + updated.trailers).distinctBy { it.key })
         }
 
         return updated
@@ -1908,6 +1908,7 @@ private fun TmdbVideoResult.toMetaTrailer(
         seasonNumber = seasonNumber,
         displayName = displayName,
         iso6391 = iso6391?.trim()?.takeIf { it.isNotBlank() },
+        fromTmdb = true,
     )
 }
 
