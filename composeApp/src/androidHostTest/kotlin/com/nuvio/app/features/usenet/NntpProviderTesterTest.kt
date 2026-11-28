@@ -16,24 +16,24 @@ class NntpProviderTesterTest {
         val port get() = server.localPort
         val commands: MutableList<String> = Collections.synchronizedList(mutableListOf())
 
-        init {
-            thread(isDaemon = true) {
-                runCatching {
-                    server.accept().use { socket ->
-                        val input = socket.getInputStream().bufferedReader()
-                        val output = socket.getOutputStream()
-                        output.write("$greeting\r\n".toByteArray()); output.flush()
-                        while (true) {
-                            val line = input.readLine() ?: break
-                            commands += line
-                            val reply = replies.entries.firstOrNull { line.startsWith(it.key) }?.value ?: "205 bye"
-                            output.write("$reply\r\n".toByteArray()); output.flush()
-                            if (line == "QUIT") break
-                        }
+        private val worker = thread(isDaemon = true) {
+            runCatching {
+                server.accept().use { socket ->
+                    val input = socket.getInputStream().bufferedReader()
+                    val output = socket.getOutputStream()
+                    output.write("$greeting\r\n".toByteArray()); output.flush()
+                    while (true) {
+                        val line = input.readLine() ?: break
+                        commands += line
+                        val reply = replies.entries.firstOrNull { line.startsWith(it.key) }?.value ?: "205 bye"
+                        output.write("$reply\r\n".toByteArray()); output.flush()
+                        if (line == "QUIT") break
                     }
                 }
             }
         }
+
+        fun awaitSession() = worker.join(5_000)
 
         override fun close() = server.close()
     }
@@ -46,6 +46,7 @@ class NntpProviderTesterTest {
     @Test fun `signs in and quits`() = runBlocking {
         FakeNntp("200 welcome", auth).use { server ->
             assertEquals(UsenetProviderTestResult.SUCCESS, NntpProviderTester().test(provider(server.port), allowPrivateNetwork = true))
+            server.awaitSession()
             assertEquals(listOf("AUTHINFO USER user", "AUTHINFO PASS pass", "QUIT"), server.commands.toList())
         }
     }
@@ -84,6 +85,7 @@ class NntpProviderTesterTest {
             val tester = NntpProviderTester { addresses }
             assertEquals(UsenetProviderTestResult.SUCCESS,
                 tester.test(provider(server.port).copy(host = "news.example.com"), allowPrivateNetwork = true))
+            server.awaitSession()
             assertEquals(listOf("AUTHINFO USER user", "AUTHINFO PASS pass", "QUIT"), server.commands.toList())
         }
     }
