@@ -3,6 +3,8 @@ package com.nuvio.app.features.plugins
 import co.touchlab.kermit.Logger
 import com.nuvio.app.core.network.SupabaseProvider
 import com.nuvio.app.features.addons.httpGetText
+import com.nuvio.app.features.profiles.NuvioProfile
+import com.nuvio.app.features.profiles.ProfilePreload
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.tmdb.TmdbService
 import com.nuvio.app.features.plugins.runtime.PluginRuntime
@@ -77,6 +79,8 @@ actual object PluginRepository {
 
     private var initialized = false
     private var currentProfileId = 1
+    private val statePreload = ProfilePreload<LoadedPluginState>()
+    private var preloadedState: LoadedPluginState? = null
     private val activeRefreshJobs = mutableMapOf<String, Job>()
     private val persistenceGeneration = atomic(0L)
     private val persistenceRevision = atomic(0L)
@@ -98,13 +102,22 @@ actual object PluginRepository {
         }
     }
 
+    actual suspend fun preload(profileId: Int) {
+        val profile = ProfileRepository.state.value.profiles.firstOrNull { it.profileIndex == profileId }
+        val effectiveProfileId = effectiveProfileId(profile, profileId)
+        val loadedState = withContext(Dispatchers.Default) { loadStateAsUiState(effectiveProfileId) }
+        statePreload.put(effectiveProfileId, loadedState)
+    }
+
     actual fun onProfileChanged(profileId: Int) {
         val effectiveProfileId = resolveEffectiveProfileId(profileId)
+        val preloaded = statePreload.take(effectiveProfileId)
         if (effectiveProfileId == currentProfileId && initialized) return
 
         cancelActiveRefreshes()
         currentProfileId = effectiveProfileId
         initialized = false
+        preloadedState = preloaded
         _uiState.value = PluginsUiState()
     }
 
@@ -113,6 +126,7 @@ actual object PluginRepository {
         persistenceGeneration.incrementAndGet()
         currentProfileId = 1
         initialized = false
+        preloadedState = null
         _uiState.value = PluginsUiState()
     }
 
@@ -591,8 +605,10 @@ actual object PluginRepository {
             cancelActiveRefreshes()
         }
 
+        val preloaded = preloadedState.takeIf { currentProfileId == profileId }
+        preloadedState = null
         currentProfileId = profileId
-        val loadedState = loadStateAsUiState(profileId)
+        val loadedState = preloaded ?: loadStateAsUiState(profileId)
         _uiState.value = loadedState.state
         initialized = true
         if (loadedState.requiresMigration) persist()
@@ -660,8 +676,9 @@ actual object PluginRepository {
         return if (query.isEmpty()) manifestPath else "$manifestPath?$query"
     }
 
-    private fun resolveEffectiveProfileId(profileId: Int): Int {
-        val active = ProfileRepository.state.value.activeProfile
-        return if (active != null && !active.id.isBlank() && active.usesPrimaryPlugins) 1 else profileId
-    }
+    private fun resolveEffectiveProfileId(profileId: Int): Int =
+        effectiveProfileId(ProfileRepository.state.value.activeProfile, profileId)
+
+    private fun effectiveProfileId(profile: NuvioProfile?, profileId: Int): Int =
+        if (profile != null && !profile.id.isBlank() && profile.usesPrimaryPlugins) 1 else profileId
 }

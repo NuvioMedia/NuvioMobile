@@ -47,9 +47,13 @@ object HomeRepository {
     private var lastPublishedCatalogHeroEmpty: Boolean = true
     private var lastErrorMessage: String? = null
 
-    fun refresh(addons: List<ManagedAddon>, force: Boolean = false) {
+    fun refresh(
+        addons: List<ManagedAddon>,
+        force: Boolean = false,
+        definitions: List<HomeCatalogDefinition>? = null,
+    ) {
         val activeAddons = addons.enabledAddons()
-        val requests = buildHomeCatalogDefinitions(activeAddons)
+        val requests = definitions ?: buildHomeCatalogDefinitions(activeAddons)
         currentDefinitions = requests
         val requestCacheKeys = requests.mapTo(mutableSetOf(), HomeCatalogDefinition::cacheKey)
         cachedSections = cachedSections.filterKeys(requestCacheKeys::contains)

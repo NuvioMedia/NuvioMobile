@@ -14,6 +14,8 @@ actual object PluginRepository {
 
     actual fun initialize() = Unit
 
+    actual suspend fun preload(profileId: Int) = Unit
+
     actual fun onProfileChanged(profileId: Int) = Unit
 
     actual fun clearLocalState() = Unit

@@ -1,5 +1,7 @@
 package com.nuvio.app.features.profiles
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -13,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
+import com.nuvio.app.core.ui.NuvioTokens
 import com.nuvio.app.core.ui.ProfileMeshBackground
 import com.nuvio.app.features.membership.MemberAccessRepository
 import com.nuvio.app.features.membership.ProfileBackgroundRepository
@@ -62,23 +65,29 @@ fun ProfileBackgroundBackdrop(
             null -> null
         }
 
-        if (backgroundModel == null) {
-            ProfileMeshBackground(
-                profileColor = profileColor,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            AsyncImage(
-                model = backgroundModel,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Crop,
-            )
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.28f)),
-            )
+        ProfileMeshBackground(
+            profileColor = profileColor,
+            modifier = Modifier.fillMaxSize(),
+        )
+        Crossfade(
+            targetState = backgroundModel,
+            animationSpec = tween(NuvioTokens.Motion.slowMillis),
+            modifier = Modifier.fillMaxSize(),
+            label = "profile_background",
+        ) { model ->
+            if (model != null) {
+                AsyncImage(
+                    model = model,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.28f)),
+                )
+            }
         }
     }
 }

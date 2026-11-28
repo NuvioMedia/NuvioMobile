@@ -10,6 +10,7 @@ import com.nuvio.app.features.addons.AddonLibraryAction
 import com.nuvio.app.features.watchprogress.buildPlaybackVideoId
 import com.nuvio.app.features.details.MetaDetails
 import com.nuvio.app.features.details.MetaVideo
+import com.nuvio.app.features.profiles.ProfilePreload
 import com.nuvio.app.features.profiles.ProfileRepository
 import com.nuvio.app.features.servers.ServerWatched
 import com.nuvio.app.features.tracking.TrackingProviderId
@@ -36,6 +37,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -135,6 +137,7 @@ object WatchedRepository {
         ignoreUnknownKeys = true
         encodeDefaults = false
     }
+    private val payloadPreload = ProfilePreload<StoredWatchedPayload>()
 
     private val _uiState = MutableStateFlow(WatchedUiState())
     val uiState: StateFlow<WatchedUiState> = _uiState.asStateFlow()
@@ -177,9 +180,15 @@ object WatchedRepository {
         startExtraKeysObserverIfNeeded()
     }
 
+    suspend fun preload(profileId: Int) {
+        val payload = withContext(Dispatchers.Default) { readStoredPayload(profileId) } ?: return
+        payloadPreload.put(profileId, payload)
+    }
+
     fun onProfileChanged(profileId: Int) {
+        val preloaded = payloadPreload.take(profileId)
         if (profileId == currentProfileId && hasLoaded) return
-        loadFromDisk(profileId)
+        loadFromDisk(profileId, preloaded)
     }
 
     fun clearLocalState() {
@@ -217,7 +226,19 @@ object WatchedRepository {
         _uiState.value = WatchedUiState()
     }
 
-    private fun loadFromDisk(profileId: Int) {
+    private fun readStoredPayload(profileId: Int): StoredWatchedPayload? {
+        val payload = WatchedStorage.loadPayload(profileId).orEmpty().trim()
+        if (payload.isEmpty()) return null
+        if (!shouldRestoreWatchedPayload(payload.length)) {
+            WatchedStorage.savePayload(profileId, "")
+            return StoredWatchedPayload()
+        }
+        return runCatching {
+            json.decodeFromString<StoredWatchedPayload>(payload)
+        }.getOrDefault(StoredWatchedPayload())
+    }
+
+    private fun loadFromDisk(profileId: Int, preloaded: StoredWatchedPayload? = null) {
         currentProfileId = profileId
         profileGeneration += 1L
         activeSource = WatchProgressSource.NUVIO_SYNC
@@ -238,16 +259,8 @@ object WatchedRepository {
         nuvioHasLoadedRemote = false
         providersLoadedFromRemote.clear()
 
-        val payload = WatchedStorage.loadPayload(profileId).orEmpty().trim()
-        if (payload.isNotEmpty()) {
-            val storedPayload = if (shouldRestoreWatchedPayload(payload.length)) {
-                runCatching {
-                    json.decodeFromString<StoredWatchedPayload>(payload)
-                }.getOrDefault(StoredWatchedPayload())
-            } else {
-                WatchedStorage.savePayload(profileId, "")
-                StoredWatchedPayload()
-            }
+        val storedPayload = preloaded ?: readStoredPayload(profileId)
+        if (storedPayload != null) {
             lastSuccessfulPushEpochMs = storedPayload.lastSuccessfulPushEpochMs
             deltaCursorEventId = storedPayload.deltaCursorEventId
             deltaInitialized = storedPayload.deltaInitialized
