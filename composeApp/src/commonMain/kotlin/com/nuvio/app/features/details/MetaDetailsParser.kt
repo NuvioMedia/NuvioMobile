@@ -252,8 +252,24 @@ internal object MetaDetailsParser {
                 runtime = parseRuntimeMinutes((video["runtime"] as? JsonPrimitive)?.contentOrNull),
                 rating = video.string("rating")?.trim()?.toDoubleOrNull()?.takeIf { it > 0.0 },
                 streams = video.embeddedStreams(),
+                // Anime catalogs number episodes their own way and give the IMDb id and numbering
+                // beside them. Read leniently, so one addon's unusual form cannot fail the whole meta.
+                imdbId = (video["imdb_id"] as? JsonPrimitive)?.takeIf { it.isString }?.content?.trim()
+                    ?.takeIf { IMDB_ID.matches(it) },
+                imdbSeason = video.wholeNumber("imdbSeason"),
+                imdbEpisode = video.wholeNumber("imdbEpisode"),
             )
         }
+
+    private val IMDB_ID = Regex("tt\\d+")
+
+    /** A whole number sent as a number or as text; null for anything else. */
+    private fun JsonObject.wholeNumber(name: String): Int? {
+        val value = this[name] as? JsonPrimitive ?: return null
+        val text = value.contentOrNull?.trim() ?: return null
+        if (value.isString) return text.toIntOrNull()?.takeIf { it >= 0 }
+        return text.toDoubleOrNull()?.takeIf { it % 1.0 == 0.0 && it >= 0.0 && it <= Int.MAX_VALUE }?.toInt()
+    }
 
     private fun JsonObject.seasonPosters(videos: List<MetaVideo>): Map<Int, String> {
         val appExtras = this["app_extras"] as? JsonObject ?: return emptyMap()

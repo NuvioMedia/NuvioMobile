@@ -1,0 +1,179 @@
+package com.nuvio.app.features.usenet
+
+import com.nuvio.app.features.streams.AddonStreamGroup
+import com.nuvio.app.features.streams.StreamItem
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
+
+enum class UsenetProviderTestResult { SUCCESS, UNREACHABLE, TLS, AUTH, REFUSED, PRIVATE_NETWORK, INVALID }
+
+/** Why the last request to an indexer failed. Categories only: raw errors could echo keys. */
+@kotlinx.serialization.Serializable
+enum class UsenetIndexerProblem { AUTH, UNREACHABLE, RESPONSE }
+
+/**
+ * What settings show for an indexer: a limit pause, the last failure, and the API hits and
+ * grabs it reported left for today, when it reports them.
+ */
+data class UsenetIndexerStatus(
+    val pausedUntil: Long = 0,
+    val problem: UsenetIndexerProblem? = null,
+    val apiHitsLeft: Int? = null,
+    val grabsLeft: Int? = null,
+    /** When the indexer reported what is left. */
+    val leftAt: Long = 0,
+)
+
+/** One delivery of a built-in search: the group as it stands now, or an indexer's failure. */
+data class UsenetSearchUpdate(
+    val group: AddonStreamGroup? = null,
+    val failure: String? = null,
+)
+
+/** What a failed open says about the next attempt: another release, another provider, or nothing. */
+enum class UsenetFailureScope {
+    /** This release; other releases may play. */
+    SOURCE,
+    /** The release's provider accounts; releases read from other providers may play. */
+    PROVIDER,
+    /** The engine itself; no other release can play now. */
+    ENGINE,
+}
+
+/** Why preparing a Usenet stream failed, as the engine and the app classify it. */
+class UsenetPlaybackException(
+    message: String,
+    /** The engine's failure kind, such as "missing-article", when it sent one. */
+    val failure: String? = null,
+    val scope: UsenetFailureScope = UsenetFailureScope.SOURCE,
+) : Exception(message)
+
+/**
+ * What runs only where the Usenet engine exists: credential storage, indexer searches, provider
+ * tests and the engine itself. Android launches the engine as a child process; iOS has none.
+ */
+internal expect object UsenetPlatform {
+    val isSupported: Boolean
+
+    /** Decrypts the profile's sources; throws when the device keystore cannot read them. */
+    fun loadSources(profileId: Int): UsenetSourceConfiguration
+
+    /** Validates and stores the profile's sources; throws [IllegalArgumentException] with the reason. */
+    fun saveSources(profileId: Int, value: UsenetSourceConfiguration)
+
+    fun removeProfile(profileId: Int)
+
+    /** Removes every profile's sources and the device-local search state, for an account reset. */
+    fun clearAll()
+
+    fun loadEngineSettings(): UsenetConfiguration
+
+    fun saveEngineSettings(value: UsenetConfiguration)
+
+    suspend fun testProvider(provider: UsenetProvider, allowPrivateNetwork: Boolean): UsenetProviderTestResult
+
+    /** Live capabilities request and a one-result search; false on any failure. */
+    suspend fun testIndexer(indexer: UsenetIndexer): Boolean
+
+    /**
+     * Measures [provider]'s connection limit and the port and connection allowance that download
+     * fastest, with real test articles: often more than 1 GB of data, up to about 4 GB on a fast line,
+     * as each of its steps may read up to 250 MB. Cancelling stops it and signs every
+     * connection out. [pipeline] is the engine's requests in flight per connection.
+     */
+    suspend fun tuneProvider(
+        provider: UsenetProvider,
+        allowPrivateNetwork: Boolean,
+        pipeline: Int,
+        onProgress: (TuneProgress) -> Unit,
+    ): TuneOutcome
+
+    /** Increments whenever an indexer status may have changed. */
+    val indexerStatusChanges: StateFlow<Int>
+
+    fun indexerStatus(indexer: UsenetIndexer): UsenetIndexerStatus
+
+    /**
+     * Searches every enabled indexer; nothing when [config] is not ready or the type is not searched.
+     * [contentId] is the title's own id, its meta's, when known.
+     */
+    fun search(
+        config: UsenetSourceConfiguration,
+        type: String,
+        videoId: String,
+        season: Int?,
+        episode: Int?,
+        groupName: String,
+        contentId: String?,
+    ): Flow<UsenetSearchUpdate>
+
+    /** Increments when a release's outcome is remembered, so shown results can be arranged again. */
+    val outcomeChanges: StateFlow<Int>
+
+    /** Labels and orders the built-in group by how its releases last went; other groups are unchanged. */
+    fun arrangeOutcomes(groups: List<AddonStreamGroup>, availableFirst: Boolean): List<AddonStreamGroup>
+
+    /** Opens [stream] in the engine; the returned stream plays from the engine's local URL. */
+    suspend fun prepare(stream: StreamItem, season: Int?, episode: Int?, profileId: Int): StreamItem
+
+    /** Ends the engine session that plays [url], if it still owns it. */
+    fun release(url: String?)
+
+    /**
+     * The built-in release Reuse Last Link kept, with today's providers and indexer key; null when
+     * it cannot open now or has failed for good since.
+     */
+    fun restoredStream(nzbUrl: String, name: String, title: String?, size: Long?, publishedAt: Long?, series: Boolean): StreamItem?
+
+    /** Opens [stream] ahead of its Play when the user turned prefetching on; [owner] is the asking screen. */
+    fun prefetch(owner: Any, stream: StreamItem, season: Int?, episode: Int?, profileId: Int)
+
+    /** Drops the session [owner] prefetched and nobody played. */
+    fun cancelPrefetch(owner: Any)
+
+    fun isEngineUrl(url: String?): Boolean
+
+    /** The release behind the engine URL [url] showed its first frame. */
+    fun onFirstFrame(url: String?)
+
+    /** The player reached startup step [name] with the engine URL [url], for the startup diagnostics. */
+    fun markStartup(url: String, name: String)
+
+    /** A measured [value] in milliseconds for the startup of the engine URL [url]. */
+    fun markStartupValue(url: String, name: String, value: Long)
+
+    /** The last startup's timings as NuvioTV's JSON report; empty until a Usenet stream showed a frame. */
+    val lastStartupReport: StateFlow<String>
+
+    /** Increments whenever a source statistic or a statistics filter changes. */
+    val statsRevision: StateFlow<Int>
+
+    /** The statistics of these sources for the chosen period and content. Reads storage: call it off the main thread. */
+    fun stats(indexers: List<UsenetIndexer>, providers: List<UsenetProvider>): UsenetStatsSnapshot
+
+    fun setStatsPeriod(period: StatsPeriod)
+
+    fun setStatsContent(content: StatsContent)
+
+    /** Forgets every source's counts; the chosen filters stay. */
+    fun resetStats()
+
+    /** Playback of the engine URL [url] failed with the engine's [failure] kind. */
+    fun onPlaybackFailure(url: String?, failure: String?)
+
+    fun onAppForegrounded()
+
+    fun onAppBackgrounded()
+
+    /** [epochMs] as a short local time of day, such as 18:30. */
+    fun clockTime(epochMs: Long): String
+
+    /** [epochMs] as a short local date and time with seconds. */
+    fun dateTime(epochMs: Long): String
+
+    /**
+     * Sorts [samples] with [profile] as real results would be, for the sorting editor; null where
+     * the sorting engine does not run. Throws [IllegalArgumentException] for an invalid profile.
+     */
+    fun previewRanking(profile: StreamRankingProfile, samples: List<RankingSample>, mediaType: String): RankingPreview?
+}

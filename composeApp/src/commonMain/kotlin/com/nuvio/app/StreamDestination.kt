@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -15,7 +16,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import com.nuvio.app.core.ui.NuvioLoadingIndicator
 import com.nuvio.app.core.ui.NuvioToastController
 import com.nuvio.app.core.ui.nuvio
@@ -34,6 +38,8 @@ import com.nuvio.app.features.player.sanitizePlaybackHeaders
 import com.nuvio.app.features.player.sanitizePlaybackResponseHeaders
 import com.nuvio.app.features.servers.ServerPlayback
 import com.nuvio.app.features.servers.serverPlaybackMessage
+import com.nuvio.app.features.usenet.BUILT_IN_USENET_GROUP_ID
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.features.streams.StreamBehaviorHints
 import com.nuvio.app.features.streams.StreamItem
 import com.nuvio.app.features.streams.StreamLaunchStore
@@ -93,6 +99,8 @@ internal fun StreamDestination(
     var resolvingDebridStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var resolvingYouTubeStream by rememberSaveable(route.launchId) { mutableStateOf(false) }
     var preparingServerStream by remember(route.launchId) { mutableStateOf(false) }
+    /** What automatic Usenet fallback is trying, shown while it prepares the next release. */
+    var usenetFallbackMessage by remember(route.launchId) { mutableStateOf<String?>(null) }
     var pendingP2pStreamOpen by remember { mutableStateOf<PendingP2pStreamOpen?>(null) }
     val shouldResolveEpisodeVideoId =
         launch.parentMetaId != null &&
@@ -311,6 +319,82 @@ internal fun StreamDestination(
         )
         val maxAgeMs = playerSettings.streamReuseLastLinkCacheHours * 60L * 60L * 1000L
         val cached = StreamLinkCacheRepository.getValid(cacheKey, maxAgeMs)
+        if (cached != null && !cached.nzbUrl.isNullOrBlank()) {
+            // A built-in Usenet release opens again with today's providers, unless it cannot or has
+            // failed for good since; the list then shows as usual.
+            val restored = UsenetPlayback.restoreForReuse(cached, series = !launch.type.equals("movie", ignoreCase = true))
+                ?: return@LaunchedEffect
+            reuseNavigated = true
+            preparingServerStream = true
+            // The engine opens it on the route's scope: resolving the video ID can restart this effect.
+            streamRouteScope.launch {
+                usenetFallbackMessage = getString(Res.string.usenet_opening)
+                val prepared = try {
+                    UsenetPlayback.prepare(restored, launch.seasonNumber, launch.episodeNumber)
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    NuvioToastController.show(UsenetPlayback.failureMessage(error))
+                    null
+                } finally {
+                    preparingServerStream = false
+                    usenetFallbackMessage = null
+                }
+                val sourceUrl = prepared?.playableDirectUrl
+                if (prepared == null || sourceUrl == null) {
+                    StreamLinkCacheRepository.remove(cacheKey)
+                    reuseNavigated = false
+                    return@launch
+                }
+                UsenetPlayback.rememberForReuse(cacheKey, restored, resolveLaunchContentLanguage(cached.contentLanguage))
+                val playerLaunch = PlayerLaunch(
+                    profileId = launch.profileId,
+                    title = launch.title,
+                    sourceUrl = sourceUrl,
+                    sourceHeaders = emptyMap(),
+                    sourceResponseHeaders = emptyMap(),
+                    externalSubtitles = prepared.externalSubtitles,
+                    streamType = prepared.streamType,
+                    logo = launch.logo,
+                    poster = launch.poster,
+                    background = launch.background,
+                    seasonNumber = launch.seasonNumber,
+                    episodeNumber = launch.episodeNumber,
+                    episodeTitle = launch.episodeTitle,
+                    episodeThumbnail = launch.episodeThumbnail,
+                    streamTitle = prepared.streamLabel,
+                    streamSubtitle = prepared.streamSubtitle,
+                    bingeGroup = prepared.behaviorHints.bingeGroup,
+                    pauseDescription = pauseDescription,
+                    providerName = prepared.addonName,
+                    providerAddonId = prepared.addonId,
+                    contentType = launch.type,
+                    videoId = effectiveVideoId,
+                    parentMetaId = launch.parentMetaId ?: effectiveVideoId,
+                    parentMetaType = launch.parentMetaType ?: launch.type,
+                    initialPositionMs = launch.resumePositionMs ?: 0L,
+                    initialProgressFraction = launch.resumeProgressFraction,
+                    subtitleExtras = SubtitleRequestExtras.from(prepared.behaviorHints, sourceUrl),
+                    contentLanguage = resolveLaunchContentLanguage(cached.contentLanguage),
+                    sourceFilename = prepared.behaviorHints.filename,
+                    stream = prepared,
+                    sourceAutoSelected = true,
+                )
+                if (playerSettings.externalPlayerEnabled) {
+                    openExternalPlayback(playerLaunch)
+                    StreamsRepository.cancelLoading()
+                    StreamsRepository.setOverlayVisible(false)
+                    return@launch
+                }
+                StreamsRepository.clear()
+                autoPlayNavigationStarted = true
+                val launchId = PlayerLaunchStore.put(playerLaunch)
+                navController.navigate(PlayerRoute(launchId = launchId, title = playerLaunch.title)) {
+                    popUpTo<StreamRoute> { inclusive = true }
+                }
+            }
+            return@LaunchedEffect
+        }
         if (cached != null) {
             if (cached.url.isBlank() && !cached.infoHash.isNullOrBlank()) {
                 val cachedStream = StreamItem(
@@ -427,12 +511,37 @@ internal fun StreamDestination(
         manualSelection = launch.manualSelection,
     )
     SideEffect { onLandscapeLoadingChanged(useLandscapeLoading) }
+
+    // With prefetching on, the first Usenet release opens once per search while the list is read.
+    // Play claims that session; leaving the screen or the app drops it. Auto-play opens its own pick.
+    val usenetPrefetchOwner = remember { Any() }
+    var usenetPrefetchToken by remember { mutableStateOf<String?>(null) }
+    val screenStarted = LocalLifecycleOwner.current.lifecycle.currentStateAsState().value.isAtLeast(Lifecycle.State.STARTED)
+    val canPrefetchUsenet = screenStarted && !showLoadingScreen && !streamsUiState.isDirectAutoPlayFlow &&
+        streamsUiState.requestToken == expectedStreamsRequestToken &&
+        streamsUiState.groups.none { it.addonId == BUILT_IN_USENET_GROUP_ID && it.isLoading }
+    LaunchedEffect(canPrefetchUsenet, streamsUiState.requestToken) {
+        val token = streamsUiState.requestToken
+        if (!canPrefetchUsenet || token == null || token == usenetPrefetchToken) return@LaunchedEffect
+        usenetPrefetchToken = token
+        UsenetPlayback.prefetchFirst(usenetPrefetchOwner, streamsUiState.allStreams, launch.seasonNumber, launch.episodeNumber)
+    }
+    LaunchedEffect(screenStarted) {
+        if (!screenStarted) {
+            UsenetPlayback.cancelPrefetch(usenetPrefetchOwner)
+            usenetPrefetchToken = null
+        }
+    }
+    DisposableEffect(usenetPrefetchOwner) {
+        onDispose { UsenetPlayback.cancelPrefetch(usenetPrefetchOwner) }
+    }
     var autoPlayHandled by rememberSaveable(launch.videoId, effectiveVideoId) { mutableStateOf(false) }
     LaunchedEffect(
         streamsUiState.autoPlayStream,
         streamsUiState.requestToken,
         expectedStreamsRequestToken,
         reuseHandled,
+        reuseNavigated,
         launch.manualSelection,
     ) {
         if (!reuseHandled) return@LaunchedEffect
@@ -441,7 +550,17 @@ internal fun StreamDestination(
         if (autoPlayHandled) return@LaunchedEffect
         if (streamsUiState.requestToken != expectedStreamsRequestToken) return@LaunchedEffect
         val selectedStream = streamsUiState.autoPlayStream ?: return@LaunchedEffect
-        val stream = if (selectedStream.needsServerPreparation) {
+        val stream = if (selectedStream.needsUsenetPreparation) {
+            StreamsRepository.setOverlayVisible(true, getString(Res.string.usenet_opening))
+            runCatching { UsenetPlayback.prepare(selectedStream, launch.seasonNumber, launch.episodeNumber) }
+                .onFailure { if (it is CancellationException) throw it }
+                .getOrElse { error ->
+                    if (!StreamsRepository.skipAutoPlayStream(selectedStream)) {
+                        NuvioToastController.show(UsenetPlayback.failureMessage(error))
+                    }
+                    return@LaunchedEffect
+                }
+        } else if (selectedStream.needsServerPreparation) {
             StreamsRepository.setOverlayVisible(true, getString(Res.string.player_loading_preparing))
             runCatching { ServerPlayback.prepare(selectedStream) }
                 .onFailure { if (it is CancellationException) throw it }
@@ -502,7 +621,19 @@ internal fun StreamDestination(
         }
         autoPlayHandled = true
         val serverResumeMs = serverResumePositionMs(stream)
-        if (playerSettings.streamReuseLastLinkEnabled && stream.serverTarget == null) {
+        // An engine link ends with its session, so it is never kept for reuse.
+        if (playerSettings.streamReuseLastLinkEnabled && UsenetPlayback.isEngineUrl(sourceUrl)) {
+            // The release is kept instead, to open again with today's providers.
+            val cacheKey = StreamLinkCacheRepository.contentKey(
+                type = launch.type,
+                videoId = effectiveVideoId,
+                parentMetaId = launch.parentMetaId,
+                season = launch.seasonNumber,
+                episode = launch.episodeNumber,
+            )
+            UsenetPlayback.rememberForReuse(cacheKey, selectedStream, resolveLaunchContentLanguage())
+        }
+        if (playerSettings.streamReuseLastLinkEnabled && stream.serverTarget == null && !UsenetPlayback.isEngineUrl(sourceUrl)) {
             val cacheKey = StreamLinkCacheRepository.contentKey(
                 type = launch.type,
                 videoId = effectiveVideoId,
@@ -606,6 +737,49 @@ internal fun StreamDestination(
         forceInternal: Boolean,
         saveForReuse: Boolean = true,
     ) {
+        if (stream.needsUsenetPreparation) {
+            if (preparingServerStream) return
+            streamRouteScope.launch {
+                preparingServerStream = true
+                // With Automatic Usenet fallback on, a release that fails gives way to the next one shown.
+                val prepared = try {
+                    val session = UsenetPlayback.fallbackSession(stream, streamsUiState.allStreams)
+                    UsenetPlayback.prepareWithFallback(session, stream, launch.seasonNumber, launch.episodeNumber) { message ->
+                        usenetFallbackMessage = message
+                    }.also {
+                        if (saveForReuse && playerSettings.streamReuseLastLinkEnabled) {
+                            // The release that opened, which fallback may have chosen in place of [stream].
+                            val cacheKey = StreamLinkCacheRepository.contentKey(
+                                type = launch.type,
+                                videoId = effectiveVideoId,
+                                parentMetaId = launch.parentMetaId,
+                                season = launch.seasonNumber,
+                                episode = launch.episodeNumber,
+                            )
+                            UsenetPlayback.rememberForReuse(cacheKey, session.current, resolveLaunchContentLanguage())
+                        }
+                    }
+                } catch (cancelled: CancellationException) {
+                    throw cancelled
+                } catch (error: Exception) {
+                    NuvioToastController.show(UsenetPlayback.failureMessage(error))
+                    return@launch
+                } finally {
+                    preparingServerStream = false
+                    usenetFallbackMessage = null
+                }
+                openSelectedStream(
+                    stream = prepared,
+                    resolvedResumePositionMs = resolvedResumePositionMs,
+                    resolvedResumeProgressFraction = resolvedResumeProgressFraction,
+                    forceExternal = forceExternal,
+                    forceInternal = forceInternal,
+                    // An engine link ends with its session, so it is never kept for reuse.
+                    saveForReuse = false,
+                )
+            }
+            return
+        }
         if (stream.needsServerPreparation) {
             if (preparingServerStream) return
             streamRouteScope.launch {
@@ -885,6 +1059,7 @@ internal fun StreamDestination(
                 resolvingYouTubeStream = resolvingYouTubeStream,
                 onBack = onBack,
                 preparingPlayback = preparingServerStream,
+                preparingMessage = usenetFallbackMessage,
             )
         }
     }

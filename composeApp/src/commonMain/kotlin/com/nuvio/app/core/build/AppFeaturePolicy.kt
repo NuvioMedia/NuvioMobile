@@ -13,6 +13,8 @@ expect object AppFeaturePolicy {
     val accountDeletionEnabled: Boolean
     val personalMediaAddonCopyEnabled: Boolean
     val p2pEnabled: Boolean
+    /** Built-in Usenet sources and NZB playback; needs the Usenet engine, which runs only on Android. */
+    val usenetEnabled: Boolean
     val trailerPlaybackMode: TrailerPlaybackMode
     val heroTrailerPlaybackSupported: Boolean
     val inAppUpdaterEnabled: Boolean

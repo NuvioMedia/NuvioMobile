@@ -100,6 +100,13 @@ data class MetaVideo(
     val runtime: Int? = null,
     val rating: Double? = null,
     val streams: List<StreamItem> = emptyList(),
+    /**
+     * The episode on IMDb, when the addon numbers it its own way (anime catalogs restart each
+     * season or count on past a thousand): its IMDb id, season and episode.
+     */
+    val imdbId: String? = null,
+    val imdbSeason: Int? = null,
+    val imdbEpisode: Int? = null,
 )
 
 data class MetaDetailsUiState(

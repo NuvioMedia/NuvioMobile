@@ -41,6 +41,7 @@ import com.nuvio.app.features.p2p.formatP2pSpeed
 import com.nuvio.app.features.player.skip.internalSkipAction
 import com.nuvio.app.features.servers.ServerStreams
 import com.nuvio.app.features.streams.streamAddonInstanceId
+import com.nuvio.app.features.usenet.UsenetPlayback
 import com.nuvio.app.isIos
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
@@ -254,6 +255,7 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
                         if (!active.value || !updatePlaybackSnapshot(snapshot, playbackKey)) return@PlatformPlayerSurface
                         refreshAudioTracksIfChanged()
                         if (!snapshot.isLoading) initialLoadCompleted = true
+                        if (snapshot.isPlaying && !snapshot.isLoading) UsenetPlayback.onFirstFrame(activeSourceUrl)
                         if (snapshot.isEnded) {
                             shouldPlay = false
                             controlsVisible = !playerControlsLocked
@@ -262,6 +264,9 @@ internal fun PlayerScreenRuntime.RenderPlayerRuntimeUi(
                     onError = { message ->
                         if (!active.value || playbackKey != activePlaybackKey) return@PlatformPlayerSurface
                         if (message != null && tryRefreshExpiredLinkAfterError(message)) {
+                            return@PlatformPlayerSurface
+                        }
+                        if (message != null && tryNextUsenetReleaseAfterError(message)) {
                             return@PlatformPlayerSurface
                         }
                         if (message != null && tryFallbackToNextSourceAfterError(message)) {
@@ -758,6 +763,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             if (vid != null) {
                 PlayerStreamsRepository.loadSources(
                     type = contentType ?: parentMetaType,
+                    parentMetaId = parentMetaId,
                     videoId = vid,
                     season = activeSeasonNumber,
                     episode = activeEpisodeNumber,
@@ -792,6 +798,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         onEpisodeStreamsRequested = { episode ->
             PlayerStreamsRepository.loadEpisodeStreams(
                 type = contentType ?: parentMetaType,
+                parentMetaId = parentMetaId,
                 videoId = episode.id,
                 season = episode.season,
                 episode = episode.episode,
@@ -809,6 +816,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             if (episode != null) {
                 PlayerStreamsRepository.loadEpisodeStreams(
                     type = contentType ?: parentMetaType,
+                    parentMetaId = parentMetaId,
                     videoId = episode.id,
                     season = episode.season,
                     episode = episode.episode,

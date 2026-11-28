@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Dns
 import androidx.compose.material.icons.rounded.Extension
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
@@ -57,6 +58,10 @@ import com.nuvio.app.core.ui.NuvioStatusModal
 import com.nuvio.app.core.ui.NuvioSurfaceCard
 import kotlinx.coroutines.launch
 import nuvio.composeapp.generated.resources.*
+import com.nuvio.app.features.usenet.BuiltInUsenetOrder
+import com.nuvio.app.features.usenet.UsenetNoticeDialog
+import com.nuvio.app.features.usenet.UsenetRepository
+import com.nuvio.app.features.usenet.UsenetSourceConfiguration
 import org.jetbrains.compose.resources.stringResource
 
 @Composable
@@ -89,6 +94,17 @@ internal fun AddonsSettingsPageContent(
 
     val uiState by AddonRepository.uiState.collectAsStateWithLifecycle()
     val pendingTrackingConsent by AddonRepository.pendingTrackingConsent.collectAsStateWithLifecycle()
+    // Built-in Usenet is listed among the addons once it has a provider and an indexer.
+    val usenetSources: UsenetSourceConfiguration? = if (UsenetRepository.isSupported) {
+        val usenetState by remember {
+            UsenetRepository.ensureLoaded()
+            UsenetRepository.uiState
+        }.collectAsStateWithLifecycle()
+        usenetState.sources.takeIf { usenetState.loaded && it.configured }
+    } else {
+        null
+    }
+    var showUsenetNotice by remember { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
     var addonUrl by rememberSaveable { mutableStateOf("") }
@@ -149,22 +165,64 @@ internal fun AddonsSettingsPageContent(
         SectionHeader(stringResource(Res.string.addons_section_installed))
         if (uiState.addons.isEmpty()) {
             EmptyStateCard(usePersonalMediaCopy = usePersonalMediaCopy)
-        } else {
-            val lastIndex = uiState.addons.lastIndex
-            uiState.addons.forEachIndexed { index, addon ->
+        }
+        val addonUrls = uiState.addons.map { it.manifestUrl }
+        val usenetIndex = usenetSources?.let { BuiltInUsenetOrder.index(addonUrls, it.addonsAbove) }
+        val rowCount = uiState.addons.size + if (usenetIndex != null) 1 else 0
+
+        /** Moves an addon, or built-in Usenet when [url] is null, in the list that shows both. */
+        fun move(url: String?, direction: Int) {
+            val from = url?.let(addonUrls::indexOf) ?: -1
+            val moved = usenetIndex?.let { BuiltInUsenetOrder.move(addonUrls, it, url, direction) }
+            when {
+                usenetIndex == null -> if (from >= 0) AddonRepository.moveAddon(from, from + direction)
+                moved == null -> Unit
+                // Two addons swapped places: that is the synced addon order.
+                moved.addonUrls != addonUrls -> if (from >= 0) AddonRepository.moveAddon(from, from + direction)
+                // Built-in Usenet and an addon swapped: only its place, kept on this device, changes.
+                else -> UsenetRepository.updateSources { it.copy(addonsAbove = moved.addonsAbove) }
+            }
+        }
+
+        for (row in 0 until rowCount) {
+            if (row == usenetIndex && usenetSources != null) {
+                BuiltInUsenetAddonCard(
+                    enabled = usenetSources.enabled,
+                    onMoveUpClick = if (row > 0) {
+                        { move(null, -1) }
+                    } else {
+                        null
+                    },
+                    onMoveDownClick = if (row < rowCount - 1) {
+                        { move(null, 1) }
+                    } else {
+                        null
+                    },
+                    onEnabledChange = { enabled ->
+                        if (enabled && !usenetSources.firstUseAccepted) {
+                            showUsenetNotice = true
+                        } else {
+                            UsenetRepository.updateSources { it.copy(enabled = enabled) }
+                        }
+                    },
+                )
+                continue
+            }
+            run {
+                val addon = uiState.addons[if (usenetIndex != null && row > usenetIndex) row - 1 else row]
                 val manifest = addon.manifest
                 val behaviorHints = manifest?.behaviorHints
                 val showConfigureAction = behaviorHints?.configurable == true || behaviorHints?.configurationRequired == true
                 val configureUrl = addon.manifestUrl.toConfigureUrl()
                 InstalledAddonCard(
                     addon = addon,
-                    onMoveUpClick = if (index > 0) {
-                        { AddonRepository.moveAddon(index, index - 1) }
+                    onMoveUpClick = if (row > 0) {
+                        { move(addon.manifestUrl, -1) }
                     } else {
                         null
                     },
-                    onMoveDownClick = if (index < lastIndex) {
-                        { AddonRepository.moveAddon(index, index + 1) }
+                    onMoveDownClick = if (row < rowCount - 1) {
+                        { move(addon.manifestUrl, 1) }
                     } else {
                         null
                     },
@@ -190,6 +248,16 @@ internal fun AddonsSettingsPageContent(
                 )
             }
         }
+    }
+
+    if (showUsenetNotice) {
+        UsenetNoticeDialog(
+            onTurnOn = {
+                showUsenetNotice = false
+                UsenetRepository.updateSources { it.copy(enabled = true, firstUseAccepted = true) }
+            },
+            onDismiss = { showUsenetNotice = false },
+        )
     }
 
     val pendingDeletionUrl = addonPendingDeletionUrl
@@ -607,6 +675,80 @@ private fun InstalledAddonCard(
                 }
             }
         }
+    }
+}
+
+/** Built-in Usenet among the addons: its place sets where its results are listed. It has nothing to remove. */
+@Composable
+private fun BuiltInUsenetAddonCard(
+    enabled: Boolean,
+    onMoveUpClick: (() -> Unit)?,
+    onMoveDownClick: (() -> Unit)?,
+    onEnabledChange: (Boolean) -> Unit,
+) {
+    NuvioSurfaceCard {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+        ) {
+            AddonIconBadge(imageUrl = null, icon = Icons.Rounded.Dns, tint = Color(0xFF71BDE8))
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(Res.string.usenet_builtin_addon_title),
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(Res.string.usenet_builtin_addon_desc),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Switch(
+                checked = enabled,
+                onCheckedChange = onEnabledChange,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                    checkedTrackColor = MaterialTheme.colorScheme.primary,
+                    uncheckedThumbColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    uncheckedTrackColor = MaterialTheme.colorScheme.outlineVariant,
+                ),
+            )
+        }
+        if (onMoveUpClick != null || onMoveDownClick != null) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                onMoveUpClick?.let { onMoveUp ->
+                    NuvioIconActionButton(
+                        icon = Icons.Rounded.ArrowUpward,
+                        contentDescription = stringResource(Res.string.addons_move_up),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = onMoveUp,
+                    )
+                }
+                onMoveDownClick?.let { onMoveDown ->
+                    NuvioIconActionButton(
+                        icon = Icons.Rounded.ArrowDownward,
+                        contentDescription = stringResource(Res.string.addons_move_down),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        onClick = onMoveDown,
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        HorizontalDivider(color = MaterialTheme.colorScheme.outline)
+        Spacer(modifier = Modifier.height(18.dp))
+        NuvioInfoBadge(
+            text = stringResource(if (enabled) Res.string.addons_badge_active else Res.string.addons_badge_disabled),
+        )
     }
 }
 

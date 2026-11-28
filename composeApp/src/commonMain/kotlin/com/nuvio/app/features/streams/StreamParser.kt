@@ -29,9 +29,10 @@ object StreamParser {
             val externalUrl = obj.string("externalUrl")
             val ytId = obj.string("ytId")?.trim()?.takeIf { it.isNotEmpty() }
             val clientResolve = obj.objectValue("clientResolve")?.toClientResolve()
+            val nzbUrl = obj.string("nzbUrl")?.trim()?.takeIf { it.isNotEmpty() }
 
             // Must have at least one source or external target.
-            if (url == null && infoHash == null && externalUrl == null && ytId == null && clientResolve == null) {
+            if (url == null && infoHash == null && externalUrl == null && ytId == null && clientResolve == null && nzbUrl == null) {
                 return@mapNotNull null
             }
 
@@ -54,6 +55,9 @@ object StreamParser {
                 addonLogo = addonLogo,
                 streamType = normalizeStreamType(obj.string("type")),
                 clientResolve = clientResolve,
+                nzbUrl = nzbUrl,
+                nzbServers = obj.stringList("servers"),
+                fileMustInclude = obj.string("fileMustInclude"),
                 behaviorHints = StreamBehaviorHints(
                     bingeGroup = hintsObj?.string("bingeGroup"),
                     notWebReady = (hintsObj?.boolean("notWebReady") ?: false) || proxyHeaders != null,

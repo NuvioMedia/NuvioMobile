@@ -1,0 +1,11 @@
+RapidYenc native SIMD kernels
+https://github.com/animetosho/rapidyenc
+Commit 480bd7b5896f8b3edecc721d23f1384d767ffe2f
+
+Upstream license declaration (README.md):
+This module is Public Domain or CC0 (or equivalent) if PD isn't recognised.
+https://creativecommons.org/publicdomain/zero/1.0/legalcode
+
+The bundled build disables RapidYenc's CRC component. It does not link crcutil
+or the zlib-ng-derived CRC kernels. CRC validation uses Go's hash/crc32.
+Individual source notices (including hedley.h) remain in the source tree.

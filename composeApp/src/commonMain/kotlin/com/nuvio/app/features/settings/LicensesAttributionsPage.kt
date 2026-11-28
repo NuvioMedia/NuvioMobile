@@ -34,6 +34,7 @@ import com.nuvio.app.core.ui.NuvioScreenHeader
 import com.nuvio.app.features.cloud.PremiumizeCloudLibraryPosterUrl
 import com.nuvio.app.features.cloud.TorboxCloudLibraryPosterUrl
 import com.nuvio.app.features.cloud.cloudLibraryDisplayArtworkUrl
+import com.nuvio.app.features.usenet.UsenetRepository
 import com.nuvio.app.isIos
 import nuvio.composeapp.generated.resources.*
 import org.jetbrains.compose.resources.StringResource
@@ -52,6 +53,7 @@ private const val MpvKitUrl = "https://github.com/mpvkit/MPVKit"
 private const val ApacheLicenseUrl = "https://www.apache.org/licenses/LICENSE-2.0"
 private const val SherpaOnnxUrl = "https://github.com/k2-fsa/sherpa-onnx"
 private const val HazeLicenseUrl = "https://github.com/chrisbanes/haze/blob/1.7.2/LICENSE"
+private const val UsenetEngineUrl = "https://github.com/NuvioMedia/nuvio-usenet-engine"
 
 private data class AttributionItem(
     val titleRes: StringResource,
@@ -140,6 +142,18 @@ private fun LicensesAttributionsBody(
                 if (index != items.lastIndex) {
                     PlainStackDivider()
                 }
+            }
+            if (UsenetRepository.isSupported) {
+                PlainStackDivider()
+                LicenseRow(
+                    item = LicenseItem(
+                        titleRes = Res.string.settings_licenses_attributions_usenet_title,
+                        bodyRes = Res.string.settings_licenses_attributions_usenet_body,
+                        licenseRes = Res.string.settings_licenses_attributions_usenet_license,
+                        link = UsenetEngineUrl,
+                    ),
+                    isTablet = isTablet,
+                )
             }
         }
 

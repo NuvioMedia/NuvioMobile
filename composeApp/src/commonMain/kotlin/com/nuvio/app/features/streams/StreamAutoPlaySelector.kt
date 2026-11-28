@@ -1,6 +1,8 @@
 package com.nuvio.app.features.streams
 
 import com.nuvio.app.core.build.AppFeaturePolicy
+import com.nuvio.app.features.usenet.UsenetPlayback
+import com.nuvio.app.features.usenet.UsenetRepository
 
 object StreamAutoPlaySelector {
 
@@ -209,6 +211,8 @@ object StreamAutoPlaySelector {
     ): Boolean =
         playableDirectUrl != null ||
             serverTarget != null ||
+            // A release already found unplayable with these providers is never chosen automatically.
+            (isUsenet && UsenetRepository.isSupported && !UsenetPlayback.isMarkedUnavailable(this)) ||
             (
                 AppFeaturePolicy.p2pEnabled &&
                     needsLocalDebridResolve &&
