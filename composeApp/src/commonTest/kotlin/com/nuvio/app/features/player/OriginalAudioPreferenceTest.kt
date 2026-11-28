@@ -368,6 +368,34 @@ class OriginalAudioPreferenceTest {
         assertEquals(listOf(1, 0), controller.subtitleSelections)
     }
 
+    // Addon subtitles usually arrive after the first selection pass, which then found nothing to turn on.
+    @Test
+    fun secondaryLanguageAddonSubtitleArrivingLaterIsSelected() {
+        val controller = RecordingController(audioTracks())
+        controller.subtitles = listOf(SubtitleTrack(0, "s1", "Portuguese", "por"))
+        val runtime = runtime(controller)
+        runtime.playerSettingsUiState = runtime.playerSettingsUiState.copy(
+            preferredAudioLanguage = AudioLanguageOption.DEFAULT,
+            preferredSubtitleLanguage = "no",
+            secondaryPreferredSubtitleLanguage = "es",
+        )
+        runtime.preferredSubtitleSelectionApplied = false
+        runtime.isLoadingAddonSubtitles = true
+        runtime.refreshTracks()
+        runtime.refreshTracks()
+        assertTrue(runtime.preferredSubtitleSelectionApplied)
+        assertEquals(null, runtime.selectedAddonSubtitleId)
+
+        runtime.addonSubtitles = listOf(
+            AddonSubtitle("ger", "https://example.com/ger.srt", "ger", "German"),
+            AddonSubtitle("spa", "https://example.com/spa.srt", "spa", "Spanish"),
+        )
+        runtime.isLoadingAddonSubtitles = false
+        runtime.refreshTracks()
+
+        assertEquals("https://example.com/spa.srt", runtime.selectedAddonSubtitleId)
+    }
+
     private fun reportRequestedOriginalSelection(runtime: PlayerScreenRuntime, controller: RecordingController) {
         assertEquals(originalLanguage, controller.audioLanguagePreferences.last().first())
         assertEquals(emptyList(), controller.audioSelections)
