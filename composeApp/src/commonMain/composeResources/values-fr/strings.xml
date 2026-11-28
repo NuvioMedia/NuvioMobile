@@ -256,7 +256,7 @@
     <string name="collections_editor_trakt_sort_title">Titre</string>
     <string name="collections_editor_trakt_sort_released">Date de sortie</string>
     <string name="collections_editor_trakt_sort_runtime">Durée</string>
-    <string name="collections_editor_trakt_sort_popular">Populaire</string>
+    <string name="collections_editor_trakt_sort_popular">Populaires</string>
     <string name="collections_editor_trakt_sort_percentage">Pourcentage</string>
     <string name="collections_editor_trakt_sort_votes">Votes</string>
     <string name="collections_editor_trakt_enter_name_url_or_id">Saisissez le nom, l’URL ou l’ID d’une liste Trakt</string>
@@ -299,7 +299,7 @@
     <string name="collections_editor_tmdb_network_prime_video">Prime Video</string>
     <string name="collections_editor_tmdb_network_hulu">Hulu</string>
     <string name="collections_editor_tmdb_sort_original">Original</string>
-    <string name="collections_editor_tmdb_sort_popular">Populaire</string>
+    <string name="collections_editor_tmdb_sort_popular">Populaires</string>
     <string name="collections_editor_tmdb_sort_top_rated">Mieux notés</string>
     <string name="collections_editor_tmdb_sort_recent">Récents</string>
     <string name="collections_editor_tmdb_sort_vote_count">Les plus votés</string>
@@ -1668,9 +1668,9 @@
     <string name="person_born">Naissance&#160;: %1$s%2$s</string>
     <string name="person_died">Décès&#160;: %1$s</string>
     <string name="person_known_for">Domaine&#160;: %1$s</string>
-    <string name="person_latest">Récent</string>
+    <string name="person_latest">Récents</string>
     <string name="person_load_failed">Impossible de charger les détails de %1$s</string>
-    <string name="person_popular">Populaire</string>
+    <string name="person_popular">Populaires</string>
     <string name="person_something_wrong">Un problème est survenu</string>
     <string name="person_upcoming">À venir</string>
     <string name="pin_backspace">Effacer</string>
