@@ -89,6 +89,8 @@ object UsenetPlayback {
             nzbUrl = UsenetKeptLinks.withoutApiKeys(nzbUrl, UsenetRepository.sources()),
             releaseTitle = listed.title,
             publishedAt = listed.publishedAt,
+            usenetSeason = listed.usenetSeason,
+            usenetEpisode = listed.usenetEpisode,
         )
     }
 
@@ -97,6 +99,8 @@ object UsenetPlayback {
         if (!UsenetRepository.isSupported) return null
         val nzbUrl = cached.nzbUrl?.takeIf { it.isNotBlank() } ?: return null
         return UsenetPlatform.restoredStream(nzbUrl, cached.streamName, cached.releaseTitle, cached.videoSize, cached.publishedAt, series)
+            // Its file in a pack is picked by the numbering it was searched by, as when it was listed.
+            ?.copy(usenetSeason = cached.usenetSeason, usenetEpisode = cached.usenetEpisode)
     }
 
     /**

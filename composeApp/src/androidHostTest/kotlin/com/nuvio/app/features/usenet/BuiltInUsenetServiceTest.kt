@@ -1,5 +1,8 @@
 package com.nuvio.app.features.usenet
 
+import com.nuvio.app.features.details.MetaDetails
+import com.nuvio.app.features.details.MetaVideo
+import com.nuvio.app.features.player.skip.SimklIdResolver
 import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamAutoPlayMode
 import com.nuvio.app.features.streams.StreamAutoPlaySelector
@@ -36,6 +39,21 @@ private class FakeMetadata(
         seasonLookups++
         return seasons()
     }
+}
+
+/** Metas and Simkl mappings for anime catalog ids, keyed "type:id" and "source:id"; records what was asked. */
+private class FakeCatalog(
+    val held: Map<String, MetaDetails> = emptyMap(),
+    val fetched: Map<String, MetaDetails> = emptyMap(),
+    val simkl: Map<String, SimklIdResolver.ResolvedIds> = emptyMap(),
+    val episodes: Map<Long, List<SimklIdResolver.EpisodeMapping>> = emptyMap(),
+) : UsenetCatalogSource {
+    val asked = mutableListOf<String>()
+
+    override suspend fun heldMeta(type: String, id: String) = held["$type:$id"].also { asked += "held $type:$id" }
+    override suspend fun fetchedMeta(type: String, id: String) = fetched["$type:$id"].also { asked += "fetched $type:$id" }
+    override suspend fun simklIds(source: String, id: String) = simkl["$source:$id"].also { asked += "simkl $source:$id" }
+    override suspend fun simklEpisodes(simklId: Long, type: String) = episodes[simklId].orEmpty()
 }
 
 class BuiltInUsenetServiceTest {
@@ -448,5 +466,100 @@ class BuiltInUsenetServiceTest {
             StreamAutoPlaySource.ALL_SOURCES, emptySet(), emptySet(), emptySet(),
             preferredBingeGroup = played.behaviorHints.bingeGroup, preferBingeGroupInSelection = true, bingeGroupOnly = true)
         assertEquals(played.title, picked?.title)
+    }
+
+    private val animeIndexer = UsenetIndexer(id = "geek", name = "Geek", apiUrl = "https://geek.test/api")
+    private val animeConfig = UsenetSourceConfiguration(enabled = true, providers = listOf(provider), indexers = listOf(animeIndexer))
+
+    private fun animeClient(title: String): NewznabClient = mockk<NewznabClient>().also { client ->
+        coEvery { client.capabilities(any()) } returns NewznabCapabilities()
+        coEvery { client.search(animeIndexer, any(), any(), any()) } returns listOf(
+            UsenetRelease(title, "https://geek.test/nzb/1", indexerId = animeIndexer.id))
+    }
+
+    private fun animeMeta(id: String, imdbId: String?, vararg videos: MetaVideo) =
+        MetaDetails(id = id, type = "series", name = "Show", imdbId = imdbId, videos = videos.toList())
+
+    @Test fun `an anime catalog's episode is searched by the IMDb id and numbering its meta gives`() = runTest {
+        val client = animeClient("Show.S02E01.1080p")
+        val catalog = FakeCatalog(held = mapOf("series:kitsu:49240" to animeMeta("kitsu:49240", "tt22248376",
+            MetaVideo(id = "kitsu:49240:1", title = "1", season = 1, episode = 1, imdbSeason = 2, imdbEpisode = 1))))
+        // The catalog numbers the second season's first episode S1E1; the player passes that.
+        val stream = BuiltInUsenetService(client, FakeMetadata(), catalog = catalog)
+            .search(animeConfig, "series", "kitsu:49240:1", 1, 1).toList().lastGroup().streams.single()
+        coVerify { client.search(animeIndexer, match { it.imdbId == "tt22248376" && it.season == 2 && it.episode == 1 }, any(), any()) }
+        coVerify(exactly = 0) { client.search(animeIndexer, match { it.season == 1 }, any(), any()) }
+        // Its file in a pack is picked by the same numbering, whatever the player asks for.
+        assertEquals(2 to 1, engineEpisode(stream, 1, 1))
+    }
+
+    @Test fun `an IMDb id is searched as before, without looking at metas`() = runTest {
+        val client = animeClient("Show.S01E03.1080p")
+        val catalog = FakeCatalog()
+        val stream = BuiltInUsenetService(client, FakeMetadata(), catalog = catalog)
+            .search(animeConfig, "series", "tt123:1:3", 1, 3, contentId = "tt123").toList().lastGroup().streams.single()
+        coVerify { client.search(animeIndexer, match { it.imdbId == "tt123" && it.season == 1 && it.episode == 3 }, any(), any()) }
+        assertEquals(emptyList<String>(), catalog.asked)
+        assertNull(stream.usenetSeason)
+        assertNull(stream.usenetEpisode)
+    }
+
+    @Test fun `a catalog episode of a title with its own IMDb id is searched by that id and the title's numbering`() = runTest {
+        val client = animeClient("Show.S03E02.1080p")
+        val catalog = FakeCatalog()
+        BuiltInUsenetService(client, FakeMetadata(), catalog = catalog)
+            .search(animeConfig, "series", "kitsu:9:40", 3, 2, contentId = "tt777").toList()
+        coVerify { client.search(animeIndexer, match { it.imdbId == "tt777" && it.season == 3 && it.episode == 2 }, any(), any()) }
+        // Neither the catalog's addon nor Simkl is asked.
+        assertEquals(listOf("held series:tt777"), catalog.asked)
+    }
+
+    @Test fun `without IMDb numbering in the meta, Simkl's TVDB numbering is searched with the meta's IMDb id`() = runTest {
+        val client = animeClient("Show.S02E01.1080p")
+        val catalog = FakeCatalog(
+            held = mapOf("series:mal:52991" to animeMeta("mal:52991", "tt22248376",
+                MetaVideo(id = "mal:52991:1", title = "1", season = 1, episode = 1))),
+            simkl = mapOf("mal:52991" to SimklIdResolver.ResolvedIds(simklId = 7, type = "anime", imdb = "tt999")),
+            episodes = mapOf(7L to listOf(SimklIdResolver.EpisodeMapping(animeEpisode = 1, tvdbSeason = 2, tvdbEpisode = 1))))
+        val stream = BuiltInUsenetService(client, FakeMetadata(), catalog = catalog)
+            .search(animeConfig, "series", "mal:52991:1", 1, 1, contentId = "mal:52991").toList().lastGroup().streams.single()
+        coVerify { client.search(animeIndexer, match { it.imdbId == "tt22248376" && it.season == 2 && it.episode == 1 }, any(), any()) }
+        assertEquals(2 to 1, engineEpisode(stream, 1, 1))
+    }
+
+    @Test fun `a meta without a usable IMDb id takes Simkl's`() = runTest {
+        val client = animeClient("Show.S01E05.1080p")
+        val catalog = FakeCatalog(
+            held = mapOf("series:kitsu:46474" to animeMeta("kitsu:46474", "not-an-id")),
+            simkl = mapOf("kitsu:46474" to SimklIdResolver.ResolvedIds(simklId = 7, type = "anime", imdb = "tt999")),
+            episodes = mapOf(7L to listOf(SimklIdResolver.EpisodeMapping(animeEpisode = 5, tvdbSeason = 1, tvdbEpisode = 5))))
+        BuiltInUsenetService(client, FakeMetadata(), catalog = catalog)
+            .search(animeConfig, "series", "kitsu:46474:5", 1, 5).toList()
+        coVerify { client.search(animeIndexer, match { it.imdbId == "tt999" && it.season == 1 && it.episode == 5 }, any(), any()) }
+    }
+
+    @Test fun `a catalog's meta is asked of its addon when the details page no longer holds it`() = runTest {
+        val client = animeClient("Show.S02E01.1080p")
+        val catalog = FakeCatalog(fetched = mapOf("series:kitsu:49240" to animeMeta("kitsu:49240", "tt22248376",
+            MetaVideo(id = "kitsu:49240:1", title = "1", season = 1, episode = 1, imdbSeason = 2, imdbEpisode = 1))))
+        BuiltInUsenetService(client, FakeMetadata(), catalog = catalog)
+            .search(animeConfig, "series", "kitsu:49240:1", 1, 1).toList()
+        coVerify { client.search(animeIndexer, match { it.imdbId == "tt22248376" && it.season == 2 && it.episode == 1 }, any(), any()) }
+        assertEquals(listOf("held series:kitsu:49240", "fetched series:kitsu:49240"), catalog.asked)
+    }
+
+    @Test fun `a catalog episode nothing maps is not searched with the catalog's own numbers`() = runTest {
+        val client = mockk<NewznabClient>()
+        coEvery { client.capabilities(any()) } returns NewznabCapabilities()
+        // The real client sends nothing for a request without an ID or a title.
+        coEvery { client.search(animeIndexer, any(), any(), any()) } returns emptyList()
+        val catalog = FakeCatalog(
+            held = mapOf("series:kitsu:49240" to animeMeta("kitsu:49240", "tt22248376")),
+            simkl = mapOf("kitsu:49240" to SimklIdResolver.ResolvedIds(simklId = 7, type = "anime", imdb = "tt22248376")))
+        val results = BuiltInUsenetService(client, FakeMetadata(title = { UsenetTitleMetadata() }), catalog = catalog)
+            .search(animeConfig, "series", "kitsu:49240:1", 1, 1, contentId = "kitsu:49240").toList()
+        assertTrue(results.mapNotNull { it.group }.all { it.streams.isEmpty() })
+        coVerify(exactly = 0) { client.search(any(), match { it.imdbId != null || it.tvdbId != null || it.tmdbId != null }, any(), any()) }
+        coVerify(exactly = 0) { client.search(any(), match { it.title != null }, any(), any()) }
     }
 }

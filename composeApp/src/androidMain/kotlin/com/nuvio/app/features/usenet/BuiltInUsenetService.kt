@@ -1,6 +1,9 @@
 package com.nuvio.app.features.usenet
 
 import android.util.Log
+import com.nuvio.app.features.details.MetaDetails
+import com.nuvio.app.features.details.MetaDetailsRepository
+import com.nuvio.app.features.player.skip.SimklIdResolver
 import com.nuvio.app.features.streams.AddonStreamGroup
 import com.nuvio.app.features.streams.StreamBadge
 import com.nuvio.app.features.streams.StreamBehaviorHints
@@ -11,6 +14,7 @@ import java.util.Locale
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
@@ -21,6 +25,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.selects.select
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 
 /** The TMDB lookups a search makes; tests replace them. */
@@ -35,6 +40,35 @@ internal object TmdbUsenetMetadataSource : UsenetMetadataSource {
 
     override suspend fun seasonEpisodes(tmdbId: String?, videoId: String) =
         UsenetMetadata.seasonEpisodes(tmdbId, videoId)
+}
+
+/** The metas and Simkl mapping that give an anime catalog's ids their IMDb equivalent; tests replace them. */
+internal interface UsenetCatalogSource {
+    /** The meta the details page holds under [id]; nothing is fetched. */
+    suspend fun heldMeta(type: String, id: String): MetaDetails?
+
+    /** The meta of [id] from the addons that serve it. */
+    suspend fun fetchedMeta(type: String, id: String): MetaDetails?
+
+    /** Simkl's ids for an anime catalog's [source] id; null when Simkl is not set up or does not know it. */
+    suspend fun simklIds(source: String, id: String): SimklIdResolver.ResolvedIds?
+
+    suspend fun simklEpisodes(simklId: Long, type: String): List<SimklIdResolver.EpisodeMapping>
+}
+
+/** The app's metas and Simkl mapping, whose caches are kept on the main thread. */
+internal object AppUsenetCatalogSource : UsenetCatalogSource {
+    override suspend fun heldMeta(type: String, id: String) =
+        withContext(Dispatchers.Main) { MetaDetailsRepository.peek(type, id) }
+
+    override suspend fun fetchedMeta(type: String, id: String) =
+        withContext(Dispatchers.Main) { MetaDetailsRepository.fetch(type, id) }
+
+    override suspend fun simklIds(source: String, id: String) =
+        withContext(Dispatchers.Main) { SimklIdResolver.resolveIds(source, id) }
+
+    override suspend fun simklEpisodes(simklId: Long, type: String) =
+        withContext(Dispatchers.Main) { SimklIdResolver.getEpisodeMapping(simklId, type) }
 }
 
 /** The wording of results and failures, as format patterns; English where no translation is loaded. */
@@ -57,27 +91,38 @@ internal class BuiltInUsenetService(
     private val labels: suspend () -> UsenetLabels = { UsenetLabels() },
     /** Counts each indexer's searches; null in unit tests that do not look. */
     private val stats: UsenetSourceStats? = null,
+    /** The metas and Simkl mapping that give an anime catalog's ids their IMDb equivalent; null in unit tests without them. */
+    private val catalog: UsenetCatalogSource? = null,
 ) {
+    /** [contentId] is the title's own id, its meta's, when known. */
     fun search(config: UsenetSourceConfiguration, type: String, videoId: String,
         season: Int?, episode: Int?, groupName: String = BUILT_IN_USENET_GROUP_NAME,
-        groupId: String = BUILT_IN_USENET_GROUP_ID): Flow<UsenetSearchUpdate> = flow {
+        groupId: String = BUILT_IN_USENET_GROUP_ID, contentId: String? = null): Flow<UsenetSearchUpdate> = flow {
         if (!config.ready || type.lowercase() !in BUILT_IN_USENET_TYPES) return@flow
         val text = labels()
         val series = type.lowercase() != "movie"
         val (idSeason, idEpisode) = episodeNumbers(videoId)
-        val resolvedSeason = season ?: idSeason
-        val resolvedEpisode = episode ?: idEpisode
         val baseImdb = videoId.substringBefore(':').takeIf { it.matches(Regex("tt\\d+")) }
         val baseTmdb = videoId.removePrefix("tmdb:").substringBefore(':')
             .takeIf { it.toIntOrNull() != null }
-        val request = UsenetSearchRequest(baseImdb, baseTmdb, season = resolvedSeason,
+        // Indexers do not know an anime catalog's ids: the title, its meta or Simkl give the IMDb id and numbering.
+        val equivalent = if (baseImdb == null && baseTmdb == null) {
+            catalogImdbEquivalent(type, videoId, series, season, episode, contentId)
+        } else null
+        val resolvedSeason = equivalent?.season ?: season ?: idSeason
+        val resolvedEpisode = equivalent?.episode ?: episode ?: idEpisode
+        // The episode as searched, which picks its file in a pack, when it differs from the player's.
+        val searched = if (equivalent?.season != null && equivalent.episode != null) equivalent.season to equivalent.episode else null
+        // TMDB finds the show by its IMDb id when the video id is a catalog's own.
+        val lookupId = equivalent?.imdbId ?: videoId
+        val request = UsenetSearchRequest(baseImdb ?: equivalent?.imdbId, baseTmdb, season = resolvedSeason,
             episode = resolvedEpisode, series = series)
         if (series && (resolvedSeason == null || resolvedSeason < 0 || resolvedEpisode == null || resolvedEpisode < 1)) return@flow
         coroutineScope {
             // A failed child would cancel this scope; keep lookup failures per indexer.
             val titleLookup = async(start = CoroutineStart.LAZY) {
                 try {
-                    metadata.title(request.imdbId, request.tmdbId, videoId, series).let { found ->
+                    metadata.title(request.imdbId, request.tmdbId, lookupId, series).let { found ->
                         request.copy(imdbId = found.imdbId, tmdbId = found.tmdbId, tvdbId = found.tvdbId,
                             title = found.title, originalTitle = found.originalTitle,
                             otherTitles = found.otherTitles, year = found.year)
@@ -94,7 +139,7 @@ internal class BuiltInUsenetService(
             val seasonEpisodes = AtomicReference<Map<Int, Int>?>(null)
             val seasonLookup = if (!series) null else launch(start = CoroutineStart.LAZY) {
                 val counts = withTimeoutOrNull(SEASON_LOOKUP_TIMEOUT_MS) {
-                    try { metadata.seasonEpisodes(request.tmdbId, videoId) }
+                    try { metadata.seasonEpisodes(request.tmdbId, lookupId) }
                     catch (e: CancellationException) { throw e }
                     catch (_: Exception) { null }
                 }
@@ -166,7 +211,7 @@ internal class BuiltInUsenetService(
                             val outcome = outcomes.getValue(it.nzbUrl)
                             it.toStream(config, series, groupName, groupId, text, outcome.failed, outcome.played,
                                 pack = series && it.packSeasons.isNotEmpty(), seasonEpisodes = seasonCounts(),
-                                sibling = outcome.sibling)
+                                sibling = outcome.sibling, searched = searched)
                         }, isLoading = loading)))
                 }
                 // The list appears whole once every indexer answered, unless one is slow: after a short
@@ -271,9 +316,10 @@ internal class BuiltInUsenetService(
         }
     }
 
+    /** [searched] is the season and episode the release was searched by, when they differ from the episode's own. */
     private fun UsenetRelease.toStream(config: UsenetSourceConfiguration, series: Boolean, groupName: String,
         groupId: String, text: UsenetLabels, failed: Boolean = false, played: Boolean = false, pack: Boolean = false,
-        seasonEpisodes: Map<Int, Int>? = null, sibling: SiblingOutcome? = null): StreamItem {
+        seasonEpisodes: Map<Int, Int>? = null, sibling: SiblingOutcome? = null, searched: Pair<Int, Int>? = null): StreamItem {
         fun gb(bytes: Long) = "%.2f GB".format(Locale.ROOT, bytes / (1024.0 * 1024 * 1024))
         // A pack's size is its seasons', not the episode's that plays: with their episode counts, the
         // size badge shows an episode's share and the details keep the whole size.
@@ -315,7 +361,70 @@ internal class BuiltInUsenetService(
             nzbUrl = nzbUrl,
             nzbServers = config.servers(),
             publishedAt = publishedAt.takeIf { it > 0 },
+            usenetSeason = searched?.first,
+            usenetEpisode = searched?.second,
         )
+    }
+
+    /**
+     * [videoId] on IMDb when it is an anime catalog's id, from the first that says:
+     * 1. the title's own IMDb id ([contentId]), with the episode's numbering;
+     * 2. the IMDb id and numbering its meta gives, from the meta the details page holds or, when it
+     *    is no longer held, from the catalog's addon;
+     * 3. Simkl's mapping: the IMDb id (the meta's first) and the episode's TVDB numbering.
+     * Null for any other id, or when none says: the catalog's own numbers would name another episode.
+     */
+    private suspend fun catalogImdbEquivalent(type: String, videoId: String, series: Boolean,
+        season: Int?, episode: Int?, contentId: String?): ImdbEquivalent? {
+        val metaId = animeMetaId(videoId, series) ?: return null
+        val held = contentId?.let { id -> heldMeta(type, id) }
+        val equivalent = contentImdbEquivalent(contentId, held?.videos?.firstOrNull { it.id == videoId.trim() },
+            series, season, episode)
+            ?: run {
+                val meta = held ?: heldMeta(type, metaId) ?: fetchedMeta(type, metaId)
+                meta?.let { imdbEquivalent(it, videoId, series) } ?: simklEquivalent(videoId, series,
+                    metaImdb = meta?.let { m -> m.videos.firstOrNull { it.id == videoId.trim() }?.imdbId ?: m.imdbId })
+            }
+        runCatching { Log.i("UsenetSearch", "$videoId on IMDb: ${equivalent ?: "unknown"}") }
+        return equivalent
+    }
+
+    private suspend fun heldMeta(type: String, id: String): MetaDetails? = try {
+        catalog?.heldMeta(type, id)
+    } catch (e: CancellationException) { throw e }
+    catch (_: Exception) { null }
+
+    private suspend fun fetchedMeta(type: String, id: String): MetaDetails? {
+        val catalog = catalog ?: return null
+        return try {
+            withTimeoutOrNull(META_LOOKUP_TIMEOUT_MS) { catalog.fetchedMeta(type, id) }
+        } catch (e: CancellationException) { throw e }
+        catch (_: Exception) { null }
+    }
+
+    /**
+     * [videoId] on IMDb as Simkl maps its anime catalog id: [metaImdb], or Simkl's IMDb id, and for an
+     * episode the TVDB season and episode Simkl gives the catalog's episode number. Null when Simkl
+     * is not set up, does not know the id, or does not map the episode.
+     */
+    private suspend fun simklEquivalent(videoId: String, series: Boolean, metaImdb: String?): ImdbEquivalent? {
+        val catalog = catalog ?: return null
+        val parts = videoId.trim().split(':')
+        val source = parts.getOrNull(0)?.lowercase(Locale.ROOT) ?: return null
+        val id = parts.getOrNull(1)?.takeIf { it.toLongOrNull() != null } ?: return null
+        return try {
+            withTimeoutOrNull(SIMKL_LOOKUP_TIMEOUT_MS) {
+                val ids = catalog.simklIds(source, id) ?: return@withTimeoutOrNull null
+                val imdb = listOf(metaImdb, ids.imdb).firstNotNullOfOrNull { candidate ->
+                    candidate?.trim()?.takeIf { it.matches(Regex("tt\\d+")) }
+                } ?: return@withTimeoutOrNull null
+                if (!series) return@withTimeoutOrNull ImdbEquivalent(imdb, null, null)
+                val number = absoluteAnimeEpisodeNumber(videoId) ?: return@withTimeoutOrNull null
+                catalog.simklEpisodes(ids.simklId, ids.type).firstOrNull { it.animeEpisode == number }
+                    ?.let { ImdbEquivalent(imdb, it.tvdbSeason, it.tvdbEpisode) }
+            }
+        } catch (e: CancellationException) { throw e }
+        catch (_: Exception) { null }
     }
 
     /** One search of [indexer] in its statistics; its releases count for it once downloaded or played. */
@@ -334,6 +443,10 @@ internal class BuiltInUsenetService(
         private val SEASON_COUNTED = Any()
         /** How long a search may use for a season's episode count; the list never waits for it. */
         private const val SEASON_LOOKUP_TIMEOUT_MS = 3_000L
+        /** How long a search of an anime catalog's id waits for its meta when the details page no longer holds it. */
+        private const val META_LOOKUP_TIMEOUT_MS = 5_000L
+        /** How long a search of an anime catalog's id waits for Simkl's mapping when its meta gives none. */
+        private const val SIMKL_LOOKUP_TIMEOUT_MS = 5_000L
         /** How long a movie's ID results wait for its metadata before they are listed unchecked. */
         private const val ID_CHECK_WAIT_MS = 3_000L
         /** How long a search waits for every indexer before it shows what came. */

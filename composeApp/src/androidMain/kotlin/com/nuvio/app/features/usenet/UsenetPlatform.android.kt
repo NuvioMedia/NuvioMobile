@@ -37,7 +37,10 @@ internal actual object UsenetPlatform {
     private val client by lazy { NewznabClient(indexerStateStorage, sourceStats) { UsenetRepository.engineSettings().searchAgent } }
     private val tester by lazy { NntpProviderTester() }
     private val tuner by lazy { NntpProviderTuner(tester) }
-    private val service by lazy { BuiltInUsenetService(client, unplayable = unplayable, labels = ::localizedLabels, stats = sourceStats) }
+    private val service by lazy {
+        BuiltInUsenetService(client, unplayable = unplayable, labels = ::localizedLabels, stats = sourceStats,
+            catalog = AppUsenetCatalogSource)
+    }
     private val sidecar by lazy { UsenetSidecar(appContext, { UsenetRepository.engineSettings() }, unplayable, sourceStats) }
 
     fun initialize(context: Context) {
@@ -114,11 +117,12 @@ internal actual object UsenetPlatform {
         season: Int?,
         episode: Int?,
         groupName: String,
+        contentId: String?,
     ): Flow<UsenetSearchUpdate> {
         if (!ready || !config.ready) return emptyFlow()
         // The engine is likely needed soon: start Go and its trust roots while the indexers answer.
         sidecar.prewarmForSources()
-        return service.search(config, type, videoId, season, episode, groupName, BUILT_IN_USENET_GROUP_ID)
+        return service.search(config, type, videoId, season, episode, groupName, BUILT_IN_USENET_GROUP_ID, contentId)
             .flowOn(Dispatchers.IO)
     }
 

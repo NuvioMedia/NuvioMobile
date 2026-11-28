@@ -93,8 +93,9 @@ internal class UsenetSidecar(
 
     private fun preparationKey(stream: StreamItem, season: Int?, episode: Int?, profileId: Int?): PreparationKey {
         val configuration = settings()
+        val (engineSeason, engineEpisode) = engineEpisode(stream, season, episode)
         return PreparationKey(stream.nzbUrl, stream.nzbServers, nzbHeaders(stream, configuration), stream.fileIdx,
-            stream.fileMustInclude, season, episode, configuration, profileId)
+            stream.fileMustInclude, engineSeason, engineEpisode, configuration, profileId)
     }
 
     /** The release each recent engine URL plays, so playback outcomes reach its entry. */
@@ -297,8 +298,10 @@ internal class UsenetSidecar(
                 put("servers", JSONArray(stream.nzbServers))
                 stream.fileIdx?.let { put("fileIdx", it) }
                 stream.fileMustInclude?.let { put("fileMustInclude", it) }
-                season?.let { put("season", it) }
-                episode?.let { put("episode", it) }
+                // A pack's file is picked by the numbering the release was searched by.
+                val (engineSeason, engineEpisode) = engineEpisode(stream, season, episode)
+                engineSeason?.let { put("season", it) }
+                engineEpisode?.let { put("episode", it) }
                 put("headers", JSONObject(nzbHeaders(stream, configuration)))
                 put("config", JSONObject().apply {
                     put("profile", configuration.profile)

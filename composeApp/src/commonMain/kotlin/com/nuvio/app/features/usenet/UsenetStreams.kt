@@ -43,6 +43,8 @@ internal class UsenetStreamSource(
     private val videoId: String,
     private val season: Int?,
     private val episode: Int?,
+    /** The title's own id, its meta's, which maps an anime catalog's episode to IMDb. */
+    private val contentId: String? = null,
 ) {
     val addonId: String get() = BUILT_IN_USENET_GROUP_ID
     val addonName: String get() = BUILT_IN_USENET_GROUP_NAME
@@ -57,7 +59,7 @@ internal class UsenetStreamSource(
         var last: AddonStreamGroup? = null
         val failures = mutableListOf<String>()
         try {
-            UsenetPlatform.search(config, type, videoId, season, episode, addonName).collect { update ->
+            UsenetPlatform.search(config, type, videoId, season, episode, addonName, contentId).collect { update ->
                 update.failure?.let { failures += it }
                 update.group?.let { group ->
                     last = group
@@ -84,12 +86,15 @@ internal class UsenetStreamSource(
     }
 
     companion object {
-        /** The search for this title, or null when built-in Usenet is off, incomplete or cannot search it. */
-        fun create(type: String, videoId: String, season: Int?, episode: Int?): UsenetStreamSource? {
+        /**
+         * The search for this title, or null when built-in Usenet is off, incomplete or cannot search
+         * it. [contentId] is the title's own id, its meta's, when known.
+         */
+        fun create(type: String, videoId: String, season: Int?, episode: Int?, contentId: String? = null): UsenetStreamSource? {
             if (!UsenetRepository.isSupported) return null
             val config = UsenetRepository.sources()
             if (!config.ready || !canSearch(type, videoId, season, episode)) return null
-            return UsenetStreamSource(config, type, videoId, season, episode)
+            return UsenetStreamSource(config, type, videoId, season, episode, contentId)
         }
 
         /**

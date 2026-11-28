@@ -18,6 +18,32 @@ import kotlin.test.assertTrue
 class MetaDetailsParserTest {
 
     @Test
+    fun `an episode's IMDb id and numbering are read in any form without failing the meta`() {
+        val result = MetaDetailsParser.parse(
+            """
+            {
+              "meta": {
+                "id": "kitsu:1",
+                "type": "series",
+                "name": "Show",
+                "videos": [
+                  { "id": "kitsu:1:1", "title": "1", "season": 1, "episode": 1, "imdb_id": "tt123", "imdbSeason": 2, "imdbEpisode": 1 },
+                  { "id": "kitsu:1:2", "title": "2", "season": 1, "episode": 2, "imdb_id": " tt123 ", "imdbSeason": "2", "imdbEpisode": "2" },
+                  { "id": "kitsu:1:3", "title": "3", "season": 1, "episode": 3, "imdb_id": 123, "imdbSeason": {"n": 2}, "imdbEpisode": 2.5 },
+                  { "id": "kitsu:1:4", "title": "4", "season": 1, "episode": 4, "imdb_id": "nm123", "imdbSeason": "S2", "imdbEpisode": -1 },
+                  { "id": "kitsu:1:5", "title": "5", "season": 1, "episode": 5 }
+                ]
+              }
+            }
+            """.trimIndent()
+        )
+
+        assertEquals(listOf("tt123", "tt123", null, null, null), result.videos.map { it.imdbId })
+        assertEquals(listOf(2, 2, null, null, null), result.videos.map { it.imdbSeason })
+        assertEquals(listOf(1, 2, null, null, null), result.videos.map { it.imdbEpisode })
+    }
+
+    @Test
     fun `parse rejects null meta object without json object cast crash`() {
         assertFailsWith<IllegalStateException> {
             MetaDetailsParser.parse("""{"meta":null}""")

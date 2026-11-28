@@ -163,6 +163,7 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
 
         PlayerStreamsRepository.loadEpisodeStreams(
             type = type,
+            parentMetaId = parentMetaId,
             videoId = nextVideo.id,
             season = nextVideo.season,
             episode = nextVideo.episode,
@@ -353,6 +354,7 @@ internal fun CoroutineScope.launchPlayerNextEpisodeAutoPlay(
             result.toastMessage()?.let { NuvioToastController.show(it) }
             PlayerStreamsRepository.loadEpisodeStreams(
                 type = type,
+                parentMetaId = parentMetaId,
                 videoId = nextVideo.id,
                 season = nextVideo.season,
                 episode = nextVideo.episode,
@@ -391,6 +393,7 @@ internal fun PlayerScreenRuntime.preloadNextEpisodeSources() {
     nextEpisodePreloadJob = scope.launch {
         PlayerStreamsRepository.loadEpisodeStreams(
             type = type,
+            parentMetaId = parentMetaId,
             videoId = nextEp.videoId,
             season = nextEp.season,
             episode = nextEp.episode

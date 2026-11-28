@@ -28,6 +28,9 @@ data class CachedStreamLink(
     /** The kept release's name, which its binge group and outcome are found by. */
     val releaseTitle: String? = null,
     val publishedAt: Long? = null,
+    /** The season and episode the kept release was searched by, when the episode's own numbering differs. */
+    val usenetSeason: Int? = null,
+    val usenetEpisode: Int? = null,
 )
 
 internal expect fun epochMs(): Long
@@ -72,6 +75,8 @@ object StreamLinkCacheRepository {
         nzbUrl: String? = null,
         releaseTitle: String? = null,
         publishedAt: Long? = null,
+        usenetSeason: Int? = null,
+        usenetEpisode: Int? = null,
     ) {
         val entry = CachedStreamLink(
             url = url,
@@ -95,6 +100,8 @@ object StreamLinkCacheRepository {
             nzbUrl = nzbUrl,
             releaseTitle = releaseTitle,
             publishedAt = publishedAt,
+            usenetSeason = usenetSeason,
+            usenetEpisode = usenetEpisode,
         )
         val payload = json.encodeToString(CachedStreamLink.serializer(), entry)
         StreamLinkCacheStorage.saveEntry(hashedKey(contentKey), payload)

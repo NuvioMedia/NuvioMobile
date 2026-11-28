@@ -190,7 +190,7 @@ object StreamsRepository {
             groupByRepository = pluginUiState.groupStreamsByRepository,
         )
         // Built-in sources are searched on play, so a title can play even with no addon installed.
-        val usenetSource = if (isNativeServerRequest) null else UsenetStreamSource.create(type, videoId, season, episode)
+        val usenetSource = if (isNativeServerRequest) null else UsenetStreamSource.create(type, videoId, season, episode, parentMetaId)
 
         if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && usenetSource == null) {
             _uiState.value = StreamsUiState(

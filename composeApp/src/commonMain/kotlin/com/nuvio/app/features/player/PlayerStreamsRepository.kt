@@ -76,12 +76,14 @@ object PlayerStreamsRepository {
         }
     }
 
+    /** [parentMetaId] is the title's own id, which built-in Usenet maps an anime catalog's episode by. */
     fun loadSources(
         type: String,
         videoId: String,
         season: Int? = null,
         episode: Int? = null,
         forceRefresh: Boolean = false,
+        parentMetaId: String? = null,
     ) {
         fetchStreams(
             type = type,
@@ -89,6 +91,7 @@ object PlayerStreamsRepository {
             season = season,
             episode = episode,
             forceRefresh = forceRefresh,
+            parentMetaId = parentMetaId,
             stateFlow = _sourceState,
             requestKeyHolder = { sourceRequestKey },
             setRequestKey = { sourceRequestKey = it },
@@ -103,6 +106,7 @@ object PlayerStreamsRepository {
         season: Int? = null,
         episode: Int? = null,
         forceRefresh: Boolean = false,
+        parentMetaId: String? = null,
     ) {
         fetchStreams(
             type = type,
@@ -110,6 +114,7 @@ object PlayerStreamsRepository {
             season = season,
             episode = episode,
             forceRefresh = forceRefresh,
+            parentMetaId = parentMetaId,
             stateFlow = _episodeStreamsState,
             requestKeyHolder = { episodeStreamsRequestKey },
             setRequestKey = { episodeStreamsRequestKey = it },
@@ -194,6 +199,7 @@ object PlayerStreamsRepository {
         season: Int?,
         episode: Int?,
         forceRefresh: Boolean,
+        parentMetaId: String?,
         stateFlow: MutableStateFlow<StreamsUiState>,
         requestKeyHolder: () -> String?,
         setRequestKey: (String?) -> Unit,
@@ -261,7 +267,7 @@ object PlayerStreamsRepository {
             groupByRepository = pluginUiState.groupStreamsByRepository,
         )
         // The same targets as the stream screen, so both share one search.
-        val usenetSource = if (isNativeServerRequest) null else UsenetStreamSource.create(type, videoId, season, episode)
+        val usenetSource = if (isNativeServerRequest) null else UsenetStreamSource.create(type, videoId, season, episode, parentMetaId)
 
         if (installedAddons.isEmpty() && pluginProviderGroups.isEmpty() && serverSources.isEmpty() && usenetSource == null) {
             stateFlow.value = StreamsUiState(

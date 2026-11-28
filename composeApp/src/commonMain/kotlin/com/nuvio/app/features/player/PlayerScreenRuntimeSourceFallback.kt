@@ -137,6 +137,7 @@ internal fun PlayerScreenRuntime.tryFallbackToNextSourceAfterError(message: Stri
             // Joins the shared source search, so results the stream screen already found are reused.
             PlayerStreamsRepository.loadSources(
                 type = contentType ?: parentMetaType,
+                parentMetaId = parentMetaId,
                 videoId = videoId,
                 season = season,
                 episode = episode,

@@ -354,6 +354,7 @@ internal fun PlayerScreenRuntime.switchToSource(
                 if (vid != null) {
                     PlayerStreamsRepository.loadSources(
                         type = contentType ?: parentMetaType,
+                        parentMetaId = parentMetaId,
                         videoId = vid,
                         season = activeSeasonNumber,
                         episode = activeEpisodeNumber,
@@ -448,6 +449,7 @@ internal fun PlayerScreenRuntime.switchToEpisodeStream(
             onStale = {
                 PlayerStreamsRepository.loadEpisodeStreams(
                     type = contentType ?: parentMetaType,
+                    parentMetaId = parentMetaId,
                     videoId = episode.id,
                     season = episode.season,
                     episode = episode.episode,
@@ -603,6 +605,7 @@ internal fun PlayerScreenRuntime.openSourcesPanel() {
     val vid = activeVideoId ?: return
     PlayerStreamsRepository.loadSources(
         type = contentType ?: parentMetaType,
+        parentMetaId = parentMetaId,
         videoId = vid,
         season = activeSeasonNumber,
         episode = activeEpisodeNumber,

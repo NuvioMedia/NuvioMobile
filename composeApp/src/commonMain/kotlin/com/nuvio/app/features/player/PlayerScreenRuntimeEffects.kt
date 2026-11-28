@@ -962,6 +962,7 @@ internal fun PlayerScreenRuntime.tryRefreshExpiredLinkAfterError(message: String
         try {
             PlayerStreamsRepository.loadSources(
                 type = type,
+                parentMetaId = parentMetaId,
                 videoId = currentVideoId,
                 season = season,
                 episode = episode,

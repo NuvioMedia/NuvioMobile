@@ -44,6 +44,12 @@ data class StreamItem(
     val fileMustInclude: String? = null,
     /** When a built-in Usenet release was posted, in epoch milliseconds, if its indexer said. */
     val publishedAt: Long? = null,
+    /**
+     * The season and episode a built-in Usenet release was searched by, when the episode's own
+     * numbering differs (an anime catalog's); its file in a pack is chosen by these.
+     */
+    val usenetSeason: Int? = null,
+    val usenetEpisode: Int? = null,
 ) {
     val streamLabel: String
         get() = name?.takeIf { it.isNotBlank() } ?: "Stream"

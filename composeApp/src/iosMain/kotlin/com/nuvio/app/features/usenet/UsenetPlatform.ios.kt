@@ -51,6 +51,7 @@ internal actual object UsenetPlatform {
         season: Int?,
         episode: Int?,
         groupName: String,
+        contentId: String?,
     ): Flow<UsenetSearchUpdate> = emptyFlow()
 
     actual val outcomeChanges: StateFlow<Int> = unchanged

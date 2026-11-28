@@ -93,7 +93,10 @@ internal expect object UsenetPlatform {
 
     fun indexerStatus(indexer: UsenetIndexer): UsenetIndexerStatus
 
-    /** Searches every enabled indexer; nothing when [config] is not ready or the type is not searched. */
+    /**
+     * Searches every enabled indexer; nothing when [config] is not ready or the type is not searched.
+     * [contentId] is the title's own id, its meta's, when known.
+     */
     fun search(
         config: UsenetSourceConfiguration,
         type: String,
@@ -101,6 +104,7 @@ internal expect object UsenetPlatform {
         season: Int?,
         episode: Int?,
         groupName: String,
+        contentId: String?,
     ): Flow<UsenetSearchUpdate>
 
     /** Increments when a release's outcome is remembered, so shown results can be arranged again. */

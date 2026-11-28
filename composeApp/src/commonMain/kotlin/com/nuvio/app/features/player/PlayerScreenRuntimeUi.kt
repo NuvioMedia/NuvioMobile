@@ -763,6 +763,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             if (vid != null) {
                 PlayerStreamsRepository.loadSources(
                     type = contentType ?: parentMetaType,
+                    parentMetaId = parentMetaId,
                     videoId = vid,
                     season = activeSeasonNumber,
                     episode = activeEpisodeNumber,
@@ -797,6 +798,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
         onEpisodeStreamsRequested = { episode ->
             PlayerStreamsRepository.loadEpisodeStreams(
                 type = contentType ?: parentMetaType,
+                parentMetaId = parentMetaId,
                 videoId = episode.id,
                 season = episode.season,
                 episode = episode.episode,
@@ -814,6 +816,7 @@ private fun PlayerScreenRuntime.RenderPlayerModals(displayedPositionMs: Long) {
             if (episode != null) {
                 PlayerStreamsRepository.loadEpisodeStreams(
                     type = contentType ?: parentMetaType,
+                    parentMetaId = parentMetaId,
                     videoId = episode.id,
                     season = episode.season,
                     episode = episode.episode,
