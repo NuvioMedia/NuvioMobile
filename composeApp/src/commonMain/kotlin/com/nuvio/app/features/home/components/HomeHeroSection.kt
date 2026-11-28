@@ -107,6 +107,7 @@ fun HomeHeroSection(
     listState: LazyListState? = null,
     stretchPx: () -> Float = { 0f },
     showImdbRating: Boolean = true,
+    showReleaseStatus: Boolean = true,
     showMdbListRatings: Boolean = false,
     onItemClick: ((MetaPreview) -> Unit)? = null,
 ) {
@@ -315,6 +316,7 @@ fun HomeHeroSection(
                                         item = item,
                                         layout = layout,
                                         showImdbRating = showImdbRating,
+                                        showReleaseStatus = showReleaseStatus,
                                         showMdbListRatings = showMdbListRatings,
                                         onItemClick = onItemClick,
                                     )
@@ -428,6 +430,7 @@ private fun HeroContentBlock(
     item: MetaPreview,
     layout: HomeHeroLayout,
     showImdbRating: Boolean,
+    showReleaseStatus: Boolean,
     showMdbListRatings: Boolean,
     onItemClick: ((MetaPreview) -> Unit)?,
 ) {
@@ -482,6 +485,7 @@ private fun HeroContentBlock(
             item = item,
             isTablet = layout.isTablet,
             showImdbRating = showImdbRating,
+            showReleaseStatus = showReleaseStatus,
             showMdbListRatings = showMdbListRatings,
         )
     }

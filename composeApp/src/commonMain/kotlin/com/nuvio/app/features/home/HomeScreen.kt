@@ -1026,6 +1026,7 @@ fun HomeScreen(
                                 stretchPx = { heroStretchState.stretchPx },
                                 showImdbRating = homeHeroState.showImdbRating,
                                 showMdbListRatings = homeHeroState.showMdbListRatings,
+                                showReleaseStatus = !homeSettingsUiState.hideUnreleasedContent,
                                 onItemClick = onPosterClick,
                             )
 

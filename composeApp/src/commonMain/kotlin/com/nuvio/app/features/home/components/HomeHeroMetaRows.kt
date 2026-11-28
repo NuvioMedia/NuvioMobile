@@ -40,6 +40,7 @@ internal fun HomeHeroMetaRows(
     item: MetaPreview,
     isTablet: Boolean,
     showImdbRating: Boolean,
+    showReleaseStatus: Boolean,
     showMdbListRatings: Boolean,
 ) {
     val type = item.type.trim().lowercase()
@@ -52,7 +53,7 @@ internal fun HomeHeroMetaRows(
     val genre = item.genres.firstOrNull()?.takeIf { it.isNotBlank() }
     val runtime = formatRuntimeForDisplay(item.runtime)?.takeIf { it.isNotBlank() }
     val release = item.releaseInfo?.takeIf { it.isNotBlank() }?.let(::formatReleaseDateForDisplay)
-    val status = item.status?.trim()?.takeIf { it.isNotBlank() }
+    val status = item.status?.trim()?.takeIf { showReleaseStatus && it.isNotBlank() }
         ?.let { localizedMediaStatusLabel(it, isSeries).uppercase() }
     val badges = listOfNotNull(item.ageRating?.trim()?.takeIf { it.isNotBlank() }, status)
     val language = item.language?.trim()?.takeIf { it.isNotBlank() }?.uppercase()
