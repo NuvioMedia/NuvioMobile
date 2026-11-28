@@ -663,6 +663,7 @@ internal fun settingsSearchEntries(
                 PlaybackSearchRow("exo-native-memory", stringResource(Res.string.settings_playback_exo_native_memory), stringResource(Res.string.settings_playback_exo_native_memory_description), page = SettingsPage.PlaybackBuffer),
                 PlaybackSearchRow("custom-buffers", stringResource(Res.string.settings_playback_buffer_custom), stringResource(Res.string.settings_playback_buffer_custom_description), page = SettingsPage.PlaybackBuffer),
                 PlaybackSearchRow("vod-cache", stringResource(Res.string.settings_playback_vod_cache), stringResource(Res.string.settings_playback_vod_cache_description), page = SettingsPage.PlaybackBuffer),
+                PlaybackSearchRow("night-mode", stringResource(Res.string.settings_playback_night_mode), stringResource(Res.string.settings_playback_night_mode_description), page = SettingsPage.PlaybackAudio),
                 PlaybackSearchRow("remember-audio-delay", stringResource(Res.string.settings_playback_remember_audio_delay), stringResource(Res.string.settings_playback_remember_audio_delay_description), page = SettingsPage.PlaybackAudio),
                 PlaybackSearchRow("downmix", stringResource(Res.string.settings_playback_downmix), stringResource(Res.string.settings_playback_downmix_description), page = SettingsPage.PlaybackAudio),
             ),

@@ -105,6 +105,8 @@ internal expect object PlayerSettingsStorage {
     fun saveMaintainOriginalAudioOnDownmix(enabled: Boolean)
     fun loadCenterMixLevelDb(): Int?
     fun saveCenterMixLevelDb(db: Int)
+    fun loadNightMode(): String?
+    fun saveNightMode(value: String)
     fun loadDecoderPriority(): Int?
     fun saveDecoderPriority(priority: Int)
     fun loadMapDV7ToHevc(): Boolean?

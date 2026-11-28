@@ -44,6 +44,10 @@ interface PlayerEngineController {
     fun isCenterMixActive(): Boolean = false
     /** Center channel level in the downmix, from [CENTER_MIX_LEVEL_MIN_DB] to [CENTER_MIX_LEVEL_MAX_DB]. */
     fun setCenterMixLevelDb(db: Int) {}
+    /** Whether [setNightMode] has an effect; the player hides the night mode control otherwise. */
+    val supportsNightMode: Boolean get() = false
+    /** Lifts dialogue and quiet sounds by the [mode]'s level; [NightMode.OFF] leaves the audio as mixed. */
+    fun setNightMode(mode: NightMode) {}
     fun configureIosVideoOutput(settings: PlayerSettingsUiState) {}
     fun updateNowPlayingMetadata(info: PlayerNowPlayingInfo) {}
     fun clearNowPlayingInfo() {}

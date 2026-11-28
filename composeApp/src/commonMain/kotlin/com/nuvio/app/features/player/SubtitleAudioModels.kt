@@ -93,6 +93,19 @@ enum class AudioOutputChannels(
     }
 }
 
+/** Night mode level: how far dialogue and quiet sounds are lifted, from off to strong. */
+enum class NightMode(val settingValue: String) {
+    OFF("off"),
+    LIGHT("light"),
+    MEDIUM("medium"),
+    STRONG("strong");
+
+    companion object {
+        fun fromSettingValue(value: String?): NightMode =
+            entries.firstOrNull { it.settingValue == value } ?: OFF
+    }
+}
+
 /** The downmix setting only works through the app's FFmpeg audio decoder ("Prefer app decoders"). */
 val PlayerSettingsUiState.effectiveDownmixEnabled: Boolean
     get() = downmixEnabled && decoderPriority == 2

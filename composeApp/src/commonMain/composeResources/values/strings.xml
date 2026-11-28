@@ -426,6 +426,7 @@
     <string name="compose_player_audio_amplification">Amplification</string>
     <string name="compose_player_audio_amplification_keep">Keep for next videos</string>
     <string name="compose_player_center_mix">Center Mix Level</string>
+    <string name="compose_player_night_mode">Night Mode</string>
     <string name="compose_player_audio">Audio</string>
     <string name="compose_player_auto_sync">Auto Sync</string>
     <string name="compose_player_bold">Bold</string>
@@ -1302,6 +1303,15 @@
     <string name="settings_playback_exo_chapters_description">Read the chapters of MKV files to mark them on the progress bar and list them in the player.</string>
     <string name="settings_playback_chapter_title">Show Chapter Title</string>
     <string name="settings_playback_chapter_title_description">Show the name of the current chapter above the progress bar.</string>
+    <string name="settings_playback_night_mode">Night Mode</string>
+    <string name="settings_playback_night_mode_description">Lifts dialogue and quiet sounds, so you can keep the volume low. Works with ExoPlayer.</string>
+    <string name="settings_playback_night_mode_off">Off</string>
+    <string name="settings_playback_night_mode_light">Light</string>
+    <string name="settings_playback_night_mode_light_desc">Gentle lift, up to +6 dB</string>
+    <string name="settings_playback_night_mode_medium">Medium</string>
+    <string name="settings_playback_night_mode_medium_desc">Dialogue clearly lifted, up to +10 dB</string>
+    <string name="settings_playback_night_mode_strong">Strong</string>
+    <string name="settings_playback_night_mode_strong_desc">Up to +15 dB, for late-night viewing at low volume</string>
     <string name="settings_playback_remember_audio_delay">Remember Audio Delay per Device</string>
     <string name="settings_playback_remember_audio_delay_description">Restore the audio delay set in the player whenever the same output plays again, such as the phone speaker, wired headphones or each Bluetooth device</string>
     <string name="settings_playback_downmix_section">Downmix</string>
