@@ -841,7 +841,7 @@
     <string name="settings_continue_watching_sort_mode_split_upcoming">Tách hàng Sắp phát sóng</string>
     <string name="settings_continue_watching_sort_mode_split_upcoming_desc">Chuyển các tập chưa phát sóng vào hàng Sắp phát sóng riêng biệt.</string>
     <string name="settings_continue_watching_click_action_title">Khi chọn</string>
-    <string name="settings_continue_watching_click_action_description">Mở gì khi bạn chọn một mục trong danh sách Tiếp tục xem</string>
+    <string name="settings_continue_watching_click_action_description">Mở gì khi bạn chọn một mục trong Tiếp tục xem</string>
     <string name="settings_continue_watching_click_action_stream">Mở luồng phát</string>
     <string name="settings_continue_watching_click_action_stream_desc">Chọn một nguồn hoặc tiếp tục phát</string>
     <string name="settings_continue_watching_click_action_details">Mở Chi tiết</string>
@@ -2594,6 +2594,7 @@
     <string name="subtitle_shadow">Đổ bóng</string>
     <string name="subtitle_shadow_description">Tách chữ khỏi các cảnh sáng.</string>
     <string name="subtitle_shadow_opacity">Độ mờ bóng</string>
+    <string name="subtitle_customize_ass">Tùy chỉnh kiểu ASS/SSA</string>
     <string name="subtitle_shadow_size">Kích thước bóng</string>
     <string name="subtitle_outline_width">Độ rộng viền</string>
     <string name="subtitle_reset_appearance">Đặt lại giao diện</string>
