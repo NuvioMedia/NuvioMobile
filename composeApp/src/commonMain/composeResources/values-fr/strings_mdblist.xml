@@ -4,7 +4,7 @@
     <string name="settings_mdb_ratings_connected_account">Utilisation du compte connecté</string>
     <string name="tracking_source_mdblist">MDBList</string>
     <string name="settings_mdblist_library_description">Liste de suivi et vos listes statiques de films et de séries.</string>
-    <string name="settings_mdblist_progress_description">Historique de visionnage, progression de reprise et Épisode suivant depuis MDBList.</string>
+    <string name="settings_mdblist_progress_description">Historique de visionnage, progression de reprise et épisode suivant depuis MDBList.</string>
     <string name="library_mdblist_title">Bibliothèque MDBList</string>
     <string name="library_mdblist_load_failed">Impossible de charger votre bibliothèque MDBList</string>
     <string name="library_mdblist_empty_title">Votre bibliothèque MDBList est vide</string>

@@ -256,7 +256,7 @@
     <string name="collections_editor_trakt_sort_title">Titre</string>
     <string name="collections_editor_trakt_sort_released">Date de sortie</string>
     <string name="collections_editor_trakt_sort_runtime">Durée</string>
-    <string name="collections_editor_trakt_sort_popular">Populaire</string>
+    <string name="collections_editor_trakt_sort_popular">Populaires</string>
     <string name="collections_editor_trakt_sort_percentage">Pourcentage</string>
     <string name="collections_editor_trakt_sort_votes">Votes</string>
     <string name="collections_editor_trakt_enter_name_url_or_id">Saisissez le nom, l’URL ou l’ID d’une liste Trakt</string>
@@ -299,7 +299,7 @@
     <string name="collections_editor_tmdb_network_prime_video">Prime Video</string>
     <string name="collections_editor_tmdb_network_hulu">Hulu</string>
     <string name="collections_editor_tmdb_sort_original">Original</string>
-    <string name="collections_editor_tmdb_sort_popular">Populaire</string>
+    <string name="collections_editor_tmdb_sort_popular">Populaires</string>
     <string name="collections_editor_tmdb_sort_top_rated">Mieux notés</string>
     <string name="collections_editor_tmdb_sort_recent">Récents</string>
     <string name="collections_editor_tmdb_sort_vote_count">Les plus votés</string>
@@ -594,7 +594,7 @@
     <string name="settings_licenses_attributions_tmdb_title">The Movie Database (TMDB)</string>
     <string name="settings_licenses_attributions_tmdb_body">Nuvio utilise l’API TMDB pour les métadonnées des films et des séries, les visuels, les bandes-annonces, la distribution, les détails de production, les collections et les recommandations. Ce produit utilise l’API TMDB, mais n’est ni approuvé ni certifié par TMDB.</string>
     <string name="settings_licenses_attributions_imdb_title">Jeux de données non commerciaux d’IMDb</string>
-    <string name="settings_licenses_attributions_imdb_body">Nuvio utilise les jeux de données non commerciaux IMDb, y compris title.ratings.tsv.gz, pour les notes et le nombre de votes IMDb. Informations fournies par IMDb (https://www.imdb.com). Utilisé avec autorisation. Les données IMDb sont destinées à un usage personnel et non commercial selon les conditions d’IMDb.</string>
+    <string name="settings_licenses_attributions_imdb_body">Nuvio utilise les jeux de données non commerciaux d’IMDb, dont title.ratings.tsv.gz, pour les notes et le nombre de votes IMDb. Informations fournies par IMDb (https://www.imdb.com). Utilisées avec autorisation. Les données d’IMDb sont destinées à un usage personnel et non commercial, conformément aux conditions d’IMDb.</string>
     <string name="settings_licenses_attributions_trakt_title">Trakt</string>
     <string name="settings_licenses_attributions_trakt_body">Nuvio se connecte à Trakt pour l’authentification du compte, l’historique de visionnage, la synchronisation de la progression, les données de la bibliothèque, les notes, les listes et les commentaires. Nuvio n’est ni affilié à Trakt ni approuvé par Trakt.</string>
     <string name="settings_licenses_attributions_simkl_title">Simkl</string>
@@ -851,7 +851,7 @@
     <string name="upcoming_section_title">À venir</string>
     <string name="settings_continue_watching_section_card_style">STYLE DE CARTE D’AFFICHE</string>
     <string name="settings_continue_watching_section_on_launch">AU DÉMARRAGE</string>
-    <string name="settings_continue_watching_section_up_next_behavior">COMPORTEMENT DE LA SUITE</string>
+    <string name="settings_continue_watching_section_up_next_behavior">COMPORTEMENT DE L’ÉPISODE SUIVANT</string>
     <string name="settings_continue_watching_section_visibility">VISIBILITÉ</string>
     <string name="settings_continue_watching_show_description">Afficher le bandeau Continuer à regarder sur l’écran d’accueil.</string>
     <string name="settings_continue_watching_show_title">Afficher Continuer à regarder</string>
@@ -1667,10 +1667,10 @@
     <string name="person_age">(%1$d ans)</string>
     <string name="person_born">Naissance&#160;: %1$s%2$s</string>
     <string name="person_died">Décès&#160;: %1$s</string>
-    <string name="person_known_for">Connu(e) pour&#160;: %1$s</string>
-    <string name="person_latest">Récent</string>
+    <string name="person_known_for">Domaine&#160;: %1$s</string>
+    <string name="person_latest">Récents</string>
     <string name="person_load_failed">Impossible de charger les détails de %1$s</string>
-    <string name="person_popular">Populaire</string>
+    <string name="person_popular">Populaires</string>
     <string name="person_something_wrong">Un problème est survenu</string>
     <string name="person_upcoming">À venir</string>
     <string name="pin_backspace">Effacer</string>
@@ -1762,7 +1762,7 @@
     <string name="streams_size">TAILLE %1$s</string>
     <string name="streams_torrent_not_supported">Ce type de flux n’est pas pris en charge</string>
     <string name="debrid_missing_api_key">Connectez un compte dans les paramètres.</string>
-    <string name="debrid_not_cached">Non mis en cache sur Torbox.</string>
+    <string name="debrid_not_cached">Non mis en cache sur TorBox.</string>
     <string name="debrid_stream_stale">Ce lien a expiré. Actualisation des résultats.</string>
     <string name="debrid_resolve_failed">Impossible d’ouvrir ce lien.</string>
     <string name="external_player_failed">Impossible d’ouvrir le lecteur externe</string>
@@ -2594,6 +2594,7 @@
     <string name="subtitle_shadow">Ombre portée</string>
     <string name="subtitle_shadow_description">Détacher le texte des scènes lumineuses.</string>
     <string name="subtitle_shadow_opacity">Opacité de l’ombre</string>
+    <string name="subtitle_customize_ass">Personnaliser le style ASS/SSA</string>
     <string name="subtitle_shadow_size">Taille de l’ombre</string>
     <string name="subtitle_outline_width">Épaisseur du contour</string>
     <string name="subtitle_reset_appearance">Réinitialiser l’apparence</string>

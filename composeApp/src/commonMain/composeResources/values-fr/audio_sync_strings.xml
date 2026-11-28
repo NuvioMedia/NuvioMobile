@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="audio_sync_setting_title">Synchroniser les sous-titres avec l’audio</string>
+    <string name="audio_sync_setting_description">Aligne les sous-titres sur les dialogues lorsque la synchronisation automatique ne trouve pas de correspondance fiable.</string>
+    <string name="audio_sync_model_title">Modèle vocal anglais (%1$d Mo)</string>
+    <string name="audio_sync_model_description">Facultatif. Reconnaît la parole en anglais et la met en correspondance avec les sous-titres anglais externes, pour une synchronisation plus rapide et plus précise. Utilise davantage le processeur et la mémoire.</string>
+    <string name="audio_sync_model_downloading">Téléchargement… %1$d&#160;%%</string>
+    <string name="audio_sync_model_ready">Téléchargé. Si la lecture saccade, supprimez-le pour ne synchroniser qu’avec la détection de la parole.</string>
+    <string name="audio_sync_model_failed">Échec du téléchargement. Sélectionnez pour réessayer. La détection de la parole fonctionne toujours.</string>
+    <string name="audio_sync_model_download">Télécharger</string>
+    <string name="audio_sync_model_delete">Supprimer</string>
+    <string name="audio_sync_sampling_title">Échantillonnage audio</string>
+    <string name="audio_sync_sampling_description">Écoute les dialogues avant leur lecture, afin de trouver plus tôt la synchronisation.</string>
+    <string name="audio_sync_sampling_off">Désactivé</string>
+    <string name="audio_sync_sampling_low">Faible</string>
+    <string name="audio_sync_sampling_high">Élevé</string>
+    <string name="audio_sync_sampling_off_description">Écoute uniquement ce qui est en cours de lecture, ce qui allonge la synchronisation. Ne fonctionne pas avec le lecteur mpv.</string>
+    <string name="audio_sync_sampling_low_description">Écoute à l’avance quelques scènes de dialogue via une connexion supplémentaire, jusqu’à 75 Mo par titre. Également utilisé à la place de «&#160;Élevé&#160;» sur les réseaux à données limitées.</string>
+    <string name="audio_sync_sampling_high_description">Synchronisation la plus rapide. Écoute à l’avance davantage de scènes via plusieurs connexions, généralement jusqu’à 150 Mo par titre, et utilise davantage le processeur. Certains serveurs limitent le nombre de connexions autorisées.</string>
+    <string name="licenses_attributions_audio_sync_title">Synchronisation audio des sous-titres</string>
+    <string name="licenses_attributions_audio_sync_body">La détection de la parole utilise les poids Silero VAD v5 (MIT, Silero Team). La reconnaissance vocale facultative utilise sherpa-onnx (Apache-2.0, k2-fsa) et son modèle anglais Zipformer GigaSpeech (Apache-2.0).</string>
+    <string name="licenses_attributions_audio_sync_license">Les mentions complètes sont fournies avec l’application dans licenses/audio_sync_NOTICE.md.</string>
+</resources>
