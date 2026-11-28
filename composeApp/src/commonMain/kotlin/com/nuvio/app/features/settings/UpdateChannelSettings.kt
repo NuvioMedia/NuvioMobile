@@ -37,9 +37,12 @@ import org.jetbrains.compose.resources.stringResource
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun UpdateChannelSettingsRow(isTablet: Boolean) {
-    val channel by UpdatePreferences.shared.channel.collectAsState()
+    val preferences = UpdatePreferences.shared
+    val channel by preferences.channel.collectAsState()
+    val showBanner by preferences.showBanner.collectAsState()
     var showDialog by rememberSaveable { mutableStateOf(false) }
     val tokens = MaterialTheme.nuvio
+
     SettingsNavigationRow(
         title = stringResource(Res.string.updates_channel_title),
         description = stringResource(Res.string.updates_channel_description),
@@ -54,6 +57,7 @@ internal fun UpdateChannelSettingsRow(isTablet: Boolean) {
         },
         onClick = { showDialog = true },
     )
+
     if (showDialog) {
         DialogSurface(
             onDismissRequest = { showDialog = false },
@@ -67,10 +71,7 @@ internal fun UpdateChannelSettingsRow(isTablet: Boolean) {
                         modifier = Modifier.fillMaxWidth().selectable(
                             selected = option == channel,
                             role = Role.RadioButton,
-                            onClick = {
-                                UpdatePreferences.shared.setChannel(option)
-                                showDialog = false
-                            },
+                            onClick = { preferences.setChannel(option) },
                         ).padding(vertical = 12.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(tokens.spacing.controlGap),
@@ -96,9 +97,18 @@ internal fun UpdateChannelSettingsRow(isTablet: Boolean) {
                     }
                 }
             }
+
+            SettingsSwitchRow(
+                title = stringResource(Res.string.updates_banner_title),
+                description = stringResource(Res.string.updates_banner_description),
+                checked = showBanner,
+                isTablet = isTablet,
+                onCheckedChange = preferences::setShowBanner,
+            )
+
             DialogButtons {
                 DialogButton(
-                    text = stringResource(Res.string.action_cancel),
+                    text = stringResource(Res.string.action_close),
                     onClick = { showDialog = false },
                 )
             }

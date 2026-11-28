@@ -2370,6 +2370,8 @@
     <string name="updates_no_channel_release">No update has been published yet.</string>
     <string name="updates_channel_title">Update channel</string>
     <string name="updates_channel_description">Choose the type of app updates to receive</string>
+    <string name="updates_banner_title">Show update banner</string>
+    <string name="updates_banner_description">Show available app updates in the banner</string>
     <string name="updates_channel_stable">Stable</string>
     <string name="updates_channel_beta">Beta</string>
     <string name="updates_channel_stable_description">Intended for everyday use.</string>

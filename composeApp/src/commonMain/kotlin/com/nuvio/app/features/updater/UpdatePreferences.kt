@@ -9,6 +9,9 @@ internal class UpdatePreferences(versionName: String = AppVersionConfig.VERSION_
     private val _channel = MutableStateFlow(storedChannel ?: UpdateChannel.defaultForVersion(versionName))
     val channel = _channel.asStateFlow()
 
+    private val _showBanner = MutableStateFlow(AppUpdaterPlatform.getShowUpdateBanner())
+    val showBanner = _showBanner.asStateFlow()
+
     init {
         if (storedChannel == null && AppUpdaterPlatform.isSupported) {
             AppUpdaterPlatform.setUpdateChannel(_channel.value.storedValue)
@@ -20,6 +23,12 @@ internal class UpdatePreferences(versionName: String = AppVersionConfig.VERSION_
         AppUpdaterPlatform.setUpdateChannel(channel.storedValue)
         AppUpdaterPlatform.setIgnoredTag(null)
         _channel.value = channel
+    }
+
+    fun setShowBanner(show: Boolean) {
+        if (_showBanner.value == show) return
+        AppUpdaterPlatform.setShowUpdateBanner(show)
+        _showBanner.value = show
     }
 
     companion object {
