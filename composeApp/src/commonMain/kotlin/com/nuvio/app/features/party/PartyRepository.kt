@@ -71,6 +71,10 @@ object PartyRepository {
     private val _sharedStream = MutableStateFlow<PartyStream?>(null)
     val sharedStream: StateFlow<PartyStream?> = _sharedStream.asStateFlow()
 
+    // A null stream may mean either sharing is disabled or the host has no shareable source.
+    private val _hostSharingEnabled = MutableStateFlow(false)
+    val hostSharingEnabled: StateFlow<Boolean> = _hostSharingEnabled.asStateFlow()
+
     private val _enabled = MutableStateFlow(true)
     val available: StateFlow<Boolean> = combine(ServerConfigurationRepository.active, _enabled) { server, enabled ->
         server.capabilities.watchParty && enabled
@@ -86,6 +90,7 @@ object PartyRepository {
     private var resumedAt: TimeMark? = null
     private val ignoredWaiting = mutableSetOf<String>()
     private var rejoining = false
+    private var hostShareAnnouncementSent = false
 
     init {
         scope.launch {
@@ -175,15 +180,22 @@ object PartyRepository {
             val party = _state.value.party ?: return@launch
             if (!party.isHost || party.sharing == enabled) return@launch
             updateParty { it.copy(sharing = enabled) }
-            if (!enabled) sendStream(null)
+            _hostSharingEnabled.value = enabled
+            if (enabled) {
+                // Publish the current source, or explicitly announce that no shareable source is ready.
+                hostShareAnnouncementSent = false
+            } else {
+                sendStream(stream = null, sharingEnabled = false)
+            }
         }
     }
 
     fun shareStream(stream: PartyStream?) {
         scope.launch {
             val party = _state.value.party ?: return@launch
-            if (!party.isHost || !party.sharing || stream == _sharedStream.value) return@launch
-            sendStream(stream)
+            if (!party.isHost || !party.sharing) return@launch
+            if (stream == _sharedStream.value && hostShareAnnouncementSent) return@launch
+            sendStream(stream = stream, sharingEnabled = true)
         }
     }
 
@@ -265,6 +277,8 @@ object PartyRepository {
         sessionJob = job
         sessionScope = session
         channel = partyChannel
+        hostShareAnnouncementSent = false
+        _hostSharingEnabled.value = party.isHost && party.sharing
         localPresence = null
         ignoredWaiting.clear()
         waitStartedAt = null
@@ -299,6 +313,8 @@ object PartyRepository {
         localPresence = null
         _playback.value = null
         _sharedStream.value = null
+        _hostSharingEnabled.value = false
+        hostShareAnnouncementSent = false
         _state.value = PartyUiState()
         PartyChat.stop()
     }
@@ -325,7 +341,12 @@ object PartyRepository {
         runCatching { channel?.track(presence) }
         runCatching { channel?.send("status", presence) }
         _playback.value?.let { current -> runCatching { channel?.send("state", encodePlayback(current)) } }
-        if (party.isHost && party.sharing) _sharedStream.value?.let { sendStream(it) }
+        if (party.isHost) {
+            sendStream(
+                stream = _sharedStream.value.takeIf { party.sharing },
+                sharingEnabled = party.sharing,
+            )
+        }
         requestState(party)
         PartyChat.refresh()
     }
@@ -337,7 +358,12 @@ object PartyRepository {
             "state_request" -> {
                 if (payload.string("member_id") == party.memberId) return
                 runCatching { channel?.send("status", encodePresence(ownPresence(party))) }
-                if (party.isHost && party.sharing) _sharedStream.value?.let { sendStream(it) }
+                if (party.isHost) {
+                    sendStream(
+                        stream = _sharedStream.value.takeIf { party.sharing },
+                        sharingEnabled = party.sharing,
+                    )
+                }
                 val current = _playback.value ?: return
                 runCatching { channel?.send("state", encodePlayback(current)) }
             }
@@ -365,10 +391,19 @@ object PartyRepository {
             }
             "stream" -> {
                 if (party.isHost || payload.string("member_id") != party.hostMemberId) return
-                _sharedStream.value = payload["stream"]
-                    ?.takeIf { it !is JsonNull }
-                    ?.let { decode(it, PartyStream.serializer()) }
-                    ?.takeIf { isShareableStreamUrl(it.url) }
+                val streamElement = payload["stream"]
+                val announcedSharing = (payload["sharing"] as? JsonPrimitive)?.booleanOrNull
+                    // Older clients send only a stream payload; preserve their previous behavior.
+                    ?: (streamElement != null && streamElement !is JsonNull)
+                _hostSharingEnabled.value = announcedSharing
+                _sharedStream.value = if (announcedSharing) {
+                    streamElement
+                        ?.takeIf { it !is JsonNull }
+                        ?.let { decode(it, PartyStream.serializer()) }
+                        ?.takeIf { isShareableStreamUrl(it.url) }
+                } else {
+                    null
+                }
             }
             "chat" -> PartyChat.receive(payload)
         }
@@ -411,7 +446,10 @@ object PartyRepository {
             return
         }
         val name = party.member(memberId)?.displayName
-        if (memberId == party.hostMemberId) _sharedStream.value = null
+        if (memberId == party.hostMemberId) {
+            _sharedStream.value = null
+            _hostSharingEnabled.value = false
+        }
         updateParty { current ->
             current.copy(
                 members = current.members.filterNot { it.id == memberId },
@@ -653,11 +691,14 @@ object PartyRepository {
 
     private fun deviceId(): String = SyncClientIdentity.currentClientId()
 
-    private suspend fun sendStream(stream: PartyStream?) {
+    private suspend fun sendStream(stream: PartyStream?, sharingEnabled: Boolean) {
         val party = _state.value.party ?: return
         _sharedStream.value = stream
+        _hostSharingEnabled.value = sharingEnabled
+        hostShareAnnouncementSent = true
         val payload = buildJsonObject {
             put("member_id", party.memberId)
+            put("sharing", sharingEnabled)
             put("stream", stream?.let { PartyApi.json.encodeToJsonElement(PartyStream.serializer(), it) } ?: JsonNull)
         }
         runCatching { channel?.send("stream", payload) }
