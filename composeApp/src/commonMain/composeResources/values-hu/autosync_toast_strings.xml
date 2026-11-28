@@ -1,4 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="autosync_label_synced">Automatikusan szinkronizálva</string>
+    <string name="autosync_status_title">Automatikus szinkronizálás állapota</string>
+    <string name="autosync_status_synced">Szinkronizálva</string>
+    <string name="autosync_status_not_needed">Nem szükséges</string>
+    <string name="autosync_status_in_progress">Folyamatban</string>
+    <string name="autosync_status_no_fit">Lehet, hogy nem egyezik</string>
+    <string name="autosync_status_no_reference">Nincsenek beágyazott feliratok</string>
+    <string name="autosync_status_failed">Sikertelen</string>
 </resources>
